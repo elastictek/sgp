@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="container">
+    <div class="container">
+        
+        
+    </div>
+    <div class="container">
+        <h1>Palete: {{ palete.nome }}</h1>
+        <div class="row">
+                <div class="col">
+                    {% if erro == "2" %}
+                        <h1>A bobine selecionada não existe.</h1>
+                    {% elif erro == "1" %}
+                        <h1>A bobine selecionada está fora de especificações.</h1>
+                    {% elif  erro == "3" %}
+                        <h1>A palete já se encontra completa.</h1>
+                    {% elif  erro == "4" %}
+                        <h1>A bobine já faz parte desta palete.</h1>
+                    {% elif  erro == "5" %}
+                        <h1>A bobine já faz parte de outra palate.</h1>
+                    {% endif %}
+                </div>
+                <a href="{% url 'producao:addbobinepalete' pk=palete.pk  %}" class="btn btn-primary" role="button">Voltar</a>
+            </div>
+        </div>
+       
+
+</div>
+<!-- <script>
+    var input = document.getElementById("myInput");
+    input.addEventListener("keyup", function(event){
+        event.preventDefault();
+        if(event.keyCode === 13){
+            document.getElementById("myBtn").click();
+        }
+    });
+</script> -->
+
+{% endblock %}

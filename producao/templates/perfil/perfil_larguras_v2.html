@@ -1,0 +1,704 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+{% block title %}Perfil Larguras | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container">
+  <a href="{% url 'producao:cancel_insert_larguras' pk=perfil.pk %}" class="btn btn-outline-primary" role="button">Cancelar</a>
+   
+</div>
+<div>
+  <h3 class="text-center">Atribuir Larguras</h3>
+</div>
+
+<form method="post" id="largurasForm" data-artigos-url="{% url 'producao:load_artigos_cliente' %}">
+  {% csrf_token %} 
+  {{ formset.management_form }}
+  {% if messages %}
+  <div>
+    {% for message in messages %} {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+    <div class="error_classificacao">
+      <p>{{message}}</p>
+    </div>
+    {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+    <div class="success_classificacao">
+      <p>{{message}}</p>
+    </div>
+    {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+    <div>
+      <p>{{message}}</p>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="container">
+    <div class="table-responsive">
+      <table class="table table-fixed">
+        <thead>
+            <tr>
+              <th scope="col">Nº bobine</th>
+              <th scope="col">Produto</th>
+              <th scope="col">Largura</th>
+              <th scope="col">Gsm</th>
+              <th scope="col">Cliente</th>
+              <th scope="col">Artigo</th>
+            </tr>
+        </thead>
+        <tbody>
+          {% for form in formset %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            {% for field in form %}
+            <td>{{ field }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor%}        
+        </tbody>
+      </table>
+    </div>
+    <div class="row mt-2">
+      <button type="submit" class="btn btn-primary">Validar</button>
+  </div>
+  </div>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script>
+  var num_forms = $("#id_form-TOTAL_FORMS").val();
+
+  $("#id_form-0-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-0-largura").val();
+    var produto = $("#id_form-0-designacao_prod").val();
+    var gsm = $("#id_form-0-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-0-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-1-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-1-largura").val();
+    var produto = $("#id_form-1-designacao_prod").val();
+    var gsm = $("#id_form-1-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-1-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-2-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-2-largura").val();
+    var produto = $("#id_form-2-designacao_prod").val();
+    var gsm = $("#id_form-2-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-2-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-3-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-3-largura").val();
+    var produto = $("#id_form-3-designacao_prod").val();
+    var gsm = $("#id_form-3-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-3-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-4-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-4-largura").val();
+    var produto = $("#id_form-4-designacao_prod").val();
+    var gsm = $("#id_form-4-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-4-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-5-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-5-largura").val();
+    var produto = $("#id_form-5-designacao_prod").val();
+    var gsm = $("#id_form-5-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-5-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-6-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-6-largura").val();
+    var produto = $("#id_form-6-designacao_prod").val();
+    var gsm = $("#id_form-6-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-6-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-7-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-7-largura").val();
+    var produto = $("#id_form-7-designacao_prod").val();
+    var gsm = $("#id_form-7-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-7-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-8-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-8-largura").val();
+    var produto = $("#id_form-8-designacao_prod").val();
+    var gsm = $("#id_form-8-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-8-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-9-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-9-largura").val();
+    var produto = $("#id_form-9-designacao_prod").val();
+    var gsm = $("#id_form-9-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-9-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-10-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-10-largura").val();
+    var produto = $("#id_form-10-designacao_prod").val();
+    var gsm = $("#id_form-10-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-10-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-11-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-11-largura").val();
+    var produto = $("#id_form-11-designacao_prod").val();
+    var gsm = $("#id_form-11-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-11-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-12-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-12-largura").val();
+    var produto = $("#id_form-12-designacao_prod").val();
+    var gsm = $("#id_form-12-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-12-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-13-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-13-largura").val();
+    var produto = $("#id_form-13-designacao_prod").val();
+    var gsm = $("#id_form-13-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-13-artigo").html(data);
+      },
+    });
+  });
+
+  $("#id_form-14-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-14-largura").val();
+    var produto = $("#id_form-14-designacao_prod").val();
+    var gsm = $("#id_form-14-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-14-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-15-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-15-largura").val();
+    var produto = $("#id_form-15-designacao_prod").val();
+    var gsm = $("#id_form-15-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-15-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-16-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-16-largura").val();
+    var produto = $("#id_form-16-designacao_prod").val();
+    var gsm = $("#id_form-16-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-16-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-17-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-17-largura").val();
+    var produto = $("#id_form-17-designacao_prod").val();
+    var gsm = $("#id_form-17-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-17-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-18-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-18-largura").val();
+    var produto = $("#id_form-18-designacao_prod").val();
+    var gsm = $("#id_form-18-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-18-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-19-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-19-largura").val();
+    var produto = $("#id_form-19-designacao_prod").val();
+    var gsm = $("#id_form-19-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-19-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-20-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-20-largura").val();
+    var produto = $("#id_form-20-designacao_prod").val();
+    var gsm = $("#id_form-20-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-20-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-21-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-21-largura").val();
+    var produto = $("#id_form-21-designacao_prod").val();
+    var gsm = $("#id_form-21-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-21-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-22-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-22-largura").val();
+    var produto = $("#id_form-22-designacao_prod").val();
+    var gsm = $("#id_form-22-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-22-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-23-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-23-largura").val();
+    var produto = $("#id_form-23-designacao_prod").val();
+    var gsm = $("#id_form-23-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-23-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-24-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-24-largura").val();
+    var produto = $("#id_form-24-designacao_prod").val();
+    var gsm = $("#id_form-24-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-24-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-25-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-25-largura").val();
+    var produto = $("#id_form-25-designacao_prod").val();
+    var gsm = $("#id_form-25-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-25-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-26-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-26-largura").val();
+    var produto = $("#id_form-26-designacao_prod").val();
+    var gsm = $("#id_form-26-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-26-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-27-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-27-largura").val();
+    var produto = $("#id_form-27-designacao_prod").val();
+    var gsm = $("#id_form-27-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-27-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-28-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-28-largura").val();
+    var produto = $("#id_form-28-designacao_prod").val();
+    var gsm = $("#id_form-28-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-28-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-29-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-29-largura").val();
+    var produto = $("#id_form-29-designacao_prod").val();
+    var gsm = $("#id_form-29-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-29-artigo").html(data);
+      },
+    });
+  });
+  $("#id_form-30-cliente").change(function () {
+    var url = $("#largurasForm").attr("data-artigos-url");
+    var clienteId = $(this).val();
+    var largura = $("#id_form-30-largura").val();
+    var produto = $("#id_form-30-designacao_prod").val();
+    var gsm = $("#id_form-30-gsm").val();
+
+    $.ajax({
+      url: url,
+      data: {
+        cliente: clienteId,
+        largura: largura,
+        produto: produto,
+        gsm: gsm,
+      },
+      success: function (data) {
+        $("#id_form-30-artigo").html(data);
+      },
+    });
+  });
+</script>
+{% endblock %}

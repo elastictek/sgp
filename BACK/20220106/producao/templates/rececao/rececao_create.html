@@ -1,0 +1,51 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Criar Receção | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-9 col-lg-9">  
+                <a href="{% url 'producao:rececao_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+  
+    
+
+
+    <div class="row">
+        <h1 id="center">Criar Receção</h1>
+    </div>
+    <div class="row">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% bootstrap_field form.fornecedor %}
+                        </div>
+                        <div class="col-sm-6">
+                            {% bootstrap_field form.encomenda %}
+                        </div>
+
+                    </div>
+                   
+                    
+                    
+                </div>
+                               
+               
+                <input type="submit" class="btn btn-block btn-primary pull-right" value="Criar">
+                
+            </form>
+    </div>
+                
+    </div>        
+    
+</div>
+
+{% endblock %}

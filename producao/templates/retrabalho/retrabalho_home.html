@@ -1,0 +1,138 @@
+{% extends "layout.html" %} 
+{% block title %}Retrabalho | {{ block.super }}{% endblock %} 
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:producao_home' %}" class="btn btn-primary" role="button">Voltar</a>
+    
+    <a href="{% url 'producao:create_bobinagem_retrabalho' %}" class="btn btn-primary pull-right" role="button">Retrabalhar</a>
+ </div>
+ <h1 id="center">Bobinagens retrabalhadas</h1><br>
+ <div class="container">
+    
+        
+    
+</div>
+<div class="row">
+        <div class="container col-sm-3"></div>
+        <div class="container col-sm-6">
+                <input id="myInput" type="text" placeholder="Bobinagem" onkeyup="searchBobinagem()" autofocus/>
+        </div>
+        <div class="container col-sm-3"></div>
+</div>
+<div class="row">
+    <div class="container col-sm-3"></div>
+    <div class="container col-sm-6 table-responsive size-table">
+            
+        <table class="table fit" id="myTable">
+            <thead>
+                <tr>
+                    <th>Bobinagem</th>
+                    <th>Emendas</th>
+                    <th>Nº de bobines</th>
+                    <th>Comprimento(m)</th>    
+                    <th>Área(m2)</th>                              
+                    
+                </tr>
+            </thead>
+            <tbody id="bobinagem_dm">
+                
+            </tbody>
+            
+        </table>
+    </div>
+    <div class="container col-sm-3"></div>
+</div>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<script>
+$(window).load(function() {
+    $.ajax({ 
+        type: "GET",
+        dataType: "json",
+        url: "/api/bobinagem/list/dm",
+        success: function(bobinagem_dm){ 
+            if(!bobinagem_dm || bobinagem_dm.length === 0) {
+                    return;
+            }
+            
+            var bobinagem_dm_length = bobinagem_dm.length
+          
+
+            for(i=0; i < bobinagem_dm_length; i++){
+                var link = "/producao/bobinagem/" + bobinagem_dm[i].id
+                var link_del = "/producao/bobinagem/delete/" + bobinagem_dm[i].id
+                var link_refazer = "/producao/retrabalho/refazer/" + bobinagem_dm[i].id
+                var e = 0
+                var a1=$(document.createElement("a")).text(bobinagem_dm[i].nome).attr('href', link), td1=$(document.createElement("td"));
+                var td2=$(document.createElement("td")).attr('id', "center")
+                var td3=$(document.createElement("td")).attr('id', "center")
+                var td4=$(document.createElement("td")).attr('id', "center")
+                var td5=$(document.createElement("td")).attr('id', "center")
+                var td5=$(document.createElement("td")).attr('id', "center")
+                var td6=$(document.createElement("a"))
+                var td7=$(document.createElement("a"))
+                
+                if (bobinagem_dm[i].num_emendas - 1 < 0) {
+                    e = 0
+                } else {
+                    e = bobinagem_dm[i].num_emendas - 1
+                }
+                
+                td1.append(a1);
+                td2.text(e);
+                td3.text(bobinagem_dm[i].perfil.num_bobines);
+                td4.text(bobinagem_dm[i].comp_cli);
+                td5.text(bobinagem_dm[i].area);
+                
+                td6.addClass('btn btn-danger glyphicon glyphicon-trash').attr('href', link_del);
+                td7.addClass('btn btn-warning').text("Refazer").attr('href', link_refazer);
+                var tr=$(document.createElement("tr"));
+                tr.append(td1).append(td2).append(td3).append(td4).append(td5).append(td7).append(td6);
+
+                if (bobinagem_dm[i].perfil.retrabalho == true){
+                    a1.click(function () {
+                    window.location = link
+                    
+                    });
+                }
+                 
+                
+                $("#bobinagem_dm").append(tr);
+            }
+
+        }
+    })
+
+
+})
+
+function searchBobinagem() {
+  // Declare variables 
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value;
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    } 
+  }
+}
+
+</script>
+
+
+
+{% endblock %}

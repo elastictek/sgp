@@ -1,0 +1,233 @@
+{% extends "layout.html"%} 
+{% load bootstrap3 %}
+{% load producao_tags %}
+{% block title %}Classificar Bobinagem | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div>
+    <a href="{% url 'producao:bobinestatus' pk=bobinagem.pk %}"  class="btn btn-outline-primary" role="button">Voltar</a>
+    
+</div>
+<div class="title_block-list">
+    <h1>Classificar Bobinagem</h1>
+    <h2>{{ bobinagem.nome }}</h2>
+</div>
+{% if messages %}
+    <div>
+        
+        {% for message in messages %}
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="error_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                <div class="success_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                <div>
+                    <p>{{message}} </p>
+                </div>
+            {% endif %}
+    {% endfor %}
+
+</div>
+{% endif %}
+<div>
+    <form action='' method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <input type="submit" value="Validar" class="btn btn-outline-primary">
+        {% if request.user|has_group:"Qualidade Supervisor" or request.user|has_group:"Qualidade Tecnico" %}
+        <a href="{% url 'producao:classificacao_bobines_all' pk=bobinagem.pk operation='hold' %}" class="btn btn-light" role="button">Hold</a>
+        {% endif %}
+        <!-- <a href="{% url 'producao:classificacao_bobines_all' pk=bobinagem.pk operation='rej' %}" class="btn_r" role="button">Rejeitar</a> -->
+        <!-- <a href="{% url 'producao:classificacao_bobines_all' pk=bobinagem.pk operation='dm' %}" class="btn_dm" role="button">DM</a> -->
+        <a href="{% url 'producao:classificacao_bobines_all' pk=bobinagem.pk operation='ap' %}" class="btn btn-success" role="button">Aprovar</a>
+        <table class="content-table" id="defeitos">
+            <thead>
+                <tr>
+                    <th id="designacao">Bobine</th>
+                    <!-- <th>Largura</th>
+                    <th>Área(m<sup>2</sup>)</th> -->
+                    <th>Estado</th>
+                    <th>Largura Real (mm)</th>
+                    <th>Largura NOK</th>
+                    <th>Cónico</th>
+                    <th>Desc.</th>
+                    <th>Presa</th>
+                    <th>Diâm.</th>
+                    <th>Suj.</th>
+                    <th>Carro atrás</th>
+                    <th>Laçou</th>
+                    <th>Não Colou</th>
+                    <th>Sobretiragem</th>
+                    <th>Falha Corte</th>
+                    <th>Inicio Diam. (mm)</th>
+                    <th>Fim Diam. (mm)</th>
+                    <th>Falha Filme</th>
+                    <th>Início Metros Desbobinagem (m)</th>
+                    <th>Fim Metros Desbobinagem (m)</th>
+                    <th>Falha MP</th>
+                    <th>Furos</th>
+                    <th>Buracos</th>
+                    <th>Gram.</th>
+                    <th>Prop.</th>
+                    <th>Prop. Obs.</th>
+                    <th>Outros</th>
+                    <th>Obs.</th>
+                    <th>Troca</th>
+                  
+
+
+                </tr>
+            </thead>
+            <tbody>
+                <tbody>   
+                    <tr>
+                        <td>Geral</td>
+                        <td><select name="estado" id="estado">
+                                <option value="---">---</option>
+                                <option value="G">G</option>
+                                <option value="DM">DM12</option>
+                                <option value="R">R</option>
+                                <option value="BA">BA</option>
+                                <option value="LAB">LAB</option>
+                                <option value="IND">IND</option>
+                                <option value="HOLD">HOLD</option>
+                                <option value="SC">SC</option>
+                            </select>
+                        </td>
+                        <td><input type="text" id="l_real" name="Largura Real"></td>
+                        <td><input type="checkbox" id="nok" name="Largura NOK"></td>
+                        <td><input type="checkbox" id="con" name="Cónico"></td>
+                        <td><input type="checkbox" id="descen" name="Descentrada"></td>
+                        <td><input type="checkbox" id="presa" name="Presa"></td>
+                        <td><input type="checkbox" id="diam_insuf" name="Diêmetro Insuficiente"></td>
+                        <td><input type="checkbox" id="suj" name="vehicle1"></td>
+                        <td><input type="checkbox" id="car" name="vehicle1"></td>
+                        <td><input type="checkbox" id="lac" name="vehicle1"></td>
+                        <td><input type="checkbox" id="ncore" name="vehicle1"></td>
+                        <td><input type="checkbox" id="sbrt" name="vehicle1"></td>
+                        <td><input type="checkbox" id="fc" name="vehicle1"></td>
+                        <td><input type="text" id="fc_diam_ini" name="vehicle1"></td>
+                        <td><input type="text" id="fc_diam_fim" name="vehicle1"></td>
+                        <td><input type="checkbox" id="ff" name="vehicle1"></td>
+                        <td><input type="text" id="ff_m_ini" name="vehicle1"></td>
+                        <td><input type="text" id="ff_m_fim" name="vehicle1"></td>
+                        <td><input type="checkbox" id="fmp" name="Falha Matéria Prima"></td>
+                        <td><input type="checkbox" id="furos" name="Furos"></td>
+                        <td><input type="checkbox" id="buraco" name="Buracos"></td>
+                        <td><input type="checkbox" id="esp" name="Gramagem"></td>
+                        <td><input type="checkbox" id="prop" name="Propriedades"></td>
+                        <td><input type="text" id="prop_obs" name="Propriedades Observações"></td>
+                        <td><input type="checkbox" id="outros" name="Outros"></td>
+                        <td><input type="text" id="obs" name="Observações"></td>
+                        <td><input type="checkbox" id="troca_nw" name="Troca NW"></td>
+                        
+                        
+                       
+                    </tr> 
+                    {% for form in formset %}
+                        <tr>
+                            <td>{{ forloop.counter}}</td>
+                            {% for field in form %}
+                            <td>{{ field }}</td>
+                            {% endfor %}
+                                                  
+                            
+                            
+                            
+                        </tr>
+                    {% endfor %}
+                                
+                </tbody>  
+            </tbody>
+        </table>
+    </form>
+</div>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    
+    $(':checkbox').change(function() {
+        var id = $(this).attr('id');
+        if( $('#' + id).is(":checked")){
+            var n = 0
+            var rowCount = $('#defeitos tr').length - 2;
+            for(i = 0; i < rowCount; i++){
+                id_bobine = "#id_bobine_set-" + i + "-" + id
+                $(id_bobine).prop("checked", true);
+            }
+        } else {
+            var n = 0
+            var rowCount = $('#defeitos tr').length - 2;
+            for(i = 0; i < rowCount; i++){
+                id_bobine = "#id_bobine_set-" + i + "-" + id
+                $(id_bobine).prop("checked", false);
+            }
+        }
+    });
+    $(':text').keyup(function() {
+        var id = $(this).attr('id');
+        console.log(id)
+        var val = $('#' + id).val()
+        console.log(val)
+        var rowCount = $('#defeitos tr').length - 2;
+        for(i = 0; i < rowCount; i++){
+            id_bobine = "#id_bobine_set-" + i + "-" + id
+            $(id_bobine).val(val);
+        }
+        
+        
+        
+    });
+    $('select').change(function() {
+        var id = $(this).attr('id');
+        console.log(id)
+        var val = $('#' + id).val()
+        console.log(val)
+        var rowCount = $('#defeitos tr').length - 2;
+        for(i = 0; i < rowCount; i++){
+            id_bobine = "#id_bobine_set-" + i + "-" + id
+            $(id_bobine).val(val);
+        }
+        
+        
+        
+    });
+   
+
+});
+</script>
+
+{% endblock %}
+               
+
+
+            
+        
+        
+        
+            
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                
+                                

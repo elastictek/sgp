@@ -1,0 +1,67 @@
+{% load static %}
+<html>
+    <head>
+        <meta charset="utf-8"> 
+        <title>Packinglist: {{ carga }}</title>
+        <style>
+            th {
+                text-align: left;
+                font-size: 1.2rem;
+                padding: 3px 0 0 2px;
+            }
+            td {
+                padding: 3px 0 0 2px;
+                
+            }
+            h1 {
+                text-align: center;
+                font-size: 2rem;
+            }
+            h3 {
+                font-size: 1.5rem;
+            }
+            .logo {
+                width: 200px;
+                
+            }
+            table {
+                border: 1px solid black
+            }
+        </style>
+    </head>
+    <body>
+        <img class="logo" src="c:\projects\git_\Sistema\sistema\assets\img\logo.png" alt="logo">
+        <h1>Detailed Packing List</h1>
+        <h2>{{ carga.enc.cliente }}</h2>
+        <h2>{{ carga.enc.prf }}</h2>
+        <!-- <hr> -->
+        
+        <!-- <h3>{{ palete }}</h3> -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Pallet No.</th>
+                    <th>Reel</th>
+                    <th>Width</th>
+                    <th>SQM</th>
+                </tr>                
+            </thead>
+            {% for palete in paletes %}
+            <tbody>
+                {% for bobine in palete.bobine_set.all %}
+                <tr>
+                 <td>{{ palete }}</td>
+                 <td>{{ bobine.nome }}</td>
+                 <td>{{ bobine.largura.largura }}</td>
+                 <td>{{ bobine.area }}</td>
+                </tr>
+                {% endfor %}
+                
+            </tbody>
+            {% endfor%}
+        </table>
+        <!-- <hr> -->
+        
+    </body>
+    
+</html>

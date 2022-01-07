@@ -1,0 +1,94 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Detalhes Artigo Nonwoven | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <br>
+    <div class="row">
+        <div class="container">  
+                <a href="{% url 'producao:artigonw_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+    <div class="row">
+        <h1 id="center">Artigo Nonwoven</h1>
+        <br>
+        <h1 id="center">{{artigonw.cod}} - {{ artigonw.designacao }}</h1>
+    </div>
+    <br>
+    <br>
+  
+    
+
+
+    <div class="row">
+        <h1 id="center">Lotes de Nonwoven</h1>
+        <br>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Stack number</th>
+                        <th id="center">Lote</th>
+                        <th id="center">Produção</th>
+                        <th id="center">Comp. actual(m)</th>
+                        <th id="center">Comp. Total(m)</th>
+                        <th id="center">Receçãodd</th>
+                        <th id="center">Disponivel</th>
+                        <!-- <th id="center"></th>
+                        <th id="center"></th> -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nw in nonwoven %}
+                    <tr>
+                        <td>{{ nw.stack_num }}</td>
+                        <td id="center">{{ nw.lote }}</td>
+                        <td id="center">{{ nw.prod }}</td> 
+                        <td id="center">{{ nw.comp_actual }}</td>
+                        <td id="center">{{ nw.comp_total }}</td>
+                        <td id="center">{{ nw.rececao }}</td>
+                        {% if nw.vazio == True %}
+                            <td id="estado_rejected"><i class="glyphicon glyphicon glyphicon-remove"></td>
+                        {% else %}
+                            <td id="estado_good"><i class="glyphicon glyphicon-ok"></td>
+                        {% endif %}
+                        <!-- <td id="center"><a href="#" class="btn btn-warning"><i class="glyphicon glyphicon-pencil"></i></span></a></td>
+                        <td id="center"><a href="#" class="btn btn-danger"><i class="glyphicon glyphicon-trash"></i></span></a></td> -->
+                        
+                    </tr>
+                    {% endfor%}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        {% if nonwoven.has_other_pages %}
+        <div class="pagination">
+            <span class="step-links">
+                {% if nonwoven.has_previous %}
+                    <a role="button" class="btn btn-primary " href="?page=1">Primeira</a>
+                    <a role="button" class="btn btn-primary glyphicon glyphicon-menu-left" href="?page={{ nonwoven.previous_page_number }}"></a>
+                {% endif %}
+        
+                <span class="current">
+                    Pág. {{ nonwoven.number }} de {{ nonwoven.paginator.num_pages }}
+                </span>
+        
+                {% if nonwoven.has_next %}
+                    <a role="button" class="btn btn-primary glyphicon glyphicon-menu-right" href="?page={{ nonwoven.next_page_number }}"></a>
+                    <a role="button" class="btn btn-primary" href="?page={{ bobinagem.paginator.num_pages }}">Última</a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    
+    </div>
+
+</div>
+
+{% endblock %}

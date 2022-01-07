@@ -1,0 +1,173 @@
+{% extends "layout.html"%} 
+{% block title %}Bobinagens | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+        <a href="{% url 'producao:producao_home' %}" class="btn btn-primary" role="button">Voltar</a>
+        
+        
+        
+   </div>
+<h1 id="center">Bobinagens Linha 1 Histórico</h1><br>
+<div class="container">
+    <input id="myInput" type="text" placeholder="Bobinagem" onkeyup="searchBobinagem()" autofocus/>
+        
+    
+</div>
+<div class="container table-responsive size-table">
+        
+<table class="table fit" id="myTable">
+    <thead>
+        <tr>
+            <th>Bobinagem</th>
+            <th>Data</th>
+            <th>Inicio</th>
+            <th>Fim</th>    
+            <th>Duração </th>                              
+            <th>Core</th>
+            <th>Comp(m)</th>
+            <th>Comp. Emenda(m)</th>
+            <th>Comp. Cliente(m)</th>
+            <th>Area(m2)</th> 
+
+        </tr>
+    </thead>
+    <tbody id="jsonresp">
+        
+    </tbody>
+    
+</table>
+</div>
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+
+$(window).load(function() {
+    $.ajax({ 
+        type: "GET",
+        dataType: "json",
+        url: "/api/bobinagem/historico/",
+        success: function(data){        
+            if(!data || data.length === 0) {
+                    return;
+                }
+            var data_length = data.length
+            for ( i = 0; i < data_length; i++){
+                
+                if (data[i].perfil.retrabalho == false){
+
+                    var link = "/producao/bobinagem/" + data[i].id
+                    var link_ap = "/producao/bobinagem/ap/" + data[i].id
+                    var link_dm = "/producao/bobinagem/dm/" + data[i].id
+                    var link_rej = "/producao/bobinagem/rej/" + data[i].id
+                    var link_hold = "/producao/bobinagem/hold/" + data[i].id
+                    var link_del = "/producao/bobinagem/delete/" + data[i].id
+                    
+                    
+                    var a1=$(document.createElement("a")).text(data[i].nome).attr('href', link), td1=$(document.createElement("td"));
+                    var td2=$(document.createElement("td"))
+                    var td3=$(document.createElement("td")).attr('id', "center")
+                    var td4=$(document.createElement("td")).attr('id', "center")
+                    var td5=$(document.createElement("td")).attr('id', "center")
+                    var td6=$(document.createElement("td")).attr('id', "center")
+                    var td7=$(document.createElement("td")).attr('id', "center")
+                    var td8=$(document.createElement("td")).attr('id', "center")
+                    var td9=$(document.createElement("td")).attr('id', "center")
+                    var td10=$(document.createElement("td")).attr('id', "center")
+                    var td11=$(document.createElement("a"))
+                    var td12=$(document.createElement("a"))
+                    var td13=$(document.createElement("a"))
+                    var td14=$(document.createElement("a"))
+                    var td15=$(document.createElement("a"))
+                                                           
+
+                    td1.append(a1);
+                    td2.text(data[i].data);
+                    td3.text(data[i].inico);
+                    td4.text(data[i].fim);
+                    td5.text(data[i].duracao);
+                    td6.text(data[i].perfil.core);
+                    td7.text(data[i].comp);
+                    td8.text(data[i].comp_par);
+                    td9.text(data[i].comp_cli);
+                    td10.text(data[i].area);
+                    if (data[i].estado == "LAB"){
+                        td11.addClass('btn btn-success').text("Aprovar").attr('href', link_ap);
+                        td12.addClass('btn btn-warning').text("DM").attr('href', link_dm);
+                        td13.addClass('btn btn-danger').text("Rejeitar").attr('href', link_rej);
+                        td15.addClass('btn btn-info').text("Hold").attr('href', link_hold);
+                        }
+                    td14.addClass('btn btn-danger glyphicon glyphicon-trash').attr('href', link_del);
+                    var tr=$(document.createElement("tr"));
+                    var tr_total = tr.append(td1).append(td2).append(td3).append(td4).append(td5).append(td6).append(td7).append(td8).append(td9).append(td10).append(td11).append(td12).append(td13).append(td15).append(td14);
+                    
+                    // $.ajax({
+                    //     type: "GET",
+                    //     dataType: "json",
+                    //     url: "/api/bobinagem/" + data[i].id,
+                    //     success: function(bobines){  
+                    //         var bobines_length = bobines.length
+                            
+                    //         for (i=0; i < bobines_length; i++){
+                    //             var td = $(document.createElement("td")).attr('id', "center")
+                                
+                    //             td.attr("src", './sistema/assets/img/black_stripe.jpeg')
+                    //             tr_total.append(td)
+                                
+                                
+                    //         }
+
+                    //     } 
+                    // })
+                   
+                    
+
+                    
+                    
+                }
+
+                
+                if (data[i].perfil.retrabalho == false){
+                    a1.click(function () {
+                    window.location = link
+                    
+                    });
+                }
+                 
+                
+                $("#jsonresp").append(tr);
+            }
+        }
+    }); 
+});
+
+function searchBobinagem() {
+  // Declare variables 
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value;
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    } 
+  }
+}
+
+
+</script>
+{% endblock %}

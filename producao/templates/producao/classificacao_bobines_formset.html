@@ -1,0 +1,196 @@
+{% extends "layout.html"%}
+{% load bootstrap4 %}
+
+
+
+{% block title %}Bobinagem | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">    
+        <h1 id="center">Classificar Bobinagem</h1><br>
+        <h2 id="center">{{ bobinagem.nome }}</h2><br>
+<form method="POST" action=''>{% csrf_token %}
+    {{ formset.management_form }}
+    <table class="table table-fixed">
+        <thead>
+            <th>Bobine</th>
+            <th>Estado</th>
+            <th>Cónica</th>
+            <th>Descentrada</th>
+            <th>Presa</th>
+            <th>Diâmetro Insuficiente</th>
+            <th>Furos</th>
+            <th>Gramagem</th>
+            <th>Troca NW</th>
+            <th>Buracos</th>
+            <th>Outros</th>
+            <th>Observações</th>
+        </thead>
+        
+    {% for form in formset %}
+        <tbody> 
+            
+            <td></td>
+            
+            <td>{% bootstrap_field form.estado show_label=False field_class='estado_boot_class'  %}</td>
+            <td>{% bootstrap_field form.con show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.descen show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.presa show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.diam_insuf show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.furos show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.esp show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.troca_nw show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.buraco show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.outros show_label=False field_class='center-text' %}</td>
+            <td>{% bootstrap_field form.obs show_label=False field_class='classi_obs'  %}</td>
+        </tbody>      
+            
+        
+        <!-- {% bootstrap_form form %} -->
+        
+    {% endfor %}
+    
+         
+    </table>
+    <input type="submit" class="btn btn-primary" value="Criar">
+</form>
+</div>
+       
+
+{% endblock %}
+<!-- <div class="conatiner size-table">
+        <form method="POST" action="{% url 'producao:bobinagem_create' %}" onkeypress="return event.keyCode != 13;">
+          
+            <div class="container">
+                <h1 id="center">Criar bobinagem</h1><br>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.data %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.inico %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.fim %}
+                            
+                            
+                
+                    </div>
+            </div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.num_bobinagem %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.perfil %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.estado %}
+                            
+                            
+                
+                    </div>
+            </div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.diam %}
+                            
+                            
+                
+                    </div>
+                    
+            </div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.comp %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.comp_par %}
+                            
+                      </div>
+                
+                    
+            </div>
+            <h3>Nonwoven</h3>
+            <div></div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.tiponwsup %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.tiponwinf %}
+                            
+                            
+                
+                    </div>
+                    
+                    
+            </div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.lotenwsup %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.lotenwinf %}
+                            
+                            
+                
+                    </div>
+                    
+            </div>
+            <div class="row">
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.nwsup %}
+                            
+                            
+                
+                    </div>
+                    <div class="container col-sm-4">
+                            {% bootstrap_field form.nwinf %}
+                            
+                            
+                
+                    </div>
+                    
+            </div>
+            <div class="row">
+                <div class="container col-sm-12">
+                        {% bootstrap_field form.obs %}
+                        
+                        
+            
+                </div>
+            </div>
+            </br>
+            <div class="row">    
+                    {% csrf_token %}
+                    <a href="{% url 'producao:bobinagens' %}" class="btn btn-primary pull-left" role="button">Voltar</a>
+                    <input type="submit" class="btn btn-primary pull-right" value="Gravar">
+                </div>
+            
+        </div>
+        
+            
+        </form>
+        </div> -->

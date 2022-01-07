@@ -1,0 +1,160 @@
+{% extends "layout.html" %} 
+{% load bootstrap3 %}
+{% load static %}
+
+{% block title %}Reciclado | {{ block.super }}{% endblock %} 
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:reciclado_home' %}"  class="btn btn-outline-primary" role="button">Voltar</a>
+    <a href="{% url 'producao:reciclado_create' %}"  class="btn btn-outline-primary" role="button">Pesar Reciclado</a>                                                                                                                                                                                               
+<div>
+<br>
+<div class="container">
+    <div>
+        <h3 class="text-center">Reciclado</h3>
+    </div>
+    <div>
+        <form action="" method="GET">
+            <input type="text" name="q">
+            <input type="submit" value="Procurar" class="btn btn-primary">
+            <a href="{% url 'producao:reciclado_list' %}" class="btn btn-outline-primary">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th id="designacao">Lote</th>
+                    <th>Data e hora de registo</th>
+                    <th>Produto</th>
+                    <th>Estado</th>
+                    <th>Peso(Kg)</th>
+                    <th>Observações</th>
+                    <th>Editar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in reciclado %}
+                    <tr>
+                        <td><a href="{% url 'producao:reciclado_details' pk=rec.pk %}">{{ rec.lote }}</a></td>
+                        <td>{{ rec.timestamp|date:"d-n-Y G:i" }}</td>
+                        <td>{{ rec.produto_granulado }}</td>
+                        {% if rec.estado == 'G' %}<td id="estado_good">{{ rec.estado }}</td>
+                        {% elif rec.estado == 'R' %}<td id="estado_rejected">{{ rec.estado }}</td>
+                        {% elif rec.estado == 'NOK' %}<td id="estado_nok">{{ rec.estado }}</td>{% endif %}
+                        <td>{{ rec.peso }}</td>
+                        <td>{{ rec.obs }}</td>
+                        <td class="td-icon"><a href="{% url 'producao:reciclado_edit' pk=rec.pk %}"><i class="fas fa-pencil-alt"></i></a></td>
+
+              
+                    </tr>
+                    {% endfor%}
+            </tbody>
+        </table>
+        
+    </div>
+    <div class="container">
+        {% if reciclado.has_other_pages %}
+        <div>
+            <span>
+                {% if reciclado.has_previous %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page=1"><i class="fas fa-angle-double-left"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.previous_page_number }}"><i class="fas fa-angle-left"></i></a>
+                {% endif %}
+        
+                <span>
+                    Pág. {{ reciclado.number }} de {{ reciclado.paginator.num_pages }}
+                </span>
+        
+                {% if reciclado.has_next %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.next_page_number }}"><i class="fas fa-angle-right"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.paginator.num_pages }}"><i class="fas fa-angle-double-right"></i></a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    
+    </div>
+</div>
+
+
+<!-- 
+
+<div>
+    <a href="{% url 'producao:reciclado_home' %}"  class="btn_back" role="button">Voltar</a>
+    <a href="{% url 'producao:reciclado_create' %}"  class="btn_create" role="button">Pesar Reciclado</a>
+</div>
+<div class="title_block-list">
+    <h1>Reciclado</h1>
+</div>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="q">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:reciclado_list' %}">Reset</a>
+    </form>
+</div>
+<div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th id="designacao">Lote</th>
+                <th>Data e hora de registo</th>
+                <th>Produto</th>
+                <th>Estado</th>
+                <th>Peso(Kg)</th>
+                <th>Observações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rec in reciclado %}
+            <tr>
+                <td id="designacao"><a href="{% url 'producao:reciclado_details' pk=rec.pk %}">{{ rec.lote }}</a></td>
+                <td>{{ rec.timestamp|date:"d-n-Y G:i" }}</td>
+                <td>{{ rec.produto_granulado }}</td>
+                {% if rec.estado == 'G' %}<td id="estado_good">{{ rec.estado }}</td>
+                {% elif rec.estado == 'R' %}<td id="estado_rejected">{{ rec.estado }}</td>
+                {% elif rec.estado == 'NOK' %}<td id="estado_nok">{{ rec.estado }}</td>{% endif %}
+                <td>{{ rec.peso }}</td>
+                <td id="designacao">{{ rec.obs }}</td>
+                <td class="td-icon"><a href="{% url 'producao:reciclado_edit' pk=rec.pk %}"><i class="fas fa-pencil-alt"></i></a></td>
+
+           </tr>
+            </tr>
+            {% endfor%}
+        </tbody>
+    </table>
+</div>
+<div class="pagination">
+    {% if reciclado.has_other_pages %}
+    <div>
+        <span>
+            {% if reciclado.has_previous %}
+                <a role="button" class="fas fa-angle-double-left" href="?{% if query %}q={{query}}&{% endif %}page=1"></a>
+                <a role="button" class="fas fa-angle-left" href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.previous_page_number }}"></a>
+            {% endif %}
+    
+            <span>
+                Pág. {{ reciclado.number }} de {{ reciclado.paginator.num_pages }}
+            </span>
+    
+            {% if reciclado.has_next %}
+                <a role="button" class="fas fa-angle-right" href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.next_page_number }}"></a>
+                <a role="button" class="fas fa-angle-double-right" href="?{% if query %}q={{query}}&{% endif %}page={{ reciclado.paginator.num_pages }}"></a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+</div> -->
+             
+      
+                
+
+            
+            
+
+
+
+{% endblock %}

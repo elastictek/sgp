@@ -1,0 +1,123 @@
+{% extends "layout.html"%}
+
+{% block title %}Relatorio Consumos{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <div >
+            <a href="{% url 'producao:relatorio_home' %}" class="btn btn-primary" role="button">Voltar</a><br><br>
+    </div>
+    <form method="GET" action=''>{% csrf_token %}
+        <div class="container col-md-6">
+            <div class="row">
+                <input type="text" name='id' placeholder="Data Início" autofocus/>
+                <input type="text" name='fd' placeholder="Data Fim"/>
+                <input type="submit" class="btn btn-success" value="Pesquisar"/>
+            </div>
+            <br>
+            <!-- <div class="row">
+                <input type="text" name='hi' placeholder="Hora Início"/>
+                <input type="text" name='hf' placeholder="Hora Fim"/>
+                
+            </div> -->
+            <!-- <br> -->
+            <div class="row">
+                
+            </div>
+        </div>
+    </form>
+</div>
+<div class="container">
+<div class="row">
+    <div class="container">
+        <h1>Consumos</h1>
+        <br>
+        
+    </div>
+      
+<div class="row">
+    <div class="container">
+            <div class="row"></div>
+        <div class="col-md-6 table-responsive size-table3">
+                <h2 id="center">SUP</h2><br>
+            <table class="table fit">
+                <thead>
+                    <tr>
+                        <th>NW</th>
+                        <th>Lote</th>
+                        <th>Bobinagem</th>
+                        <th>Dia</th>
+                        <th>Hora de Saída</th>
+                        <th>Consumo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                        {% for b in bobinagem %}
+                            {% if b.perfil.retrabalho == False %}
+                                <tr>
+                                
+                                    <th>{{ b.tiponwsup }}</th>
+                                    <th>{{ b.lotenwsup }}</th>
+                                    <td>{{ b.nome }}</td>
+                                    <td>{{ b.data|date:"d-n-Y" }}</td>
+                                    <td>{{ b.fim|date:"G:i" }}</td>
+                                    <td>{{ b.nwsup }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    
+                </tbody>
+            </table>
+            
+            <!-- <h3 id="estado_good">{{ area_g }} m2</h3> -->
+            <!-- <h3>Total(m2): {{ area_g_total }}</h3> -->
+        </div>
+        
+        <div class="col-md-6 table-responsive size-table3">
+                <h2 id="center">INF</h2><br>
+                <table class="table fit">
+                        <thead>
+                            <tr>
+                                <th>NW</th>
+                                <th>Lote</th>
+                                <th>Bobinagem</th>
+                                <th>Dia</th>
+                                <th>Hora de Saída</th>
+                                <th>Consumo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                {% for b in bobinagem %}
+                                    {% if b.perfil.retrabalho == False %}
+                                        <tr>
+                                            
+                                            <th>{{ b.tiponwinf }}</th>
+                                            <th>{{ b.lotenwinf }}</th>
+                                            <td>{{ b.nome }}</td>
+                                            <td>{{ b.data|date:"d-n-Y" }}</td>
+                                            <td>{{ b.fim|date:"G:i" }}</td>
+                                            <td>{{ b.nwinf }}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            
+                        </tbody>
+                    </table>
+            
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h3 id="estado_good">Total: {{ c_sup_total }} m</h3>
+            </div>
+            <div class="col-md-6">
+                <h3 id="estado_good">Total: {{ c_inf_total }} m</h3>
+            </div>
+            </div>
+        
+    </div>
+</div>
+
+
+</div>
+{% endblock %}

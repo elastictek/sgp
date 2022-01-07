@@ -1,0 +1,59 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Fornecedor Editar | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-9 col-lg-9">  
+                <a href="{% url 'producao:fornecedor_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+  
+    
+
+
+    <div class="row">
+        <h1 id="center">Editar Fornecedor</h1>
+        
+    </div>
+    <div class="row">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3>Código: {{ fornecedor.cod }}</h3>
+                        </div>
+                        
+
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% bootstrap_field form.abv %}
+                        </div>
+                        <div class="col-sm-6">
+                            {% bootstrap_field form.designacao %}
+                        </div>
+
+                    </div>
+                  
+                    
+                </div>
+                               
+               
+                <input type="submit" class="btn btn-block btn-primary pull-right" value="Gravar">
+                
+            </form>
+    </div>
+                
+    </div>        
+    
+</div>
+
+{% endblock %}

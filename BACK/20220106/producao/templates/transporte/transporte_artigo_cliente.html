@@ -1,0 +1,64 @@
+{% extends "layout.html"%} 
+{% load producao_tags %}
+{% block title %}Transportes {{ cliente.nome}} {{ artigo.des }} | {{ block.super }}{% endblock %}
+{% block content %}
+
+
+<div class="container">
+    <a href="{% url 'producao:cliente_details' pk=cliente.pk %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    <a href="{% url 'producao:transportes_artigo_cliente_add' pk=artigo_cliente.pk %}" class="btn btn-outline-primary" role="button">Adicionar transporte</a>
+    
+</div>
+<br>
+<div>
+    <h3 class="text-center">Transportes</h3>
+</div>
+<br>
+<div class="container">
+    <div class="container">
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Cliente:</label></div>
+            <div class="col-10">{{ cliente.nome }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Artigo:</label></div>
+            <div class="col-10">{{ artigo }} - {{ artigo.des }}</div>
+        </div>
+        
+    </div>
+    <br>     
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Transporte</th>
+                    <th scope="col">Nº de bobines por palete</th>
+                    <th scope="col">Nº paletes por transporte</th>
+                    {% if request.user|has_group:"Logistica Supervisor"%}
+                    <th scope="col">Editar</th>
+                    <th scope="col">Remover</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for transporte in transportes %}
+                <tr>                   
+                    <td>{{ transporte.transporte}}</td>
+                    <td>{{ transporte.num_bobines_palete }}</td>
+                    <td>{{ transporte.num_paletes_transporte }}</td>
+                    {% if request.user|has_group:"Logistica Supervisor"%}
+                    <td><a href="#"><i class="fas fa-edit"></i></a></td>
+                    <td><a href="#"><i class="fas fa-trash"></i></a></td>
+                    {% endif %}
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+            
+        
+    
+
+{% endblock %}

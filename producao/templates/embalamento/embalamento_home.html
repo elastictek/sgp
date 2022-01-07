@@ -1,0 +1,49 @@
+{% extends "layout.html"%} 
+{% block title %}Embalamento | {{ block.super }}{% endblock %}
+{% load producao_tags %}
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:dadosbase' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Embalamento</h3>
+    </div>
+    <br>
+    <div class="container" id="embalamento-menu">
+        <div class="row mb-2">
+            <div class="col-4">            
+                <a href="{% url 'producao:paletes_emb_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Palete</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:filmes_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Filmes</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:cintas_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Cintas</h1></a>
+            </div>
+        </div>
+        <br>
+        <div class="row text-center">
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:cores_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Cores</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:mdfs_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">MDF's</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:cartao_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Cartão</h1></a>
+            </div>
+            
+        </div>
+        <br>
+        <div class="row text-center">
+            <div class="col-4 text-center">
+                <a href="#" class="btn btn-primary btn-lg" role="button"><h1 class="p-4 m-4">Etiquetas</h1></a>
+            </div>
+            
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

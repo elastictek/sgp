@@ -1,0 +1,158 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+
+
+{% block title %}Palete pesagem | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:paletes_retrabalho' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Pesagem {{ instance.nome }}</h3>
+    </div>
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}" id="error">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if temartigo == False %}
+        <p>As bobines da palete {{ instance.nome }} não têm artigo atribuido. Por favor contacte o Administrador.</p>
+    {% endif%}
+    <br>
+    <div class="container">
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Destino:</label></div>
+            <div class="col-10">{{ instance.destino }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Carga:</label></div>
+            <div class="col-10">{{ instance.carga }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Encomenda:</label></div>
+            <div class="col-10">{{ instance.enc }}</div>
+        </div>
+        
+        
+    </div>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Peso Bruto:</label></div>
+                <div class="col-6 form-control-sm">{{ form.peso_bruto }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Peso Palete:</label></div>
+                <div class="col-3 form-control-sm">{{ form.peso_palete }}</div>
+                
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Stock:</label></div>
+                <div class="col-3 form-control-sm">{{ form.stock }}</div>
+                
+            </div>
+            
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Submit</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+<!-- 
+
+<div>
+    <input type="button" value="Voltar" id="confirm-btn" onclick="history.back()">
+</div>
+<div class="title_block-list">
+    <h1>{{ instance.nome }}</h1>
+    <h3>Destino: <span>{{ instance.destino }}</span></h3>
+    {% if instance.carga == None %}
+    <h3>Carga: Sem carga atribuida </h3>
+    {% else %}
+    <h3>Carga: <span>{{ instance.carga }}</span></h3>
+    {% endif %}
+    {% if instance.enc == None %}
+    <h3>Encomenda: Sem encomenda atribuida </h3>
+    {% else %}
+    <h3>Encomenda: <span>{{ instance.enc }}</span></h3>
+    {% endif %}
+</div>
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}" id="error">{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+<div>
+    {% if temartigo == False %}
+        <p>As bobines da palete {{ instance.nome }} não têm artigo atribuido. Por favor contacte o Administrador.</p>
+    {% endif%}
+</div>
+<form action="" method="POST" class="submission-form">
+    {% csrf_token %}
+    <h3><label for="id_peso_bruto">Peso Bruto</label>{{ form.peso_bruto }}</h3>
+    <h3><label for="id_peso_palete">Peso Palete</label>{{ form.peso_palete }}</h3>
+    <h3><label for="id_stock">Stock</label>{{ form.stock }}</h3>
+    <input type="submit" value="Avançar" id="validate-btn">
+</form> -->
+
+
+
+<!-- 
+
+'carga', 'stock', 'peso_bruto', 'peso_palete'
+
+
+
+<div class="container">
+    <div class="container">
+        <a href="{% url 'producao:palete_selecao' %}" class="btn btn-primary pull-left" role="button">Voltar</a>
+    </div>
+    <div class="container">
+        <h1 id="center">{{ instance.nome }}</h1>
+        <h3 id="center">Carga: {{ instance.destino }}</h3>
+        {% if instance.carga == None %}
+        <h3 id="center">Carga: Sem proforma atribuida </h3>
+        {% else %}
+        <h3 id="center">Proforms - Carga: {{ instance.carga }} </h3>
+        {% endif %}
+    </div>
+    <div class="row" id="center">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <div class="row" id="center">
+        {% if temartigo == False %}
+            <p>As bobines da palete {{ instance.nome }} não têm artigo atribuido. Por favor contacte o Administrador.</p>
+        {% endif%}
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+                {% palete_pesagem_form form %}
+            
+            
+            
+        </div>
+        <div class="col-md-6">
+            
+
+        </div>
+
+    </div>
+</div> -->
+{% endblock %}

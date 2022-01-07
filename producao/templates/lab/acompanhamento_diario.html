@@ -1,0 +1,21 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+
+
+{% block title %}Acompanhamento diário | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row">
+            <h1 id="center">Qualidade</h1>
+        <div class="col-md-6">
+            
+            {% acompanhamento_diario_form form %}
+        </div>
+        <div class="col-md-6">
+            
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+{% block title %}Adicionar Paltes em Stock a Ordem de Produção | {{ block.super }}{% endblock %}
+{% block content %}
+<div>
+    <a href="{% url 'planeamento:details_ordem' pk=ordem.pk %}"  class="btn_back" role="button">Voltar</a>
+</div>
+<div class="title_block-list">
+    
+    <h1>Adicionar paletes a {{ ordem.op }} </h1>
+</div>
+<br>
+<div>
+     
+    {% for message in messages %}
+        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+            <div class="error_classificacao">
+                <p>{{message}} </p>
+            </div>
+        {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+            <div class="success_classificacao">
+                <p>{{message}} </p>
+            </div>
+        {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+            <div>
+                <p>{{message}} </p>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+</div>
+<div class="flex-container">
+    <div>Faltam inserir {{ paletes_em_falta }} paletes em stock na ordem de produção</div>
+    <div>Paletes inseridas: {{ num_paletes_total }} / {{ ordem.num_paletes_total}}</div>
+</div>
+    
+   
+    <div class="flex-container">
+        <div>
+            <table>
+                <h2>Paletes em Stock</h2>
+                <thead>
+                    <tr>
+                        <th>Palete</th>
+                        <th>Bobines</th>
+                        <th>Largura</th>
+                        <th>Core</th>
+                        <th>Cliente</th>
+                        <th>Destino</th>
+                        
+                        <th></th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pal in paletes_stock %}
+                    <tr>
+                        <td>{{ pal.nome }}</td>
+                        <td>{{ pal.num_bobines_act }}</td>
+                        <td>{{ pal.largura_bobines }}</td>
+                        <td>{{ pal.core_bobines }}</td>
+                        {% if pal.cliente == None %}
+                        <td>s/ cliente atribuido</td>  
+                        {% else %}                      
+                        <td>{{ pal.cliente }}</td>  
+                        {% endif %}                      
+                        {% if pal.destino == None %}
+                        <td>s/ Destino</td>
+                        {% else %}
+                        <td>{{ pal.destino }}</td>
+                        {% endif %}
+                        
+                        <td class="td-icon"><a href="{% url 'planeamento:palete_inserir_ordem' pk_palete=pal.pk pk_palete=pal.pk pk_ordem=ordem.pk %}"><i class="fas fa-arrow-right"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <table>
+                <h2>Paletes Ordem de Produção</h2>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Palete</th>
+                        <th>Bobines</th>
+                        <th>Largura</th>
+                        <th>Core</th>
+                        <th>Destino</th>
+                        
+                    </tr>
+                        
+                </thead>
+                <tbody>
+                    {% for pal in paletes_ordem %}
+                    <tr>
+                        <td class="td-icon"><a href="{% url 'planeamento:palete_remover_ordem' pk_palete=pal.pk pk_ordem=ordem.pk %}"><i class="fas fa-arrow-left"></i></a></td>
+                        <!-- {% if pal.ordem_original_stock == True %} -->
+                        <!-- {% endif %} -->
+                        <td>{{ pal.nome }}</td>
+                        <td>{{ pal.num_bobines_act }}</td>
+                        <td>{{ pal.largura_bobines }}</td>
+                        <td>{{ pal.core_bobines }}</td>
+                        <td>{{ pal.destino }}</td>
+                        
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+ 
+    
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+
+</script>
+{% endblock %}

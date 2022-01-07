@@ -1,0 +1,96 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+{% load producao_tags %}
+{% block title %}Perfil | {{ block.super }}{% endblock %}
+{% block content %}
+
+
+<div class="container">
+    <a href="{% url 'producao:planeamento_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    {% if request.user|has_group:"Produção Supervisor" or request.user|has_group:"Produção Operador" %}
+    <a href="{% url 'producao:perfil_create_dm_v2' %}" class="btn btn-outline-primary" role="button">Criar Perfil DM</a>
+    <a href="{% url 'producao:perfil_create_linha_v2' %}" class="btn btn-outline-primary" role="button">Criar Perfil Linha</a>
+    {% endif %}
+    
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Artigos</h3>
+    </div>
+    <div>
+        <form action="" method="GET">
+            <input type="text" name="q">
+            <input type="submit" value="Procurar" class="btn btn-primary">
+            <a href="{% url 'producao:perfil_list_v2' %}" class="btn btn-outline-primary">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Perfil</th>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Nº de Bobines</th>
+                    <th scope="col">Core</th>
+                    <th scope="col">Largura total</th>
+                    <th scope="col">Retrabalho</th>
+                    <th scope="col">Editar</th>
+                    <th scope="col">Apagar</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>                   
+                    {% for p in perfil %}
+                    <tr>
+                        <td><a href="{% url 'producao:perfil_details_v2' pk=p.pk %}">{{ p.nome }}</a></td>
+                        <td>{{ p.produto }}</td>
+                        <td>{{ p.num_bobines }}</td>
+                        <td>{{ p.core }}</td>
+                        <td>{{ p.largura_bobinagem }}</td>
+                        {% if p.retrabalho == True %}
+                            <td><i class="fas fa-check"></i></td>
+                            {% else %}
+                            <td><i class="fas fa-times"></i></td>
+                        {% endif %}
+                        {% if request.user|has_group:"Produção Supervisor" %}
+                        <td><a href="{% url 'producao:perfil_edit_larguras_v2' pk=p.pk %}"><i class="fas fa-edit"></i></a></td>
+                        <td><a href="{% url 'producao:perfil_delete_v2' pk=p.pk %}"><i class="fas fa-trash"></i></a></td>
+                        {% endif %}
+                        
+                    </tr>
+                    {% endfor%}
+                    <!-- <td><a href="#"><i class="fas fa-edit"></i></a></td>
+                    <td><a href="#"><i class="fas fa-trash"></i></a></td> -->
+                    
+                </tr>
+            </tbody>
+        </table>
+        
+    </div>
+    <div class="container">
+        {% if perfil.has_other_pages %}
+        <div>
+            <span>
+                {% if perfil.has_previous %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page=1"><i class="fas fa-angle-double-left"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ perfil.previous_page_number }}"><i class="fas fa-angle-left"></i></a>
+                {% endif %}
+        
+                <span>
+                    Pág. {{ perfil.number }} de {{ perfil.paginator.num_pages }}
+                </span>
+        
+                {% if perfil.has_next %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ perfil.next_page_number }}"><i class="fas fa-angle-right"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ perfil.paginator.num_pages }}"><i class="fas fa-angle-double-right"></i></a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    
+    </div>
+</div>
+
+
+{% endblock %}
+

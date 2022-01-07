@@ -1,0 +1,65 @@
+{% extends "layout.html" %} 
+{% load bootstrap3 %}
+{% load static %}
+{% load producao_tags %}
+{% block title %}Atribuir Destions | {{ block.super }}{% endblock %} 
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:bobinagem_list_v3' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Atribuir Destinos</h3>
+    </div>
+    <br>
+    <div class="container">
+        <form action='{% url "producao:atribuir_destinos" %}' method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row mt-2">
+                <div class="col-3"><label class="form-label">Carregar:</label></div>
+                <div class="col-3"><input type="file" title="Upload excel file" name="excel_file" required="required" class="btn btn-outline-primary"></div>
+            </div>
+            <br>
+            <div class="row mt-2">                
+                <input type="submit" value="Submeter" class="btn btn-outline-primary">            
+            </div>
+            <!-- <input type="text" name="destino" required="required"> -->
+        </form>
+    </div>
+    <br>
+    <div class="container">
+        <div class="table-responsive">
+            <table class="table table-fixed">
+                <thead>
+                    <tr>
+                        <th scope="col">Bobine</th>
+                        <th scope="col">Destino</th>
+                        <th scope="col">Observações</th>                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in excel_data %}
+                    <tr>                   
+                        <td>{{ row.0}}</td>
+                        <td>{{row.1}}</td>
+                        <td>{{row.2}}</td>                       
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- {% for row in excel_data %} -->
+            <!-- {% for cell in row %}
+                {{ cell }}
+            {% endfor %} -->
+            <!-- {{ row.0 }}
+            <br>
+        {% endfor %} -->
+        <!-- {% for bobine in bobines %}
+            {{ bobine }}
+        {% endfor %}
+        {{ destino }} -->
+    </div>
+</div>
+
+{% endblock %}

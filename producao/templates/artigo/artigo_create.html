@@ -1,0 +1,62 @@
+{% extends "layout.html"%} 
+{% block title %}Criar Artigo | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:artigos_list' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Criar Artigo</h3>
+    </div>
+    <br>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Cód. Artigo:</label></div>
+                <div class="col-3 form-control-sm">{{ form.cod }}</div>
+                <div class="col-2"><label class="form-label">Descrição:</label></div>
+                <div class="col-5 form-control-sm">{{ form.des }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Nonwoven 1:</label></div>
+                <div class="col-3 form-control-sm">{{ form.nw1 }}</div>
+                <div class="col-2"><label class="form-label">Nonwoven 2:</label></div>
+                <div class="col-3 form-control-sm">{{ form.nw2 }}</div>
+                <div class="col-1"><label class="form-label">Formulação:</label></div>
+                <div class="col-1 form-control-sm">{{ form.formu }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Largura:</label></div>
+                <div class="col-3 form-control-sm">{{ form.lar }}</div>
+                <div class="col-2"><label class="form-label">Diâm. de Referência:</label></div>
+                <div class="col-3 form-control-sm">{{ form.diam_ref }}</div>
+                <div class="col-1"><label class="form-label">Core:</label></div>
+                <div class="col-1 form-control-sm">{{ form.core }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Gramagem:</label></div>
+                <div class="col-3 form-control-sm">{{ form.gsm }}</div>
+                <div class="col-2"><label class="form-label">Produto:</label></div>
+                <div class="col-3 form-control-sm">{{ form.produto }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Gtin:</label></div>
+                <div class="col-5 form-control-sm">{{ form.gtin }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Tipo:</label></div>
+                <div class="col-5 form-control-sm">{{ form.tipo }}</div>
+            </div>
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Submeter</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

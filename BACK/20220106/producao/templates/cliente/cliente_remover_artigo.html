@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% load producao_tags %}
+{% block content %}
+{% if request.user|has_group:"Logistica Supervisor"%}
+<div class="title_block-list">
+    <h1>Deseja remover o artigo {{ artigo_cliente.artigo.des }}?</h1>
+</div>
+<form action="" method="POST" class="submission-form">
+    {% csrf_token %}
+    <a href="{% url 'producao:cliente_details' pk=cliente.pk %}"  class="btn_back" role="button">Não</a>
+    <input type="submit" value="Sim" id="validate-btn">
+</form>      
+{% else %}
+<h3>Acesso Restrito</h3>       
+{% endif %}  
+           
+
+{% endblock %}

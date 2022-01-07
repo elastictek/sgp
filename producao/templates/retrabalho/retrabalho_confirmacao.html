@@ -1,0 +1,162 @@
+{% extends "layout.html"%}
+
+
+
+{% block title %}Retrabalho Confirmação | {{ block.super }}{% endblock %}
+{% block content %}
+<div>
+    <input type="button" value="Voltar" class="btn btn-outline-primary" onclick="history.back()">
+</div>
+<div class="title_block-list">
+    <h2>Deseja confirmar o retrabalho da bobinagem {{ bobinagem.nome }} com as seguintes caracteristicas?</h2>
+</div>
+<div class="content_details">
+    <div>
+        <table class="content-table"> 
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="designacao">Comprimento (m)</td>
+                    <td>{{ comp_total }}</td>
+                </tr>
+
+                <tr>
+                    <td id="designacao">Largura (mm)</td>
+                    <td>{{ bobinagem.perfil.largura_bobinagem }}</td>
+                    
+                </tr>
+                <tr>
+                    <td id="designacao">Área Total (m2)</td>
+                    <td>{{ area_total }}</td>
+                    
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div>
+        <table class="content-table"> 
+            <thead>
+                <tr>
+                    <th>Bobine</th>
+                    <th>Comp. (m)</th>
+                    <th>Largura (mm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bobines %}
+                <tr>
+                    <td>{{ b.nome }}</td>
+                    <td>{{ comp_total }}</td>
+                    <td>{{ b.largura.largura }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<br>
+<br>
+<div class="title_block-list">
+    <h2>Bobines Originais</h2>
+</div>
+<div>
+    <table class="content-table"> 
+        <thead>
+            <tr>
+                <th>Nº bobine</th>
+                <th>Bobine</th>
+                <th>Metros consumidos (m)</th>
+                <th>Metros emenda (m) / Fim da Bobinagem</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>{{ b_1 }}</td>
+                <td>{{ m_1 }}</td>
+                <td>{{ e_1 }}</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>{{ b_2}}</td>
+                <td>{{ m_2 }}</td>
+                <td>{{ e_2 }}</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>{{ b_3 }}</td>
+                <td>{{ m_3 }}</td>
+                <td>{{ e_3 }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>                   
+<br>                       
+<br>                       
+<div class="title_block-list">
+    <h2>Deseja reciclar alguma das bobines originais?</h2>
+</div>
+<div>
+    <form method="POST" action="#"> 
+        {% csrf_token %}
+        <table class="content-table"> 
+            <thead>
+                <tr>
+                    <th><h2>Bobine</h2></th>
+                    <th><h2>Metros retantes (m)</h2></th>
+                    <th><h2>Reciclar</h2></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><h3>{{ b_1 }}</h3></td>
+                    {% if mr_1 <= 150 %}
+                    <td id="estado_rejected"><h3>{{ mr_1 }}</h3></td>
+                    {% elif mr_1 <= 500 %}
+                    <td id="estado_dm"><h3>{{ mr_1 }}</h3></td>
+                    {% else %}
+                    <td><h3>{{ mr_1 }}</h3></td>
+                    {% endif %}
+                    <td> <h3>{{ form.recycle_1 }}</h3></td>
+                            
+                        
+                </tr>
+                <tr>
+                    <td><h3>{{ b_2 }}</h3></td>
+                    {% if mr_2 <= 150 %}
+                    <td id="estado_rejected"><h3>{{ mr_2 }}</h3></td>
+                    {% elif mr_2 <= 500 %}
+                    <td id="estado_dm"><h3>{{ mr_2 }}</h3></td>
+                    {% else %}
+                    <td><h3>{{ mr_2 }}</h3></td>
+                    {% endif %}
+                    <td>{% if b_2 != "N/A" and b_1 != b_2 %}<h3>{{ form.recycle_2 }}</h3>{% endif %}</td>
+                            
+                        
+                </tr>
+                <tr>
+                    <td><h3>{{ b_3 }}</h3></td>
+                    {% if mr_3 <= 150 %}
+                    <td id="estado_rejected"><h3>{{ mr_3 }}</h3></td>
+                    {% elif mr_3 <= 500 %}
+                    <td id="estado_dm"><h3>{{ mr_3 }}</h3></td>
+                    {% else %}
+                    <td><h3>{{ mr_3 }}</h3></td>
+                    {% endif %}
+                    <td>{% if b_3 != "N/A" and b_3 != b_2 and b_3 != b_1 %}<h3>{{ form.recycle_3 }}</h3>{% endif %}</td>
+                            
+                        
+                </tr>
+            </tbody>
+        </table>
+        <input type="submit" value="Validar" class="btn btn-outline-primary">
+    </form>
+</div>                   
+    
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Inventário Bobines DM Picagem| {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-9 col-lg-9">  
+                <a href="{% url 'producao:inventario_paletes_cliente_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+  
+    
+
+
+    <div class="row">
+        <h1 id="center">Inserir Palete Inventário</h1>
+        
+    </div>
+    <div class="row">
+            {% if messages %}
+            
+                {% for message in messages %}
+                    {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                    <div class="alert alert-danger" role="alert">
+                        <h3 id="center">ERRO!</h3>
+                        <p id="center"> {{message}} </p>
+                     </div>
+                    {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                    <div class="alert alert-success" role="alert">
+                        <h3 id="center">SUCESSO!</h3>
+                        <p id="center"> {{message}} </p>
+                    </div>
+                    {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                    <div class="alert alert-warning" role="alert">
+                        <h3 id="center">JÁ EXISTE!</h3>
+                        <p id="center"> {{message}} </p>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            
+            {% endif %}
+        </div>
+    <div class="row">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row">
+                    
+                        <div class="col-md-12">
+                            {% bootstrap_form form %}
+                        </div>
+
+                </div>
+                  
+                    
+                
+                
+               
+                <input type="submit" class="btn btn-block btn-primary pull-right" value="Inserir">
+                
+            </form>
+    </div>
+                
+</div>  
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>      
+<script type="text/javascript">
+    $(document).ready(function() {
+        window.onload = function() {
+            $("#id_palete").focus();
+         
+        };  
+    }); 
+</script>  
+
+
+{% endblock %}

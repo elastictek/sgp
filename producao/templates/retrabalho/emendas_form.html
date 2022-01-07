@@ -1,0 +1,46 @@
+{% load bootstrap3 %}
+
+<form method="POST" action="#" id="formid">
+ 
+
+        <h1>Retrabalho</h1>
+    <div class="row">
+            <div class="container col-sm-6">
+                    {% bootstrap_field form.bobine %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-6">
+                {% bootstrap_field form.metros %}
+                
+                
+    
+        </div>
+            
+        </div>
+       
+    
+   
+    </br>
+    <div class="row">    
+        <div class="container col-sm-12">
+            {% csrf_token %}
+            <!-- <a href="{% url 'producao:bobinagens' %}" class="btn btn-primary pull-left" role="button">Voltar</a> -->
+
+            <!-- <input type="submit" href="{% url 'home' %}"class="btn btn-primary pull-right" value="Finalizar"> -->
+    
+            <input type="submit" class="btn btn-primary pull-right" value="Adicionar bobine">
+    
+            <p></p>
+         
+            
+        </div>
+    
+        </div>
+
+
+    
+</form>
+
+

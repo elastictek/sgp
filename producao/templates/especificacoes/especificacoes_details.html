@@ -1,0 +1,268 @@
+{% extends "layout.html"%} 
+{% block title %}Especificações Detalhes | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:especificacoes_artigo_cliente' pk_cliente=especificacoes.artigo_cliente.cliente.pk pk_artigo=especificacoes.artigo_cliente.artigo.pk  %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Especificaçõe Detalhes</h3>
+    </div>
+    <div class="container">
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Cliente:</label></div>
+            <div class="col-10">{{ especificacoes.artigo_cliente.cliente.nome }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Artigo:</label></div>
+            <div class="col-10">{{ especificacoes.artigo_cliente.artigo.cod }} - {{ especificacoes.artigo_cliente.artigo.des }}</div>
+        </div>
+        
+    </div>
+    <div class="row mt-2">
+        <div class="col-2"><label class="form-label">Nome Método:</label></div>
+        <div class="col-10">{{ especificacoes.spec }}</div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Propriedade</th>
+                    <th scope="col">Inferior</th>
+                    <th scope="col">Superior</th>
+                    </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basis Weight (g/m2)</td>
+                    {% if especificacoes.basis_weight_inf == None %}
+                    <td>N/A</td>
+                    {% else %}
+                    <td>{{ especificacoes.basis_weight_inf }}</td>
+                    {% endif %}
+                    {% if especificacoes.basis_weight_sup == None %}
+                    <td>N/A</td>
+                    {% else %}
+                    <td>{{ especificacoes.basis_weight_sup }}</td>
+                    {% endif %}
+                </tr>
+                <tr>
+                    <td>Tensile at peak CD (N/25mm)</td>
+                    {% if especificacoes.tensile_peak_cd_inf == None %}
+                    <td>N/A</td>
+                    {% else %}
+                    <td>{{ especificacoes.tensile_peak_cd_inf }}</td>
+                    {% endif %}
+                    <td>{{ especificacoes.tensile_peak_cd_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at break CD (%)</td>
+                    <td>{{ especificacoes.elongation_break_cd_inf }}</td>
+                    <td>{{ especificacoes.elongation_break_cd_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at 9.81N CD (%)</td>
+                    <td>{{ especificacoes.elongation_n_cd_inf }}</td>
+                    <td>{{ especificacoes.elongation_n_cd_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Tensile at peak MD (N/25mm)</td>
+                    <td>{{ especificacoes.tensile_peak_md_inf }}</td>
+                    <td>{{ especificacoes.tensile_peak_md_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at break MD (%)</td>
+                    <td>{{ especificacoes.elongation_break_md_inf }}</td>
+                    <td>{{ especificacoes.elongation_break_md_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at 9.81N MD (%)</td>
+                    <td>{{ especificacoes.elongation_n_md_inf }}</td>
+                    <td>{{ especificacoes.elongation_n_md_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 5% elongation 1st cycle (N)</td>
+                    <td>{{ especificacoes.load_five_inf }}</td>
+                    <td>{{ especificacoes.load_five_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 10% elongation 1st cycle (N)</td>
+                    <td>{{ especificacoes.load_ten_inf }}</td>
+                    <td>{{ especificacoes.load_ten_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 20% elongation 1st cycle (N)</td>
+                    <td>{{ especificacoes.load_twenty_inf }}</td>
+                    <td>{{ especificacoes.load_twenty_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 50% elongation 1st cycle (N)</td>
+                    <td>{{ especificacoes.load_50_inf }}</td>
+                    <td>{{ especificacoes.load_50_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Permanent set 2º Cicle (%)</td>
+                    <td>{{ especificacoes.permanent_set_second_inf }}</td>
+                    <td>{{ especificacoes.permanent_set_second_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 100% elongation 2cicle (N/50mm)</td>
+                    <td>{{ especificacoes.load_hundred_second_inf }}</td>
+                    <td>{{ especificacoes.load_hundred_second_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Permanent set 3º Cicle (%)</td>
+                    <td>{{ especificacoes.permanent_set_third_inf }}</td>
+                    <td>{{ especificacoes.permanent_set_third_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Load at 100% elongation 3cicle (N/50mm)</td>
+                    <td>{{ especificacoes.load_hundred_third_inf }}</td>
+                    <td>{{ especificacoes.load_hundred_third_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Peel test - (CD) (N/25mm)</td>
+                    <td>{{ especificacoes.peel_test_inf }}</td>
+                    <td>{{ especificacoes.peel_test_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at 10 N (mm)</td>
+                    <td>{{ especificacoes.elongation_ten_inf }}</td>
+                    <td>{{ especificacoes.elongation_ten_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Force Max (N)</td>
+                    <td>{{ especificacoes.force_max_inf }}</td>
+                    <td>{{ especificacoes.force_max_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Force Relaxation 1st Cycle (%)</td>
+                    <td>{{ especificacoes.force_relax_inf }}</td>
+                    <td>{{ especificacoes.force_relax_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Tensile Set (%)</td>
+                    <td>{{ especificacoes.tensile_set_inf }}</td>   
+                    <td>{{ especificacoes.tensile_set_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD 1ST CYCLE (N/50mm)</td>
+                    <td>{{ especificacoes.load_first_cycle_inf }}</td>   
+                    <td>{{ especificacoes.load_first_cycle_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD 1ST RELAXATION (N/50mm)</td>
+                    <td>{{ especificacoes.load_first_relax_inf }}</td>   
+                    <td>{{ especificacoes.load_first_relax_sup }}</td>
+                </tr>
+                <tr>
+                    <td>1ST RETRACTION FORCE AT 50% (N/50mm)</td>
+                    <td>{{ especificacoes.first_retract_force_fifty_inf }}</td>   
+                    <td>{{ especificacoes.first_retract_force_fifty_sup }}</td>
+                </tr>
+                <tr>
+                    <td>1st cycle PERMANENT SET (mm)</td>
+                    <td>{{ especificacoes.first_cycle_permanent_set_inf }}</td>   
+                    <td>{{ especificacoes.first_cycle_permanent_set_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD 2ND CYCLE (N/50mm)</td>
+                    <td>{{ especificacoes.load_second_cycle_inf }}</td>   
+                    <td>{{ especificacoes.load_second_cycle_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD 2ND RELAXATION (N/50mm)</td>
+                    <td>{{ especificacoes.load_second_relax_inf }}</td>   
+                    <td>{{ especificacoes.load_second_relax_sup }}</td>
+                </tr>
+                <tr>
+                    <td>2ND RETRACTION FORCE AT 50% (N/50mm)</td>
+                    <td>{{ especificacoes.second_retract_force_fifty_inf }}</td>   
+                    <td>{{ especificacoes.second_retract_force_fifty_sup }}</td>
+                </tr>
+                <tr>
+                    <td>MAXIMUM LOAD (N/50mm)</td>
+                    <td>{{ especificacoes.max_load_inf }}</td>   
+                    <td>{{ especificacoes.max_load_sup }}</td>
+                </tr>
+                <tr>
+                    <td>EXTENSION AT MAXIMUM LOAD (mm)</td>
+                    <td>{{ especificacoes.extension_max_load_inf }}</td>   
+                    <td>{{ especificacoes.extension_max_load_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD AT BREAK (N/50mm)</td>
+                    <td>{{ especificacoes.load_break_inf }}</td>   
+                    <td>{{ especificacoes.load_break_sup }}</td>
+                </tr>
+                <tr>
+                    <td>EXTENSION AT BREAK (mm)</td>
+                    <td>{{ especificacoes.extencion_break_inf }}</td>   
+                    <td>{{ especificacoes.extencion_break_sup }}</td>
+                </tr>
+                <tr>
+                    <td>EXTENSION AT PRESET POINT - LOAD 10N (mm)</td>
+                    <td>{{ especificacoes.extencion_preset_point_load_ten_inf }}</td>   
+                    <td>{{ especificacoes.extencion_preset_point_load_ten_sup }}</td>
+                </tr>
+                <tr>
+                    <td>LOAD AT PRESET POINT - TENSILE EXTENSION 45mm (N/50mm)</td>
+                    <td>{{ especificacoes.load_preset_point_tensile_extention_fortyfive_inf }}</td>   
+                    <td>{{ especificacoes.load_preset_point_tensile_extention_fortyfive_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation capacity (%)</td>
+                    <td>{{ especificacoes.elongation_capacity_inf }}</td>   
+                    <td>{{ especificacoes.elongation_capacity_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Maximum elongation capacity (%)</td>
+                    <td>{{ especificacoes.max_elongation_capacity_inf }}</td>   
+                    <td>{{ especificacoes.max_elongation_capacity_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Retraction capacity (%)</td>
+                    <td>{{ especificacoes.retract_capacity_inf }}</td>   
+                    <td>{{ especificacoes.retract_capacity_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Deformation (%)</td>
+                    <td>{{ especificacoes.deformation_inf }}</td>   
+                    <td>{{ especificacoes.deformation_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Tensile strengh (N/50mm)</td>
+                    <td>{{ especificacoes.tensile_strengh_inf }}</td>   
+                    <td>{{ especificacoes.tensile_strengh_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at break CD (%)</td>
+                    <td>{{ especificacoes.elongation_break_cd_inf }}</td>   
+                    <td>{{ especificacoes.elongation_break_cd_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation at 9,81N - fora estufa (%)</td>
+                    <td>{{ especificacoes.elongation_n_out_inf }}</td>   
+                    <td>{{ especificacoes.elongation_n_out_sup }}</td>
+                </tr>
+                <tr>
+                    <td>Elongation after 1h at 40°C (%)</td>
+                    {% if especificacoes.elongation_after_one_forty_inf == None %}
+                    <td>N/A</td>
+                    {% else %}   
+                    <td>{{ especificacoes.elongation_after_one_forty_inf }}</td>   
+                    {% endif %}
+                    {% if especificacoes.elongation_after_one_forty_sup == None %}
+                    <td>N/A</td>
+                    {% else %}   
+                    <td>{{ especificacoes.elongation_after_one_forty_sup }}</td>
+                    {% endif %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

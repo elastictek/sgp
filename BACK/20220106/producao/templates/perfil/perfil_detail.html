@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+
+<div class="container size-table">
+    <div class="container">
+        <a href="{% url 'producao:perfil' %}" class="btn btn-primary" role="button">Voltar</a>
+    </div>
+    
+    <div class="container">
+            <h1>Detalhes do perfil {{ perfil.nome }}</h1><br>
+       <table>
+                <tr>
+                    <th>Produto:</th>
+                    <td id="right">{{ perfil.produto }}</td>
+                </tr>
+               <tr>
+                    <th>Nº de bonines:</th>
+                    <td id="right">{{ perfil.num_bobines }}</td>
+                </tr>
+               <tr>
+                    <th>Largura:</th>
+                    <td id="right">{{ perfil.largura_bobinagem }}</td>
+                </tr>
+               <tr>
+                    <th>Core:</th>
+                    <td id="right">{{ perfil.core }}</td>
+                </tr>
+           
+       </table>
+       
+      
+       <!-- <p>Core: {{ perfil.gramagem }}</p>
+       <p>Espessura: {{ perfil.espessura }}</p>
+       <p>Densidade MP: {{ perfil.densidade_mp }}</p>
+       <p>Velocidade: {{ perfil.velocidade }}</p>
+       <p>Produção: {{ perfil.producao }}</p> -->
+
+          
+    </div>
+    <div class="container">
+        <br>
+        <h3 id="center">Larguras</h3>
+        <br>
+        <div class="row">
+            <div class="col-md-12 table-responsive">
+                <table class="table">
+                    
+                    <tr>
+                        <th>Bobine</td>
+                        {% for lar in largura %}
+                            <th id="center">{{ lar.num_bobine }}</th>
+                        {% endfor%}
+                    </tr>
+                    <tr>
+                        <th>Largura</td>
+                        {% for lar in largura %}
+                            {% if not lar.largura == None%}
+                            <td id="center">{{ lar.largura }}</td>
+                            
+                            {% else %}
+                            <td></td>
+                            {% endif %}
+                        {% endfor%}
+                    </tr>
+                  
+                    <tr>
+                        <th>Produto</td>
+                        {% for lar in largura %}
+                            {% if not lar.largura == None %}
+                            <td id="center">{{ lar.designacao_prod }}</td>
+                            
+                            {% else %}
+                            <td></td>
+                        {% endif %}
+                    {% endfor%}
+                        
+                    </tr>
+                    <tr>
+                        <th>Gramagem</td>
+                        {% for lar in largura %}
+                            {% if not lar.largura == None %}
+                            <td id="center">{{ lar.gsm }}</td>
+                            
+                            {% else %}
+                            <td></td>
+                        {% endif %}
+                    {% endfor%}
+                        
+                    </tr>
+                    
+                    <tr>
+                        <td></td>
+                        {% for lar in largura %}
+                            <td id="center"><a type="submit" href="{% url 'producao:perfil_update_largura' lar.pk %}" class="btn btn-primary">Alterar</a></td>
+                        {% endfor%}
+                    </tr>
+
+                </table>
+                
+                <!-- <a href="{% url 'producao:perfil' %}" class="btn btn-primary pull-right" role="button">Confirmar</a> -->
+            </div>
+            
+            
+        </div>
+    </div>
+    
+
+    
+</div>
+{% endblock %}

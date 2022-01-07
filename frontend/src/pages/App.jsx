@@ -1,0 +1,97 @@
+import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
+import ReactDOM from "react-dom";
+import { Route, Routes, useRoutes, BrowserRouter } from 'react-router-dom';
+import { Spin } from 'antd';
+import { useMediaQuery } from 'react-responsive';
+import './app.css'
+import 'antd/dist/antd.compact.less';
+
+const NotFound = lazy(() => import('./404'));
+const SOrders = lazy(() => import('./SOrders'));
+const OFabricoList = lazy(() => import('./OFabricoList'));
+const LayoutPage = lazy(() => import('./LayoutPage'));
+const OFDetails = lazy(() => import('./ordemFabrico/FormDetails'));
+
+export const MediaContext = React.createContext({});
+
+const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
+    //const { formatMessage } = useIntl();
+    //const WitchRoute = auth ? PrivateRoute : Route;
+    const WitchRoute = Route;
+    //if (titleId) {document.title = formatMessage({id: titleId});}
+    return <WitchRoute {...props} />;
+};
+
+const RenderRouter = () => {
+    let element = useRoutes([
+        {
+            path: '/app',
+            element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
+            children: [
+                { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
+                { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
+                { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> },
+            ]
+        },
+        { path: "*", element: <Suspense fallback={<Spin />}><NotFound /></Suspense> }
+    ]);
+    return element;
+};
+
+
+const useMedia = () => {
+    const isBigScreen = useMediaQuery({ minWidth: 1824 });
+    const isDesktop = useMediaQuery({ minWidth: 992 });
+    const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 991 });
+    const isMobile = useMediaQuery({ maxWidth: 767 });
+    const isPortrait = useMediaQuery({ orientation: 'portrait' });
+    const [width, setWidth] = useState();
+
+    useEffect(() => {
+        const orientation = (isPortrait) ? "portrait" : "landscape";
+        if (isBigScreen) {
+            setWidth({ width: 900, unit: "px", maxWidth: 80, maxUnit: "%", device: "bigscreen", orientation });
+        } else if (isDesktop) {
+            setWidth({ width: 800, unit: "px", maxWidth: 80, maxUnit: "%", device: "desktop", orientation });
+        } else if (isTablet) {
+            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "tablet", orientation });
+        } else {
+            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "mobile", orientation });
+        }
+    }, [isDesktop, isTablet, isMobile, isBigScreen]);
+
+    return [width];
+};
+
+const App = () => {
+    const [width] = useMedia();
+    return (
+        <BrowserRouter>
+            {/*             <Routes> */}
+            {/* <Route path="/app" element={<Suspense fallback={<Spin />}><LayoutPage /></Suspense>} />
+                <Route path="/app/sorders" element={<Suspense fallback={<Spin />}><SOrders /></Suspense>} />
+                <Route path="/app/ordemfabrico/formdetails" element={<Suspense fallback={<Spin />}><OFDetails /></Suspense>} />
+                <Route path="*" element={<Suspense fallback={<Spin />}><NotFound /></Suspense>} /> */}
+
+
+
+            {/*  <Default><RenderRouter /></Default> */}
+
+
+            {/*             <MediaContext.Provider value={contextValue}>
+                
+            </MediaContext.Provider> */}
+            {/*             </Routes> */}
+            <MediaContext.Provider value={width}>
+                <RenderRouter />
+            </MediaContext.Provider>
+
+        </BrowserRouter>
+    );
+}
+
+
+export default App;
+
+const container = document.getElementById("app");
+ReactDOM.render(<App />, container);

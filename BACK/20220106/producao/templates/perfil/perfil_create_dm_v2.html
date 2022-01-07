@@ -1,0 +1,65 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+{% load producao_tags %}
+{% block title %}Criar Perfil DM | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:perfil_list_v2' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+{% if request.user|has_group:"Produção Supervisor" or request.user|has_group:"Produção Operador" %}
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Criar Perfil DM</h3>
+    </div>
+    <br>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Produto:</label></div>
+                <div class="col-3 form-control-sm">{{ form.produto }}</div>
+               
+            </div>
+            <div class="row mt-2">               
+                <div class="col-2"><label class="form-label">Nº de Bobines:</label></div>
+                <div class="col-5 form-control-sm">{{ form.num_bobines }}</div>
+                <div class="col-2"><label class="form-label">Core:</label></div>
+                <div class="col-3 form-control-sm">{{ form.core }}</div>
+            </div>
+            <br>
+            <div class="row mt-2">
+                <p>Preencher apenas se a largura e a gramagem das bobines forem todas iguais.</p>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Largura das Bobines:</label></div>
+                <div class="col-5 form-control-sm">{{ form.largura_bobines }}</div>
+                <div class="col-2"><label class="form-label">Gramagem:</label></div>
+                <div class="col-3 form-control-sm">{{ form.gramagem }}</div>
+            </div>
+            <div class="row mt-2">
+                <p>Dados da bobine original</p>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Largura Original:</label></div>
+                <div class="col-5 form-control-sm">{{ form.largura_original }}</div>
+                <div class="col-2"><label class="form-label">Core Original:</label></div>
+                <div class="col-3 form-control-sm">{{ form.core_original }}</div>
+            </div>
+            
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-primary">Validar</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+{% else %}
+<div class="container">
+    <h3 class="text-center">Acesso Restrito</h3>
+</div>  
+{% endif %}
+
+
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "layout.html"%}
+
+
+
+{% block title %}Produção{% endblock %}
+{% block content %}
+<div class="container size-table">
+    <div class="row">
+        <div class="container">
+            <a href="{% url 'home' %}" class="btn btn-primary" role="button">Voltar</a>
+        </div>  
+        <br>
+        <br>
+        <div class="row">
+            <h1 id="center">Dados de produção</h1>
+        </div>
+        <br>
+        <br>
+        <br>
+        <div class="row">
+            
+            <div class="container col-md-6" id="center"><a href="{% url 'producao:relatorio_diario' %}"><button class="btn btn-primary btn-lg">Linha 1</button></a></div>    
+            <div class="container col-md-6" id="center"><a href="{% url 'producao:relatorio_consumos' %}"><button class="btn btn-primary btn-lg">Consumos</button></a></div>       
+        </div>
+        <br>
+        <br>
+        <br>
+        <div class="row">
+            <div class="container col-md-6" id="center"><a href="{% url 'producao:relatorio_paletes' %}"><button class="btn btn-primary btn-lg">Paletes</button></a></div>    
+            <div class="container col-md-6" id="center"><a href="#"><button class="btn btn-primary btn-lg">Retrabalho</button></a></div>   
+        </div>
+        
+        
+       
+    
+    
+
+</div>
+
+
+
+
+
+
+{% endblock %}

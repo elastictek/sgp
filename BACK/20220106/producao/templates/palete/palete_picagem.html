@@ -1,0 +1,192 @@
+<div class="container">
+    <div class="container">
+        {% if palete.estado == 'G' %}
+        <a href="{% url 'producao:palete_list_all' %}" class="btn btn-primary" role="button">Voltar</a>
+        {% elif palete.estado == 'DM' %}
+        <a href="{% url 'producao:paletes_retrabalho' %}" class="btn btn-primary" role="button">Voltar</a>
+        {% endif %}
+        {% if palete.estado == 'G'%}
+        <a href="{% url 'producao:palete_create' %}" class="btn btn-primary" role="button">Nova Palete</a>
+        {% endif %}
+    </div>
+    <div class="container">
+        {% if palete.estado != 'DM'%}
+        <div class="row">
+            <h1>Palete: {{ palete.nome }}</h1>
+            <h2>Cliente: {{ palete.cliente.nome}}</h2>
+            {% if palete.estado == 'G' %}
+                <h3 id="estado_good">Good</h3>
+            {% elif palete.estado == 'R' %}
+                <h3 id="estado_rejected">Rejected</h3>
+            {% elif palete.estado == 'DM' %}
+                <h3 id="estado_dm">DM12</h3>
+            {% endif %}
+            <div class="container col-md-6">
+                <h3>Bobines: {{ palete.num_bobines_act }} / {{ palete.num_bobines }}</h3>
+                <h3>Largura bobines: {{ palete.largura_bobines }}</h3>
+                {% if e_p.diam_min != Null or e_p.diam_max != Null %}
+                <h3>Diâmetro: {{ e_p.diam_min }} / {{ e_p.diam_max }}</h3>
+                {% endif %}
+                <h3>Core: {{ palete.core_bobines }}</h3>
+            </div>
+            <div class="container col-md-6">
+                <h2>Área: {{ palete.area }}</h2>
+                <h2>Comprimento total: {{ palete.comp_total }}</h2>
+            </div>
+        </div>
+        {% else %}
+        <div class="row">
+            <h1>Palete: {{ palete.nome }}</h1>
+            {% if palete.estado == 'G' %}
+                <h3 id="estado_good">Good</h3>
+            {% elif palete.estado == 'R' %}
+                <h3 id="estado_rejected">Rejected</h3>
+            {% elif palete.estado == 'DM' %}
+                <h3 id="estado_dm">DM12</h3>
+            {% endif %}
+            <div class="container col-md-6">
+                <h3>Bobines: {{ palete.num_bobines_act }}</h3>
+                
+            </div>
+            <div class="container col-md-6">
+                <h2>Área: {{ palete.area }}</h2>
+                <h2>Comprimento total: {{ palete.comp_total }}</h2>
+            </div>
+        </div>
+        {% endif %}
+     </div>
+
+            
+           
+    </br></br>
+    
+    <div class="container">
+    <div class="row">
+            <div class="col container table-responsive ml-2">
+                    
+                    <form method="POST" action="{% url 'producao:picagem' pk=palete.pk %}" >{% csrf_token %}
+                        <input id="myInput" type="text" name="q" placeholder="Bobine" autofocus/>
+                        <input id="myBtn" type="submit" class="btn btn-success"/>
+                    </form>
+                    <br>
+                    <br>
+                    
+                    {% if messages %}
+                    <ul class="messages">
+                    {% for message in messages %}
+                    <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                    {% endfor %}
+                    </ul>
+                    {% endif %}
+                </ul>
+                    {% if palete.estado != 'DM' %}
+                        {% if palete.num_bobines_act == palete.num_bobines %}
+                        <div class="row">
+                            <div class="col">
+                                
+                                <h1 class="alert-success">Palete completa!{% if e_p.produto == "" %}<a href="{% url 'producao:etiqueta_palete' pk=palete.pk %}"><button type="button" class="btn btn-success pull-right">Gerar etiqueta</button></a>{% else %}<a href="{% url 'producao:reabrir_palete' pk=palete.pk %}"><button type="button" class="btn btn-danger pull-right">Reabrir Palete</button></a>{% endif %}</h1>
+                                
+                                
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="row">
+                            <div class="col">
+                                <h1 class="alert-success"><a href="{% url 'producao:etiqueta_palete' pk=palete.pk %}"><button type="button" class="btn btn-success pull-right">Gerar etiqueta</button></a></h1>
+                                    
+                                    
+                            </div>
+                        </div>
+                        
+                        
+                    {% endif %}
+
+                    <table class="table table-responsive">
+                            <tr>
+                                {% if e_p.produto == ""%}
+                                <th></th>
+                                <th></th>
+                                {% endif %} 
+                                <th>Bobine nº</th>
+                                <th>Bobine</th>
+                                <th>Estado</th>
+                                <th>Largura</th>
+                                <th>Diâmetro</th>
+                                <th>Core</th>
+                                <th>Área</th>
+                                <th></th>
+                            </tr>
+                            {% for bob in bobine %}
+                                {% if bob.palete.pk == palete.pk  %}
+                                
+                                <tr>
+                                    {% if e_p.produto == ""%}
+                                        {% if bob.posicao_palete > 1 %}
+                                        <td><a href="{% url 'producao:ordenar_bobines_op' operation='up' pk=bob.pk %}"><button type="button" class="glyphicon glyphicon-arrow-up btn-success"></button></a></td>
+                                        {% else %}
+                                        <td></td>
+                                        {% endif %}
+                                        {% if bob.posicao_palete < ultima_pos %}
+                                        <td></ultima_pos><a href="{% url 'producao:ordenar_bobines_op' operation='down' pk=bob.pk %}"><button type="button" class="glyphicon glyphicon-arrow-down btn-danger"></button></a></td>
+                                        {% else %}
+                                        <td></td>
+                                        {% endif %}
+                                    {% endif %}  
+                                    
+                                    <td>{{ bob.posicao_palete }}</td>
+                                    <td><a href="{{ bob.get_absolute_url }}">{{ bob.nome }} </a></td>
+                                    {% if bob.estado == "G" %}
+                                    <td id="estado_good">{{ bob.estado }}</td>
+                                    {% elif bob.estado == "DM"%}
+                                    <td id="estado_dm">{{ bob.estado }}</td>
+                                    {% elif bob.estado == "R" %}
+                                    <td id="estado_rejected">{{ bob.estado }}</td>
+                                    {% elif  bob.estado == "BA"%}
+                                    <td id="estado_ba">{{ bob.estado }}</td>
+                                    {% elif  bob.estado == "IND"%}
+                                    <td id="estado_ind">{{ bob.estado }}</td>
+                                    {% else %}
+                                        <td id="estado_lab">{{ bob.estado }}</td>
+                                    {% endif %}
+                                            
+                                    <td>{{ bob.largura.largura }}</td>
+                                    
+                                    <td>{{ bob.bobinagem.diam }}</td>
+                                    
+                                    
+                                    <td>{{ bob.bobinagem.perfil.core }}</td>
+                                    <td>{{ bob.area }}</td>
+                                    {% if e_p.produto == "" or bob.palete.estado == 'DM' %}
+                                    <td>
+                                        
+                                        {% if not bob.posicao_palete < ultima_pos %}
+                                        <a href="{% url 'producao:paletebobine' operation='remove' pk_bobine=bob.pk pk_palete=palete.pk %}"><button type="button" class="btn btn-danger">Remove</button></a>
+                                        {% endif %}
+                                    </td>
+                                    {% endif %}
+                                   
+                                          
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                                
+                            
+                        </table>
+                </div>
+        </div>
+    </div>
+
+
+</div>
+<script>
+    var input = document.getElementById("myInput");
+    input.addEventListener("keyup", function(event){
+        event.preventDefault();
+        if(event.keyCode === 13){
+            document.getElementById("myBtn").click();
+        }
+    });
+</script>
+
+{% endblock %}

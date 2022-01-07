@@ -1,0 +1,94 @@
+{% load bootstrap3 %}
+<div class="container">
+<form method="POST" action="#">
+    <div class="container">
+        
+            <div class="row">
+                    <div class="col-md-12">
+                        <h2 id="center" class="erro">Deseja reciclar alguma das bobines originais?</h2>
+                        <br>
+                        <br>
+                        <table class="table table-striped">
+                                <tr>
+                                        <th></th>
+                                        <th id="center" class="bg-primary"><h3>Metros restantes</h3></th>
+                                        <th id="center" class="bg-primary"><h3>Reciclar</h3></th>
+                                    </tr>
+                                <tr>
+                                    <td class="bg-primary"><h3>{{ b_1.nome }}:</h3></td>
+                                    <td id="center"><h3>200</h3></td>
+                                    <td id="center">
+                                            <div class="btn-group" data-toggle="buttons">
+<!--                 
+                                                    <label class="btn btn-success">
+                                                        <input type="checkbox" autocomplete="off">
+                                                        <span class="glyphicon glyphicon-ok"></span>
+                                                    </label> -->
+                                                    {% bootstrap_field form.recycle_1 %}
+                                        
+                                                  
+                                                
+                                                </div>
+                                        
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-primary"><h3>Bobine 2:</h3></td>
+                                    <td id="center"><h3>200</h3></td>
+                                    <td id="center">
+                                            <div class="btn-group" data-toggle="buttons">
+                
+                                                    <!-- <label class="btn btn-success">
+                                                        <input type="checkbox" autocomplete="off">
+                                                        <span class="glyphicon glyphicon-ok"></span>
+                                                    </label> -->
+                                                    {% bootstrap_field form.recycle_2 %}
+                                                    
+                                                
+                                                </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-primary"><h3>Bobine 3:</h3></td>
+                                    <td id="center"><h3>200</h3></td>
+                                    <td id="center"> <div class="btn-group" data-toggle="buttons"></div>
+            
+                                        <div class="btn-group" data-toggle="buttons">
+                
+                                                <!-- <label class="btn btn-success">
+                                                    <input type="checkbox" autocomplete="off">
+                                                    <span class="glyphicon glyphicon-ok"></span>
+                                                </label> -->
+                                                {% bootstrap_field form.recycle_3 %}
+                                            
+                                            </div>
+                                                               
+                                    </div>
+                                </td>
+                                </tr>
+                            </table>
+                        
+                    </div>
+
+       
+     
+     
+    </div>
+    
+      
+    <br>
+    <div class="row">  
+        <div class="col-md-2"></div>  
+        <div class="col-md-8">
+            {% csrf_token %}
+            <a href="#" class="btn btn-primary pull-left" role="button">Voltar</a>
+            <input type="submit" class="btn btn-primary pull-right" value="Confirmar">
+        </div>
+        <div class="col-md-2"></div>
+</div>
+    
+</div>
+
+    
+</form>
+</div>
