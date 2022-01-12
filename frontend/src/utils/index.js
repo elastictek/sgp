@@ -28,6 +28,13 @@ export const hasValue = (value, compare, ret = '') => {
     return value;
 }
 
+export const noValue = (value, ret = '') => {
+    if (!value){
+        return ret;
+    }
+    return value;
+}
+
 export const deepMerge = (a, b) => {
     return (R.is(Object, a) && R.is(Object, b)) ? R.mergeWith(deepMerge, a, b) : b;
 }

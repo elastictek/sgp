@@ -135,6 +135,7 @@ def OFabricoList(request, format=None):
     parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
     #cols = encloseColumn(['ofitm."ROWID" OFROWID','itm."ROWID" ITMROWID', 'enc."ROWID" ENCROWID', 'ofitm.MFGNUM_0', 'itm.TSICOD_0',
     #        'itm.ITMREF_0', 'itm.ITMDES1_0', 'enc.SOHNUM_0', 'enclin.SOPLIN_0', 'enc.ORDDAT_0', 'enc.DEMDLVDAT_0', 'enc.SHIDAT_0',
     #        'enc.PRFNUM_0', 'enc.CUSORDREF_0', 'enc.DAYLTI_0',
@@ -162,12 +163,12 @@ def OFabricoList(request, format=None):
         f"""
         SELECT {c(f'{cols}')} 
         FROM MV_OFABRICO_LIST oflist
-        LEFT JOIN "SGP-DEV".planeamento_ordemproducao sgp_op on sgp_op.id = oflist.ofabrico_sgp
-        LEFT JOIN "SGP-DEV".producao_tempordemfabrico sgp_top on sgp_top.of_id = oflist.ofabrico and sgp_top.item_cod=oflist.item
-        LEFT JOIN "SGP-DEV".producao_artigo sgp_a on sgp_a.cod = oflist.item
-        LEFT JOIN "SGP-DEV".producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
+        LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op on sgp_op.id = oflist.ofabrico_sgp
+        LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = oflist.ofabrico and sgp_top.item_cod=oflist.item
+        LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = oflist.item
+        LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
         WHERE 
-        NOT EXISTS(SELECT 1 FROM "SGP-DEV".producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
+        NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
         {f.text}
         {p(dql.sort)} {p(dql.paging)}
         """
@@ -254,14 +255,16 @@ def MateriasPrimasGet(request, format=None):
     parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
-    response = db.executeSimpleList(lambda: (
+    response = dbgw.executeSimpleList(lambda: (
         f"""SELECT {dql.columns} 
-        FROM "SAGE-PROD"."BOM" bm
-        JOIN "SAGE-PROD"."BOMD" bmd ON bm."ITMREF_0" = bmd."ITMREF_0" AND bm."BOMALT_0" = bmd."BOMALT_0"
-        JOIN "SAGE-PROD"."ITMMASTER" matprima ON bmd."CPNITMREF_0" = matprima."ITMREF_0"
-        JOIN "SAGE-PROD"."ITMMASTER" pacabado ON bm."ITMREF_0" = pacabado."ITMREF_0"
-        {'JOIN "SAGE-PROD"."MFGITM" ofabrico ON ofabrico."ITMREF_0" =  bm."ITMREF_0" and ofabrico."BOMALT_0" = bm."BOMALT_0"' if "ofabrico" in request.data['filter'] else ''}
+        FROM {sageAlias}."BOM" bm
+        JOIN {sageAlias}."BOMD" bmd ON bm."ITMREF_0" = bmd."ITMREF_0" AND bm."BOMALT_0" = bmd."BOMALT_0"
+        JOIN {sageAlias}."ITMMASTER" matprima ON bmd."CPNITMREF_0" = matprima."ITMREF_0"
+        JOIN {sageAlias}."ITMMASTER" pacabado ON bm."ITMREF_0" = pacabado."ITMREF_0"
+        {f'JOIN {sageAlias}."MFGITM" ofabrico ON ofabrico."ITMREF_0" =  bm."ITMREF_0" and ofabrico."BOMALT_0" = bm."BOMALT_0"' if "ofabrico" in request.data['filter'] else ''}
         {f.text} {dql.sort} {dql.limit}"""
     ), conn, parameters)
     return Response(response)
@@ -290,12 +293,14 @@ def MateriasPrimasLookup(request, format=None):
         cfilter = f"""(LOWER("ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER("ITMDES1_0") NOT LIKE 'core%%') AND ("ACCCOD_0" = 'PT_MATPRIM')"""
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
-    response = db.executeSimpleList(lambda: (
+    response = dbgw.executeSimpleList(lambda: (
         f"""
             select 
             {dql.columns}
-            from "SAGE-PROD"."ITMMASTER" mprima
+            from {sageAlias}."ITMMASTER" mprima
             where 
             {cfilter}
             {dql.sort}
@@ -318,12 +323,14 @@ def BomLookup(request, format=None):
     parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
-    response = db.executeSimpleList(lambda: (
+    response = dbgw.executeSimpleList(lambda: (
         f"""
             select 
             DISTINCT {dql.columns}
-            FROM "SAGE-PROD"."BOM" bm
+            FROM {sageAlias}."BOM" bm
             {f.text} {dql.sort}
         """
     ), conn, parameters)
@@ -366,10 +373,12 @@ def SellCustomersLookup(request, format=None):
     parameters = {**f['parameters']}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols)
     with connections[connGatewayName].cursor() as cursor:
        response = dbgw.executeSimpleList(lambda: (
-         f'SELECT {dql.columns} FROM "SAGE-PROD"."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+         f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
        ), cursor, parameters)
        return Response(response)
 #endregion
@@ -802,22 +811,25 @@ def GamaOperatoriaItemsGet(request, format=None):
 def PaletesStockLookup(request, format=None):
     cols = ['distinct(pp.id),pp.nome,pp.largura_bobines,pp.core_bobines,pp.area,pp.comp_total']
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        "nome": {"value": lambda v: f"%{v.get('fpl-filter').lower()}%" if v.get('fpl-filter') is not None else None}
+    }, False)
     f.where(False,"and")
+    f.add(f'lower(pp.nome) like :nome', lambda v:(v!=None))
     f.add(f'pb.artigo_id = :item_id', True)
     f.value("and")
     parameters = {**f.parameters}
-    
+
     dql = db.dql(request.data, False)
     dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
         # response = db.executeList(lambda p, c: (
         #     f"""
         #     SELECT {c(f'{dql.columns}')} 
-        #     FROM sistema.producao_palete pp
-        #     join sistema.producao_bobine pb on pb.palete_id=pp.id 
-        #     join sistema.producao_artigo pa on pb.artigo_id=pa.id
-        #     join sistema_dev.producao_tempordemfabrico ptof on ptof.item_cod = pa.cod
+        #     FROM producao_palete pp
+        #     join producao_bobine pb on pb.palete_id=pp.id 
+        #     join producao_artigo pa on pb.artigo_id=pa.id
+        #     join producao_tempordemfabrico ptof on ptof.item_cod = pa.cod
         #     where 
         #     pp.stock=1 
         #     {f.text}
@@ -827,9 +839,9 @@ def PaletesStockLookup(request, format=None):
         response = db.executeList(lambda p, c: (
             f"""
             SELECT {c(f'{dql.columns}')} 
-            FROM sistema_dev.producao_palete pp
-            JOIN sistema_dev.producao_bobine pb on pb.palete_id=pp.id {f.text}
-            join sistema.producao_artigo pa on pb.artigo_id=pa.id
+            FROM producao_palete pp
+            JOIN producao_bobine pb on pb.palete_id=pp.id {f.text}
+            join producao_artigo pa on pb.artigo_id=pa.id
             where pp.stock=1
             {p(dql.sort)} {p(dql.paging)}
             """
@@ -843,8 +855,11 @@ def PaletesStockLookup(request, format=None):
 def PaletesStockGet(request, format=None):
     cols = ['pp.id ,pp.nome, pp.largura_bobines, pp.core_bobines, pp.area, pp.comp_total']
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        "nome": {"value": lambda v: f"%{v.get('fpr-filter').lower()}%" if v.get('fpr-filter') is not None else None}
+    }, False)
     f.where()
+    f.add(f'lower(pp.nome) like :nome', lambda v:(v!=None))
     f.add(f'pp.draft_ordem_id = :of_id', True)
     f.value("and")
     parameters = {**f.parameters}    
@@ -854,7 +869,7 @@ def PaletesStockGet(request, format=None):
         response = db.executeList(lambda p, c: (
             f"""
             SELECT {c(f'{dql.columns}')} 
-            FROM sistema_dev.producao_palete pp
+            FROM producao_palete pp
             {f.text}
             {p(dql.sort)} {p(dql.paging)}
             """
@@ -1133,6 +1148,7 @@ def CortesOrdemLookup(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def ArtigosTempAggLookup(request, format=None):
+    connection = connections[connGatewayName].cursor()
     cols = ["""
     pc.id cortes_id, pc.largura_cod, pc.largura_json, pca.id cortes_artigo_id,pca.largura cortes_artigo_lar, COALESCE(pca.ncortes,1) cortes_artigo_ncortes,tof.of_id,
     tof.item_cod,itm_sage."ITMDES1_0" item_des, itm.lar item_lar, pco.designacao, pco.largura_ordem, pco.id largura_id, toaf.cortesordem_id
@@ -1144,24 +1160,26 @@ def ArtigosTempAggLookup(request, format=None):
     f.value("and")
     parameters = {**f.parameters}
     
-    dql = db.dql(request.data, False)
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
     with connections[connGatewayName].cursor() as cursor:
-        response = db.executeSimpleList(lambda: (
+        response = dbgw.executeSimpleList(lambda: (
             f"""              
                 select 
                 {dql.columns}
-                from "SGP-DEV".producao_tempordemfabrico tof
-                join "SGP-DEV".producao_tempaggordemfabrico toaf on toaf.id = tof.agg_of_id
-                join "SGP-DEV".producao_artigo itm on itm.cod = tof.item_cod
-                join "SAGE-PROD"."ITMMASTER" itm_sage on itm_sage."ITMREF_0" = tof.item_cod
-                left join "SGP-DEV".producao_cortes pc on toaf.cortes_id= pc.id
-                left join "SGP-DEV".producao_cortesordem pco on pc.id= pco.cortes_id and toaf.cortesordem_id = pco.id
-                left join "SGP-DEV".producao_cortesartigos pca on pca.cortes_id = pc.id and pca.of_id = tof.of_id and pca.artigo_cod = tof.item_cod
+                from {sgpAlias}.producao_tempordemfabrico tof
+                join {sgpAlias}.producao_tempaggordemfabrico toaf on toaf.id = tof.agg_of_id
+                join {sgpAlias}.producao_artigo itm on itm.cod = tof.item_cod
+                join {sageAlias}."ITMMASTER" itm_sage on itm_sage."ITMREF_0" = tof.item_cod
+                left join {sgpAlias}.producao_cortes pc on toaf.cortes_id= pc.id
+                left join {sgpAlias}.producao_cortesordem pco on pc.id= pco.cortes_id and toaf.cortesordem_id = pco.id
+                left join {sgpAlias}.producao_cortesartigos pca on pca.cortes_id = pc.id and pca.of_id = tof.of_id and pca.artigo_cod = tof.item_cod
                 {f.text}
                 {dql.sort}
             """
-        ), cursor, parameters)
+        ), connection, parameters)
         return Response(response)
 
 def CortesGet(request, format=None):
@@ -1358,6 +1376,7 @@ def computeRolledLength(aggId):
 # @transaction.atomic()
 def SaveTempOrdemFabrico(request, format=None):
     data = request.data.get("parameters")
+
     def computeLinearMeters(data):
         artigo = data["artigo"] if "artigo" in data else data
         if artigo is not None:
@@ -1447,6 +1466,13 @@ def SaveTempOrdemFabrico(request, format=None):
     def addArtigo(data,produto_id,cursor):
         artigo = data["artigo"] if "artigo" in data else None
         if artigo is not None:
+
+            f = Filters({"cod": data["item"]})
+            f.where()
+            f.add(f'cod = :cod', True)
+            f.value("and")
+            artigoId = db.executeSimpleList(lambda: (f'SELECT id from producao_artigo {f.text}'), cursor, f.parameters)['rows']
+
             dta = {
             'cod': data['item'],
             'des': artigo['artigo_nome'],
@@ -1467,9 +1493,15 @@ def SaveTempOrdemFabrico(request, format=None):
                 dta["gtin"] = artigo["artigo_gtin"]
             else:
                 dta["gtin"] = computeGtin(cursor,artigo['main_gtin'])
-            dml = db.dml(TypeDml.INSERT, dta, "producao_artigo",None,None,False)
-            db.execute(dml.statement, cursor, dml.parameters)
-            return cursor.lastrowid
+            if len(artigoId)>0:
+                print(f"ENTREI-EXISTS->",artigoId)
+                dml = db.dml(TypeDml.UPDATE, dta, "producao_artigo",{"id":artigoId[0]["id"]},None,None)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return artigoId[0]["id"]
+            else:
+                dml = db.dml(TypeDml.INSERT, dta, "producao_artigo",None,None)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return cursor.lastrowid
         else:
             return None
 
@@ -1487,7 +1519,12 @@ def SaveTempOrdemFabrico(request, format=None):
         dta = {
             'core_cod': data['core_cod'] if 'core_cod' in data else None,
             'core_des': data['core_des'] if 'core_des' in data else None,
-            'status': data['status'] if 'status' in data else 0
+            'status': data['status'] if 'status' in data else 0,
+            'sentido_enrolamento': data['sentido_enrolamento'] if 'sentido_enrolamento' in data else None,
+            'amostragem': data['f_amostragem'] if 'f_amostragem' in data else None,
+            'observacoes': data['observacoes'] if 'observacoes' in data else None,
+            'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
+            'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
         }
         if "formulacao_id" in data:
             dta["formulacao_id"] = data["formulacao_id"]
@@ -1502,10 +1539,15 @@ def SaveTempOrdemFabrico(request, format=None):
 
         if ids is None:
             dml = db.dml(TypeDml.INSERT, dta, "producao_tempaggordemfabrico",None,None,False)
+            tags = []
+            for idx, val in enumerate(dml.columns):
+                tags.append(f'{dml.tags[idx]} {val}')
             statement = f"""
                 insert into producao_tempaggordemfabrico(year,cod,{",".join(dml.columns)})
-                select YEAR(CURDATE()) year, CONCAT('AGG-OF-',LPAD(IFNULL(count(*),0)+1,4,'0'),'/',YEAR(CURDATE())) d, {",".join(dml.tags)}
-                from producao_tempaggordemfabrico where year=YEAR(CURDATE())
+                select * from (
+                    select YEAR(CURDATE()) year, CONCAT('AGG-OF-',LPAD(IFNULL(count(*),0)+1,4,'0'),'/',YEAR(CURDATE())) d, {",".join(tags)}
+                    from producao_tempaggordemfabrico where year=YEAR(CURDATE())
+                ) t
             """
             db.execute(statement, cursor, dml.parameters)
             return cursor.lastrowid
@@ -1581,16 +1623,24 @@ def SaveTempOrdemFabrico(request, format=None):
         db.execute(dml.statement, cursor, dml.parameters)
         return cursor.lastrowid
 
+    def updateTempOrdemFabrico(data,cursor):
+        dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":data["paletizacao_id"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+        return data["ofabrico"]
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                cp = computeLinearMeters(data)
-                cpp = computePaletizacao(cp,data,cursor)
-                produto_id = addProduto(data,cursor)
-                addArtigo(data,produto_id,cursor)
-                ids = getAgg(data,cursor)
-                aggid = upsertTempAggOrdemFabrico(data,ids,cursor)
-                id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
+                if ("type" in data and data["type"] == "paletizacao"):
+                    id = updateTempOrdemFabrico(data,cursor)
+                else:
+                    cp = computeLinearMeters(data)
+                    cpp = computePaletizacao(cp,data,cursor)
+                    produto_id = addProduto(data,cursor)
+                    addArtigo(data,produto_id,cursor)
+                    ids = getAgg(data,cursor)
+                    aggid = upsertTempAggOrdemFabrico(data,ids,cursor)
+                    id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
         return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Guardada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!"})
@@ -1612,10 +1662,10 @@ def SaveTempAgg(request, format=None):
         f.add(f't.agg_of_id <> :agg_of_id', True)
         f.value("and")   
         rows = db.executeSimpleList(lambda: (f"""        
-            select agg_of_id,GROUP_CONCAT(of_id) group_ofid from sistema_dev.producao_tempordemfabrico tof 
+            select agg_of_id,GROUP_CONCAT(of_id) group_ofid from producao_tempordemfabrico tof 
             where 
             exists (
-            SELECT 1 FROM sistema_dev.producao_tempordemfabrico t where id in (
+            SELECT 1 FROM producao_tempordemfabrico t where id in (
             {','.join(str(v) for v in agg_ids)}
             ) 
             {f.text} 
@@ -1654,7 +1704,8 @@ def SaveTempAgg(request, format=None):
 @permission_classes([IsAuthenticated])
 def TempOFabricoGet(request, format=None):
     #conn = connections[connGatewayName].cursor()
-    cols = ['tof.*','tagg.core_cod,tagg.core_des,tagg.artigospecs_id,tagg.formulacao_id,tagg.gamaoperatoria_id,tagg.nonwovens_id,tagg.year,tagg.cod,tagg.status,tagg.cortes_id']
+    #cols = ['tof.*','tagg.core_cod,tagg.core_des,tagg.artigospecs_id,tagg.formulacao_id,tagg.gamaoperatoria_id,tagg.nonwovens_id,tagg.year,tagg.cod,tagg.status,tagg.cortes_id']
+    cols = ['tof.*','tagg.*']
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
@@ -1703,32 +1754,35 @@ def TempAggOFabricoLookup(request, format=None):
     f.add(f'tof.produto_id = :produto_id',lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
-    dql = db.dql(request.data, False)
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
     dql.columns = encloseColumn(cols,False)
     with connections[connGatewayName].cursor() as cursor:
         if group:
-            response = db.executeSimpleList(lambda:(f"""
+            response = dbgw.executeSimpleList(lambda:(f"""
                 select json_agg(t) v from (
                 SELECT
-                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.linear_meters,tof.n_paletes,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
-                ,(select json_agg(pd) x from "SGP-DEV".producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
+                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
+                ,(select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
                 ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
-                (select json_agg(pp.nome) x from "SGP-DEV".producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock
+                (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
+                (select row_to_json(_) from (select pe.*) as _) emendas
                 FROM MV_OFABRICO_LIST oflist
-                join "SGP-DEV".producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
-                join "SGP-DEV".producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
-                left join "SGP-DEV".producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+                join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
+                join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+                left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+                left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
                 {f.text}
                 ) t
             """),cursor,parameters)
         else:
-            response = db.executeSimpleList(lambda: (
+            response = dbgw.executeSimpleList(lambda: (
                 f"""
                     select 
                     {dql.columns}
                     FROM MV_OFABRICO_LIST oflist
-                    join "SGP-DEV".producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
-                    join "SGP-DEV".producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+                    join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
+                    join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
                     {f.text}
                     {dql.sort}
                     {group}
@@ -1829,6 +1883,8 @@ def SellOrdersList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
 
     if groupByOrder == True:
         dql.columns = encloseColumn(['enc.ROWID', 'enc.SOHNUM_0', 'enc.ORDDAT_0', 'enc.DEMDLVDAT_0', 'enc.SHIDAT_0', 'enc.PRFNUM_0', 'enc.CUSORDREF_0', 'enc.DAYLTI_0',
@@ -1839,9 +1895,9 @@ def SellOrdersList(request, format=None):
         response = dbgw.executeList(lambda p, c: (
             f"""
             SELECT {c(f'distinct(enc."SOHNUM_0") "key", {dql.columns}')} 
-            FROM "SAGE"."SORDER" as enc
-            JOIN "SAGE"."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0"
-            JOIN "SAGE"."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
+            FROM {sageAlias}."SORDER" as enc
+            JOIN {sageAlias}."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0"
+            JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
             {f.text} {f2['text']}
             {p(dql.sort)} {p(dql.paging)}
             """
@@ -1864,9 +1920,9 @@ def SellOrdersList(request, format=None):
         response = dbgw.executeList(lambda p, c: (
             f"""
             SELECT {c(f'{dql.columns}')} 
-            FROM "SAGE-PROD"."SORDER" as enc
-            JOIN "SAGE-PROD"."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0"
-            JOIN "SAGE-PROD"."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
+            FROM {sageAlias}."SORDER" as enc
+            JOIN {sageAlias}."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0"
+            JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
             --LEFT JOIN producao_artigodetails as sgpitm on sgpitm.cod = itm."ITMREF_0"
             --LEFT JOIN planeamento_ordemfabricoartigos as ofa on ofa.encomenda_num = enclin."SOHNUM_0" and ofa.artigo_cod = itm."ITMREF_0"
             --LEFT JOIN planeamento_ordemfabrico as "of" on "of".id = ofa.ordemfabrico_id
@@ -1883,6 +1939,7 @@ def SellOrdersList(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def SellOrderItemsList(request, format=None):
+    connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
@@ -1891,14 +1948,16 @@ def SellOrderItemsList(request, format=None):
     parameters = {**f.parameters}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(['enclin.SOHNUM_0', 'enclin.SDHNUM_0', 'enclin.ITMREF_0', 'enclin.ORIQTY_0',
                                 'enclin.QTY_0', 'itm.ITMDES1_0', 'itm.TSICOD_2', 'itm.TSICOD_3', 'itm.TSICOD_0', 'itm.TSICOD_1'])
 
     response = dbgw.executeSimpleList(lambda: (
         f"""
          SELECT {dql.columns} 
-         FROM "SAGE"."SORDERQ" as enclin
-         JOIN "SAGE"."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
+         FROM {sageAlias}."SORDERQ" as enclin
+         JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
          {f.text}
          {dql.sort}
          """
@@ -1911,16 +1970,19 @@ def SellOrderItemsList(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def SellCustomersLookup_OLD(request, format=None):
+    connection = connections[connGatewayName].cursor()
     cols = ['BPCNUM_0', 'BPCNAM_0']
     f = filterMulti(request.data['filter'], {
                     'fmulti_customer': {"keys": cols}})
     parameters = {**f['parameters']}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM "SAGE"."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 
@@ -1930,15 +1992,18 @@ def SellCustomersLookup_OLD(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def SellOrdersLookup(request, format=None):
+    connection = connections[connGatewayName].cursor()
     cols = ['SOHNUM_0', 'PRFNUM_0']
     f = filterMulti(request.data['filter'], {'fmulti_order': {"keys": cols}})
     parameters = {**f['parameters']}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM "SAGE"."SORDER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns} FROM {sageAlias}."SORDER" {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 
@@ -1948,15 +2013,18 @@ def SellOrdersLookup(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def SellItemsLookup(request, format=None):
+    connection = connections[connGatewayName].cursor()
     cols = ['ITMREF_0', 'ITMDES1_0']
     f = filterMulti(request.data['filter'], {'fmulti_item': {"keys": cols}})
     parameters = {**f['parameters']}
 
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM "SAGE"."ITMMASTER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns} FROM {sageAlias}."ITMMASTER" {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 
@@ -2052,12 +2120,14 @@ def NonWovenLookup(request, format=None):
     parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
     response = db.executeSimpleList(lambda: (
         f"""
             select 
             {dql.columns}
-            from "SAGE-PROD"."ITMMASTER" mprima
+            from {sageAlias}."ITMMASTER" mprima
             where 
             "ACCCOD_0" = 'PT_MATPRIM' and 
             ("ZFAMILIA_0" IN ('NWSL','NONW','NWSB','NWBC','NWBI') or
@@ -2090,12 +2160,13 @@ def PaletizacaoGet(request, format=None):
     parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
     dql.columns = encloseColumn(cols,False)
     response = db.executeSimpleList(lambda: (
         f"""SELECT {dql.columns} 
             from 
-            "SGP-DEV".producao_paletizacao pp
-            join "SGP-DEV".producao_paletizacaodetails ppd on ppd.paletizacao_id = pp.id
+            {sgpAlias}.producao_paletizacao pp
+            join {sgpAlias}.producao_paletizacaodetails ppd on ppd.paletizacao_id = pp.id
             {f.text} 
             order by ppd.item_order    
             {dql.limit}
@@ -2111,6 +2182,7 @@ def PaletizacaoGet(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def OFArtigosList(request, format=None):
+    connection = connections[connGatewayName].cursor()
     cols = ['ofa.id as ofaid','itm."ITMDES1_0"','enclin."ORIQTY_0"', 'enc."BPCNAM_0"', 'itmd.*']
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
@@ -2119,6 +2191,8 @@ def OFArtigosList(request, format=None):
     f.value("and")
     parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     dql.columns = encloseColumn(cols,False)
     response = dbgw.executeSimpleList(lambda: (
         f"""
@@ -2126,9 +2200,9 @@ def OFArtigosList(request, format=None):
             FROM planeamento_ordemfabrico as "of"
             JOIN planeamento_ordemfabricoartigos as ofa on ofa.ordemfabrico_id = "of".id
             JOIN producao_artigodetails as itmd on ofa.artigo_cod = itmd.cod
-            JOIN "SAGE"."ITMMASTER" as itm on itmd.cod = itm."ITMREF_0"
-            JOIN "SAGE"."SORDER" as enc on enc."SOHNUM_0" = ofa.encomenda_num
-            JOIN "SAGE"."SORDERQ" as enclin on ofa.encomenda_num = enclin."SOHNUM_0" and ofa.artigo_cod = enclin."ITMREF_0" 
+            JOIN {sageAlias}."ITMMASTER" as itm on itmd.cod = itm."ITMREF_0"
+            JOIN {sageAlias}."SORDER" as enc on enc."SOHNUM_0" = ofa.encomenda_num
+            JOIN {sageAlias}."SORDERQ" as enclin on ofa.encomenda_num = enclin."SOHNUM_0" and ofa.artigo_cod = enclin."ITMREF_0" 
             {f.text} 
             {dql.sort}
         """

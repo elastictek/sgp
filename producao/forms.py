@@ -122,7 +122,7 @@ class PaleteCreateForm(ModelForm):
                   'num_bobines', 'largura_bobines', 'core_bobines']
 
     def __init__(self, *args, **kwargs):
-        palete = Palete.objects.filter(estado='G', data_pal__year='2022').latest('num')
+        palete = Palete.objects.filter(estado='G', data_pal__year='2021').latest('num')
         num_bobines = palete.num_bobines
         largura_bobines = palete.largura_bobines
         core_bobines = palete.core_bobines
@@ -188,7 +188,7 @@ class PaleteRetrabalhoForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         palete = Palete.objects.filter(
-            estado='DM', data_pal__year='2022').latest('num')
+            estado='DM', data_pal__year='2021').latest('num')
         num = palete.num
         super(PaleteRetrabalhoForm, self).__init__(*args, **kwargs)
 
@@ -402,8 +402,7 @@ class SearchPerfil(forms.Form):
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE(D)', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE(D)'),
                 ('FRONTAL TAPE 48', 'FRONTAL TAPE 48'),
                 ('CAR PROTECTION SHEET 57', 'CAR PROTECTION SHEET 57'),
-                ('ELASTIC FILM', 'ELASTIC FILM'),
-                ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED')
+                ('ELASTIC FILM', 'ELASTIC FILM')
                 )
     nome = forms.CharField(label="Produto", max_length=200,
                            required=False, widget=forms.Select(choices=PRODUTO))

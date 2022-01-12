@@ -4,11 +4,12 @@ import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
+import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space } from "antd";
+import { Button, Spin, Form, Space, Input } from "antd";
 import { LoadingOutlined, EditOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import FormPaletizacaoSchema from '../paletizacaoSchema/FormPaletizacaoSchema';
@@ -72,12 +73,14 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
     const [showSchema, setShowSchema] = useState({ show: false });
     const [paletizacoes, setPaletizacoes] = useState([]);
     const [changedValues, setChangedValues] = useState({});
+    const [resultMessage, setResultMessage] = useState({ status: "none" });
 
     const init = () => {
         (setFormTitle) && setFormTitle({ title: `Esquema de Paletização ${record.aggItem.cliente_nome}`, subTitle: `${record.aggItem.item_cod}` });
     }
 
     useEffect(() => {
+        console.log("zzzz",form.getFieldsValue(true))
         init();
     }, []);
 
@@ -97,6 +100,10 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
     }
 
     const onFinish = async (values) => {
+        const paletizacao_id = form.getFieldValue("paletizacao_id");
+        const ofabrico = record.aggItem.tempof_id;
+        const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type:"paletizacao", paletizacao_id, ofabrico } });
+        setResultMessage(response.data);
         // const status = { error: [], warning: [], info: [], success: [] };
         // const msgKeys = ["start_date", "start_hour", "end_date", "end_hour"];
         // const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
@@ -119,7 +126,7 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
         // }
         // setFieldStatus(diff.fields);
         // setFormStatus(status);
-    };
+    }
 
 
     /*     useEffect(() => {
@@ -162,8 +169,10 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
     }
 
     const onShowSchema = (newSchema = false, forInput = false) => {
+        console.log("sssssssxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",record.aggItem)
+        const { cliente_cod, cliente_nome, item_cod, paletizacao_id } = record.aggItem;
         if (newSchema) {
-            setShowSchema(prev => ({ ...prev, show: !prev.show, record: {}, forInput }));
+            setShowSchema(prev => ({ ...prev, show: !prev.show, record: { cliente_cod, cliente_nome, artigo_cod: item_cod, paletizacao_id }, forInput }));
         } else {
             setShowSchema(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(true) }, forInput }));
         }
@@ -219,7 +228,7 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
+                        <Button type="primary" onClick={()=>form.submit()}>Guardar</Button>
                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                     </Space>
                 </Portal>

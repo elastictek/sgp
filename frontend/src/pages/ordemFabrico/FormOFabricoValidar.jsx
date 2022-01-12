@@ -33,10 +33,8 @@ export const OFabricoContext = React.createContext({});
 
 const schema = (keys, excludeKeys) => {
     return getSchema({
-        start_date: Joi.any().label("Data de Início"),
-        end_date: Joi.any().label("Data de Fim"),
-        start_hour: Joi.any().label("Hora de Início"),
-        end_hour: Joi.any().label("Hora de Fim")
+        start_prev_date: Joi.any().label("Data de Início"),
+        end_prev_date: Joi.any().label("Data de Fim")
     }, keys, excludeKeys).unknown(true);
 }
 
@@ -79,8 +77,8 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
         cliente_cod: record.cliente_cod,
         cliente_nome: record.cliente_nome,
         qty_item: record.qty_item,
-        start_date:record.start_date,
-        end_date:record.end_date,
+        sage_start_date:record.start_date,
+        sage_end_date:record.end_date,
         fieldStatus,
         setFieldStatus,
         form,
@@ -128,14 +126,14 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
 
     const onFinish = async (values) => {
         const status = { error: [], warning: [], info: [], success: [] };
-        const msgKeys = ["start_date", "start_hour", "end_date", "end_hour"];
+        const msgKeys = ["start_prev_date", "end_prev_date"];
         const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
         const { core_cod: { value: core_cod, label: core_des } = {} } = values;
         const { cortes_id, cortesordem_id } = form.getFieldsValue(true);
         let diff = {};
         const v = schema().custom((v, h) => {
-            const { start_date, start_hour, end_date, end_hour } = v;
-            diff = dateTimeDiffValidator(start_date, start_hour, end_date, end_hour);
+            const { start_prev_date, end_prev_date } = v;
+            diff = dateTimeDiffValidator(start_prev_date, end_prev_date);
             if (diff.errors == true) {
                 return h.message("A Data de Fim tem de ser Maior que a Data de Início", { key: "start_date", label: "start_date" })
             }
@@ -144,7 +142,8 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         if (!v.error) { }
         if (status.error.length === 0) {
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
+            const { start_prev_date, end_prev_date } = values;
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, qty_item:record.qty_item, start_prev_date:start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date:end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
             setResultMessage(response.data);
         }
         setFieldStatus(diff.fields);

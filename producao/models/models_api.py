@@ -31,7 +31,12 @@ class TempAggOrdemFabrico(models.Model):
     amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
     year = models.IntegerField(verbose_name="Ano", null=False, default=datetime.date.today().year)
-    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED - Status [0 - A Validar/Aberta | 1 - A Validar/Reaberta | 2 - Em Produção/Fechada | -1 - Disabled]
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED - Status [0 - A Validar/Aberta | 1 - A Validar/Reaberta | 2 - Em Produção/Fechada | -1 - Disabled],
+    start_prev_date = models.DateTimeField(verbose_name="Data Início Prevista", null=True, blank=True)
+    end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
+    start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
+    end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
+
 
 class TempOrdemFabrico(models.Model):
     of_id = models.CharField(max_length=25,verbose_name="Ordem de Produção", null=True) #ADDED - ORDEM FABRICO SAGE ID
@@ -48,7 +53,7 @@ class TempOrdemFabrico(models.Model):
     #sqm_palete = models.DecimalField(verbose_name="Metros Quadrados por Palete", max_digits=12, decimal_places=5, null=True)
     #sqm_contentor = models.DecimalField(verbose_name="Metros Quadrados por Camião/Contentor", max_digits=12, decimal_places=5, null=True)
     n_voltas = models.DecimalField(verbose_name="Nº Voltas", max_digits=12, decimal_places=5, null=True)
-    #n_paletes = models.DecimalField(verbose_name="Metros Quadrados por Bobine", max_digits=12, decimal_places=5, null=True)
+    n_paletes_total = models.DecimalField(verbose_name="Nº de Paletes Total", max_digits=12, decimal_places=5, null=True)
     n_paletes = models.CharField(max_length=5000,verbose_name="N Paletes", null=True)
     paletizacao = models.ForeignKey('producao.Paletizacao', on_delete=models.PROTECT, verbose_name="Paletização", null=True, blank=True)
     emendas = models.ForeignKey('producao.Emendas', on_delete=models.PROTECT, verbose_name="Emendas", null=True, blank=True)

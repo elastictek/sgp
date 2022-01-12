@@ -87,7 +87,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 (setFormTitle) && setFormTitle({ title: `Editar Esquema de Paletização ${record.cliente_nome}`, subTitle: `${record.artigo_cod}` });
                 form.setFieldsValue({ ...record });
             } else {
-                (setFormTitle) && setFormTitle({ title: `Novo Esquema de Paletização ${record.cliente_nome}`, subTitle: `${record.item_cod}` });
+                (setFormTitle) && setFormTitle({ title: `Novo Esquema de Paletização ${record.cliente_nome}`, subTitle: `${record.artigo_cod}` });
                 form.setFieldsValue({ contentor_id: "Camião", cintas_palete: 1, ncintas: 2, netiquetas_bobine: 2, netiquetas_lote: 4, netiquetas_final: 1, npaletes: 24, palete_maxaltura: 2.55 });
             }
             setLoading(false);
@@ -95,6 +95,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
+        console.log("Sssssssssssssssssssssssssss entreeeeeee",record)
         init();
     }, []);
 

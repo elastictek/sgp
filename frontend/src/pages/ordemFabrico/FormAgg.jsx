@@ -15,6 +15,7 @@ import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import FormAggUpsert from '../agg/FormAggUpsert';
 const FormPaletesStockUpsert = React.lazy(() => import('../paletesStock/FormPaletesStockUpsert'));
 const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
+const FormSettings = React.lazy(() => import('./FormSettings'));
 import { remove } from 'ramda';
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
@@ -67,11 +68,10 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
         >
-
             {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} /* record={record} */ parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
             {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
             {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-            {showWrapper.type === "settings" && <Suspense fallback={<></>}>ddddddddd</Suspense>}
+            {showWrapper.type === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
         </WrapperForm>
     );
 }
@@ -88,7 +88,6 @@ const loadPaletesGet = async (tempof_id) => {
 
 const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
     const paletes = JSON.parse(aggItem?.n_paletes);
-    console.log("#####-", aggItem)
     const onAction = (op) => {
         switch (op) {
             case 'paletes_stock':
@@ -98,7 +97,7 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'settings':
-                setShowForm(prev => ({ ...prev, type: op, mode: "modal", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
         }
     }

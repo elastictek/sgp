@@ -75,11 +75,11 @@ def DBSql(alias):
     type = AppSettings.typeDB.get(alias)
     print(f"----------------{type}")
     if type == TypeDB.POSTGRES:
-        return PostgresSql(type)
+        return PostgresSql(type,alias)
     elif type == TypeDB.MYSQL:
-        return MySqlSql(type)
+        return MySqlSql(type,alias)
     elif type == TypeDB.SQLSERVER:
-        return SqlServerSql(type)
+        return SqlServerSql(type,alias)
 
 
 class BaseSql:
@@ -216,9 +216,11 @@ class BaseSql:
         return
 
 class PostgresSql(BaseSql):
-    def __init__(self, typeDB):
+    def __init__(self, typeDB,alias):
         super().__init__()
         self.typeDB = typeDB
+        self.dbAlias = AppSettings.dbAlias.get(alias)
+
 
     def columns(self, cols, enclose=True, join=True, ignore=['*', 'count(*)']):
         return encloseColumn(cols, enclose, join, ignore)
@@ -347,13 +349,15 @@ class PostgresSql(BaseSql):
 
 
 class MySqlSql(BaseSql):
-    def __init__(self, typeDB):
+    def __init__(self, typeDB,alias):
         super().__init__()
         self.typeDB = typeDB
-    def columns(self, cols, enclose=True, join=True, ignore=['*', 'count(*)']):
+        self.dbAlias = AppSettings.dbAlias.get(alias)
+
+    def columns(self, cols, enclose=False, join=True, ignore=['*', 'count(*)']):
         return encloseColumn(cols, enclose, join, ignore)
 
-    def dql(self, data, computeColumns=True, encloseColumns=True):
+    def dql(self, data, computeColumns=True, encloseColumns=False):
         "Compute query items: sort and pagination"
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
@@ -379,7 +383,7 @@ class MySqlSql(BaseSql):
                 data.get('columns', ['*']), super().encloseColumns)
         return ret
 
-    def dml(self, typeDml, data, table=None, filterParameters=None, returning=None, encloseColumns=True, ignoreKeys=[]):
+    def dml(self, typeDml, data, table=None, filterParameters=None, returning=None, encloseColumns=False, ignoreKeys=[]):
         "Compute insert/update/delete items and statement"
         ret = BaseSql.Dml()
 
@@ -435,7 +439,7 @@ class MySqlSql(BaseSql):
                     ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text} returning {returning}'
         return ret
 
-    def count(self, table, p={}, connOrCursor=None, encloseColumns=True):
+    def count(self, table, p={}, connOrCursor=None, encloseColumns=False):
         ret = BaseSql.Count()
         f = Filters(p)
         f.where()
@@ -453,7 +457,7 @@ class MySqlSql(BaseSql):
                 ret.count = connOrCursor.fetchone()[0]
         return ret
 
-    def exists(self, table, p={}, connOrCursor=None, encloseColumns=True):
+    def exists(self, table, p={}, connOrCursor=None, encloseColumns=False):
         if isinstance(p,dict):
             ret = BaseSql.Exists()
             f = Filters(p)
@@ -462,6 +466,7 @@ class MySqlSql(BaseSql):
             ret.filter = f.value('and').text
             ret.parameters = f.parameters
             ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {f.text})'
+            print(f"EXXXXX-->{ret.statement} --- {ret.parameters}")
         else:
             ret = BaseSql.Exists()
             ret.filter = p.text
@@ -484,9 +489,10 @@ class MySqlSql(BaseSql):
 
 
 class SqlServerSql:
-    def __init__(self, typeDB):
+    def __init__(self, typeDB,alias):
         super().__init__()
         self.typeDB = typeDB
+        self.dbAlias = AppSettings.dbAlias.get(alias)
         print("I'M SQLSERVER")
 
 class Filters:

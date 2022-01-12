@@ -3,6 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
+import { noValue } from "utils";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule } from "components/formLayout";
@@ -110,12 +111,24 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                 }
                 (async () => {
                     const { artigo, exists } = await loadArtigoDetail(ctx, token);
-                    console.log("LOAD DATA--", artigo, '------', dayjs(ctx.start_date).format('DD/MM/YYYY HH:mm:ss'))
                     artigo["qty_item"] = ctx.qty_item;
                     setCoresLookup(await loadCoresLookup(artigo.artigo_core, token));
                     setArtigoExists(exists);
-                    console.log("sssssssssssssssssssssssssssOI-->", dayjs(ctx.start_date, 'HH:mm:ss'));
-                    form.setFieldsValue({ f_amostragem: 4, sentido_enrolamento: 1, ...artigo, start_date: dayjs(ctx.start_date, 'YYYY-MM-DD'), start_hour: dayjs(ctx.start_date, 'YYYY-MM-DD HH:mm:ss') });
+
+                    console.log("LOAD REQUIREMENTS----->", form.getFieldsValue(true))
+                    const plan = {
+                        start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm:ss'),
+                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss')
+                        /* start_date: dayjs(noValue(form.getFieldValue("start_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm:ss'),
+                        end_date: dayjs(noValue(form.getFieldValue("end_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss') */
+                    }
+
+
+                    //console.log("sssssssssssssssssssssssssssOI-->", ctx, dayjs(ctx.start_date, 'HH:mm:ss'));
+
+
+
+                    form.setFieldsValue({ f_amostragem: 4, sentido_enrolamento: 1, ...artigo, ...plan });
                     /* let _artigosspecs = artigosSpecs;
                     if (item) {
                         _artigosspecs = await loadArtigosSpecsLookup({ item });
@@ -193,25 +206,25 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                             </FieldSet>
                         </FieldSet>
                         <VerticalSpace />
-                        <HorizontalRule title="2. Encomenda" />
+{/*                         <HorizontalRule title="2. Encomenda" />
                         <FieldSet margin={false}>
                             <Field wide={3} forInput={false} required={false} label={{ text: "Qtd. Encomenda" }} name="qty_item"><InputAddon size="small" addonAfter={<b>m&#178;</b>} maxLength={4} /></Field>
                             <Field wide={3} forInput={false} required={false} label={{ text: "Metros/Bobine" }} name="linear_meters"><InputAddon size="small" addonAfter={<b>m</b>} maxLength={4} /></Field>
                             <Field wide={3} forInput={false} required={false} label={{ text: <span>Metros&#178;/Bobine</span> }} name="sqm_bobine"><InputAddon size="small" addonAfter={<b>m&#178;</b>} maxLength={4} /></Field>
                             <Field wide={2} forInput={false} required={false} label={{ text: "Nº Bobines" }} name="nbobines"><InputNumber size="small" min={1} max={10000} /></Field>
                         </FieldSet>
-                        <VerticalSpace />
-                        <HorizontalRule title="3. Planificação" />
+                        <VerticalSpace /> */}
+                        <HorizontalRule title="2. Planificação" />
                         <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
-                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_date"><DatePicker size="small" /></Field>
-                            <Field required={true} label={{ text: "Hora Prevista Início" }} name="start_hour"><TimePicker size="small" /></Field>
+                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" /></Field>
+                            <Field required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" /></Field>
                             <AlertsContainer style={{ alignSelf: "end", paddingBottom: "6px" }} main={true} />
                         </FieldSet>
-                        <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
-                            <Field required={true} label={{ text: "Data Prevista Fim" }} name="end_date"><DatePicker size="small" /></Field>
-                            <Field required={true} label={{ text: "Hora Prevista Fim" }} name="end_hour"><TimePicker size="small" /></Field>
+                        {/* <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
+                            <Field required={true} label={{ text: "Data Início" }} name="start_date"><DatePicker showTime size="small" /></Field>
+                            <Field required={true} label={{ text: "Data Fim" }} name="end_date"><DatePicker showTime size="small" /></Field>
                             <AlertsContainer style={{ alignSelf: "end", paddingBottom: "6px" }} main={true} />
-                        </FieldSet>
+                        </FieldSet> */}
                         {/*                         <VerticalSpace />
                         <HorizontalRule title="4. Core" />
                         <VerticalSpace />
@@ -241,7 +254,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                             </FieldSet>
                         </FieldSet>
                         <VerticalSpace /> */}
-                        <HorizontalRule title="4. Amostragem, Enrolamento e Observações" />
+                        <HorizontalRule title="3. Amostragem, Enrolamento e Observações" />
                         <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: 4, style: { alignSelf: "left" }, label: { pos: "top", wrap: false, ellipsis: false, width: "130px" } }} layout="vertical">
                             <FieldSet margin={false}>

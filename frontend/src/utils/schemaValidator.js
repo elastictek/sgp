@@ -65,9 +65,29 @@ export const getRules = (rules, keys = null) => {
     }
 }
 
-export const dateTimeDiffValidator = (start_date, start_hour, end_date, end_hour) => {
+/* export const dateTimeDiffValidator = (start_date, start_hour, end_date, end_hour) => {
     const start = dayjs(`${start_date?.format('YYYY-MM-DD')} ${start_hour?.format('HH:mm')}`);
     const end = dayjs(`${end_date?.format('YYYY-MM-DD')} ${end_hour?.format('HH:mm')}`);
+    if (!start.isValid()) {
+        let status = { status: "error", messages: [{ message: `` }] };
+        return ({ errors: true, fields: { start_date: status } });
+    } else if (!end.isValid()) {
+        let status = { status: "error", messages: [{ message: `` }] };
+        return ({ errors: true, fields: { end_date: status } });
+    } else {
+        const diff = end.diff(start);
+        if (diff < 0) {
+            let status = { status: "error", messages: [{ message: `` }] };
+            return ({ errors: true, fields: { start_date: status, end_date: status } });
+        } else {
+            return ({ errors: false, fields: { start_date: {}, end_date: {} } });
+        }
+    }
+}; */
+
+export const dateTimeDiffValidator = (start_date, end_date) => {
+    const start = dayjs(`${start_date?.format('YYYY-MM-DD HH:mm:ss')}`);
+    const end = dayjs(`${end_date?.format('YYYY-MM-DD HH:mm:ss')}`);
     if (!start.isValid()) {
         let status = { status: "error", messages: [{ message: `` }] };
         return ({ errors: true, fields: { start_date: status } });

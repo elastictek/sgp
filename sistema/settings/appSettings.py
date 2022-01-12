@@ -6,3 +6,10 @@ class AppSettings:
         "postgres": TypeDB.POSTGRES,
         "default": TypeDB.MYSQL
     }
+    dbAlias = {
+        "postgres":{
+            "sgp":f'"SGP-DEV"',
+            "sage":f'"SAGE-PROD"'
+        }
+    }
+

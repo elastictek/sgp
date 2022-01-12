@@ -523,23 +523,11 @@ def create_palete_retrabalho(request):
 def add_bobine_palete(request, pk):
     template_name = 'palete/add_bobine_palete.html'
     palete = Palete.objects.get(pk=pk)
-    estado = palete.estado
-    ordem_palete_total = 0
-    if estado == "G":
-        ordemid = palete.ordem_id
-        if ordemid is not None:
-            ordem_palete_total = OrdemProducao.objects.get(pk=ordemid).num_paletes_total
-        bobinagem = Bobinagem.objects.filter(diam=palete.diametro)
-        bobine = Bobine.objects.all().order_by('posicao_palete')
-        bobines = Bobine.objects.filter(palete=palete).order_by('posicao_palete')
-        movimentos_bobines = MovimentosBobines.objects.filter(palete=palete)
-        has_carga = False
-    else:
-        bobinagem = Bobinagem.objects.filter(diam=palete.diametro)
-        bobine = Bobine.objects.all().order_by('posicao_palete')
-        bobines = Bobine.objects.filter(palete=palete).order_by('posicao_palete')
-        movimentos_bobines = MovimentosBobines.objects.filter(palete=palete)
-        has_carga = False
+    bobinagem = Bobinagem.objects.filter(diam=palete.diametro)
+    bobine = Bobine.objects.all().order_by('posicao_palete')
+    bobines = Bobine.objects.filter(palete=palete).order_by('posicao_palete')
+    movimentos_bobines = MovimentosBobines.objects.filter(palete=palete)
+    has_carga = False
     try:
         carga = Carga.objects.get(id=palete.carga.id)
         has_carga = True
@@ -563,8 +551,7 @@ def add_bobine_palete(request, pk):
         "palete": palete,
         "bobines": bobines,
         "bobinagem": bobinagem,
-        "form": form,
-        "totalordem": ordem_palete_total
+        "form": form
     }
     return render(request, template_name, context)
 
@@ -2567,8 +2554,10 @@ def encomenda_list(request):
     server = 'SRV-SAGE\SAGEX3' 
     database = 'x3v80db' 
     username = 'X3_ELASTICTEK' 
-    password = '%ElAsTicT3k@2021!RePoRt' 
-    conn = pyodbc.connect('DRIVER={sql server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    password = '%ElAsTicT3k@2021!RePoRt'    
+    conn = pyodbc.connect('DRIVER={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.8.so.1.1};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    #conn = pyodbc.connect('DRIVER={sql server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+
 
     cursor=conn.cursor()
     cursor.execute("select distinct e.ROWID, e.SOHNUM_0, e.ORDDAT_0, e.DEMDLVDAT_0, e.SHIDAT_0, e.EXTDLVDAT_0, e.ITMREF_0, a.ITMDES1_0, e.QTY_0, e.BPCORD_0, c.BPCNAM_0, b.GROPRI_0 from x3v80db.ELASTICTEK.SORDERQ as e left join x3v80db.ELASTICTEK.SORDERP as b on e.SOHNUM_0 = b.SOHNUM_0 left join x3v80db.ELASTICTEK.ITMMASTER as a on e.ITMREF_0 = a.ITMREF_0 left join x3v80db.ELASTICTEK.BPCUSTOMER as c on e.BPCORD_0 = c.BPCNUM_0 where e.ORDDAT_0 > '2021-01-01' order by e.ROWID desc;")
@@ -3607,7 +3596,6 @@ def palete_picagem(request, pk):
     template_name = 'palete/palete_picagem_v2.html'
     num_bobines = palete.num_bobines
     PicagemBobinesFormSet = formset_factory(PicagemBobines, extra=num_bobines)
-
     if request.method == 'POST':
         formset = PicagemBobinesFormSet(request.POST)
         if formset.is_valid():
@@ -4139,7 +4127,7 @@ def perfil_larguras_v2(request, pk):
                 artigos.append(artigo)
                 artigo_obj = Artigo.objects.get(id=artigo.id)
 
-                if artigo_obj.cod == 'EEEEFTACPAAR000181' or 'EEEEFTACPAAR000042' or 'EEEEFTACPAAR000228':
+                if artigo_obj.cod == 'EEEEFTACPAAR000181' or 'EEEEFTACPAAR000042':
                     pass
                 elif designacao_prod != artigo_obj.produto or gsm != artigo_obj.gsm or largura != artigo_obj.lar:
                     valid = False
@@ -6223,8 +6211,7 @@ def bobinagem_edit(request, pk):
         #     messages.error(request, 'A soms total de metros do lote de Nonwoven superior "' + sup + '" excede o limite establecido de 7500. Por favor verifique o valor introduzido.')
         # if (total_inf > 7500):
 
-        if (total_inf > 15000 or total_sup > 15000):
-        #if (total_inf > 8500 or total_sup > 8500):
+        if (total_inf > 8500 or total_sup > 8500):
             messages.error(
                 request, 'A soma total de metros dos lotes de Nonwoven excedem o limite establecido. Por favor verifique os valores introduzidos.')
         else:
@@ -6268,8 +6255,7 @@ def bobinagem_edit(request, pk):
         #     messages.error(request, 'A soms total de metros do lote de Nonwoven superior "' + sup + '" excede o limite establecido de 7500. Por favor verifique o valor introduzido.')
         # if (total_inf > 7500):
 
-        if (total_inf > 15000 or total_sup > 15000):
-        #if (total_inf > 8500 or total_sup > 8500):
+        if (total_inf > 8500 or total_sup > 8500):
             messages.error(
                 request, 'A soma total de metros dos lotes de Nonwoven excedem o limite establecido. Por favor verifique os valores introduzidos.')
         else:
@@ -6398,20 +6384,13 @@ def finalizar_carga(request, pk):
     num_palete_carga = 0
 
     if paletes_count == carga.num_paletes:
-        error = 0
         for pal in paletes:
             metros += pal.comp_total
             sqm += pal.area
             pal.num_palete_carga = num_palete_carga + 1
             num_palete_carga += 1
             pal.save()
-            error = gerar_etiqueta_final(pal.pk)
-            if error == -1:
-                break
-                
-        if error == -1:
-            messages.error(request, 'A carga contém bobines em paletes de artigos diferentes. Não é possivel finalizar carga.')
-            return redirect('producao:carga_carregar', pk=carga.pk)
+            gerar_etiqueta_final(pal.pk)
 
         enc = carga.enc
         enc.num_paletes_actual += paletes_count
@@ -6542,24 +6521,21 @@ def palete_pesagem_dm(request, pk):
 def palete_picagem_v3(request, pk):
     template_name = "palete/palete_picagem_v3.html"
     palete = get_object_or_404(Palete, pk=pk)
-    print(f"$$$$$$$$$$$$--->{pk}")
+    
     cliente = palete.cliente
     num_bobines = palete.num_bobines
     PicagemBobinesFormSet = formset_factory(PicagemBobines, extra=num_bobines)
     form = PaletePesagemForm(request.POST or None, instance=palete)
     peso_cores = 0
-
     if request.method == 'POST':
         formset = PicagemBobinesFormSet(request.POST)
-        
+
         exists = Bobine.objects.filter(palete=palete).exists()
         if exists:
             messages.error(request, 'A Palete já se encontra fechada!')
         else:
-        
             if formset.is_valid() and form.is_valid():
                 instance = form.save(commit=False)
-                
                 cliente = 0
                 count = 0
                 array_bobines = []
@@ -6567,7 +6543,6 @@ def palete_picagem_v3(request, pk):
                 array_larguras = []
                 array_produtos = []
                 array_estados = []
-                array_artigos = [] #v1
                 validation = True
                 if palete.cliente != None:
                     cliente = palete.cliente
@@ -6585,7 +6560,6 @@ def palete_picagem_v3(request, pk):
                             array_cores.append(bobine.bobinagem.perfil.core)
                             array_larguras.append(bobine.largura.largura)
                             array_produtos.append(bobine.designacao_prod)
-                            array_artigos.append(bobine.artigo_id) #v1
                             array_estados.append(bobine.estado)
                             if cliente != 0:
                                 try:
@@ -6632,6 +6606,7 @@ def palete_picagem_v3(request, pk):
                         messages.error(
                             request, '(' + str(count) + ') Por favor preencha a campo nº ' + str(count) + '.')
                         validation = False
+                print(f)
 
                 validation_estados = True
                 for estado in array_estados:
@@ -6643,8 +6618,6 @@ def palete_picagem_v3(request, pk):
                 if len(array_bobines) == palete.num_bobines and validation == True:
                     if len(array_bobines) > len(set(array_bobines)):
                         messages.error(request, 'A picagem contem bobines repetidas.')
-                    elif len(set(array_artigos)) != 1:
-                        messages.error(request, 'As bobines picadas são de artigos diferentes. Para que a palete seja válida todas as bobines têm de ter o mesmo artigo.')
                     elif len(set(array_produtos)) != 1:
                         messages.error(request, 'As bobines picadas são produtos diferentes. Para que a palete seja válida todas as bobines têm de ser o mesmo produto.')
                     elif len(set(array_estados)) != 1 and validation_estados == False:
@@ -6802,9 +6775,6 @@ def palete_picagem_v3(request, pk):
                         
 
                         return redirect('producao:addbobinepalete', pk=palete.pk)
-                
-
-
     else:
         formset = PicagemBobinesFormSet()
 
@@ -6945,7 +6915,7 @@ def artigo_create(request):
     template_name = 'artigo/artigo_create.html'
 
     form = ArtigoCreateForm(request.POST or None)
-    print(f'cccc-->{form.is_valid()} -- {form}')
+
     if form.is_valid():
         instance = form.save(commit=False)
         instance.save()

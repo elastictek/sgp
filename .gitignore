@@ -7,7 +7,7 @@ test.py
 # Other
 db.sqlite3
 *.sock
-BAK/
+BACK/
 logs/
 PC-PROJECT/
 sgp-app-env/

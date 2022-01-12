@@ -13,10 +13,11 @@ import Portal from "components/portal";
 import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Transfer, Tag } from "antd";
+const ButtonGroup = Button.Group;
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import Table, { setColumns } from "components/table";
 import { useDataAPI } from "utils/useDataAPI";
-import { RightOutlined, LeftOutlined, LoadingOutlined, SwapOutlined } from '@ant-design/icons';
+import { RightOutlined, LeftOutlined, LoadingOutlined, SwapOutlined, SearchOutlined } from '@ant-design/icons';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -52,7 +53,46 @@ const loadPaletesStockLookup = async (of_id) => {
 /> */
 
 
+const GlobalSearch = ({ form, formName, dataAPI } = {}) => {
+
+    const onValuesChange = (changedValues) => {
+        
+    }
+
+    const onFinish = async () => {
+        const { item_id, of_id } = dataAPI.getFilter();
+        dataAPI.addFilters({ of_id, item_id, [formName]: form.getFieldValue(formName) });
+        dataAPI.first();
+        dataAPI.fetchPost();
+    }
+
+    return (
+        <Form form={form} name={formName} onFinish={onFinish} onValuesChange={onValuesChange} >
+            <FormLayout
+                id="PS-FILTER"
+                layout="horizontal"
+                style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
+                field={{
+                    forInput: true,
+                    wide: [16],
+                    margin: "2px", overflow: false,
+                    label: { enabled: true, pos: "top", wrap: false, overflow: false, colon: true, ellipsis: true },
+                    alert: { pos: "right", tooltip: true, container: false /* container: "el-external" */ },
+                    layout: { top: "", right: "", center: "", bottom: "", left: "" },
+                    required: true,
+                    style: { alignSelf: "center" }
+                }}
+                fieldSet={{ wide: 16, margin: false, layout: "horizontal", overflow: false, style: { alignSelf: "center" } }}
+            >
+                <Field name={formName} label={{ enabled: false }} addons={{right:<Button /* style={{ padding: "3px" }} */ size='small' onClick={onFinish}><SearchOutlined /></Button>}}><Input size="small"/></Field>
+            </FormLayout>
+        </Form>
+    );
+}
+
 const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightDataAPI, setResultMessage, ...props }) => {
+    const [formLeftFilter] = Form.useForm();
+    const [formRightFilter] = Form.useForm();
     const { tempof_id: id, qty_encomenda } = aggItem;
     const [leftSelectedRows, setLeftSelectedRows] = useState([]);
     const [rightSelectedRows, setRightSelectedRows] = useState([]);
@@ -134,7 +174,7 @@ const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightD
 
 
 
-            <div style={{ display: "flex", flexDirection: "row"/* , alignItems: "center" */ }}>
+            <div style={{ display: "flex", flexDirection: "row",overflow:"hidden"/* , alignItems: "center" */ }}>
                 <div style={{ width: "45%" }}>
                     <div>
                         <div>Paletes em Stock (<b>{selectedTotais.left.st}</b> selecionadas)</div>
@@ -146,6 +186,7 @@ const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightD
                         clearSort={false}
                         stripRows
                         darkHeader={false}
+                        toolbar={<GlobalSearch form={formLeftFilter} formName="fpl-filter" dataAPI={leftDataAPI} />}
                         size="small"
                         selection={{ enabled: true, rowKey: "id", onSelection: onSelectionLeft, multiple: true, selectedRows: leftSelectedRows, setSelectedRows: setLeftSelectedRows }}
                         paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
@@ -156,7 +197,7 @@ const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightD
                     />
                 </div>
                 <div style={{ width: "5%", textAlign: "center", alignSelf: "center" }}><Button type='primary' onClick={addRemove} size="small" icon={<SwapOutlined />} /></div>
-                <div style={{ width: "45%" }}>
+                <div style={{ flex:1 }}>
                     <div style={{ display: "flex", flexDirection: "row" }}>
                         {/*                         <div style={{ width: "50%" }}>
                             <div><b>{selectedTotais.right.total}</b> Paletes Adicionadas</div>
@@ -173,6 +214,7 @@ const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightD
                         clearSort={false}
                         stripRows
                         darkHeader={false}
+                        toolbar={<GlobalSearch form={formRightFilter} formName="fpr-filter" dataAPI={rightDataAPI} />}
                         size="small"
                         selection={{ enabled: true, rowKey: "id", onSelection: onSelectionRight, multiple: true, selectedRows: rightSelectedRows, setSelectedRows: setRightSelectedRows }}
                         /* paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }} */
@@ -180,7 +222,7 @@ const TableTransfer = ({ aggItem, leftColumns, rightColumns, leftDataAPI, rightD
                         columns={rightColumns}
                         onFetch={rightDataAPI.fetchPost}
                         scroll={{ y: 465, scrollToFirstRowOnChange: true }}
-                        /* style={{ maxHeight: "465px", overflowY: "auto" }} */
+                    /* style={{ maxHeight: "465px", overflowY: "auto" }} */
                     //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                     />
                 </div>
@@ -203,6 +245,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const leftDataAPI = useDataAPI({ payload: { url: `${API_URL}/paletesstocklookup/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: { item_id: aggItem.item_id }, sort: [] } });
     const rightDataAPI = useDataAPI({ payload: { url: `${API_URL}/paletesstockget/`, parameters: {}, pagination: { enabled: false }, filter: { of_id: aggItem.tempof_id }, sort: [] } });
 
+
     const init = () => {
         const cancelFetch = cancelToken();
         (async () => {
@@ -220,9 +263,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             {
                 nome: { title: "Palete", width: 100, render: v => (<div style={{ fontSize: "12px", fontWeight: 700 }}>{v}</div>), ...common },
                 largura_bobines: { title: "Larg.", width: 60, render: v => (<div style={{ fontSize: "10px" }}>{v} mm</div>), ...common },
-                core_bobines: { title: "Core", width: 60, render: v => (<div style={{ fontSize: "10px" }}>{v}''</div>), ...common },
-                area: { title: "Área", width: 80, render: v => (<div style={{ fontSize: "10px" }}>{v} m&#178;</div>), ...common },
-                comp_total: { title: "Comp.", width: 60, render: v => (<div style={{ fontSize: "10px" }}>{v} m</div>), ...common }
+                core_bobines: { title: "", width: 20, render: v => (<div style={{ fontSize: "10px" }}>{v}''</div>), ...common },
+                area: { title: "Área", width: 80, render: v => (<div style={{ fontSize: "10px" }}>{v} m&#178;</div>), ...common }
+                /* comp_total: { title: "Comp.", width: 60, render: v => (<div style={{ fontSize: "10px" }}>{v} m</div>), ...common } */
             }
         ))({ idx: 1, optional: false, sort: false })
     };
