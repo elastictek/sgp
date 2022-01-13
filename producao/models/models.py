@@ -245,7 +245,7 @@ class Perfil(models.Model):
 class Artigo(models.Model):
     GSM = (('105', '105 gsm'), ('100', '100 gsm'), ('95', '95 gsm'), ('90', '90 gsm'), ('80', '80 gsm'), ('60', '60 gsm'), ('75', '75 gsm'), ('57', '57 gsm'), ('50', '50 gsm'), ('48', '48 gsm'), ('45', '45 gsm'), ('25', '25 gsm'))
     CORE = (('3', '3'), ('6', '6'))
-    FORMU = (('HE', 'HE'), ('HT', 'HT'))
+    FORMU = (('HE', 'HE'), ('HT', 'HT'),('', ''))
     PRODUTO = (
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'), 
@@ -295,7 +295,7 @@ class Artigo(models.Model):
     gtin = models.CharField(verbose_name="GTIN", max_length=14, unique=True, default="")
     produto = models.CharField(verbose_name="Produto", max_length=100, default="", choices=PRODUTO)
     produto_id = models.ForeignKey('producao.Produtos',db_column="produto_id",on_delete=models.PROTECT,verbose_name="Id Produto", null=True) #ADDED - ID PRODUTO
-    thickness = models.IntegerField(verbose_name="Espessura (Estimada/Referência) microns", default=325) #ADDED
+    thickness = models.IntegerField(verbose_name="Espessura (Estimada/Referência) microns", default=325, null=True) #ADDED
     class Meta:
         verbose_name_plural = "Artigos"
         ordering = ['cod']

@@ -6915,7 +6915,6 @@ def artigo_create(request):
     template_name = 'artigo/artigo_create.html'
 
     form = ArtigoCreateForm(request.POST or None)
-
     if form.is_valid():
         instance = form.save(commit=False)
         instance.save()

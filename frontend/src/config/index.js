@@ -10,7 +10,7 @@ export const PAGE_TOOLBAR_HEIGHT = "45px";
 //APP DATA
 //SENTIDO ENROLAMENTO
 export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }]
-export const TIPOEMENDA_OPTIONS = [{ label: "Fita Preta", value: 1 }, { label: "Fita metálica e Fita Preta", value: 2 }, { label: "Fita metálica", value: 3 }]
+export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }]
 //--ARTIGO
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'

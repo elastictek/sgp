@@ -93,6 +93,9 @@ urlpatterns = [
     url(r'^paletesstockget/$', views.PaletesStockGet),
     url(r'^savepaletesstock/$', views.SavePaletesStock),    
     #End Paletes Stock
+    #Nonwovens
+    url(r'^emendaslookup/$', views.EmendasLookup),
+    #End Nonwovens
 
     url(r'^savetempordemfabrico/$', views.SaveTempOrdemFabrico),    
     url(r'^savetempagg/$', views.SaveTempAgg),    

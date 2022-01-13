@@ -114,41 +114,14 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                     artigo["qty_item"] = ctx.qty_item;
                     setCoresLookup(await loadCoresLookup(artigo.artigo_core, token));
                     setArtigoExists(exists);
-
-                    console.log("LOAD REQUIREMENTS----->", form.getFieldsValue(true))
                     const plan = {
                         start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm:ss'),
-                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss')
-                        /* start_date: dayjs(noValue(form.getFieldValue("start_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm:ss'),
-                        end_date: dayjs(noValue(form.getFieldValue("end_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss') */
+                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss'),
+                        f_amostragem:(form.getFieldValue("amostragem")) ? form.getFieldValue("amostragem") : 4,
+                        sentido_enrolamento:form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
+                        observacoes:form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''
                     }
-
-
-                    //console.log("sssssssssssssssssssssssssssOI-->", ctx, dayjs(ctx.start_date, 'HH:mm:ss'));
-
-
-
-                    form.setFieldsValue({ f_amostragem: 4, sentido_enrolamento: 1, ...artigo, ...plan });
-                    /* let _artigosspecs = artigosSpecs;
-                    if (item) {
-                        _artigosspecs = await loadArtigosSpecsLookup({ item });
-                        setArtigosSpecs(_artigosspecs);
-                    }
-                    if (artigospecs_id) {
-                        let [artigoSpecs] = _artigosspecs.filter(v => v.id === artigospecs_id);
-                        const artigoSpecsItems = await getArtigoSpecsItems({ artigospecs_id });
-                        const fieldsValue = { nitems: artigoSpecsItems.length };
-                        for (let [i, v] of artigoSpecsItems.entries()) {
-                            fieldsValue[`key-${i}`] = v.item_key;
-                            fieldsValue[`des-${i}`] = v.item_des;
-                            const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
-                            for (let [iV, vV] of vals.entries()) {
-                                fieldsValue[`v${v.item_key}-${iV}`] = vV;
-                            }
-                        }
-                        artigoSpecs = { ...artigoSpecs, cliente_cod: { key: artigoSpecs.cliente_cod, value: artigoSpecs.cliente_cod, label: artigoSpecs.cliente_nome } };
-                        form.setFieldsValue({ artigoSpecs, artigoSpecsItems: fieldsValue });
-                    } */
+                    form.setFieldsValue({ ...artigo, ...plan });
                     setLoading(false);
                 })();
         }

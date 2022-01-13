@@ -598,15 +598,17 @@ export default () => {
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
                         cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-                        produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
-                        pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
-                        total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
-                        details: {
+                        start_date: { title: "Início Previsto", ellipsis: true, render: (v,r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
+                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v,r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
+                        //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
+                        //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
+                        //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
+                        /* details: {
                             title: "", width: 50, render: (v, r) => <Space>
                                 {r.stock == 1 && <GrStorage title="Para Stock" />}
                                 {r.retrabalho == 1 && <RiRefreshLine title="Para Retrabalho" />}
                             </Space>, table: "sgp_op", ...common
-                        }
+                        } */
 
 
                         //PRFNUM_0: { title: "Prf", width: '160px', ...common },

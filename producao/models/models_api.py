@@ -62,6 +62,12 @@ class TempOrdemFabrico(models.Model):
     class Meta:
         unique_together = (('of_id', 'item_cod'))
 
+class Attachments(models.Model):
+    of = models.ForeignKey('producao.TempOrdemFabrico', on_delete=models.PROTECT, verbose_name="Temporary Ordem fabrico")
+    tipo_doc = models.IntegerField(verbose_name="Tipo Documento")
+    path=models.TextField(max_length = 1000, verbose_name = "Caminho", default = "")
+    
+
 class Emendas(models.Model):
     designacao = models.CharField(verbose_name="Designação", max_length=20,null=True)
     cliente_cod = models.PositiveIntegerField(verbose_name="SAGE BPCORD_0 Código de cliente", unique=False, null=True)
@@ -71,6 +77,7 @@ class Emendas(models.Model):
     maximo = models.SmallIntegerField(verbose_name="Máximo Emendas", default=0,  max_length=3)
     emendas_rolo = models.SmallIntegerField(verbose_name="Emendas por Rolo",  max_length=2)
     paletes_contentor = models.SmallIntegerField(verbose_name="Emendas Paletes por Contentor",  max_length=2)
+    hashcode = models.CharField(verbose_name="hashcode", max_length=25, null=True, blank=True)
     class Meta:
         unique_together = (('designacao', 'cliente_cod', 'artigo_cod'))
 

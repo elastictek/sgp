@@ -151,12 +151,14 @@ def OFabricoList(request, format=None):
         oflist.n_paletes_produzidas,sgp_op.num_paletes_produzir,
         oflist.n_paletes_stock_in,sgp_op.num_paletes_stock,
         oflist.n_paletes_total,sgp_op.num_paletes_total,
+        sgp_op.inicio,sgp_op.fim,
         oflist.n_paletes_produzidas || '/' || sgp_op.num_paletes_produzir produzidas,
         oflist.n_paletes_stock_in || '/' || sgp_op.num_paletes_stock stock,oflist.n_paletes_total || '/' || sgp_op.num_paletes_total total,
         sgp_op.retrabalho, oflist.start_date, oflist.end_date, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
         oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.paletizacao_id, sgp_op.formulacao_id, sgp_op.status,
         sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
-        sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id
+        sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
+		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date
     """
 
     response = dbgw.executeList(lambda p, c: (
@@ -165,6 +167,7 @@ def OFabricoList(request, format=None):
         FROM MV_OFABRICO_LIST oflist
         LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op on sgp_op.id = oflist.ofabrico_sgp
         LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = oflist.ofabrico and sgp_top.item_cod=oflist.item
+        LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
         LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = oflist.item
         LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
         WHERE 
@@ -1113,6 +1116,41 @@ def NewArtigoNonwovens(request, format=None):
 
 #endregion
 
+#region EMENDAS
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def EmendasLookup(request, format=None):
+    cols = ['*']
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'em.cliente_cod = :cliente_cod', lambda v:(v!=None))
+    f.add(f'em.artigo_cod = :artigo_cod', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_emendas em
+                {f.text}
+                {dql.sort}
+                {dql.limit}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+
+#endregion
+
+
+
 #region CORTES
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1515,6 +1553,24 @@ def SaveTempOrdemFabrico(request, format=None):
         rows = db.executeSimpleList(lambda: (f'SELECT agg_of_id,agg_ofid_original FROM producao_tempordemfabrico {f.text}'), cursor, f.parameters)['rows']
         return rows[0] if len(rows)>0 else None
 
+    def GetEmendas(data, cursor):
+        vals = {
+            "artigo_cod":data["artigo_cod"],
+            "emendas_rolo":data["nemendas_rolo"],
+            "tipo_emenda":data["tipo_emenda"],
+            "maximo":data["maximo"],
+            "paletes_contentor":data["nemendas_paletescontentor"]
+        }
+        if "cliente_cod" in data and data["cliente_cod"] is not None:
+            vals["cliente_cod"]=data["cliente_cod"]
+        f = Filters({"hashcode": hashlib.md5(json.dumps(vals).encode('utf-8')).hexdigest()[ 0 : 16 ]})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'hashcode = :hashcode', True)
+        f.value("and")   
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_emendas {f.text}'), cursor, f.parameters)['rows']
+        return rows[0] if len(rows)>0 else None
+
     def upsertTempAggOrdemFabrico(data, ids, cursor):
         dta = {
             'core_cod': data['core_cod'] if 'core_cod' in data else None,
@@ -1557,9 +1613,7 @@ def SaveTempOrdemFabrico(request, format=None):
             if agg_ofid_original != aggid:
                 dml = db.dml(TypeDml.UPDATE,{"status":-1},"producao_tempaggordemfabrico",{"id":f'=={agg_ofid_original}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
-
             dml = db.dml(TypeDml.UPDATE,dta,"producao_tempaggordemfabrico",{"id":f'=={ids["agg_of_id"]}'},None,False)
-            print(f'xxxxxxxxxxxxxxxxxxxxxxxxx{data}----{dml.statement}')
             db.execute(dml.statement, cursor, dml.parameters)
             return ids["agg_of_id"]
 
@@ -1624,14 +1678,39 @@ def SaveTempOrdemFabrico(request, format=None):
         return cursor.lastrowid
 
     def updateTempOrdemFabrico(data,cursor):
-        dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":data["paletizacao_id"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
-        db.execute(dml.statement, cursor, dml.parameters)
-        return data["ofabrico"]
-
+        if data["type"] == "paletizacao":
+            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":data["paletizacao_id"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return data["ofabrico"]
+        if data["type"] == "settings":
+            emendas_id = None
+            emenda = GetEmendas(data,cursor)
+            if emenda is None:
+                vals = {
+                    "artigo_cod":data["artigo_cod"],
+                    "emendas_rolo":data["nemendas_rolo"],
+                    "tipo_emenda":data["tipo_emenda"],
+                    "maximo":data["maximo"],
+                    "paletes_contentor":data["nemendas_paletescontentor"]
+                }
+                if "cliente_cod" in data and data["cliente_cod"] is not None:
+                    vals["cliente_cod"]=data["cliente_cod"]
+                vals["hashcode"] = hashlib.md5(json.dumps(vals).encode('utf-8')).hexdigest()[ 0 : 16 ]
+                if "cliente_nome" in data and data["cliente_nome"] is not None:
+                    vals["cliente_nome"]=data["cliente_nome"]
+                vals["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                dml = db.dml(TypeDml.INSERT,vals,"producao_emendas",None,None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                emendas_id = cursor.lastrowid
+            else:
+                emendas_id = data["emendas_id"] if "emendas_id" in data and data["emendas_id"] is not None else emenda["id"]
+            dml = db.dml(TypeDml.UPDATE,{"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return data["ofabrico"]
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                if ("type" in data and data["type"] == "paletizacao"):
+                if ("type" in data):
                     id = updateTempOrdemFabrico(data,cursor)
                 else:
                     cp = computeLinearMeters(data)

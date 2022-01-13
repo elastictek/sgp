@@ -11,6 +11,7 @@ import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber } from "antd";
 import { LoadingOutlined, EditOutlined } from '@ant-design/icons';
+import ResultMessage from 'components/resultMessage';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
 import { OFabricoContext } from './FormOFabricoValidar';
 
@@ -24,66 +25,39 @@ const schema = (keys, excludeKeys) => {
     }, keys, excludeKeys).unknown(true);
 }
 
-const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
-    const [formTitle, setFormTitle] = useState({});
-    const iref = useRef();
-    const { record = {} } = showWrapper;
-    const onVisible = () => {
-        setShowWrapper(prev => ({ ...prev, show: !prev.show }));
-    }
-    return (
-        <WrapperForm
-            title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
-            type="drawer"
-            destroyOnClose={true}
-            mask={true}
-            style={{}}
-            setVisible={onVisible}
-            visible={showWrapper.show}
-            width={800}
-            bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
-            footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
-        >
-            {/* <FormToCall setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /> */}
-        </WrapperForm>
-    );
-}
-
-const loadLookup = async ({ token }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/.../`, filter: {}, sort: [], cancelToken: token });
+const loadEmendasLookup = async ({ cliente_cod, artigo_cod, token }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/emendaslookup/`, filter: { cliente_cod, artigo_cod }, pagination: { limit: 1 }, sort: [{ column: 'id', direction: 'DESC' }], cancelToken: token });
     return rows;
 }
 
-const setId = (id) => {
-    if (id) {
-        return { key: "update", values: { id } };
-    }
-    return { key: "insert", values: {} };
-}
-
-export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) => {
-    /* const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext); */
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
     const [form] = Form.useForm();
     const [guides, setGuides] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [operation, setOperation] = useState(setId(record.aggItem.paletizacao_id));
-    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
-    const [showSchema, setShowSchema] = useState({ show: false });
-    const [lookupData, setLookupData] = useState([]);
-    const [changedValues, setChangedValues] = useState({});
-    const [resultMessage, setResultMessage] = useState({ status: "none" });
 
     const loadData = (data = {}, type = "init") => {
+        const { emendas, paletesstock, ...aggItem } = record.aggItem;
         const { token } = data;
+
         switch (type) {
             default:
                 (async () => {
-                    const { emendas, paletesstock, ...aggItem } = record.aggItem;
+                    let _emendas = {};
+                    if (!emendas.id) {
+                        setLoading(true);
+                        const retEmendas = await loadEmendasLookup({ cliente_cod: aggItem.cliente_cod, artigo_cod: aggItem.item_cod, token });
+                        if (retEmendas.length > 0) {
+                            _emendas = { emendas_id: retEmendas[0].id, nemendas_paletescontentor: retEmendas[0].paletes_contentor, maximo: retEmendas[0].maximo, tipo_emenda: parseInt(retEmendas[0].tipo_emenda), nemendas_rolo: retEmendas[0].emendas_rolo }
+                        }
+                        setLoading(false);
+                    } else {
+                        _emendas = { emendas_id: emendas.id, nemendas_paletescontentor: emendas.paletes_contentor, maximo: emendas.maximo, tipo_emenda: parseInt(emendas.tipo_emenda), nemendas_rolo: emendas.emendas_rolo }
+                    }
                     const n_paletes = JSON.parse(aggItem.n_paletes);
                     const n_paletes_stock = !(paletesstock) ? 0 : paletesstock.length;
                     const n_paletes_total = (!aggItem.n_paletes_total) ? (!n_paletes?.total?.n_paletes ? n_paletes_stock : Math.round(n_paletes.total.n_paletes)) : aggItem.n_paletes_total;
                     const n_paletes_prod = n_paletes_total - n_paletes_stock;
-                    form.setFieldsValue({ n_paletes_total, n_paletes_stock, n_paletes_prod });
+                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod });
                 })();
         }
     }
@@ -108,36 +82,15 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
     }
 
     const onFinish = async (values) => {
-        console.log("okkkkk",values)
-        const status = { error: [], warning: [], info: [], success: [] };
+        const { emendas, paletesstock, tempof_id, ...aggItem } = record.aggItem;
         const v = schema().validate(values, { abortEarly: false });
-        console.log("vvvvvv",v)
-        //const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings" } });
-        //setResultMessage(response.data);
-        
-        
-        // const status = { error: [], warning: [], info: [], success: [] };
-        // const msgKeys = ["start_date", "start_hour", "end_date", "end_hour"];
-        // const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
-        // const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-        // const { cortes_id, cortesordem_id } = form.getFieldsValue(true);
-        // let diff = {};
-        // const v = schema().custom((v, h) => {
-        //     const { start_date, start_hour, end_date, end_hour } = v;
-        //     diff = dateTimeDiffValidator(start_date, start_hour, end_date, end_hour);
-        //     if (diff.errors == true) {
-        //         return h.message("A Data de Fim tem de ser Maior que a Data de Início", { key: "start_date", label: "start_date" })
-        //     }
-        // }).validate(values, { abortEarly: false });
-        // status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        // status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        // if (!v.error) { }
-        // if (status.error.length === 0) {
-        //     const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
-        //     setResultMessage(response.data);
-        // }
-        // setFieldStatus(diff.fields);
-        // setFormStatus(status);
+        if (!v.error) {
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
+            if (response.data.status !== "error") {
+                parentReload({ agg_id: aggItem.id });
+                closeParent();
+            }
+        }
     }
 
     return (
@@ -180,9 +133,7 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
                         <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: 4, style: { alignSelf: "left" }, label: { pos: "top", wrap: false, ellipsis: false, width: "130px" } }} layout="vertical">
                             <Field name="tipo_emenda" label={{ text: "Tipo Emenda" }}>
-                                <SelectField size="small" data={TIPOEMENDA_OPTIONS} keyField="value" textField="label"
-                                    optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                />
+                                <SelectField size="small" data={TIPOEMENDA_OPTIONS} keyField="key" textField="value" />
                             </Field>
                             <FieldSet margin={false}>
                                 <Field wide={2} name="maximo" label={{ text: "Máximo" }}><InputNumber size="small" addonAfter={<b>%</b>} min={0} max={100} /></Field>
@@ -196,7 +147,7 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={()=>form.submit()}>Guardar</Button>
+                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                     </Space>
                 </Portal>

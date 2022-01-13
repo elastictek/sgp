@@ -16,7 +16,7 @@ import IconButton from "components/iconButton";
 import Portal from "components/portal";
 import { Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, DatePicker, InputNumber, TimePicker, Spin } from "antd";
 const { Option, OptGroup } = Select;
-import { LoadingOutlined, PlusOutlined,PaperClipOutlined } from '@ant-design/icons';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 
 import FormRequirements from './FormRequirements';
@@ -27,7 +27,6 @@ const FormSpecs = React.lazy(() => import('./FormSpecs'));
 const FormAgg = React.lazy(() => import('./FormAgg'));
 const FormNwsCore = React.lazy(() => import('./FormNwsCore'));
 const FormCortes = React.lazy(() => import('./FormCortes'));
-const FormAttachments = React.lazy(() => import('./FormAttachments'));
 
 export const OFabricoContext = React.createContext({});
 
@@ -50,6 +49,7 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
     const [loading, setLoading] = useState(true);
     const [fieldStatus, setFieldStatus] = useState({});
 
+    const [activeTab, setActiveTab] = useState("1");
     const [paletizacaoChangedValues, setPaletizacaoChangedValues] = useState({});
     const [formulacaoChangedValues, setFormulacaoChangedValues] = useState({});
     const [gamaOperatoriaChangedValues, setGamaOperatoriaChangedValues] = useState({});
@@ -162,7 +162,6 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
         closeParent();
     }
 
-
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
@@ -177,8 +176,8 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
                     <AlertMessages formStatus={formStatus} />
                     <OFabricoContext.Provider value={contextValue} /* value={{ temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico, form, guides, schema }} */>
                         <Form form={form} name={`form-of-validar`} onFinish={onFinish} onValuesChange={onValuesChange}>
-                            <Tabs onChange={() => { }} type="card" dark={1} defaultActiveKey="1">
-                                <TabPane tab="Requisitos" key="1">
+                            <Tabs onChange={() => { }} type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k)=>setActiveTab(k)}>
+                                <TabPane tab="Requisitos" key="1" forceRender={true}>
                                     <FormRequirements changedValues={requirementsChangedValues} />
                                 </TabPane>
                                 <TabPane tab="Ordens Fabrico" key="2">
@@ -201,9 +200,6 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
                                 </TabPane> */}
                                 <TabPane tab="Cortes" key="7">
                                     <Suspense fallback={<></>}><FormCortes changedValues={cortesOrdemChangedValues} /></Suspense>
-                                </TabPane>
-                                <TabPane tab={<span><PaperClipOutlined />Anexos</span>} key="9">
-                                    <Suspense fallback={<></>}><FormAttachments /* changedValues={cortesOrdemChangedValues} */ /></Suspense>
                                 </TabPane>
                                 {/* <TabPane tab="Paletes Stock" key="9">
                                     <Suspense fallback={<></>}><FormPaletesStock id={form.getFieldValue("artigospecs_id")} record={record} form={form} guides={guides} schema={schema} changedValues={artigoSpecsChangedValues} /></Suspense>

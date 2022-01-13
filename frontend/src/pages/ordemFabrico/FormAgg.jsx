@@ -10,12 +10,13 @@ import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
 import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse } from "antd";
 const { Panel } = Collapse;
-import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined,PaperClipOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import FormAggUpsert from '../agg/FormAggUpsert';
 const FormPaletesStockUpsert = React.lazy(() => import('../paletesStock/FormPaletesStockUpsert'));
 const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
 const FormSettings = React.lazy(() => import('./FormSettings'));
+const FormAttachments = React.lazy(() => import('./FormAttachments'));
 import { remove } from 'ramda';
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
@@ -25,7 +26,7 @@ import SvgSchema from '../paletizacaoSchema/SvgSchema';
 
 const StyledCard = styled(Card)`
     .ant-card-body{
-        height:400px;
+        height:350px;
         max-height:500px; 
         overflow-y:hidden;
     }
@@ -72,6 +73,7 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
             {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
             {showWrapper.type === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+            {showWrapper.type === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
         </WrapperForm>
     );
 }
@@ -86,6 +88,14 @@ const loadPaletesGet = async (tempof_id) => {
     return rows;
 }
 
+const PaletesStock = ({ item }) => {
+    return (
+        <div style={{display: "flex", flexWrap: "wrap", flexDirection: "row-reverse"}}>
+        { item.paletesstock && item.paletesstock.map((v, idx) => { return <div style={{flex: "1 1 80px"}} key={`ps-${item.tempof_id}-${idx}`}>{v}</div> }) }
+        </div>
+    )
+}
+
 const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
     const paletes = JSON.parse(aggItem?.n_paletes);
     const onAction = (op) => {
@@ -97,6 +107,9 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'settings':
+                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+                break;
+            case 'attachments':
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
         }
@@ -119,7 +132,8 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                     /* <FaWarehouse key="paletes" onClick={() => onAction('paletes_stock')} title="Paletes em Stock" />, */
                     <div key="schema" onClick={() => onAction('schema')} title="Paletização (Esquema)">Paletização</div>,
                     <div key="paletes" onClick={() => onAction('paletes_stock')}>Stock</div>,
-                    <div key="quantity" onClick={() => onAction('quantity')} title="Quantidades">Quantidades</div>
+                    <div key="attachments" onClick={() => onAction('attachments')}><span><PaperClipOutlined />Anexos</span></div>
+                    /* <div key="quantity" onClick={() => onAction('quantity')} title="Quantidades">Quantidades</div> */
                     /*<SettingOutlined key="settings" onClick={() => onAction('settings')} title="Outras definições" />,*/
                     /*<MdProductionQuantityLimits key="quantity" onClick={() => onAction('quantity')} title="Quantidades" />*/
                     /*                     <EditOutlined key="edit" />,
@@ -128,7 +142,7 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
             >
                 <YScroll>
                     <FieldSet wide={16} margin={false} layout="vertical">
-                        <StyledCollapse defaultActiveKey={['1', '2', '3']} expandIconPosition="right" bordered>
+                        <StyledCollapse defaultActiveKey={['1']} expandIconPosition="right" bordered>
                             <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Encomenda</b></div><div>{aggItem.qty_encomenda} m&#178;</div></div>} key="1">
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{aggItem.linear_meters.toFixed(2)}</div><div>m/bobine</div></div>
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{aggItem.sqm_bobine.toFixed(2)}</div><div>m&#178;/bobine</div></div>
@@ -149,11 +163,14 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                                 })}
                                 <SvgSchema items={aggItem} width="100%" height="100%" />
                             </Panel>
-                            <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Paletes de Stock</b></div></div>} key="3">
-                                <div style={{ maxHeight: "150px", overflowY: "auto" }}>
-                                    {aggItem.paletesstock && aggItem.paletesstock.map((v, idx) => { return <div key={`ps-${aggItem.tempof_id}-${idx}`}>{v}</div> })}
+                            {aggItem?.paletesstock?.length && <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>{aggItem?.paletesstock?.length} Paletes de Stock</b></div></div>} key="3">
+                                <div style={{ height: "150px", overflowY: "hidden" }}>
+                                    <YScroll>
+                                        <PaletesStock item={aggItem} />
+                                    </YScroll>
                                 </div>
                             </Panel>
+                            }
                         </StyledCollapse>
 
                     </FieldSet>
