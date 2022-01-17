@@ -79,8 +79,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
         if (!v.error) {
             let error = false;
+            console.log("BEFORE---GO-",values);
             for (let k in values) {
-                if (values[k]===undefined){
+                if (k!=='designacao' && values[k]===undefined){
                     error=true;
                     break;
                 }

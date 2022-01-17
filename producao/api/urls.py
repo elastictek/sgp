@@ -96,6 +96,11 @@ urlpatterns = [
     #Nonwovens
     url(r'^emendaslookup/$', views.EmendasLookup),
     #End Nonwovens
+    #OF Attachments/Uploads
+    url(r'^ofattachmentsget/$', views.OfAttachmentsGet),
+    url(r'^ofattachmentschange/$', views.OfAttachmentsChange),
+    url(r'^ofupload/$', views.OfUpload),
+    #End OF Uploads
 
     url(r'^savetempordemfabrico/$', views.SaveTempOrdemFabrico),    
     url(r'^savetempagg/$', views.SaveTempAgg),    

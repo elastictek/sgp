@@ -1,6 +1,9 @@
 import React from 'react';
 //export const API_URL = "http://127.0.0.1:8000/api";
+export const CSRF = document.cookie.replace("csrftoken=","");
+export const MAX_UPLOAD_SIZE = 5; //MB
 export const API_URL = "/api";
+export const MEDIA_URL = "/media";
 export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
@@ -8,9 +11,14 @@ export const PAGE_TOOLBAR_HEIGHT = "45px";
 
 
 //APP DATA
+//ORDEM FABRICO TIPO ANEXOS
+export const TIPOANEXOS_OF = [{ value: "Ficha de processo", key: "Ficha de processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
+ { value: "Packing List", key: "Packing List" },
+ { value: "Orientação Qualidade", key: "Orientação Qualidade" },
+ { value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];
 //SENTIDO ENROLAMENTO
-export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }]
-export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }]
+export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }];
+export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
 //--ARTIGO
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'

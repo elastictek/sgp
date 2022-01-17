@@ -3,110 +3,182 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { API_URL } from "config";
-import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon } from "components/formLayout";
+import { fetch, fetchPost, serverPost, cancelToken } from "utils/fetch";
+import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace } from "components/formLayout";
 import Toolbar from "components/toolbar";
-import { Button, Spin } from "antd";
-import { LoadingOutlined, EditOutlined } from '@ant-design/icons';
-import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
+import { Button, Upload, message, Spin } from "antd";
+const { Dragger } = Upload;
+import { LoadingOutlined, EditOutlined, UploadOutlined, DeleteOutlined, InboxOutlined } from '@ant-design/icons';
+import Icon from '@ant-design/icons';
+import { API_URL, DATE_FORMAT, DATETIME_FORMAT, CSRF, MAX_UPLOAD_SIZE, TIPOANEXOS_OF, MEDIA_URL } from 'config';
 //import FormAttachementsUpsert from '../attachments/FormAttachementsUpsert';
 import { OFabricoContext } from './FormOFabricoValidar';
 
-const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
-    const [formTitle, setFormTitle] = useState({});
-    const iref = useRef();
-    const { record = {} } = showWrapper;
-    const onVisible = () => {
-        setShowWrapper(prev => ({ ...prev, show: !prev.show }));
+const loadAttachments = async ({ of_id, token }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ofattachmentsget/`, filter: { of_id }, sort: [], cancelToken: token });
+    return rows;
+}
+
+const StyledFile = styled.div`
+    display:flex;
+    flex-direction:row;
+    margin:2px;
+    font-size:11px;
+    padding-bottom:2px;
+    border-bottom:solid 1px #f5f5f5;
+    align-items: center;
+
+    &:hover,
+    &:focus {
+        background-color: #f5f5f5;
     }
+    .itemtype{
+        flex-basis: 180px;
+	    flex-grow: 0;
+	    flex-shrink: 0;
+    }
+    .itemfile{
+        flex:1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .itemfile span{
+        color:#2f54eb;
+        cursor:pointer;
+        font-weight:700;
+    }
+    .itemremove{
+        flex-basis: 30px;
+        flex-grow: 0;
+        flex-shrink: 0;
+        cursor:pointer;
+    }
+    .itemremove span:hover{
+        color:red;
+    }
+`;
+
+const StyledDragger = styled(Dragger)`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid gray;
+
+    .ant-upload.ant-upload-drag{
+        width: 80%;
+        margin: 20px;
+    }
+    .ant-upload-list.ant-upload-list-picture{
+        width: 100%;
+        margin: 20px;
+    }
+    .ant-upload-list{
+        border-radius: 2px;
+        padding: 10px;
+        border:solid 1px red;
+    }
+`;
+
+const File = ({ originNode, file, currFileList, onRemove, attachmentType, setAttachmentType }) => {
+
+    const onTypeChange = (value, option) => {
+        setAttachmentType(prev => ({ ...prev, [file.uid]: value }));
+    }
+
     return (
-        <WrapperForm
-            title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
-            type="drawer"
-            destroyOnClose={true}
-            //width={width}
-            mask={true}
-            /* style={{ maginTop: "48px" }} */
-            setVisible={onVisible}
-            visible={showWrapper.show}
-            width={800}
-            bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
-            footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
-        >
-           {/*  <FormSpecsUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /> */}
-        </WrapperForm>
+        <StyledFile>
+            <div className="itemtype"><SelectField onChange={onTypeChange} defaultValue={TIPOANEXOS_OF[0].key} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
+                optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
+            /></div>
+            <div className="itemfile">{file.name}</div>
+            <div className="itemremove" onClick={() => onRemove(file)}><DeleteOutlined /></div>
+        </StyledFile>
     );
 }
 
-/* const loadArtigosSpecsLookup = async ({ produto_id, token }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigosspecslookup/`, filter: { produto_id }, sort: [], cancelToken: token });
-    return rows;
-}
-const getArtigoSpecsItems = async ({ artigospecs_id, token }) => {
-    if (!artigospecs_id) {
-        return [];
-    }
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigospecsitemsget/`, filter: { artigospecs_id }, sort: [], cancelToken: token });
-    return rows;
-} */
+const AttachmentsList = ({ attachments, setLoading, loadData }) => {
+    const [changedTypes, setChangedTypes] = useState({});
 
-export default ({ changedValues = {} }) => {
+    const onRemove = (id) => {
+        setChangedTypes((prev) => {
+            const newchanges = { ...prev }
+            delete newchanges[id];
+            return newchanges;
+        });
+        setLoading(true);
+        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "remove", id } }).then(function (response) {
+            loadData();
+            console.log("data", response.data);
+        }).catch(function (error) {
+            message.error("Erro ao Remover Anexo!");
+        }).finally(() => {
+            setLoading(false);
+        });
+    }
+    const onTypeChange = (id, value) => {
+        setChangedTypes(prev => ({ ...prev, [id]: value }));
+    }
+    const saveChanges = () => {
+        setLoading(true);
+        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "changedtypes", changedTypes } }).then(function (response) {
+            console.log("data", response.data);
+        }).catch(function (error) {
+            message.error("Erro ao Alterar Anexos!");
+        }).finally(() => {
+            setLoading(false);
+        });
+    }
+
+    return (
+        <>
+            <Toolbar
+                style={{ width: "100%" }}
+                right={<Button type="primary" disabled={Object.keys(changedTypes).length == 0 ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
+            />
+            {attachments.map(v => <StyledFile key={`attf-${v.id}`}>
+                <a className="itemfile" href={`${MEDIA_URL}/${v.path.split("/").slice(1).join('/')}`} target="_blank"><span>{v.path.split("/").pop()}</span></a>
+                <div className="itemtype"><SelectField onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
+                    optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
+                /></div>
+                <div className="itemremove" onClick={() => onRemove(v.id)}><DeleteOutlined /></div>
+            </StyledFile>
+            )}
+        </>
+    );
+}
+
+
+export default ({ record, setFormTitle }) => {
     const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState({ show: false });
+    const [fileList, setFileList] = useState([]);
+    const [attachmentType, setAttachmentType] = useState({});
+    const [uploading, setUploading] = useState(false);
+    const [attachments, setAttachments] = useState([]);
     //const [artigosSpecs, setArtigosSpecs] = useState([]);
 
     useEffect(() => {
+        (setFormTitle) && setFormTitle({ title: `Anexos ${record.aggItem.cliente_nome}`, subTitle: `${record.aggItem.of_id} - ${record.aggItem.item_cod}` });
         const cancelFetch = cancelToken();
-        //loadData({ artigospecs_id: form.getFieldValue("artigospecs_id"), token: cancelFetch });
+        loadData({ token: cancelFetch });
         return (() => cancelFetch.cancel("Form Attachements Cancelled"));
     }, []);
 
-    useEffect(() => {
-        const cancelFetch = cancelToken();
-        /* if ("artigospecs_id" in changedValues) {
-            setLoading(true);
-            loadData({ artigospecs_id: changedValues.artigospecs_id, token: cancelFetch });
-        } */
-        return (() => cancelFetch.cancel("Form Attachements Cancelled"));
-    }, [changedValues]);
-
-    const loadData = (data = {}, type = "init") => {
-        const { artigospecs_id, token } = data;
+    const loadData = ({ token } = {}, type = "init") => {
+        const { of_id, tempof_id } = record.aggItem;
         switch (type) {
-            case "lookup":
-                setLoading(true);
-                (async () => {
-                    setArtigosSpecs(await loadArtigosSpecsLookup({ produto_id: ctx.produto_id, token }));
-                    setLoading(false);
-                })();
-                break;
             default:
                 if (!loading) {
                     setLoading(true);
                 }
                 (async () => {
-                    let _artigosspecs = artigosSpecs;
-                    if (ctx.produto_id) {
-                        _artigosspecs = await loadArtigosSpecsLookup({ produto_id: ctx.produto_id, token });
-                        setArtigosSpecs(_artigosspecs);
-                    }
-                    if (artigospecs_id) {
-                        let [artigoSpecs] = _artigosspecs.filter(v => v.id === artigospecs_id);
-                        const artigoSpecsItems = await getArtigoSpecsItems({ artigospecs_id, token });
-                        const fieldsValue = { nitems: artigoSpecsItems.length };
-                        for (let [i, v] of artigoSpecsItems.entries()) {
-                            fieldsValue[`key-${i}`] = v.item_key;
-                            fieldsValue[`des-${i}`] = v.item_des;
-                            const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
-                            for (let [iV, vV] of vals.entries()) {
-                                fieldsValue[`v${v.item_key}-${iV}`] = vV;
-                            }
-                        }
-                        artigoSpecs = { ...artigoSpecs, cliente_cod: { key: artigoSpecs.cliente_cod, value: artigoSpecs.cliente_cod, label: artigoSpecs.cliente_nome } };
-                        form.setFieldsValue({ artigoSpecs, artigoSpecsItems: fieldsValue });
-                    }
+                    setAttachments(await loadAttachments({ of_id: tempof_id, token }));
+                    setFileList([]);
+                    setAttachmentType({});
+                    setUploading(false);
                     setLoading(false);
                 })();
         }
@@ -120,10 +192,71 @@ export default ({ changedValues = {} }) => {
         }
     }
 
+    const onChange = ({ newFileList }) => {
+        //setFileList(newFileList);
+    };
+
+
+    const beforeUpload = (file, fl) => {
+        const flst = [];
+        const filesType = {};
+        for (const f of fl) {
+            const isSize = f.size / 1024 / 1024 < MAX_UPLOAD_SIZE;
+            if (!isSize) {
+                message.error(`O ficheiro tem de ser inferior a ${MAX_UPLOAD_SIZE}MB!`);
+            } else {
+                if (f.uid) {
+                    filesType[f.uid] = TIPOANEXOS_OF[0].key;
+                }
+                flst.push(f);
+            }
+        }
+        setAttachmentType(prev => ({ ...prev, ...filesType }));
+        setFileList([...fileList, ...flst]);
+        return false;
+    }
+
+    const onRemove = (file) => {
+        setAttachmentType((prev) => {
+            const newtypes = { ...prev }
+            delete newtypes[file.uid];
+            return newtypes;
+        });
+        setFileList(prev => {
+            const index = prev.indexOf(file);
+            const newFileList = prev.slice();
+            newFileList.splice(index, 1);
+            return newFileList;
+        });
+    }
+
+    const handleUpload = () => {
+        const { of_id, tempof_id } = record.aggItem;
+        const formData = new FormData();
+        formData.append("of_id", of_id);
+        formData.append("tempof_id", tempof_id);
+
+        fileList.forEach(file => {
+            formData.append(file.uid, file);
+            formData.append(`${file.uid}_type`, attachmentType[file.uid]);
+        });
+
+        setUploading(true);
+
+        serverPost({ url: `${API_URL}/ofupload/`, parameters: formData, headers: { "Content-type": "multipart/form-data" } }).then(function (response) {
+            message.success(response.data.title);
+        }).catch(function (error) {
+            message.error("Erro ao submeter os Ficheiros!");
+            console.log(error);
+        }).finally(() => {
+            loadData();
+        });
+    };
+
+
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
-                <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
                 <FormLayout
                     id="LAY-ARTIGOSPECS"
                     guides={guides}
@@ -145,6 +278,59 @@ export default ({ changedValues = {} }) => {
                         wide: 16, margin: "2px", layout: "horizontal", overflow: false
                     }}
                 >
+                    <FieldSet wide={16} margin={false} layout="vertical">
+                        <AttachmentsList attachments={attachments} setLoading={setLoading} loadData={loadData}/>
+                    </FieldSet>
+                    <VerticalSpace />
+                    <FieldSet wide={16} margin={false} layout="vertical">
+                        <StyledDragger
+                            method='post'
+                            action={`${API_URL}/ofupload/`}
+                            headers={{ "X-CSRFToken": CSRF }}
+                            withCredentials={true}
+                            fileList={fileList}
+                            onChange={onChange}
+                            maxCount={10}
+                            beforeUpload={beforeUpload}
+                            multiple
+                            onRemove={onRemove}
+                            itemRender={(originNode, file, currFileList) => (
+                                <File originNode={originNode} file={file} currFileList={currFileList} onRemove={onRemove} attachmentType={attachmentType} setAttachmentType={setAttachmentType} />
+                            )}
+                            >
+                            <p className="ant-upload-drag-icon">
+                                <InboxOutlined style={{ color: "green" }} />
+                            </p>
+                            <p className="ant-upload-text">Drag files to upload</p>
+                        </StyledDragger>
+
+                        {/* <Upload
+                            method='post'
+                            action={`${API_URL}/ofupload/`}
+                            headers={{ "X-CSRFToken": CSRF }}
+                            withCredentials={true}
+                            fileList={fileList}
+                            onChange={onChange}
+                            maxCount={10}
+                            beforeUpload={beforeUpload}
+                            multiple
+                            onRemove={onRemove}
+                            itemRender={(originNode, file, currFileList) => (
+                                <File originNode={originNode} file={file} currFileList={currFileList} onRemove={onRemove} attachmentType={attachmentType} setAttachmentType={setAttachmentType} />
+                            )}
+                        >
+                            <Button icon={<UploadOutlined />}>Selecionar Ficheiro(s)</Button>
+                        </Upload> */}
+                        <Button
+                            type="primary"
+                            onClick={handleUpload}
+                            disabled={fileList.length === 0}
+                            loading={uploading}
+                            style={{ marginTop: 16 }}
+                        >
+                            {uploading ? 'A submeter...' : 'Submeter'}
+                        </Button>
+                    </FieldSet>
                     {/* <FieldSet>
                         <Toolbar
                             style={{ width: "100%" }}

@@ -16,14 +16,14 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from django.db import connections, transaction
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
 
-from rest_framework.renderers import JSONRenderer
+from rest_framework.renderers import JSONRenderer, MultiPartRenderer
 from rest_framework.utils import encoders, json
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 import collections
 import hashlib
 import math
-
+from django.core.files.storage import FileSystemStorage
 import time
 
 
@@ -1403,10 +1403,89 @@ def UpdateCortesOrdem(request, format=None):
 
 #endregion
 
-#region TEMP ORDEMFABRICO SCHEMA
-def computeRolledLength(aggId):
-    pass
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def OfAttachmentsGet(request, format=None):
+    #conn = connections[connGatewayName].cursor()
+    cols = ['*']
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'of_id = :of_id', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_attachments
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+# @transaction.atomic()
+def OfAttachmentsChange(request, format=None):
+    print(f"{request.data}")
+    if "type" in request.data:
+        try:
+            with transaction.atomic():
+                with connections["default"].cursor() as cursor:
+                    if request.data.get("type") == "changedtypes":
+                        for key, value in request.data.get("changedTypes").items():
+                            dml = db.dml(TypeDml.UPDATE, {"tipo_doc":value}, "producao_attachments",{"id":key},None,None)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                    elif request.data.get("type") == "remove":
+                            dml = db.dml(TypeDml.DELETE, {}, "producao_attachments",{"id":request.data.get("id")},None,None)
+                            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "Anexo(s) alterado(s) com Sucesso!", "subTitle":''})
+        except Error:
+            return Response({"status": "error", "title": "Erro ao Alterar Anexo(s)!"})
+    return Response({"status": "error", "title": "Erro de Parâmetros"})
+    
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+# @transaction.atomic()
+def OfUpload(request, format=None):
+    statements = []
+    folder = request.data.get("of_id").replace("\\","_").replace("/","_")
+    fs = FileSystemStorage(f'docs/OF/{folder}')
+    for k, v in request.FILES.items():
+        filename = fs.save(f'{v.name}', v)
+        statements.append(f"('{request.data.get(f'{k}_type')}','docs/OF/{folder}/{filename}',{request.data.get('tempof_id')},'{datetime.now()}')")
+        #data.append({"tipo_doc":request.data.get(f'{k}_type'),"path":f'docs/OF/{folder}/{filename}'})
+    statement = f"""
+        INSERT INTO 
+        producao_attachments(tipo_doc,path,of_id,created_date)
+        VALUES
+        {','.join(statements)}
+    """
+    if len(statements) == 0:
+        return Response({"status": "error", "title": "Não foram selecionados Ficheiros!"})
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                db.execute(statement, cursor, {})
+        return Response({"status": "success","id":"", "title": "Os Ficheiros foram Guardados com Sucesso!", "subTitle":""})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao Guardar os Ficheiros!"})
+
+
+#region TEMP ORDEMFABRICO SCHEMA
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -1573,8 +1652,6 @@ def SaveTempOrdemFabrico(request, format=None):
 
     def upsertTempAggOrdemFabrico(data, ids, cursor):
         dta = {
-            'core_cod': data['core_cod'] if 'core_cod' in data else None,
-            'core_des': data['core_des'] if 'core_des' in data else None,
             'status': data['status'] if 'status' in data else 0,
             'sentido_enrolamento': data['sentido_enrolamento'] if 'sentido_enrolamento' in data else None,
             'amostragem': data['f_amostragem'] if 'f_amostragem' in data else None,
@@ -1582,6 +1659,9 @@ def SaveTempOrdemFabrico(request, format=None):
             'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
             'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
         }
+        if "core_cod" in data:
+            dta["core_cod"] = data["core_cod"]
+            dta["core_des"] = data["core_des"]
         if "formulacao_id" in data:
             dta["formulacao_id"] = data["formulacao_id"]
         if "cortesordem_id" in data:
@@ -1704,9 +1784,10 @@ def SaveTempOrdemFabrico(request, format=None):
                 emendas_id = cursor.lastrowid
             else:
                 emendas_id = data["emendas_id"] if "emendas_id" in data and data["emendas_id"] is not None else emenda["id"]
-            dml = db.dml(TypeDml.UPDATE,{"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            dml = db.dml(TypeDml.UPDATE,{"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"],"cliente_cod":data["cliente_cod"],"cliente_nome":data["cliente_nome"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
+    
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:

@@ -6,7 +6,7 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
-import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule } from "components/formLayout";
+import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber } from "antd";
@@ -21,12 +21,18 @@ const schema = (keys, excludeKeys) => {
         nemendas_paletescontentor: Joi.number().label("Nº Emendas Por Palete/Contentor").min(0).required(),
         nemendas_rolo: Joi.number().label("Nº Emendas Por Bobine").min(0).required(),
         maximo: Joi.number().label("Percentagem Máxima de Emendas").min(0).required(),
-        tipo_emenda: Joi.number().label("Tipo Emenda").required()
+        tipo_emenda: Joi.number().label("Tipo Emenda").required(),
+        cliente_cod:Joi.object().label("Cliente").required()
     }, keys, excludeKeys).unknown(true);
 }
 
 const loadEmendasLookup = async ({ cliente_cod, artigo_cod, token }) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/emendaslookup/`, filter: { cliente_cod, artigo_cod }, pagination: { limit: 1 }, sort: [{ column: 'id', direction: 'DESC' }], cancelToken: token });
+    return rows;
+}
+
+const loadCustomersLookup = async (value) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellcustomerslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_customer"]: `%${value.replaceAll(' ', '%%')}%` } });
     return rows;
 }
 
@@ -37,8 +43,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
 
     const loadData = (data = {}, type = "init") => {
         const { emendas, paletesstock, ...aggItem } = record.aggItem;
+        const cliente_cod = (aggItem.cliente_cod) ? { label: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod } : null;
         const { token } = data;
-
         switch (type) {
             default:
                 (async () => {
@@ -57,13 +63,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     const n_paletes_stock = !(paletesstock) ? 0 : paletesstock.length;
                     const n_paletes_total = (!aggItem.n_paletes_total) ? (!n_paletes?.total?.n_paletes ? n_paletes_stock : Math.round(n_paletes.total.n_paletes)) : aggItem.n_paletes_total;
                     const n_paletes_prod = n_paletes_total - n_paletes_stock;
-                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod });
+                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod });
                 })();
         }
     }
 
     const init = () => {
-        (setFormTitle) && setFormTitle({ title: `Definições ${record.aggItem.cliente_nome}`, subTitle: `${record.aggItem.of_id} - ${record.aggItem.item_cod}` });
+        const nome = (!record.aggItem.cliente_nome) ? "" : record.aggItem.cliente_nome;
+        (setFormTitle) && setFormTitle({ title: `Definições ${nome}`, subTitle: `${record.aggItem.of_id} - ${record.aggItem.item_cod}` });
         loadData();
     }
 
@@ -85,7 +92,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         const { emendas, paletesstock, tempof_id, ...aggItem } = record.aggItem;
         const v = schema().validate(values, { abortEarly: false });
         if (!v.error) {
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
+            const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, ...cliente, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();
@@ -119,7 +127,27 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         }}
                     >
 
-                        <HorizontalRule title="1. Nº de Paletes" />
+                        <HorizontalRule title="1. Cliente" />
+                        <VerticalSpace />
+                        <FieldSet margin={false} field={{ wide: [8] }}>
+                            <Field forInput={record.aggItem.order_cod ? false : true} name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
+                                <SelectDebounceField
+                                    placeholder="Cliente"
+                                    size="small"
+                                    keyField="BPCNUM_0"
+                                    textField="BPCNAM_0"
+                                    showSearch
+                                    showArrow
+                                    allowClear
+                                    fetchOptions={loadCustomersLookup}
+                                />
+                            </Field>
+                        </FieldSet>
+                        <VerticalSpace height="24px" />
+
+
+
+                        <HorizontalRule title="2. Nº de Paletes" />
                         <VerticalSpace />
                         <FieldSet margin={false}>
                             <Field wide={2} name="n_paletes_total" label={{ text: "Total" }}><InputNumber size="small" min={0} max={500} /></Field>
@@ -129,7 +157,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                             <Field required={false} wide={2} name="n_paletes_prod" label={{ text: "A Produzir" }} forInput={false}><InputNumber size="small" min={0} max={500} /></Field>
                         </FieldSet>
                         <VerticalSpace />
-                        <HorizontalRule title="2. Emendas" />
+                        <HorizontalRule title="3. Emendas" />
                         <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: 4, style: { alignSelf: "left" }, label: { pos: "top", wrap: false, ellipsis: false, width: "130px" } }} layout="vertical">
                             <Field name="tipo_emenda" label={{ text: "Tipo Emenda" }}>

@@ -64,8 +64,9 @@ class TempOrdemFabrico(models.Model):
 
 class Attachments(models.Model):
     of = models.ForeignKey('producao.TempOrdemFabrico', on_delete=models.PROTECT, verbose_name="Temporary Ordem fabrico")
-    tipo_doc = models.IntegerField(verbose_name="Tipo Documento")
+    tipo_doc = models.CharField(verbose_name="Tipo Documento", max_length=100)
     path=models.TextField(max_length = 1000, verbose_name = "Caminho", default = "")
+    created_date = models.DateTimeField(auto_now=True, verbose_name="Data Criação")
     
 
 class Emendas(models.Model):

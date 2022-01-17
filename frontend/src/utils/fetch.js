@@ -88,8 +88,19 @@ export const fetchPostBuffer = async ({ url = "", filter = {}, sort = [], pagina
   return await fetch({ url, responseType: "arraybuffer", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const serverPost = async ({ url = "", timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await serverRequest({ url, method: "post", timeout, parameters, cancelToken }, false);
+export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers={}, cancelToken } = {}) => {
+  const params = { method, responseType, [paramType(method)]: parameters, headers };
+  if (cancelToken) {
+    setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
+  }
+  return axios({
+    url: url,
+    ...params,
+    ...(cancelToken && { cancelToken: cancelToken.token })
+  });
+
+
+  //return await serverRequest({ url, method: "post", timeout, parameters, cancelToken }, false);
 };
 
 export const loadFromFile = file => new Promise((resolve, reject) => {
