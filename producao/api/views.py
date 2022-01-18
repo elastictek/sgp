@@ -1658,7 +1658,7 @@ def SaveTempOrdemFabrico(request, format=None):
     def addProduto(data,cursor):
         artigo = data["artigo"] if "artigo" in data else None
         if artigo is not None:            
-            f = Filters({"produto_cod": artigo["produto_cod"].lower() })
+            f = Filters({"produto_cod": artigo["produto_cod"].lower().strip() })
             f.where()
             f.add(f'lower(produto_cod) = :produto_cod', True)
             f.value("and")
