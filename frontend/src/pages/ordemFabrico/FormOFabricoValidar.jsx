@@ -48,6 +48,7 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [fieldStatus, setFieldStatus] = useState({});
+    const submitForProduction = useRef(false);
 
     const [activeTab, setActiveTab] = useState("1");
     const [paletizacaoChangedValues, setPaletizacaoChangedValues] = useState({});
@@ -125,6 +126,9 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
     }
 
     const onFinish = async (values) => {
+        const forproduction =submitForProduction.current;
+        submitForProduction.current = false;
+
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["start_prev_date", "end_prev_date"];
         const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
@@ -143,7 +147,8 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
         if (!v.error) { }
         if (status.error.length === 0) {
             const { start_prev_date, end_prev_date } = values;
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, qty_item:record.qty_item, start_prev_date:start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date:end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
+            console.log("save---",record);
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item:record.qty_item, start_prev_date:start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date:end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
             setResultMessage(response.data);
         }
         setFieldStatus(diff.fields);
@@ -160,6 +165,11 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
 
     const onClose = (reload = false) => {
         closeParent();
+    }
+
+    const onSubmitForProduction = ()=>{
+        submitForProduction.current=true;
+        form.submit();
     }
 
     return (
@@ -210,7 +220,7 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
                 </ResultMessage>
                 <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Submeter para Produção</Button>
+                        <Button type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
                         <Button onClick={() => form.submit()}>Guardar Ordem de Fabrico</Button>
                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                     </Space>

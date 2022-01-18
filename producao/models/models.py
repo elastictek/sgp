@@ -169,6 +169,7 @@ class Perfil(models.Model):
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 90 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 HE'),
+                ('NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HE'),
@@ -201,7 +202,8 @@ class Perfil(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
-                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80')
+                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
+                ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra')
         )
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username")
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -245,11 +247,12 @@ class Perfil(models.Model):
 class Artigo(models.Model):
     GSM = (('105', '105 gsm'), ('100', '100 gsm'), ('95', '95 gsm'), ('90', '90 gsm'), ('80', '80 gsm'), ('60', '60 gsm'), ('75', '75 gsm'), ('57', '57 gsm'), ('50', '50 gsm'), ('48', '48 gsm'), ('45', '45 gsm'), ('25', '25 gsm'))
     CORE = (('3', '3'), ('6', '6'))
-    FORMU = (('HE', 'HE'), ('HT', 'HT'),('', ''))
+    FORMU = (('HE', 'HE'), ('HT', 'HT'),('NA', 'NA'))
     PRODUTO = (
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'), 
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 90 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 HE'), 
+                ('NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HT'), 
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HT'), 
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HE'), 
@@ -280,7 +283,8 @@ class Artigo(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
-                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80')
+                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
+                ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra')
             )                                                                                                                                                                                      
     cod = models.CharField(verbose_name="Cód. Artigo", max_length=18, unique=True)
     des = models.CharField(verbose_name="Descrição artigo", max_length=200, unique=True)
@@ -327,6 +331,7 @@ class Largura(models.Model):
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 90 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 HE'),
+                ('NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HT'),
                 ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HE'),
@@ -359,7 +364,8 @@ class Largura(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
-                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80')
+                ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
+                ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra')
     )
     perfil = models.ForeignKey(Perfil, on_delete=models.CASCADE, verbose_name="Largura")
     num_bobine = models.PositiveIntegerField(verbose_name="Bobine nº")
@@ -502,7 +508,7 @@ class TrasporteArtigoCliente(models.Model):
 class Bobinagem(models.Model):
     STATUSP = (('G', 'G'), ('DM', 'DM12'), ('R', 'R'), ('BA', 'BA'), ('LAB', 'LAB'), ('IND', 'IND'), ('HOLD', 'HOLD'), ('SC', 'SC'))
     TIPODESP = (('R', 'R'), ('BA', 'BA'))
-    TIPONW = (('Suominen 25 gsm', 'Suominen 25 gsm'),('Sandler SPUNLACE 100%PP', 'Sandler SPUNLACE 100%PP'), ('BCN 70%PP/30%PE', 'BCN 70%PP/30%PE'), ('Sandler', 'Sandler'), ('PEGAS BICO 17gsm', 'PEGAS BICO 17gsm'), ('Suominen', 'Suominen'), ('BCN', 'BCN'), ('ORMA', 'ORMA'), ('PEGAS 22', 'PEGAS 22'), ('SAWASOFT', 'SAWASOFT'), ('SAWABOND', 'SAWABOND'), ('Teksis', 'Teksis'), ('Union', 'Union'), ('Radici', 'Radici'), ('Fitesa', 'Fitesa'), ('ALBIS 23', 'ALBIS 23'), ('ALBIS 16', 'ALBIS 16'), ('Union Pillow', 'Union Pillow'), ('Union UV', 'Union UV'), ('Jacob Holm', 'Jacob Holm'), ('Nonwoven Nikoo 25gsm Spunlace 100PP', 'Nonwoven Nikoo 25gsm Spunlace 100PP'), ('ELA-ACE', 'ELA-ACE'), ('ELA-SPUN', 'ELA-SPUN'), ('Nonwoven Nikoo 28gsm Spunlace 100PP', 'Nonwoven Nikoo 28gsm Spunlace 100PP'), ('NW Vaporjet 25gsm Spunlace 100PP 2200', 'NW Vaporjet 25gsm Spunlace 100PP 2200'), ('Sandler Sawabond 7059 24gsm', 'Sandler Sawabond 7059 24gsm'), ('Nonwoven ANT - ANTJET 25gsm 100PP 2200', 'Nonwoven ANT - ANTJET 25gsm 100PP 2200'),('Sandler 16gsm Sawabond 100PP 2200', 'Sandler 16gsm Sawabond 100PP 2200'))
+    TIPONW = (('Suominen 25 gsm', 'Suominen 25 gsm'),('Sandler SPUNLACE 100%PP', 'Sandler SPUNLACE 100%PP'), ('BCN 70%PP/30%PE', 'BCN 70%PP/30%PE'), ('Sandler', 'Sandler'), ('PEGAS BICO 17gsm', 'PEGAS BICO 17gsm'), ('Suominen', 'Suominen'), ('BCN', 'BCN'), ('ORMA', 'ORMA'), ('PEGAS 22', 'PEGAS 22'), ('SAWASOFT', 'SAWASOFT'), ('SAWABOND', 'SAWABOND'), ('Teksis', 'Teksis'), ('Union', 'Union'), ('Radici', 'Radici'), ('Fitesa', 'Fitesa'), ('ALBIS 23', 'ALBIS 23'), ('ALBIS 16', 'ALBIS 16'), ('Union Pillow', 'Union Pillow'), ('Union UV', 'Union UV'), ('Jacob Holm', 'Jacob Holm'), ('Nonwoven Nikoo 25gsm Spunlace 100PP', 'Nonwoven Nikoo 25gsm Spunlace 100PP'), ('ELA-ACE', 'ELA-ACE'), ('ELA-SPUN', 'ELA-SPUN'), ('Nonwoven Nikoo 28gsm Spunlace 100PP', 'Nonwoven Nikoo 28gsm Spunlace 100PP'), ('NW Vaporjet 25gsm Spunlace 100PP 2200', 'NW Vaporjet 25gsm Spunlace 100PP 2200'), ('Sandler Sawabond 7059 24gsm', 'Sandler Sawabond 7059 24gsm'), ('Nonwoven ANT - ANTJET 25gsm 100PP 2200', 'Nonwoven ANT - ANTJET 25gsm 100PP 2200'),('Sandler 16gsm Sawabond 100PP 2200', 'Sandler 16gsm Sawabond 100PP 2200'),('Teksis 52160EL 16gsm L2200', 'Teksis 52160EL 16gsm L2200'),('Union KB1600PHW 16gsm L2200', 'Union KB1600PHW 16gsm L2200'))
     user=models.ForeignKey(User, on_delete = models.PROTECT, verbose_name = "Username")
     perfil=models.ForeignKey(Perfil, on_delete = models.PROTECT, verbose_name = "Perfil")
     num_emendas=models.IntegerField(verbose_name = "Número de emendas", null = True, blank = True, default = 0)
@@ -779,6 +785,7 @@ class Bobine(models.Model):
             ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'), 
             ('STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE', 'STRETCHABLE NONWOVEN ELASTIC BANDS ELA-ACE 100 HE'), 
             ('NONWOVEN ELASTIC BANDS ELA-ACE 90 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 HE'), 
+            ('NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT'),
             ('NONWOVEN ELASTIC BANDS ELA-ACE 100 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 100 HT'), 
             ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HT', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HT'), 
             ('NONWOVEN ELASTIC BANDS ELA-ACE 95 HE', 'NONWOVEN ELASTIC BANDS ELA-ACE 95 HE'), 

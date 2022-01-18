@@ -1,0 +1,129 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+
+
+{% block title %}Retrabalho | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <input type="button" value="Voltar" class="btn btn-outline-primary"  onclick="history.back()">
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Bobinagem</h3>
+        <h3 class="text-center">{{ instance.nome }}</h3>
+    </div>
+    <div>
+        {% if messages %}
+            <ul class="messages">
+                <h1 class="erro">ERRO!</h1>
+                {% for message in messages %}
+                <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    <br>
+    <form method="POST" action="" onkeypress="return event.keyCode != 13;">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Bobine Original 1:</label></div>
+                <div class="col-3 form-control-sm">{{ form.bobine_1 }}</div>
+                <div class="col-2"><label class="form-label">Metros enrolados 1:</label></div>
+                <div class="col-5 form-control-sm">{{ form.m_bobine_1 }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Bobine Original 2:</label></div>
+                <div class="col-3 form-control-sm">{{ form.bobine_2 }}</div>
+                <div class="col-2"><label class="form-label">Metros enrolados 2:</label></div>
+                <div class="col-5 form-control-sm">{{ form.m_bobine_2 }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Bobine Original 3:</label></div>
+                <div class="col-3 form-control-sm">{{ form.bobine_3 }}</div>
+                <div class="col-2"><label class="form-label">Metros enrolados 3:</label></div>
+                <div class="col-5 form-control-sm">{{ form.m_bobine_3 }}</div>
+            </div>
+            
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Submeter</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+
+
+
+<!-- 
+<div>
+    <input type="button" value="Voltar" id="confirm-btn" onclick="history.back()">
+</div>
+<div class="title_block-list">
+    <h1>Bobinagem</h1>
+    <h2>{{ instance.nome }}</h2>
+</div>
+<div>
+    {% if messages %}
+        <ul class="messages">
+            <h1 class="erro">ERRO!</h1>
+            {% for message in messages %}
+            <li class="{{ message.tags }}" id="error">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+<form action="" method="POST" class="submission-form" onkeypress="return event.keyCode != 13;">
+    <div class="content_details">
+        {% csrf_token %}
+        <div>
+            <div><label for="id_bobine_1">Bobine Original 1</label>{{ form.bobine_1 }}</div>
+            <div><label for="id_bobine_2">Bobine Original 2</label>{{ form.bobine_2 }}</div>
+            <div><label for="id_bobine_3">Bobine Original 3</label>{{ form.bobine_3 }}</div>
+        </div>
+        <div>
+            <div><label for="id_m_bobine_1">Metros enrolados 1</label>{{ form.m_bobine_1 }}</div>
+            <div><label for="id_m_bobine_2">Metros enrolados 2</label>{{ form.m_bobine_2 }}</div>
+            <div><label for="id_m_bobine_3">Metros enrolados 3</label>{{ form.m_bobine_3 }}</div>
+        </div>
+    </div>
+    <input type="submit" value="Validar" id="validate-btn">
+</form>
+        
+    
+     -->
+   
+<!--     
+   
+<div class="container">
+    <div class="row">
+            <h1 id="center">Retrabalhar bobine {{ instance.nome }}</h1>
+        <div class="col-md-6">
+            {% retrabalho_form_v2 form %}
+        </div>
+        <br>
+        <br>
+        <br>
+        <div class="col-md-6">
+            {% if messages %}
+            <ul class="messages">
+                <h1 class="erro">ERRO!</h1>
+                {% for message in messages %}
+                <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+        </div>
+        <div class="col-md-6">
+            
+
+        </div>
+
+    </div>
+</div> -->
+{% endblock %}

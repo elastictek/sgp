@@ -1,0 +1,79 @@
+{% extends "layout.html" %} 
+{% load bootstrap3 %}
+{% load static %}
+{% load producao_tags %}
+{% block title %}Movimentos MP | {{ block.super }}{% endblock %} 
+{% block content %}
+<div>
+    <a href="{% url 'producao:reciclado_home' %}"  class="btn_back" role="button">Voltar</a>
+    {% if request.user|has_group:"Produção Supervisor" or request.user|has_group:"Produção Operador" %}
+    <a href="{% url 'producao:movimento_create' %}"  class="btn_create" role="button">Criar Movimento MP</a>
+    {% endif %}
+</div>
+<div class="title_block-list">
+    <h1>Movimentos MP</h1>
+</div>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="q">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:movimentos_list' %}">Reset</a>
+    </form>
+</div>
+<div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th id="designacao">Lote</th>
+                <th>Data e hora de movimento</th>
+                <th>Tipo de Movimento</th>
+                <th>Motivo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimentos %}
+            <tr>
+                <td id="designacao">{{ mov.lote }}</td>
+                <td>{{ mov.timestamp|date:"d-n-Y G:i" }}</td>
+                {% if mov.tipo == 'Entrada' %}<td id="estado_good">{{ mov.tipo }}</td>
+                {% elif mov.tipo == 'NOK' %}<td id="estado_rejected">{{ mov.tipo }}</td>{% endif %}
+                <td id="designacao">{{ mov.motivo }}</td>
+
+           </tr>
+            </tr>
+            {% endfor%}
+        </tbody>
+    </table>
+</div>
+<div class="pagination">
+    {% if movimentos.has_other_pages %}
+    <div>
+        <span>
+            {% if movimentos.has_previous %}
+                <a role="button" class="fas fa-angle-double-left" href="?{% if query %}q={{query}}&{% endif %}page=1"></a>
+                <a role="button" class="fas fa-angle-left" href="?{% if query %}q={{query}}&{% endif %}page={{ movimentos.previous_page_number }}"></a>
+            {% endif %}
+    
+            <span>
+                Pág. {{ movimentos.number }} de {{ movimentos.paginator.num_pages }}
+            </span>
+    
+            {% if movimentos.has_next %}
+                <a role="button" class="fas fa-angle-right" href="?{% if query %}q={{query}}&{% endif %}page={{ movimentos.next_page_number }}"></a>
+                <a role="button" class="fas fa-angle-double-right" href="?{% if query %}q={{query}}&{% endif %}page={{ movimentos.paginator.num_pages }}"></a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+</div>
+             
+      
+                
+
+            
+            
+
+
+
+{% endblock %}

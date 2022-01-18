@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="title_block-list">
+    
+
+
+    <form action="." method="POST">{% csrf_token %}
+        <h3>Deseja apagar a ordem de fabrico {{ ordem }}? </h3>
+        
+        <input type="button" value="Cancelar" id="confirm-btn" onclick="history.back()">
+        <input type="submit" value="Sim" id="confirm-btn">
+       
+        
+    </form>
+    
+</div>
+
+    
+
+{% endblock %}

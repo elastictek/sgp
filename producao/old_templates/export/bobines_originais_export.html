@@ -1,0 +1,101 @@
+{% extends "layout.html"%} 
+{% block title %}Exportar Bobines Originais | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:dadosbase' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Exportar bobines originais</h3>
+    </div>
+    <br>
+    <form method="POST" action="" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if messages %}
+               
+            {% for message in messages %}
+                {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="alert alert-danger" role="alert">
+                    <h3 id="center">ERRO!</h3>
+                    <p id="center"> {{message}} </p>
+                    </div>
+                {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                <div class="alert alert-success" role="alert">
+                    <h3 id="center">SUCESSO!</h3>
+                    <p id="center"> {{message}} </p>
+                </div>
+                {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                <div class="alert alert-warning" role="alert">
+                    <h3 id="center">JÁ EXISTE!</h3>
+                    <p id="center"> {{message}} </p>
+                </div>
+                {% endif %}
+            {% endfor %}
+                
+        {% endif %}
+        <div class="container">
+            
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Carga:</label></div>
+                <div class="col-4 form-control-sm">{{ form.carga }}</div>
+                <div class="col-2"><label class="form-label">PRF:</label></div>
+                <div class="col-4 form-control-sm">{{ form.prf }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Lote Nonwoven:</label></div>
+                <div class="col-3 form-control-sm">{{ form.nwlote }}</div>
+            </div>
+                
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Tipo Nonwoven:</label></div>
+                <div class="col-4 form-control-sm">{{ form.nwtipo }}</div>
+                
+                
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Data Inicio:</label></div>
+                <div class="col-4 form-control-sm">{{ form.data_inicio }}</div>
+                <div class="col-2"><label class="form-label">Data Fim:</label></div>
+                <div class="col-3 form-control-sm">{{ form.data_fim }}</div>
+                
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Bobines:</label></div>
+                <div class="col-4">{{ form.bobines }}</div>               
+                <div class="col-2"><label class="form-label">Paletes:</label></div>
+                <div class="col-4">{{ form.paletes }}</div>               
+            </div>
+            <br>
+            <div class="row mt-2">
+                <p class="text-center">Para saber as bobines originais, faça upload de um ficheiro Excel com as bobinagens finais desejadas.</p>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Bobinagens:</label></div>
+                <div class="col-4">{{ form.bobinagens }}</div>               
+                               
+            </div>
+           
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Exportar</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+<br>
+<div class="container">
+    <h4>Utilização dos filtros:</h4>
+    <ul>
+        <li>Os filtros Carga, PRF, Lote Nonwoven, Bobines, Paletes e Bobinagens têm de ser utilizados individualmente.</li>
+        <li>Os filtros Tipo Nonwoven, Data Inicio e Data Fim têm de ser utilizados em conjunto.</li>
+        <li>Os filtros Data Inicio e Data Fim podem ser utilizados em conjunto, sem o Tipo Nonwoven, devolvendo todas as bobines produzidas no intervalo dado.</li>
+        <li>Todos os ficheiro carregados terão de ser formato Excel.</li>
+        <li>Os dados dos ficheiro carregado apenas poderam ter dados na coluna A1, sem cabeçalho.</li>
+        <li>Aquando da utilização de um filtro ou conjuntos de filtros(acima referidos), verificar se o resto dos campos estão vazios.</li>
+      </ul>
+</div>
+
+{% endblock %}

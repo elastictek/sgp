@@ -1,0 +1,39 @@
+{% extends "layout.html"%} 
+{% block title %}Criar Artigo | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:encomenda_detail' pk=enc.pk %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Editar Encomenda {{ enc }}</h3>
+    </div>
+    <br>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">PRF:</label></div>
+                <div class="col-3 form-control-sm">{{ form.prf }}</div>
+                <div class="col-2"><label class="form-label">Order Number:</label></div>
+                <div class="col-5 form-control-sm">{{ form.order_num }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">SQM:</label></div>
+                <div class="col-3 form-control-sm">{{ form.sqm }}</div>
+                <div class="col-2"><label class="form-label">Nº de Paletes:</label></div>
+                <div class="col-5 form-control-sm">{{ form.num_paletes }}</div>
+            </div>
+            
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Submeter</button>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

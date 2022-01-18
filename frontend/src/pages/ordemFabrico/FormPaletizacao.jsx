@@ -64,7 +64,7 @@ const setId = (id) => {
     return { key: "insert", values: {} };
 }
 
-export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* , changedValues = {} */ }) => {
     /* const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext); */
     const [form] = Form.useForm();
     const [guides, setGuides] = useState(false);
@@ -103,7 +103,10 @@ export default ({ record, setFormTitle, parentRef/* , changedValues = {} */ }) =
         const paletizacao_id = form.getFieldValue("paletizacao_id");
         const ofabrico = record.aggItem.tempof_id;
         const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type:"paletizacao", paletizacao_id, ofabrico } });
-        setResultMessage(response.data);
+        if (response.data.status !== "error") {
+            parentReload({ agg_id: record.aggItem.id });
+            closeParent();
+        }
         // const status = { error: [], warning: [], info: [], success: [] };
         // const msgKeys = ["start_date", "start_hour", "end_date", "end_hour"];
         // const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;

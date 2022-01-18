@@ -1,0 +1,166 @@
+{% extends "layout.html"%} 
+{% block title %}Encomendas | {{ block.super }}{% endblock %}
+{% load producao_tags %}
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:planeamento_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+                                                                                                                                                                                                  
+    
+</div>
+<br>
+<div class="container">
+    <div>
+        <h3 class="text-center">Encomendas</h3>
+    </div>
+    <div>
+        <form action="" method="GET">
+            <input type="text" name="q">
+            <input type="submit" value="Procurar" class="btn btn-primary">
+            <a href="{% url 'producao:encomenda_list' %}" class="btn btn-outline-primary">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Encomenda</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Proforma</th>
+                    <th scope="col">Data</th>
+                    <th scope="col">M<sup>2</sup></th>    
+                    <th scope="col">Nº de Cargas</th>                              
+                    <th scope="col">Nº de Paletes</th>                              
+                    <th scope="col">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in encomenda %}
+            <tr>
+                <td id="designacao"><a href="{% url 'producao:encomenda_detail' pk=e.pk %}">{{ e.eef }}</a></td>
+                <td id="designacao">{{ e.cliente }}</td>
+                <td>{{ e.prf }}</td>
+                <td>{{ e.data_encomenda|date:"d-n-Y" }}</td>
+                <td>{{ e.sqm }}</td>
+                <td>{{ e.num_cargas_actual }}</td>
+                <td>{{ e.num_paletes_actual }} / {{ e.num_paletes }}</td>
+                {% if e.estado == 'A' %}
+                    <td class="td-icon"><i class="fas fa-box-open"></i></td>
+                {% else %}
+                    <td class="td-icon"><i class="fas fa-box"></i></td>
+                {% endif %}
+            </tr>
+            {% endfor%}
+            </tbody>
+        </table>
+        
+    </div>
+    <div class="container">
+        {% if encomenda.has_other_pages %}
+        <div>
+            <span>
+                {% if encomenda.has_previous %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page=1"><i class="fas fa-angle-double-left"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.previous_page_number }}"><i class="fas fa-angle-left"></i></a>
+                {% endif %}
+        
+                <span>
+                    Pág. {{ encomenda.number }} de {{ encomenda.paginator.num_pages }}
+                </span>
+        
+                {% if encomenda.has_next %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.next_page_number }}"><i class="fas fa-angle-right"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.paginator.num_pages }}"><i class="fas fa-angle-double-right"></i></a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    
+    </div>
+</div>
+
+
+<!-- 
+
+<div>
+    
+    <form>
+        
+        <input type="button" value="Voltar" id="confirm-btn" onclick="history.back()">
+    </form>
+</div>
+<div class="title_block-list">
+    <h1>Encomendas</h1>
+</div>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="q">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:encomenda_list' %}">Reset</a>
+    </form>
+</div>
+<div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th id="designacao">Encomenda</th>
+                <th id="designacao">Cliente</th>
+                <th>Proforma</th>
+                <th>Data</th>
+                <th>M<sup>2</sup></th>    
+                <th>Nº de Cargas</th>                              
+                <th>Nº de Paletes</th>                              
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in encomenda %}
+            <tr>
+                <td id="designacao"><a href="{% url 'producao:encomenda_detail' pk=e.pk %}">{{ e.eef }}</a></td>
+                <td id="designacao">{{ e.cliente }}</td>
+                <td>{{ e.prf }}</td>
+                <td>{{ e.data_encomenda|date:"d-n-Y" }}</td>
+                <td>{{ e.sqm }}</td>
+                <td>{{ e.num_cargas_actual }}</td>
+                <td>{{ e.num_paletes_actual }} / {{ e.num_paletes }}</td>
+                {% if e.estado == 'A' %}
+                    <td class="td-icon"><i class="fas fa-box-open"></i></td>
+                {% else %}
+                    <td class="td-icon"><i class="fas fa-box"></i></td>
+                {% endif %}
+            </tr>
+            {% endfor%}
+        </tbody>
+        </table>
+            
+      
+                
+
+            
+            
+</div>
+<div class="pagination">
+    {% if encomenda.has_other_pages %}
+    <div>
+        <span>
+            {% if encomenda.has_previous %}
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page=1"><<</a>
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.previous_page_number }}"><</a>
+            {% endif %}
+    
+            <span>
+                Pág. {{ encomenda.number }} de {{ encomenda.paginator.num_pages }}
+            </span>
+    
+            {% if encomenda.has_next %}
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.next_page_number }}">></a>
+                <a role="button" href="?{% if query %}q={{query}}&{% endif %}page={{ encomenda.paginator.num_pages }}">>></a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+</div> -->
+
+
+
+{% endblock %}

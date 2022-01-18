@@ -1,0 +1,27 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Perfil Delete | {{ block.super }}{% endblock %}
+{% block content %}
+{% if can_delete == True %}
+<div class="title_block-list">
+    <h1>Deseja apagar o perfil {{ perfil.nome }}?</h1>
+    <form action="." method="POST">
+        {% csrf_token %}
+        <a href="{% url 'producao:perfil_list_v2' %}"  class="btn_back" role="button">Cancelar</a>
+        <input type="submit" value="Confirmar" id="confirm-btn">
+     </form>
+</div>
+{% else %}
+<div class="title_block-list">
+    <h1>O perfil não pode ser apagado porque já foram geradas bobinagens com o mesmo.</h1>
+    <a href="{% url 'producao:perfil_list_v2' %}"  class="btn_back" role="button">Cancelar</a>
+</div>
+{% endif %}
+
+
+
+{% endblock %}
+        
+        
+

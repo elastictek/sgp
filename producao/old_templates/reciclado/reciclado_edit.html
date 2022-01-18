@@ -1,0 +1,107 @@
+{% extends "layout.html"%}
+
+{% load producao_tags %}
+
+
+{% block title %}Editar Reciclado | {{ block.super }}{% endblock %}
+{% block content %}
+
+
+<div class="container">
+    <a href="{% url 'producao:reciclado_list' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+<div class="container">
+    <div class="container">
+        <h3 class="text-center">Editar Reciclado {{ reciclado.lote }}</h3>
+    </div>
+    {% if messages %}
+    <div>
+        
+        {% for message in messages %}
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="error_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                <div class="success_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                <div>
+                    <p>{{message}} </p>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+    </div>
+    {% endif %}
+    <br>
+    <form method="POST" action="">
+        {% csrf_token %}
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Produto:</label></div>
+                <div class="col-4 form-control-sm">{{ form.produto_granulado }}</div>
+                
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Estado:</label></div>
+                <div class="col-4 form-control-sm">{{ form.estado }}</div>
+                <div class="col-2"><label class="form-label">Peso:</label></div>
+                <div class="col-4 form-control-sm">{{ form.peso }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-2"><label class="form-label">Observações:</label></div>
+                <div class="col-10 form-control-sm">{{ form.obs }}</div>
+                
+            </div>
+            
+                
+            <div class="row mt-2">
+                <button type="submit" class="btn btn-outline-primary">Submeter</button>
+            </div>
+
+        </div>
+    </form>
+
+</div> 
+<!-- 
+
+<div>
+    <input type="button" value="Voltar" id="confirm-btn" onclick="history.back()">
+</div>
+<div class="title_block-list">
+    <h1>Editar Reciclado</h1>
+    <h2>{{ reciclado.lote }}</h2>
+</div>
+{% if messages %}
+    <div>
+        
+        {% for message in messages %}
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="error_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                <div class="success_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                <div>
+                    <p>{{message}} </p>
+                </div>
+            {% endif %}
+        {% endfor %}
+
+    </div>
+{% endif %}
+
+<form action="" method="POST" class="submission-form">
+    {% csrf_token %}
+    <label for="id_cliente">Produto</label>{{ form.produto_granulado }}
+    <label for="id_cliente">Estado</label>{{ form.estado }}
+    <label for="id_cliente">Peso</label>{{ form.peso }}
+    <label for="id_cliente">Observações</label>{{ form.obs }}
+    <input type="submit" value="Guardar" id="validate-btn">
+</form> -->
+{% endblock %}

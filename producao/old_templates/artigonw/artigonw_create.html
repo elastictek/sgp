@@ -1,0 +1,64 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Criar Artigo Nonwoven | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-9 col-lg-9">  
+                <a href="{% url 'producao:artigonw_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+  
+    
+
+
+    <div class="row">
+        <h1 id="center">Criar Artigo Nonwoven</h1>
+    </div>
+    <div class="row">
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="row">
+                        <div class="col-md-4">
+                            {% bootstrap_field form.cod %}
+                        </div>
+                        <div class="col-sm-4">
+                            {% bootstrap_field form.designacao %}
+                        </div>
+                        <div class="col-sm-4">
+                            {% bootstrap_field form.fornecedor %}
+                        </div>
+
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            {% bootstrap_field form.largura %}
+                        </div>
+                        <div class="col-sm-4">
+                            {% bootstrap_field form.gsm %}
+                        </div>
+                       
+
+                    </div>
+                   
+                    
+                    
+                </div>
+                               
+               
+                <input type="submit" class="btn btn-block btn-primary pull-right" value="Criar">
+                
+            </form>
+    </div>
+                
+    </div>        
+    
+</div>
+
+{% endblock %}

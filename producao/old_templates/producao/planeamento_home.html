@@ -1,0 +1,37 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+{% block title %}Planeamento{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Planeamento</h3>
+    </div>
+    <br>
+    <div class="container" id="embalamento-menu">
+        <div class="row mb-2">
+            <div class="col-4">            
+                <a href="{% url 'producao:perfil_list_v2' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-3 m-2">Perfis de Bobinagens</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'producao:encomenda_list' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-3 m-2">Encomendas</h1></a>
+            </div>
+            <div class="col-4 text-center">
+                <a href="{% url 'planeamento:list_ordem' %}" class="btn btn-primary btn-lg" role="button"><h1 class="p-3 m-2">Ordens de Produção</h1></a>
+            </div>
+        </div>
+       
+    </div>
+</div>
+
+
+
+
+
+
+{% endblock %}
+            

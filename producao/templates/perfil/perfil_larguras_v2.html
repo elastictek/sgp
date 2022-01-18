@@ -1,4 +1,4 @@
-{% extends "layout.html"%}
+{% extends "layout.html "%}
 {% load bootstrap3 %}
 {% block title %}Perfil Larguras | {{ block.super }}{% endblock %}
 {% block content %}
@@ -72,7 +72,6 @@
     var largura = $("#id_form-0-largura").val();
     var produto = $("#id_form-0-designacao_prod").val();
     var gsm = $("#id_form-0-gsm").val();
-
     $.ajax({
       url: url,
       data: {
@@ -82,7 +81,7 @@
         gsm: gsm,
       },
       success: function (data) {
-        $("#id_form-0-artigo").html(data);
+		$("#id_form-0-artigo").html(data);
       },
     });
   });

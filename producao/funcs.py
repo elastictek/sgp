@@ -678,15 +678,24 @@ def gerar_etiqueta_final(pk):
 
     #data_inicial = palete.carga.data
     data_init = None
+    dup = 0
+    previous_artigo = None
     for b in bobines:
+        if previous_artigo != None and previous_artigo != b.artigo_id:
+            dup = dup + 1
+        previous_artigo = b.artigo_id
         if  data_init == None or b.bobinagem.data < data_init:
             data_init = b.bobinagem.data
     data_prod = data_init
     #data_prod = data_inicial
 
+    if dup>0:
+        return -1
+        
     data_validade = data_prod + datetime.timedelta(days=356)
 
-    gsm = bobine_1.largura.gsm
+    #gsm = bobine_1.largura.gsm
+    gsm = artigo.gsm
     
     cont = ult_cont + 1
     gtin = artigo.gtin
@@ -706,7 +715,7 @@ def gerar_etiqueta_final(pk):
         e_f = EtiquetaFinal.objects.create(cont=cont, gtin=gtin, palete=palete, palete_nome=palete_nome, produto=produto, largura_bobine=largura_bobines, diam_min=diam_min, diam_max=diam_max, cod_cliente=cod_cliente, cod_cliente_cliente=cod_cliente_cliente, core=core_bobines, area=area, comp=comp_total, prf=prf, num_bobines=num_bobines, palete_num=num_palete_carga, palete_total=num_paletes_total, peso_liquido=peso_liquido, peso_bruto=peso_bruto, data_prod=data_prod, data_validade=data_validade, gsm=gsm, order_num=order_num, turno=turno)
     else:
         e_f = EtiquetaFinal.objects.create(cont=cont, gtin=gtin, palete=palete, palete_nome=palete_nome, produto=produto, largura_bobine=largura_bobines, diam_min=diam_min, diam_max=diam_max, cod_cliente=cod_cliente, core=core_bobines, area=area, comp=comp_total, prf=prf, num_bobines=num_bobines, palete_num=num_palete_carga, palete_total=num_paletes_total, peso_liquido=peso_liquido, peso_bruto=peso_bruto, data_prod=data_prod, data_validade=data_validade, gsm=gsm, order_num=order_num, turno=turno)
-        
+    return 0
 
 def add_artigo_to_bobine(pk):
     palete = get_object_or_404(Palete, pk=pk)
@@ -934,7 +943,9 @@ def create_perfil_token(num_bobines, produto, core, larguras, produtos, gsms, re
         'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED': 'AG',
         'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE': 'AH',
         'NONWOVEN ELASTIC BAND ELA-CARDED 80': 'AI',
-        'Nonwoven Elastic Band ELA-ACE Amostra': 'AJ'
+        'Nonwoven Elastic Band ELA-ACE Amostra': 'AJ',
+        'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra': 'AK',
+        'NONWOVEN ELASTIC BANDS ELA-ACE 90 T-HT': 'AL'
 
     }
 

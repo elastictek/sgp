@@ -1,0 +1,696 @@
+{% extends "layout.html" %} 
+{% load producao_tags %}
+{% block title %}Retrabalho | {{ block.super }}{% endblock %} 
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:retrabalho_home' %}" class="btn btn-primary" role="button">Voltar</a>
+</div>
+<br><br>
+<div class="container">
+        <p id="bobinagem_id" data-catid="{{ bobinagem.id }}" hidden>{{ bobinagem.id }}</p> 
+    <div class="row">
+        
+        <!-- <div class="col-sm-4">
+            <h2>Paletes DM</h2>
+            <input id="myInput" type="text" placeholder="Palete / Largura mínima" tabindex="1" onkeyup="searchPalete()" autofocus/>
+            <br>
+            <div class="table-responsive bobines">
+                <table class="table fit" id="tablePaletes">
+                        <thead class="">
+                            <tr>
+                                <th>Palete</th>
+                                <th>Data</th>
+                                <th>Estado</th>
+                                <th>Largura</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paletesDm">
+                            
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <h2>Bobines</h2>
+            <input id="myInput" type="text" placeholder="Bobine" tabindex="2" onkeyup="searchBobinePalete()"/>
+            <br>
+            <div class="table-responsive bobines">
+                <table class="table fit">
+                    <thead>
+                        <tr>
+                            <th>Bobine</th>
+                            <th>Estado</th>
+                            <th>Comprimento</th>
+                            <th>Largura</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bobinesDmPalete">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div> -->
+        <div class="col-sm-12">
+            
+            <h2>Bobines DM</h2>
+            <input id="bobineInput" type="text" placeholder="Bobine DM / Largura mínima" tabindex="3" onkeyup="searchBobine()"/>
+            <br>
+            <div class="table-responsive bobines">
+                <table class="table fit" id="tableBobines">
+                    <thead>
+                        <tr>
+                            <th>Bobine</th>
+                            <th>Palete</th>
+                            <th>Estado</th>
+                            <th>Comp. Actual / Comp. Total</th>
+                            <th>Largura</th>
+                            <th>Condição</th>
+                            <!-- <th>Cónico</th>
+                            <th>Descentrado</th>
+                            <th>Presa</th>
+                            <th>Diam. Insuf.</th>
+                            <th>Furos</th>
+                            <th>Buracos</th>
+                            <th>Gramagem</th>
+                            <th>Troca NW</th>
+                            <th>Outros</th> -->
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bobinesDm">
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="container col-sm-12"><h1 id="center">{{ bobinagem.nome }}</h1></div>
+    </div>
+    <div class="row">
+        <div class="col-sm-2">
+            
+        </div>
+        <div class="col-sm-4">
+            
+            <h3 id="center">Bobine original</h3>
+            <p id="center"><input id="bobine-original-1" type="text" tabindex="4" placeholder="Bobine Original 1"/></p>
+            <br>
+            <p id="center"><input id="bobine-original-2" type="text" tabindex="6" placeholder="Bobine Original 2"/></p>
+            <br>
+            <p id="center"><input id="bobine-original-3" type="text" tabindex="8" placeholder="Bobine Original 3"/></p>
+        </div>
+        <div class="col-sm-4">
+            <h3 id="center">Metros enrolados</h3>
+            <p id="center"><input id="metros-consumidos-1" type="text" tabindex="5" placeholder="Metros consumidos"/></p>
+            <br>
+            <p id="center"><input id="metros-consumidos-2" type="text" tabindex="7" placeholder="Metros consumidos"/></p>
+            <br>
+            <p id="center"><input id="metros-consumidos-3" type="text" tabindex="9" placeholder="Metros consumidos"/></p>
+        </div>
+        <div class="col-sm-2">
+            <h3 id="center">Reciclar</h3>
+            <p id="center"><input id="reciclar-bobine-1" type="checkbox"/></p>
+            <br>
+            <p id="center"><input id="reciclar-bobine-2" type="checkbox"/></p>
+            <br>
+            <p id="center"><input id="reciclar-bobine-3" type="checkbox"/></p>
+        </div>
+
+    </div>
+    <div class="row">
+            <div class="col-sm-2">
+                
+            </div>
+            <div class="col-sm-4">
+                <br>
+                <p id="center"><input type="button" value="Limpar bobines originais" id="limpar-bobines-originais" class="btn btn-danger"/></p>
+            </div>
+            <div class="col-sm-4">
+                <br>
+                <p id="center"><input type="button" value="Validar bobines originais" id="validar-bobines-originais" class="btn btn-primary"/></p>
+            </div>
+            <div class="col-sm-2">
+                    
+            </div>
+    
+        </div>
+
+
+</div>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-2"></div>
+        <div class="col-sm-8">
+            <h3 id="center">Bobines originais</h3>
+            <table class="table fit" id="center">
+                <thead>
+                    <tr>
+                        <th>Nº Bobine Original</th>
+                        <th>Bobine</th>
+                        <th>Metros consumidos</th>
+                        <th>Metros emenda / Fim da Bobinagem</th>
+                    </tr>
+                </thead>
+                <tbody id="emendas">
+
+                </tbody>
+
+            </table>
+        </div>
+        <div class="col-sm-2"></div>
+
+    </div>
+</div>
+<br><br><br>
+<div class="container">
+    
+    
+    <div class="col-sm-1"></div>
+    <div class="col-sm-10" id="form-bobinagem">
+        <!-- <form method='post' id ='bobinagem-form'>
+            {% csrf_token %} 
+            <div class="row">
+                <div class="col-sm-4">
+                    <p id="center"><input id="data-bobinagem" type="text" tabindex="10" placeholder="Data"/></p>
+                </div>
+                <div class="col-sm-4">
+                    <p id="center"><input id="num-bobinagem" type="text" tabindex="11" placeholder="Bobinagem nº"/></p>
+                </div>
+                <div class="col-sm-4">
+                    <p id="center"><input id="perfil-bobinagem" type="text" tabindex="12" placeholder="Perfil"/></p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-4">
+                    <p id="center"><input id="inicio-bobinagem" type="text" tabindex="13" placeholder="Inicio"/></p>
+                </div>
+                <div class="col-sm-4">
+                    
+                    <p id="center"><input id="fim-bobinagem" type="text" tabindex="14" placeholder="Fim"/></p>
+                </div>
+                <div class="col-sm-4">
+                    <p id="center"><input id="diam-bobinagem" type="text" tabindex="15" placeholder="Diametro"/></p>
+                </div>
+            </div>
+            <div class="row">
+                    
+                    <div class="col-sm-12">
+                        <p id="center"><textarea name="Observações" id="obs-bobinagem" cols="100" rows="5" placeholder="Observações" tabindex="16" ></textarea></p>
+                    </div>
+                    
+                </div>
+            <div class="row">
+                <div class="col-sm-4">
+                    
+                </div>
+                <div class="col-sm-4">
+                    <br>
+                    <p id="center"><input type="submit" value="Submeter" class="btn btn-primary"/></p>
+                </div>
+                <div class="col-sm-4">
+                    
+                </div>
+            </div>
+        </form> -->
+        <p id="center"><input id="submeter-bobines" type="button" value="Submeter" class="btn btn-primary"/></p>
+        
+
+    </div>
+    <div class="col-sm-1"></div>
+</div>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    
+
+    // $.ajax({
+    //     type:"GET",
+    //     dataType: "json",
+    //     url: "/api/palete/dm",
+    //     success: function(paletes_dm){
+    //         // if(!paletes_dm || paletes_dm.length === 0) {
+    //         //     return;
+    //         // }
+    //         var paletes_length = paletes_dm.length
+    //         var num = 0
+                        
+    //         for(i = 0; i < paletes_length; i++){
+    //             var id_palete = ""
+    //             if(paletes_dm[i].num != 0){
+    //                 id_palete = "palete-bobines" + paletes_dm[i].id 
+    //                 var a1=$(document.createElement("a")).text(paletes_dm[i].nome).attr('id', id_palete), td1=$(document.createElement("td"));
+    //                 var td2=$(document.createElement("td"));
+    //                 var td3=$(document.createElement("td")).attr('id', "estado_dm");
+    //                 var td4=$(document.createElement("td")).attr('id', "center");
+
+    //                 td1.append(a1);
+    //                 td2.text(paletes_dm[i].data_pal);
+    //                 td3.text(paletes_dm[i].estado);
+    //                 td4.text(paletes_dm[i].largura_bobines);
+
+    //                 var tr=$(document.createElement("tr"));
+    //                 tr.append(td1).append(td2).append(td3).append(td4);
+    //                 $("#paletesDm").append(tr);
+                                        
+                    
+    //             }
+    //             // console.log(id_palete)
+    //             // console.log(paletes_dm[i].id)
+                
+                
+    //             // $.ajax({
+    //             //     type:"GET",
+    //             //     dataType: "json",
+    //             //     url: "/api/palete/dm/" + paletes_dm[i].id,
+    //             //     success: function(bobines_paletes_dm){
+    //             //         a1.click(function(){ 
+                            
+    //             //             console.log(bobines_paletes_dm)
+    //             //         }); 
+    //             //     }
+    //             // })
+                    
+                    
+
+    //         }
+            
+    //     }
+    // });
+    $.ajax({
+        type:"GET",
+        dataType: "json",
+        url: "/api/bobine/dm",
+        success: function(bobines_dm){
+            var bobines_length = bobines_dm.length
+            for(i=0; i < bobines_length; i++){
+                if(bobines_dm[i].comp_actual != 0 && bobines_dm[i].recycle == false ){
+                    var a1=$(document.createElement("a")).addClass('bobine-dm').text(bobines_dm[i].nome), td1=$(document.createElement("td"));
+                    var td2=$(document.createElement("td")).attr('id', "estado_dm");
+                    var td5=$(document.createElement("td")).attr('id', "center");                    
+                    var td3=$(document.createElement("td")).attr('id', "center");;
+                    var td4=$(document.createElement("td")).attr('id', "center");
+                    var td6=$(document.createElement("td")).attr('id', "center");
+                    var td7=$(document.createElement("td")).attr('id', "center");
+                    var td8=$(document.createElement("td")).attr('id', "center");
+                    var td9=$(document.createElement("td")).attr('id', "center");
+                    var td10=$(document.createElement("td")).attr('id', "center");
+                    var td11=$(document.createElement("td")).attr('id', "center");
+                    var td12=$(document.createElement("td")).attr('id', "center");
+                    var td13=$(document.createElement("td")).attr('id', "center");
+                    var td14=$(document.createElement("td")).attr('id', "center");
+                    var td15=$(document.createElement("td")).attr('id', "center");
+                    var td16=$(document.createElement("td"));
+                    
+
+                    td1.append(a1);
+                    td2.text(bobines_dm[i].estado);
+                    td3.text(bobines_dm[i].comp_actual + " / " + bobines_dm[i].bobinagem.comp);
+                    td4.text(bobines_dm[i].largura.largura);
+
+                    var cond = [bobines_dm[i].con, bobines_dm[i].descen, bobines_dm[i].presa, bobines_dm[i].diam_insuf, bobines_dm[i].furos, bobines_dm[i].buraco, bobines_dm[i].esp, bobines_dm[i].troca_nw, bobines_dm[i].outros]
+                    var cond_len = cond.length
+                    var str = ""
+                    for(j=0; j < cond_len; j++){
+                        switch (j) {
+                            case 0:
+                                if(cond[j] == true){
+                                    str += "Cónico"
+                                }
+                                break;
+                            case 1:
+                                if(cond[j] == true){
+                                    str += " Descentrado"
+                                }
+                                break;
+                            case 2:
+                                if(cond[j] == true){
+                                    str += " Presa"
+                                }
+                                break;
+                            case 3:
+                                if(cond[j] == true){
+                                    str += " Diâmetro Insuficiente"
+                                }
+                                break;
+                            case 4:
+                                if(cond[j] == true){
+                                    str += " Furos"
+                                }
+                                break;
+                            case 5:
+                                if(cond[j] == true){
+                                    str += " Buracos"
+                                }
+                                break;
+                            case 6:
+                                if(cond[j] == true){
+                                    str += " Gramagem"
+                                }
+                                break;
+                            case 7:
+                                if(cond[j] == true){
+                                    str += " Troca NW"
+                                }
+                                break;
+                            case 8:
+                                if(cond[j] == true){
+                                    str += " Outros"
+                                }
+                                break;
+                            default: 
+                                str += "";
+                            }
+                    }
+                    td16.text(str)
+
+                    if(bobines_dm[i].palete != null){
+                        td5.text(bobines_dm[i].palete.nome)
+                    }else{
+                        td5.text("Sem palete")
+                    }
+                    // if(bobines_dm[i].con === true){
+                    //     var i1=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td6.append(i1)
+                    // }else{
+                    //     td6.text("")
+                    // }
+                    // if(bobines_dm[i].descen === true){
+                    //     var i2=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td7.append(i2)
+                    // }else{
+                    //     td7.text("")
+                    // }
+                    // if(bobines_dm[i].presa === true){
+                    //     var i3=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td8.append(i3)
+                    // }else{
+                    //     td8.text("")
+                    // }
+                    // if(bobines_dm[i].diam_insuf === true){
+                    //     var i4=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td9.append(i4)
+                    // }else{
+                    //     td9.text("")
+                    // }
+                    // if(bobines_dm[i].furos === true){
+                    //     var i5=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td10.append(i5)
+                    // }else{
+                    //     td10.text("")
+                    // }
+                    // if(bobines_dm[i].buraco === true){
+                    //     var i6=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td11.append(i6)
+                    // }else{
+                    //     td11.text("")
+                    // }
+                    // if(bobines_dm[i].esp === true){
+                    //     var i7=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td12.append(i7)
+                    // }else{
+                    //     td12.text("")
+                    // }
+                    // if(bobines_dm[i].troca_nw === true){
+                    //     var i8=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td13.append(i8)
+                    // }else{
+                    //     td13.text("")
+                    // }
+                    // if(bobines_dm[i].outros === true){
+                    //     var i9=$(document.createElement("i")).addClass('glyphicon glyphicon-remove');
+                    //     td14.append(i9)
+                    // }else{
+                    //     td14.text("")
+                    // }
+                    
+                    td15.text(bobines_dm[i].obs)
+                    
+
+                    
+
+                    var tr=$(document.createElement("tr"));
+                    tr.append(td1).append(td5).append(td2).append(td3).append(td4).append(td16).append(td15);
+                    $("#bobinesDm").append(tr);
+
+                    a1.click(function () {
+                        $('#bobine-original-1').val($(a1).text());
+                    });
+                }
+            }
+        }
+    })
+
+})
+
+function searchPalete() {
+  // Declare variables 
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInput");
+  filter = input.value;
+  filter2 = input.value.toUpperCase();
+  table = document.getElementById("tablePaletes");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td1 = tr[i].getElementsByTagName("td")[3];
+    td2 = tr[i].getElementsByTagName("td")[0];
+    
+    if (td1) {
+      larguraValue = td1.textContent || td1.innerText;
+      nomeValue = td2.textContent || td2.innerText;
+      
+      if (Number(larguraValue) >= Number(filter) || nomeValue.toUpperCase().indexOf(filter2) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+
+function searchBobine() {
+  // Declare variables 
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("bobineInput");
+  filter = input.value;
+  
+  
+  
+  table = document.getElementById("tableBobines");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td1 = tr[i].getElementsByTagName("td")[3];
+    td2 = tr[i].getElementsByTagName("td")[0];
+    
+    if (td1) {
+      larguraValue = td1.textContent || td1.innerText;
+      nomeValue = td2.textContent || td2.innerText;
+      
+      
+      
+      if (Number(larguraValue) >= Number(filter) || String(nomeValue).includes(String(filter))) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+} 
+
+
+var valid = []
+var num_bobine_original = 0
+$("#validar-bobines-originais").click(function(){
+
+    var bo_1 = $("#bobine-original-1").val()
+    var bo_1_m = $("#metros-consumidos-1").val()
+    var bo_2 = $("#bobine-original-2").val()
+    var bo_2_m = $("#metros-consumidos-2").val()
+    var bo_3 = $("#bobine-original-3").val()
+    var bo_3_m = $("#metros-consumidos-3").val()
+
+    $.ajax({
+        type:"GET",
+        dataType: "json",
+        url: "/api/bobine/dm",
+        success: function(bobines_dm){
+            var bobines_dm_length = bobines_dm.length
+            var tbody = $("#emendas");
+            if(tbody.children().length == 0){   
+                if(bo_1 != "" && bo_1_m != ""){
+                    for(i=0 ; i < bobines_dm_length; i++){
+                        if(bobines_dm[i].nome === bo_1 && Number(bobines_dm[i].comp_actual) >= Number(bo_1_m)){
+                            num_bobine_original += 1
+                            var n=$(document.createElement("td"));
+                            var a1=$(document.createElement("a")).text(bobines_dm[i].nome), td1=$(document.createElement("td"));
+                            var td2=$(document.createElement("td")).attr('id', "center");
+                            var td3=$(document.createElement("td")).attr('id', "center");
+                            
+
+                            n.text(num_bobine_original)
+                            td1.append(a1);
+                            td2.text(bo_1_m);
+                            td3.text(bo_1_m);
+                            valid[num_bobine_original-1] = true
+
+                            var tr=$(document.createElement("tr"));
+                            tr.append(n).append(td1).append(td2).append(td3);
+                            $("#emendas").append(tr);
+                        }else{valid[num_bobine_original] = false}
+                    }
+                    
+                    
+                    if(bo_2 != "" && bo_2_m != ""){
+                        var emenda_1 = 0
+                        for(i=0 ; i < bobines_dm_length; i++){
+                            if(bobines_dm[i].nome === bo_2 && Number(bobines_dm[i].comp_actual) >= Number(bo_2_m)){
+                                num_bobine_original += 1
+                                emenda_1 = Number(bo_1_m) + Number(bo_2_m)
+                                var n=$(document.createElement("td"));
+                                var a1=$(document.createElement("a")).text(bobines_dm[i].nome), td1=$(document.createElement("td"));
+                                var td2=$(document.createElement("td")).attr('id', "center");
+                                var td3=$(document.createElement("td")).attr('id', "center");
+                                
+
+                                n.text(num_bobine_original)
+                                td1.append(a1);
+                                td2.text(bo_2_m);
+                                td3.text(emenda_1);
+                                valid[num_bobine_original-1] = true
+
+                                var tr=$(document.createElement("tr"));
+                                tr.append(n).append(td1).append(td2).append(td3);
+                                $("#emendas").append(tr);
+                            }else{valid[num_bobine_original] = false}
+                        }
+                        if(bo_3 != "" && bo_3_m != ""){
+                            var emenda_2 = 0
+                            for(i=0 ; i < bobines_dm_length; i++){
+                                if(bobines_dm[i].nome === bo_3 && Number(bobines_dm[i].comp_actual) >= Number(bo_3_m)){
+                                    num_bobine_original += 1
+                                    emenda_2 = Number(emenda_1) + Number(bo_3_m)
+                                    var n=$(document.createElement("td"));
+                                    var a1=$(document.createElement("a")).text(bobines_dm[i].nome), td1=$(document.createElement("td"));
+                                    var td2=$(document.createElement("td")).attr('id', "center");
+                                    var td3=$(document.createElement("td")).attr('id', "center");
+                                    
+
+                                    n.text(num_bobine_original)
+                                    td1.append(a1);
+                                    td2.text(bo_3_m);
+                                    td3.text(emenda_2);
+                                    valid[num_bobine_original-1] = true
+                                    
+
+                                    var tr=$(document.createElement("tr"));
+                                    tr.append(n).append(td1).append(td2).append(td3);
+                                    $("#emendas").append(tr);
+                                }else{valid[num_bobine_original] = false}
+                            }
+                        
+                    }
+                    }
+                }
+            }
+            
+        }
+        
+    })
+    
+})
+$("#limpar-bobines-originais").click(function(){
+   
+   $("#emendas tr").remove()
+   $("#bobine-original-1").val('') 
+   $("#metros-consumidos-1").val('') 
+   $("#bobine-original-2").val('') 
+   $("#metros-consumidos-2").val('') 
+   $("#bobine-original-3").val('') 
+   $("#metros-consumidos-3").val('')
+   num_bobine_original = 0
+   valid = []
+   
+})
+
+// $("#test").submit(function(event){
+//     event.preventDefault();
+//     $.ajax({
+//         type:"POST",
+//         dataType: "json",
+//         url: "/api/bobinagem/dm/",
+//         data:{
+//             'data': $('#data-bobinagem').val(),
+//             'num_bobinagem': $('#num-bobinagem').val(),
+//         },
+//         success: function(){
+//             $('#teste').html("<h2>Contact Form Submitted!</h2>")
+//         }
+//     })
+    
+// })
+
+$('#submeter-bobines').click(function () { 
+
+    var id_bobinagem = $("#bobinagem_id").attr("data-catid");
+    console.log(id_bobinagem)
+    var bo_1 = $('#bobine-original-1').val()
+    var bo_2 = $('#bobine-original-2').val()
+    var bo_3 = $('#bobine-original-3').val()
+    var m_1 = $('#metros-consumidos-1').val()
+    var m_2 = $('#metros-consumidos-2').val()
+    var m_3 = $('#metros-consumidos-3').val()
+    
+    var r_1 = document.querySelector('#reciclar-bobine-1').checked;
+    var r_2 = document.querySelector('#reciclar-bobine-2').checked;
+    var r_3 = document.querySelector('#reciclar-bobine-3').checked;
+    
+   
+       
+    if(valid[0] == true && valid[1] == true && valid[2] == true){
+        var url_id = "/producao/retrabalho/validate/dm/" + id_bobinagem + "/" + bo_1 + "--" + bo_2 + "--" + bo_3 + "/" + m_1 + "-" + m_2 + "-" + m_3 + "/" + r_1 + "-" + r_2 + "-" + r_3
+        
+        window.location.href = url_id;
+        
+        
+        
+    }else if(valid[0] == true && valid[1] == true && valid[2] == false){
+        var url_id = "/producao/retrabalho/validate/dm/" + id_bobinagem + "/" + bo_1 + "--" + bo_2 + "/" + m_1 + "-" + m_2 + "/" + r_1 + "-" + r_2 
+        
+        window.location.href = url_id;
+        
+       
+    }else if(valid[0] == true && valid[1] == false && valid[2] == undefined){
+        var url_id = "/producao/retrabalho/validate/dm/" + id_bobinagem + "/" + bo_1 + "/" + m_1 + "/" + r_1 
+        
+        window.location.href = url_id;
+        
+    }
+
+    // if(validation == true){
+    //     url_id = "/producao/palete/validate/dm/" + palete.id + "/"
+    //     for (i = 0; i < lb; i++){
+    //         url_id += list_bobines[i] + "-"
+    //     }
+    //     window.location.href = url_id;
+    //     console.log(url_id)
+    // }else{alert("A palete contém erros. Por favor verifique bobines picadas.")}
+
+ })
+
+
+
+</script>
+
+
+{% endblock %}

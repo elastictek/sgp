@@ -1,0 +1,63 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Detalhes Fornecedor | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <br>
+    <div class="row">
+        <div class="container">  
+                <a href="{% url 'producao:fornecedor_list' %}" class="btn btn-primary">Voltar</a>
+                
+        </div>
+        
+    </div>
+    <div class="row">
+        <h1 id="center">{{fornecedor.abv}} - {{ fornecedor.designacao }}</h1>
+    </div>
+    <br>
+    <br>
+  
+    
+
+
+    <div class="row">
+        <h3 id="center">Artigos</h3>
+        <br>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th id="center">Designação</th>
+                        <th id="center">Fornecedor</th>
+                        <th id="center">Largura(mm)</th>
+                        <th id="center">Gramagem(gsm)</th>
+                        <!-- <th id="center">Editar</th>
+                        <th id="center">Remover</th> -->
+                        
+                </tr>
+            </thead>
+
+                <tbody>
+                    {% for a in artigonw %}
+                        <tr>
+                            <td>{{ a.cod }}</td>
+                            <td id="center">{{ a.designacao }}</td>
+                            <td id="center">{{ a.fornecedor.designacao }}</td>
+                            <td id="center">{{ a.largura }}</td>
+                            <td id="center">{{ a.gsm }}</td>
+                            
+                            <!-- <td id="center"><a href="#" role="button" class="btn btn-warning glyphicon glyphicon-pencil"></a></td>
+                            <td id="center"><a href="#" role="button" class="btn btn-danger glyphicon glyphicon-trash"></a></td> -->
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

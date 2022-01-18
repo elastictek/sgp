@@ -1,0 +1,101 @@
+{% extends "layout.html"%}
+{% load bootstrap3 %}
+
+{% block title %}Perfil | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container">
+    <a href="{% url 'producao:perfil_list_v2' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+</div>
+       
+<br>
+<div>
+    <h3 class="text-center">Detalhes Perfil</h3>
+</div>
+<br>
+<div class="container">
+    <div class="container">
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Perfil:</label></div>
+            <div class="col-10">{{ perfil.nome }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Nº Bobines:</label></div>
+            <div class="col-4">{{ perfil.num_bobines }}</div>
+            <div class="col-2"><label class="form-label">Largura total:</label></div>
+            <div class="col-4">{{ perfil.largura_bobinagem }} mm</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Core:</label></div>
+            <div class="col-4">{{ perfil.core }}"</div>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Cortes</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Bobine</th>
+                    <th scope="col">Largura (mm)</th>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Gramagem (gsm)</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Artigo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lar in largura %}
+        <tr>
+            <td id="center">{{ lar.num_bobine }}</td>
+            {% if not lar.largura == None %}
+                <td id="center">{{ lar.largura }}</td>
+            {% else %}
+                <td></td>
+            {% endif %}
+            {% if not lar.largura == None %}
+                <td id="designacao">{{ lar.designacao_prod }}</td>
+            {% else %}
+                <td></td>
+            {% endif %}
+            {% if not lar.largura == None %}
+                <td id="center">{{ lar.gsm }}</td>
+            {% else %}
+                <td></td>
+            {% endif %}
+            {% if not lar.largura == None %}
+                {% if not lar.cliente == None %}
+                    <td>{{ lar.cliente }}</td>
+                {% else %}
+                    <td>S/ Cliente</td>
+                {% endif %}
+            {% else %}
+                    <td></td>
+            {% endif %}
+            {% if not lar.largura == None %}
+                {% if not lar.artigo == None %}
+                    <td id="center">{{ lar.artigo.cod }}</td>
+                {% else %}
+                    <td id="center">S/ Artigo</td>
+                {% endif %}
+            {% else %}
+                    <td></td>
+            {% endif %}
+        </tr>
+        {% endfor%}
+                
+                   
+                   
+              
+            </tbody>
+        </table>
+    </div>
+</div>
+                      
+    
+
+
+
+{% endblock %}

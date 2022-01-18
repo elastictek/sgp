@@ -1,0 +1,141 @@
+{% extends "layout.html" %} 
+{% load bootstrap3 %}
+{% load static %}
+{% load producao_tags %}
+{% block title %}Produto Granulado | {{ block.super }}{% endblock %} 
+{% block content %}
+
+
+<div class="container">
+    <a href="{% url 'producao:reciclado_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    {% if request.user|has_group:"Produção Supervisor" %}
+    <a href="{% url 'producao:produto_granulado_create' %}"  class="btn btn-outline-primary" role="button">Criar Produto Granulado</a>
+    {% endif %}                                                                                                                                                                                               
+    
+</div>
+<br>
+<div class="container">
+    <div>
+        <h3 class="text-center">Produtos Granulado</h3>
+    </div>
+    <div>
+        <form action="" method="GET">
+            <input type="text" name="q">
+            <input type="submit" value="Procurar" class="btn btn-primary">
+            <a href="{% url 'producao:produto_granulado_list' %}" class="btn btn-outline-primary">Reset</a>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Produto</th>
+                    <th scope="col">Data e hora de registo</th>
+                   
+                </tr>
+            </thead>
+            <tbody>
+                {% for pg in produto_granulado %}
+                    <tr>
+                        <td>{{ pg.produto_granulado }}</td>
+                        <td>{{ pg.timestamp|date:"d-n-Y G:i" }}</td>
+                    </tr>
+                {% endfor%}
+            </tbody>
+        </table>
+        
+    </div>
+    <div class="container">
+        {% if produto_granulado.has_other_pages %}
+        <div>
+            <span>
+                {% if produto_granulado.has_previous %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page=1"><i class="fas fa-angle-double-left"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.previous_page_number }}"><i class="fas fa-angle-left"></i></a>
+                {% endif %}
+        
+                <span>
+                    Pág. {{ produto_granulado.number }} de {{ produto_granulado.paginator.num_pages }}
+                </span>
+        
+                {% if produto_granulado.has_next %}
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.next_page_number }}"><i class="fas fa-angle-right"></i></a>
+                    <a href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.paginator.num_pages }}"><i class="fas fa-angle-double-right"></i></a>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    
+    </div>
+</div>
+
+
+
+
+<!-- <div>
+    <a href="{% url 'producao:reciclado_home' %}"  class="btn_back" role="button">Voltar</a>
+    {% if request.user|has_group:"Produção Supervisor" %}
+    <a href="{% url 'producao:produto_granulado_create' %}"  class="btn_create" role="button">Criar Produto Granulado</a>
+    {% endif %}
+</div> -->
+<!-- <div class="title_block-list">
+    <h1>Produtos Granulado</h1>
+</div>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="q">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:produto_granulado_list' %}">Reset</a>
+    </form>
+</div>
+<div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th id="designacao">Produto</th>
+                <th>Data e hora de registo</th>
+               
+            </tr>
+        </thead>
+        <tbody>
+            {% for pg in produto_granulado %}
+            <tr>
+                <td id="designacao">{{ pg.produto_granulado }}</td>
+                <td>{{ pg.timestamp|date:"d-n-Y G:i" }}</td>
+            </tr>
+            {% endfor%}
+        </tbody>
+    </table>
+</div>
+<div class="pagination">
+    {% if produto_granulado.has_other_pages %}
+    <div>
+        <span>
+            {% if produto_granulado.has_previous %}
+                <a role="button" class="fas fa-angle-double-left" href="?{% if query %}q={{query}}&{% endif %}page=1"></a>
+                <a role="button" class="fas fa-angle-left" href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.previous_page_number }}"></a>
+            {% endif %}
+    
+            <span>
+                Pág. {{ produto_granulado.number }} de {{ produto_granulado.paginator.num_pages }}
+            </span>
+    
+            {% if produto_granulado.has_next %}
+                <a role="button" class="fas fa-angle-right" href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.next_page_number }}"></a>
+                <a role="button" class="fas fa-angle-double-right" href="?{% if query %}q={{query}}&{% endif %}page={{ produto_granulado.paginator.num_pages }}"></a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+</div> -->
+             
+      
+                
+
+            
+            
+
+
+
+{% endblock %}

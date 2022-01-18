@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="title_block-list">
+    <h1>Atenção!!!</h1>
+
+
+    <form action="." method="POST">{% csrf_token %}
+        <h3>Ao apagar esta bobinagem, as seguintes bobines serão também apagadas: </h3>
+        <p>Se alguma das bobines já estiver designada a uma palete não é aconselhável apagar a bobinagem.</p>
+        <p>{{ bobine.nome }}</p>
+       
+        {% for bob in bobine %}
+       
+        {% if bob.palete != Null %}
+            <p>{{ bob.nome }}  - Palete: {{ bob.palete }}</p>
+            
+        {% else %}
+            <p>{{ bob.nome }}</p>
+        {% endif %}
+        {% endfor %}
+        
+        <h2>Têm a certeza que quer apagar a bobinagem {{ object.nome }}?</h2>
+        <div>
+            {% if messages %}
+            <ul class="messages">
+                <h1 class="erro">ERRO!</h1>
+                {% for message in messages %}
+                <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+        </div>
+        <input type="button" value="Cancelar" id="confirm-btn" onclick="history.back()">
+        <input type="submit" value="Sim" id="confirm-btn">
+       
+        
+    </form>
+    
+</div>
+
+    
+
+{% endblock %}

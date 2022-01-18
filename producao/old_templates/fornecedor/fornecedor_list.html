@@ -1,0 +1,79 @@
+{% extends "layout.html" %} 
+{% load bootstrap3 %}
+{% load static %}
+
+{% block title %}Fornecedores | {{ block.super }}{% endblock %} 
+{% block content %}
+<div>
+    <a href="{% url 'producao:planeamento_home' %}"  class="btn_back" role="button">Voltar</a>
+    <a href="{% url 'producao:fornecedor_create' %}"  class="btn_create" role="button">Criar Fornecedor</a>
+</div>
+<div class="title_block-list">
+    <h1>Fornecedores</h1>
+</div>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="q">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:fornecedor_list' %}">Reset</a>
+    </form>
+</div>
+<div>
+    <table class="content-table">
+        <thead>
+            <tr>
+                <th>Cód.</th>
+                <th>Abreviatura</th>
+                <th id="designacao">Designação</th>
+                <!-- <th>Editar</th>
+                <th>Remover</th> -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fornecedor %}
+            <tr>
+                <td>{{ f.cod }}</a></td>
+                <td>{{ f.abv }}</td>
+                <td  id="designacao"><a href="{% url 'producao:fornecedor_details' pk=f.pk %}">{{ f.designacao }}</a></td>
+                <!-- <td><a href="{% url 'producao:fornecedor_edit' pk=f.pk %}" role="button">Editar</a></td>
+                <td><a href="{% url 'producao:fornecedor_delete' pk=f.pk %}" role="button">Remover</a></td> -->
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+            
+        
+                
+
+            
+            
+</div>
+<div class="pagination">
+    {% if fornecedor.has_other_pages %}
+    <div>
+        <span>
+            {% if fornecedor.has_previous %}
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page=1"><<</a>
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page={{ fornecedor.previous_page_number }}"><</a>
+            {% endif %}
+    
+            <span>
+                Pág. {{ fornecedor.number }} de {{ fornecedor.paginator.num_pages }}
+            </span>
+    
+            {% if fornecedor.has_next %}
+                <a role="button" class="" href="?{% if query %}q={{query}}&{% endif %}page={{ fornecedor.next_page_number }}">></a>
+                <a role="button" href="?{% if query %}q={{query}}&{% endif %}page={{ fornecedor.paginator.num_pages }}">>></a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+
+</div>
+
+
+
+{% endblock %}
+                                
+                            
+                            

@@ -29,7 +29,7 @@
         <div><h3>Ordem de Fabrico: <span>{{ palete.ordem }}</span></h3></div>
         {% endif %}
         {% if palete.num_palete_ordem != None %}
-        <div><h3>Nº Palete da Ordem: <span>{{ palete.num_palete_ordem }}</span></h3></div>
+        <div><h3>Nº Palete da Ordem: <span>{{ palete.num_palete_ordem }} / {{ totalordem }} </span></h3></div>
         {% else %}
         <div><h3>Nº Palete da Ordem: <span>S/ ordem de fabrico associada</span></h3></div>
         {% endif %}

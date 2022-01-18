@@ -1,0 +1,167 @@
+{% extends "layout.html"%}
+{% load static %}
+
+{% block title %}Bobinagens | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container size-table">
+    <div class="row">
+        <div class="container">
+            <a href="{% url 'producao:bobinagens' %}" class="btn btn-primary" role="button">Voltar</a>
+            
+            <!-- <a href="{% url 'producao:bobinagem_create' %}"  class="btn btn-primary pull-right" role="button">Criar bobinagem</a>
+            <a href="#"  class="btn btn-primary pull-right" role="button">Histórico bobinagens</a> -->
+        </div>
+    </div>
+      <div class="row">  
+        <h1 id="center">Bobinagens Linha 1</h1>
+        <!-- <h2 id="center">{{ now.day }} - {{ now.month}} - {{ now.year }} </h2><br> -->
+        <div class="container" id="center">
+            <span class="step-links">
+                {% if bobinagem.has_previous %}
+                    <a href="?page=1" class="btn btn-primary">&laquo; Primeiro</a>
+                    <a href="?page={{ bobinagem.previous_page_number }}" class="btn btn-primary">&laquo; Anterior</a>
+                {% endif %}
+        
+                <span class="current">
+                    
+                      {{ bobinagem.number }} / {{ bobinagem.paginator.num_pages }}
+                    
+                </span>
+        
+                {% if bobinagem.has_next %}
+                    <a href="?page={{ bobinagem.next_page_number }}" class="btn btn-primary">Próximo &raquo;</a>
+                    <a href="?page={{ bobinagem.paginator.num_pages }}" class="btn btn-primary">Último &raquo;</a>
+                {% endif %}
+            </span>
+            <br>
+            <br>
+            
+        </div>
+        
+        <div class="col-md-12 table-responsive size-table">
+            
+                <div class="col-md-12 ">
+                        <form method="GET" action=''>{% csrf_token %}
+                                <input type="text" name="s" placeholder="Bobine / Data" autofocus>
+                                
+                                <input type="submit" class="btn btn-success" value="Pesquisar">
+                            </form>
+                            
+                <table class="table fit">
+                    <thead>
+                        <tr>
+                            <th>Bobinagem</th>
+                            <!-- <th>Estado</th> -->
+                            <th id="center">Data</th>
+                            <th id="center">Inicio</th>
+                            <th id="center">Fim</th>
+                            <th id="center">Duração</th>
+                            <th id="center">Core (")</th>
+                            <!-- <th>Tipo NW Sup</th>
+                            <th>Tipo NW Inf</th>
+                            <th>Lote NW Sup</th>
+                            <th>Lote NW Inf</th> -->
+                            <!-- <th>Nw Sup (m)</th>
+                            <th>Nw Inf (m)</th> -->
+                            <th id="center">Comp (m)</th>
+                            <th id="center">Comp Emenda (m)</th>
+                            <th id="center">Comp Cliente (m)</th>
+                            <th id="center">Área (m2)</th>
+                            <!-- <th>Desperdicio (m2)</th> -->
+                            
+                            <!-- <th>Diâmetro (mm)</th> -->
+                         
+                            
+                                         
+                            
+                            
+                        </tr>
+                    </thead>
+                        {% for bob in bobinagem %}
+                        {% if bob.perfil.retrabalho == False %}
+                        <tr>
+                            <td><a href='{{ bob.get_absolute_url }}'>{{ bob.nome }}</a></td>
+                            
+                            <!-- {% if bob.estado == "G" %}
+                                <td id="estado_good">{{ bob.estado }}</td>
+                            {% elif bob.estado == "DM"%}
+                                <td id="estado_dm">{{ bob.estado }}</td>
+                            {% elif bob.estado == "R" %}
+                                <td id="estado_rejected">{{ bob.estado }}</td>
+                            {% elif  bob.estado == "BA"%}
+                                <td id="estado_ba">{{ bob.estado }}</td>
+                            {% else %}
+                                <td id="estado_lab">{{ bob.estado }}</td>
+                            {% endif %} -->
+                            <td id="center">{{ bob.data|date:"d-n-Y" }}</td>
+                            <td id="center">{{ bob.inico|date:"G:i" }}</td>
+                            <td id="center">{{ bob.fim|date:"G:i" }}</td>
+                            <td id="center">{{ bob.duracao }}</td>
+                            <td id="center">{{ bob.perfil.core }}</td>
+                            <!-- <td>{{ bob.tiponwsup }}</td>
+                            <td>{{ bob.tiponwinf }}</td>  
+                            <td>{{ bob.lotenwinf }}</td>
+                            <td>{{ bob.lotenwinf }}</td> -->
+                            <!-- <td>{{ bob.nwsup}}</td>
+                            <td>{{ bob.nwinf }}</td> -->
+                            <td id="center">{{ bob.comp }}</td>
+                            <td id="center">{{ bob.comp_par }}</td>
+                            <td id="center">{{ bob.comp_cli }}</td>
+                            <!-- <td>{{ bob.desper }}</td> -->
+                            <!-- <td>{{ bob.diam }}</td> -->
+                            <td id="center">{{ bob.area }}</td>
+                            {% if bob.estado == "LAB" %}
+                                <td id="center"><a href="{% url 'producao:bobinagem_status' pk=bob.pk operation='ap' %}" class="btn btn-success">Aprovar</a></td>     
+                                <td id="center"><a href="{% url 'producao:bobinagem_status' pk=bob.pk operation='rej' %}" class="btn btn-danger">Rejeitar</a></td>   
+                                <td id="center"><a href="{% url 'producao:bobinagem_status' pk=bob.pk operation='dm' %}" class="btn btn-warning">DM12</a></td>  
+                            {% else %}
+                                <td style="padding:0 0px 0 0px;"></td>
+                                <td style="padding:0 0px 0 0px;"></td>
+                                <td style="padding:0 0px 0 0px;"></td>
+                            {% endif %}
+                            <td><a href="{% url 'producao:bobinagem_delete' pk=bob.pk %}" class="btn btn-danger">Apagar</a></td>    
+                            {% for b in bobine %}
+                                {% if b.bobinagem == bob %}
+                                    {% if b.estado == "G" %}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/green_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "DM"%}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/yellow_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "R" %}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/red_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "LAB" %}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/cyan_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "BA" %}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/red_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "IND"%}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/blue_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% elif b.estado == "HOLD"%}
+                                        <td style="padding:14px 0px 0 0px;"><img src="{% static 'img/purple_stripe.png' %}" width="4px" height="20px"></td>
+                                    {% endif %}
+                                
+                                {% endif%}
+                            {% endfor%}
+                           
+                            
+                                           
+                             
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </table>
+                    
+                </div>
+                
+                </div>
+                
+            </div>
+
+            
+    
+</div>
+
+
+
+
+
+
+{% endblock %}

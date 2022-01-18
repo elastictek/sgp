@@ -1,0 +1,149 @@
+{% extends "layout.html"%}
+
+
+
+{% block title %}Calendário de Expedições{% endblock %}
+{% block content %}
+<div>
+    <a href="{% url 'producao:armazem_home' %}" class="btn_back">Voltar</a>
+</div>
+<div class="title_block">
+    <h1>Calendário de Expedições</h1>
+</div>
+<br>
+<div class="form-search">
+    <form action="" method="GET">
+        <input type="text" name="m" placeholder="Mês">
+        <input type="text" name="a" placeholder="Ano">
+        <input type="submit" value="Procurar">
+        <a href="{% url 'producao:calendario_expedicoes' %}">Reset</a>
+    </form>
+</div>
+<br>
+<div class="title_block">
+    <h1>{{ mes }} - {{ ano }}</h1>
+</div>
+<br>
+<div>
+    <table class="content-table" id="calendar">
+        <thead>
+            <tr>
+                <th>Segunda</th>
+                <th>Terça</th>
+                <th>Quarta</th>
+                <th>Quinta</th>
+                <th>Sexta</th>
+                <th>Sábado</th>
+                <th>Domingo</th>
+                
+               
+            </tr>
+        </thead>
+        <tbody>
+           
+            <tr class="semana">
+                {% if semana_1.0 == None %}<td></td>{% else %}<td><p>{{ semana_1.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.1 == None %}<td></td>{% else %}<td><p>{{ semana_1.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.2 == None %}<td></td>{% else %}<td><p>{{ semana_1.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.3 == None %}<td></td>{% else %}<td><p>{{ semana_1.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.4 == None %}<td></td>{% else %}<td><p>{{ semana_1.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.5 == None %}<td></td>{% else %}<td><p>{{ semana_1.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_1.6 == None %}<td></td>{% else %}<td><p>{{ semana_1.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_1.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_1.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+                
+            </tr>
+            <tr class="semana">
+                {% if semana_2.0 == None %}<td></td>{% else %}<td><p>{{ semana_2.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.1 == None %}<td></td>{% else %}<td><p>{{ semana_2.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.2 == None %}<td></td>{% else %}<td><p>{{ semana_2.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.3 == None %}<td></td>{% else %}<td><p>{{ semana_2.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.4 == None %}<td></td>{% else %}<td><p>{{ semana_2.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.5 == None %}<td></td>{% else %}<td><p>{{ semana_2.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_2.6 == None %}<td></td>{% else %}<td><p>{{ semana_2.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_2.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_2.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+                
+            </tr>
+            <tr class="semana">
+                {% if semana_3.0 == None %}<td></td>{% else %}<td><p>{{ semana_3.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.1 == None %}<td></td>{% else %}<td><p>{{ semana_3.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.2 == None %}<td></td>{% else %}<td><p>{{ semana_3.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.3 == None %}<td></td>{% else %}<td><p>{{ semana_3.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.4 == None %}<td></td>{% else %}<td><p>{{ semana_3.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.5 == None %}<td></td>{% else %}<td><p>{{ semana_3.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_3.6 == None %}<td></td>{% else %}<td><p>{{ semana_3.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_3.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_3.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+               
+            </tr>
+            <tr class="semana">
+                {% if semana_4.0 == None %}<td></td>{% else %}<td><p>{{ semana_4.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.1 == None %}<td></td>{% else %}<td><p>{{ semana_4.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.2 == None %}<td></td>{% else %}<td><p>{{ semana_4.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.3 == None %}<td></td>{% else %}<td><p>{{ semana_4.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.4 == None %}<td></td>{% else %}<td><p>{{ semana_4.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.5 == None %}<td></td>{% else %}<td><p>{{ semana_4.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_4.6 == None %}<td></td>{% else %}<td><p>{{ semana_4.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_4.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_4.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+              
+            </tr>
+            <tr class="semana">
+                {% if semana_5.0 == None %}<td></td>{% else %}<td><p>{{ semana_5.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.1 == None %}<td></td>{% else %}<td><p>{{ semana_5.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.2 == None %}<td></td>{% else %}<td><p>{{ semana_5.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.3 == None %}<td></td>{% else %}<td><p>{{ semana_5.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.4 == None %}<td></td>{% else %}<td><p>{{ semana_5.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.5 == None %}<td></td>{% else %}<td><p>{{ semana_5.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_5.6 == None %}<td></td>{% else %}<td><p>{{ semana_5.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_5.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_5.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+               
+            </tr>
+            <tr class="semana">
+                {% if semana_6.0 == None %}<td></td>{% else %}<td><p>{{ semana_6.0 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.0 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.0 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.1 == None %}<td></td>{% else %}<td><p>{{ semana_6.1 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.1 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.1 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.2 == None %}<td></td>{% else %}<td><p>{{ semana_6.2 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.2 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.2 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.3 == None %}<td></td>{% else %}<td><p>{{ semana_6.3 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.3 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.3 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.4 == None %}<td></td>{% else %}<td><p>{{ semana_6.4 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.4 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.4 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.5 == None %}<td></td>{% else %}<td><p>{{ semana_6.5 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.5 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.5 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                {% if semana_6.6 == None %}<td></td>{% else %}<td><p>{{ semana_6.6 }}</p>{% for key, value in cargas_previstas_dia.items %}{% if key == semana_6.6 %}{% for cp in value %}<p><a href="#" id="previsao">{{ cp.carga }}</a></p>{% endfor %}{% endif %}{% endfor %}{% for key, value in cargas_expedidas_dia.items %}{% if key == semana_6.6 %}{% for ce in value %}<p><a href="#" id="expedido">{{ ce.carga }} - {{ ce.hora_expedicao|date:"G:i" }}</a></p>{% endfor %}{% endif %}{% endfor %}</td>{% endif %} 
+                
+                
+            </tr>
+            
+        </tbody>
+        </table>
+            
+    
+                
+
+            
+            
+</div>
+<!-- <div>
+    {% for cp in cargas_previstas %}
+        <p>{{ cp }}</p>
+    {% endfor %}
+    {% for cpd in cargas_previstas_dia %}
+        <p>{{ cpd }}</p>
+    {% endfor %}
+</div> -->
+<!-- <div>
+    {% for key, value in cargas_previstas_dia.items %}
+        <p>{{ key }} - {{ value }}</p>
+        {% if semana_1.4 == key %}
+            <p>{{ value }}</p>
+        {% endif %}
+        {% for cp in value %}
+            <p>{{ cp.enc }}</p>
+        {% endfor%}
+    {% endfor %}
+</div> -->
+<div>
+    <h3>Legenda:</h3>
+    <p id="expedido">Expedido</p>
+    <p id="previsao">Previsão de expedição</p>
+</div>
+
+
+
+
+
+{% endblock %}

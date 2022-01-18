@@ -1,0 +1,19 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+
+
+{% block title %}Adiconar palete a carga | {{ block.super }}{% endblock %}
+{% block content %}
+<div>
+    <input type="button" value="Voltar" id="confirm-btn" onclick="history.back()">
+</div>
+<div class="title_block-list">
+    <h1>Adicionar palete {{ instance.nome }} à carga</h1>
+</div>
+<form action="" method="POST" class="submission-form">
+    {% csrf_token %}
+    <label for="id_carga">Carga</label>{{ form.carga }}
+    <input type="submit" value="Avançar" id="validate-btn">
+</form>
+
+{% endblock %}

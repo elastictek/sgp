@@ -1,0 +1,123 @@
+{% load bootstrap3 %}
+<div class="conatiner size-table">
+<form method="POST">
+   
+    <div class="container">
+        <h1 id="center">Classificar Bobine</h1><br>
+        <h2 id="center">{{ instance.nome }}</h2><br>
+        
+    <div class="row">
+            <div class="container col-sm-4">
+                    
+                    {% bootstrap_field form.estado %}
+                    
+                    
+                    
+        
+            </div>
+        </div>
+    <div class="row">
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.con %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.furos %}
+                    
+                    
+        
+            </div>
+        </div>
+    <div class="row">
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.descen %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.esp %}
+                    
+                    
+        
+            </div>
+        </div>
+    <div class="row">
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.presa %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.troca_nw %}
+                    
+                    
+        
+            </div>
+        </div>
+    <div class="row">
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.diam_insuf %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.buraco %}
+                    
+                    
+        
+            </div>
+        </div>
+    <div class="row">
+            <div class="container col-sm-4">
+                    {% bootstrap_field form.outros %}
+                    
+                    
+        
+            </div>
+            <div class="container col-sm-4">
+                {% bootstrap_field form.nok %}
+                
+                
+    
+            </div>
+            
+        </div>
+        <div class="row">
+                <div class="container col-sm-8">
+                        {% bootstrap_field form.l_real %}
+                        
+                        
+            
+                </div>
+                
+            </div>
+    <div class="row">
+            <div class="container col-sm-8">
+                    {% bootstrap_field form.obs %}
+                    
+                    
+        
+            </div>
+            
+        </div>
+   
+    
+   
+    
+    <div class="row">    
+            {% csrf_token %}
+            <td><a href="{% url 'producao:bobinestatus' instance.bobinagem.pk %}" class="btn btn-primary" role="button">Voltar</a></td>
+            <input type="submit" class="btn btn-primary pull-right" value="Gravar">
+        </div>
+    
+</div>
+
+    
+</form>
+</div>
+

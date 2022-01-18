@@ -1,0 +1,145 @@
+{% extends "layout.html"%} 
+{% load bootstrap3 %}
+{% block title %}Classificação de bobines | {{ block.super }}{% endblock %}
+{% block content %}
+<div class="container">
+      
+    <div class="container">
+        <form method="post">
+            <div class="row">
+                <a href="{% url 'producao:palete_list_all' %}" class="btn btn-primary pull-left" role="button">Voltar</a>                    
+                <input type="submit" class="btn btn-primary pull-right" value="Validar">
+            </div>
+            <div class="row">
+                <h1>{{ bobinagem.nome }}</h1>
+            </div>
+            <div class="row">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    <!-- <table class="table fit">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Largura</th>
+                                <th>Área</th>
+                                <th>Estado</th>
+                                <th>Cónico</th>
+                                <th>Desc.</th>
+                                <th>Presa</th>
+                                <th>Diâm.</th>
+                                <th>Furos</th>
+                                <th>Buracos</th>
+                                <th>Gram.</th>
+                                <th>Troca</th>
+                                <th>Outros</th>
+                                <th>Observações</th>
+                                <th>Largura Real (mm)</th>
+                            </tr>
+                        </thead> -->
+                        
+                        <!-- {% for form in formset %}
+                        <tbody>
+                            <tr> -->
+                                <!-- <td>{% bootstrap_field form.nome %}</td>
+                                <td>Largura</td>>
+                                <td>Area</td>>
+                                <td>{% bootstrap_field form.estado %}</td>
+                                <td>{% bootstrap_field form.con %}</td>
+                                <td>{% bootstrap_field form.descen %}</td>
+                                <td>{% bootstrap_field form.presa %}</td>
+                                <td>{% bootstrap_field form.diam_insuf %}</td>
+                                <td>{% bootstrap_field form.furos %}</td>
+                                <td>{% bootstrap_field form.buraco %}</td>
+                                <td>{% bootstrap_field form.esp %}</td>
+                                <td>{% bootstrap_field form.troca_nw %}</td>
+                                <td>{% bootstrap_field form.outros %}</td>
+                                <td>{% bootstrap_field form.obs %}</td>
+                                <td>{% bootstrap_field form.l_real %}</td> -->
+
+                                <!-- <td>{{ form.nome }}</td>
+                                <td>Largura</td>>
+                                <td>Area</td>>
+                                <td>{{ form.estado }}</td>
+                                <td>{{ form.con }}</td>
+                                <td>{{ form.descen }}</td>
+                                <td>{{ form.presa }}</td>
+                                <td>{{ form.diam_insuf }}</td>
+                                <td>{{ form.furos }}</td>
+                                <td>{{ form.buraco }}</td>
+                                <td>{{ form.esp }}</td>
+                                <td>{{ form.troca_nw }}</td>
+                                <td>{{ form.outros }}</td>
+                                <td>{{ form.obs }}</td>
+                                <td>{{ form.l_real }}</td>
+                            
+                             -->
+                            
+                                {% bootstrap_form form %}
+                              
+                            <!-- </tr>
+                          
+                        </tbody>  
+                        {% endfor %} -->
+                        <!-- {{ formset }} -->
+                    <!-- </table> -->
+                                    
+                    
+                
+                <!-- <div class="col-md-6">
+                    {% if messages %}
+                    <ul class="messages">
+                        {% for message in messages %}
+                        <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div> -->
+            </div>
+        </form>
+        
+    </div>
+
+
+</div>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+//   $(document).keydown(function(e) {
+
+//         // Set self as the current item in focus
+//         var self = $(':focus'),
+//             // Set the form by the current item in focus
+//             form = self.parents('form:eq(0)'),
+//             focusable;
+
+//         // Array of Indexable/Tab-able items
+//         focusable = form.find('input,a,select,button,textarea').filter(':visible');
+
+//         function enterKey(){
+//         if (e.which === 13 && !self.is('textarea')) { // [Enter] key
+
+//             // If not a regular hyperlink/button/textarea
+//             if ($.inArray(self, focusable) && (!self.is('a')) && (!self.is('button'))){
+//             // Then prevent the default [Enter] key behaviour from submitting the form
+//             e.preventDefault();
+//             } // Otherwise follow the link/button as by design, or put new line in textarea
+
+//             // Focus on the next item (either previous or next depending on shift)
+//             focusable.eq(focusable.index(self) + (e.shiftKey ? -1 : 1)).focus();
+
+//             return false;
+//         }
+//         }
+//         // We need to capture the [Shift] key and check the [Enter] key either way.
+//         if (e.shiftKey) { enterKey() } else { enterKey() }
+// });
+
+
+  
+
+</script>
+
+{% endblock %}

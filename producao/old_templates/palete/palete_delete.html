@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="title_block-list">
+    <h1>De certeza que quer apagar a palete {{ object.nome }}?</h1>
+    {% if messages %}
+    <div>
+        
+        {% for message in messages %}
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="error_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+                <div class="success_classificacao">
+                    <p>{{message}} </p>
+                </div>
+            {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+                <div>
+                    <p>{{message}} </p>
+                </div>
+            {% endif %}
+    {% endfor %}
+
+</div>
+{% endif %}
+    <form action="." method="POST">
+        {% csrf_token %}
+        <a href="{% url 'producao:palete_list_all' %}"  class="btn btn-outline-primary" role="button">Cancelar</a>
+        <input type="submit" value="Confirmar" class="btn btn-outline-primary">
+     </form>
+</div>
+{% endblock %}

@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 
 
-from pyodbc import Cursor, Error
+from pyodbc import Cursor, Error, lowercase
 from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
@@ -1486,6 +1486,89 @@ def OfUpload(request, format=None):
 
 
 #region TEMP ORDEMFABRICO SCHEMA
+
+def getSageCliente(cod):
+    cols = ['BPCNUM_0', 'BPCNAM_0','BPCSHO_0']
+    f = Filters({"cod": cod})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'"BPCNUM_0" = :cod', True)
+    f.value("and")
+    dql = db.dql({})
+    dql.columns = encloseColumn(cols,True)
+    sageAlias = dbgw.dbAlias.get("sage")
+    with connections[connGatewayName].cursor() as cursor:
+        rows = dbgw.executeSimpleList(lambda: (
+          f'''            
+            SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f.text}            
+            '''
+        ), cursor, f.parameters)['rows']
+        return rows[0] if len(rows)>0 else None 
+
+def getSageEncomenda(cod):
+    cols = []
+    f = Filters({"cod": cod})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'"enc"."SOHNUM_0" = :cod', True)
+    f.value("and")
+    sageAlias = dbgw.dbAlias.get("sage")
+    with connections[connGatewayName].cursor() as cursor:
+        rows = dbgw.executeSimpleList(lambda: (
+          f'''            
+            SELECT 
+            tbl.*,
+            round(sqm/5400)+1 as num_paletes
+            FROM
+            (
+            SELECT 
+            DISTINCT ON ("enc"."SOHNUM_0") "enc"."SOHNUM_0" ,"enc"."PRFNUM_0","enc"."ORDDAT_0","enc"."DEMDLVDAT_0", "enc"."SHIDAT_0", "enclin"."EXTDLVDAT_0",
+            SUM("enclin"."QTY_0") OVER w as sqm
+            FROM {sageAlias}."SORDER" as enc
+            JOIN {sageAlias}."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0" 
+            JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"  
+            {f.text}
+            WINDOW w AS (PARTITION BY "enc"."SOHNUM_0")
+            ) tbl            
+            '''
+        ), cursor, f.parameters)['rows']
+        return rows[0] if len(rows)>0 else None 
+
+def sgpSaveEncomendaCliente(clienteId,encomendaId,clientCod,orderCod,userId,cursor):
+    print(f"FORPRODUCTION---{userId} -- ")
+    if clienteId is None:
+        #INSERIR CLIENTE NO SGP (não existe)
+        sage_cliente = getSageCliente(clientCod)
+        print(f"Insert into clients--- -- {sage_cliente} -- ")
+    if encomendaId is None:
+        #INSERIR ENCOMENDA NO SGP (Não existe)
+        sage_order = getSageEncomenda(orderCod)
+        if sage_order is not None:
+            dta={
+                "timestamp": datetime.now(),
+                "data":datetime.now(),
+                "eef":sage_order["SOHNUM_0"],
+                "prf":sage_order["PRFNUM_0"],
+                "sqm":sage_order["sqm"],
+                "estado":'A',
+                "num_cargas":0,
+                "num_cargas_actual":0,
+                "num_paletes":sage_order["num_paletes"],
+                "num_paletes_actual":0,
+                "data_encomenda":sage_order["ORDDAT_0"],
+                "data_expedicao":sage_order["SHIDAT_0"],
+                "data_prevista_expedicao":sage_order["EXTDLVDAT_0"],
+                "data_solicitada":sage_order["DEMDLVDAT_0"],
+                "prazo":0,
+                "user_id":userId,
+                "cliente_id":clienteId
+            }
+            dml = db.dml(TypeDml.INSERT, dta, "producao_encomenda")
+            db.execute(dml.statement, cursor, dml.parameters)
+            encomendaId = cursor.lastrowid
+    return {"clienteId":clienteId,"encomendaId":encomendaId}
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -1574,7 +1657,14 @@ def SaveTempOrdemFabrico(request, format=None):
 
     def addProduto(data,cursor):
         artigo = data["artigo"] if "artigo" in data else None
-        if artigo is not None:
+        if artigo is not None:            
+            f = Filters({"produto_cod": artigo["produto_cod"].lower() })
+            f.where()
+            f.add(f'lower(produto_cod) = :produto_cod', True)
+            f.value("and")
+            produtoId = db.executeSimpleList(lambda: (f'SELECT id from producao_produtos {f.text}'), cursor, f.parameters)['rows']
+            if len(produtoId)>0:
+                return produtoId[0]['id']
             dml = db.dml(TypeDml.INSERT, {"produto_cod":artigo["produto_cod"]}, "producao_produtos",None,None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return cursor.lastrowid
@@ -1703,8 +1793,6 @@ def SaveTempOrdemFabrico(request, format=None):
             'agg_ofid_original': aggid,
             'of_id': data['ofabrico'],
             'order_cod': data['iorder'],
-            'cliente_cod': data['cliente_cod'],
-            'cliente_nome': data['cliente_nome'],
             'item_cod': data['item'],
             'item_id': data['item_id'],
             'produto_id': data['produto_id'] if produto_id is None else produto_id
@@ -1719,6 +1807,12 @@ def SaveTempOrdemFabrico(request, format=None):
         # if "artigospecs_id" in data:
         #     dta["artigospecs_id"] = data["artigospecs_id"]
         #     onDuplicate+=",artigospecs_id=VALUES(artigospecs_id)"
+        if "cliente_cod" in data and data["cliente_cod"] is not None:
+            dta["cliente_cod"]=data["cliente_cod"]
+            dta["cliente_nome"]=data["cliente_nome"]
+            onDuplicate+=",cliente_cod=VALUES(cliente_cod)"
+            onDuplicate+=",cliente_nome=VALUES(cliente_nome)"                
+                
         if "paletizacao_id" in data:
             dta["paletizacao_id"] = data["paletizacao_id"]
             onDuplicate+=",paletizacao_id=VALUES(paletizacao_id)"
@@ -1747,8 +1841,6 @@ def SaveTempOrdemFabrico(request, format=None):
                 of_id=VALUES(of_id),
                 agg_of_id=VALUES(agg_of_id),
                 order_cod=VALUES(order_cod),
-                cliente_cod=VALUES(cliente_cod),
-                cliente_nome=VALUES(cliente_nome),
                 produto_id=VALUES(produto_id),
                 item_cod=VALUES(item_cod),
                 item_id=VALUES(item_id)
@@ -1788,6 +1880,54 @@ def SaveTempOrdemFabrico(request, format=None):
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
     
+    def GetOrdensFabrico(aggId, cursor):
+        f = Filters({"agg_of_id": aggId})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'pto.agg_of_id = :agg_of_id', True)
+        f.value("and")   
+        rows = db.executeSimpleList(lambda: (f''' 
+            SELECT 
+            pto.id,of_id,
+            JSON_OBJECT(
+            'id',pa.id,'cod',pa.cod,'des',pa.des,'tipo',pa.tipo,'gtin',pa.gtin,'core',pa.core,'diam_ref',pa.diam_ref,
+            'formu',pa.formu,'gsm',pa.gsm,'lar',pa.lar,'nw1',pa.nw1,'nw2',pa.nw2,'produto',pa.produto,
+            'produto_id',pa.produto_id,'thickness',pa.thickness,'produto_cod',pprod.produto_cod
+            ) as artigo,
+            JSON_OBJECT(
+            'designacao', pe.designacao, 'tipo_emenda', pe.tipo_emenda, 'maximo', pe.maximo, 'emendas_rolo', pe.emendas_rolo,
+            'paletes_contentor', pe.paletes_contentor
+            ) as emendas,
+            JSON_OBJECT(
+            'id',pp.id,'cliente_cod',pp.cliente_cod,'artigo_cod',pp.artigo_cod,'contentor_id',pp.contentor_id,'filmeestiravel_bobines',pp.filmeestiravel_bobines,
+            'filmeestiravel_exterior',pp.filmeestiravel_exterior,'cintas',pp.cintas,'ncintas',pp.ncintas,'paletes_sobrepostas',pp.paletes_sobrepostas,'npaletes',pp.npaletes,
+            'palete_maxaltura',pp.palete_maxaltura,'netiquetas_bobine',pp.netiquetas_bobine,'netiquetas_lote',pp.netiquetas_lote,'netiquetas_final',pp.netiquetas_final,
+            'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'cliente_nome',pp.cliente_nome, 
+            'details', JSON_ARRAYAGG(JSON_OBJECT('order',ppd.item_order,'num_bobines',ppd.item_numbobines))
+            ) paletizacao,
+            JSON_OBJECT(
+            'id',pan.id,'designacao',pan.designacao,'versao',pan.versao,'nw_cod_sup',pan.nw_cod_sup,
+            'nw_des_sup',pan.nw_des_sup,'nw_cod_inf',pan.nw_cod_inf,'nw_des_inf',pan.nw_des_inf,'produto_id',pan.produto_id
+            ) nonwovens,
+            pto.cliente_cod, pto.cliente_nome, pc.id as cliente_id,
+            pto.order_cod, penc.id as encomenda_id,
+            (select count(*) from sistema_dev.producao_palete tpp where tpp.draft_ordem_id=pto.id) n_paletes_stock,
+            pto.n_paletes_total,ptoagg.sentido_enrolamento, ptoagg.amostragem
+            FROM sistema_dev.producao_tempordemfabrico pto  
+            JOIN sistema_dev.producao_tempaggordemfabrico ptoagg on pto.agg_of_id = ptoagg.id
+            JOIN sistema_dev.producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
+            JOIN sistema_dev.producao_emendas pe on pe.id=pto.emendas_id
+            JOIN sistema_dev.producao_artigo pa on pa.id=pto.item_id
+            JOIN sistema_dev.producao_produtos pprod on pto.produto_id=pprod.id
+            JOIN sistema_dev.producao_paletizacao pp on pto.paletizacao_id=pp.id
+            JOIN sistema_dev.producao_paletizacaodetails ppd on ppd.paletizacao_id=pp.id and ppd.item_id=2
+            LEFT JOIN sistema_dev.producao_cliente pc on pc.cod = pto.cliente_cod
+            LEFT JOIN sistema_dev.producao_encomenda penc on penc.eef = pto.order_cod
+            {f.text}
+            GROUP BY pto.id
+        '''), cursor, f.parameters)['rows']
+        return rows
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -1801,6 +1941,66 @@ def SaveTempOrdemFabrico(request, format=None):
                     ids = getAgg(data,cursor)
                     aggid = upsertTempAggOrdemFabrico(data,ids,cursor)
                     id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
+                    if 'forproduction' in data and data['forproduction']==True:
+                        ofs = GetOrdensFabrico(aggid,cursor)
+                        artigo_diameter = data['artigo_diam']
+                        for idx, ordemfabrico in enumerate(ofs):
+                            vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],request.user.id,cursor)
+                            #Registar ordem de produção....
+                            
+                            _artigo = json.loads(ordemfabrico['artigo'])
+                            _emendas = json.loads(ordemfabrico['emendas'])
+                            _paletizacao = json.loads(ordemfabrico['paletizacao'])
+                            _nonwovens = json.loads(ordemfabrico['nonwovens'])
+
+                            tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
+
+                            dta = {
+                                "timestamp": datetime.now(),
+                                "op": ordemfabrico["cliente_nome"] + ' L' + str(int(_artigo['lar'])) + ' LINHA ' + ordemfabrico["order_cod"],
+                                "largura": _artigo['lar'],
+                                "core": _artigo['core'] + "''",
+                                "num_paletes_produzir":ordemfabrico['n_paletes_total'] - ordemfabrico['n_paletes_stock'],
+                                "num_paletes_stock":ordemfabrico['n_paletes_stock'],
+                                "num_paletes_total":ordemfabrico['n_paletes_total'],
+                                "emendas":f"{_emendas['emendas_rolo']}/rolo (máximo {_emendas['maximo']}% - {_emendas['paletes_contentor']} paletes/contentor)",
+                                "nwsup":_nonwovens['nw_des_sup'],
+                                "nwinf":_nonwovens['nw_des_inf'],
+                                "tipo_paletes":'970x970',
+                                "palete_por_palete": 2 if _paletizacao['paletes_sobrepostas'] == 1 else 1,
+                                "bobines_por_palete": _paletizacao['details'][0]['num_bobines'] if _paletizacao['paletes_sobrepostas'] == 0 else _paletizacao['details'][1]['num_bobines'],
+                                "bobines_por_palete_inf": _paletizacao['details'][0]['num_bobines'] if _paletizacao['paletes_sobrepostas'] == 1 else 0,
+                                "folha_id":1,
+                                "enrolamento":ordemfabrico['sentido_enrolamento'],
+                                "freq_amos":ordemfabrico['amostragem'],
+                                "diam_min":_artigo["diam_ref"],
+                                "diam_max":_artigo["diam_ref"],
+                                "stock":0,
+                                "tipo_transporte":_paletizacao["contentor_id"],
+                                "paletes_camiao":_paletizacao["npaletes"],
+                                "altura_max":_paletizacao["palete_maxaltura"],
+                                "paletes_sobre":_paletizacao["npaletes"],
+                                "cintas":_paletizacao["ncintas"],
+                                "etiqueta_bobine":_paletizacao["netiquetas_bobine"],
+                                "etiqueta_palete":_paletizacao["netiquetas_lote"],
+                                "etiqueta_final":_paletizacao["netiquetas_final"],
+                                "artigo_id":_artigo["id"],
+                                "enc_id":vals["encomendaId"],
+                                "user_id":request.user.id,
+                                "tipo_emenda":tipoemendas[_emendas["tipo_emenda"]]
+
+                            }
+                            
+                            print(f"FORPRODUCTION-TO-INSERT --- {dta}")
+                            print(f"FORPRODUCTION-CLIENTE.ENCOMENDA --- {vals}")
+                            print(f"FORPRODUCTION-ARTIGO --- {_artigo}")
+                            print(f"FORPRODUCTION-EMENDAS --- {_emendas}")
+                            print(f"FORPRODUCTION-PALETIZACAO --- {_paletizacao}")
+                            print(f"FORPRODUCTION-NONWOVENS --- {_nonwovens}")
+                            
+                            
+                            
+
         return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Guardada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!"})

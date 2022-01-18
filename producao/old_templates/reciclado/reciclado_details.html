@@ -1,0 +1,48 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+
+{% block title %}Reciclado {{ reciclado.lote }}{% endblock %}
+
+{% block content %}
+<div>
+    <a href="{% url 'producao:reciclado_list' %}"  class="btn_back" role="button">Voltar</a>
+</div>
+<div class="title_block-list">
+    <h1>Reciclado</h1>
+    <h2>{{ reciclado.lote }}</h2>
+</div>
+<div class="content_details">
+    <div>
+        <div><h3>Produto: <span>{{ reciclado.produto_granulado.produto_granulado }}</span></h3></div>
+        <div><h3>Estado: <span>{{ reciclado.estado }}</span></h3></div>
+        <div><h3>Peso: <span>{{ reciclado.peso }} Kg</span></h3></div>
+        <div><h3>Observações: <span>{{ reciclado.obs }}</span></h3></div>
+        
+    </div>
+    <div>
+        <div><h3>Data e Hora de Registo: <span>{{ reciclado.timestamp|date:"d-n-Y G:i" }}</span></h3></div>
+        <div><h3>Inicio: <span>{{ reciclado.timestamp_inicio|date:"d-n-Y G:i" }}</span></h3></div>
+        <div><h3>Fim: <span>{{ reciclado.timestamp|date:"d-n-Y G:i" }}</span></h3></div>
+        <div><h3>Tara: <span>{{ reciclado.tara }}</span></h3></div>
+        
+        
+    </div>
+   
+
+    
+    
+    
+</div>
+<div class="content_details">
+    <div></div>
+    <div>
+        <form method="POST" action="#">
+            {% csrf_token %}
+            <label for="id_num_copias">Nº de Cópias: </label>{{ form.num_copias }}
+            <input type="submit" value="Imprimir Etiqueta" id="confirm-btn">
+        </form>
+    </div>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="container">
+    <br>
+    <form action="." method="POST">{% csrf_token %}
+        <h1 id="center">Deseja Reabrir a Receção {{ rececao.rececao }} com os seguintes Nonwovens?</h1>
+        <br>
+        <br>
+        <div class="row">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Stack Number</th>
+                            <th id="center">Artigo NW</th>
+                            <th id="center">Lote</th>
+                            <th id="center">Produção</th>
+                            <th id="center">Comp. (m)</th>
+                            <th id="center">M<sup>2</sup></th>
+                            
+                    </tr>
+                    <tbody>
+                        {% for nw in nonwovens %}
+                            <tr>
+                                <td>{{ nw.stack_num }}</td>
+                                <td id="center">{{ nw.artigo_nw }}</td>
+                                <td id="center">{{ nw.lote }}</td>
+                                <td id="center">{{ nw.prod }}</td>
+                                <td id="center">{{ nw.comp_total }}</td>
+                                <td id="center">{{ nw.sqm }}</td>
+                                
+                                
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    </thead>
+                </table>
+            </div>
+        </div>
+        <br>
+        <div class="col-md-6">
+            {% if messages %}
+            <ul class="messages">
+                <h1 class="erro">ERRO!</h1>
+                {% for message in messages %}
+                <li class="{{ message.tags }}" id="error">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+        </div>
+        <input type="submit" class="btn btn-block btn-success" value="Sim">  
+        <a href="{% url 'producao:rececao_list' %}" class="btn btn-block btn-danger" role="button">Cancelar</a>
+  
+        
+    </form>
+    
+</div>
+
+{% endblock %}

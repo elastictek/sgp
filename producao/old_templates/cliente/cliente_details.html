@@ -1,0 +1,84 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+{% block title %}Cliente Detalhes | {{ block.super }}{% endblock %}
+{% block content %}
+
+
+<div class="container">
+    <a href="{% url 'producao:clientes' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    <a href="{% url 'producao:cliente_add_artigo' pk=cliente.pk %}" class="btn btn-outline-primary" role="button">Associar Artigo a Cliente</a>
+    
+</div>
+<br>
+<div>
+    <h3 class="text-center">Detalhes do Cliente</h3>
+</div>
+<br>
+<div class="container">
+    <div class="container">
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Cliente:</label></div>
+            <div class="col-10">{{ cliente.nome }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Limite Inferior:</label></div>
+            <div class="col-10">{{ cliente.liminf }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Limite Superior:</label></div>
+            <div class="col-10">{{ cliente.limsup }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-2"><label class="form-label">Diâmetro de referência:</label></div>
+            <div class="col-10">{{ cliente.diam_ref }}</div>
+        </div>
+    </div>
+    <br>
+          
+            
+        
+    
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Cód. Artigo</th>
+                    <th scope="col">Designação</th>
+                    <th scope="col">Cód. Cliente</th>
+                    <th scope="col">Detalhes</th>
+                    {% if request.user|has_group:"Logistica Supervisor"%}
+                    <th scope="col">Especificações</th>
+                    <th scope="col">Transportes</th>
+                    <th scope="col">Editar</th>
+                    <th scope="col">Remover</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ac in artigos_cliente %}
+                <tr>                   
+                    <td>{{ ac.artigo.cod }}</td>
+                    <td>{{ ac.artigo.des }}</td>
+                    {% if not ac.cod_client == None %}
+                    <td>{{ ac.cod_client }}</td>
+                    {% else %}
+                    <td>N/A</td>
+                    {% endif %}
+                    <td><a href="#"><i class="fas fa-th-list"></i></a></td>
+                    {% if request.user|has_group:"Logistica Supervisor"%}
+                    <td><a href="{% url 'producao:especificacoes_artigo_cliente' pk_cliente=cliente.pk pk_artigo=ac.artigo.pk %}"><i class="fas fa-flask"></i></a></td>
+                    <td><a href="{% url 'producao:transportes_artigo_cliente' pk_cliente=cliente.pk pk_artigo=ac.artigo.pk %}"><i class="fas fa-dolly-flatbed"></i></a></td>
+                    <td><a href="#"><i class="fas fa-edit"></i></a></td>
+                    <td><a href="{% url 'producao:cliente_remover_artigo' pk_cliente=cliente.pk pk_artigo=ac.artigo.pk %}"><i class="fas fa-trash"></i></a></td>
+                    {% endif %}
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+{% endblock %}

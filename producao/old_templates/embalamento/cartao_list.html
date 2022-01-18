@@ -1,0 +1,39 @@
+{% extends "layout.html"%} 
+{% block title %}Cartão | {{ block.super }}{% endblock %}
+{% block content %}
+
+<div class="container">
+    <a href="{% url 'producao:embalamento_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    <a href="{% url 'producao:cartao_create' %}" class="btn btn-outline-primary" role="button">Criar Cartão</a>
+    
+</div>
+<div class="container">
+    <div>
+        <h3 class="text-center">Cartão</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-fixed">
+            <thead>
+                <tr>
+                    <th scope="col">Cód. Cartão</th>
+                    <th scope="col">Descrição</th>
+                    <th scope="col">Editar</th>
+                    <th scope="col">Apagar</th>
+                    </tr>
+            </thead>
+            <tbody>
+                {% for cart in cartao %}
+                <tr>                   
+                    <td>{{ cart.cod }}</td>
+                    <td>{{ cart.des }}</td>
+                    <td><a href="#"><i class="fas fa-edit"></i></a></td>
+                    <td><a href="#"><i class="fas fa-trash"></i></a></td>
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

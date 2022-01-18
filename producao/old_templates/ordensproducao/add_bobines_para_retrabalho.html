@@ -1,0 +1,70 @@
+{% extends "layout.html"%}
+{% load producao_tags %}
+{% block title %}Retirar bobines excedentes da ordem| {{ block.super }}{% endblock %}
+{% block content %}
+<div>
+    <a href="#"  class="btn_back" role="button">Cancelar</a>
+    <a href="{% url 'planeamento:finalizar_ordem_retrabalho_dm' pk=op.pk %}"  class="btn_create" role="button">Finalizar</a>
+    <a href="{% url 'planeamento:reset_status_bobine_retrabalho' pk_ordem=op.pk %}"  class="btn_create" role="button">Reset</a>
+</div>
+<div class="title_block-list">
+    
+    <h1>Retirar bobines excedentes da ordem {{ op.op }}</h1>
+</div>
+<br>
+<div>
+     
+    {% for message in messages %}
+        {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+            <div class="error_classificacao">
+                <p>{{message}} </p>
+            </div>
+        {% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+            <div class="success_classificacao">
+                <p>{{message}} </p>
+            </div>
+        {% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}
+            <div>
+                <p>{{message}} </p>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+</div>
+
+   
+    <div class="flex-container">
+        <div>
+        {% for pal in paletes_a_retrabalhar %}
+            <table>
+                <h2>{{ pal.palete.nome }}</h2>
+                <thead>
+                    <tr>
+                        <th>Bobine</th>
+                        <th>Para retrabalho</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bobine in pal.palete.bobine_set.all %}
+                    <tr>
+                        <td>{{ bobine.nome }}</td>
+                        {% if bobine.para_retrabalho == True %}<td class="td-icon"><a href="{% url 'planeamento:change_status_bobine_retrabalho' pk=bobine.pk pk_ordem=op.pk %}"><i class="fas fa-check"></i></a></td>{% else %}<td class="td-icon"><a href="{% url 'planeamento:change_status_bobine_retrabalho' pk=bobine.pk pk_ordem=op.pk %}"><i class="fas fa-times"></i></a></td>{% endif %}
+                        <td></td>
+                        
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endfor %}
+        </div>
+    </div>
+ 
+    
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+    crossorigin="anonymous">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script>
+
+</script>
+{% endblock %}
