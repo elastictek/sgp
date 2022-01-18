@@ -1665,7 +1665,7 @@ def SaveTempOrdemFabrico(request, format=None):
             produtoId = db.executeSimpleList(lambda: (f'SELECT id from producao_produtos {f.text}'), cursor, f.parameters)['rows']
             if len(produtoId)>0:
                 return produtoId[0]['id']
-            dml = db.dml(TypeDml.INSERT, {"produto_cod":artigo["produto_cod"]}, "producao_produtos",None,None,False)
+            dml = db.dml(TypeDml.INSERT, {"produto_cod":artigo["produto_cod"].strip()}, "producao_produtos",None,None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return cursor.lastrowid
         return None
