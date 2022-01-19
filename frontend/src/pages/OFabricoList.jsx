@@ -465,6 +465,8 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
         //showPromiseConfirm({ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, action });
     }
 
+    console.log("##############STATUS#########",status,temp_ofabrico)
+
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico) && <>

@@ -82,9 +82,10 @@ class OrdemProducao(models.Model):
     prfcod                  = models.CharField(max_length=25,verbose_name="Código PRF", null=True) #ADDED - CÓDIGO PRF SAGE ID
     clientecod              = models.CharField(max_length=15,verbose_name="Código Cliente", null=True) #ADDED - CÓDIGO CLIENTE SAGE ID
     clientenome             = models.CharField(max_length=80,verbose_name="Nome Cliente", null=True) #ADDED - NOME CLIENTE SAGE NOME
-    paletizacao             = models.ForeignKey('producao.Paletizacao', on_delete=models.PROTECT, verbose_name="Paletização", null=True, blank=True)  #ADDED - PALETIZAÇÃO
-    formulacao              = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True, blank=True)  #ADDED - FORMULAÇÃO
+    #paletizacao             = models.ForeignKey('producao.Paletizacao', on_delete=models.PROTECT, verbose_name="Paletização", null=True, blank=True)  #ADDED - PALETIZAÇÃO
+    #formulacao              = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True, blank=True)  #ADDED - FORMULAÇÃO
     status                  = models.SmallIntegerField(default=0, verbose_name="Status")   #ADDED - Status
+    draft_ordem             = models.ForeignKey('producao.TempOrdemFabrico', on_delete = models.PROTECT, verbose_name = "Draft Ordem de Producao", null = True, blank = True) #ADDED
     user                    = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Username")
     enc                     = models.ForeignKey('producao.Encomenda', on_delete=models.PROTECT, verbose_name="Encomenda", null=True, blank=True) 
     artigo                  = models.ForeignKey('producao.Artigo', on_delete=models.PROTECT, verbose_name="Artigo")

@@ -3,10 +3,13 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.views import APIView
 from django.http import Http404
 from rest_framework.response import Response
+from django.http.response import HttpResponse
+from django.http import FileResponse
 from producao.models import Artigo, Palete, Bobine, Emenda, Bobinagem, Cliente, Encomenda, Carga
 from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteListSerializer, PaleteDetailSerializer, CargaListSerializer, PaletesCargaSerializer, CargasEncomendaSerializer, CargaDetailSerializer, BobineSerializer, EncomendaListSerializer, BobinagemCreateSerializer, BobinesDmSerializer, BobinesPaleteDmSerializer, EmendaSerializer, EmendaCreateSerializer, BobinagemListSerializer, BobineListAllSerializer, ClienteSerializer, BobinagemBobinesSerializer, PaleteDmSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
+import mimetypes
 
 
 from pyodbc import Cursor, Error, lowercase
@@ -78,6 +81,33 @@ db = DBSql(connections["default"].alias)
 #             return ret
 #         return
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def download_file(request):
+    print(request)
+    f = request.GET['f']
+    fs = FileSystemStorage()
+    path = fs.open("OF/OFF-E0122_00013/Action Plan v1.xlsx",'rb')
+    # # Define Django project base directory
+    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # # Define text file name
+    filename = 'v1.xlsx'
+    # # Define the full file path
+    # filepath = BASE_DIR + '/filedownload/Files/' + filename
+    # # Open the file for reading content
+    # path = open(filepath, 'r')
+    # # Set the mime type
+    
+    mime_type, _ = mimetypes.guess_type("OF/OFF-E0122_00013/Action Plan v1.xlsx")
+    print(mime_type)
+    # # Set the return value of the HttpResponse
+    response =  FileResponse(path, content_type=mime_type)
+    # # Set the HTTP header for sending to browser
+    response['Content-Disposition'] = "inline; filename=%s" % filename
+    # # Return the response value
+    # return response
+    return response
 
 def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseColumns=True, logicOperator="and"):
     p = {}
@@ -155,7 +185,7 @@ def OFabricoList(request, format=None):
         oflist.n_paletes_produzidas || '/' || sgp_op.num_paletes_produzir produzidas,
         oflist.n_paletes_stock_in || '/' || sgp_op.num_paletes_stock stock,oflist.n_paletes_total || '/' || sgp_op.num_paletes_total total,
         sgp_op.retrabalho, oflist.start_date, oflist.end_date, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
-        oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.paletizacao_id, sgp_op.formulacao_id, sgp_op.status,
+        oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.status,
         sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
         sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
 		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date
@@ -1954,12 +1984,13 @@ def SaveTempOrdemFabrico(request, format=None):
                             _nonwovens = json.loads(ordemfabrico['nonwovens'])
 
                             tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
-
+                            enrolamento = {"1": "Anti-horário", "2":"Horário"}
+                            delta = datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S")
                             dta = {
                                 "timestamp": datetime.now(),
                                 "op": ordemfabrico["cliente_nome"] + ' L' + str(int(_artigo['lar'])) + ' LINHA ' + ordemfabrico["order_cod"],
                                 "largura": _artigo['lar'],
-                                "core": _artigo['core'] + "''",
+                                "core": _artigo['core'] + '"',
                                 "num_paletes_produzir":ordemfabrico['n_paletes_total'] - ordemfabrico['n_paletes_stock'],
                                 "num_paletes_stock":ordemfabrico['n_paletes_stock'],
                                 "num_paletes_total":ordemfabrico['n_paletes_total'],
@@ -1971,7 +2002,7 @@ def SaveTempOrdemFabrico(request, format=None):
                                 "bobines_por_palete": _paletizacao['details'][0]['num_bobines'] if _paletizacao['paletes_sobrepostas'] == 0 else _paletizacao['details'][1]['num_bobines'],
                                 "bobines_por_palete_inf": _paletizacao['details'][0]['num_bobines'] if _paletizacao['paletes_sobrepostas'] == 1 else 0,
                                 "folha_id":1,
-                                "enrolamento":ordemfabrico['sentido_enrolamento'],
+                                "enrolamento":enrolamento[ordemfabrico['sentido_enrolamento']],
                                 "freq_amos":ordemfabrico['amostragem'],
                                 "diam_min":_artigo["diam_ref"],
                                 "diam_max":_artigo["diam_ref"],
@@ -1979,24 +2010,46 @@ def SaveTempOrdemFabrico(request, format=None):
                                 "tipo_transporte":_paletizacao["contentor_id"],
                                 "paletes_camiao":_paletizacao["npaletes"],
                                 "altura_max":_paletizacao["palete_maxaltura"],
-                                "paletes_sobre":_paletizacao["npaletes"],
-                                "cintas":_paletizacao["ncintas"],
+                                "paletes_sobre":_paletizacao["paletes_sobrepostas"],
+                                "cintas": 1 if _paletizacao["ncintas"] > 0 else 0,
                                 "etiqueta_bobine":_paletizacao["netiquetas_bobine"],
                                 "etiqueta_palete":_paletizacao["netiquetas_lote"],
                                 "etiqueta_final":_paletizacao["netiquetas_final"],
                                 "artigo_id":_artigo["id"],
                                 "enc_id":vals["encomendaId"],
                                 "user_id":request.user.id,
-                                "tipo_emenda":tipoemendas[_emendas["tipo_emenda"]]
-
+                                "tipo_emenda":tipoemendas[_emendas["tipo_emenda"]],
+                                "cliente_id":vals["clienteId"],
+                                "retrabalho":0,
+                                "ativa":0,
+                                "completa":0,
+                                "num_paletes_produzidas":0,                                
+                                "data_prevista_inicio": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d"),
+                                "hora_prevista_inicio": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%H:%M:%S"),
+                                "data_prevista_fim": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d"),
+                                "hora_prevista_fim": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%H:%M:%S"),
+                                "num_paletes_stock_in":0,
+                                "ofid":ordemfabrico["of_id"],
+                                "draft_ordem_id":ordemfabrico["id"],
+                                "status":2,
+                                "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0]
                             }
                             
-                            print(f"FORPRODUCTION-TO-INSERT --- {dta}")
+                            dml = db.dml(TypeDml.INSERT, dta, "planeamento_ordemproducao")
+                            
+                            print(f"FORPRODUCTION-TO-INSERT STATEMENT --- -- {dml.statement}")
+
+                            db.execute(dml.statement, cursor, dml.parameters)
+                            opid = cursor.lastrowid
+                            
+                            
+                            print(f"FORPRODUCTION-TO-INSERT ---  -- {dta}")
                             print(f"FORPRODUCTION-CLIENTE.ENCOMENDA --- {vals}")
                             print(f"FORPRODUCTION-ARTIGO --- {_artigo}")
                             print(f"FORPRODUCTION-EMENDAS --- {_emendas}")
                             print(f"FORPRODUCTION-PALETIZACAO --- {_paletizacao}")
                             print(f"FORPRODUCTION-NONWOVENS --- {_nonwovens}")
+                            print(f"FORPRODUCTION-DATA --- {data}")
                             
                             
                             

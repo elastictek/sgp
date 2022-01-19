@@ -107,6 +107,8 @@ urlpatterns = [
     url(r'^tempofabricoget/$', views.TempOFabricoGet),
     url(r'^tempaggofabricolookup/$', views.TempAggOFabricoLookup),
     url(r'^ignorarordemfabrico/$', views.IgnorarOrdemFabrico),
+
+    url(r'^downloadfile/$', views.download_file),
     
     
     #url(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
