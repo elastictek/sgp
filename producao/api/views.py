@@ -27,6 +27,7 @@ import collections
 import hashlib
 import math
 from django.core.files.storage import FileSystemStorage
+from sistema.settings.appSettings import AppSettings
 import time
 
 
@@ -86,20 +87,23 @@ db = DBSql(connections["default"].alias)
 @permission_classes([IsAuthenticated])
 def download_file(request):
     print(request)
-    f = request.GET['f']
+    f = request.GET['f'] #file path
+    i = request.GET['i'] #Id
+    t = request.GET['f'] #type
+    dt = datetime.now().strftime("%Y%m%d-%H%M%S")
     fs = FileSystemStorage()
-    path = fs.open("OF/OFF-E0122_00013/Action Plan v1.xlsx",'rb')
+    path = fs.open(f,'rb')
     # # Define Django project base directory
     # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # # Define text file name
-    filename = 'v1.xlsx'
+    filename = f'{t.replace(" ",".")}_{str(i)}_{dt}'
     # # Define the full file path
     # filepath = BASE_DIR + '/filedownload/Files/' + filename
     # # Open the file for reading content
     # path = open(filepath, 'r')
     # # Set the mime type
     
-    mime_type, _ = mimetypes.guess_type("OF/OFF-E0122_00013/Action Plan v1.xlsx")
+    mime_type, _ = mimetypes.guess_type(f)
     print(mime_type)
     # # Set the return value of the HttpResponse
     response =  FileResponse(path, content_type=mime_type)
@@ -122,11 +126,9 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
         if data.get(mainKey) is not None:
             sp = {}
             for key in mainValue.get('keys'):
-                table = f'"{mainValue.get("table")}".' if (mainValue.get(
-                    "table") and encloseColumns) else mainValue.get("table", '')
+                table = f'"{mainValue.get("table")}".' if (mainValue.get("table") and encloseColumns) else mainValue.get("table", '')
                 field = f'{table}"{key}"' if encloseColumns else f'{table}{key}'
-                sp[key] = {"value": data.get(
-                    mainKey).lower(), "field": f'lower({field})'}
+                sp[key] = {"value": data.get(mainKey).lower(), "field": f'lower({field})'}
             f = Filters(data)
             f.setParameters(sp, True)
             f.where(_forceWhere, _overrideWhere)
@@ -156,27 +158,58 @@ def rangeP(data, key, field):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def OFabricoList(request, format=None):
+    def statusFilter(v):
+        if v == 'all':
+            return None
+        elif v == 'notcreated':
+            return 'isnull'
+        elif v == 'inpreparation':
+            return '==0'
+        elif v == 'inprogress':
+            return '==1'
+        elif v == 'finished':
+            return '==99'
+        return None
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE(oflist.{k})'),
+        **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+        **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+        # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+        # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
+        "status": {"value": lambda v: statusFilter(v.get('fofstatus')), "field": lambda k, v: f'sgp_op.{k}'}
+    }, True)
     f.where(False,"and")
-    #f.add(f'"of".id = :id', True)
-    f.value("and")
-    parameters = {**f.parameters}
-    
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": 'oflist.'},
+        'fmulti_order': {"keys": ['iorder', 'prf'], "table": 'oflist.'},
+        'fmulti_item': {"keys": ['item', 'item_nome'], "table": 'oflist.'},
+        'f_ofabrico': {"keys": ['ofabrico'], "table": 'oflist.'},
+        'f_agg': {"keys": ['cod'], "table": 'sgp_tagg.'}
+    }, False, "and",False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    print(f'data----{request.data}')
+
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
+    mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
     #cols = encloseColumn(['ofitm."ROWID" OFROWID','itm."ROWID" ITMROWID', 'enc."ROWID" ENCROWID', 'ofitm.MFGNUM_0', 'itm.TSICOD_0',
     #        'itm.ITMREF_0', 'itm.ITMDES1_0', 'enc.SOHNUM_0', 'enclin.SOPLIN_0', 'enc.ORDDAT_0', 'enc.DEMDLVDAT_0', 'enc.SHIDAT_0',
     #        'enc.PRFNUM_0', 'enc.CUSORDREF_0', 'enc.DAYLTI_0',
-    #        'enc.LASDLVDAT_0', 'enc.LASDLVNUM_0', 'enc.LASINVDAT_0', 'enc.LASINVNUM_0', 'enc.DSPTOTQTY_0', 'enc.DSPTOTVOL_0', 'enc.DSPTOTWEI_0',
+    #        'enc.LASDLVDAT_0', 'enc.LASDLVNUM_0', 'enc.lasinvdat_0', 'enc.LASINVNUM_0', 'enc.DSPTOTQTY_0', 'enc.DSPTOTVOL_0', 'enc.DSPTOTWEI_0',
     #        'enc.DSPVOU_0', 'enc.DSPWEU_0',
     #        'enc.BPCORD_0', 'enc.BPCNAM_0', 'enc.CREUSR_0', 'enc.CREDAT_0', 'enc.CREDATTIM_0', 'enc.UPDUSR_0', 'enc.UPDDAT_0', 'enc.UPDDATTIM_0'
     #],True,True,['"ROWID" OFROWID','"ROWID" ITMROWID', '"ROWID" ENCROWID'])
     #dql.columns = encloseColumn(cols,False)
 
     cols = f"""
-        oflist.ofabrico, oflist.ofabrico_sgp_nome,oflist.ofabrico_sgp,
+        sgp_tagg.cod,
+        oflist.ofabrico, oflist.prf, oflist.ofabrico_sgp_nome,oflist.ofabrico_sgp,
         oflist.item, oflist.item_nome, oflist.iorder,oflist.cliente_cod,oflist.cliente_nome,
         oflist.n_paletes_produzidas,sgp_op.num_paletes_produzir,
         oflist.n_paletes_stock_in,sgp_op.num_paletes_stock,
@@ -194,7 +227,7 @@ def OFabricoList(request, format=None):
     response = dbgw.executeList(lambda p, c: (
         f"""
         SELECT {c(f'{cols}')} 
-        FROM MV_OFABRICO_LIST oflist
+        FROM {mv_ofabrico_list} oflist
         LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op on sgp_op.id = oflist.ofabrico_sgp
         LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = oflist.ofabrico and sgp_top.item_cod=oflist.item
         LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
@@ -202,7 +235,7 @@ def OFabricoList(request, format=None):
         LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
         WHERE 
         NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
-        {f.text}
+        {f.text} {f2["text"]}
         {p(dql.sort)} {p(dql.paging)}
         """
     ), connection, parameters, [])
@@ -488,9 +521,10 @@ def NewPaletizacaoSchema(request, format=None):
     
     def checkPaletizacao(data, cursor):
         if ("id" in data):
-            f = Filters({"id":data["id"]})
+            f = Filters({"id":data["id"],"status":0})
             f.where()
             f.add(f'paletizacao_id = :id', True)
+            f.add(f'status = :status', True)
             f.value("and")
             return db.exists("producao_tempordemfabrico",f,cursor).exists
         return 0
@@ -1973,7 +2007,10 @@ def SaveTempOrdemFabrico(request, format=None):
                     id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
                     if 'forproduction' in data and data['forproduction']==True:
                         ofs = GetOrdensFabrico(aggid,cursor)
-                        artigo_diameter = data['artigo_diam']
+                        if len(ofs)>0:
+                            #Update Agg status
+                            dml = db.dml(TypeDml.UPDATE,{"status":1},"producao_tempaggordemfabrico",{"id":f'=={aggid}'},None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
                         for idx, ordemfabrico in enumerate(ofs):
                             vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],request.user.id,cursor)
                             #Registar ordem de produção....
@@ -2169,6 +2206,7 @@ def TempAggOFabricoLookup(request, format=None):
     parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
+    mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
     dql.columns = encloseColumn(cols,False)
     with connections[connGatewayName].cursor() as cursor:
         if group:
@@ -2180,7 +2218,7 @@ def TempAggOFabricoLookup(request, format=None):
                 ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
                 (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
                 (select row_to_json(_) from (select pe.*) as _) emendas
-                FROM MV_OFABRICO_LIST oflist
+                FROM {mv_ofabrico_list} oflist
                 join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
                 join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
                 left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
@@ -2193,7 +2231,7 @@ def TempAggOFabricoLookup(request, format=None):
                 f"""
                     select 
                     {dql.columns}
-                    FROM MV_OFABRICO_LIST oflist
+                    FROM {mv_ofabrico_list} oflist
                     join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
                     join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
                     {f.text}
@@ -2407,7 +2445,7 @@ def SellCustomersLookup_OLD(request, format=None):
 def SellOrdersLookup(request, format=None):
     connection = connections[connGatewayName].cursor()
     cols = ['SOHNUM_0', 'PRFNUM_0']
-    f = filterMulti(request.data['filter'], {'fmulti_order': {"keys": cols}})
+    f = filterMulti(request.data['filter'], {'fmulti_order': {"keys":cols}})
     parameters = {**f['parameters']}
 
     dql = dbgw.dql(request.data, False)
@@ -2416,7 +2454,7 @@ def SellOrdersLookup(request, format=None):
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM {sageAlias}."SORDER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns}, concat("SOHNUM_0", \' \', "PRFNUM_0") COMPUTED FROM {sageAlias}."SORDER" {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 
@@ -2437,7 +2475,7 @@ def SellItemsLookup(request, format=None):
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM {sageAlias}."ITMMASTER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns}, concat("ITMREF_0", \' \', "ITMDES1_0") COMPUTED FROM {sageAlias}."ITMMASTER" {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 

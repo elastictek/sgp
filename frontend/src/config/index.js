@@ -1,8 +1,9 @@
 import React from 'react';
-//export const API_URL = "http://127.0.0.1:8000/api";
+export const ROOT_URL = "http://localhost:8000";
 export const CSRF = document.cookie.replace("csrftoken=","");
 export const MAX_UPLOAD_SIZE = 5; //MB
 export const API_URL = "/api";
+export const DOWNLOAD_URL = "/downloadfile";
 export const MEDIA_URL = "/media";
 export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';

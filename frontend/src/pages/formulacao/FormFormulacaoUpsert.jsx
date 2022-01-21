@@ -329,12 +329,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["formu_materiasprimas_A", "formu_materiasprimas_BC"];
         const v = schema(false, ['mangueira_A', 'matprima_cod_A', 'densidade_A', 'arranque_A', 'mangueira_BC', 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(values, { abortEarly: false });
+        console.log("after", values)
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         let fieldValues;
         if (!v.error) {
             fieldValues = updateGlobals({ values, action: "finish" });
-
             let mA = fieldValues.formu_materiasprimas_A.map((v) => v.mangueira_A);
             let mBC = fieldValues.formu_materiasprimas_BC.map((v) => v.mangueira_BC);
 
@@ -512,7 +512,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
+                        <Button type="primary" onClick={() => onFinish(form.getFieldsValue(true))}>Guardar</Button>
                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                     </Space>
                 </Portal>

@@ -31,7 +31,7 @@ class TempAggOrdemFabrico(models.Model):
     amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
     year = models.IntegerField(verbose_name="Ano", null=False, default=datetime.date.today().year)
-    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED - Status [0 - A Validar/Aberta | 1 - A Validar/Reaberta | 2 - Em Produção/Fechada | -1 - Disabled],
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED - Status [0 - A Validar/Aberta | 1 - Na Produção/Aberta | 5 - A Validar/Reaberta | 7 - Em Produção | 9 - Fechada | -1 - Disabled],
     start_prev_date = models.DateTimeField(verbose_name="Data Início Prevista", null=True, blank=True)
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
     start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)

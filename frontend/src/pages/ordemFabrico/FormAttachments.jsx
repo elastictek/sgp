@@ -10,7 +10,7 @@ import { Button, Upload, message, Spin } from "antd";
 const { Dragger } = Upload;
 import { LoadingOutlined, EditOutlined, UploadOutlined, DeleteOutlined, InboxOutlined } from '@ant-design/icons';
 import Icon from '@ant-design/icons';
-import { API_URL, DATE_FORMAT, DATETIME_FORMAT, CSRF, MAX_UPLOAD_SIZE, TIPOANEXOS_OF, MEDIA_URL } from 'config';
+import { API_URL, ROOT_URL, DOWNLOAD_URL, DATE_FORMAT, DATETIME_FORMAT, CSRF, MAX_UPLOAD_SIZE, TIPOANEXOS_OF, MEDIA_URL } from 'config';
 //import FormAttachementsUpsert from '../attachments/FormAttachementsUpsert';
 import { OFabricoContext } from './FormOFabricoValidar';
 
@@ -131,6 +131,12 @@ const AttachmentsList = ({ attachments, setLoading, loadData }) => {
         });
     }
 
+    const urlAttachemnt = (p)=>{
+        console.log(" ---- ",p,`${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`);
+        console.log(API_URL," -- ", MEDIA_URL," --- ",p.path.split("/").slice(1).join('/'))
+        //${MEDIA_URL}/${v.path.split("/").slice(1).join('/')}
+    }
+
     return (
         <>
             <Toolbar
@@ -138,7 +144,7 @@ const AttachmentsList = ({ attachments, setLoading, loadData }) => {
                 right={<Button type="primary" disabled={Object.keys(changedTypes).length == 0 ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
             />
             {attachments.map(v => <StyledFile key={`attf-${v.id}`}>
-                <a className="itemfile" href={`${MEDIA_URL}/${v.path.split("/").slice(1).join('/')}`} target="_blank"><span>{v.path.split("/").pop()}</span></a>
+                <a className="itemfile" href={urlAttachemnt(v)} target="_blank"><span>{v.path.split("/").pop()}</span></a>
                 <div className="itemtype"><SelectField onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
                     optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
                 /></div>

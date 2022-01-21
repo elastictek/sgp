@@ -14,6 +14,20 @@ export const getFilterRangeValues = (data) => {
     return ret;
 }
 
+//type = any | start | end | exact
+export const getFilterValue = (v, type = 'exact') => {
+    const val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
+    if (val !== '' && val !== undefined) {
+        switch (type) {
+            case 'any': return `%${val.replaceAll(' ', '%%')}%`;
+            case 'start': return `${val}%`;
+            case 'end': return `${val}%`;
+            default: return val;
+        }
+    }
+    return undefined;
+}
+
 export const isValue = (value, compare, ret = '') => {
     if (value === compare) {
         return ret;
@@ -29,7 +43,7 @@ export const hasValue = (value, compare, ret = '') => {
 }
 
 export const noValue = (value, ret = '') => {
-    if (!value){
+    if (!value) {
         return ret;
     }
     return value;
@@ -61,8 +75,7 @@ export const gtinCheckdigit = (input) => {
         if (i % 2 === 0) {
             total = total + number;
         }
-        else
-        {
+        else {
             total = total + (number * 3);
         }
         i++;

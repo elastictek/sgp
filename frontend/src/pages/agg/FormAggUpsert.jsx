@@ -77,34 +77,6 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
         } else {
             setResultMessage(response.data);
         }
-        //setResultMessage(response.data);
-
-
-        /* const status = { error: [], warning: [], info: [], success: [] };
-        const msgKeys = [];
-        const v = schema().validate(values, { abortEarly: false });
-        status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        if (!v.error) {
-        }
-
-        if (status.error.length === 0) {
-            const { nw_cod_sup: { value: nw_cod_sup, label: nw_des_sup } = {} } = values;
-            const { nw_cod_inf: { value: nw_cod_inf, label: nw_des_inf } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/newartigononwovens/`, parameters: { ...values, produto_id: record.produto_id, nw_cod_sup, nw_des_sup, nw_cod_inf, nw_des_inf } });
-            setResultMessage(response.data);
-        }
-        setFormStatus(status); */
-        throw "TODO - RELOAD PARENT...";
-
-        /* const response = await fetchPost({ url: `${API_URL}/newformulacao/`, parameters: { ...values, artigo_cod: record.item_cod } });
-        if (operation.key === "update") {
-            parentReload({ formulacao_id: operation.values.id });
-        } else {
-            parentReload({}, "lookup");
-        }
-        setResultMessage(response.data); */
-        //throw "TODO - CHECK VALIDATION ERRORS...";
     }
 
     const onSuccessOK = () => {
@@ -161,7 +133,7 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                                 return (
                                     <FieldSet layout="vertical">
                                         {fields.map((field, index) => (
-                                            <FieldSet key={field.key} field={{ wide: [1, 4, 4] }}>
+                                            <FieldSet key={field.key} field={{ wide: [1, 7, 8] }}>
                                                 <Field forInput={true} name={[field.name, `checked`]} label={{ enabled: false }}><CheckboxField disabled={form.getFieldValue(["aggs", field.name, "enabled"]) ? false : true} /></Field>
                                                 <Field forInput={false} name={[field.name, `of_id`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                 <Field forInput={false} name={[field.name, `artigo_cod`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>

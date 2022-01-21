@@ -12,4 +12,7 @@ class AppSettings:
             "sage":f'"SAGE-PROD"'
         }
     }
+    materializedViews = {
+        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST_DEV'
+    }
 

@@ -10,7 +10,7 @@ import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
 import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse } from "antd";
 const { Panel } = Collapse;
-import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined,PaperClipOutlined } from '@ant-design/icons';
+import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import FormAggUpsert from '../agg/FormAggUpsert';
 const FormPaletesStockUpsert = React.lazy(() => import('../paletesStock/FormPaletesStockUpsert'));
@@ -60,20 +60,21 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
             type={showWrapper.mode}
             destroyOnClose={true}
-            //width={width}
+            width={800}
             mask={true}
             /* style={{ maginTop: "48px" }} */
             setVisible={onVisible}
             visible={showWrapper.show}
-            width={800}
             bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
         >
-            {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} /* record={record} */ parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
-            {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-            {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-            {showWrapper.type === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-            {showWrapper.type === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+            <YScroll>
+                {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} /* record={record} */ parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
+                {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.type === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.type === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+            </YScroll>
         </WrapperForm>
     );
 }
@@ -90,8 +91,8 @@ const loadPaletesGet = async (tempof_id) => {
 
 const PaletesStock = ({ item }) => {
     return (
-        <div style={{display: "flex", flexWrap: "wrap", flexDirection: "row-reverse"}}>
-        { item.paletesstock && item.paletesstock.map((v, idx) => { return <div style={{flex: "1 1 80px"}} key={`ps-${item.tempof_id}-${idx}`}>{v}</div> }) }
+        <div style={{ display: "flex", flexWrap: "wrap", flexDirection: "row-reverse" }}>
+            {item.paletesstock && item.paletesstock.map((v, idx) => { return <div style={{ flex: "1 1 80px" }} key={`ps-${item.tempof_id}-${idx}`}>{v}</div> })}
         </div>
     )
 }
@@ -230,6 +231,7 @@ export default ({ /* changedValues */ }) => {
                 (async () => {
                     let _aggs = await loadAggsLookup(ctx.produto_id, token);
                     setAggs(_aggs);
+                    console.log("LOAD-DATA-AGG",agg_id)
                     if (agg_id && _aggs[0]?.v) {
                         //const { id, group_id, group_ofid, group_item_cod, group_qty_item } = _aggs[0].v.filter(v => v.id == agg_of_id)[0];
                         const ret = _aggs[0].v.filter(v => v.id == agg_id);

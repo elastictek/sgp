@@ -12,6 +12,8 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
 import { AiOutlineFullscreen } from "react-icons/ai";
+import RangeDate from "./RangeDate";
+import { DATE_FORMAT } from 'config';
 
 import { MediaContext } from '../pages/App';
 
@@ -275,6 +277,55 @@ const StyledHRuleTitle = styled('div').withConfig({
     
 `;
 
+export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, setShowFilter, form, mask = false }) => {
+    return (
+        <>
+            <Drawer
+                title="Filtros"
+                width={width}
+                mask={false}
+                /* style={{ top: "48px" }} */
+                onClose={() => setShowFilter(false)}
+                visible={showFilter}
+                bodyStyle={{ paddingBottom: 80 }}
+                footer={
+                    <div style={{ textAlign: 'right' }}>
+                        <Button onClick={() => form.resetFields()} style={{ marginRight: 8 }}>Limpar</Button>
+                        <Button onClick={() => form.submit()} type="primary">Aplicar</Button>
+                    </div>
+                }
+            >
+                <Form form={form} name="search-form" layout="vertical" hideRequiredMark>
+                    {schema.map((line, ridx) => (
+                        <Row key={`rf-${ridx}`} gutter={16}>
+                            {Object.keys(line).map((col, cidx) => {
+                                const span = ("span" in line[col]) ? line[col].span : 24;
+                                const itemWidth = ("itemWidth" in line[col]) ? { width: line[col].itemWidth } : {};
+                                const label = ("label" in line[col]) ? line[col].label : filterRules.$_mapLabels([col]);
+                                const field = ("field" in line[col]) ? line[col].field : { type: "input" };
+                                const initialValue = ("initialValue" in line[col]) ? line[col].initialValue : undefined;
+                                return (
+                                    <Col key={`cf-${cidx}`} span={span}>
+                                        <Form.Item key={`fd-${col}`} name={`${col}`} label={label} {...(initialValue !== undefined && { initialValue: initialValue })} >
+                                            {(typeof field === 'function') ? field() :
+                                                {
+                                                    autocomplete: <AutoCompleteField allowClear {...field} />,
+                                                    rangedate: <RangeDateField allowClear {...field} />
+                                                }[field?.type] || <Input style={{ ...itemWidth }} allowClear {...field} />
+                                            }
+
+                                        </Form.Item>
+                                    </Col>
+                                );
+                            })}
+                        </Row>
+                    ))}
+                </Form>
+            </Drawer>
+        </>
+    );
+};
+
 export const HorizontalRule = ({ margin = false, title, description, props }) => {
     const parentProps = useContext(ParentContext);
     const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
@@ -342,6 +393,23 @@ export const SwitchField = ({ value, checkedValue = 1, uncheckedValue = 0, ...re
     );
 };
 
+export const RangeDateField = ({ onChange, value, format = DATE_FORMAT, ...rest }) => {
+    const onRangeDateChange = (field, v) => {
+        const { formatted = {} } = (value === undefined) ? {} : value;
+        onChange?.({
+            ...value,
+            [field]: v,
+            formatted: {
+                ...formatted,
+                [field]: v?.format(format)
+            }
+        });
+    }
+
+    return (<RangeDate value={value} onChange={onRangeDateChange} {...rest} />);
+};
+
+
 export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValue = 0, ...rest }) => {
     const parseToBool = (v) => {
         return (v === checkedValue) ? true : false;
@@ -364,6 +432,51 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
         </div>
     );
 };
+
+export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", ...rest }) => {
+    const [fetching, setFetching] = useState(false);
+    const [options, setOptions] = useState([]);
+    const fetchRef = useRef(0);
+    keyField = (keyField) ? keyField : valueField;
+    valueField = (valueField) ? valueField : keyField;
+    const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], key: d[keyField], value: d[valueField] });
+
+    const debounceFetcher = React.useMemo(() => {
+        const loadOptions = (v) => {
+            fetchRef.current += 1;
+            const fetchId = fetchRef.current;
+            setOptions([]);
+            setFetching(true);
+            fetchOptions(v).then((newOptions) => {
+                if (fetchId !== fetchRef.current) {
+                    // for fetch callback order
+                    return;
+                }
+                const opts = newOptions.map(d => _optionsRender(d));
+                setOptions(opts);
+                setFetching(false);
+            });
+        };
+
+        return debounce(loadOptions, debounceTimeout);
+    }, [fetchOptions, debounceTimeout]);
+
+    const onSelectChange = (v) => {
+        onChange?.(v);
+    }
+
+    return (
+        <AutoComplete
+            value={value}
+            onSearch={debounceFetcher}
+            onChange={onSelectChange}
+            options={options}
+            {...rest}
+        >
+            <Input size={size} />
+        </AutoComplete>
+    );
+}
 
 export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest }) => {
     const [fetching, setFetching] = useState(false);

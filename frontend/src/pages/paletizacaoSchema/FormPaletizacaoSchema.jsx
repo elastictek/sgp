@@ -54,7 +54,7 @@ const SubFormPalete = ({ form, field, remove, move, index, length, operation, fo
             </Field>
             }
             {item === 2 && <Field label={{ enabled: false }} name={[field.name, "item_numbobines"]}>
-                <InputNumber size="small" min={1} max={30} />
+                <InputNumber size="small" min={1} max={80} />
             </Field>
             }
             {(item > 2 || item === undefined) && <FieldItem label={{ enabled: false }} />}
@@ -109,7 +109,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const v = schema().validate(values, { abortEarly: false });
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         if (!v.error && status.error.length === 0) {
-            console.log("breforeeeeeee", values)
             const response = await fetchPost({ url: `${API_URL}/newpaletizacaoschema/`, parameters: { ...values, id: record?.paletizacao_id, cliente_cod: record.cliente_cod, cliente_nome: record.cliente_nome, artigo_cod: record.artigo_cod } });
             if (response.data.status !== "error") {
                 if (operation.key === "update") {

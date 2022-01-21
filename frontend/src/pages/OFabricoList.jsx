@@ -7,10 +7,10 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, GTIN } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, isValue } from 'utils';
+import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
 
-import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterDrawer, FilterTags, AutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm } from "components/formLayout";
+import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
+import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer } from "components/formLayout";
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
@@ -41,50 +41,85 @@ import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import { VerticalSpace } from 'components/formLayout';
 const { Title } = Typography;
 
+const schema = (keys, excludeKeys) => {
+    return getSchema({}, keys, excludeKeys).unknown(true);
+}
+
 const filterRules = (keys) => {
     return getSchema({
         //field1: Joi.string().label("Designação")
     }, keys).unknown(true);
 }
 
-const filterSchema = ({ /*field_multi, field_daterange, field*/ }) => [
-    /*{ field1: { label: "field", field: field } },
-    { field2: { label: "Date Range", field: { type: "rangedate" } } },
-    { field3: { label: "Multi", field: field_multi } }*/
+const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
+    { f_ofabrico: { label: "Ordem de Fabrico" } },
+    { f_agg: { label: "Agregação Ordem de Fabrico" } },
+    { fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue:'all', ignoreFilterTag: (v) => v === 'all' } },
+    { fmulti_order: { label: "Nº Encomenda/Nº Proforma", field: ordersField } },
+    { fmulti_customer: { label: "Nº/Nome de Cliente", field: customersField } },
+    { fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
+    { forderdate: { label: "Data Encomenda", field: { type: "rangedate", size: 'small' } } },
+    { fstartprevdate: { label: "Data Prevista Início", field: { type: "rangedate", size: 'small' } } },
+    { fendprevdate: { label: "Data Prevista Fim", field: { type: "rangedate", size: 'small' } } },
+
+    /* { SHIDAT_0: { label: "Data Expedição", field: { type: "rangedate" } } },
+    { LASDLVNUM_0: { label: "Nº Última Expedição" } },
+    { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
 ];
 
-const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus }) => {
+//const filterSchema = ({ /*field_multi, field_daterange, field*/ }) => [
+/*{ field1: { label: "field", field: field } },
+{ field2: { label: "Date Range", field: { type: "rangedate" } } },
+{ field3: { label: "Multi", field: field_multi } }*/
+//];
+
+const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
+
     const leftContent = (
         <>
-            <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button>
+            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
         </>
     );
 
     const rightContent = (
         <Space>
             <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
-                Right Content Element
+                
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                Another Right Content Element
+                <Form form={form} initialValues={{fofstatus:"all"}}>
+                    <FormLayout id="tbt-of" schema={schema}>
+                        <Field name="fofstatus" label={{ enabled: true, width:"60px", text: "Estado", pos:"left" }}>{ordemFabricoStatusField()}</Field>
+                    </FormLayout>
+                </Form>
             </div>
         </Space>
     );
-
     return (
         <Toolbar left={leftContent} right={rightContent} />
     );
 }
 
+
+
 const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
     const [formData, setFormData] = useState({});
     const [changed, setChanged] = useState(false);
     const onFinish = (type, values) => {
+        console.log("ddd", values)
         switch (type) {
             case "filter":
                 (!changed) && setChanged(true);
                 const _values = {
-                    ...values
+                    ...values,
+                    f_ofabrico: getFilterValue(values?.f_ofabrico, 'exact'),
+                    f_agg: getFilterValue(values?.f_agg, 'exact'),
+                    fmulti_customer: getFilterValue(values?.fmulti_customer, 'any'),
+                    fmulti_order: getFilterValue(values?.fmulti_order, 'any'),
+                    fmulti_item: getFilterValue(values?.fmulti_item, 'any'),
+                    forderdate: getFilterRangeValues(values["forderdate"]?.formatted),
+                    fstartprevdate: getFilterRangeValues(values["fstartprevdate"]?.formatted),
+                    fendprevdate: getFilterRangeValues(values["fendprevdate"]?.formatted)
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.first();
@@ -101,36 +136,91 @@ const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoSt
         }
     }
 
+    const fetchCustomers = async (value) => {
+        const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellcustomerslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_customer"]: `%${value.replaceAll(' ', '%%')}%` } });
+        return rows;
+    }
+    const fetchOrders = async (value) => {
+        const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellorderslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_order"]: `%${value.replaceAll(' ', '%%')}%` } });
+        console.log("FETECHED", rows)
+        return rows;
+    }
+    const fetchItems = async (value) => {
+        const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellitemslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_item"]: `%${value.replaceAll(' ', '%%')}%` } });
+        return rows;
+    }
+
+    const customersField = () => (
+        <AutoCompleteField
+            placeholder="Cliente"
+            size="small"
+            keyField="BPCNAM_0"
+            textField="BPCNAM_0"
+            dropdownMatchSelectWidth={250}
+            allowClear
+            fetchOptions={fetchCustomers}
+        />
+    );
+    const ordersField = () => (
+        <AutoCompleteField
+            placeholder="Encomenda/Prf"
+            size="small"
+            keyField="SOHNUM_0"
+            textField="computed"
+            dropdownMatchSelectWidth={250}
+            allowClear
+            fetchOptions={fetchOrders}
+        />
+    );
+    const itemsField = () => (
+        <AutoCompleteField
+            placeholder="Artigo"
+            size="small"
+            keyField="ITMREF_0"
+            textField="computed"
+            dropdownMatchSelectWidth={250}
+            allowClear
+            fetchOptions={fetchItems}
+        />
+    );
+
     return (
         <>
-            <FilterDrawer schema={filterSchema({ form })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <FormManager
-                visible={true}
-                form={form}
-                name="feature-form-1"
-                layout="horizontal"
-                onFinish={(values) => onFinish("filter", values)}
-                onValuesChange={(changedValues, allValues) => onValuesChange("filter", changedValues, allValues)}
-                //messages={messages}
-                /* formData={formData} */
-                style={{ minWidth: "40vw" }}
-                rowGap="10px"
-                field={{ /* split: 3, */ layout: "vertical", gap: "5px", overflow: false, labelStyle: { align: "left" /* width: "90px", align: "right", gap: "10px" */ }, alert: { position: "right", visible: true } }}
-                fieldSet={{ wide: 4, layout: "horizontal", overflow: false, grow: false /* alert: { position: "right", visible: true } */, alert: { position: "bottom", visible: true } }}
-            >
-                <OldFieldSet wide={2} style={{ alignItems: "flex-end", justifyContent: "flex-start" }}>
 
-
-                    <ButtonGroup>
-                        <Button style={{ padding: "3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                        <Button style={{ padding: "3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
-                        {/* <Dropdown overlay={menu}>
+            <FilterDrawer schema={filterSchema({ form, ordersField, customersField, itemsField, ordemFabricoStatusField })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
+            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
+                <FormLayout
+                    id="LAY-OFFLIST"
+                    layout="horizontal"
+                    style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
+                    schema={schema}
+                    field={{ guides: false, wide: [3, 3, 3, 4, 2], style: { marginLeft: "2px", alignSelf: "end" } }}
+                    fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+                >
+                    <Field name="fmulti_customer" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Cliente", pos: "top" }}>
+                        {customersField()}
+                    </Field>
+                    <Field name="fmulti_order" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Encomenda/Prf", pos: "top" }}>
+                        {ordersField()}
+                    </Field>
+                    <Field name="fmulti_item" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Artigo", pos: "top" }}>
+                        {itemsField()}
+                    </Field>
+                    <Field name="forderdate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Encomenda", pos: "top" }}>
+                        <RangeDateField size='small' />
+                    </Field>
+                    <FieldItem label={{ enabled: false }}>
+                        <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
+                            <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
+                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
+                            {/* <Dropdown overlay={menu}>
                             <Button style={{ padding: "3px" }}><DownOutlined /></Button>
                         </Dropdown> */}
-                    </ButtonGroup>
+                        </ButtonGroup>
+                    </FieldItem>
 
-                </OldFieldSet>
-            </FormManager>
+                </FormLayout>
+            </Form>
         </>
     );
 }
@@ -202,8 +292,6 @@ const menu = (action, showPopconfirm) => {
 }
 
 
-
-
 const ColumnProgress = ({ record, type }) => {
     let current, total;
     let showProgress = (record.ativa == 1 && record.completa == 0) ? true : false;
@@ -224,9 +312,6 @@ const ColumnProgress = ({ record, type }) => {
             : <div style={{ textAlign: "center" }}>{current}/{total}</div>}
     </>);
 }
-
-
-
 
 const schemaConfirm = (keys, excludeKeys) => {
     return getSchema({
@@ -322,10 +407,6 @@ const ContentConfirm = ({ status, temp_ofabrico, cliente_cod, cliente_nome, iord
         </>
     );
 }
-
-
-
-
 
 const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
     const [form] = Form.useForm();
@@ -438,9 +519,6 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
     );
 };
 
-
-
-
 const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
     const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
     const [action, setAction] = useState();
@@ -465,8 +543,6 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
         //showPromiseConfirm({ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, action });
     }
 
-    console.log("##############STATUS#########",status,temp_ofabrico)
-
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico) && <>
@@ -475,8 +551,11 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
                     <TagButton>...</TagButton>
                 </Dropdown>
             </>}
-            {(status == 1 || temp_ofabrico) && <>
+            {((status == 1 || !status) && temp_ofabrico) && <>
                 <TagButton onClick={() => onAction(record, "preparing", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+            </>}
+            {(status == 2 && temp_ofabrico) && <>
+                <TagButton onClick={() => onAction(record, "preparing", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
             {status == 4 && <>
                 <TagButton onClick={() => showPopconfirm('finalizar')} style={{ width: "98px", textAlign: "center" }} icon={<SyncOutlined spin />} color="processing">Em Curso</TagButton>
@@ -593,6 +672,7 @@ export default () => {
                 ...((common) => (
                     {
                         ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
+                        prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
                         iorder: { title: "Encomenda(s)", width: 140, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
                         estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
@@ -600,8 +680,8 @@ export default () => {
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
                         cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-                        start_date: { title: "Início Previsto", ellipsis: true, render: (v,r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
-                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v,r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
+                        start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
+                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
                         //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
                         //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
                         //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
@@ -628,26 +708,36 @@ export default () => {
         setFlyoutStatus(prev => ({ ...prev, visible: false }));
     }
 
+    const ordemFabricoStatusField = () => (
+        <SelectField keyField="value" valueField="label" style={{ width: 150 }} options={
+            [{ value: "all", label: "Todos" },
+            { value: "notcreated", label: "Não Criada" },
+            { value: "inpreparation", label: "Em Preparação" },
+            { value: "inprogress", label: "Em Progresso" },
+            { value: "finished", label: "Finalizada" }]
+        } />
+    );
+
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
-                <Drawer showWrapper={showValidar} setShowWrapper={setShowValidar}><FormOFabricoValidar /></Drawer>
+                <Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer>
                 {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
                 <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
                     <SubLayout.content>
-                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} />
+                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
                         {elFilterTags && <Portal elId={elFilterTags}>
                             <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                         </Portal>}
                         <Table
                             title={<Title level={4}>Ordens de Fabrico</Title>}
-                            columnChooser
+                            columnChooser={false}
                             reload
                             stripRows
                             darkHeader
                             size="small"
-                            toolbar={<GlobalSearch form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
+                            toolbar={<GlobalSearch form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
                             selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
                             paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
                             dataAPI={dataAPI}
