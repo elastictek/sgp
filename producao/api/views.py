@@ -354,7 +354,8 @@ def MateriasPrimasLookup(request, format=None):
         cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
     elif type=='cores':
         core = int(int(request.data['parameters']['core']) * 25.4)
-        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+        #largura = request.data['parameters']['largura']
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
     else:
         cfilter = f"""(LOWER("ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER("ITMDES1_0") NOT LIKE 'core%%') AND ("ACCCOD_0" = 'PT_MATPRIM')"""
 
@@ -1813,9 +1814,6 @@ def SaveTempOrdemFabrico(request, format=None):
             'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
             'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
         }
-        if "core_cod" in data:
-            dta["core_cod"] = data["core_cod"]
-            dta["core_des"] = data["core_des"]
         if "formulacao_id" in data:
             dta["formulacao_id"] = data["formulacao_id"]
         if "cortesordem_id" in data:
@@ -1921,6 +1919,7 @@ def SaveTempOrdemFabrico(request, format=None):
         if data["type"] == "settings":
             emendas_id = None
             emenda = GetEmendas(data,cursor)
+            print(f'settingggggsss--{data}')
             if emenda is None:
                 vals = {
                     "artigo_cod":data["artigo_cod"],
@@ -1940,7 +1939,11 @@ def SaveTempOrdemFabrico(request, format=None):
                 emendas_id = cursor.lastrowid
             else:
                 emendas_id = data["emendas_id"] if "emendas_id" in data and data["emendas_id"] is not None else emenda["id"]
-            dml = db.dml(TypeDml.UPDATE,{"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"],"cliente_cod":data["cliente_cod"],"cliente_nome":data["cliente_nome"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            vl = {"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"],"cliente_cod":data["cliente_cod"],"cliente_nome":data["cliente_nome"]}
+            if "core_cod" in data:
+                vl["core_cod"] = data["core_cod"]
+                vl["core_des"] = data["core_des"]
+            dml = db.dml(TypeDml.UPDATE,vl,"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
     
@@ -2213,16 +2216,18 @@ def TempAggOFabricoLookup(request, format=None):
             response = dbgw.executeSimpleList(lambda:(f"""
                 select json_agg(t) v from (
                 SELECT
-                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
+                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
                 ,(select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
                 ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
                 (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
-                (select row_to_json(_) from (select pe.*) as _) emendas
+                (select row_to_json(_) from (select pe.*) as _) emendas,
+                (select row_to_json(_) from (select pa.*) as _) artigo
                 FROM {mv_ofabrico_list} oflist
                 join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
                 join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
                 left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
                 left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
+                left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
                 {f.text}
                 ) t
             """),cursor,parameters)

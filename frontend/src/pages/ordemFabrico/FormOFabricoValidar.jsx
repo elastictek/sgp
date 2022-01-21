@@ -87,15 +87,12 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
         schema
     }
 
-
-
-
     useEffect(() => {
         const cancelFetch = cancelToken();
         setFormTitle({ title: `Validar Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
         (async () => {
             let [oFabricoTemp] = await LoadOFabricoTemp(record, cancelFetch);
-            oFabricoTemp = { ...oFabricoTemp, core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } };
+            oFabricoTemp = { ...oFabricoTemp /* core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } */ };
 
             form.setFieldsValue({ ...oFabricoTemp, nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) });
             setLoading(false);

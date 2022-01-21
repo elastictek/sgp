@@ -22,8 +22,13 @@ const schema = (keys, excludeKeys) => {
         nemendas_rolo: Joi.number().label("Nº Emendas Por Bobine").min(0).required(),
         maximo: Joi.number().label("Percentagem Máxima de Emendas").min(0).required(),
         tipo_emenda: Joi.number().label("Tipo Emenda").required(),
-        cliente_cod:Joi.object().label("Cliente").required()
+        cliente_cod: Joi.object().label("Cliente").required()
     }, keys, excludeKeys).unknown(true);
+}
+
+const loadCoresLookup = async (core, largura, token) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, parameters: { type: 'cores', core, largura }, cancelToken: token });
+    return rows;
 }
 
 const loadEmendasLookup = async ({ cliente_cod, artigo_cod, token }) => {
@@ -40,30 +45,34 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     const [form] = Form.useForm();
     const [guides, setGuides] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [coresLookup, setCoresLookup] = useState([]);
 
     const loadData = (data = {}, type = "init") => {
-        const { emendas, paletesstock, ...aggItem } = record.aggItem;
+        const { emendas, paletesstock, artigo, core_des, ...aggItem } = record.aggItem;
         const cliente_cod = (aggItem.cliente_cod) ? { label: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod } : null;
         const { token } = data;
         switch (type) {
             default:
                 (async () => {
+                    setLoading(true);
+                    setCoresLookup(await loadCoresLookup(artigo.core, artigo.lar, token));
                     let _emendas = {};
                     if (!emendas.id) {
-                        setLoading(true);
+
                         const retEmendas = await loadEmendasLookup({ cliente_cod: aggItem.cliente_cod, artigo_cod: aggItem.item_cod, token });
                         if (retEmendas.length > 0) {
                             _emendas = { emendas_id: retEmendas[0].id, nemendas_paletescontentor: retEmendas[0].paletes_contentor, maximo: retEmendas[0].maximo, tipo_emenda: parseInt(retEmendas[0].tipo_emenda), nemendas_rolo: retEmendas[0].emendas_rolo }
                         }
-                        setLoading(false);
                     } else {
                         _emendas = { emendas_id: emendas.id, nemendas_paletescontentor: emendas.paletes_contentor, maximo: emendas.maximo, tipo_emenda: parseInt(emendas.tipo_emenda), nemendas_rolo: emendas.emendas_rolo }
                     }
+                    setLoading(false);
                     const n_paletes = JSON.parse(aggItem.n_paletes);
                     const n_paletes_stock = !(paletesstock) ? 0 : paletesstock.length;
                     const n_paletes_total = (!aggItem.n_paletes_total) ? (!n_paletes?.total?.n_paletes ? n_paletes_stock : Math.round(n_paletes.total.n_paletes)) : aggItem.n_paletes_total;
                     const n_paletes_prod = n_paletes_total - n_paletes_stock;
-                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod });
+                    const core_cod =  { key: aggItem?.core_cod, value: aggItem?.core_cod, label: aggItem?.core_des }
+                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod, core_cod });
                 })();
         }
     }
@@ -93,7 +102,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         const v = schema().validate(values, { abortEarly: false });
         if (!v.error) {
             const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, ...cliente, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
+            const { core_cod: { value: core_cod, label: core_des } = {} } = values;
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();
@@ -146,8 +156,20 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         <VerticalSpace height="24px" />
 
 
-
-                        <HorizontalRule title="2. Nº de Paletes" />
+                        <HorizontalRule title="2. Core" />
+                        <VerticalSpace />
+                        <FieldSet margin={false}>
+                            <Field wide={[10]} name="core_cod" label={{ enabled: false, text: "Core", pos: "top" /* pos: "left", width: "140px", align: "end" */ }} required={false}>
+                                <SelectField size="small" data={coresLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                    optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                    showSearch
+                                    labelInValue
+                                    filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                                />
+                            </Field>
+                        </FieldSet>
+                        <VerticalSpace />
+                        <HorizontalRule title="3. Nº de Paletes" />
                         <VerticalSpace />
                         <FieldSet margin={false}>
                             <Field wide={2} name="n_paletes_total" label={{ text: "Total" }}><InputNumber size="small" min={0} max={500} /></Field>
@@ -157,7 +179,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                             <Field required={false} wide={2} name="n_paletes_prod" label={{ text: "A Produzir" }} forInput={false}><InputNumber size="small" min={0} max={500} /></Field>
                         </FieldSet>
                         <VerticalSpace />
-                        <HorizontalRule title="3. Emendas" />
+                        <HorizontalRule title="4. Emendas" />
                         <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: 4, style: { alignSelf: "left" }, label: { pos: "top", wrap: false, ellipsis: false, width: "130px" } }} layout="vertical">
                             <Field name="tipo_emenda" label={{ text: "Tipo Emenda" }}>

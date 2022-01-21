@@ -194,7 +194,7 @@ module.exports = {
                 parallel: true,
                 terserOptions: {
                     //cache: true,
-                    parallel: true,
+                    //parallel: true,
                     toplevel: false,
                     compress: {
                         warnings: false,
