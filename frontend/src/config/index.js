@@ -13,7 +13,7 @@ export const PAGE_TOOLBAR_HEIGHT = "45px";
 
 //APP DATA
 //ORDEM FABRICO TIPO ANEXOS
-export const TIPOANEXOS_OF = [{ value: "Ficha de processo", key: "Ficha de processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
+export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
  { value: "Packing List", key: "Packing List" },
  { value: "Orientação Qualidade", key: "Orientação Qualidade" },
  { value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];

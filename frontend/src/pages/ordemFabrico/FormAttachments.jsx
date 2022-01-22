@@ -135,6 +135,7 @@ const AttachmentsList = ({ attachments, setLoading, loadData }) => {
         console.log(" ---- ",p,`${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`);
         console.log(API_URL," -- ", MEDIA_URL," --- ",p.path.split("/").slice(1).join('/'))
         //${MEDIA_URL}/${v.path.split("/").slice(1).join('/')}
+        return `${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`;
     }
 
     return (

@@ -86,31 +86,20 @@ db = DBSql(connections["default"].alias)
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def download_file(request):
-    print(request)
     f = request.GET['f'] #file path
     i = request.GET['i'] #Id
     t = request.GET['f'] #type
     dt = datetime.now().strftime("%Y%m%d-%H%M%S")
     fs = FileSystemStorage()
     path = fs.open(f,'rb')
-    # # Define Django project base directory
-    # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # # Define text file name
     filename = f'{t.replace(" ",".")}_{str(i)}_{dt}'
-    # # Define the full file path
-    # filepath = BASE_DIR + '/filedownload/Files/' + filename
-    # # Open the file for reading content
-    # path = open(filepath, 'r')
-    # # Set the mime type
-    
     mime_type, _ = mimetypes.guess_type(f)
     print(mime_type)
     # # Set the return value of the HttpResponse
     response =  FileResponse(path, content_type=mime_type)
     # # Set the HTTP header for sending to browser
     response['Content-Disposition'] = "inline; filename=%s" % filename
-    # # Return the response value
-    # return response
     return response
 
 def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseColumns=True, logicOperator="and"):
@@ -1675,8 +1664,12 @@ def sgpForProduction(data,aggid,user,cursor):
             'id',pan.id,'designacao',pan.designacao,'versao',pan.versao,'nw_cod_sup',pan.nw_cod_sup,
             'nw_des_sup',pan.nw_des_sup,'nw_cod_inf',pan.nw_cod_inf,'nw_des_inf',pan.nw_des_inf,'produto_id',pan.produto_id
             ) nonwovens,
+            (select JSON_ARRAYAGG(JSON_OBJECT('created_date', patt.created_date,'id', patt.id,'of_id', patt.of_id,'path', patt.path,'tipo_doc', patt.tipo_doc))
+            FROM sistema_dev.producao_attachments patt WHERE patt.of_id=pto.id) attachments,
             pto.cliente_cod, pto.cliente_nome, pc.id as cliente_id,
             pto.order_cod, penc.id as encomenda_id,
+            (select JSON_ARRAYAGG(ppal.id)
+            FROM sistema_dev.producao_palete ppal WHERE ppal.draft_ordem_id=pto.id) paletesstock,
             (select count(*) from sistema_dev.producao_palete tpp where tpp.draft_ordem_id=pto.id) n_paletes_stock,
             pto.n_paletes_total,ptoagg.sentido_enrolamento, ptoagg.amostragem
             FROM sistema_dev.producao_tempordemfabrico pto
@@ -1768,10 +1761,32 @@ def sgpForProduction(data,aggid,user,cursor):
             _paletizacao = json.loads(ordemfabrico['paletizacao_bobines'])
             _nonwovens = json.loads(ordemfabrico['nonwovens'])
 
+            #Attachments
+            atts = {}
+            if ordemfabrico['attachments'] is not None:
+                _attachments = json.loads(ordemfabrico['attachments'])
+                for idx, att in enumerate(_attachments):
+                    tipo_doc = att["tipo_doc"]
+                    att_path = "/".join((att["path"].split('/')[1:]))
+                    if tipo_doc.lower() == "ficha de processo":
+                        atts["ficha_processo"] = att_path
+                    elif tipo_doc.lower() == "resumo de produção":
+                        atts["res_prod"] = att_path
+                    elif tipo_doc.lower() == "ficha técnica":
+                        atts["ficha_tecnica"] = att_path
+                    elif tipo_doc.lower() == "packing list":
+                        atts["pack_list"] = att_path
+                    elif tipo_doc.lower() == "orientação qualidade":
+                        atts["ori_qua"] = att_path
+                    elif tipo_doc.lower() == "ordem de fabrico":
+                        atts["of"] = att_path
+
+
             tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
             enrolamento = {"1": "Anti-horário", "2":"Horário"}
             delta = datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S")
             dta = {
+                **atts,
                 "timestamp": datetime.now(),
                 "op": ordemfabrico["cliente_nome"] + ' L' + str(int(_artigo['lar'])) + ' LINHA ' + ordemfabrico["order_cod"],
                 "largura": _artigo['lar'],
@@ -1823,7 +1838,18 @@ def sgpForProduction(data,aggid,user,cursor):
             dml = db.dml(TypeDml.INSERT, dta, "planeamento_ordemproducao")
             db.execute(dml.statement, cursor, dml.parameters)
             opid = cursor.lastrowid     
-        
+
+            #Adicionar Paletes em stock 
+            if ordemfabrico['paletesstock'] is not None:
+                dta = {
+                    "cliente_id":vals["clienteId"],
+                    "ordem_id":opid,
+                    "stock":0
+                }
+                dml = db.dml(TypeDml.UPDATE,dta,"producao_palete",{},None,False)
+                statement = f'{dml.statement} WHERE id in(select id from (select pp.id FROM producao_palete pp WHERE pp.draft_ordem_id={ordemfabrico["id"]}) t)'
+                db.execute(statement, cursor, dml.parameters)
+
 
         aggdata = GetAggData(aggid,cursor)
         dta = {
@@ -1842,9 +1868,7 @@ def sgpForProduction(data,aggid,user,cursor):
         }      
         dml = db.dml(TypeDml.INSERT, dta, "producao_currentsettings")
         db.execute(dml.statement, cursor, dml.parameters)
-        csid = cursor.lastrowid
-        
-            
+        csid = cursor.lastrowid            
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1853,6 +1877,26 @@ def sgpForProduction(data,aggid,user,cursor):
 # @transaction.atomic()
 def SaveTempOrdemFabrico(request, format=None):
     data = request.data.get("parameters")
+
+    def getAggStatus(data,cursor):
+        f = Filters({"of_id": data['ofabrico']})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'of_id = :of_id', True)
+        f.value("and")   
+        rows = db.executeSimpleList(lambda: (f'''
+                select toaf.status 
+                FROM sistema_dev.producao_tempordemfabrico tof
+                join sistema_dev.producao_tempaggordemfabrico toaf on tof.agg_of_id=toaf.id
+                {f.text}
+        '''), cursor, f.parameters)['rows']
+        status = rows[0]["status"] if len(rows)>0 else None
+        if (status==None):
+            return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"Não existe Ordem de Produção Agregada."}
+        elif (status==0):
+            return {"status":"success"}
+        else:
+            return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"O planeamento da Ordem de Fabrico Já se encontra Fechado."}
 
     def computeLinearMeters(data):
         artigo = data["artigo"] if "artigo" in data else data
@@ -1998,7 +2042,7 @@ def SaveTempOrdemFabrico(request, format=None):
         rows = db.executeSimpleList(lambda: (f'SELECT agg_of_id,agg_ofid_original FROM producao_tempordemfabrico {f.text}'), cursor, f.parameters)['rows']
         return rows[0] if len(rows)>0 else None
 
-    def GetEmendas(data, cursor):
+    def getEmendas(data, cursor):
         vals = {
             "artigo_cod":data["artigo_cod"],
             "emendas_rolo":data["nemendas_rolo"],
@@ -2129,7 +2173,7 @@ def SaveTempOrdemFabrico(request, format=None):
             return data["ofabrico"]
         if data["type"] == "settings":
             emendas_id = None
-            emenda = GetEmendas(data,cursor)
+            emenda = getEmendas(data,cursor)
             if emenda is None:
                 vals = {
                     "artigo_cod":data["artigo_cod"],
@@ -2160,6 +2204,9 @@ def SaveTempOrdemFabrico(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                aggStatus = getAggStatus(data,cursor)
+                if (aggStatus["status"]=="error"):
+                    return Response(aggStatus)
                 if ("type" in data):
                     id = updateTempOrdemFabrico(data,cursor)
                 else:
