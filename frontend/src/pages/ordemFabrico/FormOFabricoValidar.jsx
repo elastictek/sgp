@@ -20,6 +20,7 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 
 import FormRequirements from './FormRequirements';
+import FormNonwovens from './FormNonwovens';
 const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacao'));
 const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoria'));
@@ -56,7 +57,6 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
     const [gamaOperatoriaChangedValues, setGamaOperatoriaChangedValues] = useState({});
     const [artigoSpecsChangedValues, setArtigoSpecsChangedValues] = useState({});
     const [nonwovensChangedValues, setNonwovensChangedValues] = useState({});
-    const [coreChangedValues, setCoreChangedValues] = useState({});
     const [requirementsChangedValues, setRequirementsChangedValues] = useState({});
     const [aggChangedValues, setAggChangedValues] = useState({});
     const [cortesOrdemChangedValues, setCortesOrdemChangedValues] = useState({});
@@ -89,7 +89,7 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
 
     useEffect(() => {
         const cancelFetch = cancelToken();
-        setFormTitle({ title: `Validar Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
+        setFormTitle({ title: `Planear Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
         (async () => {
             let [oFabricoTemp] = await LoadOFabricoTemp(record, cancelFetch);
             oFabricoTemp = { ...oFabricoTemp /* core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } */ };
@@ -97,7 +97,7 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
             form.setFieldsValue({ ...oFabricoTemp, nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) });
             setLoading(false);
         })();
-        return (() => cancelFetch.cancel("Form OFabrico Validar Cancelled"));
+        return (() => cancelFetch.cancel("Form OFabrico Plannig Cancelled"));
     }, []);
 
     const onValuesChange = (changedValues, allValues) => {
@@ -111,9 +111,9 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
             setArtigoSpecsChangedValues(changedValues);
         } else if ("nonwovens_id" in changedValues) {
             setNonwovensChangedValues(changedValues);
-        } else if ("core_id" in changedValues) {
+        } /* else if ("core_id" in changedValues) {
             setCoreChangedValues(changedValues);
-        } else if ("agg_id" in changedValues) {
+        } */ else if ("agg_id" in changedValues) {
             setAggChangedValues(changedValues);
         } else if ("cortesordem_id" in changedValues || "cortes" in changedValues) {
             setCortesOrdemChangedValues(changedValues);
@@ -190,8 +190,9 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
                                 <TabPane tab="Ordens Fabrico" key="2">
                                     <Suspense fallback={<></>}><FormAgg changedValues={aggChangedValues} /></Suspense>
                                 </TabPane>
-                                <TabPane tab="Nonwovens e Core" key="8">
-                                    <Suspense fallback={<></>}><FormNwsCore nwChangedValues={nonwovensChangedValues} coreChangedValues={coreChangedValues} /></Suspense>
+                                <TabPane tab="Nonwovens" key="8">
+                                    <Suspense fallback={<></>}><FormNonwovens changedValues={nonwovensChangedValues} /></Suspense>
+                                    {/* <Suspense fallback={<></>}><FormNwsCore nwChangedValues={nonwovensChangedValues}  coreChangedValues={coreChangedValues} /></Suspense> */}
                                 </TabPane>
                                 <TabPane tab="Especificações" key="3">
                                     <Suspense fallback={<></>}><FormSpecs changedValues={artigoSpecsChangedValues} /></Suspense>

@@ -55,6 +55,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
             default:
                 (async () => {
                     setLoading(true);
+                    console.log("aaaaaaaaaa", artigo)
                     setCoresLookup(await loadCoresLookup(artigo.core, artigo.lar, token));
                     let _emendas = {};
                     if (!emendas.id) {
@@ -71,8 +72,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     const n_paletes_stock = !(paletesstock) ? 0 : paletesstock.length;
                     const n_paletes_total = (!aggItem.n_paletes_total) ? (!n_paletes?.total?.n_paletes ? n_paletes_stock : Math.round(n_paletes.total.n_paletes)) : aggItem.n_paletes_total;
                     const n_paletes_prod = n_paletes_total - n_paletes_stock;
-                    const core_cod =  { key: aggItem?.core_cod, value: aggItem?.core_cod, label: aggItem?.core_des }
-                    form.setFieldsValue({ ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod, core_cod });
+                    const core_cod = { key: aggItem?.core_cod, value: aggItem?.core_cod, label: aggItem?.core_des }
+                    form.setFieldsValue({
+                        ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod, core_cod,
+                        artigo_width: artigo.lar, artigo_core: artigo.core, artigo_diam: artigo.diam_ref, artigo_gram: artigo.gsm,
+                        artigo_des: artigo.des
+                    });
                 })();
         }
     }
@@ -137,9 +142,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         }}
                     >
 
-                        <HorizontalRule title="1. Cliente" />
+                        <HorizontalRule title="1. Cliente e Artigo" />
                         <VerticalSpace />
-                        <FieldSet margin={false} field={{ wide: [8] }}>
+                        <FieldSet margin={false} field={{ wide: [12] }}>
                             <Field forInput={record.aggItem.order_cod ? false : true} name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
                                 <SelectDebounceField
                                     placeholder="Cliente"
@@ -152,6 +157,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                                     fetchOptions={loadCustomersLookup}
                                 />
                             </Field>
+                        </FieldSet>
+                        <FieldSet margin={false} field={{ wide: [12], forInput:false }}>
+                            <Field required={false} label={{ text: "Designação" }} name="artigo_des"><Input size="small" /></Field>
+                        </FieldSet>
+                        <FieldSet margin={false} field={{ wide: [2, 2, 2, 2, '*'], forInput: false }}>
+                            <Field required={false} label={{ text: "Largura" }} name="artigo_width"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
+                            <Field required={false} label={{ text: "Diâmetro" }} name="artigo_diam"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
+                            <Field required={false} label={{ text: "Core" }} name="artigo_core"><InputAddon size="small" addonAfter={<b>''</b>} maxLength={1} /></Field>
+                            <Field required={false} label={{ text: "Gramagem" }} name="artigo_gram"><InputAddon size="small" addonAfter={<b>gsm</b>} maxLength={4} /></Field>
                         </FieldSet>
                         <VerticalSpace height="24px" />
 

@@ -71,17 +71,17 @@ export const GAMAOPERATORIA = [
 ];
 
 export const ARTIGOS_SPECS = [
-    { key: "A", designacao: "Basis Weight", unidade: "gsm", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "B", designacao: "Tensile at peak CD", unidade: "N/25mm", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "C", designacao: "Elongation at break CD", unidade: "%", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "D", designacao: "Elongation at 9.81N CD", unidade: "%", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "E", designacao: "Load at 5% elongation 1st cycle CD", nvalues: 2, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
-    { key: "F", designacao: "Load at 10% elongation 1st cycle CD", nvalues: 2, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
-    { key: "G", designacao: "Load at 20% elongation 1st cycle CD", nvalues: 2, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
-    { key: "H", designacao: "Load at 50% elongation 1st cycle CD", nvalues: 2, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
-    { key: "I", designacao: "Permanent set 2nd cycle", unidade: "%", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "J", designacao: "Load at 100% elongation 2nd cycle", unidade: "N/50mm", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "K", designacao: "Permanent set 3rd cycle", unidade: "%", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "L", designacao: "Load at 100% elongation 3rd cycle", unidade: "N/50mm", nvalues: 2, min: 0, max: 999, precision: 1 },
-    { key: "M", designacao: "Lamination strenght (CD)", unidade: "N/25mm", nvalues: 2, min: 0, max: 999, precision: 1 }
+    { key: "A", designacao: "Basis Weight", unidade: "gsm", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "B", designacao: "Tensile at peak CD", unidade: "N/25mm", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "C", designacao: "Elongation at break CD", unidade: "%", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "D", designacao: "Elongation at 9.81N CD", unidade: "%", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "E", designacao: "Load at 5% elongation 1st cycle CD", nvalues: 4, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
+    { key: "F", designacao: "Load at 10% elongation 1st cycle CD", nvalues: 4, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
+    { key: "G", designacao: "Load at 20% elongation 1st cycle CD", nvalues: 4, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
+    { key: "H", designacao: "Load at 50% elongation 1st cycle CD", nvalues: 4, unidade: "N/50mm", min: 0, max: 999, precision: 1 },
+    { key: "I", designacao: "Permanent set 2nd cycle", unidade: "%", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "J", designacao: "Load at 100% elongation 2nd cycle", unidade: "N/50mm", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "K", designacao: "Permanent set 3rd cycle", unidade: "%", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "L", designacao: "Load at 100% elongation 3rd cycle", unidade: "N/50mm", nvalues: 4, min: 0, max: 999, precision: 1 },
+    { key: "M", designacao: "Lamination strenght (CD)", unidade: "N/25mm", nvalues: 4, min: 0, max: 999, precision: 1 }
 ];

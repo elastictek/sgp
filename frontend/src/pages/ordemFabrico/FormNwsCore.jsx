@@ -55,44 +55,6 @@ export default ({ /* record, form, guides, schema, coreChangedValues, */ nwChang
         <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
             {!loading &&
                 <>
-                    <FormLayout
-                        id="LAY-NWSCORE"
-                        guides={guides}
-                        layout="vertical"
-                        style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
-                        schema={schema}
-                        fieldStatus={fieldStatus}
-                        field={{
-                            wide: [4, 4, '*'],
-                            margin: "2px", overflow: false, guides: guides,
-                            label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: false, ellipsis: true },
-                            alert: { pos: "alert", tooltip: false, container: true, /* container: "el-external"*/ },
-                            layout: { top: "", right: "", center: "align-self: center;", bottom: "", left: "" },
-                            required: true,
-                            style: { alignSelf: "center" }
-                        }}
-                        fieldSet={{
-                            guides: guides,
-                            wide: 16, margin: false, layout: "horizontal", overflow: false
-                        }}
-                    >
-                        <FieldSet margin={false} layout="vertical">
-
-                            <HorizontalRule title="1. Core" />
-                            <VerticalSpace />
-                            <FieldSet margin={false}>
-                                <Field wide={[10]} name="core_cod" label={{ enabled: false, text: "Core", pos: "top" /* pos: "left", width: "140px", align: "end" */ }} required={false}>
-                                    <SelectField size="small" data={coresLookup} keyField="ITMREF_0" textField="ITMDES1_0"
-                                        optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                        showSearch
-                                        labelInValue
-                                        filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                                    />
-                                </Field>
-                            </FieldSet>
-                        </FieldSet>
-
-                    </FormLayout>
                     <FormNonwovens forInput={false} /* record={ctx} form={form} guides={guides} schema={schema} */ changedValues={nwChangedValues} />
                 </>
             }

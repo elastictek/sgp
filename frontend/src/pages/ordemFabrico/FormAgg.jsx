@@ -80,7 +80,7 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
 }
 
 const loadAggsLookup = async (produto_id, token) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/tempaggofabricolookup/`, filter: { status: 0, produto_id }, sort: [], cancelToken: token });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/tempaggofabricolookup/`, filter: { status: 6, produto_id }, sort: [], cancelToken: token });
     return rows;
 }
 

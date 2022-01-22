@@ -58,6 +58,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 for (let [idx, v] of artigoSpecsItems.entries()) {
                     initValues[`key-${idx}`] = v.key;
                     initValues[`des-${idx}`] = v.designacao;
+                    initValues[`nv-${idx}`] = v.nvalues;
                 }
                 form.setFieldsValue(initValues);
             }
@@ -136,7 +137,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         field={{
                             forInput,
                             wide: [16],
-                            margin: "2px", overflow: false, guides: guides,
+                            margin: "2px", overflow: false, guides: false,
                             label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: true, ellipsis: true },
                             alert: { pos: "right", tooltip: true, container: false /* container: "el-external" */ },
                             layout: { top: "", right: "", center: "", bottom: "", left: "" },
@@ -144,7 +145,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             style: { alignSelf: "top" }
                         }}
                         fieldSet={{
-                            guides: guides,
+                            guides: false,
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
@@ -186,16 +187,47 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </>
                         }
                         <FieldSet wide={16} margin={false} layout="vertical">
+                            <FieldSet margin={false}>
+                                <FieldItem label={{ enabled: false }} wide={7}></FieldItem>
+                                <FieldSet wide={9} margin={false}>
+                                    <FieldItem label={{ enabled: false }} split={4.5}><div style={{ textAlign: "center", fontWeight:700 }}>TDS</div></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={50}></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={4.5}><div style={{ textAlign: "center", fontWeight:700 }}>Objetivo</div></FieldItem>
+                                </FieldSet>
+                            </FieldSet>
+                            <FieldSet margin={false}>
+                                <FieldItem label={{ enabled: false }} wide={7}></FieldItem>
+                                <FieldSet wide={9} margin={false}>
+                                    <FieldItem label={{ enabled: false }} split={9}><div style={{ textAlign: "center" }}>Min.</div></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={9}><div style={{ textAlign: "center" }}>Máx.</div></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={50}></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={9}><div style={{ textAlign: "center" }}>Min.</div></FieldItem>
+                                    <FieldItem label={{ enabled: false }} split={9}><div style={{ textAlign: "center" }}>Máx.</div></FieldItem>
+                                </FieldSet>
+                            </FieldSet>
                             {artigoSpecsItems.map((v, idx) =>
                                 <FieldSet key={`gop-${idx}`} wide={16} field={{ wide: [7, 9] }} margin={false}>
                                     <FieldItem label={{ enabled: false }} style={{ fontSize: "11px" }}>
                                         <b>{v.designacao}</b> ({v.unidade})
                                     </FieldItem>
                                     <FieldSet wide={9} margin={false}>
-                                        {[...Array(v.nvalues)].map((x, i) =>
-                                            <Field split={9} key={`${v.key}-${i}`} name={`v${v.key}-${i}`} label={{ enabled: false }}>
-                                                <InputNumber min={v.min} max={v.max} controls={false} size="small" precision={v?.precision} />
-                                            </Field>
+                                        {[...Array(form.getFieldValue(`nv-${idx}`))].map((x, i) => {
+                                            if (i % 2 === 0 && i !==0) {
+                                                return (
+                                                    <React.Fragment key={`${v.key}-${i}`}>
+                                                        <FieldItem label={{ enabled: false }} split={50}></FieldItem>
+                                                        <Field split={9} key={`${v.key}-${i}`} name={`v${v.key}-${i}`} label={{ enabled: false }}>
+                                                            <InputNumber min={v.min} max={v.max} controls={false} size="small" precision={v?.precision} />
+                                                        </Field>
+                                                    </React.Fragment>
+                                                );
+                                            }
+                                            return (
+                                                <Field split={9} key={`${v.key}-${i}`} name={`v${v.key}-${i}`} label={{ enabled: false }}>
+                                                    <InputNumber min={v.min} max={v.max} controls={false} size="small" precision={v?.precision} />
+                                                </Field>
+                                            );
+                                        }
                                         )}
                                     </FieldSet>
                                 </FieldSet>

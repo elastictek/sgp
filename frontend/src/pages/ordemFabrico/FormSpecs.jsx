@@ -99,6 +99,7 @@ export default ({ /* id, record, form, guides, schema, */ changedValues = {} }) 
                         for (let [i, v] of artigoSpecsItems.entries()) {
                             fieldsValue[`key-${i}`] = v.item_key;
                             fieldsValue[`des-${i}`] = v.item_des;
+                            fieldsValue[`nv-${i}`] = v.item_nvalues;
                             const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
                             for (let [iV, vV] of vals.entries()) {
                                 fieldsValue[`v${v.item_key}-${iV}`] = vV;

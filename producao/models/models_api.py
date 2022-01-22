@@ -17,7 +17,7 @@ from decimal import *
 class Produtos(models.Model):
     produto_cod = models.CharField(max_length=80,verbose_name="Código Produto", null=False) #ADDED - CÓDIGO PRODUTO
 
-class TempAggOrdemFabrico(models.Model):
+class BaseTempAggOrdemFabrico(models.Model):
     cod = models.CharField(max_length=25,verbose_name="Código Agg", null=False)
     formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True, blank=True)
     gamaoperatoria = models.ForeignKey('producao.GamaOperatoria', on_delete=models.PROTECT, verbose_name="Gama Operatória", null=True, blank=True)
@@ -34,7 +34,19 @@ class TempAggOrdemFabrico(models.Model):
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
     start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
     end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
+    class Meta:
+        abstract = True
 
+class TempAggOrdemFabrico(BaseTempAggOrdemFabrico):
+    pass
+
+class AuditDraftAggordemfabrico(BaseTempAggOrdemFabrico):
+    type = models.CharField(max_length=45, blank=True, null=True)
+    timestamp = models.DateTimeField(blank=True, null=True)
+    action = models.CharField(max_length=8, blank=True, null=True)
+    contextid = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'audit_draft_aggordemfabrico'
 
 class TempOrdemFabrico(models.Model):
     of_id = models.CharField(max_length=25,verbose_name="Ordem de Produção", null=True) #ADDED - ORDEM FABRICO SAGE ID
@@ -61,6 +73,20 @@ class TempOrdemFabrico(models.Model):
     agg_ofid_original = models.IntegerField(verbose_name="Agg Original", null=True) #Apenas como referência, mas utilizado para os lookups...
     class Meta:
         unique_together = (('of_id', 'item_cod'))
+
+class CurrentSettings(models.Model):
+    agg_of = models.ForeignKey('producao.TempAggOrdemFabrico', on_delete=models.PROTECT, verbose_name="Aggregate Ordem de Fabrico", null=True, blank=True)
+    formulacao = models.JSONField(blank=True, null=True)
+    gamaoperatoria = models.JSONField(blank=True, null=True)
+    nonwovens = models.JSONField(blank=True, null=True)
+    artigospecs = models.JSONField(blank=True, null=True)
+    cortes = models.JSONField(blank=True, null=True)
+    cortesordem = models.JSONField(blank=True, null=True)
+    cores = models.JSONField(blank=True, null=True)
+    paletizacao = models.JSONField(blank=True, null=True)
+    emendas = models.JSONField(blank=True, null=True)
+    ofs = models.JSONField(blank=True, null=True)
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active
 
 class Attachments(models.Model):
     of = models.ForeignKey('producao.TempOrdemFabrico', on_delete=models.PROTECT, verbose_name="Temporary Ordem fabrico")

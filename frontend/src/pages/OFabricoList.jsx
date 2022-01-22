@@ -54,7 +54,7 @@ const filterRules = (keys) => {
 const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
     { f_ofabrico: { label: "Ordem de Fabrico" } },
     { f_agg: { label: "Agregação Ordem de Fabrico" } },
-    { fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue:'all', ignoreFilterTag: (v) => v === 'all' } },
+    { fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue: 'all', ignoreFilterTag: (v) => v === 'all' } },
     { fmulti_order: { label: "Nº Encomenda/Nº Proforma", field: ordersField } },
     { fmulti_customer: { label: "Nº/Nome de Cliente", field: customersField } },
     { fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
@@ -84,12 +84,12 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
     const rightContent = (
         <Space>
             <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
-                
+
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                <Form form={form} initialValues={{fofstatus:"all"}}>
+                <Form form={form} initialValues={{ fofstatus: "all" }}>
                     <FormLayout id="tbt-of" schema={schema}>
-                        <Field name="fofstatus" label={{ enabled: true, width:"60px", text: "Estado", pos:"left" }}>{ordemFabricoStatusField()}</Field>
+                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField()}</Field>
                     </FormLayout>
                 </Form>
             </div>
@@ -224,33 +224,6 @@ const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoSt
         </>
     );
 }
-
-// const ModalValidar = ({ showValidar, setShowValidar }) => {
-//     const [formTitle, setFormTitle] = useState({});
-//     const iref = useRef();
-//     const { record = {} } = showValidar;
-//     const onVisible = () => {
-//         setShowValidar(prev => ({ ...prev, show: !prev.show }));
-//     }
-//     return (
-//         <WrapperForm
-//             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
-//             type="drawer"
-//             destroyOnClose={true}
-//             //width={width}
-//             mask={true}
-//             /* style={{ maginTop: "48px" }} */
-//             setVisible={onVisible}
-//             visible={showValidar.show}
-//             width={800}
-//             bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
-//             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
-//         >
-//             <FormOFabricoValidar setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} />
-//             {/* <ArtigosForm show={showUpsert} form={form} setFormTitle={setFormTitle} selectedKey={selectedKey} pRef={iref} /> */}
-//         </WrapperForm>
-//     );
-// }
 
 const TitlePopup = ({ status, action, ofabrico }) => {
     /*     if (ativa == 1 && completa == 0){
@@ -519,28 +492,17 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
     );
 };
 
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
-    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
+const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
+    const { status, temp_ofabrico } = record;
     const [action, setAction] = useState();
 
-
-    // const confirm = async (values) => {
-    //     console.log("ESTOU a CONFRMAR", values, record)
-    //     // setConfirmLoading(true);
-    //     // const response = await onAction(rowKey, record, action, () => { });
-    //     // //const { ofabrico, ofabrico_sgp, ativa, completa } = record;
-    //     // //const response = await fetchPost({ url: `${API_URL}/setofabricostatus/`, parameters: { ofabrico, ofabrico_sgp, ativa, completa } });
-    //     // setConfirmLoading(false);
-    //     // setEstadoRecord(false);
-    //     // /*         if (response.data.status !== "error") {
-    //     //             reloadParent();
-    //     //         } */
-    //     // //openNotificationWithIcon(response.data);
-    // }
-
     const onShowConfirm = (action) => {
+        const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
         setShowConfirm({ show: true, data: { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction } });
-        //showPromiseConfirm({ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, action });
+    }
+    const onShowMenuActions = () => {
+        const { status, cod } = record;
+        setShowMenuActions({ show: true, data: { status, cod, onAction } });
     }
 
     return (
@@ -552,10 +514,10 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
                 </Dropdown>
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
-                <TagButton onClick={() => onAction(record, "preparing", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+                <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
             </>}
             {(status == 2 && temp_ofabrico) && <>
-                <TagButton onClick={() => onAction(record, "preparing", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
+                <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
             {status == 4 && <>
                 <TagButton onClick={() => showPopconfirm('finalizar')} style={{ width: "98px", textAlign: "center" }} icon={<SyncOutlined spin />} color="processing">Em Curso</TagButton>
@@ -580,6 +542,51 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm }) => {
 }
 
 
+const TitleMenuActions = ({ status, action }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+            <div><ExclamationCircleOutlined style={{ color: "#faad14" }} /></div>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
+                <div><b style={{ textTransform: "capitalize" }}>{action}</b> Titleeeeee</div>
+                <div style={{ color: "#1890ff" }}></div>
+            </div>
+        </div>
+    );
+}
+
+const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
+    const [form] = Form.useForm();
+    const [confirmLoading, setConfirmLoading] = React.useState(false);
+    const [modalText, setModalText] = React.useState('Content of the modal');
+    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, onAction } = showMenuActions.data;
+    const [formStatus, setFormStatus] = useState({});
+
+    useEffect(() => {
+
+    }, []);
+
+    const handleCancel = () => {
+        setShowMenuActions({ show: false, data: {} });
+    };
+
+    return (
+        <>
+            <Modal
+                title={<TitleMenuActions status={status} action={action} />}
+                visible={showMenuActions.show}
+                centered
+                onCancel={handleCancel}
+                confirmLoading={confirmLoading}
+                maskClosable={true}
+                footer={null}
+            >
+
+            </Modal>
+        </>
+    );
+};
+
+
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -601,6 +608,7 @@ export default () => {
     const [estadoRecord, setEstadoRecord] = useState(false);
 
     const [showConfirm, setShowConfirm] = useState({ show: false, data: {} });
+    const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -640,7 +648,7 @@ export default () => {
                 }
                 setLoading(false);
                 return response;
-            case 'preparing':
+            case 'inpreparation':
                 setShowValidar(prev => ({ ...prev, show: !prev.show, record }));
                 break;
             case 'reabrir':
@@ -671,17 +679,18 @@ export default () => {
             include: {
                 ...((common) => (
                     {
+                        cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
                         prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
                         iorder: { title: "Encomenda(s)", width: 140, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
                         cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-                        start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
-                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><b>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</b></div>, ...common },
+                        start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
                         //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
                         //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
                         //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
@@ -721,6 +730,7 @@ export default () => {
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+                <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
                 <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
                 <Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer>
                 {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}

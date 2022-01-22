@@ -18,11 +18,6 @@ import { OFabricoContext } from './FormOFabricoValidar';
 import { MediaContext } from '../App';
 
 
-const loadCoresLookup = async (core, token) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, parameters: { type: 'cores', core }, cancelToken: token });
-    return rows;
-}
-
 const loadArtigoDetail = async ({ item_cod, item_nome, produto_cod }, token) => {
     let artigo = {};
     let exists = false;
@@ -69,7 +64,9 @@ const loadArtigoDetail = async ({ item_cod, item_nome, produto_cod }, token) => 
     return { artigo, exists };
 }
 
-
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
 export default ({ /* record, form, guides, schema, */ changedValues, /* nonwovensChangedValues, fieldStatus */ }) => {
     const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext);
@@ -101,7 +98,6 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
             case "lookup":
                 setLoading(true);
                 (async () => {
-                    setCoresLookup(await loadCoresLookup(form.getFieldValue("artigo_core"), token));
                     setLoading(false);
                 })();
                 break;
@@ -112,11 +108,11 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                 (async () => {
                     const { artigo, exists } = await loadArtigoDetail(ctx, token);
                     artigo["qty_item"] = ctx.qty_item;
-                    setCoresLookup(await loadCoresLookup(artigo.artigo_core, token));
+                    await sleep(50);
                     setArtigoExists(exists);
                     const plan = {
-                        start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm:ss'),
-                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm:ss'),
+                        start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm'),
+                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm'),
                         f_amostragem:(form.getFieldValue("amostragem")) ? form.getFieldValue("amostragem") : 4,
                         sentido_enrolamento:form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
                         observacoes:form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''
@@ -189,8 +185,8 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                         <VerticalSpace /> */}
                         <HorizontalRule title="2. Planificação" />
                         <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
-                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" /></Field>
-                            <Field required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" /></Field>
+                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm"/></Field>
+                            <Field required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm"/></Field>
                             <AlertsContainer style={{ alignSelf: "end", paddingBottom: "6px" }} main={true} />
                         </FieldSet>
                         {/* <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>

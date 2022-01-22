@@ -128,7 +128,7 @@ export default ({ changedValues }) => {
                     }}
                 >
                     <VerticalSpace />
-                    <HorizontalRule title="2. Nonwovens" />
+                    <HorizontalRule title="1. Nonwovens" />
                     <VerticalSpace />
                     {/* <Item><h4 style={{ padding: "5px" }}>Nonwovens</h4></Item> */}
                     <FieldSet margin={false} field={{ wide: [6, 2] }} style={{ alignItems: "center" }}>
