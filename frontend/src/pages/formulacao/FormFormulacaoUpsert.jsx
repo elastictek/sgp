@@ -24,12 +24,12 @@ const schema = (keys, excludeKeys) => {
         formu_materiasprimas_BC: Joi.array().label("Matérias Primas das Extrusoras B & C").min(1).required(),
         matprima_cod_A: Joi.string().label("Matéria Prima").required(),
         densidade_A: Joi.number().label("Densidade").required(),
-        mangueira_A: Joi.string().label("Mangueira Extrusora A").required(),
+        /* mangueira_A: Joi.string().label("Mangueira Extrusora A").required(), */
         arranque_A: Joi.number().label("Arranque").required(),
         matprima_cod_BC: Joi.string().label("Matéria Prima").required(),
         densidade_BC: Joi.number().label("Densidade").required(),
-        arranque_BC: Joi.number().label("Arranque").required(),
-        mangueira_BC: Joi.string().label("Mangueira Extrusora BC").required()
+        arranque_BC: Joi.number().label("Arranque").required()
+       /*  mangueira_BC: Joi.string().label("Mangueira Extrusora BC").required() */
     }, keys, excludeKeys).unknown(true);
 }
 
@@ -198,17 +198,15 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                             <FieldSet key={field.key} wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
                                 <FieldSet wide={7} margin={false}
                                     field={{
-                                        wide: [2, 11, 3],
+                                        wide: [13, 3],
                                         style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" }
                                     }}
                                 >
-                                    <Field name={[field.name, `mangueira_${id}`]}>
+{/*                                     <Field name={[field.name, `mangueira_${id}`]}>
                                         <SelectField size="small" data={FORMULACAO_MANGUEIRAS[id]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                        /* showSearch */
-                                        /* filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0} */
                                         />
-                                    </Field>
+                                    </Field> */}
                                     <Field name={[field.name, `matprima_cod_${id}`]}>
                                         <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
@@ -297,8 +295,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             }
             if (operation.key === "update") {
                 (setFormTitle) && setFormTitle({ title: `Editar Formulação` });
-                let formu_materiasprimas_A = record.formulacaoMatPrimas?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, mangueira_A: v.mangueira, matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, removeCtrl: true }));
-                let formu_materiasprimas_BC = record.formulacaoMatPrimas?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, mangueira_BC: v.mangueira, matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, removeCtrl: true }));
+                let formu_materiasprimas_A = record.formulacaoMatPrimas?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, /* mangueira_A: v.mangueira, */ matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, removeCtrl: true }));
+                let formu_materiasprimas_BC = record.formulacaoMatPrimas?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, /* mangueira_BC: v.mangueira, */ matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, removeCtrl: true }));
                 form.setFieldsValue({ ...record.formulacao, formu_materiasprimas_A, formu_materiasprimas_BC, totalGlobal: 100 });
             } else {
                 (setFormTitle) && setFormTitle({ title: `Nova Formulação ${ctx.item_cod}`, subTitle: `${ctx.item_nome}` });
@@ -328,21 +326,21 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const items = [];
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["formu_materiasprimas_A", "formu_materiasprimas_BC"];
-        const v = schema(false, ['mangueira_A', 'matprima_cod_A', 'densidade_A', 'arranque_A', 'mangueira_BC', 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(values, { abortEarly: false });
+        const v = schema(false, [/* 'mangueira_A', */ 'matprima_cod_A', 'densidade_A', 'arranque_A', /* 'mangueira_BC', */ 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(values, { abortEarly: false });
         console.log("after", values)
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         let fieldValues;
         if (!v.error) {
             fieldValues = updateGlobals({ values, action: "finish" });
-            let mA = fieldValues.formu_materiasprimas_A.map((v) => v.mangueira_A);
-            let mBC = fieldValues.formu_materiasprimas_BC.map((v) => v.mangueira_BC);
+            /* let mA = fieldValues.formu_materiasprimas_A.map((v) => v.mangueira_A);
+            let mBC = fieldValues.formu_materiasprimas_BC.map((v) => v.mangueira_BC); */
 
-            if ((new Set(mA)).size !== mA.length) {
+/*             if ((new Set(mA)).size !== mA.length) {
                 status.error.push({ message: "As mangueiras na Extrusora A, não podem estar duplicadas!" });
             } else if ((new Set(mBC)).size !== mBC.length) {
                 status.error.push({ message: "As mangueiras na Extrusora BC, não podem estar duplicadas!" });
-            }
+            } */
 
 
             let sumA = fieldValues.formu_materiasprimas_A.reduce((a, b) => a + (b["arranque_A"] || 0), 0);
@@ -363,7 +361,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 let matprima_des = matPrimasLookup.find(val => val.ITMREF_0 === v.matprima_cod_A)?.ITMDES1_0;
                 items.push({
                     tolerancia: v.tolerancia_A, arranque: v.arranque_A, vglobal: v.global,
-                    densidade: v.densidade_A, mangueira: v.mangueira_A, extrusora: 'A', matprima_cod: v.matprima_cod_A,
+                    densidade: v.densidade_A, /* mangueira: v.mangueira_A, */ extrusora: 'A', matprima_cod: v.matprima_cod_A,
                     matprima_des
                 });
             }
@@ -371,7 +369,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 let matprima_des = matPrimasLookup.find(val => val.ITMREF_0 === v.matprima_cod_BC)?.ITMDES1_0;
                 items.push({
                     tolerancia: v.tolerancia_BC, arranque: v.arranque_BC, vglobal: v.global,
-                    densidade: v.densidade_BC, mangueira: v.mangueira_BC, extrusora: 'BC', matprima_cod: v.matprima_cod_BC,
+                    densidade: v.densidade_BC, /* mangueira: v.mangueira_BC, */ extrusora: 'BC', matprima_cod: v.matprima_cod_BC,
                     matprima_des
                 });
             }

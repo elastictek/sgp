@@ -52,6 +52,9 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                     tempof_id: v.tempof_id,
                     of_id: v.of_id,
                     artigo_cod: v.item_cod,
+                    cliente_nome:v.cliente_nome,
+                    iorder:v.iorder,
+                    item_nome:v.item_nome,
                     enabled: (of_cod == v.of_id ? false : true)
                 });
             });
@@ -131,12 +134,21 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                         <Form.List name="aggs">
                             {(fields, { }) => {
                                 return (
-                                    <FieldSet layout="vertical">
+                                    <FieldSet layout="vertical" margin={false}>
                                         {fields.map((field, index) => (
-                                            <FieldSet key={field.key} field={{ wide: [1, 7, 8] }}>
+                                            <FieldSet key={field.key} field={{ wide: [1] }} margin="0px 0px 3px 0px" padding="5px" style={{border:"solid 1px #d9d9d9",borderRadius:"3px"}}>
                                                 <Field forInput={true} name={[field.name, `checked`]} label={{ enabled: false }}><CheckboxField disabled={form.getFieldValue(["aggs", field.name, "enabled"]) ? false : true} /></Field>
-                                                <Field forInput={false} name={[field.name, `of_id`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                <Field forInput={false} name={[field.name, `artigo_cod`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                <FieldSet margin={false} wide={15} layout="vertical">
+                                                    <FieldSet field={{ wide: [5,5, 6], forViewBorder:false }} margin={false} wide={16} style={{fontWeight:700}}>
+                                                        <Field forInput={false} name={[field.name, `of_id`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                        <Field forInput={false} name={[field.name, `iorder`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                        <Field forInput={false} name={[field.name, `artigo_cod`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                    </FieldSet>
+                                                    <FieldSet field={{ wide: [7,9], forViewBorder:false }} margin={false} wide={16}>
+                                                        <Field forInput={false} name={[field.name, `cliente_nome`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                        <Field forInput={false} name={[field.name, `item_nome`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                    </FieldSet>
+                                                </FieldSet>
                                             </FieldSet>
                                         ))}
                                     </FieldSet>

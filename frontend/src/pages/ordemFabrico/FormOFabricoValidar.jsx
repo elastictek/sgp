@@ -44,7 +44,7 @@ const LoadOFabricoTemp = async (record, token) => {
     return rows;
 }
 
-export default ({ record, setFormTitle, parentRef, closeParent }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
 /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -147,6 +147,9 @@ export default ({ record, setFormTitle, parentRef, closeParent }) => {
             console.log("save---",record);
             const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item:record.qty_item, start_prev_date:start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date:end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
             setResultMessage(response.data);
+            if (forproduction){
+                parentReload();
+            }
         }
         setFieldStatus(diff.fields);
         setFormStatus(status);

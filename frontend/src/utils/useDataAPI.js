@@ -239,7 +239,9 @@ export const useDataAPI = ({ payload } = {}) => {
         console.log("BEFORE FETCH POST->", payload);
         setIsLoading(true);
         (async () => {
-            setData((await fetchPost({ url: _url, ...payload, cancelToken: token })).data, payload);
+            const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
+            console.log("FETCHEDDDDD---",dt)
+            setData(dt, payload);
             setIsLoading(false);
         })();
     }

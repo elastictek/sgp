@@ -58,6 +58,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
     const [showForm, setShowForm] = useState({ show: false });
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [cortesOrdemLookup, setCortesOrdemLookup] = useState([]);
+    const [larguraUtil, setLarguraUtil] = useState();
     const { form, guides, schema, ...ctx } = useContext(OFabricoContext);
 
     useEffect(() => {
@@ -69,7 +70,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
     useEffect(() => {
         if (changedValues) {
             if ("cortes" in changedValues) {
-
+                setLarguraUtil(calculateLarguraUtil(form.getFieldValue("cortes")));
             }
             if ("cortesordem_id" in changedValues) {
                 //const v = ((changedValues.cortesordem_id) ? cortesOrdemLookup.filter(v => v.id === changedValues.cortesordem_id) : [])[0];
@@ -89,6 +90,11 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
         return !(!form.getFieldValue("cortes_id") || (changedValues && "cortes" in changedValues));
     }
 
+    const calculateLarguraUtil = useCallback((cortes) => {
+        const v = cortes.reduce((accumulator, current) => accumulator + (current.cortes_artigo_ncortes * current.cortes_artigo_lar), 0);
+        return v;
+    });
+
     const loadData = ({ agg_id, token }, type = "init") => {
         switch (type) {
             case "lookup":
@@ -107,6 +113,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                     const cortesordem_id = (_cortes.length > 0) ? _cortes[0]["cortesordem_id"] : null;
                     const _cortesOrdemLookup = await loadCortesOrdemLookup({ cortes_id, token });
                     form.setFieldsValue({ cortes: _cortes, ...(cortes_id ? { cortes_id } : { cortes_id: null }), ...(cortesordem_id ? { cortesordem_id } : { cortesordem_id: null }) });
+                    setLarguraUtil(calculateLarguraUtil(_cortes));
                     setCortesOrdemLookup(_cortesOrdemLookup);
                     setLoading(false);
                 })();
@@ -177,6 +184,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                     <FieldSet>
                         {form.getFieldValue("cortes_id") && <Toolbar
                             style={{ width: "100%" }}
+                            left={<div>{larguraUtil && <>Largura Útil [ <b>{larguraUtil}mm</b> ]</>}</div>}
                             right={<Button onClick={clearCortes}>Refazer Cortes</Button>}
                         />
                         }

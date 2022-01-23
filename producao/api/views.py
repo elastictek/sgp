@@ -11,8 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 
-
-from pyodbc import Cursor, Error, lowercase
+from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
@@ -31,8 +30,16 @@ from sistema.settings.appSettings import AppSettings
 import time
 
 
+import psycopg2
+# from psycopg2 import pool
 
 
+
+# postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="postgres",
+#                                                          password="Inf0rmat1ca",
+#                                                          host="192.168.0.16",
+#                                                          port="5432",
+#                                                          database="postgres")
 
 #NEW API METHODS
 connGatewayName = "postgres"
@@ -159,8 +166,10 @@ def OFabricoList(request, format=None):
         elif v == 'finished':
             return '==99'
         return None
+
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
+
     f.setParameters({
         **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE(oflist.{k})'),
         **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
@@ -186,6 +195,7 @@ def OFabricoList(request, format=None):
 
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
     #cols = encloseColumn(['ofitm."ROWID" OFROWID','itm."ROWID" ITMROWID', 'enc."ROWID" ENCROWID', 'ofitm.MFGNUM_0', 'itm.TSICOD_0',
     #        'itm.ITMREF_0', 'itm.ITMDES1_0', 'enc.SOHNUM_0', 'enclin.SOPLIN_0', 'enc.ORDDAT_0', 'enc.DEMDLVDAT_0', 'enc.SHIDAT_0',
@@ -228,6 +238,80 @@ def OFabricoList(request, format=None):
         {p(dql.sort)} {p(dql.paging)}
         """
     ), connection, parameters, [])
+
+
+    # cols = f"""
+    #     t.prf,t.data_encomenda,t.rowid,t.ofabrico,
+    #     t.ofabrico_status,t.start_date,t.end_date,t.qty_prevista,t.qty_realizada,t.ofabrico_sgp,
+    #     t.ofabrico_sgp_nome,t.paletes_produzir_sgp,t.paletes_stock_sgp,t.paletes_total_sgp,
+    #     t.retrabalho_sgp,t.ativa_sgp,t.completa_sgp,t.item,t.item_nome,t.qty_item,t.iorder,
+    #     t.cliente_cod,t.cliente_nome,t.cod,t.inicio,t.fim,t.retrabalho, t.ativa, t.completa, t.stock, 
+    #     t.status,t.produto_cod, t.produto_id, t.temp_ofabrico, t.temp_ofabrico_agg, t.item_thickness,
+    #     t.item_diam,t.item_core, t.item_width, t.item_id,t.start_prev_date,t.end_prev_date
+    # """
+
+    # response = dbgw.executeList(lambda p, c: (
+    #     f"""
+    #     SELECT {c(f'{cols}')} 
+    #     from (
+    #     SELECT DISTINCT ON (ofh."MFGNUM_0", ofitm."MFGLIN_0") ofh."MFGNUM_0" AS ofabrico,
+    #     oforder."PRFNUM_0" AS prf,
+    #     oforder."ORDDAT_0" AS data_encomenda,
+    #     ofh."ROWID" AS rowid,
+    #     ofh."MFGTRKFLG_0" AS ofabrico_status,
+    #     ofh."STRDAT_0" AS start_date,
+    #     ofh."ENDDAT_0" AS end_date,
+    #     ofh."EXTQTY_0" AS qty_prevista,
+    #     ofh."CPLQTY_0" AS qty_realizada,
+    #     sgp_op.id AS ofabrico_sgp,
+    #     sgp_op.op AS ofabrico_sgp_nome,
+    #     sgp_op.num_paletes_produzir AS paletes_produzir_sgp,
+    #     sgp_op.num_paletes_stock AS paletes_stock_sgp,
+    #     sgp_op.num_paletes_total AS paletes_total_sgp,
+    #     sgp_op.retrabalho AS retrabalho_sgp,
+    #     sgp_op.ativa AS ativa_sgp,
+    #     sgp_op.completa AS completa_sgp,
+    #     ofitm."ITMREF_0" AS item,
+    #     itmsales."ITMDES1_0" AS item_nome,
+    #     ofitm."UOMEXTQTY_0" AS qty_item,
+    #     sgp_tagg.cod,
+    #     sgp_op.inicio,sgp_op.fim,
+    #     sgp_op.retrabalho, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
+    #     sgp_op.status,
+    #     sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
+    #     sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
+    #     sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,
+    #     CASE
+    #     WHEN length(ofitm."VCRNUMORI_0"::text) = 1 THEN sgp_op.enccod
+    #     ELSE ofitm."VCRNUMORI_0"
+    #     END AS iorder,
+    #     CASE
+    #     WHEN oforder."BPCORD_0" IS NULL THEN sgp_op.clientecod
+    #     ELSE oforder."BPCORD_0"
+    #     END AS cliente_cod,
+    #     CASE
+    #     WHEN oforder."BPCNAM_0" IS NULL THEN sgp_op.clientenome
+    #     ELSE oforder."BPCNAM_0"
+    #     END AS cliente_nome
+    #     FROM {sageAlias}."MFGHEAD" ofh
+    #     LEFT JOIN {sageAlias}."MFGITM" ofitm ON ofitm."MFGNUM_0"::text = ofh."MFGNUM_0"::text
+    #     LEFT JOIN {sageAlias}."SORDER" oforder ON oforder."SOHNUM_0"::text = ofitm."VCRNUMORI_0"::text
+    #     LEFT JOIN {sageAlias}."ITMSALES" itmsales ON itmsales."ITMREF_0"::text = ofitm."ITMREF_0"::text
+    #     LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op ON sgp_op.ofid::text = ofh."MFGNUM_0"::text
+    #     LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = ofh."MFGNUM_0" and sgp_top.item_cod=ofitm."ITMREF_0"
+    #     LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
+    #     LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = ofitm."ITMREF_0"
+    #     LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
+    #     WHERE 
+    #     NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = ofh."MFGNUM_0")
+    #     ) t
+    #     {f.text} {f2["text"]}
+    #     {p(dql.sort)} {p(dql.paging)}
+    #     """
+    # ), connection, parameters, [])
+
+    ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM "SGP-DEV".planeamento_ordemproducao where id>679"""),connection,{})
+    print(f'----------------------{ret}')
     return Response(response)
 
 @api_view(['POST'])
@@ -1649,7 +1733,7 @@ def sgpForProduction(data,aggid,user,cursor):
             'palete_maxaltura',pp.palete_maxaltura,'netiquetas_bobine',pp.netiquetas_bobine,'netiquetas_lote',pp.netiquetas_lote,'netiquetas_final',pp.netiquetas_final,      
             'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'cliente_nome',pp.cliente_nome,
             'details', (select JSON_ARRAYAGG(JSON_OBJECT('order',ppdb.item_order,'num_bobines',ppdb.item_numbobines))
-            FROM sistema_dev.producao_paletizacaodetails ppdb WHERE ppdb.paletizacao_id=pp.id and ppdb.item_id=2)
+            FROM producao_paletizacaodetails ppdb WHERE ppdb.paletizacao_id=pp.id and ppdb.item_id=2)
             ) paletizacao_bobines,
             JSON_OBJECT(
             'id',pp.id,'cliente_cod',pp.cliente_cod,'artigo_cod',pp.artigo_cod,'contentor_id',pp.contentor_id,'filmeestiravel_bobines',pp.filmeestiravel_bobines,
@@ -1658,29 +1742,29 @@ def sgpForProduction(data,aggid,user,cursor):
             'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'cliente_nome',pp.cliente_nome,
             'details', (select JSON_ARRAYAGG(JSON_OBJECT('id', ppd.id,'item_des', ppd.item_des,'item_id', ppd.item_id,'item_numbobines', ppd.item_numbobines,
             'item_order', ppd.item_order,'item_paletesize', ppd.item_paletesize,'paletizacao_id', ppd.paletizacao_id))
-            FROM sistema_dev.producao_paletizacaodetails ppd WHERE ppd.paletizacao_id=pp.id)
+            FROM producao_paletizacaodetails ppd WHERE ppd.paletizacao_id=pp.id)
             ) paletizacao,
             JSON_OBJECT(
             'id',pan.id,'designacao',pan.designacao,'versao',pan.versao,'nw_cod_sup',pan.nw_cod_sup,
             'nw_des_sup',pan.nw_des_sup,'nw_cod_inf',pan.nw_cod_inf,'nw_des_inf',pan.nw_des_inf,'produto_id',pan.produto_id
             ) nonwovens,
             (select JSON_ARRAYAGG(JSON_OBJECT('created_date', patt.created_date,'id', patt.id,'of_id', patt.of_id,'path', patt.path,'tipo_doc', patt.tipo_doc))
-            FROM sistema_dev.producao_attachments patt WHERE patt.of_id=pto.id) attachments,
+            FROM producao_attachments patt WHERE patt.of_id=pto.id) attachments,
             pto.cliente_cod, pto.cliente_nome, pc.id as cliente_id,
             pto.order_cod, penc.id as encomenda_id,
             (select JSON_ARRAYAGG(ppal.id)
-            FROM sistema_dev.producao_palete ppal WHERE ppal.draft_ordem_id=pto.id) paletesstock,
-            (select count(*) from sistema_dev.producao_palete tpp where tpp.draft_ordem_id=pto.id) n_paletes_stock,
+            FROM producao_palete ppal WHERE ppal.draft_ordem_id=pto.id) paletesstock,
+            (select count(*) from producao_palete tpp where tpp.draft_ordem_id=pto.id) n_paletes_stock,
             pto.n_paletes_total,ptoagg.sentido_enrolamento, ptoagg.amostragem
-            FROM sistema_dev.producao_tempordemfabrico pto
-            JOIN sistema_dev.producao_tempaggordemfabrico ptoagg on pto.agg_of_id = ptoagg.id
-            JOIN sistema_dev.producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
-            JOIN sistema_dev.producao_emendas pe on pe.id=pto.emendas_id
-            JOIN sistema_dev.producao_artigo pa on pa.id=pto.item_id
-            JOIN sistema_dev.producao_produtos pprod on pto.produto_id=pprod.id        
-            JOIN sistema_dev.producao_paletizacao pp on pto.paletizacao_id=pp.id       
-            LEFT JOIN sistema_dev.producao_cliente pc on pc.cod = pto.cliente_cod      
-            LEFT JOIN sistema_dev.producao_encomenda penc on penc.eef = pto.order_cod  
+            FROM producao_tempordemfabrico pto
+            JOIN producao_tempaggordemfabrico ptoagg on pto.agg_of_id = ptoagg.id
+            JOIN producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
+            JOIN producao_emendas pe on pe.id=pto.emendas_id
+            JOIN producao_artigo pa on pa.id=pto.item_id
+            JOIN producao_produtos pprod on pto.produto_id=pprod.id        
+            JOIN producao_paletizacao pp on pto.paletizacao_id=pp.id       
+            LEFT JOIN producao_cliente pc on pc.cod = pto.cliente_cod      
+            LEFT JOIN producao_encomenda penc on penc.eef = pto.order_cod  
             {f.text}
         '''), cursor, f.parameters)['rows']
         return rows
@@ -1701,7 +1785,7 @@ def sgpForProduction(data,aggid,user,cursor):
             'items',(select JSON_ARRAYAGG(JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
             pfomp.extrusora,'formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
             pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal))
-            FROM sistema_dev.producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id))
+            FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id))
             formulacao,
             JSON_OBJECT('created_date', pan.created_date,'designacao', pan.designacao,'id', pan.id,'nw_cod_inf', pan.nw_cod_inf,'nw_cod_sup', 
             pan.nw_cod_sup,'nw_des_inf', pan.nw_des_inf,'nw_des_sup', pan.nw_des_sup,'produto_id', pan.produto_id,'updated_date', pan.updated_date,'versao', pan.versao
@@ -1714,25 +1798,25 @@ def sgpForProduction(data,aggid,user,cursor):
             JSON_OBJECT('id',pas.id,'designacao',pas.designacao,'versao',pas.versao,'cliente_cod',pas.cliente_cod,'cliente_nome',pas.cliente_nome,'produto_id',pas.produto_id,
             'items',  (select JSON_ARRAYAGG(JSON_OBJECT('id',pasi.id,'item_des',pasi.item_des,'item_values',pasi.item_values,'item_key',
             pasi.item_key,'artigospecs_id',pasi.artigospecs_id,'item_nvalues',pasi.item_nvalues)) j
-            from sistema_dev.producao_artigospecsitems pasi where pasi.artigospecs_id = ptoagg.artigospecs_id)
+            from producao_artigospecsitems pasi where pasi.artigospecs_id = ptoagg.artigospecs_id)
             ) specs,
             JSON_OBJECT('created_date', pgo.created_date,'designacao', pgo.designacao,'id', pgo.id,'produto_id', pgo.produto_id,'updated_date', 
             pgo.updated_date,'versao', pgo.versao,'items',( SELECT JSON_ARRAYAGG(JSON_OBJECT('gamaoperatoria_id', pgoi.gamaoperatoria_id,'id', pgoi.id,'item_des', pgoi.item_des,'item_key', pgoi.item_key,
             'item_nvalues', pgoi.item_nvalues,'item_values', pgoi.item_values,'tolerancia', pgoi.tolerancia))
-            FROM sistema_dev.producao_gamaoperatoriaitems pgoi WHERE pgoi.gamaoperatoria_id = ptoagg.gamaoperatoria_id)
+            FROM producao_gamaoperatoriaitems pgoi WHERE pgoi.gamaoperatoria_id = ptoagg.gamaoperatoria_id)
             ) gamaoperatoria,
             (SELECT JSON_ARRAYAGG(JSON_OBJECT('agg_of_id', tof.agg_of_id,'agg_ofid_original', tof.agg_ofid_original,'cliente_cod', tof.cliente_cod,'cliente_nome', 
             tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
             'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_id', tof.of_id,'order_cod', 
             tof.order_cod,'paletizacao_id', tof.paletizacao_id,'prf_cod', tof.prf_cod,'produto_id', tof.produto_id,'qty_encomenda', tof.qty_encomenda,
-            'sqm_bobine', tof.sqm_bobine)) FROM  sistema_dev.producao_tempordemfabrico tof WHERE tof.agg_of_id=ptoagg.id) ofs
-            FROM sistema_dev.producao_tempaggordemfabrico ptoagg 
-            JOIN sistema_dev.producao_formulacao pfo on pfo.id = ptoagg.formulacao_id
-            JOIN sistema_dev.producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
-            JOIN sistema_dev.producao_artigospecs pas on pas.id = ptoagg.artigospecs_id
-            JOIN sistema_dev.producao_gamaoperatoria pgo on pgo.id = ptoagg.gamaoperatoria_id
-            JOIN sistema_dev.producao_cortes pc on pc.id = ptoagg.cortes_id
-            LEFT JOIN sistema_dev.producao_cortesordem pco on pco.id = ptoagg.cortesordem_id
+            'sqm_bobine', tof.sqm_bobine)) FROM  producao_tempordemfabrico tof WHERE tof.agg_of_id=ptoagg.id) ofs
+            FROM producao_tempaggordemfabrico ptoagg 
+            JOIN producao_formulacao pfo on pfo.id = ptoagg.formulacao_id
+            JOIN producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
+            JOIN producao_artigospecs pas on pas.id = ptoagg.artigospecs_id
+            JOIN producao_gamaoperatoria pgo on pgo.id = ptoagg.gamaoperatoria_id
+            JOIN producao_cortes pc on pc.id = ptoagg.cortes_id
+            LEFT JOIN producao_cortesordem pco on pco.id = ptoagg.cortesordem_id
             {f.text}
         '''), cursor, f.parameters)['rows']
         return rows
@@ -1868,7 +1952,7 @@ def sgpForProduction(data,aggid,user,cursor):
         }      
         dml = db.dml(TypeDml.INSERT, dta, "producao_currentsettings")
         db.execute(dml.statement, cursor, dml.parameters)
-        csid = cursor.lastrowid            
+        csid = cursor.lastrowid
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1886,8 +1970,8 @@ def SaveTempOrdemFabrico(request, format=None):
         f.value("and")   
         rows = db.executeSimpleList(lambda: (f'''
                 select toaf.status 
-                FROM sistema_dev.producao_tempordemfabrico tof
-                join sistema_dev.producao_tempaggordemfabrico toaf on tof.agg_of_id=toaf.id
+                FROM producao_tempordemfabrico tof
+                join producao_tempaggordemfabrico toaf on tof.agg_of_id=toaf.id
                 {f.text}
         '''), cursor, f.parameters)['rows']
         status = rows[0]["status"] if len(rows)>0 else None
@@ -2218,7 +2302,14 @@ def SaveTempOrdemFabrico(request, format=None):
                     aggid = upsertTempAggOrdemFabrico(data,ids,cursor)
                     id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
                     sgpForProduction(data,aggid,request.user,cursor)
-                    
+        if 'forproduction' in data and data['forproduction']==True:
+            mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
+            conngw = connections[connGatewayName]
+            cgw = conngw.cursor()
+            cgw.execute(f"REFRESH MATERIALIZED VIEW public.{mv_ofabrico_list};")
+            conngw.commit()
+
+                  
         return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Guardada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!"})
