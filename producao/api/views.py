@@ -1,7 +1,7 @@
 from typing import List
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.views import APIView
-from django.http import Http404
+from django.http import Http404, request
 from rest_framework.response import Response
 from django.http.response import HttpResponse
 from django.http import FileResponse
@@ -1173,6 +1173,38 @@ def ArtigoSpecsItemsGet(request, format=None):
         return Response(response)
 #endregion
 
+
+
+#region CURRENT SETTINGS
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CurrentSettingsGet(request, format=None):
+    cols = ['*']
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'agg_of_id = :aggId', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_currentsettings
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+#endregion
+
+
 #region NONWOVENS
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1538,8 +1570,6 @@ def UpdateCortesOrdem(request, format=None):
         return Response({"status": "error", "title": "Erro ao Posicionados os Cortes!"})
 
 
-
-
 #endregion
 
 
@@ -1821,6 +1851,17 @@ def sgpForProduction(data,aggid,user,cursor):
         '''), cursor, f.parameters)['rows']
         return rows
 
+    def GetTeste(aggId, cursor):
+        f = Filters({})
+        f.setParameters({}, False)
+        f.where()
+        f.value("and")   
+        rows = db.executeSimpleList(lambda: (f''' 
+           select * from planeamento_ordemproducao where id >679
+            {f.text}
+        '''), cursor, f.parameters)['rows']
+        return rows
+
     #Se a ação for para criar as ordens de produção/fabrico
     if 'forproduction' in data and data['forproduction']==True:
         ofs = GetOrdensFabrico(aggid,cursor)
@@ -1831,6 +1872,11 @@ def sgpForProduction(data,aggid,user,cursor):
         emendas = []
         paletizacao = []
         cores = []
+
+        draft_ids = [d['id'] for d in ofs]
+        print(f'||||||||||||||-draft----{draft_ids}')
+
+        
         for idx, ordemfabrico in enumerate(ofs):
             vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],user.id,cursor)
             
@@ -1934,7 +1980,8 @@ def sgpForProduction(data,aggid,user,cursor):
                 statement = f'{dml.statement} WHERE id in(select id from (select pp.id FROM producao_palete pp WHERE pp.draft_ordem_id={ordemfabrico["id"]}) t)'
                 db.execute(statement, cursor, dml.parameters)
 
-
+        r = GetTeste(aggid,cursor)
+        print(f'$$$$$$$$$$$$$$$$$$$-teste----{r}')
         aggdata = GetAggData(aggid,cursor)
         dta = {
             "formulacao":aggdata[0]["formulacao"],
@@ -1948,7 +1995,15 @@ def sgpForProduction(data,aggid,user,cursor):
             "emendas":json.dumps(emendas, ensure_ascii=False),
             "paletizacao":json.dumps(paletizacao, ensure_ascii=False),
             "cores":json.dumps(cores, ensure_ascii=False),
-            "status":1
+            "status":1,
+            "start_prev_date": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S"),
+            "end_prev_date": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S"),
+            "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0],
+            "sentido_enrolamento":ordemfabrico['sentido_enrolamento'],
+            "amostragem":ordemfabrico['amostragem'],
+            "observacoes":data['observacoes'],
+            "user_id":user.id
+
         }      
         dml = db.dml(TypeDml.INSERT, dta, "producao_currentsettings")
         db.execute(dml.statement, cursor, dml.parameters)

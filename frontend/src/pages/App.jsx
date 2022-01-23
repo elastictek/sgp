@@ -10,7 +10,7 @@ const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
 const OFabricoList = lazy(() => import('./OFabricoList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
-const OFDetails = lazy(() => import('./ordemFabrico/FormDetails'));
+/* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
 
@@ -30,7 +30,7 @@ const RenderRouter = () => {
             children: [
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
-                { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> },
+               /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
         },
         { path: "*", element: <Suspense fallback={<Spin />}><NotFound /></Suspense> }

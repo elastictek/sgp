@@ -25,7 +25,7 @@ const ButtonGroup = Button.Group;
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 const { Title } = Typography;
 
-import FormOrdemFabricoArtigos from "./ordemFabrico/FormArtigos";
+/* import FormOrdemFabricoArtigos from "./ordemFabrico/FormArtigos"; */
 
 const ToolbarTable = ({ form, dataAPI, groupByOrder, setGroupByOrder, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
 

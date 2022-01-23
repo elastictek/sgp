@@ -40,14 +40,6 @@ class BaseTempAggOrdemFabrico(models.Model):
 class TempAggOrdemFabrico(BaseTempAggOrdemFabrico):
     pass
 
-class AuditDraftAggordemfabrico(BaseTempAggOrdemFabrico):
-    type = models.CharField(max_length=45, blank=True, null=True)
-    timestamp = models.DateTimeField(blank=True, null=True)
-    action = models.CharField(max_length=8, blank=True, null=True)
-    contextid = models.IntegerField(blank=True, null=True)
-    class Meta:
-        db_table = 'audit_draft_aggordemfabrico'
-
 class TempOrdemFabrico(models.Model):
     of_id = models.CharField(max_length=25,verbose_name="Ordem de Produção", null=True) #ADDED - ORDEM FABRICO SAGE ID
     order_cod = models.CharField(max_length=25,verbose_name="Código Encomenda", null=True) #ADDED - CÓDIGO ENCOMENDA SAGE ID
@@ -74,7 +66,7 @@ class TempOrdemFabrico(models.Model):
     class Meta:
         unique_together = (('of_id', 'item_cod'))
 
-class CurrentSettings(models.Model):
+class BaseCurrentSettings(models.Model):
     agg_of = models.ForeignKey('producao.TempAggOrdemFabrico', on_delete=models.PROTECT, verbose_name="Aggregate Ordem de Fabrico", null=True, blank=True)
     formulacao = models.JSONField(blank=True, null=True)
     gamaoperatoria = models.JSONField(blank=True, null=True)
@@ -86,7 +78,28 @@ class CurrentSettings(models.Model):
     paletizacao = models.JSONField(blank=True, null=True)
     emendas = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
+    paletesstock = models.JSONField(blank=True, null=True)
     status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active
+    observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
+    start_prev_date = models.DateTimeField(verbose_name="Data Início Prevista", null=True, blank=True)
+    end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
+    horas_previstas_producao= models.IntegerField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True)
+    sentido_enrolamento = models.CharField(verbose_name="Sentido de Enrolamento", max_length=100, null=True)
+    amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
+    class Meta:
+        abstract = True
+
+class AuditCurrentSettings(BaseCurrentSettings):
+    type = models.CharField(max_length=45, blank=True, null=True)
+    timestamp = models.DateTimeField(blank=True, null=True)
+    action = models.CharField(max_length=8, blank=True, null=True)
+    contextid = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'audit_currentsettings'
+
+class CurrentSettings(BaseCurrentSettings):
+    pass
 
 class Attachments(models.Model):
     of = models.ForeignKey('producao.TempOrdemFabrico', on_delete=models.PROTECT, verbose_name="Temporary Ordem fabrico")

@@ -27,7 +27,8 @@ import { RiRefreshLine } from "react-icons/ri";
 
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 
-import FormOFabricoValidar from './ordemFabrico/FormOFabricoValidar';
+import FormOFabricoValidar from './planeamento/ordemFabrico/FormOFabricoValidar';
+const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
 
 
 
@@ -501,8 +502,8 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         setShowConfirm({ show: true, data: { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction } });
     }
     const onShowMenuActions = () => {
-        const { status, cod } = record;
-        setShowMenuActions({ show: true, data: { status, cod, onAction } });
+        const { status, cod, temp_ofabrico_agg } = record;
+        setShowMenuActions({ show: true, data: { status, cod, aggId: temp_ofabrico_agg, onAction } });
     }
 
     return (
@@ -542,12 +543,11 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 }
 
 
-const TitleMenuActions = ({ status, action }) => {
+const TitleMenuActions = ({  }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div><ExclamationCircleOutlined style={{ color: "#faad14" }} /></div>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
-                <div><b style={{ textTransform: "capitalize" }}>{action}</b> Titleeeeee</div>
+                <div><b style={{ textTransform: "capitalize" }}></b> Titleeeeee</div>
                 <div style={{ color: "#1890ff" }}></div>
             </div>
         </div>
@@ -558,7 +558,7 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     const [form] = Form.useForm();
     const [confirmLoading, setConfirmLoading] = React.useState(false);
     const [modalText, setModalText] = React.useState('Content of the modal');
-    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, onAction } = showMenuActions.data;
+    const { aggId } = showMenuActions.data;
     const [formStatus, setFormStatus] = useState({});
 
     useEffect(() => {
@@ -572,15 +572,16 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     return (
         <>
             <Modal
-                title={<TitleMenuActions status={status} action={action} />}
+                title={<TitleMenuActions/>}
                 visible={showMenuActions.show}
                 centered
                 onCancel={handleCancel}
                 confirmLoading={confirmLoading}
                 maskClosable={true}
                 footer={null}
+                destroyOnClose={true}
             >
-
+                <FormMenuActions aggId={aggId} />
             </Modal>
         </>
     );
