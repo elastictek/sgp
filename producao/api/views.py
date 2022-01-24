@@ -1848,8 +1848,8 @@ def sgpForProduction(data,aggid,user,cursor):
 			(SELECT JSON_ARRAYAGG(JSON_OBJECT("id",ppal.id,"nome",ppal.nome)) FROM producao_palete ppal where ppal.ordem_id = pop.id)
 			)) paletesstock
 			FROM planeamento_ordemproducao pop
-			where pop.id in ({ops})) paletesstock
-
+			where pop.id in ({ops})) paletesstock,
+            pcs.id cs_id
             FROM producao_tempaggordemfabrico ptoagg 
             JOIN producao_formulacao pfo on pfo.id = ptoagg.formulacao_id
             JOIN producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
@@ -1857,6 +1857,7 @@ def sgpForProduction(data,aggid,user,cursor):
             JOIN producao_gamaoperatoria pgo on pgo.id = ptoagg.gamaoperatoria_id
             JOIN producao_cortes pc on pc.id = ptoagg.cortes_id
             LEFT JOIN producao_cortesordem pco on pco.id = ptoagg.cortesordem_id
+            LEFT JOIN producao_currentsettings pcs on pcs.agg_of_id = ptoagg.id
             {f.text}
         '''), cursor, f.parameters)['rows']
         return rows
@@ -1871,9 +1872,6 @@ def sgpForProduction(data,aggid,user,cursor):
         emendas = []
         paletizacao = []
         cores = []
-
-        draft_ids = [d['id'] for d in ofs]
-        print(f'||||||||||||||-draft----{draft_ids}')
 
         ops=[]
         for idx, ordemfabrico in enumerate(ofs):
@@ -2002,9 +2000,35 @@ def sgpForProduction(data,aggid,user,cursor):
             "amostragem":ordemfabrico['amostragem'],
             "observacoes":data['observacoes'],
             "user_id":user.id
-
-        }      
+        }
+        if aggdata[0]["cs_id"] is not None:
+            dta["id"] = aggdata[0]["cs_id"]
         dml = db.dml(TypeDml.INSERT, dta, "producao_currentsettings")
+        dml.statement = f"""
+            {dml.statement}
+            ON DUPLICATE KEY UPDATE 
+                id=LAST_INSERT_ID(id),
+                formulacao=values(formulacao),
+                gamaoperatoria=values(gamaoperatoria),
+                nonwovens=values(nonwovens),
+                artigospecs=values(artigospecs),
+                cortes=values(cortes),
+                cortesordem=values(cortesordem),
+                ofs=values(ofs),
+                paletesstock=values(paletesstock),
+                agg_of_id=values(agg_of_id),
+                emendas=values(emendas),
+                paletizacao=values(paletizacao),
+                cores=values(cores),
+                status=values(status),
+                start_prev_date=values(start_prev_date),
+                end_prev_date=values(end_prev_date),
+                horas_previstas_producao=values(horas_previstas_producao),
+                sentido_enrolamento=values(sentido_enrolamento),
+                amostragem=values(amostragem),
+                observacoes=values(observacoes),
+                user_id=values(user_id)
+        """
         db.execute(dml.statement, cursor, dml.parameters)
         csid = cursor.lastrowid
 
