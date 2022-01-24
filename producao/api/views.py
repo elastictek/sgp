@@ -1799,7 +1799,7 @@ def sgpForProduction(data,aggid,user,cursor):
         '''), cursor, f.parameters)['rows']
         return rows
 
-    def GetAggData(aggId, cursor):
+    def GetAggData(aggId,ops, cursor):
         f = Filters({"agg_of_id": aggId})
         f.setParameters({}, False)
         f.where()
@@ -1836,10 +1836,20 @@ def sgpForProduction(data,aggid,user,cursor):
             FROM producao_gamaoperatoriaitems pgoi WHERE pgoi.gamaoperatoria_id = ptoagg.gamaoperatoria_id)
             ) gamaoperatoria,
             (SELECT JSON_ARRAYAGG(JSON_OBJECT('agg_of_id', tof.agg_of_id,'agg_ofid_original', tof.agg_ofid_original,'cliente_cod', tof.cliente_cod,'cliente_nome', 
-            tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
-            'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_id', tof.of_id,'order_cod', 
+            tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'draft_of_id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
+            'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_cod', tof.of_id,'order_cod', 
             tof.order_cod,'paletizacao_id', tof.paletizacao_id,'prf_cod', tof.prf_cod,'produto_id', tof.produto_id,'qty_encomenda', tof.qty_encomenda,
-            'sqm_bobine', tof.sqm_bobine)) FROM  producao_tempordemfabrico tof WHERE tof.agg_of_id=ptoagg.id) ofs
+            'sqm_bobine', tof.sqm_bobine,'of_id',pop.id)) 
+            FROM producao_tempordemfabrico tof 
+            JOIN planeamento_ordemproducao pop on pop.draft_ordem_id = tof.id 
+            WHERE tof.agg_of_id=ptoagg.id) ofs,
+
+            (SELECT JSON_ARRAYAGG(JSON_OBJECT("draft_of_id",pop.draft_ordem_id ,"of_cod",pop.ofid, "of_id" ,pop.id , "paletes",
+			(SELECT JSON_ARRAYAGG(JSON_OBJECT("id",ppal.id,"nome",ppal.nome)) FROM producao_palete ppal where ppal.ordem_id = pop.id)
+			)) paletesstock
+			FROM planeamento_ordemproducao pop
+			where pop.id in ({ops})) paletesstock
+
             FROM producao_tempaggordemfabrico ptoagg 
             JOIN producao_formulacao pfo on pfo.id = ptoagg.formulacao_id
             JOIN producao_artigononwovens pan on pan.id = ptoagg.nonwovens_id
@@ -1847,17 +1857,6 @@ def sgpForProduction(data,aggid,user,cursor):
             JOIN producao_gamaoperatoria pgo on pgo.id = ptoagg.gamaoperatoria_id
             JOIN producao_cortes pc on pc.id = ptoagg.cortes_id
             LEFT JOIN producao_cortesordem pco on pco.id = ptoagg.cortesordem_id
-            {f.text}
-        '''), cursor, f.parameters)['rows']
-        return rows
-
-    def GetTeste(aggId, cursor):
-        f = Filters({})
-        f.setParameters({}, False)
-        f.where()
-        f.value("and")   
-        rows = db.executeSimpleList(lambda: (f''' 
-           select * from planeamento_ordemproducao where id >679
             {f.text}
         '''), cursor, f.parameters)['rows']
         return rows
@@ -1876,15 +1875,10 @@ def sgpForProduction(data,aggid,user,cursor):
         draft_ids = [d['id'] for d in ofs]
         print(f'||||||||||||||-draft----{draft_ids}')
 
-        
+        ops=[]
         for idx, ordemfabrico in enumerate(ofs):
             vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],user.id,cursor)
             
-            #Dados para currentSettings
-            emendas.append({"id":ordemfabrico["id"],"of_id":ordemfabrico["of_id"],"emendas":ordemfabrico["emendas"]})
-            paletizacao.append({"id":ordemfabrico["id"],"of_id":ordemfabrico["of_id"],"paletizacao":ordemfabrico["paletizacao"]})
-            cores.append({"id":ordemfabrico["id"],"of_id":ordemfabrico["of_id"],"cores":[{"core_cod":ordemfabrico["core_cod"],"core_des":ordemfabrico["core_des"]}]})
-
             #Registar ordem de produção....
             _artigo = json.loads(ordemfabrico['artigo'])
             _emendas = json.loads(ordemfabrico['emendas'])
@@ -1967,7 +1961,13 @@ def sgpForProduction(data,aggid,user,cursor):
             #Save Current Settings
             dml = db.dml(TypeDml.INSERT, dta, "planeamento_ordemproducao")
             db.execute(dml.statement, cursor, dml.parameters)
-            opid = cursor.lastrowid     
+            opid = cursor.lastrowid 
+            ops.append(opid)    
+
+            #Dados para currentSettings
+            emendas.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"emendas":ordemfabrico["emendas"]})
+            paletizacao.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"paletizacao":ordemfabrico["paletizacao"]})
+            cores.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"cores":[{"core_cod":ordemfabrico["core_cod"],"core_des":ordemfabrico["core_des"]}]})
 
             #Adicionar Paletes em stock 
             if ordemfabrico['paletesstock'] is not None:
@@ -1980,9 +1980,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 statement = f'{dml.statement} WHERE id in(select id from (select pp.id FROM producao_palete pp WHERE pp.draft_ordem_id={ordemfabrico["id"]}) t)'
                 db.execute(statement, cursor, dml.parameters)
 
-        r = GetTeste(aggid,cursor)
-        print(f'$$$$$$$$$$$$$$$$$$$-teste----{r}')
-        aggdata = GetAggData(aggid,cursor)
+        aggdata = GetAggData(aggid,",".join(str(v) for v in ops),cursor)
         dta = {
             "formulacao":aggdata[0]["formulacao"],
             "gamaoperatoria":aggdata[0]["gamaoperatoria"],
@@ -1991,6 +1989,7 @@ def sgpForProduction(data,aggid,user,cursor):
             "cortes":aggdata[0]["cortes"],
             "cortesordem":aggdata[0]["cortesordem"],
             "ofs":aggdata[0]["ofs"],
+            "paletesstock":aggdata[0]["paletesstock"],
             "agg_of_id":aggid,
             "emendas":json.dumps(emendas, ensure_ascii=False),
             "paletizacao":json.dumps(paletizacao, ensure_ascii=False),

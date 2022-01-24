@@ -204,8 +204,8 @@ export default ({ aggId }) => {
                     const emendas = JSON.parse(raw[0].emendas);
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
-
-                    console.log("################...", { formulacao, gamaoperatoria, nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status })
+                    
+                    console.log("################...",raw[0], { formulacao, gamaoperatoria, nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status })
 
 
                     setCurrentSettings({ formulacao, gamaoperatoria, nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status });
