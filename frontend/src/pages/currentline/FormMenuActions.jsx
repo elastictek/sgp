@@ -59,11 +59,11 @@ const schema = (keys, excludeKeys) => {
 const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
     const iref = useRef();
-    
+
     const onVisible = () => {
         setShowWrapper(prev => ({ ...prev, show: !prev.show }));
     }
- 
+
     return (
         <WrapperForm
             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
@@ -179,7 +179,7 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     const { formulacao, cores, nonwovens } = record;
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, type: menuItem.type, show: !prev.show, record, fullScreen:true }))
+        setShowForm(prev => ({ ...prev, type: menuItem.type, show: !prev.show, record, fullScreen: true }))
     }
 
     useEffect(() => {
@@ -267,6 +267,8 @@ const menuItems = [
     }
 ];
 
+
+
 export default ({ aggId }) => {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState({ show: false, type: null, mode: 'modal' });
@@ -303,14 +305,20 @@ export default ({ aggId }) => {
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
 
-                    console.log("#####", ofs)
-
+                    const quantity = ofs.reduce((basket, ofitem) => {
+                        basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
+                        basket["linear_meters"] = (!basket?.linear_meters) ? ofitem.linear_meters : basket.linear_meters + ofitem.linear_meters;
+                        basket["n_paletes"] = (!basket?.n_paletes) ? ofitem.n_paletes_total : basket.n_paletes + ofitem.n_paletes_total;
+                        return basket;
+                    }, {});
                     setCurrentSettings({
                         id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status,
+                        quantity,
                         planificacao: {
                             start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),
                             end_prev_date: dayjs(raw[0].end_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'), horas_previstas_producao: raw[0].horas_previstas_producao
                         },
+                        produto: { produto_id: raw[0].produto_id, produto_cod: raw[0].produto_cod, gsm: raw[0].gsm },
                         sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria,
                         nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status
                     });
@@ -337,12 +345,12 @@ export default ({ aggId }) => {
 
                 {Object.keys(currentSettings).length > 0 && <StyledGrid>
                     {menuItems.map((menuItem, idx) => {
-                        const { planificacao, formulacao, cores, nonwovens, artigospecs } = currentSettings;
+                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity } = currentSettings;
                         switch (menuItem.type) {
                             case "planificacao":
                                 return (<CardPlanificacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao }} setShowForm={setShowForm} />);
                             case "lotes":
-                                return (<CardLotes key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, cores, nonwovens }} setShowForm={setShowForm} />);
+                                return (<CardLotes key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity }} setShowForm={setShowForm} />);
                             case "formulacao":
                                 return (<CardFormulacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
                             case "especificacoes":

@@ -424,7 +424,7 @@ def MateriasPrimasLookup(request, format=None):
     type = None if "type" not in request.data['parameters'] else request.data['parameters']['type']
     cfilter = ""
     if type=='nonwovens':
-        cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
     elif type=='cores':
         core = int(int(request.data['parameters']['core']) * 25.4)
         largura = str(request.data['parameters']['largura'])[:-1]
@@ -1207,12 +1207,12 @@ def CurrentSettingsGet(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def LotesLookup(request, format=None):
-    cols = ["UPDDATTIM_0","LOT_0", "QTYPCU_0", "PCUORI_0","LOC_0"]
+    cols = ["ITMREF_0","UPDDATTIM_0","LOT_0", "QTYPCU_0", "PCUORI_0","LOC_0"]
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
-    f.add(f'"ITMREF_0" = :item_cod', True)
-    f.add(f'"LOT_0" like :lote_cod', True)
+    f.add(f'lower("ITMREF_0") = lower(:item_cod)', lambda v:(v!=None))
+    f.add(f'lower("LOT_0") like lower(:lote_cod)', True)
     f.add(f'"LOC_0" = :loc_cod', True)
     f.add(f'"STOFCY_0" = \'E01\'',True)
     f.value("and")

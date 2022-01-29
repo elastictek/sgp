@@ -79,6 +79,7 @@ class BaseCurrentSettings(models.Model):
     cores = models.JSONField(blank=True, null=True)
     paletizacao = models.JSONField(blank=True, null=True)
     emendas = models.JSONField(blank=True, null=True)
+    lotes = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
     paletesstock = models.JSONField(blank=True, null=True)
     status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active

@@ -11,7 +11,7 @@ import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectFi
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import Portal from "components/portal";
-import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch } from "antd";
+import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 
@@ -51,8 +51,11 @@ const TitleExtrusora = ({ value, extrusoraRef }) => {
     return (
         <>
             {show.current &&
-                <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [16], label: { enabled: false } }}>
+                <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [6, 1, 5, 1], label: { enabled: false } }}>
                     <FieldItem><div style={{ fontWeight: 700, fontSize: "14px" }}>Extrusora {value}</div></FieldItem>
+                    <FieldItem><div style={{ textAlign: "center" }}>Qtd. Requerida</div></FieldItem>
+                    <FieldItem><div style={{ textAlign: "center" }}>Lotes</div></FieldItem>
+                    <FieldItem><div style={{ textAlign: "center" }}>Qtd. Disponível</div></FieldItem>
                 </FieldSet>
             }
         </>
@@ -134,8 +137,29 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             const matPrimas = record.formulacao.items.map(({ matprima_cod }) => `'${matprima_cod}'`).join(',');
             sendJsonMessage({ cmd: 'loadmatprimas', value: matPrimas, cs: record.id });
 
+            console.log("$$#$#$#$#$--", record.nonwovens)
+            console.log("$$#$#$#$#$--", record.quantity)
+            console.log("$$#$#$#$#$--", record.produto)
+            console.log("$$#$#$#$#$--", record.formulacao)
 
-            record.formulacao.items.forEach(v => { if (!('lotes' in v)) v.lotes = [] });
+            const gsmNwSup = record.nonwovens.nw_des_sup.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
+            const gsmNwInf = record.nonwovens.nw_des_inf.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
+
+            const filmeSqm = Number(record.quantity.square_meters) * (Number(gsmNwSup) + Number(gsmNwInf)) / Number(record.produto.gsm);
+
+
+
+            record.formulacao.items.forEach(v => {
+                if (!('qty_available' in v)) v.qty_available = 0;
+                if (!('lotes' in v)) v.lotes = [];
+                if (!('qty' in v)) v.qty = Math.round((filmeSqm * (Number(v.vglobal) / 100)) * 0.1, 2);
+
+                console.log(v.vglobal, "-------", (filmeSqm * (Number(v.vglobal) / 100)))
+
+            });
+            console.log("$$#$#$#$#$--", Number(record.quantity.square_meters));
+
+
             form.setFieldsValue({ formulacao: record.formulacao.items /* groupBy(record.formulacao.items, 'extrusora') */ });
             setLoading(false);
         })();
@@ -211,9 +235,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             const fv = form.getFieldValue("formulacao");
             const idx = fv.findIndex(v => v.extrusora === extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
             if (idx >= 0) {
-                fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
-                console.log('--------', { extrusora, matprima_cod: fv[idx].matprima_cod, matprima_des: fv[idx].matprima_des }, fv[idx].lotes);
-                form.setFieldsValue(fv);
+                if (fv[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+                    fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                    //fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+                    fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
+                    form.setFieldsValue(fv);
+                }
             }
             /* const fv = form.getFieldsValue(true);
             const lotes = !("lotes" in fv) ? [] : fv.lotes;
@@ -226,6 +253,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         inputRef.current.value = '';
 
     }, [lastJsonMessage]);
+
+    const onManualPick = (v) => {
+        sendJsonMessage({ cmd: 'pick', value: v.key, cs: record.id });
+    }
 
     const onPick = (e, a, b) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
@@ -279,50 +310,23 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} />
                             </FieldItem>
                         </FieldSet>
-                        <FieldSet wide={16} margin={false}>
-                            <FieldItem label={{ enabled: false }}><input className="ant-input" ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                        <FieldSet wide={16} margin={false} field={{ wide: [4, 4] }}>
+                            <FieldItem label={{ enabled: false }}><input className="ant-input ant-input-lg" ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                            <Field required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
+                                <SelectDebounceField
+                                    defaultActiveFirstOption
+                                    placeholder="Lote Picagem Manual"
+                                    size="large"
+                                    keyField="LOT_0"
+                                    textField="LOT_0"
+                                    showSearch
+                                    showArrow
+                                    allowClear
+                                    onSelect={onManualPick}
+                                    fetchOptions={(v) => loadLotesLookup(v)}
+                                />
+                            </Field>
                         </FieldSet>
-
-
-
-
-                        <Form.List name="lotes">
-                            {(fields, { add, remove, move }) => {
-                                return (
-                                    <>
-                                        {fields.map((field, index) => (
-                                            <React.Fragment key={field.key}>
-                                                <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
-                                                    <FieldSet wide={16} margin={false}
-                                                        field={{
-                                                            wide: [2, 6, 4],
-                                                            style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" }
-                                                        }}
-                                                    >
-                                                        <Field name={[field.name, `lote_cod`]} required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
-                                                            <AutoCompleteField
-                                                                //autoFocus={field.name == 0 ? true : false}
-                                                                tabIndex={0}
-                                                                placeholder="Selecione o Lote"
-                                                                size="small"
-                                                                keyField="LOT_0"
-                                                                textField="LOT_0"
-                                                                dropdownMatchSelectWidth={250}
-                                                                allowClear
-                                                                backfill
-                                                                optionsRender={lotesRenderer}
-                                                                fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
-                                                            />
-                                                        </Field>
-                                                    </FieldSet>
-                                                </FieldSet>
-                                            </React.Fragment>
-                                        ))}
-                                    </>
-                                );
-                            }}
-                        </Form.List>
-
 
 
                         <Form.List name="formulacao">
@@ -332,31 +336,41 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                         {fields.map((field, index) => (
                                             <React.Fragment key={field.key}>
                                                 <TitleExtrusora extrusoraRef={extrusoraRef} value={form.getFieldValue("formulacao")[field.name]['extrusora']} />
-                                                <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
+                                                <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }} style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}>
                                                     <FieldSet wide={16} margin={false}
                                                         field={{
-                                                            wide: [1, 3, 4],
-                                                            style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" }
+                                                            style: { alignSelf: "center" },
+                                                            wide: [1, 4, 1, 5, 1],
+                                                            /* style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" } */
                                                         }}
                                                     >
-                                                        <Field name={[field.name, `mangueira`]}>
-                                                            <SelectField tabIndex={1000} size="small" data={FORMULACAO_MANGUEIRAS[form.getFieldValue("formulacao")[field.name]['extrusora']]} keyField="key" textField="key"
+                                                        <Field name={[field.name, `mangueira`]} style={{ fontSize: "14px", backgroundColor: "#fff", alignSelf: "center" }}>
+                                                            <SelectField tabIndex={1000} size="large" data={FORMULACAO_MANGUEIRAS[form.getFieldValue("formulacao")[field.name]['extrusora']]} keyField="key" textField="key"
                                                                 optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                                             />
                                                         </Field>
-                                                        <Field name={[field.name, `matprima_cod`]} forInput={false}>
-                                                            <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                                        <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, fontSize: "14px", alignSelf: "center" }}>
+                                                            <SelectField size="large" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
                                                                 optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                                                 showSearch
                                                                 filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                                                             />
                                                         </Field>
-                                                        <FieldItem>
-                                                            <Space >
+                                                        <FieldItem style={{ textAlign: "right", alignSelf: "center", fontSize: "14px" }}>
+                                                            <b>{form.getFieldValue("formulacao")[field.name].qty}</b> kg
+                                                        </FieldItem>
+                                                        <FieldItem style={{ alignSelf: "center", fontSize: "14px" }}>
+                                                            <Space size={2} wrap={true}>
                                                                 {form.getFieldValue("formulacao")[field.name]?.lotes && form.getFieldValue("formulacao")[field.name]?.lotes.map((v, idx) => {
-                                                                    return (<div key={`lot-${idx}`} >{v.lote} {v.qty}{v.unit}</div>);
+                                                                    return (<Tag style={{ fontSize: "14px", padding:"5px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
                                                                 })}
                                                             </Space>
+                                                        </FieldItem>
+                                                        <FieldItem style={{
+                                                            textAlign: "right", alignSelf: "center", fontSize: "14px",
+                                                            ...form.getFieldValue("formulacao")[field.name].qty <= form.getFieldValue("formulacao")[field.name].qty_available && { color: "#237804" }
+                                                        }}>
+                                                            <b>{form.getFieldValue("formulacao")[field.name].qty_available}</b> kg
                                                         </FieldItem>
                                                         {/* <Field name={[field.name, `lote_cod`]} required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
                                                                                                                     <SelectDebounceField
