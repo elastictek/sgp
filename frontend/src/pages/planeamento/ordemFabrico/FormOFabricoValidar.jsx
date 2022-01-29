@@ -45,7 +45,7 @@ const LoadOFabricoTemp = async (record, token) => {
 }
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
-/*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
+    /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [fieldStatus, setFieldStatus] = useState({});
@@ -78,8 +78,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         cliente_cod: record.cliente_cod,
         cliente_nome: record.cliente_nome,
         qty_item: record.qty_item,
-        sage_start_date:record.start_date,
-        sage_end_date:record.end_date,
+        sage_start_date: record.start_date,
+        sage_end_date: record.end_date,
         fieldStatus,
         setFieldStatus,
         form,
@@ -123,12 +123,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     }
 
     const onFinish = async (values) => {
-        const forproduction =submitForProduction.current;
+        const forproduction = submitForProduction.current;
         submitForProduction.current = false;
 
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["start_prev_date", "end_prev_date"];
-        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
+        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id } = record;
         const { core_cod: { value: core_cod, label: core_des } = {} } = values;
         const { cortes_id, cortesordem_id } = form.getFieldsValue(true);
         let diff = {};
@@ -144,9 +144,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         if (!v.error) { }
         if (status.error.length === 0) {
             const { start_prev_date, end_prev_date } = values;
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item:record.qty_item, start_prev_date:start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date:end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, cortes_id, cortesordem_id } });
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, produto_cod, cortes_id, cortesordem_id } });
             setResultMessage(response.data);
-            if (forproduction){
+            if (forproduction) {
                 parentReload();
             }
         }
@@ -166,8 +166,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         closeParent();
     }
 
-    const onSubmitForProduction = ()=>{
-        submitForProduction.current=true;
+    const onSubmitForProduction = () => {
+        submitForProduction.current = true;
         form.submit();
     }
 
@@ -185,7 +185,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     <AlertMessages formStatus={formStatus} />
                     <OFabricoContext.Provider value={contextValue} /* value={{ temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico, form, guides, schema }} */>
                         <Form form={form} name={`form-of-validar`} onFinish={onFinish} onValuesChange={onValuesChange}>
-                            <Tabs onChange={() => { }} type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k)=>setActiveTab(k)}>
+                            <Tabs onChange={() => { }} type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k) => setActiveTab(k)}>
                                 <TabPane tab="Requisitos" key="1" forceRender={true}>
                                     <FormRequirements changedValues={requirementsChangedValues} />
                                 </TabPane>
@@ -205,7 +205,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                                 <TabPane tab="Gama Operatória" key="5">
                                     <Suspense fallback={<></>}><FormGamaOperatoria changedValues={gamaOperatoriaChangedValues} /></Suspense>
                                 </TabPane>
- {/*                                <TabPane tab="Paletização" key="6">
+                                {/*                                <TabPane tab="Paletização" key="6">
                                     <Suspense fallback={<></>}><FormPaletizacao changedValues={paletizacaoChangedValues} /></Suspense>
                                 </TabPane> */}
                                 <TabPane tab="Cortes" key="7">

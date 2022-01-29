@@ -8,19 +8,21 @@ import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
-import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse } from "antd";
+import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert } from "antd";
+const { Title, Text } = Typography;
 const { Panel } = Collapse;
 import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import { remove } from 'ramda';
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
+import { Object } from 'sugar';
+
+const FormLotes = React.lazy(() => import('./FormLotes'));
 
 
 const StyledCard = styled(Card)`
     .ant-card-body{
-        height:350px;
-        max-height:500px; 
         overflow-y:hidden;
     }
 
@@ -39,6 +41,17 @@ const StyledCollapse = styled(Collapse)`
 
 `;
 
+const StyledGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-gap: .5rem;
+    grid-auto-flow: dense;
+    align-items: start;
+    padding:4px 10px;
+`;
+
+
+
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
@@ -46,24 +59,26 @@ const schema = (keys, excludeKeys) => {
 const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
     const iref = useRef();
-    const { record = {} } = showWrapper;
+    
     const onVisible = () => {
         setShowWrapper(prev => ({ ...prev, show: !prev.show }));
     }
+ 
     return (
         <WrapperForm
             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
             type={showWrapper.mode}
+            mode="fullscreen"
             destroyOnClose={true}
-            width={800}
             mask={true}
             /* style={{ maginTop: "48px" }} */
             setVisible={onVisible}
             visible={showWrapper.show}
-            bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
+            bodyStyle={{ height: "100%"/*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
         >
             <YScroll>
+                {showWrapper.type === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {/*                 {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
                 {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
@@ -80,98 +95,181 @@ const loadCurrentSettings = async (aggId, token) => {
 }
 
 
-const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
-    const paletes = JSON.parse(aggItem?.n_paletes);
-    const onAction = (op) => {
-        switch (op) {
-            case 'paletes_stock':
-                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-                break;
-            case 'schema':
-                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-                break;
-            case 'settings':
-                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-                break;
-            case 'attachments':
-                setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-                break;
-        }
-    }
+const CardAgg = ({ ofItem, setShowForm, /* aggItem */ of_id }) => {
+    const { of_cod, cliente_nome, produto_cod, item_des } = ofItem;
+    // const paletes = JSON.parse(aggItem?.n_paletes);
+    // const onAction = (op) => {
+    //     switch (op) {
+    //         case 'paletes_stock':
+    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+    //             break;
+    //         case 'schema':
+    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+    //             break;
+    //         case 'settings':
+    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+    //             break;
+    //         case 'attachments':
+    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+    //             break;
+    //     }
+    // }
+
+    useEffect(() => {
+        console.log("ENTREI MENU OFSACTION", ofItem)
+    }, [])
 
     return (
-
-
-        <List.Item>
+        <div style={{ height: '100%' }}>
             <StyledCard hoverable
-                style={{ width: '100%'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                style={{ width: '100%', height: '100%'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 headStyle={{ backgroundColor: "#002766", color: "#fff" }}
                 title={<div>
-                    <div style={{ fontWeight: 700, fontSize: "14px" }}>{aggItem.of_id}</div>
-                    <div style={{ color: "#fff", fontSize: ".7rem" }}>{aggItem.item_cod} - {aggItem.cliente_nome}</div>
+                    <div style={{ fontWeight: 700, fontSize: "12px" }}>{of_cod}</div>
+                    <div style={{ color: "#fff", fontSize: ".6rem" }}>{cliente_nome}</div>
                 </div>} size="small"
                 actions={[
                     <div key="settings" onClick={() => onAction('settings')} title="Outras definições">Definições</div>,
-                    /* <FaPallet key="schema" onClick={() => onAction('schema')} title="Paletização (Esquema)" />, */
-                    /* <FaWarehouse key="paletes" onClick={() => onAction('paletes_stock')} title="Paletes em Stock" />, */
                     <div key="schema" onClick={() => onAction('schema')} title="Paletização (Esquema)">Paletização</div>,
                     <div key="paletes" onClick={() => onAction('paletes_stock')}>Stock</div>,
                     <div key="attachments" onClick={() => onAction('attachments')}><span><PaperClipOutlined />Anexos</span></div>
-                    /* <div key="quantity" onClick={() => onAction('quantity')} title="Quantidades">Quantidades</div> */
-                    /*<SettingOutlined key="settings" onClick={() => onAction('settings')} title="Outras definições" />,*/
-                    /*<MdProductionQuantityLimits key="quantity" onClick={() => onAction('quantity')} title="Quantidades" />*/
-                    /*                     <EditOutlined key="edit" />,
-                                        <EllipsisOutlined key="ellipsis" />, */
                 ]}
             >
                 <YScroll>
-                    <FieldSet wide={16} margin={false} layout="vertical">
-                        <StyledCollapse defaultActiveKey={['1']} expandIconPosition="right" bordered>
-                            <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Encomenda</b></div><div>{aggItem.qty_encomenda} m&#178;</div></div>} key="1">
-                                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{aggItem.linear_meters.toFixed(2)}</div><div>m/bobine</div></div>
-                                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{aggItem.sqm_bobine.toFixed(2)}</div><div>m&#178;/bobine</div></div>
-                                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{(aggItem.qty_encomenda / aggItem.sqm_bobine).toFixed(2)}</div><div>bobines</div></div>
-                                {paletes?.items && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{paletes.total.n_paletes.toFixed(2)}</div><div>paletes</div></div>}
-                                {paletes?.items && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{paletes.total.sqm_contentor.toFixed(2)}</div><div>m&#178;/contentor</div></div>}
-                                {paletes?.items && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{(aggItem.qty_encomenda / paletes.total.sqm_contentor).toFixed(2)}</div><div>contentores</div></div>}
-                            </Panel>
-                            <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Paletização</b></div></div>} key="2">
-                                {paletes?.items && paletes.items.map((v, idx) => {
-                                    return (
-                                        <div style={{ borderBottom: "20px" }} key={`pc-${aggItem.name}-${v.id}`}>
-                                            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", borderBottom: "solid 1px #d9d9d9" }}><div><b>Palete</b> {idx + 1}</div><div><b>Bobines</b> {v.num_bobines}</div></div>
-                                            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div style={{ color: "#595959" }}>m&#178;</div><div>{v.sqm_palete.toFixed(2)}</div></div>
-                                            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div style={{ color: "#595959" }}>Nº Paletes</div><div>{(paletes.total.n_paletes / paletes.items.length).toFixed(2)}</div></div>
-                                        </div>
-                                    );
-                                })}
-                                <SvgSchema items={aggItem} width="100%" height="100%" />
-                            </Panel>
-                            {aggItem?.paletesstock?.length && <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>{aggItem?.paletesstock?.length} Paletes de Stock</b></div></div>} key="3">
-                                <div style={{ height: "150px", overflowY: "hidden" }}>
-                                    <YScroll>
-                                        <PaletesStock item={aggItem} />
-                                    </YScroll>
-                                </div>
-                            </Panel>
-                            }
-                        </StyledCollapse>
-
-                    </FieldSet>
+                    <Text strong>{item_des}</Text>
                 </YScroll>
 
 
             </StyledCard>
-        </List.Item>
-
-
+        </div>
     );
 }
 
-export default ({ aggId }) => {
+const CardPlanificacao = ({ menuItem, record }) => {
+    const { planificacao } = record;
 
+    useEffect(() => {
+        console.log("ENTREI PLANIFICACAO", record)
+    }, [])
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+            >
+                <div>
+                    <div>Horas de Produção Previstas</div>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: "16px" }}>{planificacao.horas_previstas_producao}H</div>
+
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1 }}>Início</div>
+                    <div style={{ flex: 1 }}>Fim</div>
+                </div>
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.start_prev_date}</div>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.end_prev_date}</div>
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+const CardLotes = ({ menuItem, record, setShowForm }) => {
+    const { formulacao, cores, nonwovens } = record;
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, type: menuItem.type, show: !prev.show, record, fullScreen:true }))
+    }
+
+    useEffect(() => {
+        console.log("ENTREI LOTES", record)
+    }, [])
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+            >
+
+                {/* <div>
+                    <div>Horas de Produção Previstas</div>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: "16px" }}>{planificacao.horas_previstas_producao}H</div>
+
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1 }}>Início</div>
+                    <div style={{ flex: 1 }}>Fim</div>
+                </div>
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.start_prev_date}</div>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.end_prev_date}</div>
+                </div> */}
+            </Card>
+        </div>
+    );
+}
+
+const CardFormulacao = ({ menuItem, record }) => {
+    const { formulacao } = record;
+
+    useEffect(() => {
+        console.log("ENTREI NA FORMULAÇÃO", record)
+    }, [])
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Button icon={<EditOutlined />} />}
+            >
+            </Card>
+        </div>
+    );
+}
+
+const CardArtigoSpecs = ({ menuItem, record }) => {
+    const { artigospecs } = record;
+
+    useEffect(() => {
+        console.log("ENTREI NAs ESPECIFICAÇÕES", record)
+    }, [])
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Button icon={<EditOutlined />} />}
+            >
+            </Card>
+        </div>
+    );
+}
+
+const menuItems = [
+    {
+        type: "planificacao",
+        title: "Planificação",
+    }, {
+        type: "lotes",
+        title: "Lotes de Matérias Primas"
+    }, {
+        type: "especificacoes",
+        title: "Especificações"
+    }, {
+        type: "formulacao",
+        title: "Formulação",
+        span: 2
+    }
+];
+
+export default ({ aggId }) => {
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState({ show: false, type: null });
+    const [showForm, setShowForm] = useState({ show: false, type: null, mode: 'modal' });
     const [guides, setGuides] = useState(false);
     const [currentSettings, setCurrentSettings] = useState({});
 
@@ -204,11 +302,18 @@ export default ({ aggId }) => {
                     const emendas = JSON.parse(raw[0].emendas);
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
-                    
-                    console.log("################...",raw[0], { formulacao, gamaoperatoria, nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status })
 
+                    console.log("#####", ofs)
 
-                    setCurrentSettings({ formulacao, gamaoperatoria, nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status });
+                    setCurrentSettings({
+                        id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status,
+                        planificacao: {
+                            start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),
+                            end_prev_date: dayjs(raw[0].end_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'), horas_previstas_producao: raw[0].horas_previstas_producao
+                        },
+                        sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria,
+                        nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status
+                    });
                     setLoading(false);
                 })();
         }
@@ -222,57 +327,48 @@ export default ({ aggId }) => {
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
                 <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
-                <FormLayout
-                    id="LAY-MENU-ACTIONS"
-                    guides={guides}
-                    layout="vertical"
-                    style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
-                    schema={schema}
-                    field={{
-                        //wide: [3, 2, 1, '*'],
-                        margin: "2px", overflow: false, guides: guides,
-                        label: { enabled: true, pos: "top", align: "start", vAlign: "center", width: "180px", wrap: false, overflow: false, colon: true, ellipsis: true },
-                        alert: { pos: "right", tooltip: true, container: true /* container: "el-external" */ },
-                        layout: { top: "", right: "", center: "", bottom: "", left: "" },
-                        addons: {}, //top|right|center|bottom|left
-                        required: true,
-                        style: { alignSelf: "top" }
-                    }}
-                    fieldSet={{
-                        guides: guides,
-                        wide: 16, margin: "2px", layout: "horizontal", overflow: false
-                    }}
-                >
-                    {/*                     <FieldSet margin={false}>
-                        <Toolbar
-                            style={{ width: "100%" }}
-                            right={<Button onClick={() => onShowForm()}>Agrupar</Button>}
-                        />
-                    </FieldSet>
 
-                    <FieldSet margin={false}>
-                        {aggId &&
-                            <List
-                                style={{ width: "100%" }}
-                                grid={{
-                                    gutter: 16,
-                                    xs: 1,
-                                    sm: 1,
-                                    md: 2,
-                                    lg: 2,
-                                    xl: 2,
-                                    xxl: 2,
-                                }}
-                                size="small"
-                                dataSource={aggId}
-                                renderItem={aggItem => {
-                                    return (<CardAgg aggItem={aggItem} of_id={ctx.of_id} setShowForm={setShowForm} />);
-                                }}
-                            >
-                            </List>
+                {/*                     <FormLayout id="LAY-MENU-ACTIONS-0" style={{ width: "500px", padding: "0px" }} field={{label:{enabled:false}}}>
+                        <FieldSet margin={false} field={{ wide: [8,8] }}>
+                            <FieldItem><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></FieldItem>
+                            <FieldItem><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></FieldItem>
+                        </FieldSet>
+                    </FormLayout> */}
+
+                {Object.keys(currentSettings).length > 0 && <StyledGrid>
+                    {menuItems.map((menuItem, idx) => {
+                        const { planificacao, formulacao, cores, nonwovens, artigospecs } = currentSettings;
+                        switch (menuItem.type) {
+                            case "planificacao":
+                                return (<CardPlanificacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao }} setShowForm={setShowForm} />);
+                            case "lotes":
+                                return (<CardLotes key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, cores, nonwovens }} setShowForm={setShowForm} />);
+                            case "formulacao":
+                                return (<CardFormulacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
+                            case "especificacoes":
+                                return (<CardArtigoSpecs key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
+                            default: <React.Fragment key={`ct-${idx}`} />
                         }
-                    </FieldSet> */}
-                </FormLayout>
+                    })}
+                </StyledGrid>}
+
+                {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
+                    {currentSettings.ofs.map((ofItem, idx) => {
+                        return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} />)
+                    })}
+                </StyledGrid>}
+                {currentSettings.observacoes &&
+                    <div style={{ padding: "10px" }}>
+                        <Alert
+                            style={{ width: "100%" }}
+                            message="Observações"
+                            description={currentSettings.observacoes}
+                            type="info"
+                        />
+                    </div>
+                }
+
+
             </Spin>
         </>
     );

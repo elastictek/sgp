@@ -346,7 +346,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             let sumA = fieldValues.formu_materiasprimas_A.reduce((a, b) => a + (b["arranque_A"] || 0), 0);
             let sumBC = fieldValues.formu_materiasprimas_BC.reduce((a, b) => a + (b["arranque_BC"] || 0), 0);
 
-            if (fieldValues.totalGlobal !== 100) {
+            console.log("testeeeee",Math.round(fieldValues.totalGlobal))
+            if (Math.round(fieldValues.totalGlobal) !== 100) {
                 status.error.push({ message: "O Total Global das Matérias Primas tem de ser 100%!" });
             } else if (sumA !== 100) {
                 status.error.push({ message: "O Total das Matérias Primas da Extrusora A tem de ser 100%!" });

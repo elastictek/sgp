@@ -68,6 +68,8 @@ class TempOrdemFabrico(models.Model):
 
 class BaseCurrentSettings(models.Model):
     agg_of = models.ForeignKey('producao.TempAggOrdemFabrico', on_delete=models.PROTECT, verbose_name="Aggregate Ordem de Fabrico", null=True, blank=True)
+    produto = models.ForeignKey('producao.Produtos', on_delete=models.PROTECT, verbose_name="Produto", null=True, blank=True)
+    produto_cod = models.CharField(max_length=200,verbose_name="Codigo do Produto", null=True)
     formulacao = models.JSONField(blank=True, null=True)
     gamaoperatoria = models.JSONField(blank=True, null=True)
     nonwovens = models.JSONField(blank=True, null=True)
@@ -86,6 +88,7 @@ class BaseCurrentSettings(models.Model):
     horas_previstas_producao= models.IntegerField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True)
     sentido_enrolamento = models.CharField(verbose_name="Sentido de Enrolamento", max_length=100, null=True)
     amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
+    gsm = models.IntegerField(verbose_name="Gramagem", max_length=3, null=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
     class Meta:
         abstract = True

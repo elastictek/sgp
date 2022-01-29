@@ -26,6 +26,7 @@ import { GrStorage } from "react-icons/gr";
 import { RiRefreshLine } from "react-icons/ri";
 
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
+import YScroll from "components/YScroll";
 
 import FormOFabricoValidar from './planeamento/ordemFabrico/FormOFabricoValidar';
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
@@ -503,7 +504,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
-        setShowMenuActions({ show: true, data: { status, cod, aggId: temp_ofabrico_agg, onAction } });
+        setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
     }
 
     return (
@@ -543,11 +544,11 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 }
 
 
-const TitleMenuActions = ({  }) => {
+const TitleMenuActions = ({ aggCod }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
-                <div><b style={{ textTransform: "capitalize" }}></b> Titleeeeee</div>
+                <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
                 <div style={{ color: "#1890ff" }}></div>
             </div>
         </div>
@@ -558,11 +559,10 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     const [form] = Form.useForm();
     const [confirmLoading, setConfirmLoading] = React.useState(false);
     const [modalText, setModalText] = React.useState('Content of the modal');
-    const { aggId } = showMenuActions.data;
+    const { aggId, aggCod } = showMenuActions.data;
     const [formStatus, setFormStatus] = useState({});
 
     useEffect(() => {
-
     }, []);
 
     const handleCancel = () => {
@@ -572,7 +572,7 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     return (
         <>
             <Modal
-                title={<TitleMenuActions/>}
+                title={<TitleMenuActions aggCod={aggCod} />}
                 visible={showMenuActions.show}
                 centered
                 onCancel={handleCancel}
@@ -580,8 +580,12 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
                 maskClosable={true}
                 footer={null}
                 destroyOnClose={true}
+                bodyStyle={{ height: 500, backgroundColor: "#f0f0f0" }}
+                width={"80%"}
             >
-                <FormMenuActions aggId={aggId} />
+                <YScroll>
+                    <FormMenuActions aggId={aggId} />
+                </YScroll>
             </Modal>
         </>
     );

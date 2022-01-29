@@ -503,7 +503,7 @@ def IgnorarOrdemFabrico(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao Ignorar Ordem de Fabrico!"})
 
-#region CLIENTES
+#region CLIENTES\
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -596,10 +596,9 @@ def NewPaletizacaoSchema(request, format=None):
     
     def checkPaletizacao(data, cursor):
         if ("id" in data):
-            f = Filters({"id":data["id"],"status":0})
+            f = Filters({"id":data["id"]})
             f.where()
             f.add(f'paletizacao_id = :id', True)
-            f.add(f'status = :status', True)
             f.value("and")
             return db.exists("producao_tempordemfabrico",f,cursor).exists
         return 0
@@ -1202,6 +1201,37 @@ def CurrentSettingsGet(request, format=None):
             """
         ), cursor, parameters)
         return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def LotesLookup(request, format=None):
+    cols = ["UPDDATTIM_0","LOT_0", "QTYPCU_0", "PCUORI_0","LOC_0"]
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'"ITMREF_0" = :item_cod', True)
+    f.add(f'"LOT_0" like :lote_cod', True)
+    f.add(f'"LOC_0" = :loc_cod', True)
+    f.add(f'"STOFCY_0" = \'E01\'',True)
+    f.value("and")
+    parameters = {**f.parameters}   
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    dql.columns = encloseColumn(cols)
+    with connections[connGatewayName].cursor() as cursor:
+       response = dbgw.executeSimpleList(lambda: (
+         f'''
+            SELECT {dql.columns}
+            FROM {sageAlias}."STOCK" {f.text} {dql.sort} {dql.limit} --Where "ITMREF_0" = 'NNWSB0025000023' And "STOFCY_0" = 'E01'
+         '''
+         #f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+       ), cursor, parameters)
+       return Response(response)
+
 #endregion
 
 
@@ -1572,6 +1602,7 @@ def UpdateCortesOrdem(request, format=None):
 
 #endregion
 
+#region ATTACHMENTS
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1653,6 +1684,7 @@ def OfUpload(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar os Ficheiros!"})
 
+#endegion
 
 #region TEMP ORDEMFABRICO SCHEMA
 
@@ -1839,11 +1871,12 @@ def sgpForProduction(data,aggid,user,cursor):
             tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'draft_of_id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
             'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_cod', tof.of_id,'order_cod', 
             tof.order_cod,'paletizacao_id', tof.paletizacao_id,'prf_cod', tof.prf_cod,'produto_id', tof.produto_id,'qty_encomenda', tof.qty_encomenda,
-            'sqm_bobine', tof.sqm_bobine,'of_id',pop.id)) 
+            'sqm_bobine', tof.sqm_bobine,'of_id',pop.id,'item_des',pa.des,'produto_id',pa.produto_id,'produto_cod',ppr.produto_cod)) 
             FROM producao_tempordemfabrico tof 
+            JOIN producao_artigo pa on pa.id = tof.item_id
+            JOIN producao_produtos ppr on ppr.id = pa.produto_id
             JOIN planeamento_ordemproducao pop on pop.draft_ordem_id = tof.id 
             WHERE tof.agg_of_id=ptoagg.id) ofs,
-
             (SELECT JSON_ARRAYAGG(JSON_OBJECT("draft_of_id",pop.draft_ordem_id ,"of_cod",pop.ofid, "of_id" ,pop.id , "paletes",
 			(SELECT JSON_ARRAYAGG(JSON_OBJECT("id",ppal.id,"nome",ppal.nome)) FROM producao_palete ppal where ppal.ordem_id = pop.id)
 			)) paletesstock
@@ -1901,7 +1934,7 @@ def sgpForProduction(data,aggid,user,cursor):
                     elif tipo_doc.lower() == "orientação qualidade":
                         atts["ori_qua"] = att_path
                     elif tipo_doc.lower() == "ordem de fabrico":
-                        atts["of"] = att_path
+                        atts["`of`"] = att_path
 
 
             tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
@@ -1999,6 +2032,9 @@ def sgpForProduction(data,aggid,user,cursor):
             "sentido_enrolamento":ordemfabrico['sentido_enrolamento'],
             "amostragem":ordemfabrico['amostragem'],
             "observacoes":data['observacoes'],
+            "gsm":data['artigo_gram'],
+            "produto_id":data['produto_id'],
+            "produto_cod":data['produto_cod'],
             "user_id":user.id
         }
         if aggdata[0]["cs_id"] is not None:
@@ -2027,6 +2063,9 @@ def sgpForProduction(data,aggid,user,cursor):
                 sentido_enrolamento=values(sentido_enrolamento),
                 amostragem=values(amostragem),
                 observacoes=values(observacoes),
+                produto_id=values(produto_id),
+                produto_cod=values(produto_cod),
+                gsm=values(gsm),
                 user_id=values(user_id)
         """
         db.execute(dml.statement, cursor, dml.parameters)
@@ -2053,6 +2092,7 @@ def SaveTempOrdemFabrico(request, format=None):
                 {f.text}
         '''), cursor, f.parameters)['rows']
         status = rows[0]["status"] if len(rows)>0 else None
+        return {"status":"success"}
         if (status==None):
             return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"Não existe Ordem de Produção Agregada."}
         elif (status==0):
@@ -2362,7 +2402,7 @@ def SaveTempOrdemFabrico(request, format=None):
             dml = db.dml(TypeDml.UPDATE,vl,"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
-    
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -2582,7 +2622,27 @@ def TempAggOFabricoLookup(request, format=None):
 
 
 
-#End Ordens de Fabrico
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

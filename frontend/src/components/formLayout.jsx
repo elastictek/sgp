@@ -94,6 +94,7 @@ export const WrapperForm = props => {
                 {type == 'modal' ? (
                     <Modal
                         {...rest}
+                        bodyStyle={{height:"70vh"}}
                         width={widthMode.width}
                         title={titleForm}
                         centered
@@ -816,7 +817,7 @@ export const Item = ({ children = <></>, ...props }) => {
     );
 }
 
-const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder=true, ...rest }) => {
+const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, ...rest }) => {
     return (
         <>
             {"value" in rest ? <>
@@ -824,7 +825,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                     const value = rest.value;
                     switch (children.type.name) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && {border: "dashed 1px #d9d9d9"}, minHeight: "25px" }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
                         case 'CheckboxField':
                             return (
                                 <CheckboxField {...children.props} value={value} disabled={true} />
@@ -843,7 +844,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
                             ) */
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && {border: "dashed 1px #d9d9d9"}, minHeight: "25px" }}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value?.label}</div>
                             )
                         case 'SelectField':
                             let text = "";
@@ -856,19 +857,19 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && {border: "dashed 1px #d9d9d9"}, minHeight: "25px" }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{text}</div>
                             )
                         default:
 
                             if ("addonAfter" in children.props || "addonAfter" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && {border: "dashed 1px #d9d9d9"}, display: "flex", flexDirection: "row" }}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && {border: "dashed 1px #d9d9d9"}, minHeight: "25px" }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
                     }
 
                 })()}
@@ -1445,7 +1446,7 @@ export const FormLayout = ({ className, style, field, fieldSet, schema, children
         }
     }, [fieldStatus]);
 
-    const dataContext = { field, fieldSet, schema, layoutId: id, fieldStatus: localFieldStatus, updateFieldStatus: updateLocalFieldStatus, clearFieldStatus: clearLocalFieldStatus };
+    const dataContext = { field, fieldSet, schema: (schema ? schema : {}), layoutId: id, fieldStatus: localFieldStatus, updateFieldStatus: updateLocalFieldStatus, clearFieldStatus: clearLocalFieldStatus };
 
     return (
         <StyledFormLayout {...props} className={classNames("formlayout", className)} style={style}>

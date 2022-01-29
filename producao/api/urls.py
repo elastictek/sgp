@@ -111,7 +111,8 @@ urlpatterns = [
     url(r'^downloadfile/$', views.download_file),
     
     #CURRENT SETTINGS
-    url(r'^currentsettingsget/$', views.CurrentSettingsGet),  
+    url(r'^currentsettingsget/$', views.CurrentSettingsGet),
+    url(r'^loteslookup/$', views.LotesLookup),
     #END CURRENT SETTINGS
 
     #url(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

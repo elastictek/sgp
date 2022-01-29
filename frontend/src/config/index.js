@@ -9,10 +9,11 @@ export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
-
+export const SOCKET = { url:'ws://localhost:8000/ws' };
 
 //APP DATA
 //ORDEM FABRICO TIPO ANEXOS
+
 export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
  { value: "Packing List", key: "Packing List" },
  { value: "Orientação Qualidade", key: "Orientação Qualidade" },
