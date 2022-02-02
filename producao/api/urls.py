@@ -113,6 +113,7 @@ urlpatterns = [
     #CURRENT SETTINGS
     url(r'^currentsettingsget/$', views.CurrentSettingsGet),
     url(r'^loteslookup/$', views.LotesLookup),
+    url(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
     #END CURRENT SETTINGS
 
     #url(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

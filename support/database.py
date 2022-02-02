@@ -264,6 +264,7 @@ class PostgresSql(BaseSql):
                 ret.filter = filter.value('and').text
                 ret.parameters = filter.parameters
             else:
+                filter = filterParameters
                 ret.filter = filterParameters.value('and').text
                 ret.parameters = filterParameters.parameters
 
@@ -396,6 +397,7 @@ class MySqlSql(BaseSql):
                 ret.filter = filter.value('and').text
                 ret.parameters = filter.parameters
             else:
+                filter = filterParameters
                 ret.filter = filterParameters.value('and').text
                 ret.parameters = filterParameters.parameters
 

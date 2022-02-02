@@ -108,7 +108,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                 (async () => {
                     const { artigo, exists } = await loadArtigoDetail(ctx, token);
                     artigo["qty_item"] = ctx.qty_item;
-                    await sleep(250);
+                    await sleep(500);
                     setArtigoExists(exists);
                     const plan = {
                         start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm'),

@@ -1,6 +1,6 @@
 import React from 'react';
 export const ROOT_URL = "http://localhost:8000";
-export const CSRF = document.cookie.replace("csrftoken=","");
+export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
 export const API_URL = "/api";
 export const DOWNLOAD_URL = "/downloadfile";
@@ -9,15 +9,15 @@ export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
-export const SOCKET = { url:'ws://localhost:8000/ws' };
+export const SOCKET = { url: 'ws://localhost:8000/ws' };
 
 //APP DATA
 //ORDEM FABRICO TIPO ANEXOS
 
 export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
- { value: "Packing List", key: "Packing List" },
- { value: "Orientação Qualidade", key: "Orientação Qualidade" },
- { value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];
+{ value: "Packing List", key: "Packing List" },
+{ value: "Orientação Qualidade", key: "Orientação Qualidade" },
+{ value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];
 //SENTIDO ENROLAMENTO
 export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }];
 export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
@@ -36,7 +36,10 @@ export const CONTENTORES_OPTIONS = [
 export const CINTASPALETES_OPTIONS = [{ label: "Ambas as Paletes", value: 1 }, { label: "Palete Superior", value: 2 }, { label: "Palete Inferior", value: 3 }];
 //--FORMULAÇÃO
 export const FORMULACAO_EXTRUSORAS_COD = ['A', 'C', 'B', 'C', 'A'];
-export const FORMULACAO_MANGUEIRAS = { A: [{ key: 'A1' }, { key: 'A2' }, { key: 'A3' }, { key: 'A4' }, { key: 'A5' }, { key: 'A6' }], BC: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }, { key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }] };
+export const FORMULACAO_MANGUEIRAS = {
+    A: [{ key: 'A1' }, { key: 'A2' }, { key: 'A3' }, { key: 'A4' }, { key: 'A5' }, { key: 'A6' }], BC: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }, { key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }],
+    B: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }], C: [{ key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }]
+};
 export const FORMULACAO_EXTRUSORAS_VAL = [5, 22.5, 45, 22.5, 5];
 export const FORMULACAO_TOLERANCIA = 0.5;
 const ponderacaoExtrusoras = () => {

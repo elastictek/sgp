@@ -60,8 +60,15 @@ export const WrapperForm = props => {
         }
     }, [ctx]);
 
+    useEffect(() => {
+        if (widthMode) {
+            setWidthMode({ width: computeWitdth(props.mode), mode, prevMode: mode });
+        } else {
+            setWidthMode({ width: computeWitdth(props.mode), mode, prevMode: mode });
+        }
+    }, [props.mode]);
+
     const computeWitdth = (mode, width) => {
-        console.log("COMPUT....", ctx)
         if (width)
             return width;
         if (mode === "normal") {
@@ -70,6 +77,8 @@ export const WrapperForm = props => {
             return `${ctx.maxWidth}${ctx.maxUnit}`;
         } else if (mode === "fullscreen") {
             return "100%";
+        }else{
+            return `${ctx.width}${ctx.unit}`;
         }
     }
 
@@ -94,7 +103,8 @@ export const WrapperForm = props => {
                 {type == 'modal' ? (
                     <Modal
                         {...rest}
-                        bodyStyle={{height:"70vh"}}
+                        bodyStyle={{ height: "70vh" }}
+                        style={{ width: widthMode.width, minWidth: widthMode.width }}
                         width={widthMode.width}
                         title={titleForm}
                         centered
@@ -857,7 +867,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }}>{text}</div>
                             )
                         default:
 

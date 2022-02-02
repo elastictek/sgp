@@ -16,7 +16,6 @@ import { PlusOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
 import { MdAdjust } from 'react-icons/md';
 import { CgCloseO } from 'react-icons/cg';
 import { DATE_FORMAT, DATETIME_FORMAT, GAMAOPERATORIA } from 'config';
-import { OFabricoContext } from '../ordemFabrico/FormOFabricoValidar';
 const gamaOperatoriaItems = GAMAOPERATORIA.filter(v => !v?.disabled);
 
 const schema = (keys, excludeKeys) => {
@@ -33,13 +32,13 @@ const setId = (id) => {
 }
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
-    const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [changedValues, setChangedValues] = useState({});
+    const [isTouched, setIsTouched] = useState(false);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
-    const [operation, setOperation] = useState(setId(record.gamaoperatoria_id));
+    const [operation, setOperation] = useState(setId(record.gamaoperatoria.id));
     const [resultMessage, setResultMessage] = useState({ status: "none" });
 
     const init = (lookup = false) => {
@@ -48,54 +47,63 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
             }
             if (operation.key === "update") {
-                (setFormTitle) && setFormTitle({ title: `Editar Gama Operatória` });
-                form.setFieldsValue({ ...record.gamaOperatoria, ...record.gamaOperatoriaItems });
-            } else {
-                (setFormTitle) && setFormTitle({ title: `Nova Gama Operatória ${ctx.item_cod}`, subTitle: `${ctx.item_nome}` });
-                const initValues = {};
-                initValues[`nitems`] = gamaOperatoriaItems.length;
-                for (let [idx, v] of gamaOperatoriaItems.entries()) {
-                    initValues[`key-${idx}`] = v.key;
-                    initValues[`des-${idx}`] = v.designacao;
-                    initValues[`tolerancia-${idx}`] = v.tolerancia;
+                (setFormTitle) && setFormTitle({ title: `Gama Operatória` });
+
+                const { items, ...gamaoperatoria } = record.gamaoperatoria;
+                const fieldsValue = { nitems: items.length };
+                for (let [i, v] of items.entries()) {
+                    fieldsValue[`key-${i}`] = v.item_key;
+                    fieldsValue[`des-${i}`] = v.item_des;
+                    fieldsValue[`tolerancia-${i}`] = v.tolerancia;
+                    const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
+                    for (let [iV, vV] of vals.entries()) {
+                        fieldsValue[`v${v.item_key}-${iV}`] = vV;
+                    }
                 }
-                form.setFieldsValue(initValues);
+                form.setFieldsValue({ ...gamaoperatoria, ...fieldsValue });
             }
             setLoading(false);
         })();
     }
 
     useEffect(() => {
-        console.log("RECORD---",record)
         init(true);
     }, []);
 
     const onValuesChange = (changedValues) => {
+        setIsTouched(true);
         setChangedValues(changedValues);
     }
 
     const onFinish = async (values) => {
+        if (!isTouched) {
+            return;
+        }
         const status = { error: [], warning: [], info: [], success: [] };
         const v = schema().validate(values, { abortEarly: false });
-
         if (!v.error) {
             let error = false;
-            console.log("BEFORE---GO-",values);
             for (let k in values) {
-                if (k!=='designacao' && values[k]===undefined){
-                    error=true;
+                if (k !== 'designacao' && values[k] === undefined) {
+                    error = true;
                     break;
                 }
             }
-            if (error){
+            if (error) {
                 status.error.push({ message: "Os items da Gama Operatória têm de estar preenchidos!" });
             }
             if (status.error.length === 0) {
-                const response = await fetchPost({ url: `${API_URL}/newgamaoperatoria/`, parameters: { ...form.getFieldsValue(true), produto_id: ctx.produto_id } });
-                if (response.data.status !== "error") {
-                    parentReload({gamaoperatoria_id: record.gamaoperatoria_id}, "init");
-                }
+                const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: 'gamaoperatoria', gamaoperatoria: { ...form.getFieldsValue(true), produto_id: record.gamaoperatoria.produto_id } } });
                 setResultMessage(response.data);
+                if (response.data.status !== "error") {
+                    throw 'TODO RELOAD PARENT'
+                    //parentReload({ formulacao_id: record.formulacao.id }, "init");
+                }
+                // //const response = await fetchPost({ url: `${API_URL}/newgamaoperatoria/`, parameters: { ...form.getFieldsValue(true), produto_id: record.gamaoperatoria.produto_id } });
+                // if (response.data.status !== "error") {
+                //     parentReload({ gamaoperatoria_id: record.gamaoperatoria_id }, "init");
+                // }
+                // setResultMessage(response.data);
             }
         }
 
@@ -151,14 +159,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
-                        {forInput && <>
-                            <FieldSet margin={false} field={{ wide: [6, 4] }}>
-                                <Field name="designacao" label={{ enabled: false }}><Input placeholder="Designação" size="small" /></Field>
-                            </FieldSet>
-                            <VerticalSpace height="24px" />
-                        </>
-                        }
-
                         <FieldSet wide={16} margin={false} layout="vertical">
                             {gamaOperatoriaItems.map((v, idx) =>
                                 <FieldSet key={`gop-${idx}`} wide={16} field={{ wide: [5, 9, 2] }} margin={false}>
@@ -181,8 +181,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        {isTouched && <Button type="primary" onClick={() => onFinish(form.getFieldsValue(true))}>Guardar</Button>}
+                        <Button onClick={onClose}>Fechar</Button>
                     </Space>
                 </Portal>
                 }

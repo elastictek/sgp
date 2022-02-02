@@ -19,6 +19,10 @@ import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 
 const FormLotes = React.lazy(() => import('./FormLotes'));
+const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
+const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoriaUpsert'));
+const FormSpecs = React.lazy(() => import('./FormSpecsUpsert'));
+const FormCortes = React.lazy(() => import('./FormCortes'));
 
 
 const StyledCard = styled(Card)`
@@ -67,8 +71,8 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     return (
         <WrapperForm
             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
-            type={showWrapper.mode}
-            mode="fullscreen"
+            type={showWrapper.type}
+            mode={showWrapper.mode}
             destroyOnClose={true}
             mask={true}
             /* style={{ maginTop: "48px" }} */
@@ -78,12 +82,16 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
         >
             <YScroll>
-                {showWrapper.type === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {/*                 {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
-                {showWrapper.type === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.type === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.type === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.type === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>} */}
+                {showWrapper.idcard === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>} */}
             </YScroll>
         </WrapperForm>
     );
@@ -179,7 +187,7 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     const { formulacao, cores, nonwovens } = record;
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, type: menuItem.type, show: !prev.show, record, fullScreen: true }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "fullscreen", type: "modal" }))
     }
 
     useEffect(() => {
@@ -212,39 +220,109 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardFormulacao = ({ menuItem, record }) => {
+const CardFormulacao = ({ menuItem, record, setShowForm }) => {
     const { formulacao } = record;
 
     useEffect(() => {
         console.log("ENTREI NA FORMULAÇÃO", record)
-    }, [])
+    }, []);
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal" }))
+    }
 
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button icon={<EditOutlined />} />}
+                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
+                <YScroll>
+                    <FormFormulacao record={record} forInput={false} />
+                </YScroll>
             </Card>
         </div>
     );
 }
 
-const CardArtigoSpecs = ({ menuItem, record }) => {
-    const { artigospecs } = record;
+const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
+    const { gamaoperatoria } = record;
 
     useEffect(() => {
-        console.log("ENTREI NAs ESPECIFICAÇÕES", record)
-    }, [])
+        console.log("ENTREI NA GAMA OPERATORIA", record)
+    }, []);
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal' }))
+    }
 
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button icon={<EditOutlined />} />}
+                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
+                <YScroll>
+                    <FormGamaOperatoria record={record} forInput={false} />
+                </YScroll>
+            </Card>
+        </div>
+    );
+}
+
+const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
+    const { artigospecs } = record;
+
+    useEffect(() => {
+        console.log("ENTREI NAs ESPECIFICAÇÕES", record)
+    }, []);
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal' }))
+    };
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
+            >
+                <YScroll>
+                    <FormSpecs record={record} forInput={false} />
+                </YScroll>
+            </Card>
+        </div>
+    );
+}
+
+const CardCortes = ({ menuItem, record, setShowForm }) => {
+    const { formulacao } = record;
+
+    useEffect(() => {
+        console.log("ENTREI NOS CORTES", record)
+    }, []);
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal" }))
+    }
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
+            >
+                <YScroll>
+                    <FormCortes record={record} forInput={false} />
+                </YScroll>
             </Card>
         </div>
     );
@@ -252,18 +330,26 @@ const CardArtigoSpecs = ({ menuItem, record }) => {
 
 const menuItems = [
     {
-        type: "planificacao",
+        idcard: "planificacao",
         title: "Planificação",
     }, {
-        type: "lotes",
+        idcard: "lotes",
         title: "Lotes de Matérias Primas"
     }, {
-        type: "especificacoes",
+        idcard: "especificacoes",
         title: "Especificações"
     }, {
-        type: "formulacao",
+        idcard: "formulacao",
         title: "Formulação",
+        span: 3
+    }, {
+        idcard: "gamaoperatoria",
+        title: "Gama Operatória",
         span: 2
+    }, {
+        idcard: "cortes",
+        title: "Cortes",
+        span: 3
     }
 ];
 
@@ -271,7 +357,7 @@ const menuItems = [
 
 export default ({ aggId }) => {
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState({ show: false, type: null, mode: 'modal' });
+    const [showForm, setShowForm] = useState({ show: false, type: 'modal', mode: "fullscreen" });
     const [guides, setGuides] = useState(false);
     const [currentSettings, setCurrentSettings] = useState({});
 
@@ -304,6 +390,7 @@ export default ({ aggId }) => {
                     const emendas = JSON.parse(raw[0].emendas);
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
+                    const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
 
                     const quantity = ofs.reduce((basket, ofitem) => {
                         basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
@@ -312,7 +399,7 @@ export default ({ aggId }) => {
                         return basket;
                     }, {});
                     setCurrentSettings({
-                        id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status,
+                        id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status, agg_of_id: raw[0].agg_of_id,
                         quantity,
                         planificacao: {
                             start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),
@@ -320,16 +407,16 @@ export default ({ aggId }) => {
                         },
                         produto: { produto_id: raw[0].produto_id, produto_cod: raw[0].produto_cod, gsm: raw[0].gsm },
                         sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria,
-                        nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status
+                        nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status, lotes
                     });
                     setLoading(false);
                 })();
         }
     }
 
-    const onShowForm = (/* newForm = false */) => {
-        setShowForm(prev => ({ ...prev, type: null, show: !prev.show, record: {} }));
-    }
+    // const onShowForm = (/* newForm = false */) => {
+    //     setShowForm(prev => ({ ...prev, type: 'modal', show: !prev.show, record: {} }));
+    // }
 
     return (
         <>
@@ -345,16 +432,20 @@ export default ({ aggId }) => {
 
                 {Object.keys(currentSettings).length > 0 && <StyledGrid>
                     {menuItems.map((menuItem, idx) => {
-                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity } = currentSettings;
-                        switch (menuItem.type) {
+                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem } = currentSettings;
+                        switch (menuItem.idcard) {
                             case "planificacao":
-                                return (<CardPlanificacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao }} setShowForm={setShowForm} />);
+                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao }} setShowForm={setShowForm} />);
                             case "lotes":
-                                return (<CardLotes key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity }} setShowForm={setShowForm} />);
+                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} />);
                             case "formulacao":
-                                return (<CardFormulacao key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
+                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
+                            case "gamaoperatoria":
+                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} />);
                             case "especificacoes":
-                                return (<CardArtigoSpecs key={`ct-${menuItem.type}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
+                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
+                            case "cortes":
+                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id }} setShowForm={setShowForm} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}

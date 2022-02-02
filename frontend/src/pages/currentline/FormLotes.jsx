@@ -10,6 +10,7 @@ import { groupBy } from "utils";
 import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon, SelectDebounceField, AutoCompleteField } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
+import YScroll from "components/YScroll";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET } from 'config';
@@ -51,11 +52,11 @@ const TitleExtrusora = ({ value, extrusoraRef }) => {
     return (
         <>
             {show.current &&
-                <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [6, 1, 5, 1], label: { enabled: false } }}>
-                    <FieldItem><div style={{ fontWeight: 700, fontSize: "14px" }}>Extrusora {value}</div></FieldItem>
-                    <FieldItem><div style={{ textAlign: "center" }}>Qtd. Requerida</div></FieldItem>
+                <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [8, 1.5, 1.5, 5], label: { enabled: false } }}>
+                    <FieldItem><div style={{ fontWeight: 700, fontSize: "12px" }}>Extrusora {value}</div></FieldItem>
+                    <FieldItem><div style={{ textAlign: "right" }}>Qtd. Requerida</div></FieldItem>
+                    <FieldItem><div style={{ textAlign: "right" }}>Qtd. Disponível</div></FieldItem>
                     <FieldItem><div style={{ textAlign: "center" }}>Lotes</div></FieldItem>
-                    <FieldItem><div style={{ textAlign: "center" }}>Qtd. Disponível</div></FieldItem>
                 </FieldSet>
             }
         </>
@@ -102,6 +103,94 @@ const MenuExtrusoras = ({ setExtrusora, extrusora, setFocus }) => {
     );
 }
 
+const Extrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
+    const name = `lotes${id}`;
+    return (
+        <Form.List name={name}>
+            {(fields, { add, remove, move }) => {
+                return (
+                    <>
+                        {fields.map((field, index) => (
+                            <React.Fragment key={field.key}>
+                                <TitleExtrusora extrusoraRef={extrusoraRef} value={form.getFieldValue(name)[field.name]['extrusora']} />
+                                {/* <FieldSet wide={8} layout="horizontal" margin={false} field={{ label: { enabled: false } }} style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}> */}
+                                <FieldSet wide={16} margin={false}
+                                    style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}
+                                    field={{
+                                        label: { enabled: false },
+                                        style: { alignSelf: "center" },
+                                        wide: [1, 7, 1.5, 1.5, 5],
+                                        /* style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" } */
+                                    }}
+                                >
+                                    <Field name={[field.name, `mangueira`]} style={{ fontSize: "12px", backgroundColor: "#fff", alignSelf: "center" }}>
+                                        <SelectField tabIndex={1000} size="large" data={FORMULACAO_MANGUEIRAS[form.getFieldValue(name)[field.name]['extrusora']]} keyField="key" textField="key"
+                                            optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                        />
+                                    </Field>
+                                    <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, fontSize: "12px", alignSelf: "center" }}>
+                                        <SelectField size="large" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                            optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                            showSearch
+                                            filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                                        />
+                                    </Field>
+                                    <FieldItem style={{ textAlign: "right", alignSelf: "center", fontSize: "12px" }}>
+                                        <b>{form.getFieldValue(name)[field.name].qty}</b> kg
+                                    </FieldItem>
+
+                                    <FieldItem style={{
+                                        textAlign: "right", alignSelf: "center", fontSize: "12px",
+                                        ...form.getFieldValue(name)[field.name].qty <= form.getFieldValue(name)[field.name].qty_available && { color: "#237804" }
+                                    }}>
+                                        <b>{form.getFieldValue(name)[field.name].qty_available}</b> kg
+                                    </FieldItem>
+                                    <FieldItem style={{ alignSelf: "center", fontSize: "12px" }}>
+                                        <Space size={2} wrap={true}>
+                                            {form.getFieldValue(name)[field.name]?.lotes && form.getFieldValue(name)[field.name]?.lotes.map((v, idx) => {
+                                                return (<Tag style={{ fontSize: "11px", padding: "2px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
+                                            })}
+                                        </Space>
+                                    </FieldItem>
+                                    {/* <Field name={[field.name, `lote_cod`]} required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
+                                                                                                                    <SelectDebounceField
+                                                            autoFocus={field.name == 0 ? true : false}
+                                                            tabIndex={0}
+                                                            defaultActiveFirstOption
+                                                            placeholder="Lote"
+                                                            size="small"
+                                                            keyField="LOT_0"
+                                                            textField="LOT_0"
+                                                            showSearch
+                                                            showArrow
+                                                            allowClear
+                                                            fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
+                                                        /> 
+                                                            <AutoCompleteField
+                                                                //autoFocus={field.name == 0 ? true : false}
+                                                                tabIndex={0}
+                                                                placeholder="Selecione o Lote"
+                                                                size="small"
+                                                                keyField="LOT_0"
+                                                                textField="LOT_0"
+                                                                dropdownMatchSelectWidth={250}
+                                                                allowClear
+                                                                backfill
+                                                                optionsRender={lotesRenderer}
+                                                                fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
+                                                            />
+                                                        </Field> */}
+                                </FieldSet>
+                                {/*                                                         </FieldSet> */}
+                            </React.Fragment>
+                        ))}
+                    </>
+                );
+            }}
+        </Form.List>
+    );
+}
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -141,26 +230,47 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             console.log("$$#$#$#$#$--", record.quantity)
             console.log("$$#$#$#$#$--", record.produto)
             console.log("$$#$#$#$#$--", record.formulacao)
+            console.log("$$#$#$#$#$--", record.lotes)
 
             const gsmNwSup = record.nonwovens.nw_des_sup.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
             const gsmNwInf = record.nonwovens.nw_des_inf.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
-
             const filmeSqm = Number(record.quantity.square_meters) * (Number(gsmNwSup) + Number(gsmNwInf)) / Number(record.produto.gsm);
 
+            const lotes = { A: [], B: [], C: [] };
+            if (record.lotes && record.lotes.length > 0) {
+                console.log("$$#$#$#$#$-lotes-", record.lotes);
+                throw 'TODO---------';
+            } else {
+                record.formulacao.items.forEach(v => {
+                    console.log(v.extrusora, "-------")
+                    const vitem = {
+                        qty_available: 0,
+                        lotes: [],
+                        qty: Math.round((filmeSqm * (Number(v.vglobal) / 100)), 2),
+                        type: 0, //lotes de extrusoras
+                        extrusora: v.extrusora,
+                        matprima_cod: v.matprima_cod
+                    };
+                    if (v.extrusora === 'BC') {
+                        lotes['B'].push({ ...vitem, extrusora: 'B' });
+                        lotes['C'].push({ ...vitem, extrusora: 'C' });
+                    } else {
+                        lotes[v.extrusora].push(vitem);
+                    }
+                    /* if (!('qty_available' in v)) v.qty_available = 0;
+                    if (!('lotes' in v)) v.lotes = [];
+                    if (!('qty' in v)) v.qty = Math.round((filmeSqm * (Number(v.vglobal) / 100)) * 0.1, 2);
+    
+                    console.log(v.vglobal, "-------", (filmeSqm * (Number(v.vglobal) / 100))) */
+
+                });
+
+            }
 
 
-            record.formulacao.items.forEach(v => {
-                if (!('qty_available' in v)) v.qty_available = 0;
-                if (!('lotes' in v)) v.lotes = [];
-                if (!('qty' in v)) v.qty = Math.round((filmeSqm * (Number(v.vglobal) / 100)) * 0.1, 2);
-
-                console.log(v.vglobal, "-------", (filmeSqm * (Number(v.vglobal) / 100)))
-
-            });
-            console.log("$$#$#$#$#$--", Number(record.quantity.square_meters));
 
 
-            form.setFieldsValue({ formulacao: record.formulacao.items /* groupBy(record.formulacao.items, 'extrusora') */ });
+            form.setFieldsValue({ lotesA: lotes['A'], lotesB: lotes['B'], lotesC: lotes['C'] /* groupBy(record.formulacao.items, 'extrusora') */ });
             setLoading(false);
         })();
     }
@@ -172,6 +282,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }, []);
 
     const onValuesChange = (changedValues) => {
+        console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
         setChangedValues(changedValues);
     }
 
@@ -217,37 +328,101 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         closeParent();
     }
 
-    const ItemLabelRenderer = ({ d }) => {
-        return (
-            <div>
-                <div>{d["LOT_0"]}</div>
-                <Space><div>{d["QTYPCU_0"]}{d["PCUORI_0"]}</div></Space>
-            </div>
-        );
-    }
+    /*     const ItemLabelRenderer = ({ d }) => {
+            return (
+                <div>
+                    <div>{d["LOT_0"]}</div>
+                    <Space><div>{d["QTYPCU_0"]}{d["PCUORI_0"]}</div></Space>
+                </div>
+            );
+        } */
 
-    const lotesRenderer = (d) => {
-        return { label: <ItemLabelRenderer d={d} />, key: d["LOT_0"], value: d["LOT_0"] };
-    }
+    /*     const lotesRenderer = (d) => {
+            return { label: <ItemLabelRenderer d={d} />, key: d["LOT_0"], value: d["LOT_0"] };
+        } */
 
     useEffect(() => {
         if (lastJsonMessage && lastJsonMessage.length > 0) {
-            const fv = form.getFieldValue("formulacao");
-            const idx = fv.findIndex(v => v.extrusora === extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
-            if (idx >= 0) {
-                if (fv[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
-                    fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
-                    //fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
-                    fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
-                    form.setFieldsValue(fv);
+            const eA = [];
+            const eB = [];
+            const eC = [];
+            let idx = -1;
+            if (extrusora === 'A') {
+                eA.push(...form.getFieldValue('lotesA'));
+                idx = eA.findIndex(v => v.extrusora === 'A' && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+                if (idx >= 0) {
+                    if (eA[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+                        eA[idx].lotes = [...eA[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eA[idx].qty_available = eA[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        console.log('picjeddddd',eA[idx].lotes.reduce((prev, v) => (v.qty + prev),0))
+                        //eA[idx].lotes.forEach(e => { eA[idx].qty_available += e.qty; });
+                        form.setFieldsValue({lotesA:eA});
+                    }
+                }
+            } else {
+                eB.push(...form.getFieldValue('lotesB'));
+                eC.push(...form.getFieldValue('lotesC'));
+                idx = eB.findIndex(v => v.extrusora === 'B' && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+                if (idx >= 0) {
+                    if (eB[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+                        eB[idx].lotes = [...eB[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eB[idx].qty_available = eB[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        //eB[idx].lotes.forEach(e => { eB[idx].qty_available += e.qty; });
+                        eC[idx].lotes = [...eC[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eC[idx].qty_available = eC[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        //eC[idx].lotes.forEach(e => { eC[idx].qty_available += e.qty; });
+                        form.setFieldsValue({lotesB:eB,lotesC:eC});
+                    }
                 }
             }
-            /* const fv = form.getFieldsValue(true);
-            const lotes = !("lotes" in fv) ? [] : fv.lotes;
-            lotes.push({ lote_cod: lastJsonMessage[0].LOT_0 });
-            fv.lotes = lotes; 
-            form.setFieldsValue(fv);
-            */
+           
+
+
+
+
+            // let _extrusora = extrusora;
+            // if (_extrusora === 'A') {
+            //     selExtrusora.push(...form.getFieldValue('lotesA'));
+            // } else {
+            //     selExtrusora.push(...form.getFieldValue('lotesB'));
+            //     _extrusora='B';
+            // }
+            // const idx = selExtrusora.findIndex(v => v.extrusora === _extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+            // if (idx >= 0) {
+            //     if (selExtrusora[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+            //         const lt = { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 };
+            //         selExtrusora[idx].lotes = [...selExtrusora[idx].lotes,{...lt}];
+            //         selExtrusora[idx].qty_available = selExtrusora[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         selExtrusora[idx].lotes.forEach(e => { selExtrusora[idx].qty_available += e.qty; });
+            //         if (extrusora==='BC'){
+            //             selExtrusora[idx].lotes = [...selExtrusora[idx].lotes,{...lt}];
+            //             selExtrusora[idx].qty_available = selExtrusora[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //             selExtrusora[idx].lotes.forEach(e => { selExtrusora[idx].qty_available += e.qty; });
+            //         }
+
+            //         console.log("TO PICKKKK",extrusora,selExtrusora,lt);
+            //         //fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+            //         ////fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         //fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
+            //         //form.setFieldsValue(fv);
+            //     }
+            // }
+
+            // const idx = fv.findIndex(v => v.extrusora === extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+            // if (idx >= 0) {
+            //     if (fv[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+            //         fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+            //         //fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
+            //         form.setFieldsValue(fv);
+            //     }
+            // }
+            // /* const fv = form.getFieldsValue(true);
+            // const lotes = !("lotes" in fv) ? [] : fv.lotes;
+            // lotes.push({ lote_cod: lastJsonMessage[0].LOT_0 });
+            // fv.lotes = lotes; 
+            // form.setFieldsValue(fv);
+            // */
 
         }
         inputRef.current.value = '';
@@ -287,7 +462,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         id="LAY-LOTES"
                         guides={guides}
                         layout="vertical"
-                        style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
+                        style={{ width: "100%", padding: "0px", height: "65vh" /* , minWidth: "700px" */ }}
                         schema={schema}
                         field={{
                             forInput,
@@ -305,12 +480,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         }}
                     >
 
-                        <FieldSet wide={16} field={{ wide: [4] }} margin={false}>
-                            <FieldItem label={{ enabled: false }}>
+                        <FieldSet wide={16} margin={false} field={{ wide: [4, 6, 6] }}>
+                            <FieldItem label={{ enabled: false }} style={{ textAlign: "center" }}>
                                 <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} />
                             </FieldItem>
-                        </FieldSet>
-                        <FieldSet wide={16} margin={false} field={{ wide: [4, 4] }}>
                             <FieldItem label={{ enabled: false }}><input className="ant-input ant-input-lg" ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
                             <Field required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
                                 <SelectDebounceField
@@ -328,88 +501,17 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             </Field>
                         </FieldSet>
 
-
-                        <Form.List name="formulacao">
-                            {(fields, { add, remove, move }) => {
-                                return (
-                                    <>
-                                        {fields.map((field, index) => (
-                                            <React.Fragment key={field.key}>
-                                                <TitleExtrusora extrusoraRef={extrusoraRef} value={form.getFieldValue("formulacao")[field.name]['extrusora']} />
-                                                <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }} style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}>
-                                                    <FieldSet wide={16} margin={false}
-                                                        field={{
-                                                            style: { alignSelf: "center" },
-                                                            wide: [1, 4, 1, 5, 1],
-                                                            /* style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" } */
-                                                        }}
-                                                    >
-                                                        <Field name={[field.name, `mangueira`]} style={{ fontSize: "14px", backgroundColor: "#fff", alignSelf: "center" }}>
-                                                            <SelectField tabIndex={1000} size="large" data={FORMULACAO_MANGUEIRAS[form.getFieldValue("formulacao")[field.name]['extrusora']]} keyField="key" textField="key"
-                                                                optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                                            />
-                                                        </Field>
-                                                        <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, fontSize: "14px", alignSelf: "center" }}>
-                                                            <SelectField size="large" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
-                                                                optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                                                showSearch
-                                                                filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                                                            />
-                                                        </Field>
-                                                        <FieldItem style={{ textAlign: "right", alignSelf: "center", fontSize: "14px" }}>
-                                                            <b>{form.getFieldValue("formulacao")[field.name].qty}</b> kg
-                                                        </FieldItem>
-                                                        <FieldItem style={{ alignSelf: "center", fontSize: "14px" }}>
-                                                            <Space size={2} wrap={true}>
-                                                                {form.getFieldValue("formulacao")[field.name]?.lotes && form.getFieldValue("formulacao")[field.name]?.lotes.map((v, idx) => {
-                                                                    return (<Tag style={{ fontSize: "14px", padding:"5px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
-                                                                })}
-                                                            </Space>
-                                                        </FieldItem>
-                                                        <FieldItem style={{
-                                                            textAlign: "right", alignSelf: "center", fontSize: "14px",
-                                                            ...form.getFieldValue("formulacao")[field.name].qty <= form.getFieldValue("formulacao")[field.name].qty_available && { color: "#237804" }
-                                                        }}>
-                                                            <b>{form.getFieldValue("formulacao")[field.name].qty_available}</b> kg
-                                                        </FieldItem>
-                                                        {/* <Field name={[field.name, `lote_cod`]} required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
-                                                                                                                    <SelectDebounceField
-                                                            autoFocus={field.name == 0 ? true : false}
-                                                            tabIndex={0}
-                                                            defaultActiveFirstOption
-                                                            placeholder="Lote"
-                                                            size="small"
-                                                            keyField="LOT_0"
-                                                            textField="LOT_0"
-                                                            showSearch
-                                                            showArrow
-                                                            allowClear
-                                                            fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
-                                                        /> 
-                                                            <AutoCompleteField
-                                                                //autoFocus={field.name == 0 ? true : false}
-                                                                tabIndex={0}
-                                                                placeholder="Selecione o Lote"
-                                                                size="small"
-                                                                keyField="LOT_0"
-                                                                textField="LOT_0"
-                                                                dropdownMatchSelectWidth={250}
-                                                                allowClear
-                                                                backfill
-                                                                optionsRender={lotesRenderer}
-                                                                fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
-                                                            />
-                                                        </Field> */}
-                                                    </FieldSet>
-                                                </FieldSet>
-                                            </React.Fragment>
-                                        ))}
-                                    </>
-                                );
-                            }}
-                        </Form.List>
-
-
+                        <YScroll>
+                            <FieldSet layout="horizontal" margin={false}>
+                                <FieldSet layout="vertical" split={2} margin={false}>
+                                    <Extrusora id='A' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
+                                </FieldSet>
+                                <FieldSet layout="vertical" split={2} margin={false}>
+                                    <Extrusora id='B' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
+                                    <Extrusora id='C' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
+                                </FieldSet>
+                            </FieldSet>
+                        </YScroll>
 
 
                     </FormLayout>

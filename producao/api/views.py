@@ -1232,6 +1232,161 @@ def LotesLookup(request, format=None):
        ), cursor, parameters)
        return Response(response)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def UpdateCurrentSettings(request, format=None):
+    data = request.data.get("parameters")
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'id = :csid', True)
+    f.value("and")
+    if data['type'] == 'formulacao':
+        dta = {
+            "formulacao":json.dumps(data['formulacao'], ensure_ascii=False)
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'gamaoperatoria':
+        items = []
+        itms = collections.OrderedDict(sorted(data["gamaoperatoria"].items()))
+        for i in range(data["gamaoperatoria"]['nitems']):            
+            key = itms[f'key-{i}']
+            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+            items.append({
+                "item_des":itms[f'des-{i}'], 
+                "item_values":values, 
+                "tolerancia":itms[f'tolerancia-{i}'],
+                "gamaoperatoria_id":data["gamaoperatoria"]['id'],
+                "item_key":key,
+                "item_nvalues":len(values)
+            })
+        dta = {
+            "gamaoperatoria" : json.dumps({ 
+                'id': data["gamaoperatoria"]['id'],
+                'produto_id': data["gamaoperatoria"]["produto_id"],
+                'designacao': data["gamaoperatoria"]["designacao"],
+                'versao': data["gamaoperatoria"]["versao"],
+                "created_date": data["gamaoperatoria"]["created_date"],
+                "updated_date": data["gamaoperatoria"]["updated_date"],
+                "items":items
+            }, ensure_ascii=False)
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'specs':
+        items = []
+        itms = collections.OrderedDict(sorted(data["specs"].items()))
+        for i in range(data["specs"]['nitems']):            
+            key = itms[f'key-{i}']
+            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+            items.append({
+                "item_des":itms[f'des-{i}'], 
+                "item_values":json.dumps(values),
+                "artigospecs_id":data["specs"]['id'],
+                "item_key":key,
+                "item_nvalues":len(values)
+            })
+        dta = {
+            "artigospecs":json.dumps({ 
+                'id': data["specs"]['id'],
+                'produto_id': data["specs"]["produto_id"],
+                'designacao': data["specs"]["designacao"],
+                'versao': data["specs"]["versao"],
+                'cliente_cod': data["specs"]["cliente_cod"],
+                'cliente_nome': data["specs"]["cliente_nome"],
+                "created_date": data["specs"]["created_date"],
+                "updated_date": data["specs"]["updated_date"],
+                "items":items
+            }, ensure_ascii=False)
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'cortes':
+        dml = db.dml(TypeDml.UPDATE,{"cortes_id":data["cortes"]["cortes_id"],"cortesordem_id":data["cortes"]["cortesordem_id"]},"producao_currentsettings",f,None,False)
+        dml.statement = f"""        
+                update 
+                producao_currentsettings pcs
+                JOIN (
+                select 
+                %(csid)s csid,
+                (select 
+                JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
+                ) cortes
+                FROM producao_cortes pc
+                where pc.id=%(cortes_id)s) cortes,
+                (select 
+                JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
+                pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
+                ) cortesordem
+                FROM producao_cortesordem pco
+                WHERE pco.id=%(cortesordem_id)s) cortesordem
+                ) tbl
+                on tbl.csid=pcs.id
+                set
+                pcs.cortes = tbl.cortes,
+                pcs.cortesordem = tbl.cortesordem        
+        """
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+
+        print(f'dataaaaaaa{dml.statement}')
+        pass
+        # items = []
+        # itms = collections.OrderedDict(sorted(data["specs"].items()))
+        # for i in range(data["specs"]['nitems']):            
+        #     key = itms[f'key-{i}']
+        #     values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+        #     items.append({
+        #         "item_des":itms[f'des-{i}'], 
+        #         "item_values":json.dumps(values),
+        #         "artigospecs_id":data["specs"]['id'],
+        #         "item_key":key,
+        #         "item_nvalues":len(values)
+        #     })
+        # dta = {
+        #     "artigospecs":json.dumps({ 
+        #         'id': data["specs"]['id'],
+        #         'produto_id': data["specs"]["produto_id"],
+        #         'designacao': data["specs"]["designacao"],
+        #         'versao': data["specs"]["versao"],
+        #         'cliente_cod': data["specs"]["cliente_cod"],
+        #         'cliente_nome': data["specs"]["cliente_nome"],
+        #         "created_date": data["specs"]["created_date"],
+        #         "updated_date": data["specs"]["updated_date"],
+        #         "items":items
+        #     }, ensure_ascii=False)
+        # }
+        # dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        # try:
+        #     with connections["default"].cursor() as cursor:
+        #         db.execute(dml.statement, cursor, dml.parameters)
+        #     return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        # except Exception as error:
+        #     return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+
+
 #endregion
 
 
@@ -1453,10 +1608,11 @@ def CortesGet(request, format=None):
 def NewCortes(request, format=None):
     data = request.data.get("parameters")
     def computeLarguraCod(data):
-        list = sorted(data['cortes'], key=lambda k: k['item_lar'])
+        list = sorted(data['cortes'], key=lambda k: int(k['item_lar']))
         cod = {}
         for v in list:
-            cod[v["item_lar"]] = v["cortes_artigo_ncortes"] if v["item_lar"] not in cod else cod[v["item_lar"]] + v["cortes_artigo_ncortes"]
+            keyncortes = "cortes_artigo_ncortes" if "cortes_artigo_ncortes" in v else "item_ncortes"
+            cod[v["item_lar"]] = v[keyncortes] if v["item_lar"] not in cod else cod[v["item_lar"]] + v[keyncortes]
         return {"json":json.dumps(cod),"cod":hashlib.md5(json.dumps(cod).encode('utf-8')).hexdigest()[ 0 : 16 ]}
 
     def getCortesId(larguras, cursor):
@@ -1515,15 +1671,14 @@ def NewCortes(request, format=None):
             with connections["default"].cursor() as cursor:
                 if 'cortes' not in data:
                     raise ValueError("Os Cortes têm de estar Definidos.")
-                if 'agg_id' not in data:
-                    raise ValueError("Erro ao Registar os Cortes! Sem Agregação!")
                 larguras = computeLarguraCod(data)
-                cortes_are_equal = data["cortes"][0]["largura_cod"] == larguras["cod"]
                 cortes_id = getCortesId(larguras,cursor)
                 cortes_id = insertCortes(cortes_id, larguras, data, cursor)
-                deleteCortesArtigos(cortes_id,cursor)
-                insertCortesArtigos(cortes_id,data,cursor)
-                updateTempAggOFabrico(cortes_id,data,cursor,cortes_are_equal)
+                if 'agg_id' in data:
+                    deleteCortesArtigos(cortes_id,cursor)
+                    insertCortesArtigos(cortes_id,data,cursor)
+                    cortes_are_equal = data["cortes"][0]["largura_cod"] == larguras["cod"]
+                    updateTempAggOFabrico(cortes_id,data,cursor,cortes_are_equal)
                 return Response({"status": "success", "id":cortes_id, "title": "Os Cortes foram Registados com Sucesso!", "subTitle":''})
     except Error:
         return Response({"status": "error", "title": "Erro ao Registar os Cortes!"})
@@ -1557,7 +1712,7 @@ def ClearCortes(request, format=None):
 # @transaction.atomic()
 def UpdateCortesOrdem(request, format=None):
     data = request.data.get("parameters")
-    
+
     def getVersao(data, cursor):
         f = Filters({"cortes_id": data['cortes_id']})
         f.setParameters({}, False)
@@ -1857,7 +2012,7 @@ def sgpForProduction(data,aggid,user,cursor):
             ) cortesordem,
             JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
             ) cortes,
-            JSON_OBJECT('id',pas.id,'designacao',pas.designacao,'versao',pas.versao,'cliente_cod',pas.cliente_cod,'cliente_nome',pas.cliente_nome,'produto_id',pas.produto_id,
+            JSON_OBJECT('id',pas.id,'designacao',pas.designacao,'versao',pas.versao,'created_date', pas.created_date,'updated_date', pas.updated_date,'cliente_cod',pas.cliente_cod,'cliente_nome',pas.cliente_nome,'produto_id',pas.produto_id,
             'items',  (select JSON_ARRAYAGG(JSON_OBJECT('id',pasi.id,'item_des',pasi.item_des,'item_values',pasi.item_values,'item_key',
             pasi.item_key,'artigospecs_id',pasi.artigospecs_id,'item_nvalues',pasi.item_nvalues)) j
             from producao_artigospecsitems pasi where pasi.artigospecs_id = ptoagg.artigospecs_id)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
@@ -28,7 +28,7 @@ import { RiRefreshLine } from "react-icons/ri";
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 import YScroll from "components/YScroll";
 
-import FormOFabricoValidar from './planeamento/ordemFabrico/FormOFabricoValidar';
+const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
 
 
@@ -580,11 +580,11 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
                 maskClosable={true}
                 footer={null}
                 destroyOnClose={true}
-                bodyStyle={{ height: 500, backgroundColor: "#f0f0f0" }}
-                width={"80%"}
+                bodyStyle={{ height: "800px", backgroundColor: "#f0f0f0" }}
+                width={"90%"}
             >
                 <YScroll>
-                    <FormMenuActions aggId={aggId} />
+                    <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
                 </YScroll>
             </Modal>
         </>
@@ -737,7 +737,7 @@ export default () => {
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
                 <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
-                <Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer>
+                <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
                 {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
                 <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
                     <SubLayout.content>
