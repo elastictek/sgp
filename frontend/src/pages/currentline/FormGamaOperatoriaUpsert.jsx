@@ -3,13 +3,14 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import { fetch, fetchPost } from "utils/fetch";
+import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { getSchema } from "utils/schemaValidator";
 import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import IconButton from "components/iconButton";
 import ResultMessage from 'components/resultMessage';
+import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker } from "antd";
 import { PlusOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
@@ -31,6 +32,18 @@ const setId = (id) => {
     return { key: "insert", values: {} };
 }
 
+const loadGamasOperatoriasLookup = async ({ produto_id, token }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/gamasoperatoriaslookup/`, filter: { produto_id }, sort: [], cancelToken: token });
+    return rows;
+}
+const getGamaOperatoriaItems = async ({ gamaoperatoria_id, token }) => {
+    if (!gamaoperatoria_id) {
+        return [];
+    }
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/gamaoperatoriaitemsget/`, filter: { gamaoperatoria_id }, sort: [], cancelToken: token });
+    return rows;
+}
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -40,38 +53,51 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [guides, setGuides] = useState(false);
     const [operation, setOperation] = useState(setId(record.gamaoperatoria.id));
     const [resultMessage, setResultMessage] = useState({ status: "none" });
+    const [gamasOperatorias, setGamasOperatorias] = useState([]);
 
-    const init = (lookup = false) => {
+
+    const transformData = ({ items, gamaoperatoria }) => {
+        const fieldsValue = { nitems: items.length };
+        for (let [i, v] of items.entries()) {
+            fieldsValue[`key-${i}`] = v.item_key;
+            fieldsValue[`des-${i}`] = v.item_des;
+            fieldsValue[`tolerancia-${i}`] = v.tolerancia;
+            const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
+            for (let [iV, vV] of vals.entries()) {
+                fieldsValue[`v${v.item_key}-${iV}`] = vV;
+            }
+        }
+        return { ...gamaoperatoria, ...fieldsValue };
+    }
+
+    const init = (lookup = false, token) => {
         (async () => {
             if (lookup) {
 
             }
             if (operation.key === "update") {
                 (setFormTitle) && setFormTitle({ title: `Gama Operatória` });
-
                 const { items, ...gamaoperatoria } = record.gamaoperatoria;
-                const fieldsValue = { nitems: items.length };
-                for (let [i, v] of items.entries()) {
-                    fieldsValue[`key-${i}`] = v.item_key;
-                    fieldsValue[`des-${i}`] = v.item_des;
-                    fieldsValue[`tolerancia-${i}`] = v.tolerancia;
-                    const vals = (typeof v.item_values === "string") ? JSON.parse(v.item_values) : v.item_values;
-                    for (let [iV, vV] of vals.entries()) {
-                        fieldsValue[`v${v.item_key}-${iV}`] = vV;
-                    }
-                }
-                form.setFieldsValue({ ...gamaoperatoria, ...fieldsValue });
+                setGamasOperatorias(await loadGamasOperatoriasLookup({ produto_id: gamaoperatoria.produto_id, token }));
+                form.setFieldsValue(transformData({ items, gamaoperatoria }));
             }
             setLoading(false);
         })();
     }
 
     useEffect(() => {
-        init(true);
+        const cancelFetch = cancelToken();
+        init(true, cancelFetch);
+        return (() => cancelFetch.cancel("Form Gama Operatória Cancelled"));
     }, []);
 
-    const onValuesChange = (changedValues) => {
+    const onValuesChange = async (changedValues) => {
         setIsTouched(true);
+        if ('id' in changedValues) {
+            const gamaoperatoria = gamasOperatorias.find(v=>v.id===changedValues.id);
+            const items = await getGamaOperatoriaItems({ gamaoperatoria_id: changedValues.id });
+            form.setFieldsValue(transformData({ items, gamaoperatoria }));
+        }
         setChangedValues(changedValues);
     }
 
@@ -159,6 +185,21 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
+                        {forInput && <FieldSet wide={16}>
+                            <Toolbar
+                                style={{ width: "100%" }}
+                                left={
+                                    <FieldSet>
+                                        <Field name="id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Gama Operatória", pos: "left" }}>
+                                            <SelectField size="small" data={gamasOperatorias} keyField="id" textField="designacao"
+                                                optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
+                                            />
+                                        </Field>
+                                    </FieldSet>
+                                }
+                            />
+                        </FieldSet>
+                        }
                         <FieldSet wide={16} margin={false} layout="vertical">
                             {gamaOperatoriaItems.map((v, idx) =>
                                 <FieldSet key={`gop-${idx}`} wide={16} field={{ wide: [5, 9, 2] }} margin={false}>

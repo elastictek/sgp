@@ -108,6 +108,7 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'settings':
+                console.log("sssss",aggItem,of_id)
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'attachments':

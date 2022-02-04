@@ -1245,7 +1245,8 @@ def UpdateCurrentSettings(request, format=None):
     f.value("and")
     if data['type'] == 'formulacao':
         dta = {
-            "formulacao":json.dumps(data['formulacao'], ensure_ascii=False)
+            "formulacao":json.dumps(data['formulacao'], ensure_ascii=False),
+            "type_op":"formulacao"
         }
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
@@ -1277,7 +1278,8 @@ def UpdateCurrentSettings(request, format=None):
                 "created_date": data["gamaoperatoria"]["created_date"],
                 "updated_date": data["gamaoperatoria"]["updated_date"],
                 "items":items
-            }, ensure_ascii=False)
+            }, ensure_ascii=False),
+            "type_op":"gamaoperatoria"
         }
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
@@ -1310,7 +1312,8 @@ def UpdateCurrentSettings(request, format=None):
                 "created_date": data["specs"]["created_date"],
                 "updated_date": data["specs"]["updated_date"],
                 "items":items
-            }, ensure_ascii=False)
+            }, ensure_ascii=False),
+            "type_op":"specs"
         }
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
@@ -1342,7 +1345,8 @@ def UpdateCurrentSettings(request, format=None):
                 on tbl.csid=pcs.id
                 set
                 pcs.cortes = tbl.cortes,
-                pcs.cortesordem = tbl.cortesordem        
+                pcs.cortesordem = tbl.cortesordem,
+                pcs.type_op = 'cortes'     
         """
         try:
             with connections["default"].cursor() as cursor:
@@ -2190,7 +2194,8 @@ def sgpForProduction(data,aggid,user,cursor):
             "gsm":data['artigo_gram'],
             "produto_id":data['produto_id'],
             "produto_cod":data['produto_cod'],
-            "user_id":user.id
+            "user_id":user.id,
+            "type_op":"created"
         }
         if aggdata[0]["cs_id"] is not None:
             dta["id"] = aggdata[0]["cs_id"]
@@ -2221,7 +2226,8 @@ def sgpForProduction(data,aggid,user,cursor):
                 produto_id=values(produto_id),
                 produto_cod=values(produto_cod),
                 gsm=values(gsm),
-                user_id=values(user_id)
+                user_id=values(user_id),
+                type_op=values(type)
         """
         db.execute(dml.statement, cursor, dml.parameters)
         csid = cursor.lastrowid

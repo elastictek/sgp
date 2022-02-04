@@ -198,23 +198,25 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                             </Field>
                                         </FieldSet>
                                     }
+                                    right={<div style={{ display: "flex", flexDirection: "row" }}>
+                                        <FieldSet style={{ minWidth: "300px" }} margin={false} field={{ wide: [16] }}>
+                                            <Field name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
+                                                <SelectDebounceField
+                                                    placeholder="Cliente"
+                                                    size="small"
+                                                    keyField="BPCNUM_0"
+                                                    textField="BPCNAM_0"
+                                                    showSearch
+                                                    showArrow
+                                                    allowClear
+                                                    fetchOptions={loadCustomersLookup}
+                                                />
+                                            </Field>
+                                        </FieldSet>
+                                    </div>}
                                 />
                             </FieldSet>
-                            <FieldSet margin={false} field={{ wide: [8] }}>
-                                <Field name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
-                                    <SelectDebounceField
-                                        placeholder="Cliente"
-                                        size="small"
-                                        keyField="BPCNUM_0"
-                                        textField="BPCNAM_0"
-                                        showSearch
-                                        showArrow
-                                        allowClear
-                                        fetchOptions={loadCustomersLookup}
-                                    />
-                                </Field>
-                            </FieldSet>
-                            <VerticalSpace height="24px" />
+                            <VerticalSpace height="12px" />
                         </>
                         }
                         {!forInput && <>
@@ -232,13 +234,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                     />
                                 </Field>
                             </FieldSet>
-                            <VerticalSpace height="24px" />
+                            <VerticalSpace height="12px" />
                         </>
                         }
                         <FieldSet wide={16} margin={false} layout="vertical">
                             <FieldSet margin={false}>
                                 <FieldItem label={{ enabled: false }} wide={7}></FieldItem>
-                                <FieldSet wide={9} margin={false}>
+                                <FieldSet wide={9} margin={false} style={{ minWidth: "185px" }}>
                                     <FieldItem label={{ enabled: false }} split={3}><div style={{ textAlign: "center", fontWeight: 700 }}>TDS</div></FieldItem>
                                     <FieldItem label={{ enabled: false }} split={50}></FieldItem>
                                     <FieldItem label={{ enabled: false }} split={3}><div style={{ textAlign: "center", fontWeight: 700 }}>Objetivo</div></FieldItem>
@@ -246,7 +248,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             </FieldSet>
                             <FieldSet margin={false}>
                                 <FieldItem label={{ enabled: false }} wide={7}></FieldItem>
-                                <FieldSet wide={9} margin={false}>
+                                <FieldSet wide={9} margin={false} style={{ minWidth: "185px" }}>
                                     <FieldItem label={{ enabled: false }} split={6}><div style={{ textAlign: "center" }}>Min.</div></FieldItem>
                                     <FieldItem label={{ enabled: false }} split={6}><div style={{ textAlign: "center" }}>Máx.</div></FieldItem>
                                     <FieldItem label={{ enabled: false }} split={50}></FieldItem>
@@ -259,7 +261,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                     <FieldItem label={{ enabled: false }} style={{ fontSize: "11px" }}>
                                         <b>{v.designacao}</b> ({v.unidade})
                                     </FieldItem>
-                                    <FieldSet wide={9} margin={false}>
+                                    <FieldSet wide={9} margin={false} style={{ minWidth: "185px", ...(!forInput && {fontSize:"10px"}) }}>
                                         {[...Array(form.getFieldValue(`nv-${idx}`))].map((x, i) => {
                                             if (i % 2 === 0 && i !== 0) {
                                                 return (

@@ -11,12 +11,13 @@ import YScroll from "components/YScroll";
 import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert } from "antd";
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
-import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import { remove } from 'ramda';
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
+import { VerticalSpace } from 'components/formLayout';
 
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
@@ -73,6 +74,8 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
             type={showWrapper.type}
             mode={showWrapper.mode}
+            width={showWrapper?.width}
+            height={showWrapper?.height}
             destroyOnClose={true}
             mask={true}
             /* style={{ maginTop: "48px" }} */
@@ -103,28 +106,38 @@ const loadCurrentSettings = async (aggId, token) => {
 }
 
 
-const CardAgg = ({ ofItem, setShowForm, /* aggItem */ of_id }) => {
+const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
     const { of_cod, cliente_nome, produto_cod, item_des } = ofItem;
+    const totais = useRef({});
+
     // const paletes = JSON.parse(aggItem?.n_paletes);
-    // const onAction = (op) => {
-    //     switch (op) {
-    //         case 'paletes_stock':
-    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-    //             break;
-    //         case 'schema':
-    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-    //             break;
-    //         case 'settings':
-    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-    //             break;
-    //         case 'attachments':
-    //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-    //             break;
-    //     }
-    // }
+    const onAction = (idcard) => {
+        console.log("$$$$$", idcard, ofItem)
+        switch (idcard) {
+            //         case 'paletes_stock':
+            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+            //             break;
+            //         case 'schema':
+            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+            //             break;
+            case 'settings':
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                break;
+            //         case 'attachments':
+            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
+            //             break;
+        }
+    }
+
+    const computeQty = () => {
+        const ps = paletesStock.find(v => v.of_id = ofItem.of_id);
+        const total = { n_paletes: ofItem.n_paletes_total, linear_meters: ofItem.linear_meters, qty_encomenda: ofItem.qty_encomenda, paletes_stock: (ps.paletes ? ps.paletes.length : 0) };
+        total.paletes_produzir = total.n_paletes - total.paletes_stock;
+        return total;
+    }
 
     useEffect(() => {
-        console.log("ENTREI MENU OFSACTION", ofItem)
+        totais.current = computeQty();
     }, [])
 
     return (
@@ -145,6 +158,22 @@ const CardAgg = ({ ofItem, setShowForm, /* aggItem */ of_id }) => {
             >
                 <YScroll>
                     <Text strong>{item_des}</Text>
+                    <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between" }}>
+                        <div>Encomenda</div>
+                        <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "12px" }}>{totais.current.qty_encomenda} m&#178;</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div>Paletes Total</div>
+                        <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "12px" }}>{totais.current.n_paletes}</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div>Paletes Stock</div>
+                        <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "12px" }}>{totais.current.paletes_stock}</div>
+                    </div>
+                    <div style={{ borderTop: "solid 1px #000", display: "flex", justifyContent: "space-between" }}>
+                        <div>Paletes a Produzir</div>
+                        <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "12px" }}>{totais.current.paletes_produzir}</div>
+                    </div>
                 </YScroll>
 
 
@@ -154,10 +183,27 @@ const CardAgg = ({ ofItem, setShowForm, /* aggItem */ of_id }) => {
 }
 
 const CardPlanificacao = ({ menuItem, record }) => {
-    const { planificacao } = record;
+    const { planificacao, ofs, paletesstock } = record;
+    const totais = useRef({});
+
+    const computeQty = () => {
+        const paletes_stock = paletesstock.reduce((ac, v) => {
+            ac += (v.paletes) ? v.paletes.length : 0;
+            return ac;
+        }, 0);
+
+        const total = ofs.reduce((ac, v) => {
+            ac.n_paletes += v.n_paletes_total;
+            ac.linear_meters += v.linear_meters;
+            ac.qty_encomenda += v.qty_encomenda;
+            return ac;
+        }, { n_paletes: 0, linear_meters: 0, qty_encomenda: 0, paletes_stock });
+        total.paletes_produzir = total.n_paletes - total.paletes_stock;
+        return total;
+    }
 
     useEffect(() => {
-        console.log("ENTREI PLANIFICACAO", record)
+        totais.current = computeQty();
     }, [])
 
     return (
@@ -177,6 +223,23 @@ const CardPlanificacao = ({ menuItem, record }) => {
                 <div style={{ display: "flex" }}>
                     <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.start_prev_date}</div>
                     <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.end_prev_date}</div>
+                </div>
+
+                <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between" }}>
+                    <div>Encomenda</div>
+                    <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "14px" }}>{totais.current.qty_encomenda} m&#178;</div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div>Paletes Total</div>
+                    <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "14px" }}>{totais.current.n_paletes}</div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div>Paletes Stock</div>
+                    <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "14px" }}>{totais.current.paletes_stock}</div>
+                </div>
+                <div style={{ borderTop: "solid 1px #000", display: "flex", justifyContent: "space-between" }}>
+                    <div>Paletes a Produzir</div>
+                    <div style={{ minWidth: "120px", fontWeight: 700, fontSize: "14px" }}>{totais.current.paletes_produzir}</div>
                 </div>
             </Card>
         </div>
@@ -228,7 +291,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal" }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal", width: null, height: null }))
     }
 
     return (
@@ -236,7 +299,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -255,7 +318,7 @@ const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal' }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: null, height: null }))
     }
 
     return (
@@ -263,7 +326,7 @@ const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -282,7 +345,7 @@ const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal' }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: null, height: null }))
     };
 
     return (
@@ -290,7 +353,7 @@ const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -309,7 +372,7 @@ const CardCortes = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal" }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal", width: null, height: null }))
     }
 
     return (
@@ -317,12 +380,50 @@ const CardCortes = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
                     <FormCortes record={record} forInput={false} />
                 </YScroll>
+            </Card>
+        </div>
+    );
+}
+
+const CardOperacoes = ({ menuItem, record, setShowForm }) => {
+    const { status } = record;
+
+    const onEdit = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "fullscreen", type: "modal" }))
+    }
+
+    useEffect(() => {
+        console.log("ENTREI NAS OPERAÇÕES", record)
+    }, [])
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+            >
+                <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }}>Iniciar Produção</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }}>Refazer Planeamento</Button>
+                {/* <div>
+                    <div>Horas de Produção Previstas</div>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: "16px" }}>{planificacao.horas_previstas_producao}H</div>
+
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1 }}>Início</div>
+                    <div style={{ flex: 1 }}>Fim</div>
+                </div>
+                <div style={{ display: "flex" }}>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.start_prev_date}</div>
+                    <div style={{ flex: 1, fontWeight: 600 }}>{planificacao.end_prev_date}</div>
+                </div> */}
             </Card>
         </div>
     );
@@ -343,6 +444,9 @@ const menuItems = [
         title: "Formulação",
         span: 3
     }, {
+        idcard: "operacoes",
+        title: "Operações"
+    }, {
         idcard: "gamaoperatoria",
         title: "Gama Operatória",
         span: 2
@@ -352,8 +456,6 @@ const menuItems = [
         span: 3
     }
 ];
-
-
 
 export default ({ aggId }) => {
     const [loading, setLoading] = useState(true);
@@ -379,7 +481,7 @@ export default ({ aggId }) => {
                 }
                 (async () => {
                     let raw = await loadCurrentSettings(aggId, token);
-
+                    console.log("CURRENT--SETTINGS", raw[0]);
                     const formulacao = JSON.parse(raw[0].formulacao);
                     const gamaoperatoria = JSON.parse(raw[0].gamaoperatoria);
                     const nonwovens = JSON.parse(raw[0].nonwovens);
@@ -388,6 +490,7 @@ export default ({ aggId }) => {
                     const cortesordem = JSON.parse(raw[0].cortesordem);
                     const cores = JSON.parse(raw[0].cores);
                     const emendas = JSON.parse(raw[0].emendas);
+                    const paletesstock = JSON.parse(raw[0].paletesstock);
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
                     const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
@@ -406,7 +509,7 @@ export default ({ aggId }) => {
                             end_prev_date: dayjs(raw[0].end_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'), horas_previstas_producao: raw[0].horas_previstas_producao
                         },
                         produto: { produto_id: raw[0].produto_id, produto_cod: raw[0].produto_cod, gsm: raw[0].gsm },
-                        sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria,
+                        sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria, paletesstock,
                         nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status, lotes
                     });
                     setLoading(false);
@@ -429,33 +532,6 @@ export default ({ aggId }) => {
                             <FieldItem><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></FieldItem>
                         </FieldSet>
                     </FormLayout> */}
-
-                {Object.keys(currentSettings).length > 0 && <StyledGrid>
-                    {menuItems.map((menuItem, idx) => {
-                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem } = currentSettings;
-                        switch (menuItem.idcard) {
-                            case "planificacao":
-                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao }} setShowForm={setShowForm} />);
-                            case "lotes":
-                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} />);
-                            case "formulacao":
-                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
-                            case "gamaoperatoria":
-                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} />);
-                            case "especificacoes":
-                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
-                            case "cortes":
-                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id }} setShowForm={setShowForm} />);
-                            default: <React.Fragment key={`ct-${idx}`} />
-                        }
-                    })}
-                </StyledGrid>}
-
-                {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
-                    {currentSettings.ofs.map((ofItem, idx) => {
-                        return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} />)
-                    })}
-                </StyledGrid>}
                 {currentSettings.observacoes &&
                     <div style={{ padding: "10px" }}>
                         <Alert
@@ -466,6 +542,35 @@ export default ({ aggId }) => {
                         />
                     </div>
                 }
+                {Object.keys(currentSettings).length > 0 && <StyledGrid>
+                    {menuItems.map((menuItem, idx) => {
+                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem, ofs, paletesstock } = currentSettings;
+                        switch (menuItem.idcard) {
+                            case "planificacao":
+                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao, ofs, paletesstock }} setShowForm={setShowForm} />);
+                            case "lotes":
+                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} />);
+                            case "formulacao":
+                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
+                            case "gamaoperatoria":
+                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} />);
+                            case "especificacoes":
+                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
+                            case "cortes":
+                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id }} setShowForm={setShowForm} />);
+                            case "operacoes":
+                                return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} />);
+                            default: <React.Fragment key={`ct-${idx}`} />
+                        }
+                    })}
+                </StyledGrid>}
+
+                {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
+                    {currentSettings.ofs.map((ofItem, idx) => {
+                        return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
+                    })}
+                </StyledGrid>}
+                
 
 
             </Spin>

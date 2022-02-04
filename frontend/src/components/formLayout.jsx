@@ -49,11 +49,11 @@ export const WrapperForm = props => {
     const ctx = useContext(MediaContext);
     // // setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "mobile", orientation });
     // console.log("drawer-----",ctx);
-    const { type = 'modal', visible = false, setVisible, children, title, mode = "normal", width, ...rest } = props;
+    const { type = 'modal', visible = false, setVisible, children, title, mode = "normal", width, height = '70vh', ...rest } = props;
     const [widthMode, setWidthMode] = useState();
 
     useEffect(() => {
-        if (widthMode) {
+        if (widthMode && !width) {
             setWidthMode({ width: computeWitdth(mode), mode, prevMode: mode });
         } else {
             setWidthMode({ width: computeWitdth(mode, width), mode, prevMode: mode });
@@ -61,12 +61,21 @@ export const WrapperForm = props => {
     }, [ctx]);
 
     useEffect(() => {
-        if (widthMode) {
+        if (width) {
+            setWidthMode({ width: computeWitdth(props.mode, width), mode, prevMode: mode });
+        } else if (widthMode) {
             setWidthMode({ width: computeWitdth(props.mode), mode, prevMode: mode });
         } else {
             setWidthMode({ width: computeWitdth(props.mode), mode, prevMode: mode });
         }
+
     }, [props.mode]);
+
+    useEffect(() => {
+        if (width) {
+            setWidthMode({ width: computeWitdth(props.mode, width), mode, prevMode: mode });
+        }
+    }, [width,height]);
 
     const computeWitdth = (mode, width) => {
         if (width)
@@ -77,7 +86,7 @@ export const WrapperForm = props => {
             return `${ctx.maxWidth}${ctx.maxUnit}`;
         } else if (mode === "fullscreen") {
             return "100%";
-        }else{
+        } else {
             return `${ctx.width}${ctx.unit}`;
         }
     }
@@ -103,7 +112,7 @@ export const WrapperForm = props => {
                 {type == 'modal' ? (
                     <Modal
                         {...rest}
-                        bodyStyle={{ height: "70vh" }}
+                        bodyStyle={{ height: !height ? '70vh' : height }}
                         style={{ width: widthMode.width, minWidth: widthMode.width }}
                         width={widthMode.width}
                         title={titleForm}

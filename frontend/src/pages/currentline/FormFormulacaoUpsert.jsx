@@ -454,7 +454,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                     style={{ width: "100%" }}
                                     left={
                                         <FieldSet>
-                                            <Field name="id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Formulacao", pos: "left" }}>
+                                            <Field name="id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Formulacao", pos: "left" }}>
                                                 <SelectField size="small" data={formulacoes} keyField="id" textField="designacao"
                                                     optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                                 />

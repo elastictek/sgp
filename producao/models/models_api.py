@@ -80,9 +80,10 @@ class BaseCurrentSettings(models.Model):
     paletizacao = models.JSONField(blank=True, null=True)
     emendas = models.JSONField(blank=True, null=True)
     lotes = models.JSONField(blank=True, null=True)
+    dosers = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
     paletesstock = models.JSONField(blank=True, null=True)
-    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active | 9 Finished
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
     start_prev_date = models.DateTimeField(verbose_name="Data Início Prevista", null=True, blank=True)
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
@@ -91,11 +92,11 @@ class BaseCurrentSettings(models.Model):
     amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
     gsm = models.IntegerField(verbose_name="Gramagem", max_length=3, null=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
+    type_op = models.CharField(max_length=45, blank=True, null=True)
     class Meta:
         abstract = True
 
 class AuditCurrentSettings(BaseCurrentSettings):
-    type = models.CharField(max_length=45, blank=True, null=True)
     timestamp = models.DateTimeField(blank=True, null=True)
     action = models.CharField(max_length=8, blank=True, null=True)
     contextid = models.IntegerField(blank=True, null=True)

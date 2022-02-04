@@ -115,7 +115,7 @@ const Extrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
                                 <TitleExtrusora extrusoraRef={extrusoraRef} value={form.getFieldValue(name)[field.name]['extrusora']} />
                                 {/* <FieldSet wide={8} layout="horizontal" margin={false} field={{ label: { enabled: false } }} style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}> */}
                                 <FieldSet wide={16} margin={false}
-                                    style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}
+                                    /* style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }} */
                                     field={{
                                         label: { enabled: false },
                                         style: { alignSelf: "center" },
