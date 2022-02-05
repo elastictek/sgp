@@ -2227,7 +2227,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 produto_cod=values(produto_cod),
                 gsm=values(gsm),
                 user_id=values(user_id),
-                type_op=values(type)
+                type_op=values(type_op)
         """
         db.execute(dml.statement, cursor, dml.parameters)
         csid = cursor.lastrowid

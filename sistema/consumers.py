@@ -1,3 +1,11 @@
+import os
+import sys
+import django
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sistema.settings")
+django.setup()
+
 from socket import timeout
 from asgiref.sync import async_to_sync
 from django.core.cache import cache
