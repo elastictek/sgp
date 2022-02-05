@@ -1,10 +1,10 @@
-from django.conf.urls import url, include
+from django.urls import re_path, include
 from . import views
 
 app_name="users" 
 
 urlpatterns = [
     
-    url('^', include('django.contrib.auth.urls')),
-    url(r'^logout-/$', views.LogoutView.as_view(), name='logout'),
+    re_path('^', include('django.contrib.auth.urls')),
+    re_path(r'^logout-/$', views.LogoutView.as_view(), name='logout'),
 ]

@@ -4,7 +4,7 @@ import django
 from channels.http import AsgiHandler
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
-from django.conf.urls import url
+from django.urls import re_path
 from . import consumers
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sistema.settings')
@@ -16,7 +16,7 @@ django.setup()
 #})
 
 websocket_urlpatterns = [
-    url(r'^ws/lotespick$', consumers.LotesPickConsumer.as_asgi()),
+    re_path(r'^ws/lotespick$', consumers.LotesPickConsumer.as_asgi()),
 ]
 
 application = ProtocolTypeRouter({

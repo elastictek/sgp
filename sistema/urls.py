@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from django.conf.urls import url, include
+from django.urls import re_path, include
 from django.conf.urls.static import static
 from .settings import local
 from django.views.generic import TemplateView
@@ -24,13 +24,13 @@ from producao import views as producao_views
 from django.conf.urls import handler500
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^users/', include(users_urls)),
-    url(r'^producao/', include('producao.urls', namespace='producao')),
-    url(r'^planeamento/', include('planeamento.urls', namespace='planeamento')),
-    url(r'^$', TemplateView.as_view(template_name='index.html'), name='home'),
-    url(r'^api/', include("producao.api.urls", namespace='api')),
-    url(r'^plan-api/', include("planeamento.api.urls", namespace='plan-api')),
+    re_path(r'^admin/', admin.site.urls),
+    re_path(r'^users/', include(users_urls)),
+    re_path(r'^producao/', include('producao.urls', namespace='producao')),
+    re_path(r'^planeamento/', include('planeamento.urls', namespace='planeamento')),
+    re_path(r'^$', TemplateView.as_view(template_name='index.html'), name='home'),
+    re_path(r'^api/', include("producao.api.urls", namespace='api')),
+    re_path(r'^plan-api/', include("planeamento.api.urls", namespace='plan-api')),
     path(r'app/', include('frontend.urls'))
 ]
 

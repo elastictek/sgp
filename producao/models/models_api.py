@@ -26,7 +26,7 @@ class BaseTempAggOrdemFabrico(models.Model):
     cortes = models.ForeignKey('producao.Cortes', on_delete=models.PROTECT, verbose_name="Cortes", null=True, blank=True)
     cortesordem = models.ForeignKey('producao.CortesOrdem', on_delete=models.PROTECT, verbose_name="Posicionamento dos Cortes", null=True, blank=True)
     sentido_enrolamento = models.CharField(verbose_name="Sentido de Enrolamento", max_length=100, null=True)
-    amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
+    amostragem = models.IntegerField(verbose_name="Amostragem", null=True)
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
     year = models.IntegerField(verbose_name="Ano", null=False, default=datetime.date.today().year)
     status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED - Status [0 - A Validar/Aberta | 1 - Na Produção/Aberta | 5 - A Validar/Reaberta | 7 - Em Produção | 9 - Fechada | -1 - Disabled],
@@ -89,8 +89,8 @@ class BaseCurrentSettings(models.Model):
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
     horas_previstas_producao= models.IntegerField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True)
     sentido_enrolamento = models.CharField(verbose_name="Sentido de Enrolamento", max_length=100, null=True)
-    amostragem = models.IntegerField(verbose_name="Amostragem", max_length=2, null=True)
-    gsm = models.IntegerField(verbose_name="Gramagem", max_length=3, null=True)
+    amostragem = models.IntegerField(verbose_name="Amostragem", null=True)
+    gsm = models.IntegerField(verbose_name="Gramagem", null=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
     type_op = models.CharField(max_length=45, blank=True, null=True)
     class Meta:
@@ -119,9 +119,9 @@ class Emendas(models.Model):
     cliente_nome = models.CharField(max_length=80,verbose_name="Nome Cliente", null=True) #ADDED - NOME CLIENTE SAGE NOME
     artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)
     tipo_emenda = models.CharField(verbose_name="Tipo Emenda", max_length=35)
-    maximo = models.SmallIntegerField(verbose_name="Máximo Emendas", default=0,  max_length=3)
-    emendas_rolo = models.SmallIntegerField(verbose_name="Emendas por Rolo",  max_length=2)
-    paletes_contentor = models.SmallIntegerField(verbose_name="Emendas Paletes por Contentor",  max_length=2)
+    maximo = models.SmallIntegerField(verbose_name="Máximo Emendas", default=0)
+    emendas_rolo = models.SmallIntegerField(verbose_name="Emendas por Rolo")
+    paletes_contentor = models.SmallIntegerField(verbose_name="Emendas Paletes por Contentor")
     hashcode = models.CharField(verbose_name="hashcode", max_length=25, null=True, blank=True)
     class Meta:
         unique_together = (('designacao', 'cliente_cod', 'artigo_cod'))

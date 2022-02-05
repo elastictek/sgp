@@ -1,4 +1,4 @@
-from django.conf.urls import url, include
+from django.urls import re_path, include
 from django.contrib import admin
 #from producao.api.views import ArtigoListAPIView, ClienteListAPIView, ArtigoDetailAPIView, PaleteListStockAPIView, PaleteListAPIView, CargaListAPIView, PaleteListHistoricoAPIView, BobinagemListHistoricoAPIView, CargaPaletesAPIView, StockListAPIView, BobineListDmAPIView, CargaDetailAPIView, EncomendaCargaAPIView, CargaDetailSerializer, EncomendaListAPIView, BobinagemListDmAPIView, BobinagemCreateDmAPIView, BobineListAPIView, PaleteDetailAPIView, BobineList, EmendaListAPIView, EmendaCreateAPIView, PaleteDmBobinesAPIView, BobinagemListAPIView, BobineDetailAPIView, BobineListAllAPIView,ClienteDetailAPIView,BobinesBobinagemAPIView,PaleteDmAPIView
 from producao.api import views 
@@ -6,123 +6,123 @@ app_name="producao"
 
 urlpatterns = [
     
-    url(r'^palete/$', views.PaleteListAPIView.as_view(), name='palete-list'),
-    url(r'^palete/historico/$', views.PaleteListHistoricoAPIView.as_view(), name='palete-list-historico'),
-    url(r'^bobine/$', views.BobineListAPIView.as_view(), name='bobine-list'),
-    url(r'^bobinelist/$', views.BobineListAllAPIView.as_view(), name='bobine-list2'),
-    url(r'^bobinagem/$', views.BobinagemListAPIView.as_view(), name='bobinagem-list'),
-    url(r'^bobinagem/historico/$', views.BobinagemListHistoricoAPIView.as_view(), name='bobinagem-list-historico'),
-    url(r'^emenda/$', views.EmendaListAPIView.as_view(), name='emenda-list'),
-    url(r'^emenda/create/$', views.EmendaCreateAPIView.as_view(), name='emenda-create'),
-    url(r'^palete/(?P<pk>\d+)/$', views.PaleteDetailAPIView.as_view(), name='palete-detail'),
-    url(r'^bobine/(?P<pk>\d+)/$', views.BobineDetailAPIView.as_view(), name='bobine-list2'),
-    url(r'^cliente/(?P<pk>\d+)/$', views.ClienteDetailAPIView.as_view(), name='cliente'),
-    url(r'^bobinagem/(?P<pk>\d+)/$', views.BobinesBobinagemAPIView.as_view(), name='cliente'),
-    url(r'^palete/dm/$', views.PaleteDmAPIView.as_view(), name='paletes_dm'),
-    url(r'^palete/dm/(?P<pk>\d+)$', views.PaleteDmBobinesAPIView.as_view(), name='paletes_dm_bobines'),
-    url(r'^bobine/dm/$', views.BobineListDmAPIView.as_view(), name='bobines-dm'),
-    url(r'^bobinagem/dm/$', views.BobinagemCreateDmAPIView.as_view(), name='bobineagem-create-dm'),
-    url(r'^bobinagem/list/dm/$', views.BobinagemListDmAPIView.as_view(), name='bobinagem-list-dm'),
-    url(r'^encomenda/$', views.EncomendaListAPIView.as_view(), name='encomenda-list'),
-    url(r'^encomenda/(?P<pk>\d+)/$', views.EncomendaCargaAPIView.as_view(), name='encomenda-cargas-list'),
-    url(r'^carga/$', views.CargaListAPIView.as_view(), name='carga-list'),
-    url(r'^carga/(?P<pk>\d+)/$', views.CargaDetailAPIView.as_view(), name='carga-detail'),
-    url(r'^carga/paletes/(?P<pk>\d+)/$', views.CargaPaletesAPIView.as_view(), name='carga-paletes-list'),
-    url(r'^stock/$', views.StockListAPIView.as_view(), name='stock-list'),
-    url(r'^palete/stock/$', views.PaleteListStockAPIView.as_view(), name='palete-stock-list'),
-    url(r'^artigo/(?P<pk>\d+)/$', views.ArtigoDetailAPIView.as_view(), name='artigo-detail'),
-    url(r'^artigos/$', views.ArtigoListAPIView.as_view(), name='artigos'),
-    url(r'^clientes/$', views.ClienteListAPIView.as_view(), name='clientes'),
+    re_path(r'^palete/$', views.PaleteListAPIView.as_view(), name='palete-list'),
+    re_path(r'^palete/historico/$', views.PaleteListHistoricoAPIView.as_view(), name='palete-list-historico'),
+    re_path(r'^bobine/$', views.BobineListAPIView.as_view(), name='bobine-list'),
+    re_path(r'^bobinelist/$', views.BobineListAllAPIView.as_view(), name='bobine-list2'),
+    re_path(r'^bobinagem/$', views.BobinagemListAPIView.as_view(), name='bobinagem-list'),
+    re_path(r'^bobinagem/historico/$', views.BobinagemListHistoricoAPIView.as_view(), name='bobinagem-list-historico'),
+    re_path(r'^emenda/$', views.EmendaListAPIView.as_view(), name='emenda-list'),
+    re_path(r'^emenda/create/$', views.EmendaCreateAPIView.as_view(), name='emenda-create'),
+    re_path(r'^palete/(?P<pk>\d+)/$', views.PaleteDetailAPIView.as_view(), name='palete-detail'),
+    re_path(r'^bobine/(?P<pk>\d+)/$', views.BobineDetailAPIView.as_view(), name='bobine-list2'),
+    re_path(r'^cliente/(?P<pk>\d+)/$', views.ClienteDetailAPIView.as_view(), name='cliente'),
+    re_path(r'^bobinagem/(?P<pk>\d+)/$', views.BobinesBobinagemAPIView.as_view(), name='cliente'),
+    re_path(r'^palete/dm/$', views.PaleteDmAPIView.as_view(), name='paletes_dm'),
+    re_path(r'^palete/dm/(?P<pk>\d+)$', views.PaleteDmBobinesAPIView.as_view(), name='paletes_dm_bobines'),
+    re_path(r'^bobine/dm/$', views.BobineListDmAPIView.as_view(), name='bobines-dm'),
+    re_path(r'^bobinagem/dm/$', views.BobinagemCreateDmAPIView.as_view(), name='bobineagem-create-dm'),
+    re_path(r'^bobinagem/list/dm/$', views.BobinagemListDmAPIView.as_view(), name='bobinagem-list-dm'),
+    re_path(r'^encomenda/$', views.EncomendaListAPIView.as_view(), name='encomenda-list'),
+    re_path(r'^encomenda/(?P<pk>\d+)/$', views.EncomendaCargaAPIView.as_view(), name='encomenda-cargas-list'),
+    re_path(r'^carga/$', views.CargaListAPIView.as_view(), name='carga-list'),
+    re_path(r'^carga/(?P<pk>\d+)/$', views.CargaDetailAPIView.as_view(), name='carga-detail'),
+    re_path(r'^carga/paletes/(?P<pk>\d+)/$', views.CargaPaletesAPIView.as_view(), name='carga-paletes-list'),
+    re_path(r'^stock/$', views.StockListAPIView.as_view(), name='stock-list'),
+    re_path(r'^palete/stock/$', views.PaleteListStockAPIView.as_view(), name='palete-stock-list'),
+    re_path(r'^artigo/(?P<pk>\d+)/$', views.ArtigoDetailAPIView.as_view(), name='artigo-detail'),
+    re_path(r'^artigos/$', views.ArtigoListAPIView.as_view(), name='artigos'),
+    re_path(r'^clientes/$', views.ClienteListAPIView.as_view(), name='clientes'),
     
     
-    url(r'^sellorders/$', views.SellOrdersList),
+    re_path(r'^sellorders/$', views.SellOrdersList),
     
-    url(r'^sellorderslookup/$', views.SellOrdersLookup),
-    url(r'^sellitemslookup/$', views.SellItemsLookup),
-    url(r'^sellorderitemsList/$', views.SellOrderItemsList),
-    url(r'^newordemfabrico/$', views.NewOrdemFabrico),
-    url(r'^ofartigoslist/$', views.OFArtigosList),
-    url(r'^ofartigoslist/$', views.OFArtigosList),
-    url(r'^ofabricolist/$', views.OFabricoList),
-    url(r'^setofabricostatus/$', views.SetOrdemFabricoStatus),
-    url(r'^sellitemsdetailsget/$', views.SellItemsDetailsGet),
-    url(r'^materiasprimasget/$', views.MateriasPrimasGet),
-    url(r'^materiasprimaslookup/$', views.MateriasPrimasLookup),
-    url(r'^bomlookup/$', views.BomLookup),
+    re_path(r'^sellorderslookup/$', views.SellOrdersLookup),
+    re_path(r'^sellitemslookup/$', views.SellItemsLookup),
+    re_path(r'^sellorderitemsList/$', views.SellOrderItemsList),
+    re_path(r'^newordemfabrico/$', views.NewOrdemFabrico),
+    re_path(r'^ofartigoslist/$', views.OFArtigosList),
+    re_path(r'^ofartigoslist/$', views.OFArtigosList),
+    re_path(r'^ofabricolist/$', views.OFabricoList),
+    re_path(r'^setofabricostatus/$', views.SetOrdemFabricoStatus),
+    re_path(r'^sellitemsdetailsget/$', views.SellItemsDetailsGet),
+    re_path(r'^materiasprimasget/$', views.MateriasPrimasGet),
+    re_path(r'^materiasprimaslookup/$', views.MateriasPrimasLookup),
+    re_path(r'^bomlookup/$', views.BomLookup),
     
     #Clientes
-    url(r'^sellcustomerslookup/$', views.SellCustomersLookup),
+    re_path(r'^sellcustomerslookup/$', views.SellCustomersLookup),
     #End Clientes
     #Paletizações
-    url(r'^paletizacaoget/$', views.PaletizacaoGet),
-    url(r'^newpaletizacaoschema/$', views.NewPaletizacaoSchema),
-    url(r'^paletizacoeslookup/$', views.PaletizacoesLookup),
-    url(r'^paletizacaodetailsget/$', views.PaletizacaoDetailsGet),
+    re_path(r'^paletizacaoget/$', views.PaletizacaoGet),
+    re_path(r'^newpaletizacaoschema/$', views.NewPaletizacaoSchema),
+    re_path(r'^paletizacoeslookup/$', views.PaletizacoesLookup),
+    re_path(r'^paletizacaodetailsget/$', views.PaletizacaoDetailsGet),
     #End Paletizações
     #Formulações
-    url(r'^formulacoeslookup/$', views.FormulacoesLookup),
-    url(r'^newformulacao/$', views.NewFormulacao),
-    url(r'^formulacaomateriasprimasget/$', views.FormulacaoMateriasPrimasGet),
+    re_path(r'^formulacoeslookup/$', views.FormulacoesLookup),
+    re_path(r'^newformulacao/$', views.NewFormulacao),
+    re_path(r'^formulacaomateriasprimasget/$', views.FormulacaoMateriasPrimasGet),
     #End Formulações
     #Gamas Operatórias
-    url(r'^gamasoperatoriaslookup/$', views.GamasOperatoriasLookup),
-    url(r'^newgamaoperatoria/$', views.NewGamaOperatoria),
-    url(r'^gamaoperatoriaitemsget/$', views.GamaOperatoriaItemsGet),
+    re_path(r'^gamasoperatoriaslookup/$', views.GamasOperatoriasLookup),
+    re_path(r'^newgamaoperatoria/$', views.NewGamaOperatoria),
+    re_path(r'^gamaoperatoriaitemsget/$', views.GamaOperatoriaItemsGet),
     #End Gamas Operatórias
     #Artigo Specs
-    url(r'^artigosspecslookup/$', views.ArtigosSpecsLookup),
-    url(r'^newartigospecs/$', views.NewArtigoSpecs),
-    url(r'^artigospecsitemsget/$', views.ArtigoSpecsItemsGet),
+    re_path(r'^artigosspecslookup/$', views.ArtigosSpecsLookup),
+    re_path(r'^newartigospecs/$', views.NewArtigoSpecs),
+    re_path(r'^artigospecsitemsget/$', views.ArtigoSpecsItemsGet),
     #End Artigo Specs
     #Nonwovens
-    url(r'^nonwovenslookup/$', views.NonwovensLookup),
-    url(r'^newartigononwovens/$', views.NewArtigoNonwovens),
-    #url(r'^newartigospecs/$', views.NewArtigoSpecs),
-    #url(r'^artigospecsitemsget/$', views.ArtigoSpecsItemsGet),
+    re_path(r'^nonwovenslookup/$', views.NonwovensLookup),
+    re_path(r'^newartigononwovens/$', views.NewArtigoNonwovens),
+    #re_path(r'^newartigospecs/$', views.NewArtigoSpecs),
+    #re_path(r'^artigospecsitemsget/$', views.ArtigoSpecsItemsGet),
     #End Nonwovens
     #Cortes
-    url(r'^artigostempagglookup/$', views.ArtigosTempAggLookup),
-    url(r'^cortesget/$', views.CortesGet),
-    url(r'^newcortes/$', views.NewCortes),
-    url(r'^clearcortes/$', views.ClearCortes),
-    url(r'^updatecortesordem/$', views.UpdateCortesOrdem),
-    url(r'^cortesordemlookup/$', views.CortesOrdemLookup),
+    re_path(r'^artigostempagglookup/$', views.ArtigosTempAggLookup),
+    re_path(r'^cortesget/$', views.CortesGet),
+    re_path(r'^newcortes/$', views.NewCortes),
+    re_path(r'^clearcortes/$', views.ClearCortes),
+    re_path(r'^updatecortesordem/$', views.UpdateCortesOrdem),
+    re_path(r'^cortesordemlookup/$', views.CortesOrdemLookup),
     #End Cortes
     #Paletes Stock
-    url(r'^paletesstocklookup/$', views.PaletesStockLookup),
-    url(r'^paletesstockget/$', views.PaletesStockGet),
-    url(r'^savepaletesstock/$', views.SavePaletesStock),    
+    re_path(r'^paletesstocklookup/$', views.PaletesStockLookup),
+    re_path(r'^paletesstockget/$', views.PaletesStockGet),
+    re_path(r'^savepaletesstock/$', views.SavePaletesStock),    
     #End Paletes Stock
     #Nonwovens
-    url(r'^emendaslookup/$', views.EmendasLookup),
+    re_path(r'^emendaslookup/$', views.EmendasLookup),
     #End Nonwovens
     #OF Attachments/Uploads
-    url(r'^ofattachmentsget/$', views.OfAttachmentsGet),
-    url(r'^ofattachmentschange/$', views.OfAttachmentsChange),
-    url(r'^ofupload/$', views.OfUpload),
+    re_path(r'^ofattachmentsget/$', views.OfAttachmentsGet),
+    re_path(r'^ofattachmentschange/$', views.OfAttachmentsChange),
+    re_path(r'^ofupload/$', views.OfUpload),
     #End OF Uploads
 
-    url(r'^savetempordemfabrico/$', views.SaveTempOrdemFabrico),    
-    url(r'^savetempagg/$', views.SaveTempAgg),    
-    url(r'^tempofabricoget/$', views.TempOFabricoGet),
-    url(r'^tempaggofabricolookup/$', views.TempAggOFabricoLookup),
-    url(r'^ignorarordemfabrico/$', views.IgnorarOrdemFabrico),
+    re_path(r'^savetempordemfabrico/$', views.SaveTempOrdemFabrico),    
+    re_path(r'^savetempagg/$', views.SaveTempAgg),    
+    re_path(r'^tempofabricoget/$', views.TempOFabricoGet),
+    re_path(r'^tempaggofabricolookup/$', views.TempAggOFabricoLookup),
+    re_path(r'^ignorarordemfabrico/$', views.IgnorarOrdemFabrico),
 
-    url(r'^downloadfile/$', views.download_file),
+    re_path(r'^downloadfile/$', views.download_file),
     
     #CURRENT SETTINGS
-    url(r'^currentsettingsget/$', views.CurrentSettingsGet),
-    url(r'^loteslookup/$', views.LotesLookup),
-    url(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
+    re_path(r'^currentsettingsget/$', views.CurrentSettingsGet),
+    re_path(r'^loteslookup/$', views.LotesLookup),
+    re_path(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
     #END CURRENT SETTINGS
 
-    #url(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
+    #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 
 
 
 
 
-    url(r'^nonwovenlookup/$', views.NonWovenLookup)
+    re_path(r'^nonwovenlookup/$', views.NonWovenLookup)
 
     
     
