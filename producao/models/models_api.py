@@ -1,4 +1,4 @@
-from msilib.schema import CreateFolder
+#from msilib.schema import CreateFolder
 from django.db import models
 import datetime
 import time
