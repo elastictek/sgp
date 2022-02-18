@@ -143,7 +143,7 @@ export default ({ vGap = 2, form, items, changedValues, x = 200, width="100%",he
             setTotalHeight(compute(els));
             setElements(els.reverse());
         }
-    }, [changedValues]);
+    }, [changedValues,items]);
     return (
         <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : totalHeight+50} viewBox={`0 0 480 ${totalHeight+50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
             {isValue((items) ? items.filmeestiravel_exterior : form.getFieldValue("filmeestiravel_exterior"), undefined, 0) === 1 && <g transform={`translate(${x - 100},${0})`}>

@@ -99,6 +99,7 @@ const PaletesStock = ({ item }) => {
 
 const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
     const paletes = JSON.parse(aggItem?.n_paletes);
+
     const onAction = (op) => {
         switch (op) {
             case 'paletes_stock':

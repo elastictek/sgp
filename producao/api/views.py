@@ -738,7 +738,6 @@ def NewPaletizacaoSchema(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 exists = checkPaletizacao(data,cursor)
-                print(exists)
                 if (exists==0 or exists==2):
                     data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
                     versao = getVersao(data,cursor)
@@ -2613,7 +2612,10 @@ def SaveTempOrdemFabrico(request, format=None):
 
     def updateTempOrdemFabrico(data,cursor):
         if data["type"] == "paletizacao":
-            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":data["paletizacao_id"]},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            print("#########################################################################################")
+            print(data)
+            pid = data["paletizacao_id"] if ("paletizacao_id" in data) else None
+            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":pid},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
         if data["type"] == "settings":

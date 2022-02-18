@@ -101,7 +101,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
 
     const onFinish = async (values) => {
         const paletizacao_id = form.getFieldValue("paletizacao_id");
-        const ofabrico = record.aggItem.tempof_id;
+
+        const {tempof_id:ofabrico, artigo, qty_encomenda:qty_item} = record.aggItem;
+        console.log("OIII",record,values)
         const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type:"paletizacao", paletizacao_id, ofabrico } });
         if (response.data.status !== "error") {
             parentReload({ agg_id: record.aggItem.id });
@@ -214,7 +216,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
                                         <Field name="paletizacao_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Paletização", pos: "left" }} addons={{
                                             ...(form.getFieldValue("paletizacao_id") && { right: <Button onClick={() => onShowSchema()} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                         }}>
-                                            <SelectField size="small" data={paletizacoes} keyField="id" textField="designacao"
+                                            <SelectField allowClear size="small" data={paletizacoes} keyField="id" textField="designacao"
                                                 optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ width: "70px" }}><b>{d["contentor_id"]}</b></div><div style={{flex:1}}>{d[textField]}</div><div style={{width:"20px"}}>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                             />
                                         </Field>
