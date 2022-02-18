@@ -1,4 +1,8 @@
+import base64
+from operator import eq
+import re
 from typing import List
+from wsgiref.util import FileWrapper
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from rest_framework.views import APIView
 from django.http import Http404, request
@@ -18,19 +22,22 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from django.db import connections, transaction
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
 
-from rest_framework.renderers import JSONRenderer, MultiPartRenderer
+from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 import collections
+import hmac
 import hashlib
 import math
 from django.core.files.storage import FileSystemStorage
 from sistema.settings.appSettings import AppSettings
 import time
+import requests
 
 
 import psycopg2
+
 # from psycopg2 import pool
 
 
@@ -149,6 +156,34 @@ def rangeP(data, key, field):
 
 #Ordens de Fabrico
 
+def export(sql, db_parameters, parameters,conn_name):
+    if ("export" in parameters and parameters["export"] is not None):
+        dbparams={}
+        for key, value in db_parameters.items():
+            if f"%({key})s" not in sql: 
+                continue
+            dbparams[key] = value
+            sql = sql.replace(f"%({key})s",f":{key}")
+        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+        req = {
+            
+            "conn-name":conn_name,
+            "sql":sql,
+            "hash":hash,
+            "data":dbparams,
+            **parameters
+        }
+        fstream = requests.post('http://localhost:8080/ReportsGW/runlist', json=req)
+        if (fstream.status_code==200):
+            resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+            if (parameters["export"] == "pdf"):
+                resp['Content-Disposition'] = "inline; filename=list.pdf"
+            elif (parameters["export"] == "excel"):
+                resp['Content-Disposition'] = "inline; filename=list.xlsx"
+            elif (parameters["export"] == "word"):
+                resp['Content-Disposition'] = "inline; filename=list.docx"
+            return resp
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -191,8 +226,6 @@ def OFabricoList(request, format=None):
     }, False, "and",False)
     parameters = {**f.parameters, **f2['parameters']}
 
-    print(f'data----{request.data}')
-
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
     sageAlias = dbgw.dbAlias.get("sage")
@@ -223,7 +256,11 @@ def OFabricoList(request, format=None):
 		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date
     """
 
-    response = dbgw.executeList(lambda p, c: (
+
+    
+
+
+    sql = lambda p, c, s: (
         f"""
         SELECT {c(f'{cols}')} 
         FROM {mv_ofabrico_list} oflist
@@ -235,9 +272,18 @@ def OFabricoList(request, format=None):
         WHERE 
         NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
         {f.text} {f2["text"]}
-        {p(dql.sort)} {p(dql.paging)}
+        {s(dql.sort)} {p(dql.paging)}
         """
-    ), connection, parameters, [])
+    )
+
+    print("###############################################################")
+    print(parameters)
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+
+    #print(sql(lambda v:v,lambda v:v))
+   
+    response = dbgw.executeList(sql, connection, parameters, [])
 
 
     # cols = f"""
@@ -250,7 +296,7 @@ def OFabricoList(request, format=None):
     #     t.item_diam,t.item_core, t.item_width, t.item_id,t.start_prev_date,t.end_prev_date
     # """
 
-    # response = dbgw.executeList(lambda p, c: (
+    # response = dbgw.executeList(lambda p, c, s: (
     #     f"""
     #     SELECT {c(f'{cols}')} 
     #     from (
@@ -306,7 +352,7 @@ def OFabricoList(request, format=None):
     #     NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = ofh."MFGNUM_0")
     #     ) t
     #     {f.text} {f2["text"]}
-    #     {p(dql.sort)} {p(dql.paging)}
+    #     {s(dql.sort)} {p(dql.paging)}
     #     """
     # ), connection, parameters, [])
 
@@ -593,36 +639,58 @@ def PaletizacaoDetailsGet(request, format=None):
 # @transaction.atomic()
 def NewPaletizacaoSchema(request, format=None):
     data = request.data.get("parameters")
-    
+
+    def getVersao(data, cursor):
+        f = Filters({"cliente_cod": data['cliente_cod'], "contentor_id":data["contentor_id"],"artigo_cod":data["artigo_cod"]})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'cliente_cod = :cliente_cod', True)
+        f.add(f'contentor_id = :contentor_id', True)
+        f.add(f'artigo_cod = :artigo_cod', True)
+        f.value("and")   
+        return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_paletizacao {f.text}'), cursor, f.parameters)['rows'][0]['mx']
+
     def checkPaletizacao(data, cursor):
+        exists=0
         if ("id" in data):
             f = Filters({"id":data["id"]})
             f.where()
             f.add(f'paletizacao_id = :id', True)
             f.value("and")
-            return db.exists("producao_tempordemfabrico",f,cursor).exists
-        return 0
+            exists = db.exists("producao_tempordemfabrico",f,cursor).exists
+            if (exists!=0):
+                f = Filters({"id":data["id"]})
+                f.where()
+                f.add(f'id = :id', True)
+                f.value("and")
+                row = db.limit("producao_paletizacao",f,1,cursor).rows
+                if (row[0]["cliente_cod"]==data["cliente_cod"] and row[0]["contentor_id"]==data["contentor_id"] and row[0]["designacao"]==data["designacao"] and row[0]["artigo_cod"]==data["artigo_cod"]):
+                    exists = 1
+                else:
+                    exists = 2        
+        return exists
 
-    def upsertPaletizacao(data, cursor):
-        data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"] 
+    def upsertPaletizacao(data, versao, cursor):
         dml = db.dml(TypeDml.INSERT, {
             'cliente_cod': data['cliente_cod'] if 'cliente_cod' in data else None,
             'cliente_nome': data['cliente_nome'] if 'cliente_nome' in data else None,
             'artigo_cod': data['artigo_cod'],
             'contentor_id': data['contentor_id'],
+            'versao': f'{versao}',
             'npaletes': data['npaletes'],
             'palete_maxaltura': data['palete_maxaltura'],
             'paletes_sobrepostas': data['paletes_sobrepostas'] if 'paletes_sobrepostas' in data else 0, 
             'netiquetas_bobine': data['netiquetas_bobine'], 
             'netiquetas_lote': data['netiquetas_lote'], 
             'netiquetas_final': data['netiquetas_final'], 
+            'folha_identificativa': data['folha_identificativa'], 
             'filmeestiravel_bobines': data['filmeestiravel_bobines'] if 'filmeestiravel_bobines' in data else 0, 
             'filmeestiravel_exterior': data['filmeestiravel_exterior'] if 'filmeestiravel_exterior' in data else 0,
             'cintas': data['cintas'] if 'cintas' in data else 0, 
             'ncintas': data['ncintas'], 
             'cintas_palete': data['cintas_palete'],
             'designacao':data['designacao']
-        }, "producao_paletizacao",None,None,False)
+        }, "producao_paletizacao",None,None,False,['versao'])
         dml.statement = f"""
             {dml.statement}
             ON DUPLICATE KEY UPDATE 
@@ -636,6 +704,7 @@ def NewPaletizacaoSchema(request, format=None):
                 paletes_sobrepostas=VALUES(paletes_sobrepostas), 
                 netiquetas_bobine=VALUES(netiquetas_bobine), 
                 netiquetas_lote=VALUES(netiquetas_lote), 
+                folha_identificativa=VALUES(folha_identificativa), 
                 netiquetas_final=VALUES(netiquetas_final), 
                 filmeestiravel_bobines=VALUES(filmeestiravel_bobines), 
                 filmeestiravel_exterior=VALUES(filmeestiravel_exterior), 
@@ -644,7 +713,6 @@ def NewPaletizacaoSchema(request, format=None):
                 cintas_palete=VALUES(cintas_palete),
                 designacao=VALUES(designacao) 
         """
-        print(f"---->>>{dml.statement}")
         db.execute(dml.statement, cursor, dml.parameters)
         return cursor.lastrowid
     def deletePaletizacaoDetails(id,cursor):
@@ -670,9 +738,13 @@ def NewPaletizacaoSchema(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 exists = checkPaletizacao(data,cursor)
-                if exists==0:
-                    id = upsertPaletizacao(data,cursor)
-                    deletePaletizacaoDetails(id,cursor)
+                print(exists)
+                if (exists==0 or exists==2):
+                    data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
+                    versao = getVersao(data,cursor)
+                    id = upsertPaletizacao(data, versao, cursor)
+                    if (exists==0):
+                        deletePaletizacaoDetails(id,cursor)
                     insertPaletizacaoDetails(id,cursor)
                     return Response({"status": "success", "id":id, "title": "O esquema de Paletização foi Registado com Sucesso!", "subTitle":f'Id do Esquema {id}'})
                 return Response({"status": "error", "title": "Não é possível alterar o esquema de paletização! Este já se encontra referenciado em Ordens de Fabrico."})
@@ -964,7 +1036,7 @@ def PaletesStockLookup(request, format=None):
     dql = db.dql(request.data, False)
     dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
-        # response = db.executeList(lambda p, c: (
+        # response = db.executeList(lambda p, c, s: (
         #     f"""
         #     SELECT {c(f'{dql.columns}')} 
         #     FROM producao_palete pp
@@ -974,17 +1046,17 @@ def PaletesStockLookup(request, format=None):
         #     where 
         #     pp.stock=1 
         #     {f.text}
-        #     {p(dql.sort)} {p(dql.paging)}
+        #     {s(dql.sort)} {p(dql.paging)}
         #     """
         # ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
-        response = db.executeList(lambda p, c: (
+        response = db.executeList(lambda p, c, s: (
             f"""
             SELECT {c(f'{dql.columns}')} 
             FROM producao_palete pp
             JOIN producao_bobine pb on pb.palete_id=pp.id {f.text}
             join producao_artigo pa on pb.artigo_id=pa.id
             where pp.stock=1 or pp.estado = 'DM'
-            {p(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)}
             """
         ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
         return Response(response)
@@ -1007,12 +1079,12 @@ def PaletesStockGet(request, format=None):
     dql = db.dql(request.data, False)
     dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
-        response = db.executeList(lambda p, c: (
+        response = db.executeList(lambda p, c, s: (
             f"""
             SELECT {c(f'{dql.columns}')} 
             FROM producao_palete pp
             {f.text}
-            {p(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)}
             """
         ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
         return Response(response)
@@ -1949,6 +2021,8 @@ def sgpForProduction(data,aggid,user,cursor):
             'paletes_contentor', pe.paletes_contentor
             ) as emendas,
             JSON_OBJECT(
+            'descentrado_min',0,'descentrado_max',3,'conico_min',0,'conico_max',6,'diametros',900,'diametro_dm12',900) as limites,
+            JSON_OBJECT(
             'id',pp.id,'cliente_cod',pp.cliente_cod,'artigo_cod',pp.artigo_cod,'contentor_id',pp.contentor_id,'filmeestiravel_bobines',pp.filmeestiravel_bobines,
             'filmeestiravel_exterior',pp.filmeestiravel_exterior,'cintas',pp.cintas,'ncintas',pp.ncintas,'paletes_sobrepostas',pp.paletes_sobrepostas,'npaletes',pp.npaletes, 
             'palete_maxaltura',pp.palete_maxaltura,'netiquetas_bobine',pp.netiquetas_bobine,'netiquetas_lote',pp.netiquetas_lote,'netiquetas_final',pp.netiquetas_final,      
@@ -2030,7 +2104,9 @@ def sgpForProduction(data,aggid,user,cursor):
             tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'draft_of_id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
             'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_cod', tof.of_id,'order_cod', 
             tof.order_cod,'paletizacao_id', tof.paletizacao_id,'prf_cod', tof.prf_cod,'produto_id', tof.produto_id,'qty_encomenda', tof.qty_encomenda,
-            'sqm_bobine', tof.sqm_bobine,'of_id',pop.id,'item_des',pa.des,'produto_id',pa.produto_id,'produto_cod',ppr.produto_cod)) 
+            'sqm_bobine', tof.sqm_bobine,'of_id',pop.id,'item_des',pa.des,'produto_id',pa.produto_id,'produto_cod',ppr.produto_cod,'artigo_id', pa.id, 
+            'artigo_cod', pa.cod, 'artigo_des', pa.des, 'artigo_tipo', pa.tipo, 'artigo_gtin', pa.gtin, 'artigo_core', pa.core, 'artigo_diam_ref', pa.diam_ref, 'artigo_formu', pa.formu, 'artigo_gsm', pa.gsm, 
+            'artigo_lar', pa.lar, 'artigo_nw1', pa.nw1, 'artigo_nw2', pa.nw2, 'artigo_produto', pa.produto, 'artigo_produto_id', pa.produto_id, 'artigo_thickness', pa.thickness)) 
             FROM producao_tempordemfabrico tof 
             JOIN producao_artigo pa on pa.id = tof.item_id
             JOIN producao_produtos ppr on ppr.id = pa.produto_id
@@ -2064,6 +2140,7 @@ def sgpForProduction(data,aggid,user,cursor):
         emendas = []
         paletizacao = []
         cores = []
+        limites = []
 
         ops=[]
         for idx, ordemfabrico in enumerate(ofs):
@@ -2157,6 +2234,7 @@ def sgpForProduction(data,aggid,user,cursor):
             #Dados para currentSettings
             emendas.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"emendas":ordemfabrico["emendas"]})
             paletizacao.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"paletizacao":ordemfabrico["paletizacao"]})
+            limites.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"limites":ordemfabrico["limites"]})
             cores.append({"of_id":opid,"draft_of_id":ordemfabrico["id"],"of_cod":ordemfabrico["of_id"],"cores":[{"core_cod":ordemfabrico["core_cod"],"core_des":ordemfabrico["core_des"]}]})
 
             #Adicionar Paletes em stock 
@@ -2184,6 +2262,7 @@ def sgpForProduction(data,aggid,user,cursor):
             "emendas":json.dumps(emendas, ensure_ascii=False),
             "paletizacao":json.dumps(paletizacao, ensure_ascii=False),
             "cores":json.dumps(cores, ensure_ascii=False),
+            "limites":json.dumps(limites, ensure_ascii=False),
             "status":1,
             "start_prev_date": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S"),
             "end_prev_date": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S"),
@@ -2195,7 +2274,8 @@ def sgpForProduction(data,aggid,user,cursor):
             "produto_id":data['produto_id'],
             "produto_cod":data['produto_cod'],
             "user_id":user.id,
-            "type_op":"created"
+            "type_op":"created",
+            "created": datetime.now(),
         }
         if aggdata[0]["cs_id"] is not None:
             dta["id"] = aggdata[0]["cs_id"]
@@ -2214,6 +2294,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 paletesstock=values(paletesstock),
                 agg_of_id=values(agg_of_id),
                 emendas=values(emendas),
+                limites=values(limites),
                 paletizacao=values(paletizacao),
                 cores=values(cores),
                 status=values(status),
@@ -2227,7 +2308,8 @@ def sgpForProduction(data,aggid,user,cursor):
                 produto_cod=values(produto_cod),
                 gsm=values(gsm),
                 user_id=values(user_id),
-                type_op=values(type_op)
+                type_op=values(type_op),
+                created=values(created)
         """
         db.execute(dml.statement, cursor, dml.parameters)
         csid = cursor.lastrowid
@@ -2863,14 +2945,14 @@ def SellOrdersList(request, format=None):
                                      'enc.DSPVOU_0', 'enc.DSPWEU_0',
                                      'enc.BPCORD_0', 'enc.BPCNAM_0', 'enc.CREUSR_0', 'enc.CREDAT_0', 'enc.CREDATTIM_0', 'enc.UPDUSR_0', 'enc.UPDDAT_0', 'enc.UPDDATTIM_0'])
 
-        response = dbgw.executeList(lambda p, c: (
+        response = dbgw.executeList(lambda p, c, s: (
             f"""
             SELECT {c(f'distinct(enc."SOHNUM_0") "key", {dql.columns}')} 
             FROM {sageAlias}."SORDER" as enc
             JOIN {sageAlias}."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0"
             JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"
             {f.text} {f2['text']}
-            {p(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)}
             """
         ), connection, parameters, ["AUUID_0", "ROWID"], lambda v: 'count(distinct(enc."SOHNUM_0"))')
     else:
@@ -2888,7 +2970,7 @@ def SellOrdersList(request, format=None):
                                      'enc.BPCORD_0', 'enc.BPCNAM_0', 'enc.CREUSR_0', 'enc.CREDAT_0', 'enc.CREDATTIM_0', 'enc.UPDUSR_0', 'enc.UPDDAT_0', 'enc.UPDDATTIM_0'
                                      ])
 
-        response = dbgw.executeList(lambda p, c: (
+        response = dbgw.executeList(lambda p, c, s: (
             f"""
             SELECT {c(f'{dql.columns}')} 
             FROM {sageAlias}."SORDER" as enc
@@ -2898,7 +2980,7 @@ def SellOrdersList(request, format=None):
             --LEFT JOIN planeamento_ordemfabricoartigos as ofa on ofa.encomenda_num = enclin."SOHNUM_0" and ofa.artigo_cod = itm."ITMREF_0"
             --LEFT JOIN planeamento_ordemfabrico as "of" on "of".id = ofa.ordemfabrico_id
             {f.text} {f2['text']}
-            {p(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)}
             """
         ), connection, parameters, ["AUUID_0", "ROWID"])
 

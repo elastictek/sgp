@@ -114,18 +114,18 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
     const onAction = (idcard) => {
         console.log("$$$$$", idcard, ofItem)
         switch (idcard) {
-            //         case 'paletes_stock':
-            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-            //             break;
-            //         case 'schema':
-            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-            //             break;
+            case 'paletes_stock':
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                break;
+            case 'schema':
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                break;
             case 'settings':
                 setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
-            //         case 'attachments':
-            //             setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
-            //             break;
+            case 'attachments':
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                break;
         }
     }
 
@@ -570,7 +570,7 @@ export default ({ aggId }) => {
                         return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
                     })}
                 </StyledGrid>}
-                
+
 
 
             </Spin>

@@ -12,6 +12,10 @@ class AppSettings:
             "sage":f'"SAGE-PROD"'
         }
     }
+    reportConn = {
+        "sgp":"MYSQL-SGP-DEV",
+        "gw":"PG-SGP-GW"
+    }
     materializedViews = {
         "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST_DEV'
     }

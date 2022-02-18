@@ -20,8 +20,8 @@ const useStyles = createUseStyles({
     darkHeader: {
         '& thead > tr > th': {
             backgroundColor: "#262626!important",
-            color:"#fff!important",
-            borderRight:"solid 1px #f5f5f5!important"
+            color: "#fff!important",
+            borderRight: "solid 1px #f5f5f5!important"
         }
     }
 });
@@ -84,7 +84,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
     if (!uuid) {
         throw new Error('uuid is required')
     }
-    const ret = { all: [], notOptional: [], uuid };
+    const ret = { all: [], notOptional: [], report: {}, uuid };
     if (!data) return;
     var keys = []
     if (Array.isArray(include) && include.length > 0) {
@@ -94,7 +94,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
     } else if (data.length > 0) {
         keys = Object.keys(data[0])
     }
-
+    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$", ret);
     for (const [i, v] of keys.entries()) {
         if (exclude.includes(v)) continue;
         let { sort = true, optional = true, ...rOptions } = (include[v] == undefined) ? {} : include[v];
@@ -110,6 +110,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
         if (!c.optional) {
             ret.notOptional.push(c);
         }
+        ret.report[c.dataIndex] = { ...(c.width && { width: c.width }), title: c.title };
         ret.all.push(c);
     }
     return ret;
@@ -129,7 +130,7 @@ const TableOptions = ({ columnChooser, reload, clearSort, checkedColumns, setChe
 }
 
 
-export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader=false, stripRows = false, ...rest }) => {
+export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
     const classes = useStyles();
     const { rowKey, onSelection, enabled: selectionEnabled = false, multiple = false, selectedRows, setSelectedRows } = selection;
     /*     const [selectedRows, setSelectedRows] = useState([]); */
@@ -157,7 +158,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
     }
 
     const onRowClick = (record, index, rowKey) => {
-        console.log("sssss",record,rowKey);
+        console.log("sssss", record, rowKey);
         let _row;
         if (typeof rowKey === 'function') {
             _row = rowKey(record);
@@ -169,32 +170,32 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
             if (selectedRows.includes(_row[0])) {
                 newRows = selectedRows.filter(item => item !== _row[0]);
                 setSelectedRows(newRows);
-                if (onSelection){
-                    onSelection(newRows,record);
+                if (onSelection) {
+                    onSelection(newRows, record);
                 }
                 /*                 onSelection(newRows); */
             } else {
                 newRows = [...selectedRows];
                 newRows.push(..._row);
                 setSelectedRows(newRows);
-                if (onSelection){
-                    onSelection(newRows,record);
+                if (onSelection) {
+                    onSelection(newRows, record);
                 }
                 /*                 onSelection(newRows); */
             }
         } else {
             setSelectedRows(_row);
-            if (onSelection){
-                onSelection(_row,record);
+            if (onSelection) {
+                onSelection(_row, record);
             }
             /*             onSelection([_row]); */
         }
     }
 
-    const onChange = (keyValue,value)=>{
+    const onChange = (keyValue, value) => {
         setSelectedRows(keyValue);
-        if (onSelection){
-               onSelection(keyValue,value);     
+        if (onSelection) {
+            onSelection(keyValue, value);
         }
     }
 

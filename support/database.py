@@ -116,6 +116,13 @@ class BaseSql:
             self.parameters = {}
             self.filter = ''
             self.exists = False
+    
+    class Rows:
+        def __init__(self) -> None:
+            self.statement = ''
+            self.parameters = {}
+            self.filter = ''
+            self.rows = False
 
     @property
     def encloseColumns(self):
@@ -163,22 +170,22 @@ class BaseSql:
     def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                print(f'SQL--> {sql(self.enable,self.enable)}')
+                print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
                 print(f'PARAMS--> {parameters}')
-                cursor.execute(sql(self.enable, self.enable), parameters)
+                cursor.execute(sql(self.enable, self.enable,self.enable), parameters)
                 rows = fetchall(cursor, ignore)
-                cursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols), parameters)
+                cursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
                 count = cursor.fetchone()[0]
         else:
-            print(f'SQL--> {sql(self.enable,self.enable)}')
+            print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
             print(f'PARAMS--> {parameters} {connOrCursor}')
             if (connOrCursor):
                 print("DB init success")
             else:
                 print("DB init fail")
-            connOrCursor.execute(sql(self.enable, self.enable), parameters)
+            connOrCursor.execute(sql(self.enable, self.enable,self.enable), parameters)
             rows = fetchall(connOrCursor, ignore)
-            connOrCursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols), parameters)
+            connOrCursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
             count = connOrCursor.fetchone()[0]
         return {"rows": rows, "total": count}
 
@@ -348,6 +355,31 @@ class PostgresSql(BaseSql):
                 ret.exists = connOrCursor.fetchone()[0]
         return ret
 
+    def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):
+        if isinstance(p,dict):
+            ret = BaseSql.Rows()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'select * from {table} {f.text} limit {limit}'
+        else:
+            ret = BaseSql.Rows()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'select * from {table} {p.text} limit {limit}'
+
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
+        return ret
+
 
 class MySqlSql(BaseSql):
     def __init__(self, typeDB,alias):
@@ -485,6 +517,31 @@ class MySqlSql(BaseSql):
                 ret.exists = connOrCursor.fetchone()[0]
         return ret
 
+    def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):
+        if isinstance(p,dict):
+            ret = BaseSql.Rows()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'select * from {table} {f.text} limit {limit}'
+            print(ret.statement)
+        else:
+            ret = BaseSql.Rows()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'select * from {table} {p.text} limit {limit}'
+
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
+        return ret
 
 
 

@@ -172,7 +172,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     }
 
     const onShowSchema = (newSchema = false, forInput = false) => {
-        console.log("sssssssxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",record.aggItem)
         const { cliente_cod, cliente_nome, item_cod, paletizacao_id } = record.aggItem;
         if (newSchema) {
             setShowSchema(prev => ({ ...prev, show: !prev.show, record: { cliente_cod, cliente_nome, artigo_cod: item_cod, paletizacao_id }, forInput }));
@@ -216,7 +215,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
                                             ...(form.getFieldValue("paletizacao_id") && { right: <Button onClick={() => onShowSchema()} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                         }}>
                                             <SelectField size="small" data={paletizacoes} keyField="id" textField="designacao"
-                                                optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "60px" }}><b>{d["contentor_id"]}</b></div><div>{d[textField]}</div></div>, value: d[keyField] })}
+                                                optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ width: "70px" }}><b>{d["contentor_id"]}</b></div><div style={{flex:1}}>{d[textField]}</div><div style={{width:"20px"}}>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                             />
                                         </Field>
                                     </FieldSet>

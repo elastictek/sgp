@@ -246,6 +246,10 @@ export const useDataAPI = ({ payload } = {}) => {
         })();
     }
 
+    const getPostRequest = () =>{
+        return { url: dataState.url, ...getPayload() };
+    }
+
     const nav = ({ action = "", page = 1, onFetch } = {}) => {
         addAction('nav');
         switch (action) {
@@ -297,6 +301,7 @@ export const useDataAPI = ({ payload } = {}) => {
         getAllFilter,
         getPagination,
         getPageSize,
+        getPostRequest,
         getSort,
         getData,
         sortOrder,

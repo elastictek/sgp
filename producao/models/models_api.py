@@ -1,3 +1,4 @@
+from msilib.schema import CreateFolder
 from django.db import models
 import datetime
 import time
@@ -79,6 +80,7 @@ class BaseCurrentSettings(models.Model):
     cores = models.JSONField(blank=True, null=True)
     paletizacao = models.JSONField(blank=True, null=True)
     emendas = models.JSONField(blank=True, null=True)
+    limites = models.JSONField(blank=True, null=True)
     lotes = models.JSONField(blank=True, null=True)
     dosers = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
@@ -93,6 +95,7 @@ class BaseCurrentSettings(models.Model):
     gsm = models.IntegerField(verbose_name="Gramagem", null=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
     type_op = models.CharField(max_length=45, blank=True, null=True)
+    created = models.DateTimeField(blank=True, null=True)
     class Meta:
         abstract = True
 
@@ -143,6 +146,8 @@ class Paletizacao(models.Model):
     netiquetas_bobine = models.SmallIntegerField(verbose_name="Número Etiquetas por Bobine")
     netiquetas_lote = models.SmallIntegerField(verbose_name="Número de Etiquetas do Lote")
     netiquetas_final = models.SmallIntegerField(verbose_name="Número de Etiquetas Final")
+    folha_identificativa = models.SmallIntegerField(verbose_name="Folha Identificativa de Palete", default=0)
+    versao = models.SmallIntegerField(verbose_name="Versão", default=1)
 
     class Meta:
         unique_together = (('designacao', 'cliente_cod', 'artigo_cod','contentor_id'))

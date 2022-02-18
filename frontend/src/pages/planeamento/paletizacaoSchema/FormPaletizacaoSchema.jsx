@@ -26,6 +26,7 @@ const schema = (keys, excludeKeys) => {
         netiquetas_bobine: Joi.number().positive().precision(2).label("Etiqueta/Bobine").required(),
         netiquetas_lote: Joi.number().positive().precision(2).label("Etiqueta do Lote da Palete").required(),
         netiquetas_final: Joi.number().positive().precision(2).label("Etiqueta Final da Palete").required(),
+        folha_identificativa: Joi.number().min(0).precision(2).label("Folha Identificativa Palete").required(),
         cintas: Joi.number().valid(0, 1),
         ncintas: Joi.when('cintas', { is: 1, then: Joi.number().positive().required() }),
         paletizacao: Joi.array().min(1).label("Items da Paletização").required()
@@ -88,14 +89,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 form.setFieldsValue({ ...record });
             } else {
                 (setFormTitle) && setFormTitle({ title: `Novo Esquema de Paletização ${record.cliente_nome}`, subTitle: `${record.artigo_cod}` });
-                form.setFieldsValue({ contentor_id: "Camião", cintas_palete: 1, ncintas: 2, netiquetas_bobine: 2, netiquetas_lote: 4, netiquetas_final: 1, npaletes: 24, palete_maxaltura: 2.55 });
+                form.setFieldsValue({ contentor_id: "Camião", cintas_palete: 1, ncintas: 2, netiquetas_bobine: 2, netiquetas_lote: 4, netiquetas_final: 1, npaletes: 24, palete_maxaltura: 2.55, folha_identificativa:1 });
             }
             setLoading(false);
         })();
     }
 
     useEffect(() => {
-        console.log("Sssssssssssssssssssssssssss entreeeeeee",record)
         init();
     }, []);
 
@@ -200,7 +200,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             </FieldSet>
                         </FieldSet>
 
-                        <FieldSet wide={16} margin={false} field={{ wide: [2, 2, '*'], style: { alignSelf: "center" } }}>
+                        <FieldSet wide={16} margin={false} field={{ wide: [2, 2,3,5, '*'], style: { alignSelf: "center" } }}>
                             <Field name="cintas" style={{ minWidth: "20px", alignSelf: "center" }} label={{ enabled: false }}><CheckboxField /></Field>
                             <FieldItem label={{ enabled: false }}>
                                 <Item shouldUpdate={(prevValues, curValues) => prevValues?.cintas !== curValues?.cintas}>
@@ -214,13 +214,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             <FieldItem label={{ enabled: false }}>
                                 <Item shouldUpdate={(prevValues, curValues) => prevValues?.cintas !== curValues?.cintas}>
                                     {() =>
-                                        <Field name="cintas_palete" layout={{ center: "min-width: 150px;max-width: 150px; align-self:center;" }} label={{ enabled: false }}>
+                                        <Field name="cintas_palete" layout={{ center: "align-self:center;" }} label={{ enabled: false }}>
                                             <SelectField size="small" data={CINTASPALETES_OPTIONS} keyField="value" textField="label" disabled={form.getFieldValue(["cintas"]) !== 1}
                                                 optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
                                             />
                                         </Field>
                                     }</Item>
                             </FieldItem>
+                            <Field name="folha_identificativa" required={false} layout={{ center: "align-self:center;" }} label={{ enabled: true, text: "Folha Identificativa da Palete", pos: "left", width: "100%" }}><InputNumber size="small" min={0} max={10} /></Field>
                         </FieldSet>
                         <HorizontalRule margin="12px" />
                         <FieldSet field={{ wide: 16 }} layout="horizontal">

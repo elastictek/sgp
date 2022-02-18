@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import { fetch, fetchPost, cancelToken } from "utils/fetch";
+import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
 import { API_URL, GTIN } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
@@ -34,6 +34,7 @@ const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions')
 
 
 import { Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 const { Option } = Select;
 const { confirm } = Modal;
 
@@ -104,11 +105,10 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
 
 
 
-const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
+const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
     const [formData, setFormData] = useState({});
     const [changed, setChanged] = useState(false);
     const onFinish = (type, values) => {
-        console.log("ddd", values)
         switch (type) {
             case "filter":
                 (!changed) && setChanged(true);
@@ -186,6 +186,75 @@ const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoSt
         />
     );
 
+    const downloadFile = (data, filename, mime, bom) => {
+        var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
+        var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
+        if (typeof window.navigator.msSaveBlob !== 'undefined') {
+            // IE workaround for "HTML7007: One or more blob URLs were
+            // revoked by closing the blob for which they were created.
+            // These URLs will no longer resolve as the data backing
+            // the URL has been freed."
+            window.navigator.msSaveBlob(blob, filename);
+        }
+        else {
+            var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
+            var tempLink = document.createElement('a');
+            tempLink.style.display = 'none';
+            tempLink.href = blobURL;
+            tempLink.setAttribute('download', filename);
+
+            // Safari thinks _blank anchor are pop ups. We only want to set _blank
+            // target if the browser does not support the HTML5 download attribute.
+            // This allows you to download files in desktop safari if pop up blocking
+            // is enabled.
+            if (typeof tempLink.download === 'undefined') {
+                tempLink.setAttribute('target', '_blank');
+            }
+
+            document.body.appendChild(tempLink);
+            tempLink.click();
+
+            // Fixes "webkit blob resource error 1"
+            setTimeout(function () {
+                document.body.removeChild(tempLink);
+                window.URL.revokeObjectURL(blobURL);
+            }, 200);
+        }
+    }
+
+    const menu = (
+        <Menu onClick={(v) => exportFile(v)}>
+            <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
+            <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
+            <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
+        </Menu>
+    );
+
+    const exportFile = async (type) => {
+        const requestData = dataAPI.getPostRequest();
+        requestData.parameters = {
+            ...requestData.parameters,
+            "config": "default",
+            "orientation": "landscape",
+            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
+            "title": "Ordens de Fabrico",
+            "export": type.key,
+            cols: columns
+        }
+        const response = await fetchPostBlob(requestData);
+        switch (type.key) {
+            case "pdf":
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.pdf`);
+                break;
+            case "excel":
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.xlsx`);
+                break;
+            case "word":
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.docx`);
+                break;
+        }
+    }
+
     return (
         <>
 
@@ -196,7 +265,7 @@ const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoSt
                     layout="horizontal"
                     style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
                     schema={schema}
-                    field={{ guides: false, wide: [3, 3, 3, 4, 2], style: { marginLeft: "2px", alignSelf: "end" } }}
+                    field={{ guides: false, wide: [3, 3, 3, 4, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
                     fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                 >
                     <Field name="fmulti_customer" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Cliente", pos: "top" }}>
@@ -220,7 +289,10 @@ const GlobalSearch = ({ form, dataAPI, setShowFilter, showFilter, ordemFabricoSt
                         </Dropdown> */}
                         </ButtonGroup>
                     </FieldItem>
-
+                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
+                        <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
+                    </Dropdown>
+                    </FieldItem>
                 </FormLayout>
             </Form>
         </>
@@ -752,7 +824,7 @@ export default () => {
                             stripRows
                             darkHeader
                             size="small"
-                            toolbar={<GlobalSearch form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
+                            toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
                             selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
                             paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
                             dataAPI={dataAPI}
