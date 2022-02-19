@@ -93,7 +93,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         (async () => {
             let [oFabricoTemp] = await LoadOFabricoTemp(record, cancelFetch);
             oFabricoTemp = { ...oFabricoTemp /* core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } */ };
-
             form.setFieldsValue({ ...oFabricoTemp, nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) });
             setLoading(false);
         })();
@@ -130,7 +129,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         const msgKeys = ["start_prev_date", "end_prev_date"];
         const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id } = record;
         const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-        const { cortes_id, cortesordem_id } = form.getFieldsValue(true);
+        const { cortes_id/* , cortesordem_id */ } = form.getFieldsValue(true);
         let diff = {};
         const v = schema().custom((v, h) => {
             const { start_prev_date, end_prev_date } = v;
@@ -144,7 +143,23 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         if (!v.error) { }
         if (status.error.length === 0) {
             const { start_prev_date, end_prev_date } = values;
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, produto_cod, cortes_id, cortesordem_id } });
+
+            if ("nonwovens_id" in values && values["nonwovens_id"]===undefined){
+                values["nonwovens_id"]=-1;
+            }
+            if ("artigospecs_id" in values && values["artigospecs_id"]===undefined){
+                values["artigospecs_id"]=-1;
+            }
+            if ("formulacao_id" in values && values["formulacao_id"]===undefined){
+                values["formulacao_id"]=-1;
+            }
+            if ("gamaoperatoria_id" in values && values["gamaoperatoria_id"]===undefined){
+                values["gamaoperatoria_id"]=-1;
+            }
+            if ("cortesordem_id" in values && values["cortesordem_id"]===undefined){
+                values["cortesordem_id"]=-1;
+            }
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, ofabrico, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
             setResultMessage(response.data);
             if (forproduction) {
                 parentReload();

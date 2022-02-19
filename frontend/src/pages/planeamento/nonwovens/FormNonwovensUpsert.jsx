@@ -107,7 +107,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         if (status.error.length === 0) {
             const { nw_cod_sup: { value: nw_cod_sup, label: nw_des_sup } = {} } = values;
             const { nw_cod_inf: { value: nw_cod_inf, label: nw_des_inf } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/newartigononwovens/`, parameters: { ...values, produto_id: ctx.produto_id, nw_cod_sup, nw_des_sup, nw_cod_inf, nw_des_inf } });
+            const response = await fetchPost({ url: `${API_URL}/newartigononwovens/`, parameters: { ...values, id: record?.nonwovens_id, produto_id: ctx.produto_id, nw_cod_sup, nw_des_sup, nw_cod_inf, nw_des_inf } });
             if (response.data.status !== "error") {
                 parentReload({}, "lookup");
             }

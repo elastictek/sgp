@@ -80,7 +80,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     }
 
     useEffect(() => {
-        console.log("zzzz",form.getFieldsValue(true))
+        console.log("zzzz", form.getFieldsValue(true))
         init();
     }, []);
 
@@ -102,9 +102,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     const onFinish = async (values) => {
         const paletizacao_id = form.getFieldValue("paletizacao_id");
 
-        const {tempof_id:ofabrico, artigo, qty_encomenda:qty_item} = record.aggItem;
-        console.log("OIII",record,values)
-        const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type:"paletizacao", paletizacao_id, ofabrico } });
+        const { tempof_id: ofabrico, qty_encomenda: qty_item } = record.aggItem;
+        const artigo = {
+            artigo_thickness: record.aggItem.artigo.thickness,
+            artigo_diam: record.aggItem.artigo.diam_ref,
+            artigo_core: record.aggItem.artigo.core,
+            artigo_width: record.aggItem.artigo.lar,
+            qty_item: record.aggItem.qty_encomenda
+        };
+        const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "paletizacao", paletizacao_id, ofabrico, artigo } });
         if (response.data.status !== "error") {
             parentReload({ agg_id: record.aggItem.id });
             closeParent();
@@ -217,7 +223,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
                                             ...(form.getFieldValue("paletizacao_id") && { right: <Button onClick={() => onShowSchema()} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                         }}>
                                             <SelectField allowClear size="small" data={paletizacoes} keyField="id" textField="designacao"
-                                                optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ width: "70px" }}><b>{d["contentor_id"]}</b></div><div style={{flex:1}}>{d[textField]}</div><div style={{width:"20px"}}>v.{d["versao"]}</div></div>, value: d[keyField] })}
+                                                optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ width: "70px" }}><b>{d["contentor_id"]}</b></div><div style={{ flex: 1 }}>{d[textField]}</div><div style={{ width: "20px" }}>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                             />
                                         </Field>
                                     </FieldSet>
@@ -232,7 +238,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={()=>form.submit()}>Guardar</Button>
+                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                     </Space>
                 </Portal>

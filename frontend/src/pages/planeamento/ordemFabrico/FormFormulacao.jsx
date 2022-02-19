@@ -146,7 +146,7 @@ export default ({ changedValues }) => {
                                     <Field name="formulacao_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Formulacao", pos: "left" }} addons={{
                                         ...(form.getFieldValue("formulacao_id") && { right: <Button onClick={() => onShowForm(false, true)} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                     }}>
-                                        <SelectField size="small" data={formulacoes} keyField="id" textField="designacao"
+                                        <SelectField allowClear size="small" data={formulacoes} keyField="id" textField="designacao"
                                             optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                         />
                                     </Field>

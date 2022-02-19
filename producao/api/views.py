@@ -549,7 +549,7 @@ def IgnorarOrdemFabrico(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao Ignorar Ordem de Fabrico!"})
 
-#region CLIENTES\
+#region CLIENTES
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -569,9 +569,6 @@ def SellCustomersLookup(request, format=None):
        ), cursor, parameters)
        return Response(response)
 #endregion
-
-
-
 
 #region PALETIZAÇÃO SCHEMA
 @api_view(['POST'])
@@ -788,7 +785,6 @@ def FormulacoesLookup(request, format=None):
 # @transaction.atomic()
 def NewFormulacao(request, format=None):
     data = request.data.get("parameters")
-    print(f'request--->{data}')
 
     def getVersao(data, cursor):
         f = Filters({"produto_id": data['produto_id']})
@@ -798,9 +794,27 @@ def NewFormulacao(request, format=None):
         f.value("and")   
         return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_formulacao f {f.text}'), cursor, f.parameters)['rows'][0]['mx']
 
+    def checkFormulacao(data, cursor):
+        exists=0
+        if ("id" in data):
+            f = Filters({"id":data["id"]})
+            f.where()
+            f.add(f'formulacao_id = :id', True)
+            f.value("and")
+            exists = db.exists("producao_tempaggordemfabrico",f,cursor).exists
+            if (exists!=0):
+                f = Filters({"id":data["id"]})
+                f.where()
+                f.add(f'id = :id', True)
+                f.value("and")
+                row = db.limit("producao_formulacao",f,1,cursor).rows
+                if (row[0]["produto_id"]==data["produto_id"] and row[0]["designacao"]==data["designacao"]):
+                    exists = 1
+                else:
+                    exists = 2        
+        return exists
 
     def upsertFormulacao(data, versao, cursor):
-        data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if  (not "designacao" in data or not data["designacao"]) else data["designacao"] 
         dml = db.dml(TypeDml.INSERT, {
             'produto_id': data['produto_id'],
             'designacao': data['designacao'],
@@ -854,11 +868,17 @@ def NewFormulacao(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                versao = getVersao(data,cursor)
-                id = upsertFormulacao(data, versao, cursor)
-                deleteFormulacaoItems(id,cursor)
-                insertFormulacaoItems(id,cursor)
-                return Response({"status": "success", "id":id, "title": "A Formulação foi Registada com Sucesso!", "subTitle":f'Formulação {data["designacao"]} v{versao}'})
+                exists = checkFormulacao(data,cursor)
+                if (exists==0 or exists==2):
+                    data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
+                    versao = getVersao(data,cursor)
+                    if (exists==0 or exists==2):
+                        id = upsertFormulacao(data, versao, cursor)
+                        if (exists==0):
+                            deleteFormulacaoItems(id,cursor)
+                        insertFormulacaoItems(id,cursor)
+                        return Response({"status": "success", "id":id, "title": "A Formulação foi Registada com Sucesso!", "subTitle":f'Formulação {data["designacao"]}'})
+                return Response({"status": "error", "title": "Não é possível alterar a Formulação! Esta já se encontra referenciada em Ordens de Fabrico."})
     except Error:
         return Response({"status": "error", "title": "Erro ao Registar a Formulação!"})
 
@@ -937,8 +957,27 @@ def NewGamaOperatoria(request, format=None):
         f.value("and")   
         return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_gamaoperatoria gop {f.text}'), cursor, f.parameters)['rows'][0]['mx']
 
+    def checkGamaOperatoria(data, cursor):
+        exists=0
+        if ("id" in data):
+            f = Filters({"id":data["id"]})
+            f.where()
+            f.add(f'gamaoperatoria_id = :id', True)
+            f.value("and")
+            exists = db.exists("producao_tempaggordemfabrico",f,cursor).exists
+            if (exists!=0):
+                f = Filters({"id":data["id"]})
+                f.where()
+                f.add(f'id = :id', True)
+                f.value("and")
+                row = db.limit("producao_gamaoperatoria",f,1,cursor).rows
+                if (row[0]["produto_id"]==data["produto_id"] and row[0]["designacao"]==data["designacao"]):
+                    exists = 1
+                else:
+                    exists = 2        
+        return exists
+
     def upsertGamaOperatoria(data, versao, cursor):
-        data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if  (not "designacao" in data or not data["designacao"]) else data["designacao"] 
         dml = db.dml(TypeDml.INSERT, {
             'produto_id': data['produto_id'],
             'designacao': data['designacao'],
@@ -977,11 +1016,17 @@ def NewGamaOperatoria(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                versao = getVersao(data,cursor)
-                id = upsertGamaOperatoria(data, versao, cursor)
-                deleteGamaOperatoriaItems(id,cursor)
-                insertGamaOperatoriaItems(id,data['nitems'],cursor)
-                return Response({"status": "success", "id":id, "title": "A Gama Operatória foi Registada com Sucesso!", "subTitle":f'Gama Operatória {data["designacao"]} v{versao}'})
+                exists = checkGamaOperatoria(data,cursor)
+                if (exists==0 or exists==2):
+                    data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
+                    versao = getVersao(data,cursor)
+                    if (exists==0 or exists==2):
+                        id = upsertGamaOperatoria(data, versao, cursor)
+                        if (exists==0):
+                            deleteGamaOperatoriaItems(id,cursor)
+                        insertGamaOperatoriaItems(id,data['nitems'],cursor)
+                        return Response({"status": "success", "id":id, "title": "A Gama Operatória foi Registada com Sucesso!", "subTitle":f'Gama Operatória {data["designacao"]}'})
+                return Response({"status": "error", "title": "Não é possível alterar a Gama Operatória! Esta já se encontra referenciada em Ordens de Fabrico."})
     except Error:
         return Response({"status": "error", "title": "Erro ao Registar a Gama Operatória!"})
 
@@ -1013,7 +1058,6 @@ def GamaOperatoriaItemsGet(request, format=None):
         ), cursor, parameters)
         return Response(response)
 #endregion
-
 
 #region PALETES STOCK
 @api_view(['POST'])
@@ -1162,6 +1206,26 @@ def NewArtigoSpecs(request, format=None):
         f.value("and")   
         return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_artigospecs specs {f.text}'), cursor, f.parameters)['rows'][0]['mx']
 
+    def checkArtigoSpecs(data, cursor):
+        exists=0
+        if ("id" in data):
+            f = Filters({"id":data["id"]})
+            f.where()
+            f.add(f'artigospecs_id = :id', True)
+            f.value("and")
+            exists = db.exists("producao_tempaggordemfabrico",f,cursor).exists
+            if (exists!=0):
+                f = Filters({"id":data["id"]})
+                f.where()
+                f.add(f'id = :id', True)
+                f.value("and")
+                row = db.limit("producao_artigospecs",f,1,cursor).rows
+                if (row[0]["produto_id"]==data["produto_id"] and row[0]["designacao"]==data["designacao"]):
+                    exists = 1
+                else:
+                    exists = 2        
+        return exists
+
     def upsertArtigoSpecs(data, versao, cursor):
         dml = db.dml(TypeDml.INSERT, {
             'produto_id': data['produto_id'],
@@ -1205,12 +1269,17 @@ def NewArtigoSpecs(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if  (not "designacao" in data or not data["designacao"]) else data["designacao"] 
-                versao = getVersao(data,cursor)
-                id = upsertArtigoSpecs(data, versao, cursor)
-                deleteArtigoSpecsItems(id,cursor)
-                insertArtigoSpecsItems(id,data['nitems'],cursor)
-                return Response({"status": "success", "id":id, "title": "As Especificações foram Registadas com Sucesso!", "subTitle":f'Especificações {data["designacao"]} v{versao}'})
+                exists = checkArtigoSpecs(data,cursor)
+                if (exists==0 or exists==2):
+                    data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
+                    versao = getVersao(data,cursor)
+                    if (exists==0 or exists==2):
+                        id = upsertArtigoSpecs(data, versao, cursor)
+                        if (exists==0):
+                            deleteArtigoSpecsItems(id,cursor)
+                        insertArtigoSpecsItems(id,data['nitems'],cursor)
+                        return Response({"status": "success", "id":id, "title": "As Especificações foram Registadas com Sucesso!", "subTitle":f'Especificações {data["designacao"]}'})
+                return Response({"status": "error", "title": "Não é possível alterar as Especificações! Estas já se encontram referenciadas em Ordens de Fabrico."})
     except Error:
         return Response({"status": "error", "title": "Erro ao Registar as Especificações!"})
 
@@ -1242,8 +1311,6 @@ def ArtigoSpecsItemsGet(request, format=None):
         ), cursor, parameters)
         return Response(response)
 #endregion
-
-
 
 #region CURRENT SETTINGS
 @api_view(['POST'])
@@ -1464,7 +1531,6 @@ def UpdateCurrentSettings(request, format=None):
 
 #endregion
 
-
 #region NONWOVENS
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1509,8 +1575,27 @@ def NewArtigoNonwovens(request, format=None):
         f.value("and")   
         return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_artigononwovens anw {f.text}'), cursor, f.parameters)['rows'][0]['mx']
 
+    def checkNonwovens(data, cursor):
+        exists=0
+        if ("id" in data):
+            f = Filters({"id":data["id"]})
+            f.where()
+            f.add(f'nonwovens_id = :id', True)
+            f.value("and")
+            exists = db.exists("producao_tempaggordemfabrico",f,cursor).exists
+            if (exists!=0):
+                f = Filters({"id":data["id"]})
+                f.where()
+                f.add(f'id = :id', True)
+                f.value("and")
+                row = db.limit("producao_artigononwovens",f,1,cursor).rows
+                if (row[0]["produto_id"]==data["produto_id"] and row[0]["designacao"]==data["designacao"]):
+                    exists = 1
+                else:
+                    exists = 2        
+        return exists
+
     def upsertNonwovens(data, versao, cursor):
-        data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if ("designacao" not in data or not data["designacao"]) else data["designacao"] 
         dml = db.dml(TypeDml.INSERT, {
             'produto_id': data['produto_id'],
             'designacao': data['designacao'],
@@ -1539,9 +1624,14 @@ def NewArtigoNonwovens(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                versao = getVersao(data,cursor)
-                id = upsertNonwovens(data, versao, cursor)
-                return Response({"status": "success", "id":id, "title": "Os Nonwovens foram Registados com Sucesso!", "subTitle":f'Nonwovens {data["designacao"]} v{versao}'})
+                exists = checkNonwovens(data,cursor)
+                if (exists==0 or exists==2):
+                    data["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "designacao" in data or not data["designacao"]) else data["designacao"]
+                    versao = getVersao(data,cursor)
+                    if (exists==0 or exists==2):
+                        id = upsertNonwovens(data, versao, cursor)
+                        return Response({"status": "success", "id":id, "title": "Os Nonwovens foram Registados com Sucesso!", "subTitle":f'Nonwovens {data["designacao"]}'})
+                return Response({"status": "error", "title": "Não é possível alterar os Nonwovens! Estes já se encontram referenciados em Ordens de Fabrico."})                
     except Error:
         return Response({"status": "error", "title": "Erro ao Registar os Nonwovens!"})
 
@@ -1579,8 +1669,6 @@ def EmendasLookup(request, format=None):
 
 
 #endregion
-
-
 
 #region CORTES
 @api_view(['POST'])
@@ -1914,7 +2002,7 @@ def OfUpload(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar os Ficheiros!"})
 
-#endegion
+#endregion
 
 #region TEMP ORDEMFABRICO SCHEMA
 
@@ -2313,6 +2401,67 @@ def sgpForProduction(data,aggid,user,cursor):
         db.execute(dml.statement, cursor, dml.parameters)
         csid = cursor.lastrowid
 
+def computeLinearMeters(data):
+    artigo = data["artigo"] if "artigo" in data else data
+    if artigo is not None:
+        t = (float(artigo['artigo_thickness'])/1000)
+        D1 = float(artigo['artigo_diam'])
+        d1 = float(artigo['artigo_core']) * 25.4
+        l = (( math.pi * ( (D1/2)**2 - (d1/2)**2 ) ) / t) / 1000
+        nvoltas = (D1 - d1) / ( 2 * t )
+        return {
+            "qty_encomenda":artigo['qty_item'] if 'qty_item' in artigo else data['qty_item'],
+            "linear_meters":l,
+            "n_voltas":nvoltas,
+            "sqm_bobine":(l*float(artigo['artigo_width']))/1000
+        }
+    return None
+
+def computePaletizacao(cp,data,cursor):
+    paletizacao = None
+    if "paletizacao_id" in data and data["paletizacao_id"] is not None:
+        rows = db.executeSimpleList(lambda: (f"""
+            select  pp.npaletes,ppd.* 
+            from producao_paletizacao pp
+            left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
+            where pp.id={data['paletizacao_id']}
+        """), cursor, {})['rows']
+        if len(rows)>0:
+            paletizacao=rows
+    else:
+        rows = db.executeSimpleList(lambda: (f"""
+            select pp.npaletes, ppd.* 
+            from producao_tempordemfabrico tof
+            left join producao_paletizacao pp on pp.id=tof.paletizacao_id
+            left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
+            where tof.of_id='{data['ofabrico']}'
+        """), cursor, {})['rows']
+        if len(rows)>0:
+            paletizacao=rows
+    computed = {}
+    sqm_paletes_total = 0
+    nitems = 0
+    items = []
+    if paletizacao is not None:
+        for pitem in paletizacao:
+            if pitem["id"] is not None:
+                nitems += 1
+                items.append({
+                    "id":pitem["id"],
+                    "num_bobines":pitem["item_numbobines"],
+                    "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
+                })
+                sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
+        if nitems>0:
+            computed["total"] = {
+                "sqm_paletes_total":sqm_paletes_total,
+                "sqm_contentor":sqm_paletes_total*paletizacao[0]["npaletes"],
+                "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
+            }
+            computed["items"] = items
+    return computed
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -2341,66 +2490,6 @@ def SaveTempOrdemFabrico(request, format=None):
             return {"status":"success"}
         else:
             return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"O planeamento da Ordem de Fabrico Já se encontra Fechado."}
-
-    def computeLinearMeters(data):
-        artigo = data["artigo"] if "artigo" in data else data
-        if artigo is not None:
-            t = (float(artigo['artigo_thickness'])/1000)
-            D1 = float(artigo['artigo_diam'])
-            d1 = float(artigo['artigo_core']) * 25.4
-            l = (( math.pi * ( (D1/2)**2 - (d1/2)**2 ) ) / t) / 1000
-            nvoltas = (D1 - d1) / ( 2 * t )
-            return {
-                "qty_encomenda":artigo['qty_item'] if 'qty_item' in artigo else data['qty_item'],
-                "linear_meters":l,
-                "n_voltas":nvoltas,
-                "sqm_bobine":(l*float(artigo['artigo_width']))/1000
-            }
-        return None
-
-    def computePaletizacao(cp,data,cursor):
-        paletizacao = None
-        if "paletizacao_id" in data and data["paletizacao_id"] is not None:
-            rows = db.executeSimpleList(lambda: (f"""
-                select  pp.npaletes,ppd.* 
-                from producao_paletizacao pp
-                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-                where pp.id={data['paletizacao_id']}
-            """), cursor, {})['rows']
-            if len(rows)>0:
-                paletizacao=rows
-        else:
-            rows = db.executeSimpleList(lambda: (f"""
-                select pp.npaletes, ppd.* 
-                from producao_tempordemfabrico tof
-                left join producao_paletizacao pp on pp.id=tof.paletizacao_id
-                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-                where tof.of_id='{data['ofabrico']}'
-            """), cursor, {})['rows']
-            if len(rows)>0:
-                paletizacao=rows
-        computed = {}
-        sqm_paletes_total = 0
-        nitems = 0
-        items = []
-        if paletizacao is not None:
-            for pitem in paletizacao:
-                if pitem["id"] is not None:
-                    nitems += 1
-                    items.append({
-                        "id":pitem["id"],
-                        "num_bobines":pitem["item_numbobines"],
-                        "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
-                    })
-                    sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
-            if nitems>0:
-                computed["total"] = {
-                    "sqm_paletes_total":sqm_paletes_total,
-                    "sqm_contentor":sqm_paletes_total*paletizacao[0]["npaletes"],
-                    "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
-                }
-                computed["items"] = items
-        return computed
 
     def computeGtin(cursor,main_gtin):
         id = getMaxArtigoGtin(cursor,main_gtin)
@@ -2513,17 +2602,18 @@ def SaveTempOrdemFabrico(request, format=None):
             'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
             'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
         }
-        if "formulacao_id" in data:
-            dta["formulacao_id"] = data["formulacao_id"]
-        if "cortesordem_id" in data:
-            dta["cortesordem_id"] = data["cortesordem_id"]
-        if "gamaoperatoria_id" in data:
-            dta["gamaoperatoria_id"] = data["gamaoperatoria_id"]
-        if "artigospecs_id" in data:
-            dta["artigospecs_id"] = data["artigospecs_id"]
-        if "nonwovens_id" in data:
-            dta["nonwovens_id"] = data["nonwovens_id"]
 
+        if "formulacao_id" in data:
+            dta["formulacao_id"] = data["formulacao_id"] if (data["formulacao_id"] is None) else ( data["formulacao_id"] if (data["formulacao_id"] >=1) else None)
+        if "cortesordem_id" in data:
+            dta["cortesordem_id"] = data["cortesordem_id"] if (data["cortesordem_id"] is None) else ( data["cortesordem_id"] if (data["cortesordem_id"] >=1) else None)
+        if "gamaoperatoria_id" in data:
+            dta["gamaoperatoria_id"] = data["gamaoperatoria_id"] if (data["gamaoperatoria_id"] is None) else ( data["gamaoperatoria_id"] if (data["gamaoperatoria_id"] >=1) else None)
+        if "artigospecs_id" in data:
+            dta["artigospecs_id"] = data["artigospecs_id"] if (data["artigospecs_id"] is None) else ( data["artigospecs_id"] if (data["artigospecs_id"] >=1) else None)
+        if "nonwovens_id" in data:
+            dta["nonwovens_id"] = data["nonwovens_id"] if (data["nonwovens_id"] is None) else ( data["nonwovens_id"] if (data["nonwovens_id"] >=1) else None)
+        
         if ids is None:
             dml = db.dml(TypeDml.INSERT, dta, "producao_tempaggordemfabrico",None,None,False)
             tags = []
@@ -2612,10 +2702,18 @@ def SaveTempOrdemFabrico(request, format=None):
 
     def updateTempOrdemFabrico(data,cursor):
         if data["type"] == "paletizacao":
-            print("#########################################################################################")
-            print(data)
+            cp = computeLinearMeters(data)
+            cpp = computePaletizacao(cp,data,cursor)
+            dta={}
+            if (len(cp.keys())>0):
+                dta['qty_encomenda'] = cp['qty_encomenda'],
+                dta['linear_meters'] = cp["linear_meters"],
+                dta['n_voltas'] = cp["n_voltas"],
+                dta['sqm_bobine'] = cp["sqm_bobine"]
+                dta['n_paletes'] = json.dumps(cpp)
+            
             pid = data["paletizacao_id"] if ("paletizacao_id" in data) else None
-            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":pid},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":pid,**dta},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
             return data["ofabrico"]
         if data["type"] == "settings":

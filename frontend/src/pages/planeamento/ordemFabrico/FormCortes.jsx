@@ -234,7 +234,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                                     <Field name="cortesordem_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Posição Cortes", pos: "left" }} addons={{
                                         ...(form.getFieldValue("cortesordem_id") && { right: <Button onClick={() => onShowForm()} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                     }}>
-                                        <SelectField size="small" data={cortesOrdemLookup} keyField="id" textField="designacao"
+                                        <SelectField allowClear size="small" data={cortesOrdemLookup} keyField="id" textField="designacao"
                                             optionsRender={(d, keyField, textField) => ({ label: <div><div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div><div style={{ color: "#1890ff" }}>{d["largura_ordem"].replaceAll('"', ' ')}</div></div>, value: d[keyField] })}
                                         />
                                     </Field>

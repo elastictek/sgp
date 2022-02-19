@@ -135,7 +135,7 @@ export default ({ changedValues }) => {
                         <Field name="nonwovens_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Nonwovens", pos: "left" }} addons={{
                             ...(form.getFieldValue("nonwovens_id") && { right: <Button onClick={() => onShowForm(false, true)} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                         }}>
-                            <SelectField size="small" data={nonwovens} keyField="id" textField="designacao"
+                            <SelectField allowClear size="small" data={nonwovens} keyField="id" textField="designacao"
                                 optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
                             />
                         </Field>
