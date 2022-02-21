@@ -102,7 +102,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     const onFinish = async (values) => {
         const paletizacao_id = form.getFieldValue("paletizacao_id");
 
-        const { tempof_id: ofabrico, qty_encomenda: qty_item } = record.aggItem;
+        const { tempof_id: ofabrico_id,of_id:ofabrico_cod, qty_encomenda: qty_item } = record.aggItem;
         const artigo = {
             artigo_thickness: record.aggItem.artigo.thickness,
             artigo_diam: record.aggItem.artigo.diam_ref,
@@ -110,7 +110,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
             artigo_width: record.aggItem.artigo.lar,
             qty_item: record.aggItem.qty_encomenda
         };
-        const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "paletizacao", paletizacao_id, ofabrico, artigo } });
+        const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "paletizacao", paletizacao_id, ofabrico_id, ofabrico_cod, artigo } });
         if (response.data.status !== "error") {
             parentReload({ agg_id: record.aggItem.id });
             closeParent();

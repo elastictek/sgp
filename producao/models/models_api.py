@@ -64,6 +64,7 @@ class TempOrdemFabrico(models.Model):
     emendas = models.ForeignKey('producao.Emendas', on_delete=models.PROTECT, verbose_name="Emendas", null=True, blank=True)
     agg_of = models.ForeignKey('producao.TempAggOrdemFabrico', on_delete=models.PROTECT, verbose_name="Aggregate Ordem de Fabrico", null=True, blank=True)
     agg_ofid_original = models.IntegerField(verbose_name="Agg Original", null=True) #Apenas como referência, mas utilizado para os lookups...
+    aggregated = models.SmallIntegerField(verbose_name="Ordem de Fabrico agregada (0/1)", default=0)
     class Meta:
         unique_together = (('of_id', 'item_cod'))
 

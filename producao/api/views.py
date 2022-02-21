@@ -2429,16 +2429,18 @@ def computePaletizacao(cp,data,cursor):
         if len(rows)>0:
             paletizacao=rows
     else:
+        computed = {}
+        if ("ofabrico_id" not in data):
+            return computed
         rows = db.executeSimpleList(lambda: (f"""
             select pp.npaletes, ppd.* 
             from producao_tempordemfabrico tof
             left join producao_paletizacao pp on pp.id=tof.paletizacao_id
             left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-            where tof.of_id='{data['ofabrico']}'
+            where tof.id='{data['ofabrico_id']}'
         """), cursor, {})['rows']
         if len(rows)>0:
             paletizacao=rows
-    computed = {}
     sqm_paletes_total = 0
     nitems = 0
     items = []
@@ -2471,25 +2473,38 @@ def SaveTempOrdemFabrico(request, format=None):
     data = request.data.get("parameters")
 
     def getAggStatus(data,cursor):
-        f = Filters({"of_id": data['ofabrico']})
-        f.setParameters({}, False)
-        f.where()
-        f.add(f'of_id = :of_id', True)
-        f.value("and")   
-        rows = db.executeSimpleList(lambda: (f'''
-                select toaf.status 
-                FROM producao_tempordemfabrico tof
-                join producao_tempaggordemfabrico toaf on tof.agg_of_id=toaf.id
-                {f.text}
-        '''), cursor, f.parameters)['rows']
-        status = rows[0]["status"] if len(rows)>0 else None
-        return {"status":"success"}
-        if (status==None):
-            return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"Não existe Ordem de Produção Agregada."}
-        elif (status==0):
-            return {"status":"success"}
+        if "ofabrico_id" not in data:
+            f = Filters({"cod": data['ofabrico_cod']})
+            f.setParameters({}, False)
+            f.where()
+            f.add(f'tof.of_id = :cod', True)
+            f.value("and")   
+            exists = db.exists("producao_tempordemfabrico tof", f, cursor).exists
+            if (not exists):
+                return {"status":"success"}
+            else:
+                return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"A Ordem de Fabrico já se encontra Criada."}
         else:
-            return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"O planeamento da Ordem de Fabrico Já se encontra Fechado."}
+            f = Filters({"id": data['ofabrico_id']})
+            f.setParameters({}, False)
+            f.where()
+            f.add(f'tof.id = :id', True)
+            f.value("and")   
+            rows = db.executeSimpleList(lambda: (f'''
+                    select toaf.status
+                    FROM producao_tempordemfabrico tof
+                    join producao_tempaggordemfabrico toaf on tof.agg_of_id=toaf.id
+                    {f.text}
+            '''), cursor, f.parameters)['rows']
+            status = rows[0]["status"] if len(rows)>0 else None
+            print(data)
+            return {"status":"success"}
+            if (status==None):
+                return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"Não existe Ordem de Produção Agregada."}
+            elif (status==0):
+                return {"status":"success"}
+            else:
+                return {"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!","subTitle":"O planeamento da Ordem de Fabrico Já se encontra Fechado."}
 
     def computeGtin(cursor,main_gtin):
         id = getMaxArtigoGtin(cursor,main_gtin)
@@ -2566,10 +2581,12 @@ def SaveTempOrdemFabrico(request, format=None):
             return None
 
     def getAgg(data, cursor):
-        f = Filters({"of_id": data['ofabrico'], "item_cod": data['item']})
+        if ("ofabrico_id" not in data):
+            return None
+        f = Filters({"id": data['ofabrico_id'], "item_cod": data['item']})
         f.setParameters({}, False)
         f.where()
-        f.add(f'of_id = :of_id', True)
+        f.add(f'id = :id', True)
         f.add(f'item_cod = :item_cod', True)
         f.value("and")   
         rows = db.executeSimpleList(lambda: (f'SELECT agg_of_id,agg_ofid_original FROM producao_tempordemfabrico {f.text}'), cursor, f.parameters)['rows']
@@ -2640,9 +2657,10 @@ def SaveTempOrdemFabrico(request, format=None):
 
     def upsertTempOrdemFabrico(data,aggid,produto_id, cp, cpp, cursor):
         dta = {
+            'aggregated':0,
             'agg_of_id': aggid,
             'agg_ofid_original': aggid,
-            'of_id': data['ofabrico'],
+            'of_id': data['ofabrico_cod'],
             'order_cod': data['iorder'],
             'item_cod': data['item'],
             'item_id': data['item_id'],
@@ -2713,10 +2731,13 @@ def SaveTempOrdemFabrico(request, format=None):
                 dta['n_paletes'] = json.dumps(cpp)
             
             pid = data["paletizacao_id"] if ("paletizacao_id" in data) else None
-            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":pid,**dta},"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            dta['n_paletes'] = {} if pid is None else dta['n_paletes']
+            dml = db.dml(TypeDml.UPDATE,{"paletizacao_id":pid,**dta},"producao_tempordemfabrico",{"id":f'=={data["ofabrico_id"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
-            return data["ofabrico"]
+            return data["ofabrico_id"]
         if data["type"] == "settings":
+            print("entri")
+            print(data)
             emendas_id = None
             emenda = getEmendas(data,cursor)
             if emenda is None:
@@ -2742,9 +2763,9 @@ def SaveTempOrdemFabrico(request, format=None):
             if "core_cod" in data:
                 vl["core_cod"] = data["core_cod"]
                 vl["core_des"] = data["core_des"]
-            dml = db.dml(TypeDml.UPDATE,vl,"producao_tempordemfabrico",{"id":f'=={data["ofabrico"]}'},None,False)
+            dml = db.dml(TypeDml.UPDATE,vl,"producao_tempordemfabrico",{"id":f'=={data["ofabrico_id"]}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
-            return data["ofabrico"]
+            return data["ofabrico_id"]
 
     try:
         with transaction.atomic():
@@ -2771,7 +2792,7 @@ def SaveTempOrdemFabrico(request, format=None):
             conngw.commit()
 
                   
-        return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Guardada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
+        return Response({"status": "success","id":data["ofabrico_cod"], "title": "A Ordem de Fabrico Foi Guardada com Sucesso!", "subTitle":f'{data["ofabrico_cod"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Guardar a Ordem de Fabrico!"})
 
@@ -2784,43 +2805,46 @@ def SaveTempAgg(request, format=None):
     data = request.data.get("parameters")
     agg_ids = [d['tempof_id'] for d in data['aggs'] if d['checked']==1]
     remove_agg_ids = [d['tempof_id'] for d in data['aggs'] if d['checked']==0]
-
+    
     def getAggsAlreadyGrouped(data, cursor):
         f = Filters({"agg_of_id": data["agg_id"]})
         f.setParameters({}, False)
         f.where(False,override='and')
         f.add(f't.agg_of_id <> :agg_of_id', True)
         f.value("and")   
-        rows = db.executeSimpleList(lambda: (f"""        
-            select agg_of_id,GROUP_CONCAT(of_id) group_ofid from producao_tempordemfabrico tof 
-            where 
-            exists (
-            SELECT 1 FROM producao_tempordemfabrico t where id in (
-            {','.join(str(v) for v in agg_ids)}
-            ) 
-            {f.text} 
-            and t.agg_of_id = tof.agg_of_id
-            )
-            group by agg_of_id
-            having count(*) > 1        
-        """), cursor, f.parameters)['rows']
-        ofs = [d['group_ofid'] for d in rows]
-        return ofs
+        # rows = db.executeSimpleList(lambda: (f"""        
+        #     select agg_of_id,GROUP_CONCAT(of_id) group_ofid from producao_tempordemfabrico tof 
+        #     where 
+        #     exists (
+        #     SELECT 1 FROM producao_tempordemfabrico t where id in (
+        #     {','.join(str(v) for v in agg_ids)}
+        #     ) 
+        #     {f.text} 
+        #     and t.agg_of_id = tof.agg_of_id
+        #     )
+        #     group by agg_of_id
+        #     having count(*) > 1        
+        # """), cursor, f.parameters)['rows']
+        print(f"select count(*) from producao_tempordemfabrico t where t.id in ({','.join(str(v) for v in agg_ids)}) {f.text} and t.aggregated=1")
+        cnt = db.executeSimpleList(lambda: (f"select count(*) cnt from producao_tempordemfabrico t where t.id in ({','.join(str(v) for v in agg_ids)}) {f.text} and t.aggregated=1"),cursor,f.parameters)
+        return cnt["rows"][0]["cnt"]
+        #ofs = [d['group_ofid'] for d in rows]
+        #return ofs
 
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 v = getAggsAlreadyGrouped(data,cursor)
-                if (len(v)>0):
-                    return Response({"status": "error", "title": "Não é possível Agrupar as Ordens de Fabrico, As seguintes Ordens já estão Agrupadas!","value":v})
+                if (v>0):
+                    return Response({"status": "error", "title": "Não é possível Agrupar as Ordens de Fabrico, Existem Ordens que já estão Agrupadas!"})
                 if (len(agg_ids)==0):
                     return Response({"status": "error", "title": "Não Foram Selecionadas Ordens de Fabrico!"})
-                dml = db.dml(TypeDml.UPDATE,{"agg_of_id":data["agg_id"]},"producao_tempordemfabrico",{},None,False)
+                dml = db.dml(TypeDml.UPDATE,{"agg_of_id":data["agg_id"],"aggregated": 0 if len(agg_ids)==1 else 1},"producao_tempordemfabrico",{},None,False)
                 statement = f"""{dml.statement} WHERE id in ({','.join(str(v) for v in agg_ids)})"""
                 db.execute(statement, cursor, dml.parameters)
                 if (len(remove_agg_ids)>0):
                     dml = db.dml(TypeDml.UPDATE,{},"producao_tempordemfabrico",{"agg_of_id":f'=={data["agg_id"]}'},None,False)
-                    statement = f"""{dml.statement.replace('SET','SET agg_of_id=agg_ofid_original',1)} and id in ({','.join(str(v) for v in remove_agg_ids)})"""
+                    statement = f"""{dml.statement.replace('SET','SET agg_of_id=agg_ofid_original, aggregated=0',1)} and id in ({','.join(str(v) for v in remove_agg_ids)})"""
                     db.execute(statement, cursor, dml.parameters)
         return Response({"status": "success","id":None, "title": "As Ordens de Fabrico Foram Agrupadas com Sucesso!", "subTitle":''})
     except BaseException as e:
@@ -2866,7 +2890,6 @@ def TempOFabricoGet(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def TempAggOFabricoLookup(request, format=None):
-    f = Filters(request.data['filter'])
     group = request.data['parameters']['group'] if 'group' in request.data['parameters'] else True
     if group:
         cols=["tofa.id,string_agg(tof.id::text,',') group_id,string_agg(tof.of_id,',') group_ofid,string_agg(tof.item_cod,',') group_item_cod,string_agg(oflist.qty_item::text,',') group_qty_item"]
@@ -2878,18 +2901,18 @@ def TempAggOFabricoLookup(request, format=None):
         #cols = ['tofa.id, tof.id tempof_id, tof.of_id of_id, tof.item_cod item_cod, tof.agg_ofid_original']
         group = ""
     
-    f.setParameters({}, False)
-    f.where()
-    f.add(f'tofa.status <= :status',lambda v:(v!=None))  
-    f.add(f'tof.produto_id = :produto_id',lambda v:(v!=None))
-    f.value("and")
-    parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
     mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
     dql.columns = encloseColumn(cols,False)
+
     with connections[connGatewayName].cursor() as cursor:
         if group:
+            f = Filters(request.data['filter'])
+            f.setParameters({}, False)
+            f.where()
+            f.add(f'tof.agg_of_id <= :agg_id',lambda v:(v!=None)) 
+            f.value("and")
             response = dbgw.executeSimpleList(lambda:(f"""
                 select json_agg(t) v from (
                 SELECT
@@ -2907,8 +2930,20 @@ def TempAggOFabricoLookup(request, format=None):
                 left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
                 {f.text}
                 ) t
-            """),cursor,parameters)
+            """),cursor,f.parameters)
         else:
+            f = Filters(request.data['filter'])
+            f.setParameters({}, False)
+            f.where()
+            f.add(f'tofa.status <= :status',lambda v:(v!=None)) 
+            f.value("and")
+            f1 = Filters(request.data['filter'])
+            f1.where(False,"and" if f.hasFilters else False)
+            f1.add(f'tof.agg_of_id = :agg_id',lambda v:(v!=None))
+            f1.add(f'(tof.produto_id = :produto_id and tof.aggregated=0)',lambda v:(v!=None))
+            f1.value("or")
+            filter = f"""{f.text}{f1.text}"""
+            parameters = {**f.parameters,**f1.parameters}
             response = dbgw.executeSimpleList(lambda: (
                 f"""
                     select 
@@ -2916,7 +2951,7 @@ def TempAggOFabricoLookup(request, format=None):
                     FROM {mv_ofabrico_list} oflist
                     join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
                     join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
-                    {f.text}
+                    {filter}
                     {dql.sort}
                     {group}
                 """

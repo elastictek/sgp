@@ -102,12 +102,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     }
 
     const onFinish = async (values) => {
-        const { emendas, paletesstock, tempof_id, ...aggItem } = record.aggItem;
+        const { emendas, paletesstock, tempof_id,of_id, ...aggItem } = record.aggItem;
         const v = schema().validate(values, { abortEarly: false });
         if (!v.error) {
             const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
             const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico: tempof_id } });
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { type: "settings", ...values, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod,  ofabrico_id: tempof_id, ofabrico_cod:of_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();

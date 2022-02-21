@@ -26,8 +26,8 @@ const setId = (id) => {
     return { key: "insert", values: {} };
 }
 
-const loadAggsLookup = async ({ produto_id }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/tempaggofabricolookup/`, filter: { status: 0, produto_id }, parameters: { group: false }, sort: [] });
+const loadAggsLookup = async ({ produto_id, agg_id }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/tempaggofabricolookup/`, filter: { status: 0, produto_id, agg_id }, parameters: { group: false }, sort: [] });
     return rows;
 }
 
@@ -44,7 +44,7 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
     const init = () => {
         const { produto_id, produto_cod, of_cod, agg_id } = ctx;
         (async () => {
-            const aggsLookup = await loadAggsLookup({ produto_id });
+            const aggsLookup = await loadAggsLookup({ produto_id, agg_id });
             (setFormTitle) && setFormTitle({ title: `Agrupar Ordens Fabrico` });
             const aggs = aggsLookup.filter(v => (v.id == agg_id || v.agg_ofid_original == v.id)).map(v => {
                 return ({

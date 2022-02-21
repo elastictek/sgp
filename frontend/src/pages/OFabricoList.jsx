@@ -244,13 +244,13 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
         const response = await fetchPostBlob(requestData);
         switch (type.key) {
             case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.pdf`);
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
                 break;
             case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.xlsx`);
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
                 break;
             case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0,10)}.docx`);
+                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
                 break;
         }
     }
@@ -710,7 +710,7 @@ export default () => {
                 setLoading(true);
                 response = await fetchPost({
                     url: `${API_URL}/savetempordemfabrico/`,
-                    parameters: { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, artigo: data, qty_item, artigo_diam: item_diam, artigo_core: item_core, artigo_width: item_width, item_id, artigo_thickness: item_thickness }
+                    parameters: { cliente_cod, cliente_nome, iorder, item, ofabrico_cod: ofabrico, produto_id, artigo: data, qty_item, artigo_diam: item_diam, artigo_core: item_core, artigo_width: item_width, item_id, artigo_thickness: item_thickness }
                 });
                 if (response.data.status !== "error") {
                     dataAPI.fetchPost();

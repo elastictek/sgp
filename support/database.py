@@ -500,7 +500,6 @@ class MySqlSql(BaseSql):
             ret.filter = f.value('and').text
             ret.parameters = f.parameters
             ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {f.text})'
-            print(f"EXXXXX-->{ret.statement} --- {ret.parameters}")
         else:
             ret = BaseSql.Exists()
             ret.filter = p.text
@@ -569,7 +568,7 @@ class Filters:
         self.length = 0
         self.hasFilters = False
         self.parameters = {}
-        self.definedParamaters = {}
+        self.definedParameters = {}
 
     def where(self, force=False, override=False):
         self.clause['enabled'] = True
