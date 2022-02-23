@@ -114,6 +114,7 @@ urlpatterns = [
     re_path(r'^currentsettingsget/$', views.CurrentSettingsGet),
     re_path(r'^loteslookup/$', views.LotesLookup),
     re_path(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
+    re_path(r'^changecurrsettings/$', views.changeCurrSettingsStatus),
     #END CURRENT SETTINGS
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

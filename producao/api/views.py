@@ -1495,6 +1495,30 @@ def UpdateCurrentSettings(request, format=None):
 
         print(f'dataaaaaaa{dml.statement}')
         pass
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def changeCurrSettingsStatus(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with connections["default"].cursor() as cursor:
+            if (data["status"]==3):
+                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
+                if (exists==0):
+                    dml = db.dml(TypeDml.UPDATE, {"status":3} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "id":0, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+            elif (data["status"]==0):
+                pass
+            elif (data["status"]==1):
+                pass
+    except Exception as error:
+        return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})
+    return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
+    
+
         # items = []
         # itms = collections.OrderedDict(sorted(data["specs"].items()))
         # for i in range(data["specs"]['nitems']):            
@@ -1773,10 +1797,12 @@ def NewCortes(request, format=None):
     def computeLarguraCod(data):
         list = sorted(data['cortes'], key=lambda k: int(k['item_lar']))
         cod = {}
+        largura_util = 0
         for v in list:
             keyncortes = "cortes_artigo_ncortes" if "cortes_artigo_ncortes" in v else "item_ncortes"
             cod[v["item_lar"]] = v[keyncortes] if v["item_lar"] not in cod else cod[v["item_lar"]] + v[keyncortes]
-        return {"json":json.dumps(cod),"cod":hashlib.md5(json.dumps(cod).encode('utf-8')).hexdigest()[ 0 : 16 ]}
+            largura_util = largura_util + ( int(v["item_lar"])*v[keyncortes] )
+        return {"json":json.dumps(cod),"cod":hashlib.md5(json.dumps(cod).encode('utf-8')).hexdigest()[ 0 : 16 ],"largura_util":largura_util}
 
     def getCortesId(larguras, cursor):
         f = Filters({"largura_cod": larguras["cod"]})
@@ -1793,6 +1819,7 @@ def NewCortes(request, format=None):
         fields = {
             "largura_cod":  larguras["cod"],
             "largura_json": larguras["json"],
+            "largura_util": larguras["largura_util"],
             "created_date": datetime.now(),
             "updated_date": datetime.now()
         }
@@ -2005,6 +2032,44 @@ def OfUpload(request, format=None):
 #endregion
 
 #region TEMP ORDEMFABRICO SCHEMA
+
+def computeProductionHours(data,cursor):
+    print("aaaaaaaaaaaaaaaaaaaaaa")
+    print(data)
+    if ("ofabrico_id" in data):
+        f = Filters({"id": data["ofabrico_id"]})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                tbl.*,JSON_EXTRACT(goi.item_values, '$[0]') speed,co.largura_util
+                from(
+                SELECT 
+                tofa.id, tofa.gamaoperatoria_id,tofa.cortes_id,sum(tof.qty_encomenda) qty
+                FROM producao_tempaggordemfabrico tofa
+                join producao_tempordemfabrico tof on tof.agg_of_id=tofa.id
+                where 
+                tofa.id in (SELECT agg_of_id FROM producao_tempordemfabrico {f.text})
+                group by tofa.id,tofa.gamaoperatoria_id,tofa.cortes_id
+                ) tbl
+                join producao_gamaoperatoriaitems goi on goi.gamaoperatoria_id = tbl.gamaoperatoria_id and goi.item_key='D'
+                join producao_cortes co on co.id = tbl.cortes_id
+            """    
+        ), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            qty = int(rows[0]["qty"])
+            speed = int(rows[0]["speed"])
+            usable_width = int(rows[0]["largura_util"])
+            hours=0
+            width = usable_width/1000
+            goal_time = 0.9
+            goal_quality = 0.9
+            hours = ((qty/(speed*width))/goal_time)/goal_quality  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
+            return hours        
+    return 0
 
 def getSageCliente(cod):
     cols = ['BPCNUM_0', 'BPCNAM_0','BPCSHO_0']
@@ -2309,6 +2374,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 "num_paletes_stock_in":0,
                 "ofid":ordemfabrico["of_id"],
                 "draft_ordem_id":ordemfabrico["id"],
+                "agg_of_id":aggid,
                 "status":2,
                 "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0]
             }
@@ -2611,13 +2677,16 @@ def SaveTempOrdemFabrico(request, format=None):
         return rows[0] if len(rows)>0 else None
 
     def upsertTempAggOrdemFabrico(data, ids, cursor):
+        hours = computeProductionHours(data,cursor)
+        print("#####################$$$$$$$$$$$$$$$$$$$$%")
         dta = {
             'status': data['status'] if 'status' in data else 0,
             'sentido_enrolamento': data['sentido_enrolamento'] if 'sentido_enrolamento' in data else None,
             'amostragem': data['f_amostragem'] if 'f_amostragem' in data else None,
             'observacoes': data['observacoes'] if 'observacoes' in data else None,
             'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
-            'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
+            'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"],
+            'horas_previstas_producao':round(hours,2)
         }
 
         if "formulacao_id" in data:

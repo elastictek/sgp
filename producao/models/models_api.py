@@ -35,6 +35,7 @@ class BaseTempAggOrdemFabrico(models.Model):
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
     start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
     end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
+    horas_previstas_producao= models.DecimalField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True,decimal_places=2,max_digits=10)
     class Meta:
         abstract = True
 
@@ -86,7 +87,7 @@ class BaseCurrentSettings(models.Model):
     dosers = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
     paletesstock = models.JSONField(blank=True, null=True)
-    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Inactive | 1 In Use/Active | 9 Finished
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Stopped | 1 In Use/Active | 3 In Progress | 9 Finished
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
     start_prev_date = models.DateTimeField(verbose_name="Data Início Prevista", null=True, blank=True)
     end_prev_date = models.DateTimeField(verbose_name="Data Fim Prevista", null=True, blank=True)
@@ -240,6 +241,7 @@ class Cortes(models.Model):
     largura_json = models.CharField(verbose_name="Larguras JSON", max_length=200) #(Nº de Cortes por largura)
     created_date = models.DateTimeField(auto_now=True, verbose_name="Data Criação")
     updated_date = models.DateTimeField(auto_now=True, verbose_name="Data Alteração")
+    largura_util = models.SmallIntegerField(verbose_name="Largura Útil", null=True)
 
 class CortesArtigos(models.Model):
     cortes = models.ForeignKey(Cortes, on_delete=models.PROTECT, verbose_name="Cortes", null=False, blank=False)

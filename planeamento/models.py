@@ -85,6 +85,7 @@ class OrdemProducao(models.Model):
     #paletizacao             = models.ForeignKey('producao.Paletizacao', on_delete=models.PROTECT, verbose_name="Paletização", null=True, blank=True)  #ADDED - PALETIZAÇÃO
     #formulacao              = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True, blank=True)  #ADDED - FORMULAÇÃO
     status                  = models.SmallIntegerField(default=0, verbose_name="Status")   #ADDED - Status
+    agg_of_id               = models.ForeignKey('producao.TempAggOrdemFabrico', on_delete = models.PROTECT, verbose_name = "Ordem de Producao Agg", null = True) #ADDED
     draft_ordem             = models.ForeignKey('producao.TempOrdemFabrico', on_delete = models.PROTECT, verbose_name = "Draft Ordem de Producao", null = True, blank = True) #ADDED
     user                    = models.ForeignKey(User, on_delete=models.PROTECT,verbose_name="Username")
     enc                     = models.ForeignKey('producao.Encomenda', on_delete=models.PROTECT, verbose_name="Encomenda", null=True, blank=True) 

@@ -391,7 +391,7 @@ const CardCortes = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardOperacoes = ({ menuItem, record, setShowForm }) => {
+const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     const { status } = record;
 
     const onEdit = () => {
@@ -402,15 +402,31 @@ const CardOperacoes = ({ menuItem, record, setShowForm }) => {
         console.log("ENTREI NAS OPERAÇÕES", record)
     }, [])
 
+    const changeStatus = async (status) => {
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id:record.agg_of_id } });
+        if (response.data.status !== "error") {
+            parentReload({ aggId:record.agg_of_id });
+        }
+    }
+
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
             >
-                <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }}>Iniciar Produção</Button>
-                <VerticalSpace height="5px" />
-                <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }}>Refazer Planeamento</Button>
+                {record.status == 1 &&
+                    <>
+                        <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(3)}>Iniciar Produção</Button>
+                        <VerticalSpace height="5px" />
+                        <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(0)}>Refazer Planeamento</Button>
+                    </>
+                }
+                {record.status == 3 &&
+                    <>
+                        <Button block size="large" style={{ background: "red", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(1)}>Parar/Suspender Produção</Button>
+                    </>
+                }
                 {/* <div>
                     <div>Horas de Produção Previstas</div>
                 </div>
@@ -559,7 +575,7 @@ export default ({ aggId }) => {
                             case "cortes":
                                 return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id }} setShowForm={setShowForm} />);
                             case "operacoes":
-                                return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} />);
+                                return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}
