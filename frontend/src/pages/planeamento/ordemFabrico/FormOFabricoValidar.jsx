@@ -200,7 +200,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     <AlertMessages formStatus={formStatus} />
                     <OFabricoContext.Provider value={contextValue} /* value={{ temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico, form, guides, schema }} */>
                         <Form form={form} name={`form-of-validar`} onFinish={onFinish} onValuesChange={onValuesChange}>
-                            <Tabs onChange={() => { }} type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k) => setActiveTab(k)}>
+                            <Tabs /* onChange={() => { }} */ type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k) => setActiveTab(k)}>
                                 <TabPane tab="Requisitos" key="1" forceRender={true}>
                                     <FormRequirements changedValues={requirementsChangedValues} />
                                 </TabPane>

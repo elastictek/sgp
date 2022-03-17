@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
@@ -30,10 +30,10 @@ import YScroll from "components/YScroll";
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
+import { SocketContext } from './App';
 
 
-
-import { Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 const { Option } = Select;
 const { confirm } = Modal;
@@ -617,11 +617,23 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 
 
 const TitleMenuActions = ({ aggCod }) => {
+    const { data } = useContext(SocketContext);
+
+    useEffect(() => {
+
+    }, [data.length]);
+
+    const onValidate = () => {
+
+    }
+
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
-                <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                <div style={{ color: "#1890ff" }}></div>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
+                <Space>
+                    <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
+                    <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(data).length}</span> Bobinagens por <Tag onClick={onValidate} type="link">Validar.</Tag></div>} type="warning" showIcon />
+                </Space>
             </div>
         </div>
     );

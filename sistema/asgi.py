@@ -15,8 +15,10 @@ django.setup()
 #  # Just HTTP for now. (We can add other protocols later.)
 #})
 
+
 websocket_urlpatterns = [
     re_path(r'^ws/lotespick$', consumers.LotesPickConsumer.as_asgi()),
+    re_path(r'^ws/realtimealerts$', consumers.RealTimeAlerts.as_asgi())
 ]
 
 application = ProtocolTypeRouter({

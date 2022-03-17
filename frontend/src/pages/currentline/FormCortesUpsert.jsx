@@ -11,7 +11,8 @@ import AlertMessages from "components/alertMessages";
 import IconButton from "components/iconButton";
 import ResultMessage from 'components/resultMessage';
 import Portal from "components/portal";
-import { Input, Space, Form, Button, InputNumber } from "antd";
+import { Input, Space, Form, Button, InputNumber, Menu, Dropdown } from "antd";
+import { EllipsisOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -36,19 +37,38 @@ const useStyles = createUseStyles({
     }
 })
 
-const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cortes }) => {
+const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cortes, setArtigo }) => {
     const classes = useStyles({ width });
     const ref = useRef(null);
     const color = cortes.find(v => v.item_lar == value);
     const style = {
         color: color.color,
         fontStyle: "italic",
-        height: "100%",
+        height: "70%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center"
     };
-    
+
+    const onClick = (item) =>{
+        console.log(index,item)
+        setArtigo(index,item);
+    }
+
+    const menu = (
+        <Menu onClick={onClick}>
+            {color.artigos.map(v => {
+                return (
+                    <Menu.Item key={v.of_id}>
+                        <div><b>{v.of_cod}</b> {v.artigo_cod}</div>
+                        <div>{v.artigo_des}</div>
+                        <div style={{ color: "#1890ff" }}>{v.cliente_nome}</div>
+                    </Menu.Item>
+                );
+            })}
+        </Menu>
+    );
+
     const [{ handlerId }, drop] = useDrop({
         accept: 'bobine',
         collect(monitor) {
@@ -92,7 +112,7 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cor
     drop(ref);
     return (
         <div ref={ref} className={classes.bobine} style={{ opacity, background: color.bcolor, color: color.color }} data-handler-id={handlerId}>
-            <div style={{ fontSize: "10px", textAlign: "center" }}>{index + 1}</div>
+            <div style={{ fontSize: "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
             <div style={style}>{value}</div>
         </div>
     );
@@ -123,6 +143,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             form.setFieldsValue({ designacao: cortesOrdem.designacao });
             _larguraTotal = _cortesOrdem.reduce((sum, v) => Number(sum) + Number(v));
         }
+
         setBobines(_bobines);
         setLarguraTotal(_larguraTotal);
     }
@@ -133,7 +154,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     const onFinish = async (values) => {
         const status = { error: [], warning: [], info: [], success: [] };
-        const { cortes, ordem,cortes_id } = record;
+        const { cortes, ordem, cortes_id } = record;
         let touched = false;
         if (!ordem) {
             touched = true;
@@ -199,7 +220,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             </Form>
 
             <DndProvider backend={HTML5Backend}>
-                <div style={{ display: "flex", flexDirection: "row" }}>
+                <div style={{ display: "flex", flexDirection: "row",justifyContent:"space-around" }}>
                     {bobines.map((v, i) => {
                         return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} cortes={record.cortes} forInput={forInput} />);
                     })}

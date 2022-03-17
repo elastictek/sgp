@@ -86,6 +86,7 @@ class BaseCurrentSettings(models.Model):
     lotes = models.JSONField(blank=True, null=True)
     dosers = models.JSONField(blank=True, null=True)
     ofs = models.JSONField(blank=True, null=True)
+    ofs_ordem = models.JSONField(blank=True, null=True)
     paletesstock = models.JSONField(blank=True, null=True)
     status = models.SmallIntegerField(default=0, verbose_name="Status") #ADDED 0 Suspended/Stopped | 1 In Use/Active | 3 In Progress | 9 Finished
     observacoes=models.TextField(max_length = 1000, null = True, blank = True, verbose_name = "Observações", default = "")
@@ -242,13 +243,6 @@ class Cortes(models.Model):
     created_date = models.DateTimeField(auto_now=True, verbose_name="Data Criação")
     updated_date = models.DateTimeField(auto_now=True, verbose_name="Data Alteração")
     largura_util = models.SmallIntegerField(verbose_name="Largura Útil", null=True)
-
-class CortesArtigos(models.Model):
-    cortes = models.ForeignKey(Cortes, on_delete=models.PROTECT, verbose_name="Cortes", null=False, blank=False)
-    of_id = models.CharField(max_length=25,verbose_name="Ordem de Produção", null=True) #ADDED - ORDEM FABRICO SAGE ID
-    artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)
-    largura = models.SmallIntegerField(verbose_name="Largura", null=False)
-    ncortes = models.SmallIntegerField(verbose_name="Nº de Cortes", null=False)
 
 class CortesOrdem(models.Model):
     designacao = models.CharField(verbose_name="Designação", max_length=50,null=True)

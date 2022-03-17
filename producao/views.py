@@ -229,7 +229,7 @@ def bobinagem_status(request, pk):
     bobine = Bobine.objects.filter(bobinagem=pk)
     emenda = Emenda.objects.filter(bobinagem=pk)
     etiquetas = EtiquetaRetrabalho.objects.filter(bobinagem=pk)
-    etiquetas_all = EtiquetaRetrabalho.objects.all()
+    #etiquetas_all = EtiquetaRetrabalho.objects.all()
     estado_impressao = False
     form = ImprimirEtiquetaBobine(request.POST or None)
     if form.is_valid():
@@ -2568,10 +2568,7 @@ def encomenda_list(request):
     database = 'x3v80db' 
     username = 'X3_ELASTICTEK' 
     password = '%ElAsTicT3k@2021!RePoRt' 
-    #FOR WINDOWS
     conn = pyodbc.connect('DRIVER={sql server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
-    #FOR LINUX
-    #conn = pyodbc.connect('DRIVER={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.8.so.1.1};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 
     cursor=conn.cursor()
     cursor.execute("select distinct e.ROWID, e.SOHNUM_0, e.ORDDAT_0, e.DEMDLVDAT_0, e.SHIDAT_0, e.EXTDLVDAT_0, e.ITMREF_0, a.ITMDES1_0, e.QTY_0, e.BPCORD_0, c.BPCNAM_0, b.GROPRI_0 from x3v80db.ELASTICTEK.SORDERQ as e left join x3v80db.ELASTICTEK.SORDERP as b on e.SOHNUM_0 = b.SOHNUM_0 left join x3v80db.ELASTICTEK.ITMMASTER as a on e.ITMREF_0 = a.ITMREF_0 left join x3v80db.ELASTICTEK.BPCUSTOMER as c on e.BPCORD_0 = c.BPCNUM_0 where e.ORDDAT_0 > '2021-01-01' order by e.ROWID desc;")
@@ -6547,6 +6544,7 @@ def palete_picagem_v3(request, pk):
     palete = get_object_or_404(Palete, pk=pk)
     print(f"$$$$$$$$$$$$--->{pk}")
     cliente = palete.cliente
+    print(f"$$$$$$$$$$$$--->{cliente}")
     num_bobines = palete.num_bobines
     PicagemBobinesFormSet = formset_factory(PicagemBobines, extra=num_bobines)
     form = PaletePesagemForm(request.POST or None, instance=palete)
@@ -6828,10 +6826,7 @@ def sql_connect(request):
     database = 'x3v80db' 
     username = 'X3_ELASTICTEK' 
     password = '%ElAsTicT3k@2021!RePoRt' 
-    #FOR WINDOWS
     conn = pyodbc.connect('DRIVER={sql server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
-    #FOR LINUX
-    #conn = pyodbc.connect('DRIVER={/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.8.so.1.1};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 
     # cursor=conn.cursor()
     # cursor.execute("select distinct e.ROWID, e.SOHNUM_0, e.ORDDAT_0, e.DEMDLVDAT_0, e.SHIDAT_0, e.EXTDLVDAT_0, e.ITMREF_0, a.ITMDES1_0, e.QTY_0, e.BPCORD_0, c.BPCNAM_0, b.GROPRI_0 from x3v80db.ELASTICTEK.SORDERQ as e left join x3v80db.ELASTICTEK.SORDERP as b on e.SOHNUM_0 = b.SOHNUM_0 left join x3v80db.ELASTICTEK.ITMMASTER as a on e.ITMREF_0 = a.ITMREF_0 left join x3v80db.ELASTICTEK.BPCUSTOMER as c on e.BPCORD_0 = c.BPCNUM_0 where e.ORDDAT_0 > '2021-01-01' order by e.ROWID desc;")

@@ -61,6 +61,8 @@ const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
 
+const colorsOfs = ['#f5222d', '#fa8c16', '#fadb14', '#52c41a', '#13c2c2', '#1890ff', '#722ed1', '#eb2f96'];
+
 const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
     const iref = useRef();
@@ -90,6 +92,7 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
                 {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                {showWrapper.idcard === "position" && <div>ssssssssssssssssssssssssssssssss</div>}
                 {/*                 {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
                 {showWrapper.idcard === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                 {showWrapper.idcard === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
@@ -105,14 +108,12 @@ const loadCurrentSettings = async (aggId, token) => {
     return rows;
 }
 
-
 const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
-    const { of_cod, cliente_nome, produto_cod, item_des } = ofItem;
+    const { of_cod, cliente_nome, produto_cod, item_des,color } = ofItem;
     const totais = useRef({});
 
     // const paletes = JSON.parse(aggItem?.n_paletes);
     const onAction = (idcard) => {
-        console.log("$$$$$", idcard, ofItem)
         switch (idcard) {
             case 'paletes_stock':
                 setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
@@ -124,6 +125,9 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
                 setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'attachments':
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                break;
+            case 'position':
                 setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
         }
@@ -146,7 +150,9 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
                 style={{ width: '100%', height: '100%'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 headStyle={{ backgroundColor: "#002766", color: "#fff" }}
                 title={<div>
-                    <div style={{ fontWeight: 700, fontSize: "12px" }}>{of_cod}</div>
+                    <div style={{ fontWeight: 700, fontSize: "12px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+                        <div>{of_cod}</div>
+                    </div>
                     <div style={{ color: "#fff", fontSize: ".6rem" }}>{cliente_nome}</div>
                 </div>} size="small"
                 actions={[
@@ -403,9 +409,9 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     }, [])
 
     const changeStatus = async (status) => {
-        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id:record.agg_of_id } });
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
         if (response.data.status !== "error") {
-            parentReload({ aggId:record.agg_of_id });
+            parentReload({ aggId: record.agg_of_id });
         }
     }
 
@@ -511,6 +517,10 @@ export default ({ aggId }) => {
                     const paletizacao = JSON.parse(raw[0].paletizacao);
                     const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
 
+                    for (const [idx, v] of ofs.entries()) {
+                        v['color'] = colorsOfs[idx]
+                    }
+
                     const quantity = ofs.reduce((basket, ofitem) => {
                         basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
                         basket["linear_meters"] = (!basket?.linear_meters) ? ofitem.linear_meters : basket.linear_meters + ofitem.linear_meters;
@@ -573,7 +583,7 @@ export default ({ aggId }) => {
                             case "especificacoes":
                                 return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
                             case "cortes":
-                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id }} setShowForm={setShowForm} />);
+                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} />);
                             case "operacoes":
                                 return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />

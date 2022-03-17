@@ -5,6 +5,8 @@ import { Spin } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
 import 'antd/dist/antd.compact.less';
+import { SOCKET } from 'config';
+import useWebSocket from 'react-use-websocket';
 
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
@@ -13,6 +15,7 @@ const LayoutPage = lazy(() => import('./LayoutPage'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
+export const SocketContext = React.createContext({});
 
 const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
     //const { formatMessage } = useIntl();
@@ -65,6 +68,27 @@ const useMedia = () => {
 
 const App = () => {
     const [width] = useMedia();
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        /*         onMessage: (v) => {
+                    if (lastJsonMessage) {
+                        console.log(v,lastJsonMessage);
+                    }
+                }, */
+        queryParams: { 'token': '123456' },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 3000
+    });
+
+    useEffect(()=>{
+        //sendJsonMessage({ cmd: 'initAlerts' });
+    },[]);
+
+//    useEffect(()=>{
+//
+//   },[lastJsonMessage])
+
     return (
         <BrowserRouter>
             {/*             <Routes> */}
@@ -83,7 +107,9 @@ const App = () => {
             </MediaContext.Provider> */}
             {/*             </Routes> */}
             <MediaContext.Provider value={width}>
-                <RenderRouter />
+                <SocketContext.Provider value={lastJsonMessage}>
+                    <RenderRouter />
+                </SocketContext.Provider>
             </MediaContext.Provider>
 
         </BrowserRouter>
