@@ -8,6 +8,7 @@ export const MEDIA_URL = "/media";
 export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+export const TIME_FORMAT = 'HH:mm';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const SOCKET = { url: 'ws://localhost:8000/ws' };
 

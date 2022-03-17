@@ -117,6 +117,10 @@ urlpatterns = [
     re_path(r'^changecurrsettings/$', views.changeCurrSettingsStatus),
     #END CURRENT SETTINGS
 
+    #BOBINAGENS
+    re_path(r'^validarbobinagenslist/$', views.ValidarBobinagensList),
+    #BOBINAGENS
+
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 
 

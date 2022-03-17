@@ -25,6 +25,9 @@ export default () => {
                         <div onClick={() => navigate('/app/ofabricolist')}>Ordens Fabrico</div>
                     </li>
                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
+                        <div onClick={() => navigate('/app/validateReellings')}>Validar Bobinagens</div>
+                    </li>
+                    <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
                         <div onClick={() => navigate('/app/ordemfabrico/formdetails', { state: { id: 48 } })}>Form Ordem Fabrico</div>
                     </li>
                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>

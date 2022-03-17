@@ -360,6 +360,7 @@ def OFabricoList(request, format=None):
     print(f'----------------------{ret}')
     return Response(response)
 
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -1731,7 +1732,7 @@ def CortesOrdemLookup(request, format=None):
 def ArtigosTempAggLookup(request, format=None):
     connection = connections[connGatewayName].cursor()
     cols = ["""
-    pc.id cortes_id, pc.largura_cod, pc.largura_json, pca.id cortes_artigo_id,pca.largura cortes_artigo_lar, COALESCE(pca.ncortes,1) cortes_artigo_ncortes,tof.of_id,
+    pc.id cortes_id, pc.largura_cod, pc.largura_json, tof.of_id,
     tof.item_cod,itm_sage."ITMDES1_0" item_des, itm.lar item_lar, pco.designacao, pco.largura_ordem, pco.id largura_id, toaf.cortesordem_id
     """]
     f = Filters(request.data['filter'])
@@ -1756,11 +1757,12 @@ def ArtigosTempAggLookup(request, format=None):
                 join {sageAlias}."ITMMASTER" itm_sage on itm_sage."ITMREF_0" = tof.item_cod
                 left join {sgpAlias}.producao_cortes pc on toaf.cortes_id= pc.id
                 left join {sgpAlias}.producao_cortesordem pco on pc.id= pco.cortes_id and toaf.cortesordem_id = pco.id
-                left join {sgpAlias}.producao_cortesartigos pca on pca.cortes_id = pc.id and pca.of_id = tof.of_id and pca.artigo_cod = tof.item_cod
                 {f.text}
                 {dql.sort}
             """
         ), connection, parameters)
+        #pca.id cortes_artigo_id,pca.largura cortes_artigo_lar, COALESCE(pca.ncortes,1) cortes_artigo_ncortes
+#left join {sgpAlias}.producao_cortesartigos pca on pca.cortes_id = pc.id and pca.of_id = tof.of_id and pca.artigo_cod = tof.item_cod
         return Response(response)
 
 def CortesGet(request, format=None):
@@ -1865,8 +1867,8 @@ def NewCortes(request, format=None):
                 cortes_id = getCortesId(larguras,cursor)
                 cortes_id = insertCortes(cortes_id, larguras, data, cursor)
                 if 'agg_id' in data:
-                    deleteCortesArtigos(cortes_id,cursor)
-                    insertCortesArtigos(cortes_id,data,cursor)
+                    #deleteCortesArtigos(cortes_id,cursor)
+                    #insertCortesArtigos(cortes_id,data,cursor)
                     cortes_are_equal = data["cortes"][0]["largura_cod"] == larguras["cod"]
                     updateTempAggOFabrico(cortes_id,data,cursor,cortes_are_equal)
                 return Response({"status": "success", "id":cortes_id, "title": "Os Cortes foram Registados com Sucesso!", "subTitle":''})
@@ -2374,7 +2376,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 "num_paletes_stock_in":0,
                 "ofid":ordemfabrico["of_id"],
                 "draft_ordem_id":ordemfabrico["id"],
-                "agg_of_id":aggid,
+                "agg_of_id_id":aggid,
                 "status":2,
                 "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0]
             }
@@ -2510,6 +2512,7 @@ def computePaletizacao(cp,data,cursor):
     sqm_paletes_total = 0
     nitems = 0
     items = []
+    computed = {}
     if paletizacao is not None:
         for pitem in paletizacao:
             if pitem["id"] is not None:
@@ -3068,7 +3071,65 @@ def TempAggOFabricoLookup(request, format=None):
 #endregion
 
 
+#region BOBINAGENS
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ValidarBobinagensList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+
+    #f.setParameters({
+    #    **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE(oflist.{k})'),
+    #    **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+    #    **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+    #    # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+    #    # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
+    #    "status": {"value": lambda v: statusFilter(v.get('fofstatus')), "field": lambda k, v: f'sgp_op.{k}'}
+    #}, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+
+    #f2 = filterMulti(request.data['filter'], {
+    #    'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": 'oflist.'},
+    #    'fmulti_order': {"keys": ['iorder', 'prf'], "table": 'oflist.'},
+    #    'fmulti_item': {"keys": ['item', 'item_nome'], "table": 'oflist.'},
+    #    'f_ofabrico': {"keys": ['ofabrico'], "table": 'oflist.'},
+    #    'f_agg': {"keys": ['cod'], "table": 'sgp_tagg.'}
+    #}, False, "and",False)
+    #parameters = {**f.parameters, **f2['parameters']}
+    
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    cols = f"""
+        pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines,pf.core
+    """
+    dql.columns=encloseColumn(cols,False)
+
+
+    sql = lambda p, c, s: (
+        f""" 
+            SELECT 
+            {c(f'{dql.columns}')}            
+            FROM producao_bobinagem pbm
+            join producao_bobine pb on pb.bobinagem_id = pbm.id
+            join producao_largura pl on pl.id = pb.largura_id
+            join producao_perfil pf on pf.id = pbm.perfil_id
+            where valid=0  {f.text}
+            group by pbm.id
+            {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+#endregion
 
 
 

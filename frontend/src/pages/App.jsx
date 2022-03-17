@@ -11,6 +11,7 @@ import useWebSocket from 'react-use-websocket';
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
 const OFabricoList = lazy(() => import('./OFabricoList'));
+const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -31,6 +32,7 @@ const RenderRouter = () => {
             path: '/app',
             element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
             children: [
+                { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
                /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */

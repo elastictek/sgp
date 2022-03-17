@@ -16,32 +16,14 @@ import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import MoreFilters from 'assets/morefilters.svg'
-import SubLayout from "components/SubLayout";
-import Container from "components/container";
-import AlertMessages from "components/alertMessages";
-import ProgressBar from "components/ProgressBar";
-import ActionButton from "components/ActionButton";
-import TagButton from "components/TagButton";
-import { GrStorage } from "react-icons/gr";
-import { RiRefreshLine } from "react-icons/ri";
-
-import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
-import YScroll from "components/YScroll";
-
-const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
-const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
-import { SocketContext } from './App';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
-const { Option } = Select;
-const { confirm } = Modal;
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
-import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
-import { VerticalSpace } from 'components/formLayout';
+import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 const { Title } = Typography;
 
 const schema = (keys, excludeKeys) => {
@@ -70,13 +52,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
     { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
 ];
 
-//const filterSchema = ({ /*field_multi, field_daterange, field*/ }) => [
-/*{ field1: { label: "field", field: field } },
-{ field2: { label: "Date Range", field: { type: "rangedate" } } },
-{ field3: { label: "Multi", field: field_multi } }*/
-//];
-
-const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
+const ToolbarTable = ({ form, dataAPI }) => {
 
     const leftContent = (
         <>
@@ -90,9 +66,8 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
 
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                <Form form={form} initialValues={{ fofstatus: "all" }}>
+                <Form form={form} initialValues={{}}>
                     <FormLayout id="tbt-of" schema={schema}>
-                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField()}</Field>
                     </FormLayout>
                 </Form>
             </div>
@@ -103,10 +78,7 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
     );
 }
 
-
-
-const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
-    const [formData, setFormData] = useState({});
+const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
     const [changed, setChanged] = useState(false);
     const onFinish = (type, values) => {
         switch (type) {
@@ -258,7 +230,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
     return (
         <>
 
-            <FilterDrawer schema={filterSchema({ form, ordersField, customersField, itemsField, ordemFabricoStatusField })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
+            <FilterDrawer schema={filterSchema({ form, ordersField, customersField, itemsField })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
             <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
                 <FormLayout
                     id="LAY-OFFLIST"
@@ -299,405 +271,24 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
     );
 }
 
-const TitlePopup = ({ status, action, ofabrico }) => {
-    /*     if (ativa == 1 && completa == 0){
-            return <div><b>Finalizar</b> a Ordem de Fabrico?</div>
-        }
-        if (ativa == 0 && completa == 0){
-            return <div><b>Iniciar</b> a Ordem de Fabrico?</div>
-        } */
+const Bobines = ({ b }) => {
+    let bobines = JSON.parse(b);
     return (
-        <div style={{ display: "flex", flexDirection: "row" }}>
-            <div><ExclamationCircleOutlined /></div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-                <div><h3><b style={{ textTransform: "capitalize" }}>{action}</b> a Ordem de Fabrico?</h3></div>
-                <div style={{ color: "#1890ff" }}>{ofabrico}</div>
-            </div>
+        <div style={{display:"flex",flexDirection:"row"}}>
+            {bobines.map((v,i) => {
+                return (<Tag key={`bob-${v.id}`}><div>{i}</div><div>{v.lar}</div></Tag>);
+            })}
         </div>
-    );
-
-}
-
-
-const menu = (action, showPopconfirm) => {
-    return (
-        <Menu onClick={(k) => showPopconfirm(k.key)}>
-            {action.includes('ignorar') &&
-                <Menu.Item key="ignorar" icon={<FcCancel size="18px" />}>Ignorar</Menu.Item>
-            }
-            {action.includes('reabrir') &&
-                <Menu.Item key="reabrir" icon={<FcUnlock size="18px" />}>Reabrir</Menu.Item>
-            }
-            {action.includes('suspender') &&
-                <Menu.Item key="suspender" icon={<FcClock size="18px" />}>A Aguardar...</Menu.Item>
-            }
-            {action.includes('iniciar') &&
-                <Menu.Item key="iniciar" icon={<FcAdvance size="18px" />}>Em Curso...</Menu.Item>
-            }
-        </Menu>
-    );
-}
-
-
-const ColumnProgress = ({ record, type }) => {
-    let current, total;
-    let showProgress = (record.ativa == 1 && record.completa == 0) ? true : false;
-    if (type === 1) {
-        current = record.n_paletes_produzidas;
-        total = record.num_paletes_produzir;
-    } else if (type === 2) {
-        current = record.n_paletes_stock_in;
-        total = record.num_paletes_stock;
-    } else if (type === 3) {
-        current = record.n_paletes_produzidas + record.n_paletes_stock_in;
-        total = record.num_paletes_produzir + record.num_paletes_stock;
-    }
-
-    return (<>
-        {showProgress ?
-            <ProgressBar value={current} max={total} />
-            : <div style={{ textAlign: "center" }}>{current}/{total}</div>}
-    </>);
-}
-
-const schemaConfirm = (keys, excludeKeys) => {
-    return getSchema({
-        produto_cod: Joi.string().label("Designação do Produto").required(),
-        artigo_formu: Joi.string().label("Fórmula").required(),
-        artigo_nw1: Joi.string().label("Nonwoven 1").required(),
-        artigo_width: Joi.number().integer().min(1).max(5000).label("Largura").required(),
-        artigo_diam: Joi.number().integer().min(1).max(5000).label("Diâmetro").required(),
-        artigo_core: Joi.number().integer().valid(3, 6).label("Core").required(),
-        artigo_gram: Joi.number().integer().min(1).max(1000).label("Gramagem").required(),
-        artigo_thickness: Joi.number().integer().min(0).max(5000).label("Espessura").required()
-    }, keys, excludeKeys).unknown(true);
-}
-
-const TitleConfirm = ({ status, action, ofabrico }) => {
-    return (
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div><ExclamationCircleOutlined style={{ color: "#faad14" }} /></div>
-            <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
-                <div><b style={{ textTransform: "capitalize" }}>{action}</b> Ordem de Fabrico?</div>
-                <div style={{ color: "#1890ff" }}>{ofabrico}</div>
-            </div>
-        </div>
-    );
-}
-
-const ContentConfirm = ({ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action }) => {
-
-    /*     
-        useEffect(() => {
-            console.log("ENTREIIII NO CONTENT CONFIRM")
-    
-        },[ofabrico]); */
-
-    if (produto_id) {
-        return (<div>Confirmar a Ordem de Fabrico:
-            <ul>
-                <li>Produto <b>{produto_cod}</b></li>
-                <li>Artigo <b>{item}</b></li>
-                <li>Des.Artigo <b>{item_nome}</b></li>
-                {iorder && <li>Encomenda <b>{iorder}</b></li>}
-                {iorder && <li>Cliente <b>{cliente_nome}</b></li>}
-            </ul>
-        </div>);
-    }
-
-    return (
-        <>
-            <ul>
-                <li> Artigo <b>{item}</b></li>
-                <li>Des.Artigo <b>{item_nome}</b></li>
-                {iorder && <li>Encomenda <b>{iorder}</b></li>}
-                {iorder && <li>Cliente <b>{cliente_nome}</b></li>}
-            </ul>
-            <div>Para Validar a Ordem de Fabrico tem de Confirmar/Preencher os seguintes dados:</div>
-            <VerticalSpace />
-            <FormLayout
-                id="LAY-PROD"
-                guides={false}
-                layout="vertical"
-                style={{ width: "100%", padding: "0px" }}
-                schema={schemaConfirm}
-                fieldStatus={{}}
-                field={{ forInput: true, wide: [16], alert: { pos: "right", tooltip: true, container: false } }}
-                fieldSet={{ guides: false, wide: 16 }}
-            >
-                <FieldSet>
-                    <Field name="produto_cod" label={{ enabled: false }}><Input placeholder="Designação do Produto" size="small" /></Field>
-                </FieldSet>
-                <FieldSet field={{ wide: [4, 4, 4, 4], margin: "2px" }}>
-                    <Field required={false} label={{ text: <Tooltip title="O código Gtin se deixado em branco será calculado automáticamente" color="blue"><div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "3px" }}>Gtin<InfoCircleOutlined style={{ color: "#096dd9" }} /></div></Tooltip> }} name="artigo_gtin"><Input size="small" /></Field>
-                    <Field required={true} label={{ text: "Fórmula" }} name="artigo_formu"><Input size="small" /></Field>
-                    <Field required={true} label={{ text: "Nw1" }} name="artigo_nw1"><Input size="small" /></Field>
-                    <Field required={false} label={{ text: "Nw2" }} name="artigo_nw2"><Input size="small" /></Field>
-                </FieldSet>
-                <FieldSet field={{ wide: [3, 3, 3, 3, 3, '*'] }}>
-                    <Field required={true} label={{ text: "Largura" }} name="artigo_width"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
-                    <Field required={true} label={{ text: "Diâmetro" }} name="artigo_diam"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
-                    <Field required={true} label={{ text: "Core" }} name="artigo_core"><InputAddon size="small" addonAfter={<b>''</b>} maxLength={1} /></Field>
-                    <Field required={true} label={{ text: "Gramagem" }} name="artigo_gram"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
-                    <Field required={true}
-                        label={{
-                            text: <Tooltip title="A espessura é usada como valor de referência, na conversão de metros&#xB2; -> metros lineares." color="blue">
-                                <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "3px" }}>Espessura<InfoCircleOutlined style={{ color: "#096dd9" }} /></div>
-                            </Tooltip>
-                        }}
-                        name="artigo_thickness">
-                        <InputAddon size="small" addonAfter={<b>&#x00B5;</b>} maxLength={4} />
-                    </Field>
-                </FieldSet>
-            </FormLayout>
-
-        </>
-    );
-}
-
-const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
-    const [form] = Form.useForm();
-    const [confirmLoading, setConfirmLoading] = React.useState(false);
-    const [modalText, setModalText] = React.useState('Content of the modal');
-    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, onAction } = showConfirm.data;
-    const [formStatus, setFormStatus] = useState({});
-
-    useEffect(() => {
-        if (!produto_id && ofabrico) {
-            let artigo = { artigo_thickness: THICKNESS, produto_cod: undefined, artigo_gtin: undefined, artigo_core: undefined, artigo_formu: undefined, artigo_nw1: undefined, artigo_nw2: undefined, artigo_width: undefined, artigo_diam: undefined, artigo_gram: undefined };
-            const designacao = item_nome.split(' ').reverse();
-            for (let v of designacao) {
-                if (v.includes("''") || v.includes("'")) {
-                    artigo["artigo_core"] = v.replaceAll("'", "");
-                    continue;
-                }
-                if (v.toUpperCase().startsWith('H')) {
-                    artigo["artigo_formu"] = v.toUpperCase();
-                    continue;
-                }
-                if (v.toUpperCase().startsWith('ELA-')) {
-                    artigo["artigo_nw1"] = v.toUpperCase();
-                    continue;
-                }
-                if (v.toLowerCase().startsWith('l')) {
-                    artigo["artigo_width"] = v.toLowerCase().replaceAll("l", "");
-                    continue;
-                }
-                if (v.toLowerCase().startsWith('d')) {
-                    artigo["artigo_diam"] = v.toLowerCase().replaceAll("d", "");
-                    continue;
-                }
-                if (v.toLowerCase().startsWith('g') || (!isNaN(v) && Number.isInteger(parseFloat(v)))) {
-                    artigo["artigo_gram"] = v.toLowerCase().replaceAll("g", "");
-                    continue;
-                }
-            }
-            setFormStatus({});
-            form.setFieldsValue({ ...artigo });
-        }
-    }, [ofabrico]);
-
-
-
-    // const confirm = async () => {
-    //     setConfirmLoading(true);
-    //     const response = await onAction(rowKey, record, action, () => { });
-    //     //const { ofabrico, ofabrico_sgp, ativa, completa } = record;
-    //     //const response = await fetchPost({ url: `${API_URL}/setofabricostatus/`, parameters: { ofabrico, ofabrico_sgp, ativa, completa } });
-    //     setConfirmLoading(false);
-    //     setEstadoRecord(false);
-    //     /*         if (response.data.status !== "error") {
-    //                 reloadParent();
-    //             } */
-    //     //openNotificationWithIcon(response.data);
-    // }
-
-    // const handleOk = (values) => {
-    //     console.log(values);
-    //     /* setModalText('The modal will be closed after two seconds');
-    //     setConfirmLoading(true);
-    //     setTimeout(() => {
-    //         setShowConfirm({ show: false, data: {} });
-    //         setConfirmLoading(false);
-    //     }, 2000); */
-    // };
-
-    const handleCancel = () => {
-        setShowConfirm({ show: false, data: {} });
-    };
-
-    const onFinish = async (values) => {
-        let response;
-        let v;
-        if (!produto_id && ofabrico) {
-            v = schemaConfirm().validate(values, { abortEarly: false });
-            if (!v.error) {
-                response = await onAction(showConfirm.data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
-            }
-        } else {
-            response = await onAction(showConfirm.data, action);
-        }
-        if (response?.data?.status === "error") {
-            setFormStatus({ error: [{ message: response.data.title }] });
-        } else {
-            if (!v?.error) {
-                setShowConfirm({ show: false, data: {} });
-            }
-        }
-    }
-
-    return (
-        <>
-            <Modal
-                title={<TitleConfirm status={status} action={action} ofabrico={ofabrico} />}
-                visible={showConfirm.show}
-                onOk={() => form.submit()}
-                centered
-                confirmLoading={confirmLoading}
-                onCancel={handleCancel}
-                maskClosable={false}
-            >
-                <Form form={form} name={`fpi`} onFinish={onFinish} component="form">
-                    <AlertMessages formStatus={formStatus} />
-                    <ContentConfirm {...showConfirm.data} />
-                </Form>
-            </Modal>
-        </>
     );
 };
-
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
-    const { status, temp_ofabrico } = record;
-    const [action, setAction] = useState();
-
-    const onShowConfirm = (action) => {
-        const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
-        setShowConfirm({ show: true, data: { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction } });
-    }
-    const onShowMenuActions = () => {
-        const { status, cod, temp_ofabrico_agg } = record;
-        setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
-    }
-
-    return (
-        <div style={{ display: "flex", flexDirection: "row" }}>
-            {((status == 0 || !status) && !temp_ofabrico) && <>
-                <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "98px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
-                <Dropdown overlay={() => menu(['ignorar'], onShowConfirm)} trigger={['click']}>
-                    <TagButton>...</TagButton>
-                </Dropdown>
-            </>}
-            {((status == 1 || !status) && temp_ofabrico) && <>
-                <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
-            </>}
-            {(status == 2 && temp_ofabrico) && <>
-                <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
-            </>}
-            {status == 4 && <>
-                <TagButton onClick={() => showPopconfirm('finalizar')} style={{ width: "98px", textAlign: "center" }} icon={<SyncOutlined spin />} color="processing">Em Curso</TagButton>
-                <Dropdown overlay={() => menu(['reabrir', 'suspender'], showPopconfirm)} trigger={['click']}>
-                    <TagButton>...</TagButton>
-                </Dropdown>
-            </>}
-            {status == 3 && <>
-                <TagButton onClick={() => showPopconfirm('iniciar')} style={{ width: "98px", textAlign: "center" }} icon={<ClockCircleOutlined />} color="warning">A Aguardar</TagButton>
-                <Dropdown overlay={() => menu(['iniciar', 'reabrir'], showPopconfirm)} trigger={['click']}>
-                    <TagButton>...</TagButton>
-                </Dropdown>
-            </>}
-            {status == 9 && <>
-                <Tag /* onClick={showPopConfirm}  */ style={{ width: "98px", textAlign: "center" }} color="error">Finalizada</Tag>
-                <Dropdown overlay={() => menu(['reabrir'], showPopconfirm)} trigger={['click']}>
-                    <TagButton>...</TagButton>
-                </Dropdown>
-            </>}
-        </div>
-    );
-}
-
-
-const TitleMenuActions = ({ aggCod }) => {
-    const { data } = useContext(SocketContext);
-
-    useEffect(() => {
-
-    }, [data.length]);
-
-    const onValidate = () => {
-
-    }
-
-    return (
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Space>
-                    <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                    <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(data).length}</span> Bobinagens por <Tag onClick={onValidate} type="link">Validar.</Tag></div>} type="warning" showIcon />
-                </Space>
-            </div>
-        </div>
-    );
-}
-
-const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
-    const [form] = Form.useForm();
-    const [confirmLoading, setConfirmLoading] = React.useState(false);
-    const [modalText, setModalText] = React.useState('Content of the modal');
-    const { aggId, aggCod } = showMenuActions.data;
-    const [formStatus, setFormStatus] = useState({});
-
-    useEffect(() => {
-    }, []);
-
-    const handleCancel = () => {
-        setShowMenuActions({ show: false, data: {} });
-    };
-
-    return (
-        <>
-            <Modal
-                title={<TitleMenuActions aggCod={aggCod} />}
-                visible={showMenuActions.show}
-                centered
-                onCancel={handleCancel}
-                confirmLoading={confirmLoading}
-                maskClosable={true}
-                footer={null}
-                destroyOnClose={true}
-                bodyStyle={{ height: "800px", backgroundColor: "#f0f0f0" }}
-                width={"90%"}
-            >
-                <YScroll>
-                    <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
-                </YScroll>
-            </Modal>
-        </>
-    );
-};
-
 
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
-    const [showValidar, setShowValidar] = useState({ show: false });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({
-        payload: {
-            url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [
-                /* { column: 'status', direction: 'ASC', options: "NULLS FIRST" },  */
-                { column: 'ofabrico', direction: 'DESC' },
-                /* { column: 'completa' }, { column: 'end_date', direction: 'DESC' } */
-            ]
-        }
-    });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'data', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
-    const [flyoutStatus, setFlyoutStatus] = useState({ visible: false, fullscreen: false });
-    const flyoutFooterRef = useRef();
-    const [estadoRecord, setEstadoRecord] = useState(false);
-
-    const [showConfirm, setShowConfirm] = useState({ show: false, data: {} });
-    const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -707,58 +298,9 @@ export default () => {
     }, []);
 
     const selectionRowKey = (record) => {
-        return `${record.ofabrico}-${isValue(record.item, undefined)}-${isValue(record.iorder, undefined)}`;
+        return `${record.id}`;
     }
 
-    const reloadFromChild = () => {
-        dataAPI.fetchPost();
-    }
-
-    const onEstadoChange = async (record, action, data) => {
-        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, qty_item, item_diam, item_core, item_thickness, item_width, item_id } = record;
-        let response;
-        switch (action) {
-            case 'validar':
-                setLoading(true);
-                response = await fetchPost({
-                    url: `${API_URL}/savetempordemfabrico/`,
-                    parameters: { cliente_cod, cliente_nome, iorder, item, ofabrico_cod: ofabrico, produto_id, artigo: data, qty_item, artigo_diam: item_diam, artigo_core: item_core, artigo_width: item_width, item_id, artigo_thickness: item_thickness }
-                });
-                if (response.data.status !== "error") {
-                    dataAPI.fetchPost();
-                }
-                setLoading(false);
-                return response;
-            case 'ignorar':
-                setLoading(true);
-                response = await fetchPost({ url: `${API_URL}/ignorarordemfabrico/`, parameters: { ofabrico } });
-                if (response.data.status !== "error") {
-                    dataAPI.fetchPost();
-                }
-                setLoading(false);
-                return response;
-            case 'inpreparation':
-                setShowValidar(prev => ({ ...prev, show: !prev.show, record }));
-                break;
-            case 'reabrir':
-                console.log('reabrir', record);
-                break;
-            case 'iniciar':
-                console.log('iniciar', record);
-                break;
-            case 'finalizar':
-                console.log('finalizar', record);
-                break;
-            case 'suspender':
-                console.log('suspender', record);
-                break;
-        }
-
-
-
-        /* setPopupEstadoRecord(rowKey);
-        console.log("--->>", rowKey,action, record); */
-    }
 
     const columns = setColumns(
         {
@@ -768,18 +310,29 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
-                        ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
-                        prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
-                        iorder: { title: "Encomenda(s)", width: 140, ...common },
+                        nome: { title: "Bobine", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
+                        data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common },
+                        inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        duracao: { title: "Duração", render: (v, r) => v, ...common },
+                        core: { title: "Core", render: (v, r) => v, ...common },
+                        comp: { title: "Comp.", render: (v, r) => v, ...common },
+                        comp_par: { title: "Comp. Emenda", render: (v, r) => v, ...common },
+                        comp_cli: { title: "Comp. Cliente", render: (v, r) => v, ...common },
+                        area: { title: "Área m2", render: (v, r) => v, ...common },
+                        bobines: { title: "Bobines", render: (v, r) => <Bobines b={v} />, ...common }
+                        //cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
+                        //ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
+                        //prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
+                        //iorder: { title: "Encomenda(s)", width: 140, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        //estado: { title: "", width: 125, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
-                        item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
-                        cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-                        start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
-                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        //item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
+                        //cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
+                        //start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        //end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
                         //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
                         //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
                         //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
@@ -802,61 +355,29 @@ export default () => {
         }
     );
 
-    const closeFlyout = () => {
-        setFlyoutStatus(prev => ({ ...prev, visible: false }));
-    }
-
-    const ordemFabricoStatusField = () => (
-        <SelectField keyField="value" valueField="label" style={{ width: 150 }} options={
-            [{ value: "all", label: "Todos" },
-            { value: "notcreated", label: "Não Criada" },
-            { value: "inpreparation", label: "Em Preparação" },
-            { value: "inprogress", label: "Em Progresso" },
-            { value: "finished", label: "Finalizada" }]
-        } />
-    );
-
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
-                <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
-                <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
-                {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
-                <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
-                    <SubLayout.content>
-                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
-                        {elFilterTags && <Portal elId={elFilterTags}>
-                            <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                        </Portal>}
-                        <Table
-                            title={<Title level={4}>Ordens de Fabrico</Title>}
-                            columnChooser={false}
-                            reload
-                            stripRows
-                            darkHeader
-                            size="small"
-                            toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
-                            selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                            dataAPI={dataAPI}
-                            columns={columns}
-                            onFetch={dataAPI.fetchPost}
-                        //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                        />
-                    </SubLayout.content>
-                    <SubLayout.flyout>
-                        <Container.Header fullScreen={false} setStatus={setFlyoutStatus} left={<Title level={4} style={{ marginBottom: "0px" }}>Title</Title>} />
-                        <Container.Body>
-
-                        </Container.Body>
-                        {/* <Container.Footer right={<div ref={flyoutFooterRef}/>} /> */}
-                    </SubLayout.flyout>
-                </SubLayout>
-
+                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
+                {elFilterTags && <Portal elId={elFilterTags}>
+                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
+                </Portal>}
+                <Table
+                    title={<Title level={4}>Validar Bobinagens da Linha 1</Title>}
+                    columnChooser={false}
+                    reload
+                    stripRows
+                    darkHeader
+                    size="small"
+                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
+                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
+                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                    dataAPI={dataAPI}
+                    columns={columns}
+                    onFetch={dataAPI.fetchPost}
+                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+                />
             </Spin>
-
-
         </>
     )
 }
