@@ -62,7 +62,7 @@ const HeaderA = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid 
                 <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} >Matérias Primas</Field>
                 <Field >Densidade</Field>
             </FieldSet>
-            <FieldSet margin={false} wide={9} margin={false} layout="vertical"
+            <FieldSet margin={false} wide={9} layout="vertical"
                 field={{ style: { border, borderLeft: "none" } }}
             >
                 <FieldSet field={{ wide: [16] }} margin={false}>
@@ -103,7 +103,7 @@ const HeaderBC = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid
                 <Field style={{ border }}></Field>
                 <Field></Field>
             </FieldSet>
-            <FieldSet margin={false} wide={9} margin={false}>
+            <FieldSet margin={false} wide={9}>
                 <FieldSet margin={false}
                     field={{
                         wide: [/* 3,  */4, 4, 4, 3, 1/*  2, 3 */],
@@ -216,7 +216,7 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                                     </Field>
                                     <Field name={[field.name, `densidade_${id}`]}><InputNumber controls={false} size="small" min={0} max={50} precision={3} step={.025} /></Field>
                                 </FieldSet>
-                                <FieldSet margin={false} wide={9} margin={false}>
+                                <FieldSet margin={false} wide={9}>
                                     <FieldSet margin={false}
                                         field={{
                                             wide: [/* 3,  */4, 4, 4, 3, 1/* , 2, 3 */],
@@ -240,7 +240,7 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                         {(sum && form.getFieldValue("totalGlobal") > 0) &&
                             <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
                                 <FieldSet wide={7} margin={false} />
-                                <FieldSet margin={false} wide={9} margin={false}>
+                                <FieldSet margin={false} wide={9}>
                                     <FieldSet margin={false}
                                         field={{
                                             wide: [12, 4],
@@ -281,6 +281,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
@@ -390,15 +391,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             init();
             setResultMessage({ status: "none" });
         }
+        setSubmitting(false);
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+
+    const onSubmit = useCallback(() => {
+        setSubmitting(true);
+        onFinish(form.getFieldsValue(true));
+    },[]);
 
     return (
         <>
@@ -511,8 +519,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => onFinish(form.getFieldsValue(true))}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                        {/* <Button type="primary" onClick={() => onFinish(form.getFieldsValue(true))}>Guardar</Button> */}
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

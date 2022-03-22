@@ -76,6 +76,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
@@ -89,7 +90,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 form.setFieldsValue({ ...record });
             } else {
                 (setFormTitle) && setFormTitle({ title: `Novo Esquema de Paletização ${record.cliente_nome}`, subTitle: `${record.artigo_cod}` });
-                form.setFieldsValue({ contentor_id: "Camião", cintas_palete: 1, ncintas: 2, netiquetas_bobine: 2, netiquetas_lote: 4, netiquetas_final: 1, npaletes: 24, palete_maxaltura: 2.55, folha_identificativa:1 });
+                form.setFieldsValue({ contentor_id: "Camião", cintas_palete: 1, ncintas: 2, netiquetas_bobine: 2, netiquetas_lote: 4, netiquetas_final: 1, npaletes: 24, palete_maxaltura: 2.55, folha_identificativa: 1 });
             }
             setLoading(false);
         })();
@@ -119,6 +120,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             }
             setResultMessage(response.data);
         }
+        setSubmitting(false);
         setFormStatus(status);
     }
 
@@ -128,15 +130,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             init();
             setResultMessage({ status: "none" });
         }
+        setSubmitting(false);
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+
+    const onSubmit = useCallback(async () => {
+        setSubmitting(true);
+        form.submit();
+    }, []);
 
     return (
         <>
@@ -200,7 +209,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             </FieldSet>
                         </FieldSet>
 
-                        <FieldSet wide={16} margin={false} field={{ wide: [2, 2,3,5, '*'], style: { alignSelf: "center" } }}>
+                        <FieldSet wide={16} margin={false} field={{ wide: [2, 2, 3, 5, '*'], style: { alignSelf: "center" } }}>
                             <Field name="cintas" style={{ minWidth: "20px", alignSelf: "center" }} label={{ enabled: false }}><CheckboxField /></Field>
                             <FieldItem label={{ enabled: false }}>
                                 <Item shouldUpdate={(prevValues, curValues) => prevValues?.cintas !== curValues?.cintas}>
@@ -258,8 +267,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

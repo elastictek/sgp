@@ -1817,7 +1817,7 @@ def NewCortes(request, format=None):
             return rows[0]['id']
         return None
 
-    def insertCortes(id, larguras, data, cursor):        
+    def insertCortes(id, larguras, data, cursor):
         fields = {
             "largura_cod":  larguras["cod"],
             "largura_json": larguras["json"],
@@ -3105,28 +3105,38 @@ def ValidarBobinagensList(request, format=None):
     parameters = {**f.parameters}
     dql = db.dql(request.data, False)
     cols = f"""
-        pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines,pf.core
+        pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines,pbm.core
     """
     dql.columns=encloseColumn(cols,False)
 
 
     sql = lambda p, c, s: (
         f""" 
-            SELECT 
-            {c(f'{dql.columns}')}            
-            FROM producao_bobinagem pbm
+            SELECT
+            {c(f'{dql.columns}')}
+            from(
+                select pbm.*,pf.core
+                FROM producao_bobinagem pbm
+                join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
+                where pbm.valid=0 {f.text}
+                {s(dql.sort)} {p(dql.paging)}
+            ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
-            join producao_largura pl on pl.id = pb.largura_id
-            join producao_perfil pf on pf.id = pbm.perfil_id
-            where valid=0  {f.text}
+            join producao_largura pl on pl.id = pb.largura_id            
             group by pbm.id
-            {s(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)}
         """
     )
+    sqlCount = f""" 
+            SELECT count(*) 
+            FROM producao_bobinagem pbm
+            join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
+            where pbm.valid=0  {f.text}
+        """
 
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
+    response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
 #endregion

@@ -300,6 +300,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     const onClose = (reload = false) => {
+        parentReload({ agg_id: aggItem.id });
         closeParent();
     }
 
@@ -325,8 +326,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button type="primary" onClick={onClose}>Fechar</Button>
+{/*                         <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

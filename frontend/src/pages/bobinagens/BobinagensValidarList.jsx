@@ -10,21 +10,25 @@ import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
 
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer } from "components/formLayout";
+import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer, CheckboxField, SwitchField } from "components/formLayout";
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import MoreFilters from 'assets/morefilters.svg'
+import MoreFilters from 'assets/morefilters.svg';
+import { Outlet, useNavigate } from "react-router-dom";
+import YScroll from "components/YScroll";
+import { MdAdjust } from 'react-icons/md';
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 const { Title } = Typography;
+import { SocketContext } from '../App';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -53,9 +57,11 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
 ];
 
 const ToolbarTable = ({ form, dataAPI }) => {
+    const navigate = useNavigate();
 
     const leftContent = (
         <>
+            <button onClick={() => navigate(-1)}>go back</button>
             {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
         </>
     );
@@ -271,36 +277,420 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
     );
 }
 
-const Bobines = ({ b }) => {
-    let bobines = JSON.parse(b);
+const StyledBobine = styled.div`
+    border:dashed 1px #000;
+    background-color:${props => props.color};
+    border-radius:3px;
+    margin-right:1px;
+    text-align:center;
+    width:25px;
+    font-size:9px;
+    cursor:pointer;
+    &:hover {
+        border-color: #d9d9d9;
+    }
+`;
+
+const useStyles = createUseStyles({
+    columnBobines: {
+        width: '25px',
+        textAlign: "center",
+        marginRight: "1px"
+    }
+})
+
+const ColumnBobines = ({ n }) => {
+    const classes = useStyles();
+    return (<div style={{ display: "flex", flexDirection: "row" }}>
+        {[...Array(n)].map((x, i) =>
+            <div className={classes.columnBobines} key={`bh-${i}`}>{i + 1}</div>
+        )}
+    </div>);
+}
+
+const bColors = (estado) => {
+    if (estado === "G") {
+        return "#237804";//"green";
+    } else if (estado === "DM") {
+        return "#fadb14";//"gold";
+    } else if (estado === "R") {
+        return "#ff1100";//"red";
+    } else if (estado === "LAB") {
+        return "#13c2c2";//"cyan";
+    } else if (estado === "BA") {
+        return "#ff1100";//"red";
+    } else if (estado === "IND") {
+        return "#0050b3";//"blue";
+    } else if (estado === "HOLD") {
+        return "#391085";//"purple";
+    }
+}
+
+const Bobines = ({ b, bm, setShow }) => {
+    let bobines = b;
+
+    const handleClick = () => {
+        console.log("OI", bobines, bm)
+        setShow({ show: true, data: { bobines, bobinagem: bm } });
+    };
+
     return (
-        <div style={{display:"flex",flexDirection:"row"}}>
-            {bobines.map((v,i) => {
-                return (<Tag key={`bob-${v.id}`}><div>{i}</div><div>{v.lar}</div></Tag>);
+        <div style={{ display: "flex", flexDirection: "row" }}>
+            {bobines.map((v, i) => {
+                return (<StyledBobine onClick={handleClick} color={bColors(v.estado)} key={`bob-${v.id}`}><b>{v.estado}</b><div>{v.lar}</div></StyledBobine>);
             })}
         </div>
     );
 };
 
+const EditableContext = React.createContext(null);
+
+const EditableRow = ({ index, ...props }) => {
+    const [form] = Form.useForm();
+    return (
+        <Form form={form} component={false}>
+            <EditableContext.Provider value={form}>
+                <tr {...props} />
+            </EditableContext.Provider>
+        </Form>
+    );
+};
+
+
+const EditableCell = ({
+    title,
+    editable,
+    children,
+    dataIndex,
+    record,
+    input,
+    handleSave,
+    ...restProps
+}) => {
+    const [editing, setEditing] = useState(false);
+    const inputRef = useRef(null);
+    const form = useContext(EditableContext);
+    useEffect(() => {
+        if (editing) {
+            inputRef.current.focus();
+        }
+    }, [editing]);
+
+    const toggleEdit = () => {
+        setEditing(!editing);
+        form.setFieldsValue({
+            [dataIndex]: record[dataIndex],
+        });
+    };
+
+    const save = async () => {
+        try {
+            const values = await form.validateFields();
+            toggleEdit();
+            handleSave({ ...record, ...values });
+        } catch (errInfo) {
+            console.log('Save failed:', errInfo);
+        }
+    };
+
+    let childNode = children;
+
+    if (editable) {
+        childNode = editing ? (
+            <Form.Item
+                style={{
+                    margin: 0,
+                }}
+                name={dataIndex}
+                rules={[
+                    {
+                        required: true,
+                        message: `${title} is required.`,
+                    },
+                ]}
+            >
+                {React.isValidElement(input) ? React.cloneElement(input, { ref: inputRef, onPressEnter: save, onBlur: save, ...input.props }) : <Input ref={inputRef} onPressEnter={save} onBlur={save} />}
+            </Form.Item>
+        ) : (
+            <div
+                className="editable-cell-value-wrap"
+                style={{
+                    paddingRight: 24,
+                }}
+                onClick={toggleEdit}
+            >
+                {children}
+            </div>
+        );
+    }
+
+    return <td {...restProps}>{childNode}</td>;
+};
+
+const TitleValidar = ({ data }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
+                <Space>
+                    <div><b style={{ textTransform: "capitalize" }}></b>Validar/Classificar a Bobinagem {data.bobinagem.nome}</div>
+                </Space>
+            </div>
+        </div>
+    );
+}
+
+const ModalValidar = ({ show, setShow }) => {
+    const [confirmLoading, setConfirmLoading] = React.useState(false);
+
+    const handleCancel = () => {
+        setShow({ show: false, data: {} });
+    };
+
+    return (
+        <>
+            <Modal
+                title={<TitleValidar data={show.data}/* aggCod={aggCod} */ />}
+                visible={show.show}
+                centered
+                onCancel={handleCancel}
+                confirmLoading={confirmLoading}
+                maskClosable={true}
+                footer={null}
+                destroyOnClose={true}
+                bodyStyle={{ height: "600px"/* , backgroundColor: "#f0f0f0" */ }}
+                width={"70%"}
+            >
+                <YScroll>
+                    <Suspense fallback={<></>}>{<BobinagemValidarForm data={show.data} />}</Suspense>
+                </YScroll>
+            </Modal>
+        </>
+    );
+};
+
+const formSchema = (keys, excludeKeys) => {
+    return getSchema({
+        /* npaletes: Joi.number().positive().label("Paletes/Contentor").required(),
+        palete_maxaltura: Joi.number().positive().precision(2).label("Altura Máx. Palete (metros)").required(),
+        //designacao: Joi.string().label("Designação").required(),
+        netiquetas_bobine: Joi.number().positive().precision(2).label("Etiqueta/Bobine").required(),
+        netiquetas_lote: Joi.number().positive().precision(2).label("Etiqueta do Lote da Palete").required(),
+        netiquetas_final: Joi.number().positive().precision(2).label("Etiqueta Final da Palete").required(),
+        folha_identificativa: Joi.number().min(0).precision(2).label("Folha Identificativa Palete").required(),
+        cintas: Joi.number().valid(0, 1),
+        ncintas: Joi.when('cintas', { is: 1, then: Joi.number().positive().required() }),
+        paletizacao: Joi.array().min(1).label("Items da Paletização").required() */
+    }, keys, excludeKeys).unknown(true);
+};
+
+const BobinagemValidarForm = ({ data, wrapForm = "form", forInput = true }) => {
+    const { bobinagem, bobines } = data;
+    const [form] = Form.useForm();
+    const [resultMessage, setResultMessage] = useState({ status: "none" });
+    const [changedValues, setChangedValues] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+
+
+    const onValuesChange = (changedValues, allValues) => {
+        console.log("chv-------", changedValues)
+        setChangedValues(changedValues);
+    }
+
+    const onFinish = async (values) => {
+        const status = { error: [], warning: [], info: [], success: [] };
+        setFormStatus(status);
+    }
+
+
+    return (
+
+        <Form form={form} name={`fpv`} onFinish={onFinish} onValuesChange={onValuesChange} component={wrapForm}>
+            <FormLayout
+                id="LAY-VALIDAR-BM"
+                guides={false}
+                layout="vertical"
+                style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
+                schema={formSchema}
+                field={{
+                    forInput,
+                    wide: [16],
+                    margin: "0px", overflow: false, guides: false,
+                    label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: true, ellipsis: true },
+                    alert: { pos: "right", tooltip: true, container: false /* container: "el-external" */ },
+                    layout: { top: "", right: "", center: "", bottom: "", left: "" },
+                    required: true,
+                    style: { alignSelf: "center" }
+                }}
+                fieldSet={{
+                    guides: false,
+                    wide: 16, margin: "0px", layout: "horizontal", overflow: false
+                }}
+            >
+
+                <FieldSet layout="vertical" wide={16}>
+                    <Form.List name="validacao_bobines_list">
+                        {(fields, { add, remove, move }) => {
+                            const addRow = (fields) => {
+                                add({ item_id: 1, item_paletesize: '970x970', item_numbobines: 10 }, 0);
+                            }
+                            /*const removeRow = (fieldName) => {
+                                remove(fieldName);
+                            }
+                            const moveRow = (from, to) => {
+                                move(from, to);
+                            } */
+                            return (
+                                <>
+                                    <FieldSet margin="5px">
+                                        {forInput && <Button type="dashed" onClick={() => addRow(fields)} style={{ width: "100%" }}><UserOutlined />Adicionar</Button>}
+                                    </FieldSet>
+                                    {fields.map((field, index) => (
+
+
+                                        <FieldSet layout="vertical" field={{ wide: [16] }} key={field.key}>
+                                            <FieldSet layout="horizontal" field={{ wide: [1, 15] }} style={{ justifyContent: "center" }}>
+                                                <Button style={{ alignSelf: "center" }} icon={<MdAdjust />} />
+                                                <div style={{ display: "flex", flexDirection: "row" }}>{data.bobines.map((v, i) => {
+                                                    return (
+                                                        <div key={`bl-${i}`}>
+                                                            {/* <div style={{ textAlign: "center" }}>{i}</div> */}
+                                                            <Badge color="green" count={5}>
+                                                                <StyledBobine color={bColors(v.estado)}>
+                                                                    {/*  <Field label={{ enabled: false }} name={[field.name, `bobine_id_${i}`]}>
+                                                                    <CheckboxField />
+                                                                </Field> */}
+                                                                    {/* <b>{v.estado}</b> */}<b>{i}</b><div>{v.lar}</div>
+                                                                    {/*                                                                 <Field label={{ enabled: false }} name={[field.name, `largura_${i}`]}>
+                                                                    <Input />
+                                                                </Field> */}
+                                                                </StyledBobine>
+                                                            </Badge>
+                                                        </div>
+                                                    );
+                                                })}</div>
+                                            </FieldSet>
+
+                                            <FieldSet layout="vertical" field={{ wide: [16] }}>
+                                                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid" }}>
+                                                    <tr>
+                                                        <th style={{ border: "1px solid" }}>Classificação</th>
+                                                        <th style={{ border: "1px solid" }}>Lastname</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{ border: "1px solid" }}>Peter</td>
+                                                        <td style={{ border: "1px solid" }}><Field name={[field.name, `nok`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style={{ border: "1px solid" }}>Lois</td>
+                                                        <td style={{ border: "1px solid" }}>Griffin</td>
+                                                    </tr>
+                                                </table>
+                                            </FieldSet>
+
+                                            {/*                                             <FieldSet layout="vertical" field={{ wide: [15] }} style={{ marginTop: "5px" }}>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Largura NOK</FieldItem>
+                                                    <Field name={[field.name, `nok`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Cónico</FieldItem>
+                                                    <Field name={[field.name, `con`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Descentrada</FieldItem>
+                                                    <Field name={[field.name, `desc`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Presa</FieldItem>
+                                                    <Field name={[field.name, `presa`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Diâmetro</FieldItem>
+                                                    <Field name={[field.name, `diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Sujidade</FieldItem>
+                                                    <Field name={[field.name, `suj`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Carro Atrás</FieldItem>
+                                                    <Field name={[field.name, `carro`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Não Colou</FieldItem>
+                                                    <Field name={[field.name, `ncolou`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Sobretiragem</FieldItem>
+                                                    <Field name={[field.name, `sobr`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Corte</FieldItem>
+                                                    <Field name={[field.name, `falhacorte`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Inicio Diam. (mm)</FieldItem>
+                                                    <Field name={[field.name, `inicio_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Diam. (mm)</FieldItem>
+                                                    <Field name={[field.name, `fim_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Filme</FieldItem>
+                                                    <Field name={[field.name, `falhafilme`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Falha M.P.</FieldItem>
+                                                    <Field name={[field.name, `falha_mp`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Furos</FieldItem>
+                                                    <Field name={[field.name, `furos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Buracos Gram.</FieldItem>
+                                                    <Field name={[field.name, `buracos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                            </FieldSet> */}
+
+
+                                        </FieldSet>
+
+                                    ))}
+                                </>
+                            );
+                        }}
+                    </Form.List>
+                </FieldSet>
+
+
+
+            </FormLayout>
+        </Form>
+    );
+}
+
+
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
+    const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'data', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
+    const { data: dataSocket } = useContext(SocketContext) || {};
+
+    /*     useEffect(() => {
+            const cancelFetch = cancelToken();
+            dataAPI.first();
+            dataAPI.fetchPost({token: cancelFetch });
+            return (() => cancelFetch.cancel());
+        }, []); */
 
     useEffect(() => {
+        console.log("NOVA BOBINAGEM DETETADA...", dataSocket);
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, []);
+    }, [dataSocket]);
 
     const selectionRowKey = (record) => {
         return `${record.id}`;
     }
 
+    const components = {
+        body: {
+            row: EditableRow,
+            cell: EditableCell,
+        },
+    };
 
     const columns = setColumns(
         {
@@ -310,17 +700,17 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobine", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
+                        nome: { title: "Bobinagem", width: 140, render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common },
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         duracao: { title: "Duração", render: (v, r) => v, ...common },
                         core: { title: "Core", render: (v, r) => v, ...common },
-                        comp: { title: "Comp.", render: (v, r) => v, ...common },
+                        comp: { title: "Comp.", render: (v, r) => v, editable: true, input: <InputNumber />, ...common },
                         comp_par: { title: "Comp. Emenda", render: (v, r) => v, ...common },
                         comp_cli: { title: "Comp. Cliente", render: (v, r) => v, ...common },
                         area: { title: "Área m2", render: (v, r) => v, ...common },
-                        bobines: { title: "Bobines", render: (v, r) => <Bobines b={v} />, ...common }
+                        bobines: { title: <ColumnBobines n={28} />, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common }
                         //cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         //ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
                         //prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
@@ -358,6 +748,7 @@ export default () => {
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+                <ModalValidar show={showValidar} setShow={setShowValidar} />
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
@@ -375,6 +766,7 @@ export default () => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
+                    components={components}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>

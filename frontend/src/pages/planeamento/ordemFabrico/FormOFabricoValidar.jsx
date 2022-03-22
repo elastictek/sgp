@@ -48,6 +48,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [fieldStatus, setFieldStatus] = useState({});
     const submitForProduction = useRef(false);
 
@@ -170,10 +171,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     };
 
     const onSuccessOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
@@ -181,10 +184,16 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         closeParent();
     }
 
-    const onSubmitForProduction = () => {
+    const onSubmitForProduction = useCallback(() => {
+        setSubmitting(true);
         submitForProduction.current = true;
         form.submit();
-    }
+    },[]);
+
+    const onSubmit = useCallback(() =>{
+        setSubmitting(true);
+        form.submit();
+    },[]);
 
     return (
         <>
@@ -235,9 +244,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                 </ResultMessage>
                 <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
-                        <Button onClick={() => form.submit()}>Guardar Ordem de Fabrico</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
+                        <Button disabled={submitting} onClick={onSubmit}>Guardar Ordem de Fabrico</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
             </Spin>

@@ -41,7 +41,20 @@ const commonPlugins = [
         chunkFilename: isDevMode ? '[id].css' : '[id].[contenthash].css',
         ignoreOrder: true
     }),
-    new AntdDayjsWebpackPlugin()
+    new AntdDayjsWebpackPlugin({
+        replaceMoment: true, plugins: [
+            'isSameOrBefore',
+            'isSameOrAfter',
+            'advancedFormat',
+            'customParseFormat',
+            'weekday',
+            'weekYear',
+            'weekOfYear',
+            'isMoment',
+            'localeData',
+            'localizedFormat'
+        ]
+    })
 ]
 const devPlugins = []
 const prodPlugins = []

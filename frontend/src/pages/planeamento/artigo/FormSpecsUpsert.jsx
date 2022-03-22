@@ -31,11 +31,11 @@ const loadCustomersLookup = async (value) => {
     return rows;
 }
 
-
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
@@ -104,17 +104,24 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         if (operation.key === "insert") {
             form.resetFields();
             init();
+            setSubmitting(false);
             setResultMessage({ status: "none" });
         }
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+
+    const onSubmit = useCallback(() =>{
+        setSubmitting(true);
+        form.submit();
+    },[]);
 
     return (
         <>
@@ -238,8 +245,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} type="primary" onClick={onSubmit}>Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

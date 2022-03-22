@@ -107,6 +107,18 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
             optional,
             ...rOptions
         }
+
+        if (c.editable){
+            c["onCell"]=(record) => ({
+                record,
+                editable: c.editable,
+                dataIndex: c.dataIndex,
+                title: c.title,
+                input:c?.input
+                //handleSave: this.handleSave,
+              });
+        }
+
         if (!c.optional) {
             ret.notOptional.push(c);
         }

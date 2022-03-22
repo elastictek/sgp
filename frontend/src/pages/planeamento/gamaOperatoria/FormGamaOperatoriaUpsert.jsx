@@ -36,6 +36,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
@@ -66,7 +67,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
-        console.log("RECORD---",record)
         init(true);
     }, []);
 
@@ -80,20 +80,20 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
         if (!v.error) {
             let error = false;
-            console.log("BEFORE---GO-",values);
             for (let k in values) {
-                if (k!=='designacao' && values[k]===undefined){
-                    error=true;
+                if (k !== 'designacao' && (values[k] === undefined || values[k] === null)) {
+                    error = true;
                     break;
                 }
             }
-            if (error){
+            if (error) {
                 status.error.push({ message: "Os items da Gama Operatória têm de estar preenchidos!" });
+                setSubmitting(false);
             }
             if (status.error.length === 0) {
                 const response = await fetchPost({ url: `${API_URL}/newgamaoperatoria/`, parameters: { ...form.getFieldsValue(true), produto_id: ctx.produto_id } });
                 if (response.data.status !== "error") {
-                    parentReload({gamaoperatoria_id: record.gamaoperatoria_id}, "init");
+                    parentReload({ gamaoperatoria_id: record.gamaoperatoria_id }, "init");
                 }
                 setResultMessage(response.data);
             }
@@ -108,15 +108,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             init();
             setResultMessage({ status: "none" });
         }
+        setSubmitting(false);
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+
+    const onSubmit = useCallback(async () => {
+        setSubmitting(true);
+        onFinish(form.getFieldsValue(true));
+    }, []);
 
     return (
         <>
@@ -181,8 +188,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

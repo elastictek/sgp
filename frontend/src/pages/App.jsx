@@ -7,6 +7,7 @@ import './app.css'
 import 'antd/dist/antd.compact.less';
 import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
+import { useImmer } from "use-immer";
 
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
@@ -17,6 +18,7 @@ const LayoutPage = lazy(() => import('./LayoutPage'));
 
 export const MediaContext = React.createContext({});
 export const SocketContext = React.createContext({});
+export const AppContext = React.createContext({});
 
 const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
     //const { formatMessage } = useIntl();
@@ -35,7 +37,7 @@ const RenderRouter = () => {
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
-               /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
+                /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
         },
         { path: "*", element: <Suspense fallback={<Spin />}><NotFound /></Suspense> }
@@ -70,6 +72,7 @@ const useMedia = () => {
 
 const App = () => {
     const [width] = useMedia();
+    const [appState, updateAppState] = useImmer({});
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
         onOpen: () => console.log(`Connected to Web Socket`),
         /*         onMessage: (v) => {
@@ -83,13 +86,13 @@ const App = () => {
         reconnectInterval: 3000
     });
 
-    useEffect(()=>{
+    useEffect(() => {
         //sendJsonMessage({ cmd: 'initAlerts' });
-    },[]);
+    }, []);
 
-//    useEffect(()=>{
-//
-//   },[lastJsonMessage])
+    //    useEffect(()=>{
+    //
+    //   },[lastJsonMessage])
 
     return (
         <BrowserRouter>
@@ -109,9 +112,11 @@ const App = () => {
             </MediaContext.Provider> */}
             {/*             </Routes> */}
             <MediaContext.Provider value={width}>
-                <SocketContext.Provider value={lastJsonMessage}>
-                    <RenderRouter />
-                </SocketContext.Provider>
+                <AppContext.Provider value={{}}>
+                    <SocketContext.Provider value={lastJsonMessage}>
+                        <RenderRouter />
+                    </SocketContext.Provider>
+                </AppContext.Provider>
             </MediaContext.Provider>
 
         </BrowserRouter>

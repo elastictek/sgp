@@ -18,6 +18,7 @@ import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
+import {Outlet,useNavigate} from "react-router-dom";
 
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));

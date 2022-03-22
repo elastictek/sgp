@@ -16,6 +16,13 @@ import { useImmer } from "use-immer";
 import { OFabricoContext } from './FormOFabricoValidar';
 
 
+const colors = [
+    { bcolor: '#002766', color: '#ffffff' },
+    { bcolor: '#0050b3', color: '#ffffff' }, { bcolor: '#1890ff', color: '#000000' },
+    { bcolor: '#69c0ff', color: '#000000' }, { bcolor: '#bae7ff', color: '#000000' },
+    { bcolor: '#ffffff', color: '#000000' }
+];
+
 
 const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
@@ -56,6 +63,7 @@ const loadCortesOrdemLookup = async ({ cortes_id, token }) => {
 export default ({ /* form, guides, schema,  */changedValues }) => {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState({ show: false });
+    const [submitting, setSubmitting] = useState(false);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [cortesOrdemLookup, setCortesOrdemLookup] = useState([]);
     const [larguraUtil, setLarguraUtil] = useState();
@@ -91,7 +99,8 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
     }
 
     const calculateLarguraUtil = useCallback((cortes) => {
-        const v = cortes.reduce((accumulator, current) => accumulator + (current.cortes_artigo_ncortes * current.cortes_artigo_lar), 0);
+        console.log("aaaaaaa",cortes)
+        const v = cortes.reduce((accumulator, current) => accumulator + (current.item_ncortes * current.item_lar), 0);
         return v;
     });
 
@@ -109,6 +118,16 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                 }
                 (async () => {
                     const _cortes = await loadArtigosAggLookup({ agg_id, token });
+                    if (_cortes.length > 0) {
+                        for (let [i, v] of _cortes.entries()) {
+                            const _larguras = JSON.parse(v.largura_json);
+                            if (_larguras !== undefined && _larguras !== null) {
+                                v["item_ncortes"] = _larguras[v.item_lar];
+                                v["bcolor"] = colors[i].bcolor;
+                                v["color"] = colors[i].color;
+                            }
+                        }
+                    }
                     const cortes_id = (_cortes.length > 0) ? _cortes[0]["cortes_id"] : null;
                     const cortesordem_id = (_cortes.length > 0) ? _cortes[0]["cortesordem_id"] : null;
                     const _cortesOrdemLookup = await loadCortesOrdemLookup({ cortes_id, token });
@@ -120,7 +139,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
         }
     }
 
-    const onSubmit = async () => {
+    const onSubmit = useCallback(async () => {
         const status = { error: [], warning: [], info: [], success: [] };
         const response = await fetchPost({ url: `${API_URL}/newcortes/`, parameters: { ...form.getFieldsValue(["cortes"]), agg_id: ctx.agg_id } });
         if (response.data.status == "error") {
@@ -130,7 +149,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
             loadData({ agg_id: ctx.agg_id });
         }
         setFormStatus(status);
-    }
+    }, []);
 
     const clearCortes = async () => {
         const status = { error: [], warning: [], info: [], success: [] };
@@ -192,10 +211,8 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                     <FieldSet>
 
 
-                        <FieldSet wide={10} layout="vertical">
-                            <FieldSet style={{ fontWeight: 500 }} field={{ wide: [5, 5, 3, 3], noItemWrap: true, label: { enabled: false } }}>
-                                <Field>Ordem Fabrico</Field>
-                                <Field>Artigo</Field>
+                        <FieldSet layout="vertical" style={{ minWidth: "200px", maxWidth: "200px" }}>
+                            <FieldSet style={{ fontWeight: 500 }} field={{ wide: [8, 8], noItemWrap: true, label: { enabled: false } }}>
                                 <Field>Largura</Field>
                                 <Field>Nº Cortes</Field>
                             </FieldSet>
@@ -207,11 +224,9 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                                     return (
                                         <>
                                             {fields.map((field, index) => (
-                                                <FieldSet key={field.key} field={{ wide: [5, 5, 3, 3] }}>
-                                                    <Field forInput={false} name={[field.name, `of_id`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                    <Field forInput={false} name={[field.name, `item_cod`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
+                                                <FieldSet key={field.key} field={{ wide: [8, 8] }}>
                                                     <Field forInput={false} name={[field.name, `item_lar`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                    <Field name={[field.name, `cortes_artigo_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={1} max={24} /></Field>
+                                                    <Field name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={1} max={24} /></Field>
                                                 </FieldSet>
                                             ))}
                                         </>

@@ -28,10 +28,10 @@ def executeAlerts():
     print(f"{val}")
 
     with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
+        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
 
     async_to_sync(channel_layer.group_send)(group_name,{
-        'type': "getAlerts", "data":json.dumps(rows,default=str), "other":val
+        'type': "getAlerts", "data":json.dumps(rows[0],default=str)
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
     Timer(5,executeAlerts).start()

@@ -24,6 +24,7 @@ import ActionButton from "components/ActionButton";
 import TagButton from "components/TagButton";
 import { GrStorage } from "react-icons/gr";
 import { RiRefreshLine } from "react-icons/ri";
+import {Outlet,useNavigate} from "react-router-dom";
 
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 import YScroll from "components/YScroll";
@@ -618,13 +619,13 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 
 const TitleMenuActions = ({ aggCod }) => {
     const { data } = useContext(SocketContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
-
-    }, [data.length]);
+    }, [data]);
 
     const onValidate = () => {
-
+        navigate('/app/validateReellings', { state: {} });
     }
 
     return (
@@ -632,7 +633,7 @@ const TitleMenuActions = ({ aggCod }) => {
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
                     <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                    <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(data).length}</span> Bobinagens por <Tag onClick={onValidate} type="link">Validar.</Tag></div>} type="warning" showIcon />
+                    <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(data).cnt}</span> Bobinagens por <Button size='small' style={{paddingLeft:"0px"}} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />
                 </Space>
             </div>
         </div>

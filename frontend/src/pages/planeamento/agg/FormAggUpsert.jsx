@@ -35,6 +35,7 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
@@ -52,9 +53,9 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                     tempof_id: v.tempof_id,
                     of_id: v.of_id,
                     artigo_cod: v.item_cod,
-                    cliente_nome:v.cliente_nome,
-                    iorder:v.iorder,
-                    item_nome:v.item_nome,
+                    cliente_nome: v.cliente_nome,
+                    iorder: v.iorder,
+                    item_nome: v.item_nome,
                     enabled: (of_cod == v.of_id ? false : true)
                 });
             });
@@ -76,14 +77,17 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
         const response = await fetchPost({ url: `${API_URL}/savetempagg/`, parameters: { ...values, agg_id: ctx.agg_id } });
         if (response.data.status !== "error") {
             parentReload({ agg_id: ctx.agg_id }, "init");
+            setSubmitting(false);
             closeParent();
         } else {
+            setSubmitting(false);
             setResultMessage(response.data);
         }
     }
 
     const onSuccessOK = () => {
         if (operation.key === "insert") {
+            setSubmitting(false);
             form.resetFields();
             init();
             setResultMessage({ status: "none" });
@@ -91,12 +95,18 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+    
+    const onSubmit = useCallback(() =>{
+        setSubmitting(true);
+        form.submit();
+    },[]);
 
     return (
         <>
@@ -136,15 +146,15 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                                 return (
                                     <FieldSet layout="vertical" margin={false}>
                                         {fields.map((field, index) => (
-                                            <FieldSet key={field.key} field={{ wide: [1] }} margin="0px 0px 3px 0px" padding="5px" style={{border:"solid 1px #d9d9d9",borderRadius:"3px"}}>
+                                            <FieldSet key={field.key} field={{ wide: [1] }} margin="0px 0px 3px 0px" padding="5px" style={{ border: "solid 1px #d9d9d9", borderRadius: "3px" }}>
                                                 <Field forInput={true} name={[field.name, `checked`]} label={{ enabled: false }}><CheckboxField disabled={form.getFieldValue(["aggs", field.name, "enabled"]) ? false : true} /></Field>
                                                 <FieldSet margin={false} wide={15} layout="vertical">
-                                                    <FieldSet field={{ wide: [5,5, 6], forViewBorder:false }} margin={false} wide={16} style={{fontWeight:700}}>
+                                                    <FieldSet field={{ wide: [5, 5, 6], forViewBorder: false }} margin={false} wide={16} style={{ fontWeight: 700 }}>
                                                         <Field forInput={false} name={[field.name, `of_id`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                         <Field forInput={false} name={[field.name, `iorder`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                         <Field forInput={false} name={[field.name, `artigo_cod`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                     </FieldSet>
-                                                    <FieldSet field={{ wide: [7,9], forViewBorder:false }} margin={false} wide={16}>
+                                                    <FieldSet field={{ wide: [7, 9], forViewBorder: false }} margin={false} wide={16}>
                                                         <Field forInput={false} name={[field.name, `cliente_nome`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                         <Field forInput={false} name={[field.name, `item_nome`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
                                                     </FieldSet>
@@ -159,8 +169,8 @@ export default ({ setFormTitle, parentRef, closeParent, parentReload, wrapForm =
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} type="primary" onClick={onSubmit}>Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

@@ -26,8 +26,8 @@ import SvgSchema from '../paletizacaoSchema/SvgSchema';
 
 const StyledCard = styled(Card)`
     .ant-card-body{
-        height:350px;
-        max-height:500px; 
+        height:250px;
+        max-height:400px; 
         overflow-y:hidden;
     }
 

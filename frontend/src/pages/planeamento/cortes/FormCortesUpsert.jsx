@@ -37,13 +37,14 @@ const useStyles = createUseStyles({
     }
 })
 
-const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false }) => {
+const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cortes }) => {
     const classes = useStyles({ width });
     const ref = useRef(null);
+    const color = cortes.find(v => v.item_lar == value);
     const style = {
-        color: "#1890ff",
+        color: color.color,
         fontStyle: "italic",
-        height: "100%",
+        height: "70%",
         display: "flex",
         justifyContent: "center",
         alignItems: "center"
@@ -90,7 +91,7 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false }) =
     drag(ref);
     drop(ref);
     return (
-        <div ref={ref} className={classes.bobine} style={{ opacity }} data-handler-id={handlerId}>
+        <div ref={ref} className={classes.bobine} style={{ opacity, background: color.bcolor, color: color.color }} data-handler-id={handlerId}>
             <div style={{ fontSize: "10px", textAlign: "center" }}>{index + 1}</div>
             <div style={style}>{value}</div>
         </div>
@@ -100,6 +101,7 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false }) =
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
     const [bobines, setBobines] = useImmer([]);
@@ -164,6 +166,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         });
     }, [bobines]);
 
+    
+    const onSubmit = useCallback(() =>{
+        setSubmitting(true);
+        form.submit();
+    },[]);
+
     return (
         <>
             <AlertMessages formStatus={formStatus} />
@@ -202,14 +210,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row" }}>
                     {bobines.map((v, i) => {
-                        return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} forInput={forInput} />);
+                        return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} cortes={record.cortes} forInput={forInput} />);
                     })}
                 </div>
             </DndProvider>
             {parentRef && <Portal elId={parentRef.current}>
                 <Space>
-                    <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                    <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                    <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                    {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                 </Space>
             </Portal>
             }

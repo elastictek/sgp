@@ -69,6 +69,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     const [form] = Form.useForm();
     const [guides, setGuides] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [operation, setOperation] = useState(setId(record.aggItem.paletizacao_id));
     const [showSchema, setShowSchema] = useState({ show: false });
     const [paletizacoes, setPaletizacoes] = useState([]);
@@ -102,7 +103,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
     const onFinish = async (values) => {
         const paletizacao_id = form.getFieldValue("paletizacao_id");
 
-        const { tempof_id: ofabrico_id,of_id:ofabrico_cod, qty_encomenda: qty_item } = record.aggItem;
+        const { tempof_id: ofabrico_id, of_id: ofabrico_cod, qty_encomenda: qty_item } = record.aggItem;
         const artigo = {
             artigo_thickness: record.aggItem.artigo.thickness,
             artigo_diam: record.aggItem.artigo.diam_ref,
@@ -115,6 +116,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
             parentReload({ agg_id: record.aggItem.id });
             closeParent();
         }
+        setSubmitting(false);
         // const status = { error: [], warning: [], info: [], success: [] };
         // const msgKeys = ["start_date", "start_hour", "end_date", "end_hour"];
         // const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, item_id } = record;
@@ -188,6 +190,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
         }
     }
 
+    const onSubmit = useCallback(async () => {
+        setSubmitting(true);
+        form.submit();
+    }, []);
+
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
@@ -238,8 +245,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload/* ,
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

@@ -16,6 +16,8 @@ import { OFabricoContext } from '../ordemFabrico/FormOFabricoValidar';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({
+        nw_cod_sup: Joi.any().label("Nonwoven Superior").required(),
+        nw_cod_inf: Joi.any().label("Nonwoven Inferiror").required()
     }, keys, excludeKeys).unknown(true);
 }
 
@@ -35,6 +37,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const ctx = useContext(OFabricoContext);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
     const [operation, setOperation] = useState(setId(record.nonwovens_id));
@@ -101,7 +104,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const v = schema().validate(values, { abortEarly: false });
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        if (!v.error) {
+        if (v.error) {
+            status.error.push({ message: "OS Nonwovens Superior e Inferior têm de estar preenchidos!" });
+            setSubmitting(false);
         }
 
         if (status.error.length === 0) {
@@ -122,15 +127,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             init();
             setResultMessage({ status: "none" });
         }
+        setSubmitting(false);
     }
 
     const onErrorOK = () => {
+        setSubmitting(false);
         setResultMessage({ status: "none" });
     }
 
     const onClose = (reload = false) => {
         closeParent();
     }
+
+    const onSubmit = useCallback(async () => {
+        setSubmitting(true);
+        onFinish(form.getFieldsValue(true));
+    }, []);
 
     return (
         <>
@@ -195,8 +207,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                        <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>
+                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

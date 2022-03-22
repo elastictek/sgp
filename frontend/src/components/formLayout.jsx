@@ -390,7 +390,7 @@ export const VerticalSpace = ({ margin = "0px", height = "12px", props }) => {
 }
 
 
-export const SwitchField = ({ value, checkedValue = 1, uncheckedValue = 0, ...rest }) => {
+export const SwitchField = ({ onChange, value, checkedValue = 1, uncheckedValue = 0, ...rest }) => {
     const parseToBool = (v) => {
         return (v === checkedValue) ? true : false;
     }

@@ -107,8 +107,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                 }
                 (async () => {
                     const { artigo, exists } = await loadArtigoDetail(ctx, token);
-                    artigo["qty_item"] = ctx.qty_item;
-                    await sleep(500);
+                    artigo["qty_item"] = ctx.qty_item;                    
                     setArtigoExists(exists);
                     const plan = {
                         start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm'),
@@ -117,6 +116,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                         sentido_enrolamento:form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
                         observacoes:form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''
                     }
+                    await sleep(500);
                     form.setFieldsValue({ ...artigo, ...plan });
                     setLoading(false);
                 })();

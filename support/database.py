@@ -167,15 +167,19 @@ class BaseSql:
     def disableCols(self,v):
         return 'count(*)'
 
-    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None):
+    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
                 print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
                 print(f'PARAMS--> {parameters}')
                 cursor.execute(sql(self.enable, self.enable,self.enable), parameters)
                 rows = fetchall(cursor, ignore)
-                cursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
-                count = cursor.fetchone()[0]
+                if (countSql is None):
+                    cursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                    count = cursor.fetchone()[0]
+                else:
+                    cursor.execute(countSql, parameters)
+                    count = cursor.fetchone()[0]
         else:
             print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
             print(f'PARAMS--> {parameters} {connOrCursor}')
@@ -185,8 +189,13 @@ class BaseSql:
                 print("DB init fail")
             connOrCursor.execute(sql(self.enable, self.enable,self.enable), parameters)
             rows = fetchall(connOrCursor, ignore)
-            connOrCursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
-            count = connOrCursor.fetchone()[0]
+            if (countSql is None):
+                connOrCursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                count = connOrCursor.fetchone()[0]
+            else:
+                connOrCursor.execute(countSql, parameters)
+                count = connOrCursor.fetchone()[0]
+
         return {"rows": rows, "total": count}
 
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
