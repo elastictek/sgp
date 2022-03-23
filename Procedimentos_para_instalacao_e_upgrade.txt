@@ -1,0 +1,19 @@
+UPGRADE APP
+
+systemctl stop gunicorn@sgp-app-dev
+systemctl stop daphne@sgp-app-dev
+cd /home/sgp-app-dev/
+git reset --hard
+sudo git pull https://github.com/elastictek/sgp.git
+cd frontend/
+yarn install
+yarn outdated
+yarn upgrade --latest
+
+Verificar os ficheiros
+	/home/sgp-app-dev/settings/local.py
+	/home/sgp-app-dev/settings/appSettings.py
+	/home/sgp_dev_share/frontend/src/config/index.jsx
+
+
+systemctl start gunicorn@sgp-app-dev

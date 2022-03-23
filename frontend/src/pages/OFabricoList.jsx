@@ -79,7 +79,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
 
 const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
 
-    const onChange = ()=>{
+    const onChange = () => {
         form.submit();
     }
 
@@ -97,7 +97,7 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
                 <Form form={form} initialValues={{ fofstatus: "Todos" }}>
                     <FormLayout id="tbt-of" schema={schema}>
-                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField({onChange})}</Field>
+                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField({ onChange })}</Field>
                     </FormLayout>
                 </Form>
             </div>
@@ -538,7 +538,10 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
     const onFinish = async (values) => {
         let response;
         let v;
-        if (!produto_id && ofabrico) {
+
+        if (form.getFieldValue('type') === 'ignorar' && ofabrico) {
+            response = await onAction(showConfirm.data, 'ignorar');
+        } else if (!produto_id && ofabrico) {
             v = schemaConfirm().validate(values, { abortEarly: false });
             if (!v.error) {
                 response = await onAction(showConfirm.data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
@@ -555,16 +558,26 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
         }
     }
 
+    const onSubmit = (type = 'validar') => {
+        form.setFieldsValue({ type });
+        form.submit();
+    }
+
     return (
         <>
             <Modal
                 title={<TitleConfirm status={status} action={action} ofabrico={ofabrico} />}
                 visible={showConfirm.show}
-                onOk={() => form.submit()}
+                //onOk={() => form.submit()}
                 centered
                 confirmLoading={confirmLoading}
-                onCancel={handleCancel}
+                //onCancel={handleCancel}
                 maskClosable={false}
+                footer={[
+                    <Button key="1" danger type="primary" onClick={() => onSubmit('ignorar')}>Ignorar</Button>,
+                    <Button key="2" onClick={handleCancel}>Cancelar</Button>,
+                    <Button key="3" type="primary" onClick={onSubmit}>Validar</Button>
+                ]}
             >
                 <Form form={form} name={`fpi`} onFinish={onFinish} component="form">
                     <AlertMessages formStatus={formStatus} />
@@ -817,7 +830,7 @@ export default () => {
         setFlyoutStatus(prev => ({ ...prev, visible: false }));
     }
 
-    const ordemFabricoStatusField = ({onChange}={}) => {
+    const ordemFabricoStatusField = ({ onChange } = {}) => {
         return (
             <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
                 [{ value: "Todos", label: "Todos" },
