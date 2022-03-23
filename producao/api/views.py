@@ -14,6 +14,7 @@ from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteLi
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
+from datetime import datetime, timedelta
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -190,17 +191,21 @@ def export(sql, db_parameters, parameters,conn_name):
 @permission_classes([IsAuthenticated])
 def OFabricoList(request, format=None):
     def statusFilter(v):
-        if v == 'all':
-            return None
-        elif v == 'notcreated':
-            return 'isnull'
-        elif v == 'inpreparation':
-            return '==0'
-        elif v == 'inprogress':
-            return '==1'
-        elif v == 'finished':
-            return '==99'
-        return None
+        if ('fofstatus' not in v):
+            return ''
+        elif v['fofstatus'] == 'Todos':
+            return ''
+        elif v['fofstatus'] == 'Por Validar':
+            return 'and ((sgp_op.status=0 or sgp_op.status is null) and sgp_top.id is null)'
+        elif v['fofstatus'] == 'Em Elaboração':
+            return 'and ((sgp_op.status=1 or sgp_op.status is null) and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Na Produção':
+            return 'and (sgp_op.status=2 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Em Produção':
+            return 'and (sgp_op.status=3 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Finalizada':
+            return 'and (sgp_op.status=9 and sgp_top.id is not null)'
+        return ''
 
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
@@ -210,8 +215,7 @@ def OFabricoList(request, format=None):
         **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
         **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
         # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
-        # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
-        "status": {"value": lambda v: statusFilter(v.get('fofstatus')), "field": lambda k, v: f'sgp_op.{k}'}
+        # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'}
     }, True)
     f.where(False,"and")
     f.auto()
@@ -271,6 +275,7 @@ def OFabricoList(request, format=None):
         LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
         WHERE 
         NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
+        {statusFilter(request.data['filter'])}
         {f.text} {f2["text"]}
         {s(dql.sort)} {p(dql.paging)}
         """
@@ -1884,7 +1889,7 @@ def ClearCortes(request, format=None):
     data = request.data.get("parameters")
     
     def updateTempAggOFabrico(data,cursor):
-        dml = db.dml(TypeDml.UPDATE, {"cortes_id":None,"cortesordem_id":None} , "producao_tempaggordemfabrico",{"id":data["agg_id"]},None,False)
+        dml = db.dml(TypeDml.UPDATE, {"cortes_id":None,"cortesordem_id":None,"horas_previstas_producao":None,"end_prev_date":None} , "producao_tempaggordemfabrico",{"id":data["agg_id"]},None,False)
         db.execute(dml.statement, cursor, dml.parameters)
 
     try:
@@ -2035,43 +2040,84 @@ def OfUpload(request, format=None):
 
 #region TEMP ORDEMFABRICO SCHEMA
 
-def computeProductionHours(data,cursor):
-    print("aaaaaaaaaaaaaaaaaaaaaa")
-    print(data)
-    if ("ofabrico_id" in data):
-        f = Filters({"id": data["ofabrico_id"]})
-        f.setParameters({}, False)
-        f.where()
-        f.add(f'id = :id', True)
-        f.value("and")
-        rows = db.executeSimpleList(lambda: (
-            f"""
-                select 
-                tbl.*,JSON_EXTRACT(goi.item_values, '$[0]') speed,co.largura_util
-                from(
-                SELECT 
-                tofa.id, tofa.gamaoperatoria_id,tofa.cortes_id,sum(tof.qty_encomenda) qty
-                FROM producao_tempaggordemfabrico tofa
-                join producao_tempordemfabrico tof on tof.agg_of_id=tofa.id
-                where 
-                tofa.id in (SELECT agg_of_id FROM producao_tempordemfabrico {f.text})
-                group by tofa.id,tofa.gamaoperatoria_id,tofa.cortes_id
-                ) tbl
-                join producao_gamaoperatoriaitems goi on goi.gamaoperatoria_id = tbl.gamaoperatoria_id and goi.item_key='D'
-                join producao_cortes co on co.id = tbl.cortes_id
-            """    
-        ), cursor, f.parameters)['rows']
-        if len(rows)>0:
-            qty = int(rows[0]["qty"])
-            speed = int(rows[0]["speed"])
-            usable_width = int(rows[0]["largura_util"])
-            hours=0
-            width = usable_width/1000
-            goal_time = 0.9
-            goal_quality = 0.9
-            hours = ((qty/(speed*width))/goal_time)/goal_quality  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
-            return hours        
-    return 0
+def computeProductionHours(aggid,cursor):
+    f=None
+    rows=None
+    f = Filters({"id": aggid})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'tofa.id = :id', True)
+    f.value("and")
+    rows = db.executeSimpleList(lambda: (
+        f"""
+            select 
+            tbl.*,JSON_EXTRACT(goi.item_values, '$[0]') speed,co.largura_util
+            from(
+            SELECT 
+            tofa.id, tofa.gamaoperatoria_id,tofa.cortes_id,sum(tof.qty_encomenda) qty, tofa.start_prev_date
+            FROM producao_tempaggordemfabrico tofa
+            join producao_tempordemfabrico tof on tof.agg_of_id=tofa.id
+            {f.text}
+            group by tofa.id,tofa.gamaoperatoria_id,tofa.cortes_id
+            ) tbl
+            join producao_gamaoperatoriaitems goi on goi.gamaoperatoria_id = tbl.gamaoperatoria_id and goi.item_key='D'
+            join producao_cortes co on co.id = tbl.cortes_id
+        """    
+    ), cursor, f.parameters)['rows']
+    if len(rows)>0:
+        start_prev_date = rows[0]["start_prev_date"]
+        qty = int(rows[0]["qty"])
+        speed = int(rows[0]["speed"])
+        usable_width = int(rows[0]["largura_util"])
+        hours=0
+        width = usable_width/1000
+        goal_time = 0.9
+        goal_quality = 0.9
+        hours = (((qty/(speed*width))/goal_time)/goal_quality)/60  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
+        end_prev_date = start_prev_date + timedelta(hours=hours)
+        return {"hours":hours,"end_prev_date":end_prev_date}    
+    return {"hours":0,"end_prev_date":None}
+
+# def computeProductionHours(data,cursor):
+#     if ("ofabrico_id" in data):
+#         f=None
+#         rows=None
+#         if "ofabrico_id" in data:
+#             f = Filters({"id": data["ofabrico_id"]})
+#             f.setParameters({}, False)
+#             f.where()
+#             f.add(f'id = :id', True)
+#             f.value("and")
+#             rows = db.executeSimpleList(lambda: (
+#                 f"""
+#                     select 
+#                     tbl.*,JSON_EXTRACT(goi.item_values, '$[0]') speed,co.largura_util
+#                     from(
+#                     SELECT 
+#                     tofa.id, tofa.gamaoperatoria_id,tofa.cortes_id,sum(tof.qty_encomenda) qty, tofa.start_prev_date
+#                     FROM producao_tempaggordemfabrico tofa
+#                     join producao_tempordemfabrico tof on tof.agg_of_id=tofa.id
+#                     where 
+#                     tofa.id in (SELECT agg_of_id FROM producao_tempordemfabrico {f.text})
+#                     group by tofa.id,tofa.gamaoperatoria_id,tofa.cortes_id
+#                     ) tbl
+#                     join producao_gamaoperatoriaitems goi on goi.gamaoperatoria_id = tbl.gamaoperatoria_id and goi.item_key='D'
+#                     join producao_cortes co on co.id = tbl.cortes_id
+#                 """    
+#             ), cursor, f.parameters)['rows']
+#         if len(rows)>0:
+#             start_prev_date = rows[0]["start_prev_date"]
+#             qty = int(rows[0]["qty"])
+#             speed = int(rows[0]["speed"])
+#             usable_width = int(rows[0]["largura_util"])
+#             hours=0
+#             width = usable_width/1000
+#             goal_time = 0.9
+#             goal_quality = 0.9
+#             hours = (((qty/(speed*width))/goal_time)/goal_quality)/60  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
+#             end_prev_date = start_prev_date + timedelta(hours=hours)
+#             return {"hours":hours,"end_prev_date":end_prev_date}    
+#     return {"hours":0,"end_prev_date":None}
 
 def getSageCliente(cod):
     cols = ['BPCNUM_0', 'BPCNAM_0','BPCSHO_0']
@@ -2287,9 +2333,10 @@ def sgpForProduction(data,aggid,user,cursor):
     #Se a ação for para criar as ordens de produção/fabrico
     if 'forproduction' in data and data['forproduction']==True:
         ofs = GetOrdensFabrico(aggid,cursor)
+        hours = computeProductionHours(aggid,cursor)
         if len(ofs)>0:
             #Update Agg status
-            dml = db.dml(TypeDml.UPDATE,{"status":1},"producao_tempaggordemfabrico",{"id":f'=={aggid}'},None,False)
+            dml = db.dml(TypeDml.UPDATE,{"status":1,"end_prev_date":hours["end_prev_date"],"horas_previstas_producao":hours["hours"]},"producao_tempaggordemfabrico",{"id":f'=={aggid}'},None,False)
             db.execute(dml.statement, cursor, dml.parameters)
         emendas = []
         paletizacao = []
@@ -2420,8 +2467,8 @@ def sgpForProduction(data,aggid,user,cursor):
             "limites":json.dumps(limites, ensure_ascii=False),
             "status":1,
             "start_prev_date": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S"),
-            "end_prev_date": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S"),
-            "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0],
+            "end_prev_date":hours["end_prev_date"],
+            "horas_previstas_producao": hours["hours"],#divmod(delta.total_seconds(), 3600)[0],
             "sentido_enrolamento":ordemfabrico['sentido_enrolamento'],
             "amostragem":ordemfabrico['amostragem'],
             "observacoes":data['observacoes'],
@@ -2680,16 +2727,14 @@ def SaveTempOrdemFabrico(request, format=None):
         return rows[0] if len(rows)>0 else None
 
     def upsertTempAggOrdemFabrico(data, ids, cursor):
-        hours = computeProductionHours(data,cursor)
-        print("#####################$$$$$$$$$$$$$$$$$$$$%")
         dta = {
             'status': data['status'] if 'status' in data else 0,
             'sentido_enrolamento': data['sentido_enrolamento'] if 'sentido_enrolamento' in data else None,
             'amostragem': data['f_amostragem'] if 'f_amostragem' in data else None,
             'observacoes': data['observacoes'] if 'observacoes' in data else None,
-            'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"],
-            'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"],
-            'horas_previstas_producao':round(hours,2)
+            'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "start_prev_date" in data or not data["start_prev_date"]) else data["start_prev_date"]
+            #'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if (not "end_prev_date" in data or not data["end_prev_date"]) else data["end_prev_date"]
+            #'horas_previstas_producao':round(hours,2)
         }
 
         if "formulacao_id" in data:
@@ -2702,7 +2747,7 @@ def SaveTempOrdemFabrico(request, format=None):
             dta["artigospecs_id"] = data["artigospecs_id"] if (data["artigospecs_id"] is None) else ( data["artigospecs_id"] if (data["artigospecs_id"] >=1) else None)
         if "nonwovens_id" in data:
             dta["nonwovens_id"] = data["nonwovens_id"] if (data["nonwovens_id"] is None) else ( data["nonwovens_id"] if (data["nonwovens_id"] >=1) else None)
-        
+
         if ids is None:
             dml = db.dml(TypeDml.INSERT, dta, "producao_tempaggordemfabrico",None,None,False)
             tags = []
@@ -2723,7 +2768,10 @@ def SaveTempOrdemFabrico(request, format=None):
             if agg_ofid_original != aggid:
                 dml = db.dml(TypeDml.UPDATE,{"status":-1},"producao_tempaggordemfabrico",{"id":f'=={agg_ofid_original}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
+            
+
             dml = db.dml(TypeDml.UPDATE,dta,"producao_tempaggordemfabrico",{"id":f'=={ids["agg_of_id"]}'},None,False)
+
             db.execute(dml.statement, cursor, dml.parameters)
             return ids["agg_of_id"]
 

@@ -88,7 +88,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             }
             if (error) {
                 status.error.push({ message: "Os items da Gama Operatória têm de estar preenchidos!" });
-                setSubmitting(false);
             }
             if (status.error.length === 0) {
                 const response = await fetchPost({ url: `${API_URL}/newgamaoperatoria/`, parameters: { ...form.getFieldsValue(true), produto_id: ctx.produto_id } });
@@ -98,7 +97,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 setResultMessage(response.data);
             }
         }
-
+        setSubmitting(false);
         setFormStatus(status);
     }
 

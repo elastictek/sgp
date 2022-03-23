@@ -87,6 +87,11 @@ const App = () => {
     });
 
     useEffect(() => {
+        console.log("RECIVING",lastJsonMessage)
+    }, [lastJsonMessage?.hash]);
+
+    
+    useEffect(() => {
         //sendJsonMessage({ cmd: 'initAlerts' });
     }, []);
 

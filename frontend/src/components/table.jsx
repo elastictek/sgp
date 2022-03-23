@@ -94,7 +94,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
     } else if (data.length > 0) {
         keys = Object.keys(data[0])
     }
-    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$", ret);
+
     for (const [i, v] of keys.entries()) {
         if (exclude.includes(v)) continue;
         let { sort = true, optional = true, ...rOptions } = (include[v] == undefined) ? {} : include[v];

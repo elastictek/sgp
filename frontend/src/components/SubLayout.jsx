@@ -7,7 +7,7 @@ const StyledSubLayout = styled.div`
 `;
 
 const SubLayout = ({ flyoutStatus = { visible: false, fullscreen: false }, flyoutWidth = "300px", children, ...rest }) => {
-    console.log("flyoutStatus.fullscree", flyoutStatus.fullscreen)
+    
     return (
         <StyledSubLayout {...rest}>
             {React.Children.map(children, (child, i) => {

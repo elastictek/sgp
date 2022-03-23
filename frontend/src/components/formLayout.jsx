@@ -13,7 +13,7 @@ import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
 import { AiOutlineFullscreen } from "react-icons/ai";
 import RangeDate from "./RangeDate";
-import { DATE_FORMAT } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 
 import { MediaContext } from '../pages/App';
 
@@ -453,7 +453,7 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
     );
 };
 
-export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", ...rest }) => {
+export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -842,6 +842,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             {"value" in rest ? <>
                 {(() => {
                     const value = rest.value;
+                    
                     switch (children.type.name) {
                         case 'Input':
                             return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
@@ -865,6 +866,9 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             return (
                                 <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value?.label}</div>
                             )
+                        case 'Picker':
+                            const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {

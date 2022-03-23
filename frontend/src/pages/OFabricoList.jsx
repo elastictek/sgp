@@ -24,7 +24,7 @@ import ActionButton from "components/ActionButton";
 import TagButton from "components/TagButton";
 import { GrStorage } from "react-icons/gr";
 import { RiRefreshLine } from "react-icons/ri";
-import {Outlet,useNavigate} from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 import YScroll from "components/YScroll";
@@ -58,7 +58,7 @@ const filterRules = (keys) => {
 const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
     { f_ofabrico: { label: "Ordem de Fabrico" } },
     { f_agg: { label: "Agregação Ordem de Fabrico" } },
-    { fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue: 'all', ignoreFilterTag: (v) => v === 'all' } },
+    { fofstatus: { label: "Estado", field: ordemFabricoStatusField, initialValue: 'Todos', ignoreFilterTag: (v) => v === 'Todos' } },
     { fmulti_order: { label: "Nº Encomenda/Nº Proforma", field: ordersField } },
     { fmulti_customer: { label: "Nº/Nome de Cliente", field: customersField } },
     { fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
@@ -79,6 +79,10 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
 
 const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
 
+    const onChange = ()=>{
+        form.submit();
+    }
+
     const leftContent = (
         <>
             {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
@@ -91,9 +95,9 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
 
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                <Form form={form} initialValues={{ fofstatus: "all" }}>
+                <Form form={form} initialValues={{ fofstatus: "Todos" }}>
                     <FormLayout id="tbt-of" schema={schema}>
-                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField()}</Field>
+                        <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField({onChange})}</Field>
                     </FormLayout>
                 </Form>
             </div>
@@ -109,14 +113,17 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
     const [formData, setFormData] = useState({});
     const [changed, setChanged] = useState(false);
-    const onFinish = (type, values) => {
+    const onFinish = (type = "filter", values = null) => {
+        if (values === null || values === undefined) {
+            values = form.getFieldsValue(true);
+        }
         switch (type) {
             case "filter":
                 (!changed) && setChanged(true);
                 const _values = {
                     ...values,
-                    f_ofabrico: getFilterValue(values?.f_ofabrico, 'exact'),
-                    f_agg: getFilterValue(values?.f_agg, 'exact'),
+                    f_ofabrico: getFilterValue(values?.f_ofabrico, 'any'),
+                    f_agg: getFilterValue(values?.f_agg, 'any'),
                     fmulti_customer: getFilterValue(values?.fmulti_customer, 'any'),
                     fmulti_order: getFilterValue(values?.fmulti_order, 'any'),
                     fmulti_item: getFilterValue(values?.fmulti_item, 'any'),
@@ -161,6 +168,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
             textField="BPCNAM_0"
             dropdownMatchSelectWidth={250}
             allowClear
+            onPressEnter={onFinish}
             fetchOptions={fetchCustomers}
         />
     );
@@ -300,27 +308,27 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
     );
 }
 
-const TitlePopup = ({ status, action, ofabrico }) => {
-    /*     if (ativa == 1 && completa == 0){
-            return <div><b>Finalizar</b> a Ordem de Fabrico?</div>
-        }
-        if (ativa == 0 && completa == 0){
-            return <div><b>Iniciar</b> a Ordem de Fabrico?</div>
-        } */
-    return (
-        <div style={{ display: "flex", flexDirection: "row" }}>
-            <div><ExclamationCircleOutlined /></div>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-                <div><h3><b style={{ textTransform: "capitalize" }}>{action}</b> a Ordem de Fabrico?</h3></div>
-                <div style={{ color: "#1890ff" }}>{ofabrico}</div>
-            </div>
-        </div>
-    );
+// const TitlePopup = ({ status, action, ofabrico }) => {
+//     /*     if (ativa == 1 && completa == 0){
+//             return <div><b>Finalizar</b> a Ordem de Fabrico?</div>
+//         }
+//         if (ativa == 0 && completa == 0){
+//             return <div><b>Iniciar</b> a Ordem de Fabrico?</div>
+//         } */
+//     return (
+//         <div style={{ display: "flex", flexDirection: "row" }}>
+//             <div><ExclamationCircleOutlined /></div>
+//             <div style={{ display: "flex", flexDirection: "column" }}>
+//                 <div><h3><b style={{ textTransform: "capitalize" }}>{action}</b> a Ordem de Fabrico?</h3></div>
+//                 <div style={{ color: "#1890ff" }}>{ofabrico}</div>
+//             </div>
+//         </div>
+//     );
 
-}
+// }
 
 
-const menu = (action, showPopconfirm) => {
+/* const menu = (action, showPopconfirm) => {
     return (
         <Menu onClick={(k) => showPopconfirm(k.key)}>
             {action.includes('ignorar') &&
@@ -337,7 +345,7 @@ const menu = (action, showPopconfirm) => {
             }
         </Menu>
     );
-}
+} */
 
 
 const ColumnProgress = ({ record, type }) => {
@@ -584,9 +592,9 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico) && <>
                 <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "98px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
-                <Dropdown overlay={() => menu(['ignorar'], onShowConfirm)} trigger={['click']}>
+                {/*                 <Dropdown overlay={() => menu(['ignorar'], onShowConfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
-                </Dropdown>
+                </Dropdown> */}
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
                 <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
@@ -594,23 +602,26 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
             {(status == 2 && temp_ofabrico) && <>
                 <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
-            {status == 4 && <>
+            {/*             {status == 4 && <>
                 <TagButton onClick={() => showPopconfirm('finalizar')} style={{ width: "98px", textAlign: "center" }} icon={<SyncOutlined spin />} color="processing">Em Curso</TagButton>
                 <Dropdown overlay={() => menu(['reabrir', 'suspender'], showPopconfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
                 </Dropdown>
-            </>}
+            </>} */}
             {status == 3 && <>
+                <TagButton onClick={() => onShowMenuActions()} style={{ width: "105px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+            </>}
+            {/*             {status == 3 && <>
                 <TagButton onClick={() => showPopconfirm('iniciar')} style={{ width: "98px", textAlign: "center" }} icon={<ClockCircleOutlined />} color="warning">A Aguardar</TagButton>
                 <Dropdown overlay={() => menu(['iniciar', 'reabrir'], showPopconfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
                 </Dropdown>
-            </>}
+            </>} */}
             {status == 9 && <>
                 <Tag /* onClick={showPopConfirm}  */ style={{ width: "98px", textAlign: "center" }} color="error">Finalizada</Tag>
-                <Dropdown overlay={() => menu(['reabrir'], showPopconfirm)} trigger={['click']}>
+                {/*                 <Dropdown overlay={() => menu(['reabrir'], showPopconfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
-                </Dropdown>
+                </Dropdown> */}
             </>}
         </div>
     );
@@ -618,11 +629,10 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 
 
 const TitleMenuActions = ({ aggCod }) => {
-    const { data } = useContext(SocketContext);
+    const v = useContext(SocketContext);
     const navigate = useNavigate();
 
-    useEffect(() => {
-    }, [data]);
+    useEffect(() => { }, [v]);
 
     const onValidate = () => {
         navigate('/app/validateReellings', { state: {} });
@@ -633,7 +643,7 @@ const TitleMenuActions = ({ aggCod }) => {
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
                     <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                    <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(data).cnt}</span> Bobinagens por <Button size='small' style={{paddingLeft:"0px"}} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />
+                    {v !== null && <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(v.data).cnt}</span> Bobinagens por <Button size='small' style={{ paddingLeft: "0px" }} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />}
                 </Space>
             </div>
         </div>
@@ -780,7 +790,7 @@ export default () => {
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
                         cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
                         start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
-                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.end_prev_date) ? r.end_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{(r.end_prev_date) && dayjs(r.end_prev_date).format(DATETIME_FORMAT)}</span></div>, ...common },
                         //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
                         //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
                         //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
@@ -807,15 +817,18 @@ export default () => {
         setFlyoutStatus(prev => ({ ...prev, visible: false }));
     }
 
-    const ordemFabricoStatusField = () => (
-        <SelectField keyField="value" valueField="label" style={{ width: 150 }} options={
-            [{ value: "all", label: "Todos" },
-            { value: "notcreated", label: "Não Criada" },
-            { value: "inpreparation", label: "Em Preparação" },
-            { value: "inprogress", label: "Em Progresso" },
-            { value: "finished", label: "Finalizada" }]
-        } />
-    );
+    const ordemFabricoStatusField = ({onChange}={}) => {
+        return (
+            <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
+                [{ value: "Todos", label: "Todos" },
+                { value: "Por Validar", label: "Por validar" },
+                { value: "Em Elaboração", label: "Em Elaboração" },
+                { value: "Na Produção", label: "Na Produção" },
+                { value: "Em Produção", label: "Em Produção" },
+                { value: "Finalizada", label: "Finalizada" }]
+            } />
+        );
+    }
 
     return (
         <>
@@ -824,37 +837,37 @@ export default () => {
                 <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
                 <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
                 {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
-                <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
-                    <SubLayout.content>
-                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
-                        {elFilterTags && <Portal elId={elFilterTags}>
-                            <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                        </Portal>}
-                        <Table
-                            title={<Title level={4}>Ordens de Fabrico</Title>}
-                            columnChooser={false}
-                            reload
-                            stripRows
-                            darkHeader
-                            size="small"
-                            toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
-                            selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                            dataAPI={dataAPI}
-                            columns={columns}
-                            onFetch={dataAPI.fetchPost}
-                        //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                        />
-                    </SubLayout.content>
+                {/*                 <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
+                    <SubLayout.content> */}
+                <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
+                {elFilterTags && <Portal elId={elFilterTags}>
+                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
+                </Portal>}
+                <Table
+                    title={<Title level={4}>Ordens de Fabrico</Title>}
+                    columnChooser={false}
+                    reload
+                    stripRows
+                    darkHeader
+                    size="small"
+                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
+                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
+                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                    dataAPI={dataAPI}
+                    columns={columns}
+                    onFetch={dataAPI.fetchPost}
+                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+                />
+                {/*                     </SubLayout.content>
                     <SubLayout.flyout>
                         <Container.Header fullScreen={false} setStatus={setFlyoutStatus} left={<Title level={4} style={{ marginBottom: "0px" }}>Title</Title>} />
                         <Container.Body>
 
-                        </Container.Body>
-                        {/* <Container.Footer right={<div ref={flyoutFooterRef}/>} /> */}
-                    </SubLayout.flyout>
+                        </Container.Body> */}
+                {/* <Container.Footer right={<div ref={flyoutFooterRef}/>} /> */}
+                {/*                     </SubLayout.flyout>
                 </SubLayout>
-
+ */}
             </Spin>
 
 

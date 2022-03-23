@@ -14,6 +14,7 @@ from channels.generic.websocket import WebsocketConsumer
 import channels.layers
 import json
 import random
+import hashlib
 from django.db import connections
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
 
@@ -30,8 +31,9 @@ def executeAlerts():
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
 
+    data = json.dumps(rows[0],default=str)
     async_to_sync(channel_layer.group_send)(group_name,{
-        'type': "getAlerts", "data":json.dumps(rows[0],default=str)
+        'type': "getAlerts", "data":data, "hash":hashlib.md5(data.encode()).hexdigest()
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
     Timer(5,executeAlerts).start()

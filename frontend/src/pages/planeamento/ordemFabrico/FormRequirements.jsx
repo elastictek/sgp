@@ -66,7 +66,7 @@ const loadArtigoDetail = async ({ item_cod, item_nome, produto_cod }, token) => 
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
+}
 
 export default ({ /* record, form, guides, schema, */ changedValues, /* nonwovensChangedValues, fieldStatus */ }) => {
     const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext);
@@ -107,16 +107,18 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                 }
                 (async () => {
                     const { artigo, exists } = await loadArtigoDetail(ctx, token);
-                    artigo["qty_item"] = ctx.qty_item;                    
+                    artigo["qty_item"] = ctx.qty_item;
                     setArtigoExists(exists);
+                    let sd = noValue(form.getFieldValue("start_prev_date"), ctx.start_prev_date);
+                    let ed = noValue(form.getFieldValue("end_prev_date"), ctx.end_prev_date);
                     const plan = {
-                        start_prev_date: dayjs(noValue(form.getFieldValue("start_prev_date"), ctx.sage_start_date), 'YYYY-MM-DD HH:mm'),
-                        end_prev_date: dayjs(noValue(form.getFieldValue("end_prev_date"), ctx.sage_end_date), 'YYYY-MM-DD HH:mm'),
-                        f_amostragem:(form.getFieldValue("amostragem")) ? form.getFieldValue("amostragem") : 4,
-                        sentido_enrolamento:form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
-                        observacoes:form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''
+                        start_prev_date: sd ? dayjs(sd, 'YYYY-MM-DD HH:mm') : null,
+                        end_prev_date: ed ? dayjs(ed, 'YYYY-MM-DD HH:mm') : null,
+                        f_amostragem: (form.getFieldValue("amostragem")) ? form.getFieldValue("amostragem") : 4,
+                        sentido_enrolamento: form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
+                        observacoes: form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''
                     }
-                    await sleep(500);
+                    await sleep(600);
                     form.setFieldsValue({ ...artigo, ...plan });
                     setLoading(false);
                 })();
@@ -175,7 +177,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                             </FieldSet>
                         </FieldSet>
                         <VerticalSpace />
-{/*                         <HorizontalRule title="2. Encomenda" />
+                        {/*                         <HorizontalRule title="2. Encomenda" />
                         <FieldSet margin={false}>
                             <Field wide={3} forInput={false} required={false} label={{ text: "Qtd. Encomenda" }} name="qty_item"><InputAddon size="small" addonAfter={<b>m&#178;</b>} maxLength={4} /></Field>
                             <Field wide={3} forInput={false} required={false} label={{ text: "Metros/Bobine" }} name="linear_meters"><InputAddon size="small" addonAfter={<b>m</b>} maxLength={4} /></Field>
@@ -185,8 +187,8 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                         <VerticalSpace /> */}
                         <HorizontalRule title="2. Planificação" />
                         <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
-                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm"/></Field>
-                            <Field required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm"/></Field>
+                            <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></Field>
+                            <Field forInput={false} required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></Field>
                             <AlertsContainer style={{ alignSelf: "end", paddingBottom: "6px" }} main={true} />
                         </FieldSet>
                         {/* <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>

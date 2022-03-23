@@ -6,7 +6,7 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
-import { hasValue, deepMerge } from "utils";
+import { hasValue, deepMerge,useSubmitting } from "utils";
 import { getSchema, dateTimeDiffValidator } from "utils/schemaValidator";
 import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon } from "components/formLayout";
 import Tabs, { TabPane } from "components/Tabs";
@@ -44,11 +44,13 @@ const LoadOFabricoTemp = async (record, token) => {
     return rows;
 }
 
+
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
     /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
+    const submitting = useSubmitting();
     const [fieldStatus, setFieldStatus] = useState({});
     const submitForProduction = useRef(false);
 
@@ -81,6 +83,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         qty_item: record.qty_item,
         sage_start_date: record.start_date,
         sage_end_date: record.end_date,
+        start_prev_date: record.start_prev_date,
+        end_prev_date: record.end_prev_date,
         fieldStatus,
         setFieldStatus,
         form,
@@ -123,9 +127,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     }
 
     const onFinish = async (values) => {
+
+        if (!submitting.init()) { return; }
+
         const forproduction = submitForProduction.current;
         submitForProduction.current = false;
-
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["start_prev_date", "end_prev_date"];
         const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id, temp_ofabrico } = record;
@@ -145,22 +151,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         if (status.error.length === 0) {
             const { start_prev_date, end_prev_date } = values;
 
-            if ("nonwovens_id" in values && values["nonwovens_id"]===undefined){
-                values["nonwovens_id"]=-1;
+            if ("nonwovens_id" in values && values["nonwovens_id"] === undefined) {
+                values["nonwovens_id"] = -1;
             }
-            if ("artigospecs_id" in values && values["artigospecs_id"]===undefined){
-                values["artigospecs_id"]=-1;
+            if ("artigospecs_id" in values && values["artigospecs_id"] === undefined) {
+                values["artigospecs_id"] = -1;
             }
-            if ("formulacao_id" in values && values["formulacao_id"]===undefined){
-                values["formulacao_id"]=-1;
+            if ("formulacao_id" in values && values["formulacao_id"] === undefined) {
+                values["formulacao_id"] = -1;
             }
-            if ("gamaoperatoria_id" in values && values["gamaoperatoria_id"]===undefined){
-                values["gamaoperatoria_id"]=-1;
+            if ("gamaoperatoria_id" in values && values["gamaoperatoria_id"] === undefined) {
+                values["gamaoperatoria_id"] = -1;
             }
-            if ("cortesordem_id" in values && values["cortesordem_id"]===undefined){
-                values["cortesordem_id"]=-1;
+            if ("cortesordem_id" in values && values["cortesordem_id"] === undefined) {
+                values["cortesordem_id"] = -1;
             }
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod:ofabrico, ofabrico_id:temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), cliente_cod, cliente_nome, iorder, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod: ofabrico, ofabrico_id: temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), /* end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), */ cliente_cod, cliente_nome, iorder, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
             setResultMessage(response.data);
             if (forproduction) {
                 parentReload();
@@ -171,12 +177,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     };
 
     const onSuccessOK = () => {
-        setSubmitting(false);
+        submitting.end();
         setResultMessage({ status: "none" });
     }
 
     const onErrorOK = () => {
-        setSubmitting(false);
+        submitting.end();
         setResultMessage({ status: "none" });
     }
 
@@ -185,15 +191,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     }
 
     const onSubmitForProduction = useCallback(() => {
-        setSubmitting(true);
+        submitting.trigger();//setSubmitting(true);
         submitForProduction.current = true;
         form.submit();
-    },[]);
+    }, []);
 
-    const onSubmit = useCallback(() =>{
-        setSubmitting(true);
+    const onSubmit = useCallback(() => {
+        submitting.trigger();
         form.submit();
-    },[]);
+    }, []);
 
     return (
         <>
@@ -244,8 +250,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                 </ResultMessage>
                 <Portal elId={parentRef.current}>
                     <Space>
-                        <Button disabled={submitting} type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
-                        <Button disabled={submitting} onClick={onSubmit}>Guardar Ordem de Fabrico</Button>
+                        <Button disabled={submitting.state} type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
+                        <Button disabled={submitting.state} onClick={onSubmit}>Guardar Ordem de Fabrico</Button>
                         {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>

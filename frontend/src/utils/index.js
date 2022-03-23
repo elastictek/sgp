@@ -1,4 +1,35 @@
+import React, { useEffect, useState, useRef } from 'react';
 import * as R from 'ramda';
+
+export const useSubmitting = (val = false) => {
+    const [state, setState] = useState(val);
+    const currentState = useRef(val);
+
+    const trigger = () => {
+        setState(true);
+    }
+
+    const init = () => {
+        let ret = false;
+        if (!currentState.current) {
+            ret = true;
+            currentState.current = true;
+        }
+        return ret;
+    }
+
+    const end = () => {
+        currentState.current = false;
+        setState(false);
+    }
+
+    const initiated = () => {
+        return currentState.current
+    }
+
+    return { trigger, init, end, initiated, state };
+
+}
 
 export const getFilterRangeValues = (data) => {
     var ret = [];
@@ -18,11 +49,17 @@ export const getFilterRangeValues = (data) => {
 export const getFilterValue = (v, type = 'exact') => {
     const val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
     if (val !== '' && val !== undefined) {
-        switch (type) {
-            case 'any': return `%${val.replaceAll(' ', '%%')}%`;
-            case 'start': return `${val}%`;
-            case 'end': return `${val}%`;
-            default: return val;
+        const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
+        const matches = val.match(re);
+        if (matches!==null && matches.length > 0) {
+            return `${val}`;
+        } else {
+            switch (type) {
+                case 'any': return `%${val.replaceAll(' ', '%%')}%`;
+                case 'start': return `${val}%`;
+                case 'end': return `${val}%`;
+                default: return `==${val}%`;
+            }
         }
     }
     return undefined;
@@ -85,8 +122,8 @@ export const gtinCheckdigit = (input) => {
 }
 
 export const groupBy = (xs, key) => {
-    return xs.reduce(function(rv, x) {
-      (rv[x[key]] = rv[x[key]] || []).push(x);
-      return rv;
+    return xs.reduce(function (rv, x) {
+        (rv[x[key]] = rv[x[key]] || []).push(x);
+        return rv;
     }, {});
-  };
+};
