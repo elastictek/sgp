@@ -17,3 +17,4 @@ Verificar os ficheiros
 
 
 systemctl start gunicorn@sgp-app-dev
+systemctl start daphne@sgp-app-dev

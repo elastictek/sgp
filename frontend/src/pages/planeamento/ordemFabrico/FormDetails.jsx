@@ -11,7 +11,7 @@ const { TabPane } = Tabs;
 const { Panel } = Collapse;
 
 import FormManager, { /* FieldLabel, TitleForm, Field, FieldItem, FieldSet, validateForm, useMessages, SelectField */ } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer } from "components/formLayout";
+import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, AddOn } from "components/formLayout";
 
 const FormTechnicalFeaturesx = ({ item }) => {
     const [formData, setFormData] = useState({
@@ -62,18 +62,6 @@ ofaid: 15 */}
     );
 
 }
-
-const AddOn = styled.div`
-    margin: 2px;
-    background-color: #fafafa; 
-    border: 1px solid #d9d9d9;
-    border-radius: 2px;
-    align-self: center;
-    text-align: center; 
-    width: 45px; 
-    font-weight: 500;
-    font-size: 10px;
-`;
 
 const schemaTechnicalFeatures = (keys) => {
     return getSchema({

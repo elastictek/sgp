@@ -63,7 +63,8 @@ const pluginsList = isDevMode ? [...commonPlugins, ...devPlugins] : [...commonPl
 
 
 module.exports = {
-    ...(isDevMode ? { devtool: 'source-map' } : {}),
+    devtool: 'source-map',
+    //...(isDevMode ? { devtool: 'source-map' } : {}),
     mode: isDevMode ? 'development' : 'production',
     watch: true,
     watchOptions: {
@@ -173,57 +174,61 @@ module.exports = {
 
         ]
     },
-    optimization: {
-        splitChunks: {
-            maxInitialRequests: Infinity,
-            minSize: 0,
-            cacheGroups: {
-                "vendors": {
-                    test: /[\\/]node_modules[\\/]/,
-                    chunks: 'all',
-                    chunks: isDevMode ? "initial" : "all",
-                    name: "vendors",
-                    enforce: true,
-                    //maxSize: 1000000,
-                    reuseExistingChunk: true
-                },
-                "commons": {
-                    name: "commons", // The name of the chunk containing all common code
-                    chunks: "initial",
-                    minChunks: 2  // This is the number of modules
-                },
-                "appStyles": {
-                    test: (m, c, entry = `${appName}/index`) => m.constructor.name === 'CssModule' && recursiveIssuer(m, c) === entry,
-                    chunks: 'all',
-                    enforce: true,
-                    reuseExistingChunk: true,
-                    name: `app_styles`
+/*     optimization: {
+        minimize: true,
+        minimizer: [new TerserPlugin()],
+    }, */
+         optimization: {
+            splitChunks: {
+                maxInitialRequests: Infinity,
+                minSize: 0,
+                cacheGroups: {
+                    "vendors": {
+                        test: /[\\/]node_modules[\\/]/,
+                        chunks: 'all',
+                        chunks: isDevMode ? "initial" : "all",
+                        name: "vendors",
+                        enforce: true,
+                        //maxSize: 1000000,
+                        reuseExistingChunk: true
+                    },
+                    "commons": {
+                        name: "commons", // The name of the chunk containing all common code
+                        chunks: "initial",
+                        minChunks: 2  // This is the number of modules
+                    },
+                    "appStyles": {
+                        test: (m, c, entry = `${appName}/index`) => m.constructor.name === 'CssModule' && recursiveIssuer(m, c) === entry,
+                        chunks: 'all',
+                        enforce: true,
+                        reuseExistingChunk: true,
+                        name: `app_styles`
+                    }
                 }
-            }
+            },
+            minimize: isDevMode ? false : true,
+            minimizer: [
+                new TerserPlugin({
+                    parallel: 4,
+                    terserOptions: {
+                        //cache: true,
+                        //parallel: true,
+                        toplevel: false,
+                        compress: {
+                            warnings: false,
+                            drop_console: true,
+                            global_defs: {
+                                "@alert": "console.log"
+                            }
+                        },
+                        output: {
+                            comments: false
+                        },
+                        parse: {}
+                    }
+                })
+            ],
+            runtimeChunk: { name: "runtime" }
         },
-        minimize: isDevMode ? false : true,
-        minimizer: [
-            new TerserPlugin({
-                parallel: true,
-                terserOptions: {
-                    //cache: true,
-                    //parallel: true,
-                    toplevel: false,
-                    compress: {
-                        warnings: false,
-                        drop_console: true,
-                        global_defs: {
-                            "@alert": "console.log"
-                        }
-                    },
-                    output: {
-                        comments: false
-                    },
-                    parse: {}
-                }
-            })
-        ],
-        runtimeChunk: { name: "runtime" }
-    },
     plugins: pluginsList
 };

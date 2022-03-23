@@ -40,8 +40,8 @@
     "webpack-cli": "^4.9.2"
   },
   "scripts": {
-    "dev": "cross-env ENV=development webpack",
-    "build": "webpack --mode production --output-path ./static/frontend"
+    "dev": "webpack --mode=development",
+    "build": "webpack --mode=production"
   },
   "dependencies": {
     "@ant-design/icons": "^4.7.0",

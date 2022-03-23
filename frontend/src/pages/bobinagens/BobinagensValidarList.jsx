@@ -554,23 +554,21 @@ const BobinagemValidarForm = ({ data, wrapForm = "form", forInput = true }) => {
                                                     return (
                                                         <div key={`bl-${i}`}>
                                                             {/* <div style={{ textAlign: "center" }}>{i}</div> */}
-                                                            <Badge color="green" count={5}>
-                                                                <StyledBobine color={bColors(v.estado)}>
-                                                                    {/*  <Field label={{ enabled: false }} name={[field.name, `bobine_id_${i}`]}>
+                                                            <StyledBobine color={bColors(v.estado)}>
+                                                                <Field label={{ enabled: false }} name={[field.name, `bobine_id_${i}`]}>
                                                                     <CheckboxField />
-                                                                </Field> */}
-                                                                    {/* <b>{v.estado}</b> */}<b>{i}</b><div>{v.lar}</div>
-                                                                    {/*                                                                 <Field label={{ enabled: false }} name={[field.name, `largura_${i}`]}>
+                                                                </Field>
+                                                                <b>{v.estado}</b><b>{i}</b><div>{v.lar}</div>
+                                                                <Field label={{ enabled: false }} name={[field.name, `largura_${i}`]}>
                                                                     <Input />
-                                                                </Field> */}
-                                                                </StyledBobine>
-                                                            </Badge>
+                                                                </Field>
+                                                            </StyledBobine>
                                                         </div>
                                                     );
                                                 })}</div>
                                             </FieldSet>
 
-                                            <FieldSet layout="vertical" field={{ wide: [16] }}>
+                                            {/*                                             <FieldSet layout="vertical" field={{ wide: [16] }}>
                                                 <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid" }}>
                                                     <tr>
                                                         <th style={{ border: "1px solid" }}>Classificação</th>
@@ -585,58 +583,58 @@ const BobinagemValidarForm = ({ data, wrapForm = "form", forInput = true }) => {
                                                         <td style={{ border: "1px solid" }}>Griffin</td>
                                                     </tr>
                                                 </table>
-                                            </FieldSet>
-
-                                            {/*                                             <FieldSet layout="vertical" field={{ wide: [15] }} style={{ marginTop: "5px" }}>
-                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Largura NOK</FieldItem>
-                                                    <Field name={[field.name, `nok`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Cónico</FieldItem>
-                                                    <Field name={[field.name, `con`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Descentrada</FieldItem>
-                                                    <Field name={[field.name, `desc`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Presa</FieldItem>
-                                                    <Field name={[field.name, `presa`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Diâmetro</FieldItem>
-                                                    <Field name={[field.name, `diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                </FieldSet>
-                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Sujidade</FieldItem>
-                                                    <Field name={[field.name, `suj`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Carro Atrás</FieldItem>
-                                                    <Field name={[field.name, `carro`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Não Colou</FieldItem>
-                                                    <Field name={[field.name, `ncolou`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Sobretiragem</FieldItem>
-                                                    <Field name={[field.name, `sobr`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Corte</FieldItem>
-                                                    <Field name={[field.name, `falhacorte`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                </FieldSet>
-                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Inicio Diam. (mm)</FieldItem>
-                                                    <Field name={[field.name, `inicio_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Diam. (mm)</FieldItem>
-                                                    <Field name={[field.name, `fim_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Filme</FieldItem>
-                                                    <Field name={[field.name, `falhafilme`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
-                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
-                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                </FieldSet>
-                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959",textAlign:"right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Falha M.P.</FieldItem>
-                                                    <Field name={[field.name, `falha_mp`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Furos</FieldItem>
-                                                    <Field name={[field.name, `furos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Buracos Gram.</FieldItem>
-                                                    <Field name={[field.name, `buracos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
-                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
-                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign:"center" }}><SwitchField size="small" /></Field>
-                                                </FieldSet>
                                             </FieldSet> */}
+
+                                            <FieldSet layout="vertical" field={{ wide: [15] }} style={{ marginTop: "5px" }}>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959", textAlign: "right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Largura NOK</FieldItem>
+                                                    <Field name={[field.name, `nok`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Cónico</FieldItem>
+                                                    <Field name={[field.name, `con`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Descentrada</FieldItem>
+                                                    <Field name={[field.name, `desc`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Presa</FieldItem>
+                                                    <Field name={[field.name, `presa`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Diâmetro</FieldItem>
+                                                    <Field name={[field.name, `diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959", textAlign: "right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Sujidade</FieldItem>
+                                                    <Field name={[field.name, `suj`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Carro Atrás</FieldItem>
+                                                    <Field name={[field.name, `carro`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Não Colou</FieldItem>
+                                                    <Field name={[field.name, `ncolou`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Sobretiragem</FieldItem>
+                                                    <Field name={[field.name, `sobr`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Corte</FieldItem>
+                                                    <Field name={[field.name, `falhacorte`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959", textAlign: "right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Inicio Diam. (mm)</FieldItem>
+                                                    <Field name={[field.name, `inicio_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Diam. (mm)</FieldItem>
+                                                    <Field name={[field.name, `fim_diam`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Falha Filme</FieldItem>
+                                                    <Field name={[field.name, `falhafilme`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                                <FieldSet layout="horizontal" style={{ backgroundColor: "#e6f7ff", border: "solid 1px #595959", textAlign: "right" }} field={{ wide: [2, 1, 2, 1, 2, 1, 2, 1, 3, 1], label: { enabled: false }, padding: "2px" }}>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3" }}>Falha M.P.</FieldItem>
+                                                    <Field name={[field.name, `falha_mp`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Furos</FieldItem>
+                                                    <Field name={[field.name, `furos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Buracos Gram.</FieldItem>
+                                                    <Field name={[field.name, `buracos`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Início Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `iniciodesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                    <FieldItem style={{ backgroundColor: "#eaeef3", borderRight: "none", borderLeft: "solid 1px #595959" }}>Fim Metros Desb. (m)</FieldItem>
+                                                    <Field name={[field.name, `fimdesb`]} style={{ backgroundColor: "#f5f5f5", borderLeft: "solid 1px #595959", textAlign: "center" }}><SwitchField size="small" /></Field>
+                                                </FieldSet>
+                                            </FieldSet>
 
 
                                         </FieldSet>

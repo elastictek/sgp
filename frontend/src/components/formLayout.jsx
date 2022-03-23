@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
-import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin } from "antd";
+import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber } from "antd";
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
@@ -75,7 +75,7 @@ export const WrapperForm = props => {
         if (width) {
             setWidthMode({ width: computeWitdth(props.mode, width), mode, prevMode: mode });
         }
-    }, [width,height]);
+    }, [width, height]);
 
     const computeWitdth = (mode, width) => {
         if (width)
@@ -346,6 +346,18 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
     );
 };
 
+export const AddOn = styled.div`
+margin: 2px;
+background-color: #fafafa; 
+border: 1px solid #d9d9d9;
+border-radius: 2px;
+align-self: center;
+text-align: center; 
+width: 45px; 
+font-weight: 500;
+font-size: 10px;
+`;
+
 export const HorizontalRule = ({ margin = false, title, description, props }) => {
     const parentProps = useContext(ParentContext);
     const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
@@ -544,7 +556,7 @@ export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onCha
     );
 }
 
-export const SelectField = ({ data, keyField, valueField, textField, showSearch = false, optionsRender, ...rest }) => {
+export const SelectField = ({ data, keyField, valueField, textField, showSearch = false, optionsRender, tpy = 'SelectField', ...rest }) => {
     //const options = data.map((d,i) => <Option disabled={(i<5) ? true :false} key={d[keyField]} value={valueField ? d[valueField] : d[keyField]}>111{d[textField]}</Option>);
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
@@ -837,13 +849,46 @@ export const Item = ({ children = <></>, ...props }) => {
 }
 
 const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, ...rest }) => {
+    let type = null; //'any' //children.props.tpy;
+    //console.log("zzzzzzz->",children.type === DatePicker, children.type === InputAddon, children.type === Input,children.props)
+    if (!type || type === 'C') {
+        if (children.type === DatePicker) {
+            console.log("FIELD-> PICKER");
+            type = 'Picker';
+        } else if (children.type === Input) {
+            console.log("FIELD-> INPUT");
+            type = 'Input';
+        } else if (children.type === InputNumber) {
+            console.log("FIELD-> INPUTNUMBER");
+            type = 'any';
+        } else if (children.type === InputAddon) {
+            console.log("FIELD-> INPUTADDON");
+            type = 'any';
+        } else if (children.type === CheckboxField) {
+            console.log("FIELD-> CHECKBOXFIELD");
+            type = 'CheckboxField';
+        } else if (children.type === SwitchField) {
+            console.log("FIELD-> SWITCHFIELD");
+            type = 'SwitchField';
+        } else if (children.type === SelectDebounceField) {
+            console.log("FIELD-> SELECTDEBOUNCEFIELD");
+            type = 'SelectDebounceField';
+        } else if (children.type === SelectField) {
+            console.log("FIELD-> SELECTFIELD");
+            type = 'SelectField';
+        } else {
+            console.log("FIELD-> OTHER", children.props);
+            type = 'any';
+        }
+    }
+    //console.log("zzzzzzz->",type)
+
     return (
         <>
             {"value" in rest ? <>
                 {(() => {
                     const value = rest.value;
-                    
-                    switch (children.type.name) {
+                    switch (type) {
                         case 'Input':
                             return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
                         case 'CheckboxField':
@@ -1348,6 +1393,24 @@ const StyledWrapperFieldSet = styled('div').withConfig({
     `}
             `;
 
+
+const isChildrenType = (children) =>{
+    if (children.type === AlertsContainer){
+        return true;
+    }else if (children.type === FieldItem){
+        return true;
+    }else if (children.type === Item){
+        return true;
+    }else if (children.type === Field){
+        return true;
+    }else if (children.type === AddOn){
+        return true;
+    }else if (children.type === LabelField){
+        return true;
+    }
+    return false;
+}
+
 /**
  *
  * @param {*} wide Tamanho do FieldSet, tipo de dados: {int entre 1 e 16 | array no formato [int,int,'*'] }  (Atenção! wide(default) e split são mutuamente exclusivos)
@@ -1375,7 +1438,7 @@ export const FieldSet = ({ children, ...props }) => {
                     <>
                         {React.Children.map(Array.isArray(children) ? children.filter(v => v) : children, (child, i) => (
                             <>
-                                {(React.isValidElement(child) && ['AlertsContainer', 'FieldItem', 'Item', 'Field', 'AddOn', 'LabelField'].includes(child.type.name)) ?
+                                {(React.isValidElement(child) && isChildrenType(child)) ?
                                     React.cloneElement(child, { ...child.props, index: i, parentPath: `${parentPath}-${props.index}` }) :
                                     child}
                             </>
@@ -1388,7 +1451,7 @@ export const FieldSet = ({ children, ...props }) => {
     );
 }
 
-
+//['AlertsContainer', 'FieldItem', 'Item', 'Field', 'AddOn', 'LabelField'].includes(child.type.name)
 
 /* const useFormLayoutStyles = createUseStyles({
                 formLayout: ({layout = 'vertical', wrap = false, guides}) => ({
