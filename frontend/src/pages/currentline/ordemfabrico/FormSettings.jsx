@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
-import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";

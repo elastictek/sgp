@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";

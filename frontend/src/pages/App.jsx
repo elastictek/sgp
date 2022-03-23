@@ -8,10 +8,6 @@ import 'antd/dist/antd.compact.less';
 import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { useImmer } from "use-immer";
-import dayjs from 'dayjs';
-import 'dayjs/locale/pt';
-dayjs.locale('pt');
-
 
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
