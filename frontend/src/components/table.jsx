@@ -65,6 +65,10 @@ const StyledTable = styled(Table)`
         ${(props) => (props.selectionEnabled === true) && `
         cursor:pointer;
     `}
+    }
+    .ant-table-cell {
+        padding: 1px 3px !important;
+    }
 `;
 
 
@@ -154,7 +158,6 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
     const onTableChange = (pagination, filters, sorter, { action }) => {
         switch (action) {
             case "sort":
-                console.log("ADDING SORT-----", sorter);
                 dataAPI.addSort(sorter);
                 onFetch();
                 break;

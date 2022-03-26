@@ -27,7 +27,7 @@ export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
 export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }];
-export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }];
+export const PALETE_SIZES = [{ key: '970x970', value: "970x970" },{ key: '1080x1080', value: "1080x1080" },{ key: '760x760', value: "760x760" }];
 export const CONTENTORES_OPTIONS = [
     { label: <b>Camião</b>, value: 'Camião' },
     { label: <b>40HC</b>, value: '40HC' },
@@ -89,4 +89,14 @@ export const ARTIGOS_SPECS = [
     { key: "K", designacao: "Permanent set 3rd cycle", unidade: "%", nvalues: 4, min: 0, max: 999, precision: 1 },
     { key: "L", designacao: "Load at 100% elongation 3rd cycle", unidade: "N/50mm", nvalues: 4, min: 0, max: 999, precision: 1 },
     { key: "M", designacao: "Lamination strenght (CD)", unidade: "N/25mm", nvalues: 4, min: 0, max: 999, precision: 1 }
+];
+
+//BOBINES
+export const BOBINE_ESTADOS = [{ value: 'G' }, { value: 'DM12' }, { value: 'R' }, { value: 'BA' }, { value: 'LAB' }, { value: 'IND' }, { value: 'HOLD' }, { value: 'SC' }];
+export const BOBINE_DEFEITOS = [
+    { value: 'troca_nw', label: 'Troca NW' }, { value: 'con', label: 'Cónico' }, { value: 'descen', label: 'Descentrada' }, { value: 'presa', label: 'Presa' },
+    { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
+    { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
+    { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }
 ];

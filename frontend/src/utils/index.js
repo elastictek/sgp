@@ -38,9 +38,13 @@ export const getFilterRangeValues = (data) => {
     }
     if (data?.startValue) {
         ret.push(`>=${data.startValue}`);
+    }else{
+        ret.push(null);
     }
     if (data?.endValue) {
         ret.push(`<=${data.endValue}`);
+    }else{
+        ret.push(null);
     }
     return ret;
 }
@@ -58,6 +62,11 @@ export const getFilterValue = (v, type = 'exact') => {
                 case 'any': return `%${val.replaceAll(' ', '%%')}%`;
                 case 'start': return `${val}%`;
                 case 'end': return `${val}%`;
+                case '==': return `==${val}`;
+                case '<': return `<${val}`;
+                case '>': return `>${val}`;
+                case '<=': return `<=${val}`;
+                case '>=': return `>=${val}`;
                 default: return `==${val}%`;
             }
         }

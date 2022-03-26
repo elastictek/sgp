@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { DatePicker } from 'antd';
-import {CalendarOutlined} from '@ant-design/icons'
-import {DATE_FORMAT} from 'config';
+import { CalendarOutlined } from '@ant-design/icons'
+import { DATE_FORMAT } from 'config';
 
-const DateRange = ({value={}, onChange, startProps, endProps, format=DATE_FORMAT, ...rest}) => {
-   const [endOpen,setEndOpen] = useState(false);
-    
+const DateRange = ({ value = {}, onChange, startProps, endProps, format = DATE_FORMAT, ...rest }) => {
+    const [endOpen, setEndOpen] = useState(false);
+
     const disabledStartDate = startValue => {
         const { endValue } = value;
         if (!startValue || !endValue) {
@@ -40,8 +40,7 @@ const DateRange = ({value={}, onChange, startProps, endProps, format=DATE_FORMAT
         setEndOpen(open);
     };
 
-    return (<div style={{display:'flex',flexDirection:'row',alignItems:'center'}}>
-        <CalendarOutlined style={{color:'rgba(0,0,0,.25)'}}/>
+    return (<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
         <DatePicker
             disabledDate={disabledStartDate}
             format={format}
@@ -49,7 +48,7 @@ const DateRange = ({value={}, onChange, startProps, endProps, format=DATE_FORMAT
             placeholder="Início"
             onChange={onStartChange}
             onOpenChange={handleStartOpenChange}
-            style={{marginRight:"1px"}}
+            style={{ marginRight: "1px" }}
             suffixIcon={<></>}
             {...rest}
             {...startProps}
@@ -66,6 +65,7 @@ const DateRange = ({value={}, onChange, startProps, endProps, format=DATE_FORMAT
             {...rest}
             {...endProps}
         />
+        <CalendarOutlined style={{ marginLeft: "1px", color: 'rgba(0,0,0,.25)' }} />
     </div>);
 }
 

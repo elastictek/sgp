@@ -13,7 +13,8 @@ import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
 import { AiOutlineFullscreen } from "react-icons/ai";
 import RangeDate from "./RangeDate";
-import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
+import RangeTime from "./RangeTime";
+import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 
 import { MediaContext } from '../pages/App';
 
@@ -322,15 +323,19 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                 const span = ("span" in line[col]) ? line[col].span : 24;
                                 const itemWidth = ("itemWidth" in line[col]) ? { width: line[col].itemWidth } : {};
                                 const label = ("label" in line[col]) ? line[col].label : filterRules.$_mapLabels([col]);
+                                const labelChk = ("labelChk" in line[col]) ? line[col].labelChk : filterRules.$_mapLabels([col]);
                                 const field = ("field" in line[col]) ? line[col].field : { type: "input" };
                                 const initialValue = ("initialValue" in line[col]) ? line[col].initialValue : undefined;
                                 return (
-                                    <Col key={`cf-${cidx}`} span={span}>
-                                        <Form.Item key={`fd-${col}`} name={`${col}`} label={label} {...(initialValue !== undefined && { initialValue: initialValue })} >
+                                    <Col key={`cf-${cidx}`} span={span} style={{paddingLeft:"1px",paddingRight:"1px"}}>
+                                        <Form.Item style={{ marginBottom: "0px" }} key={`fd-${col}`} name={`${col}`} label={label} {...(initialValue !== undefined && { initialValue: initialValue })} labelCol={{ style: { padding: "0px" } }}>
                                             {(typeof field === 'function') ? field() :
                                                 {
                                                     autocomplete: <AutoCompleteField allowClear {...field} />,
-                                                    rangedate: <RangeDateField allowClear {...field} />
+                                                    rangedate: <RangeDateField allowClear {...field} />,
+                                                    rangetime: <RangeTimeField allowClear {...field} />,
+                                                    selectmulti: <SelectMultiField allowClear {...field} />,
+                                                    checkbox: <CheckboxField {...field}>{labelChk}</CheckboxField>
                                                 }[field?.type] || <Input style={{ ...itemWidth }} allowClear {...field} />
                                             }
 
@@ -423,6 +428,22 @@ export const SwitchField = ({ onChange, value, checkedValue = 1, uncheckedValue 
             />
         </div>
     );
+};
+
+export const RangeTimeField = ({ onChange, value, format = TIME_FORMAT, ...rest }) => {
+    const onRangeTimeChange = (field, v) => {
+        const { formatted = {} } = (value === undefined) ? {} : value;
+        onChange?.({
+            ...value,
+            [field]: v,
+            formatted: {
+                ...formatted,
+                [field]: v?.format(format)
+            }
+        });
+    }
+
+    return (<RangeTime value={value} onChange={onRangeTimeChange} {...rest} />);
 };
 
 export const RangeDateField = ({ onChange, value, format = DATE_FORMAT, ...rest }) => {
@@ -556,7 +577,7 @@ export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onCha
     );
 }
 
-export const SelectField = ({ data, keyField, valueField, textField, showSearch = false, optionsRender, tpy = 'SelectField', ...rest }) => {
+export const SelectField = ({ data, keyField, valueField, textField, showSearch = false, optionsRender, ...rest }) => {
     //const options = data.map((d,i) => <Option disabled={(i<5) ? true :false} key={d[keyField]} value={valueField ? d[valueField] : d[keyField]}>111{d[textField]}</Option>);
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
@@ -572,6 +593,44 @@ export const SelectField = ({ data, keyField, valueField, textField, showSearch 
     return (
         <Select showSearch={showSearch} options={options} {...rest}>
             {/* {optionsRender({ data, keyField, valueField })} */}
+        </Select>
+    );
+}
+
+const _filterOptions = (arr1, arr2) => {
+    let res = [];
+    res = arr1.filter(el => {
+        return !arr2.find(element => {
+            return element.value === el.value;
+        });
+    });
+    return res;
+}
+
+export const SelectMultiField = ({ value, options, onChange, ...rest }) => {
+    const [selectedItems, setSelectedItems] = useState(value || []);
+
+    const onItemsChange = (v) => {
+        setSelectedItems(v);
+        onChange?.(v.length == 0 ? undefined : v);
+    }
+
+    return (
+        <Select labelInValue mode="multiple" value={value} {...rest} onChange={onItemsChange}>
+
+            {_filterOptions(options, selectedItems).map(item => (
+                <Select.Option key={item.value} value={item.value}>
+                    {item.label}
+                </Select.Option>
+            ))}
+
+
+            {/* {options.filter(o => !selectedItems.includes(Object.keys(o)[0])).map(item => (
+                <Select.Option key={Object.keys(item)[0]} value={Object.keys(item)[0]}>
+                    {item[Object.keys(item)[0]]}
+                </Select.Option>
+            ))} */}
+
         </Select>
     );
 }
@@ -1394,18 +1453,18 @@ const StyledWrapperFieldSet = styled('div').withConfig({
             `;
 
 
-const isChildrenType = (children) =>{
-    if (children.type === AlertsContainer){
+const isChildrenType = (children) => {
+    if (children.type === AlertsContainer) {
         return true;
-    }else if (children.type === FieldItem){
+    } else if (children.type === FieldItem) {
         return true;
-    }else if (children.type === Item){
+    } else if (children.type === Item) {
         return true;
-    }else if (children.type === Field){
+    } else if (children.type === Field) {
         return true;
-    }else if (children.type === AddOn){
+    } else if (children.type === AddOn) {
         return true;
-    }else if (children.type === LabelField){
+    } else if (children.type === LabelField) {
         return true;
     }
     return false;

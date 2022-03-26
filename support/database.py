@@ -183,6 +183,7 @@ class BaseSql:
         else:
             print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
             print(f'PARAMS--> {parameters} {connOrCursor}')
+            print("-------------------------------------")
             if (connOrCursor):
                 print("DB init success")
             else:

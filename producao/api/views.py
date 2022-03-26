@@ -145,14 +145,23 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
     return {"hasFilters": hasFilters, "text": txt, "parameters": p}
 
 
-def rangeP(data, key, field):
+def rangeP(data, key, field, fieldDiff=None):
     ret = {}
     if data is None:
         return ret
-    for i, v in enumerate(data):
-        ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field}
-
-    print(f'PRINT RANGE --> {data}')
+    if isinstance(key, list):
+        hasNone = False
+        for i, v in enumerate(data):
+            if v is not None:
+                ret[f'{key[i]}_{i}'] = {"key": key[i], "value": v, "field": field}
+            else:
+                hasNone = True
+        if hasNone == False and len(data)==2 and fieldDiff is not None:
+            ret[f'{key[0]}_{key[1]}'] = {"key": key, "value": ">=0", "field": fieldDiff}
+    else:    
+        for i, v in enumerate(data):
+            if v is not None:
+                ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field}
     return ret
 
 #Ordens de Fabrico
@@ -3128,36 +3137,78 @@ def TempAggOFabricoLookup(request, format=None):
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
-
-    #f.setParameters({
-    #    **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE(oflist.{k})'),
-    #    **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
-    #    **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
-    #    # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
-    #    # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
-    #    "status": {"value": lambda v: statusFilter(v.get('fofstatus')), "field": lambda k, v: f'sgp_op.{k}'}
-    #}, True)
-    f.where(False,"and")
+    f.setParameters({
+        **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
+        **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'}
+    }, True)
+    f.where(False, "and")
     f.auto()
     f.value()
-
-    #f2 = filterMulti(request.data['filter'], {
-    #    'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": 'oflist.'},
-    #    'fmulti_order': {"keys": ['iorder', 'prf'], "table": 'oflist.'},
-    #    'fmulti_item': {"keys": ['item', 'item_nome'], "table": 'oflist.'},
-    #    'f_ofabrico': {"keys": ['ofabrico'], "table": 'oflist.'},
-    #    'f_agg': {"keys": ['cod'], "table": 'sgp_tagg.'}
-    #}, False, "and",False)
-    #parameters = {**f.parameters, **f2['parameters']}
     
-    parameters = {**f.parameters}
+    f2 = filterMulti(request.data['filter'], {}, False, "and",False)
+    
+    def filterDefeitosMultiSelect(data,name,relname):
+        f = Filters(data)
+        frel = "and"
+        value = "==1"
+        if relname in data:
+            if data[relname]=="ou":
+                frel = "or"
+            if data[relname]=="!ou":
+                frel = "or"
+                value = "!==1"
+            if data[relname]=="!e":
+                frel = "and"
+                value = "!==1"
+        
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+            for v in dt:
+                fP[v] = {"key": v, "value": value, "field": lambda k, v: f'tpb.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value(frel)
+        return f
+
+    def filterMultiSelect(data,name,field):
+        f = Filters(data)
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+        
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+            fP['estado'] = {"key": field, "value": value, "field": lambda k, v: f'tpb.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value()
+        return f
+
+    fdefeitos = filterDefeitosMultiSelect(request.data['filter'],'fdefeitos','freldefeitos')
+    festados = filterMultiSelect(request.data['filter'],'festados','estado')
+    
+    f4 = Filters(request.data['filter'])
+    f4.setParameters({
+        "cliente": {"value": lambda v: v.get('fcliente'), "field": lambda k, v: f'tpb.{k}'},
+        "destino": {"value": lambda v: v.get('fdestino'), "field": lambda k, v: f'tpb.{k}'}
+    }, True)
+    f4.where(False, "and")
+    f4.auto()
+    f4.value("and")
+
+    parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters}
+
     dql = db.dql(request.data, False)
-    cols = f"""
-        pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines,pbm.core
-    """
+    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines"""
     dql.columns=encloseColumn(cols,False)
-
-
     sql = lambda p, c, s: (
         f""" 
             SELECT
@@ -3166,11 +3217,12 @@ def ValidarBobinagensList(request, format=None):
                 select pbm.*,pf.core
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-                where pbm.valid=0 {f.text}
+                where pbm.valid=0 {f.text} {f2["text"]}
+                {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
                 {s(dql.sort)} {p(dql.paging)}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
-            join producao_largura pl on pl.id = pb.largura_id            
+            join producao_largura pl on pl.id = pb.largura_id
             group by pbm.id
             {s(dql.sort)}
         """
@@ -3179,12 +3231,69 @@ def ValidarBobinagensList(request, format=None):
             SELECT count(*) 
             FROM producao_bobinagem pbm
             join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-            where pbm.valid=0  {f.text}
+            where pbm.valid=0  {f.text} {f2["text"]}
+            {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if (festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters) else '' }
         """
+    if ("export" in request.data["parameters"]):
+        for x in range(0, 30):
+            request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
+        tmpsql = sql(lambda v:'',lambda v:v,lambda v:v)
+        tmpsql = f"""SELECT t.*,
+            concat(t.bobines->>'$[0].estado','\\n',t.bobines->>'$[0].lar') as '1',concat(t.bobines->>'$[1].estado','\\n',t.bobines->>'$[1].lar') as '2',
+            concat(t.bobines->>'$[2].estado','\\n',t.bobines->>'$[2].lar') as '3',concat(t.bobines->>'$[3].estado','\\n',t.bobines->>'$[3].lar') as '4',
+            concat(t.bobines->>'$[4].estado','\\n',t.bobines->>'$[4].lar') as '5',concat(t.bobines->>'$[5].estado','\\n',t.bobines->>'$[5].lar') as '6',
+            concat(t.bobines->>'$[6].estado','\\n',t.bobines->>'$[6].lar') as '7',concat(t.bobines->>'$[7].estado','\\n',t.bobines->>'$[7].lar') as '8',
+            concat(t.bobines->>'$[8].estado','\\n',t.bobines->>'$[8].lar') as '9',concat(t.bobines->>'$[9].estado','\\n',t.bobines->>'$[9].lar') as '10',
 
+            concat(t.bobines->>'$[10].estado','\\n',t.bobines->>'$[10].lar') as '11',concat(t.bobines->>'$[11].estado','\\n',t.bobines->>'$[11].lar') as '12',
+            concat(t.bobines->>'$[12].estado','\\n',t.bobines->>'$[12].lar') as '13',concat(t.bobines->>'$[13].estado','\\n',t.bobines->>'$[13].lar') as '14',
+            concat(t.bobines->>'$[14].estado','\\n',t.bobines->>'$[14].lar') as '15',concat(t.bobines->>'$[15].estado','\\n',t.bobines->>'$[15].lar') as '16',
+            concat(t.bobines->>'$[16].estado','\\n',t.bobines->>'$[16].lar') as '17',concat(t.bobines->>'$[17].estado','\\n',t.bobines->>'$[17].lar') as '18',
+            concat(t.bobines->>'$[18].estado','\\n',t.bobines->>'$[18].lar') as '19',concat(t.bobines->>'$[19].estado','\\n',t.bobines->>'$[19].lar') as '20',
+
+            concat(t.bobines->>'$[20].estado','\\n',t.bobines->>'$[20].lar') as '21',concat(t.bobines->>'$[21].estado','\\n',t.bobines->>'$[21].lar') as '22',
+            concat(t.bobines->>'$[22].estado','\\n',t.bobines->>'$[22].lar') as '23',concat(t.bobines->>'$[23].estado','\\n',t.bobines->>'$[23].lar') as '24',
+            concat(t.bobines->>'$[24].estado','\\n',t.bobines->>'$[24].lar') as '25',concat(t.bobines->>'$[25].estado','\\n',t.bobines->>'$[25].lar') as '26',
+            concat(t.bobines->>'$[26].estado','\\n',t.bobines->>'$[26].lar') as '27',concat(t.bobines->>'$[27].estado','\\n',t.bobines->>'$[27].lar') as '28',
+            concat(t.bobines->>'$[28].estado','\\n',t.bobines->>'$[28].lar') as '29',concat(t.bobines->>'$[29].estado','\\n',t.bobines->>'$[29].lar') as '30'
+            from (
+            {tmpsql} 
+            ) t"""
+        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [],None,sqlCount)
+    return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ValidarBobinesList(request, format=None):
+    print(f"ggggg{request.data['filter']}")
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({})
+    f.where()
+    f.add("bobinagem_id = :bobinagem_id",True)
+    f.value()
+    
+
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f""" 
+        select
+        {c(f'{dql.columns}')}
+        FROM producao_bobine pb
+        {f.text}
+        {s(dql.sort)} {p(dql.paging)}            
+        """
+    )
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [],None,sqlCount)
+    response = db.executeList(sql, connection, parameters, [],None)
     return Response(response)
 
 #endregion
