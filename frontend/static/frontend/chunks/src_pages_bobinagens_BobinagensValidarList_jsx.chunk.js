@@ -25,26 +25,26 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var core_js_modules_es_array_from_js__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_from_js__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var core_js_modules_es_regexp_exec_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! core-js/modules/es.regexp.exec.js */ "./node_modules/core-js/modules/es.regexp.exec.js");
 /* harmony import */ var core_js_modules_es_regexp_exec_js__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_regexp_exec_js__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! core-js/modules/es.object.define-property.js */ "./node_modules/core-js/modules/es.object.define-property.js");
-/* harmony import */ var core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_7__);
-/* harmony import */ var core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! core-js/modules/es.object.keys.js */ "./node_modules/core-js/modules/es.object.keys.js");
-/* harmony import */ var core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! core-js/modules/es.array.filter.js */ "./node_modules/core-js/modules/es.array.filter.js");
-/* harmony import */ var core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_9__);
-/* harmony import */ var core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! core-js/modules/es.object.get-own-property-descriptor.js */ "./node_modules/core-js/modules/es.object.get-own-property-descriptor.js");
-/* harmony import */ var core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_10__);
-/* harmony import */ var core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! core-js/modules/es.array.for-each.js */ "./node_modules/core-js/modules/es.array.for-each.js");
-/* harmony import */ var core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_11__);
-/* harmony import */ var core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each.js */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
-/* harmony import */ var core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_12__);
-/* harmony import */ var core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! core-js/modules/es.object.get-own-property-descriptors.js */ "./node_modules/core-js/modules/es.object.get-own-property-descriptors.js");
-/* harmony import */ var core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_13__);
-/* harmony import */ var core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! core-js/modules/es.object.define-properties.js */ "./node_modules/core-js/modules/es.object.define-properties.js");
-/* harmony import */ var core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_14__);
-/* harmony import */ var core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! core-js/modules/es.object.freeze.js */ "./node_modules/core-js/modules/es.object.freeze.js");
-/* harmony import */ var core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_15__);
-/* harmony import */ var core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! core-js/modules/es.array.index-of.js */ "./node_modules/core-js/modules/es.array.index-of.js");
-/* harmony import */ var core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_16__);
+/* harmony import */ var core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! core-js/modules/es.object.keys.js */ "./node_modules/core-js/modules/es.object.keys.js");
+/* harmony import */ var core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_keys_js__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! core-js/modules/es.array.index-of.js */ "./node_modules/core-js/modules/es.array.index-of.js");
+/* harmony import */ var core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_index_of_js__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! core-js/modules/es.object.define-property.js */ "./node_modules/core-js/modules/es.object.define-property.js");
+/* harmony import */ var core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_define_property_js__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! core-js/modules/es.array.filter.js */ "./node_modules/core-js/modules/es.array.filter.js");
+/* harmony import */ var core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_filter_js__WEBPACK_IMPORTED_MODULE_10__);
+/* harmony import */ var core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! core-js/modules/es.object.get-own-property-descriptor.js */ "./node_modules/core-js/modules/es.object.get-own-property-descriptor.js");
+/* harmony import */ var core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_get_own_property_descriptor_js__WEBPACK_IMPORTED_MODULE_11__);
+/* harmony import */ var core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! core-js/modules/es.array.for-each.js */ "./node_modules/core-js/modules/es.array.for-each.js");
+/* harmony import */ var core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_for_each_js__WEBPACK_IMPORTED_MODULE_12__);
+/* harmony import */ var core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! core-js/modules/web.dom-collections.for-each.js */ "./node_modules/core-js/modules/web.dom-collections.for-each.js");
+/* harmony import */ var core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_for_each_js__WEBPACK_IMPORTED_MODULE_13__);
+/* harmony import */ var core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! core-js/modules/es.object.get-own-property-descriptors.js */ "./node_modules/core-js/modules/es.object.get-own-property-descriptors.js");
+/* harmony import */ var core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_get_own_property_descriptors_js__WEBPACK_IMPORTED_MODULE_14__);
+/* harmony import */ var core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! core-js/modules/es.object.define-properties.js */ "./node_modules/core-js/modules/es.object.define-properties.js");
+/* harmony import */ var core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_define_properties_js__WEBPACK_IMPORTED_MODULE_15__);
+/* harmony import */ var core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! core-js/modules/es.object.freeze.js */ "./node_modules/core-js/modules/es.object.freeze.js");
+/* harmony import */ var core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_freeze_js__WEBPACK_IMPORTED_MODULE_16__);
 /* harmony import */ var regenerator_runtime_runtime_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! regenerator-runtime/runtime.js */ "./node_modules/regenerator-runtime/runtime.js");
 /* harmony import */ var regenerator_runtime_runtime_js__WEBPACK_IMPORTED_MODULE_17___default = /*#__PURE__*/__webpack_require__.n(regenerator_runtime_runtime_js__WEBPACK_IMPORTED_MODULE_17__);
 /* harmony import */ var core_js_modules_es_array_iterator_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! core-js/modules/es.array.iterator.js */ "./node_modules/core-js/modules/es.array.iterator.js");
@@ -73,15 +73,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var core_js_modules_es_date_to_string_js__WEBPACK_IMPORTED_MODULE_29___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_date_to_string_js__WEBPACK_IMPORTED_MODULE_29__);
 /* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! core-js/modules/es.array.map.js */ "./node_modules/core-js/modules/es.array.map.js");
 /* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_30___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_30__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react_jss__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! react-jss */ "./node_modules/react-jss/dist/react-jss.esm.js");
-/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
-/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! dayjs */ "./node_modules/dayjs/dayjs.min.js");
-/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_32___default = /*#__PURE__*/__webpack_require__.n(dayjs__WEBPACK_IMPORTED_MODULE_32__);
-/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! joi */ "./node_modules/joi/dist/joi-browser.min.js");
-/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_33___default = /*#__PURE__*/__webpack_require__.n(joi__WEBPACK_IMPORTED_MODULE_33__);
-/* harmony import */ var utils_fetch__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! utils/fetch */ "./src/utils/fetch.js");
-/* harmony import */ var config__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! config */ "./src/config/index.js");
+/* harmony import */ var core_js_modules_es_number_to_fixed_js__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! core-js/modules/es.number.to-fixed.js */ "./node_modules/core-js/modules/es.number.to-fixed.js");
+/* harmony import */ var core_js_modules_es_number_to_fixed_js__WEBPACK_IMPORTED_MODULE_31___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_number_to_fixed_js__WEBPACK_IMPORTED_MODULE_31__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react_jss__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! react-jss */ "./node_modules/react-jss/dist/react-jss.esm.js");
+/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_64__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
+/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! dayjs */ "./node_modules/dayjs/dayjs.min.js");
+/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_33___default = /*#__PURE__*/__webpack_require__.n(dayjs__WEBPACK_IMPORTED_MODULE_33__);
+/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! joi */ "./node_modules/joi/dist/joi-browser.min.js");
+/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_34___default = /*#__PURE__*/__webpack_require__.n(joi__WEBPACK_IMPORTED_MODULE_34__);
+/* harmony import */ var utils_fetch__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! utils/fetch */ "./src/utils/fetch.js");
 /* harmony import */ var utils_useDataAPI__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! utils/useDataAPI */ "./src/utils/useDataAPI.js");
 /* harmony import */ var utils_schemaValidator__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! utils/schemaValidator */ "./src/utils/schemaValidator.js");
 /* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
@@ -92,27 +93,28 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var components_toolbar__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! components/toolbar */ "./src/components/toolbar.jsx");
 /* harmony import */ var components_portal__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! components/portal */ "./src/components/portal.jsx");
 /* harmony import */ var assets_morefilters_svg__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! assets/morefilters.svg */ "./src/assets/morefilters.svg");
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
 /* harmony import */ var components_YScroll__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! components/YScroll */ "./src/components/YScroll.jsx");
 /* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/button/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/typography/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/select/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_52__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/space/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/form/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/menu/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/dropdown/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_65__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/modal/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input-number/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/spin/index.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FilePdfTwoTone.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileExcelTwoTone.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileWordTwoTone.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileFilled.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/SearchOutlined.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/DownOutlined.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_68__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/LoadingOutlined.js");
-/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! ../App */ "./src/pages/App.jsx");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/typography/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_51__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/select/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_53__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/space/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_54__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/form/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_55__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/menu/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_59__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_61__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/dropdown/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_66__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/modal/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_67__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input-number/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_68__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/spin/index.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_56__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FilePdfTwoTone.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_57__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileExcelTwoTone.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_58__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileWordTwoTone.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_62__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/FileFilled.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_60__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/SearchOutlined.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_63__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/DownOutlined.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_69__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/LoadingOutlined.js");
+/* harmony import */ var config__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! config */ "./src/config/index.js");
+/* harmony import */ var _App__WEBPACK_IMPORTED_MODULE_50__ = __webpack_require__(/*! ../App */ "./src/pages/App.jsx");
 
 
 
@@ -130,14 +132,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var _excluded = ["index"],
-    _excluded2 = ["title", "editable", "children", "dataIndex", "record", "input", "handleSave"];
 
 var _templateObject;
 
-function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
-
-function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
+var _excluded = ["typelist"],
+    _excluded2 = ["index"],
+    _excluded3 = ["title", "editable", "children", "dataIndex", "record", "input", "handleSave"];
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
@@ -160,6 +160,10 @@ function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (O
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _objectWithoutProperties(source, excluded) { if (source == null) return {}; var target = _objectWithoutPropertiesLoose(source, excluded); var key, i; if (Object.getOwnPropertySymbols) { var sourceSymbolKeys = Object.getOwnPropertySymbols(source); for (i = 0; i < sourceSymbolKeys.length; i++) { key = sourceSymbolKeys[i]; if (excluded.indexOf(key) >= 0) continue; if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue; target[key] = source[key]; } } return target; }
+
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
@@ -211,9 +215,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 var ButtonGroup = antd__WEBPACK_IMPORTED_MODULE_47__["default"].Group;
 
-var Title = antd__WEBPACK_IMPORTED_MODULE_48__["default"].Title;
+var Title = antd__WEBPACK_IMPORTED_MODULE_49__["default"].Title;
 
-var BobinesValidarList = /*#__PURE__*/(0,react__WEBPACK_IMPORTED_MODULE_31__.lazy)(function () {
+var BobinesValidarList = /*#__PURE__*/(0,react__WEBPACK_IMPORTED_MODULE_32__.lazy)(function () {
   return __webpack_require__.e(/*! import() */ "src_pages_bobines_BobinesValidarList_jsx").then(__webpack_require__.bind(__webpack_require__, /*! ../bobines/BobinesValidarList */ "./src/pages/bobines/BobinesValidarList.jsx"));
 });
 
@@ -227,7 +231,7 @@ var filterRules = function filterRules(keys) {
 };
 
 var TipoRelation = function TipoRelation() {
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_50__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_51__["default"], {
     size: "small",
     options: [{
       value: "e"
@@ -325,7 +329,7 @@ var filterSchema = function filterSchema(_ref) {
       field: {
         type: 'selectmulti',
         size: 'small',
-        options: config__WEBPACK_IMPORTED_MODULE_35__.BOBINE_DEFEITOS
+        options: config__WEBPACK_IMPORTED_MODULE_48__.BOBINE_DEFEITOS
       },
       span: 20
     }
@@ -336,7 +340,7 @@ var filterSchema = function filterSchema(_ref) {
       field: {
         type: 'selectmulti',
         size: 'small',
-        options: config__WEBPACK_IMPORTED_MODULE_35__.BOBINE_ESTADOS
+        options: config__WEBPACK_IMPORTED_MODULE_48__.BOBINE_ESTADOS
       }
     }
   }, {
@@ -373,34 +377,46 @@ var filterSchema = function filterSchema(_ref) {
 
 var ToolbarTable = function ToolbarTable(_ref2) {
   var form = _ref2.form,
-      dataAPI = _ref2.dataAPI;
-  var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_51__.useNavigate)();
-  var leftContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("button", {
+      dataAPI = _ref2.dataAPI,
+      typeListField = _ref2.typeListField,
+      setTypeList = _ref2.setTypeList,
+      typeList = _ref2.typeList;
+  var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_52__.useNavigate)();
+
+  var onChange = function onChange(v) {
+    form.submit();
+  };
+
+  var leftContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("button", {
     onClick: function onClick() {
       return navigate(-1);
     }
   }, "go back"));
-  var rightContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_52__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  var rightContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row",
       whiteSpace: "nowrap"
     }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row",
       alignItems: "center",
       whiteSpace: "nowrap"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"], {
     form: form,
-    initialValues: {}
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FormLayout, {
-    id: "tbt-of",
-    schema: schema
-  }))));
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_toolbar__WEBPACK_IMPORTED_MODULE_43__["default"], {
+    initialValues: {
+      typelist: "A"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"].Item, {
+    name: "typelist"
+  }, typeListField({
+    onChange: onChange,
+    typeList: typeList
+  })))));
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_toolbar__WEBPACK_IMPORTED_MODULE_43__["default"], {
     left: leftContent,
     right: rightContent
   });
@@ -414,37 +430,34 @@ var GlobalSearch = function GlobalSearch() {
       setShowFilter = _ref3.setShowFilter,
       showFilter = _ref3.showFilter;
 
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)(false),
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)(false),
       _useState2 = _slicedToArray(_useState, 2),
       changed = _useState2[0],
       setChanged = _useState2[1];
 
   var _onFinish = function onFinish(type, values) {
-    var _values$fdata, _values$ftime;
+    var _vals$fdata, _vals$ftime;
 
     switch (type) {
       case "filter":
         !changed && setChanged(true);
-        console.log(values);
 
-        var _values = _objectSpread(_objectSpread({}, values), {}, {
-          fbobinagem: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(values === null || values === void 0 ? void 0 : values.fbobinagem, 'any'),
-          fdata: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterRangeValues)((_values$fdata = values["fdata"]) === null || _values$fdata === void 0 ? void 0 : _values$fdata.formatted),
-          ftime: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterRangeValues)((_values$ftime = values["ftime"]) === null || _values$ftime === void 0 ? void 0 : _values$ftime.formatted),
-          fduracao: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(values === null || values === void 0 ? void 0 : values.fduracao, '=='),
-          fcliente: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(values === null || values === void 0 ? void 0 : values.fcliente, 'any'),
-          fdestino: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(values === null || values === void 0 ? void 0 : values.fdestino, 'any') //f_ofabrico: getFilterValue(values?.f_ofabrico, 'exact'),
-          //f_agg: getFilterValue(values?.f_agg, 'exact'),
-          //fmulti_customer: getFilterValue(values?.fmulti_customer, 'any'),
-          //fmulti_order: getFilterValue(values?.fmulti_order, 'any'),
-          //fmulti_item: getFilterValue(values?.fmulti_item, 'any'),
-          //forderdate: getFilterRangeValues(values["forderdate"]?.formatted),
-          //fstartprevdate: getFilterRangeValues(values["fstartprevdate"]?.formatted),
-          //fendprevdate: getFilterRangeValues(values["fendprevdate"]?.formatted)
+        var typelist = values.typelist,
+            vals = _objectWithoutProperties(values, _excluded);
 
+        var _values = _objectSpread(_objectSpread({}, vals), {}, {
+          fbobinagem: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(vals === null || vals === void 0 ? void 0 : vals.fbobinagem, 'any'),
+          fdata: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterRangeValues)((_vals$fdata = vals["fdata"]) === null || _vals$fdata === void 0 ? void 0 : _vals$fdata.formatted),
+          ftime: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterRangeValues)((_vals$ftime = vals["ftime"]) === null || _vals$ftime === void 0 ? void 0 : _vals$ftime.formatted),
+          fduracao: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(vals === null || vals === void 0 ? void 0 : vals.fduracao, '=='),
+          fcliente: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(vals === null || vals === void 0 ? void 0 : vals.fcliente, 'any'),
+          fdestino: (0,utils__WEBPACK_IMPORTED_MODULE_38__.getFilterValue)(vals === null || vals === void 0 ? void 0 : vals.fdestino, 'any')
         });
 
         dataAPI.addFilters(_values);
+        dataAPI.addParameters({
+          typelist: typelist
+        });
         dataAPI.first();
         dataAPI.fetchPost();
         break;
@@ -544,23 +557,23 @@ var GlobalSearch = function GlobalSearch() {
     }
   };
 
-  var menu = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"], {
+  var menu = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_55__["default"], {
     onClick: function onClick(v) {
       return exportFile(v);
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"].Item, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_55__["default"].Item, {
     key: "pdf",
-    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_55__["default"], {
+    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_56__["default"], {
       twoToneColor: "red"
     })
-  }, "Pdf"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"].Item, {
+  }, "Pdf"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_55__["default"].Item, {
     key: "excel",
-    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_56__["default"], {
+    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_57__["default"], {
       twoToneColor: "#52c41a"
     })
-  }, "Excel"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"].Item, {
+  }, "Excel"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_55__["default"].Item, {
     key: "word",
-    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_57__["default"], null)
+    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_58__["default"], null)
   }, "Word"));
 
   var exportFile = /*#__PURE__*/function () {
@@ -582,7 +595,7 @@ var GlobalSearch = function GlobalSearch() {
               delete requestData.parameters.cols.bobines;
               requestData.parameters.cols.area.title = "Área m2";
               _context.next = 6;
-              return (0,utils_fetch__WEBPACK_IMPORTED_MODULE_34__.fetchPostBlob)(requestData);
+              return (0,utils_fetch__WEBPACK_IMPORTED_MODULE_35__.fetchPostBlob)(requestData);
 
             case 6:
               response = _context.sent;
@@ -615,7 +628,7 @@ var GlobalSearch = function GlobalSearch() {
     };
   }();
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FilterDrawer, {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FilterDrawer, {
     schema: filterSchema({
       form: form
       /* ordersField, customersField, itemsField */
@@ -626,14 +639,14 @@ var GlobalSearch = function GlobalSearch() {
     width: 350,
     setShowFilter: setShowFilter,
     showFilter: showFilter
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"], {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"], {
     form: form,
     name: "fps",
     onFinish: function onFinish(values) {
       return _onFinish("filter", values);
     },
     onValuesChange: onValuesChange
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FormLayout, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FormLayout, {
     id: "LAY-BOBINAGENS",
     layout: "horizontal",
     style: {
@@ -658,7 +671,7 @@ var GlobalSearch = function GlobalSearch() {
       layout: "horizontal",
       overflow: false
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
     name: "fbobinagem",
     required: false,
     layout: {
@@ -670,9 +683,9 @@ var GlobalSearch = function GlobalSearch() {
       text: "Nº Bobinagem",
       pos: "top"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_58__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_59__["default"], {
     size: "small"
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
     name: "fdata",
     required: false,
     layout: {
@@ -684,9 +697,9 @@ var GlobalSearch = function GlobalSearch() {
       text: "Data Bobinagem",
       pos: "top"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.RangeDateField, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.RangeDateField, {
     size: "small"
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.Field, {
     name: "ftime",
     required: false,
     layout: {
@@ -698,30 +711,30 @@ var GlobalSearch = function GlobalSearch() {
       text: "Início/Fim",
       pos: "top"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.RangeTimeField, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.RangeTimeField, {
     size: "small",
-    format: config__WEBPACK_IMPORTED_MODULE_35__.TIME_FORMAT
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FieldItem, {
+    format: config__WEBPACK_IMPORTED_MODULE_48__.TIME_FORMAT
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FieldItem, {
     label: {
       enabled: false
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(ButtonGroup, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(ButtonGroup, {
     size: "small",
     style: {
       marginLeft: "5px"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
     style: {
       padding: "0px 3px"
     },
     onClick: function onClick() {
       return form.submit();
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_59__["default"], null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_60__["default"], null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
     style: {
       padding: "0px 3px"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(assets_morefilters_svg__WEBPACK_IMPORTED_MODULE_45__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(assets_morefilters_svg__WEBPACK_IMPORTED_MODULE_45__["default"], {
     style: {
       fontSize: "16px",
       marginTop: "2px"
@@ -731,24 +744,25 @@ var GlobalSearch = function GlobalSearch() {
         return !prev;
       });
     }
-  })))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FieldItem, {
+  })))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.FieldItem, {
     label: {
       enabled: false
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_60__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_61__["default"], {
     overlay: menu
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
     size: "small",
-    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_61__["default"], null)
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_62__["default"], null)))))));
+    icon: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_62__["default"], null)
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_63__["default"], null)))))));
 };
 
-var StyledBobine = styled_components__WEBPACK_IMPORTED_MODULE_63__["default"].div(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n    border:dashed 1px #000;\n    background-color:", ";\n    border-radius:3px;\n    margin-right:1px;\n    text-align:center;\n    width:25px;\n    font-size:9px;\n    cursor:pointer;\n    &:hover {\n        border-color: #d9d9d9;\n    }\n"])), function (props) {
+var StyledBobine = styled_components__WEBPACK_IMPORTED_MODULE_64__["default"].div(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n    border:dashed 1px #000;\n    background-color:", ";\n    border-radius:3px;\n    margin-right:1px;\n    text-align:center;\n    width:25px;\n    font-size:9px;\n    cursor:pointer;\n    &:hover {\n        border-color: #d9d9d9;\n    }\n"])), function (props) {
   return props.color;
 });
-var useStyles = (0,react_jss__WEBPACK_IMPORTED_MODULE_64__.createUseStyles)({
+var useStyles = (0,react_jss__WEBPACK_IMPORTED_MODULE_65__.createUseStyles)({
   columnBobines: {
     width: '25px',
+    minWidth: '25px',
     textAlign: "center",
     marginRight: "1px"
   }
@@ -757,13 +771,13 @@ var useStyles = (0,react_jss__WEBPACK_IMPORTED_MODULE_64__.createUseStyles)({
 var ColumnBobines = function ColumnBobines(_ref5) {
   var n = _ref5.n;
   var classes = useStyles();
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row"
     }
   }, _toConsumableArray(Array(n)).map(function (x, i) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
       className: classes.columnBobines,
       key: "bh-".concat(i)
     }, i + 1);
@@ -805,36 +819,36 @@ var Bobines = function Bobines(_ref6) {
     });
   };
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row"
     }
   }, bobines.map(function (v, i) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(StyledBobine, {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(StyledBobine, {
       onClick: handleClick,
       color: bColors(v.estado),
       key: "bob-".concat(v.id)
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("b", null, v.estado), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", null, v.lar));
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("b", null, v.estado), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", null, v.lar));
   }));
 };
 
-var EditableContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createContext(null);
+var EditableContext = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createContext(null);
 
 var EditableRow = function EditableRow(_ref7) {
   var index = _ref7.index,
-      props = _objectWithoutProperties(_ref7, _excluded);
+      props = _objectWithoutProperties(_ref7, _excluded2);
 
-  var _Form$useForm = antd__WEBPACK_IMPORTED_MODULE_53__["default"].useForm(),
+  var _Form$useForm = antd__WEBPACK_IMPORTED_MODULE_54__["default"].useForm(),
       _Form$useForm2 = _slicedToArray(_Form$useForm, 1),
       form = _Form$useForm2[0];
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"], {
     form: form,
     component: false
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(EditableContext.Provider, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(EditableContext.Provider, {
     value: form
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("tr", props)));
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("tr", props)));
 };
 
 var EditableCell = function EditableCell(_ref8) {
@@ -845,16 +859,16 @@ var EditableCell = function EditableCell(_ref8) {
       record = _ref8.record,
       input = _ref8.input,
       handleSave = _ref8.handleSave,
-      restProps = _objectWithoutProperties(_ref8, _excluded2);
+      restProps = _objectWithoutProperties(_ref8, _excluded3);
 
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)(false),
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)(false),
       _useState4 = _slicedToArray(_useState3, 2),
       editing = _useState4[0],
       setEditing = _useState4[1];
 
-  var inputRef = (0,react__WEBPACK_IMPORTED_MODULE_31__.useRef)(null);
-  var form = (0,react__WEBPACK_IMPORTED_MODULE_31__.useContext)(EditableContext);
-  (0,react__WEBPACK_IMPORTED_MODULE_31__.useEffect)(function () {
+  var inputRef = (0,react__WEBPACK_IMPORTED_MODULE_32__.useRef)(null);
+  var form = (0,react__WEBPACK_IMPORTED_MODULE_32__.useContext)(EditableContext);
+  (0,react__WEBPACK_IMPORTED_MODULE_32__.useEffect)(function () {
     if (editing) {
       inputRef.current.focus();
     }
@@ -904,7 +918,7 @@ var EditableCell = function EditableCell(_ref8) {
   var childNode = children;
 
   if (editable) {
-    childNode = editing ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"].Item, {
+    childNode = editing ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_54__["default"].Item, {
       style: {
         margin: 0
       },
@@ -913,15 +927,15 @@ var EditableCell = function EditableCell(_ref8) {
         required: true,
         message: "".concat(title, " is required.")
       }]
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.isValidElement(input) ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.cloneElement(input, _objectSpread({
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.isValidElement(input) ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.cloneElement(input, _objectSpread({
       ref: inputRef,
       onPressEnter: save,
       onBlur: save
-    }, input.props)) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_58__["default"], {
+    }, input.props)) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_59__["default"], {
       ref: inputRef,
       onPressEnter: save,
       onBlur: save
-    })) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+    })) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
       className: "editable-cell-value-wrap",
       style: {
         paddingRight: 24
@@ -930,26 +944,26 @@ var EditableCell = function EditableCell(_ref8) {
     }, children);
   }
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("td", restProps, childNode);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("td", restProps, childNode);
 };
 
 var TitleValidar = function TitleValidar(_ref10) {
   var data = _ref10.data;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row",
       gap: "10px",
       alignItems: "center"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", {
     style: {
       fontSize: "14px",
       display: "flex",
       flexDirection: "row",
       alignItems: "center"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_52__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("b", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_53__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("b", {
     style: {
       textTransform: "capitalize"
     }
@@ -960,7 +974,7 @@ var ModalValidar = function ModalValidar(_ref11) {
   var show = _ref11.show,
       setShow = _ref11.setShow;
 
-  var _React$useState = react__WEBPACK_IMPORTED_MODULE_31__.useState(false),
+  var _React$useState = react__WEBPACK_IMPORTED_MODULE_32__.useState(false),
       _React$useState2 = _slicedToArray(_React$useState, 2),
       confirmLoading = _React$useState2[0],
       setConfirmLoading = _React$useState2[1];
@@ -972,8 +986,8 @@ var ModalValidar = function ModalValidar(_ref11) {
     });
   };
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_65__["default"], {
-    title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(TitleValidar, {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_66__["default"], {
+    title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(TitleValidar, {
       data: show.data
       /* aggCod={aggCod} */
 
@@ -991,9 +1005,9 @@ var ModalValidar = function ModalValidar(_ref11) {
 
     },
     width: "100%"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_YScroll__WEBPACK_IMPORTED_MODULE_46__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Suspense, {
-    fallback: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Fragment, null)
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(BobinesValidarList, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_YScroll__WEBPACK_IMPORTED_MODULE_46__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Suspense, {
+    fallback: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Fragment, null)
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(BobinesValidarList, {
     data: show.data
   })))));
 }; // const formSchema = (keys, excludeKeys) => {
@@ -1165,22 +1179,22 @@ var ModalValidar = function ModalValidar(_ref11) {
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (function () {
-  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)(false),
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)(false),
       _useState6 = _slicedToArray(_useState5, 2),
       loading = _useState6[0],
       setLoading = _useState6[1];
 
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)([]),
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)([]),
       _useState8 = _slicedToArray(_useState7, 2),
       selectedRows = _useState8[0],
       setSelectedRows = _useState8[1];
 
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)(false),
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)(false),
       _useState10 = _slicedToArray(_useState9, 2),
       showFilter = _useState10[0],
       setShowFilter = _useState10[1];
 
-  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useState)({
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)({
     show: false,
     data: {}
   }),
@@ -1188,13 +1202,13 @@ var ModalValidar = function ModalValidar(_ref11) {
       showValidar = _useState12[0],
       setShowValidar = _useState12[1];
 
-  var _Form$useForm3 = antd__WEBPACK_IMPORTED_MODULE_53__["default"].useForm(),
+  var _Form$useForm3 = antd__WEBPACK_IMPORTED_MODULE_54__["default"].useForm(),
       _Form$useForm4 = _slicedToArray(_Form$useForm3, 1),
       formFilter = _Form$useForm4[0];
 
   var dataAPI = (0,utils_useDataAPI__WEBPACK_IMPORTED_MODULE_36__.useDataAPI)({
     payload: {
-      url: "".concat(config__WEBPACK_IMPORTED_MODULE_35__.API_URL, "/validarbobinagenslist/"),
+      url: "".concat(config__WEBPACK_IMPORTED_MODULE_48__.API_URL, "/validarbobinagenslist/"),
       parameters: {},
       pagination: {
         enabled: true,
@@ -1210,8 +1224,16 @@ var ModalValidar = function ModalValidar(_ref11) {
   });
   var elFilterTags = document.getElementById('filter-tags');
 
-  var _ref12 = (0,react__WEBPACK_IMPORTED_MODULE_31__.useContext)(_App__WEBPACK_IMPORTED_MODULE_49__.SocketContext) || {},
+  var _ref12 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useContext)(_App__WEBPACK_IMPORTED_MODULE_50__.SocketContext) || {},
       dataSocket = _ref12.data;
+
+  var _useContext = (0,react__WEBPACK_IMPORTED_MODULE_32__.useContext)(_App__WEBPACK_IMPORTED_MODULE_50__.MediaContext),
+      windowDimension = _useContext.windowDimension;
+
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_32__.useState)('A'),
+      _useState14 = _slicedToArray(_useState13, 2),
+      typeList = _useState14[0],
+      setTypeList = _useState14[1];
   /*     useEffect(() => {
           const cancelFetch = cancelToken();
           dataAPI.first();
@@ -1220,9 +1242,10 @@ var ModalValidar = function ModalValidar(_ref11) {
       }, []); */
 
 
-  (0,react__WEBPACK_IMPORTED_MODULE_31__.useEffect)(function () {
+  (0,react__WEBPACK_IMPORTED_MODULE_32__.useEffect)(function () {
+    console.log(windowDimension);
     console.log("NOVA BOBINAGEM DETETADA...", dataSocket);
-    var cancelFetch = (0,utils_fetch__WEBPACK_IMPORTED_MODULE_34__.cancelToken)();
+    var cancelFetch = (0,utils_fetch__WEBPACK_IMPORTED_MODULE_35__.cancelToken)();
     dataAPI.first();
     dataAPI.fetchPost({
       token: cancelFetch
@@ -1242,17 +1265,48 @@ var ModalValidar = function ModalValidar(_ref11) {
       cell: EditableCell
     }
   };
+
+  var typeListField = function typeListField() {
+    var _ref13 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        onChange = _ref13.onChange,
+        setTypeList = _ref13.setTypeList,
+        typeList = _ref13.typeList;
+
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_40__.SelectField, {
+      name: "typelist",
+      style: {
+        width: 150
+      },
+      keyField: "value",
+      valueField: "label",
+      onChange: onChange,
+      options: [{
+        value: "A",
+        label: "Estado Bobines"
+      }, {
+        value: "B",
+        label: "Consumo Bobinagem"
+      }]
+    })
+    /*             <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
+                    [{ value: "A", label: "Estado Bobines" },
+                    { value: "B", label: "Consumo Bobinagem" }]
+                } /> */
+    ;
+  };
+
   var columns = (0,components_table__WEBPACK_IMPORTED_MODULE_42__.setColumns)({
     dataAPI: dataAPI,
     data: dataAPI.getData().rows,
     uuid: "bobinagenslist_validar",
-    include: _objectSpread({}, function (common) {
+    include: _objectSpread(_objectSpread({}, function (common) {
       return {
         nome: _objectSpread({
           title: "Bobinagem",
-          width: 60,
+          width: 90,
+          fixed: 'left',
           render: function render(v) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("span", {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("span", {
               style: {
                 color: "#096dd9",
                 cursor: "pointer"
@@ -1265,25 +1319,25 @@ var ModalValidar = function ModalValidar(_ref11) {
         inico: _objectSpread({
           title: "Início",
           render: function render(v, r) {
-            return dayjs__WEBPACK_IMPORTED_MODULE_32___default()('01-01-1970 ' + v).format(config__WEBPACK_IMPORTED_MODULE_35__.TIME_FORMAT);
+            return dayjs__WEBPACK_IMPORTED_MODULE_33___default()('01-01-1970 ' + v).format(config__WEBPACK_IMPORTED_MODULE_48__.TIME_FORMAT);
           }
         }, common),
         fim: _objectSpread({
           title: "Fim",
           render: function render(v, r) {
-            return dayjs__WEBPACK_IMPORTED_MODULE_32___default()('01-01-1970 ' + v).format(config__WEBPACK_IMPORTED_MODULE_35__.TIME_FORMAT);
+            return dayjs__WEBPACK_IMPORTED_MODULE_33___default()('01-01-1970 ' + v).format(config__WEBPACK_IMPORTED_MODULE_48__.TIME_FORMAT);
           }
         }, common),
         duracao: _objectSpread({
           title: "Duração",
-          width: 20,
+          width: 80,
           render: function render(v, r) {
             return v;
           }
         }, common),
         core: _objectSpread({
           title: "Core",
-          width: 5,
+          width: 35,
           render: function render(v, r) {
             return v;
           }
@@ -1294,7 +1348,7 @@ var ModalValidar = function ModalValidar(_ref11) {
             return v;
           },
           editable: true,
-          input: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_66__["default"], null)
+          input: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_67__["default"], null)
         }, common),
         comp_par: _objectSpread({
           title: "Comp. Emenda",
@@ -1309,7 +1363,7 @@ var ModalValidar = function ModalValidar(_ref11) {
           }
         }, common),
         area: _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement("span", null, "\xC1rea m\xB2"),
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement("span", null, "\xC1rea m\xB2"),
           render: function render(v, r) {
             return v;
           }
@@ -1330,19 +1384,6 @@ var ModalValidar = function ModalValidar(_ref11) {
           title: "Nw Sup. m",
           render: function render(v, r) {
             return v;
-          }
-        }, common),
-        bobines: _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(ColumnBobines, {
-            n: 28
-          }),
-          sorter: false,
-          render: function render(v, r) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(Bobines, {
-              b: JSON.parse(v),
-              bm: r,
-              setShow: setShowValidar
-            });
           }
         }, common) //cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
         //ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
@@ -1377,12 +1418,178 @@ var ModalValidar = function ModalValidar(_ref11) {
     }({
       idx: 1,
       optional: false
+    })), function (common) {
+      return _objectSpread(_objectSpread({}, common.typeList == 'A' && {
+        bobines: _objectSpread({
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(ColumnBobines, {
+            n: 28
+          }),
+          width: 750,
+          sorter: false,
+          render: function render(v, r) {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(Bobines, {
+              b: JSON.parse(v),
+              bm: r,
+              setShow: setShowValidar
+            });
+          }
+        }, common)
+      }), common.typeList == 'B' && {
+        A1: _objectSpread({
+          title: 'A1 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        A2: _objectSpread({
+          title: 'A2 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        A3: _objectSpread({
+          title: 'A3 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        A4: _objectSpread({
+          title: 'A4 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        A5: _objectSpread({
+          title: 'A5 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        A6: _objectSpread({
+          title: 'A6 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B1: _objectSpread({
+          title: 'B1 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B2: _objectSpread({
+          title: 'B2 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B3: _objectSpread({
+          title: 'B3 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B4: _objectSpread({
+          title: 'B4 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B5: _objectSpread({
+          title: 'B5 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        B6: _objectSpread({
+          title: 'B6 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C1: _objectSpread({
+          title: 'C1 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C2: _objectSpread({
+          title: 'C2 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C3: _objectSpread({
+          title: 'C3 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C4: _objectSpread({
+          title: 'C4 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C5: _objectSpread({
+          title: 'C5 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common),
+        C6: _objectSpread({
+          title: 'C6 kg',
+          width: 55,
+          sorter: false,
+          render: function render(v, r) {
+            return v === null || v === void 0 ? void 0 : v.toFixed(2);
+          }
+        }, common)
+      });
+    }({
+      idx: 2,
+      optional: false,
+      typeList: formFilter.getFieldValue('typelist')
     })),
     exclude: []
   });
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(react__WEBPACK_IMPORTED_MODULE_31__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(antd__WEBPACK_IMPORTED_MODULE_67__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(react__WEBPACK_IMPORTED_MODULE_32__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(antd__WEBPACK_IMPORTED_MODULE_68__["default"], {
     spinning: loading,
-    indicator: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_68__["default"], {
+    indicator: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_69__["default"], {
       style: {
         fontSize: 24
       },
@@ -1393,21 +1600,23 @@ var ModalValidar = function ModalValidar(_ref11) {
       left: "50%",
       position: "absolute"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(ModalValidar, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(ModalValidar, {
     show: showValidar,
     setShow: setShowValidar
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(ToolbarTable, {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(ToolbarTable, {
     form: formFilter,
-    dataAPI: dataAPI
-  }), elFilterTags && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_portal__WEBPACK_IMPORTED_MODULE_44__["default"], {
+    dataAPI: dataAPI,
+    typeListField: typeListField,
+    setTypeList: setTypeList
+  }), elFilterTags && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_portal__WEBPACK_IMPORTED_MODULE_44__["default"], {
     elId: elFilterTags
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_form__WEBPACK_IMPORTED_MODULE_39__.FilterTags, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_form__WEBPACK_IMPORTED_MODULE_39__.FilterTags, {
     form: formFilter,
     filters: dataAPI.getAllFilter(),
     schema: filterSchema,
     rules: filterRules()
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(components_table__WEBPACK_IMPORTED_MODULE_42__["default"], {
-    title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(Title, {
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(components_table__WEBPACK_IMPORTED_MODULE_42__["default"], {
+    title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(Title, {
       level: 4
     }, "Validar Bobinagens da Linha 1"),
     columnChooser: false,
@@ -1415,7 +1624,7 @@ var ModalValidar = function ModalValidar(_ref11) {
     stripRows: true,
     darkHeader: true,
     size: "small",
-    toolbar: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_31__.createElement(GlobalSearch, {
+    toolbar: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_32__.createElement(GlobalSearch, {
       columns: columns === null || columns === void 0 ? void 0 : columns.report,
       form: formFilter,
       dataAPI: dataAPI,
@@ -1438,7 +1647,12 @@ var ModalValidar = function ModalValidar(_ref11) {
     dataAPI: dataAPI,
     columns: columns,
     onFetch: dataAPI.fetchPost,
-    components: components //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+    components: components,
+    scroll: {
+      x: config__WEBPACK_IMPORTED_MODULE_48__.SCREENSIZE_OPTIMIZED.width - 20,
+      y: '70vh',
+      scrollToFirstRowOnChange: true
+    } //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
 
   })));
 });

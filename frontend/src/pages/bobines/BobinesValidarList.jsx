@@ -43,14 +43,14 @@ const ApproveButton = styled(Button)`
   }
 `;
 
-const ToolbarTable = ({ dataAPI }) => {
+const ToolbarTable = ({ dataAPI, onSubmit }) => {
     const navigate = useNavigate();
 
     const leftContent = (
         <Space>
-            <Button type="primary" size="small">Validar</Button>
-            <ApproveButton size="small">Aprovar</ApproveButton>
-            <Button danger size="small">Hold</Button>
+            <Button type="primary" size="small" onClick={() => onSubmit("validar")}>Validar</Button>
+            <ApproveButton size="small" onClick={() => onSubmit("aprovar")}>Aprovar</ApproveButton>
+            <Button danger size="small" onClick={() => onSubmit("hold")}>Hold</Button>
             {/* <button onClick={() => navigate(-1)}>go back</button> */}
             {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
         </Space>
@@ -77,8 +77,8 @@ const FEstado = ({ index, data, width = "70px" }) => {
     const tabIndex = 100 + index;
     return (<SelectField value={data.estado[name]} name={name} tabIndex={tabIndex} style={{ width }} size="small" options={BOBINE_ESTADOS} />);
 };
-const HeaderCol = ({ data, name, title }) => {
-    return (<Space>{title}<Checkbox checked={data[`${name}-all`]} name={`${name}-all`} /></Space>);
+const HeaderCol = ({ data, name, title, onChange }) => {
+    return (<Space>{title}<Checkbox onChange={(v) => onChange(`${name}-all`, v)} checked={data[`${name}-all`]} name={`${name}-all`} /></Space>);
 };
 const FLarguraReal = ({ index, data, width = "60px" }) => {
     const name = `lr-${index}`;
@@ -87,18 +87,19 @@ const FLarguraReal = ({ index, data, width = "60px" }) => {
 }
 const FDefeitos = ({ index, data, width = "100%", onChange }) => {
     const name = `defeitos-${index}`;
-    return (<SelectMultiField onChange={(v) => onChange("defeitos", v, index)} tabIndex={500 + index} style={{ width }} name={name} value={data.defeitos[index]} allowClear size="small" options={BOBINE_DEFEITOS} />);
+    const tabIndex = 300 + index;
+    return (<SelectMultiField onChange={(v) => onChange("defeitos", v, index)} tabIndex={tabIndex} style={{ width }} name={name} value={data.defeitos[index]} allowClear size="small" options={BOBINE_DEFEITOS} />);
 };
 const FFalhaCorte = ({ index, data, width = "50px" }) => {
     const name1 = `fc-i-${index}`;
     const name2 = `fc-e-${index}`;
-    const tabIndex = 300 + index;
+    const tabIndex = 400 + index;
     return (<Space><InputNumber tabIndex={tabIndex} controls={false} style={{ width }} disabled name={name1} size="small" /><InputNumber tabIndex={tabIndex} controls={false} style={{ width }} disabled name={name2} size="small" /></Space>);
 }
 const FFalhaFilme = ({ index, data, width = "50px" }) => {
     const name1 = `ff-i-${index}`;
     const name2 = `ff-e-${index}`;
-    const tabIndex = 400 + index;
+    const tabIndex = 500 + index;
     return (<Space><InputNumber tabIndex={tabIndex} controls={false} style={{ width }} disabled name={name1} size="small" /><InputNumber tabIndex={tabIndex} controls={false} style={{ width }} disabled name={name2} size="small" /></Space>);
 }
 
@@ -110,14 +111,14 @@ export default ({ data }) => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const [formData, setFormData] = useImmer({ 'ff-all': 0, 'fc-all': 0, 'st-all': 0, estado: {}, l_real: {}, defeitos: {}, fc: {}, ff: {} });
+    const [formData, setFormData] = useImmer({ 'defeitos-all': 0, 'ff-all': 0, 'fc-all': 0, 'st-all': 0, estado: {}, l_real: {}, defeitos: [], fc: {}, ff: {} });
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobineslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 30 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
 
     useEffect(() => {
         const { bobinagem_id } = data;
         const cancelFetch = cancelToken();
         dataAPI.first();
-        dataAPI.addFilters({bobinagem_id});
+        dataAPI.addFilters({ bobinagem_id });
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
     }, []);
@@ -128,6 +129,7 @@ export default ({ data }) => {
                 setFormData(draft => {
                     draft.estado[`st-${i}`] = v.estado;
                     draft.l_real[`lr-${i}`] = v.l_real;
+                    draft.defeitos[i]=[];
                 });
             }
         }
@@ -142,14 +144,43 @@ export default ({ data }) => {
     const onChange = (type, value, index) => {
 
         switch (type) {
-            case "defeitos":
+            case 'defeitos-all':
+                console.log("---------------", value)
                 setFormData(draft => {
-                    draft.defeitos[index] = value;
+                    draft['defeitos-all'] = value.target.checked;
                 });
+                break;
+            case "defeitos":
+                if (formData['defeitos-all']) {
+                    setFormData(draft => {
+                        draft.defeitos = formData.defeitos.map(() => value);
+                    });
+
+                } else {
+                    setFormData(draft => {
+                        draft.defeitos[index] = value;
+                    });
+                }
                 break;
         }
         console.log(formData)
     };
+
+    const onSubmit = (type) => {
+        const _defeitos = [];
+        for (let key in formData.defeitos) {
+            console.log(key, dataAPI.getData().rows[key], formData.defeitos[`${dataAPI.getData().rows[key].id}`])
+            const _t = formData.defeitos[key].map(v => ({ [v.key]: 1 }));
+            console.log(dataAPI.getData().rows[key].id);
+            _defeitos.push({ id: dataAPI.getData().rows[key].id })
+            console.log(_t);
+        }
+        switch (type) {
+            case "validar": break;
+            case "hold": break;
+            case "aprovar": break;
+        }
+    }
 
     const selectionRowKey = (record) => {
         return `${record.id}`;
@@ -171,13 +202,13 @@ export default ({ data }) => {
                 ...((common) => (
                     {
                         nome: { title: "Bobine", width: 125, render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
-                        "A": { title: <HeaderCol title="Estado" name="st" data={formData} />, width: 80, render: (v, r, i) => <FEstado width="70px" index={i} data={formData} />, ...common },
+                        "A": { title: <HeaderCol title="Estado" name="st" data={formData} onChange={onChange} />, width: 80, render: (v, r, i) => <FEstado width="70px" index={i} data={formData} />, ...common },
                         "B": { title: "Largura Real", width: 90, render: (v, r, i) => <FLarguraReal width="60px" index={i} data={formData} />, ...common },
-                        "E": { title: <HeaderCol title="Outros Defeitos" name="defeitos" data={formData} />, render: (v, r, i) => <FDefeitos width="100%" index={i} data={formData} onChange={onChange} />, ...common },
-                        "C": { title: <HeaderCol title="Falha Corte" name="fc" data={formData} />, width: 70, render: (v, r, i) => <FFalhaCorte width="50px" index={i} data={formData} />, ...common },
-                        "D": { title: <HeaderCol title="Falha Filme" name="ff" data={formData} />, width: 70, render: (v, r, i) => <FFalhaFilme width="50px" index={i} data={formData} />, ...common },
-                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} />, width: 270, render: (v, r, i) => <TextArea autoSize={{ minRows: 1, maxRows: 6 }} tabIndex={500 + i} name={`probs-i-${i}`} size="small" />, ...common },
-                        "G": { title: <HeaderCol title="Obs." name="obs" data={formData} />, width: 270, render: (v, r, i) => <TextArea autoSize={{ minRows: 1, maxRows: 6 }} tabIndex={600 + i} name={`obs-i-${i}`} size="small" />, ...common }
+                        "E": { title: <HeaderCol title="Outros Defeitos" name="defeitos" data={formData} onChange={onChange} />, render: (v, r, i) => <FDefeitos width="100%" index={i} data={formData} onChange={onChange} />, ...common },
+                        "C": { title: <HeaderCol title="Falha Corte" name="fc" data={formData} onChange={onChange} />, width: 70, render: (v, r, i) => <FFalhaCorte width="50px" index={i} data={formData} />, ...common },
+                        "D": { title: <HeaderCol title="Falha Filme" name="ff" data={formData} onChange={onChange} />, width: 70, render: (v, r, i) => <FFalhaFilme width="50px" index={i} data={formData} />, ...common },
+                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <TextArea style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={600 + i} name={`probs-i-${i}`} size="small" />, ...common },
+                        "G": { title: <HeaderCol title="Obs." name="obs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <TextArea autoSize={{ minRows: 1, maxRows: 6 }} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={700 + i} name={`obs-i-${i}`} size="small" />, ...common }
                     }
                 ))({ idx: 1, optional: false, sorter: false })
             },
@@ -188,7 +219,7 @@ export default ({ data }) => {
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <ToolbarTable dataAPI={dataAPI} />
+                <ToolbarTable dataAPI={dataAPI} onSubmit={onSubmit} />
                 <Table
                     columnChooser={false}
                     reload={false}

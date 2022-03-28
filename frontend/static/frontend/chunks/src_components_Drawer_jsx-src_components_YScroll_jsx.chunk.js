@@ -769,8 +769,9 @@ var WrapperForm = function WrapperForm(props) {
   }));
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_35__.createElement(react__WEBPACK_IMPORTED_MODULE_35__.Fragment, null, widthMode && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_35__.createElement(react__WEBPACK_IMPORTED_MODULE_35__.Fragment, null, type == 'modal' ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_35__.createElement(antd__WEBPACK_IMPORTED_MODULE_49__["default"], _extends({}, rest, {
     bodyStyle: {
-      height: !height ? '70vh' : height
-    },
+      height: "calc(".concat(!height ? '70vh' : height, " - 60px)")
+    } //bodyStyle={{ height: !height ? '70vh' : height }}
+    ,
     style: {
       width: widthMode.width,
       minWidth: widthMode.width

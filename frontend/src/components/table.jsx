@@ -26,10 +26,7 @@ const useStyles = createUseStyles({
     }
 });
 
-
-
-
-const StyledTable = styled(Table)`
+/* const StyledTable = styled(Table)`
   .ant-table-body::-webkit-scrollbar {
     width:10px;
     height:16px;
@@ -69,6 +66,14 @@ const StyledTable = styled(Table)`
     .ant-table-cell {
         padding: 1px 3px !important;
     }
+`; */
+
+
+const StyledTable = styled(Table)`
+  
+    .ant-table-cell {
+        padding: 1px 3px !important;
+    }
 `;
 
 
@@ -88,7 +93,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
     if (!uuid) {
         throw new Error('uuid is required')
     }
-    const ret = { all: [], notOptional: [], report: {}, uuid };
+    const ret = { all: [], notOptional: [], report: {}, width:0, uuid };
     if (!data) return;
     var keys = []
     if (Array.isArray(include) && include.length > 0) {
@@ -109,6 +114,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
             sorter: sort && { multiple: i },
             sortOrder: sort && dataAPI.sortOrder(v),
             optional,
+            ellipsis:true,
             ...rOptions
         }
 
@@ -126,6 +132,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
         if (!c.optional) {
             ret.notOptional.push(c);
         }
+        ret.width+=(c?.width) ? c.width : 0;
         ret.report[c.dataIndex] = { ...(c.width && { width: c.width }), title: c.title };
         ret.all.push(c);
     }
@@ -155,6 +162,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
     const css = classNames(className, { [classes.stripRows]: stripRows, [classes.darkHeader]: darkHeader });
 
 
+
     const onTableChange = (pagination, filters, sorter, { action }) => {
         switch (action) {
             case "sort":
@@ -173,7 +181,6 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
     }
 
     const onRowClick = (record, index, rowKey) => {
-        console.log("sssss", record, rowKey);
         let _row;
         if (typeof rowKey === 'function') {
             _row = rowKey(record);

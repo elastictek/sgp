@@ -11,6 +11,7 @@ export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 export const TIME_FORMAT = 'HH:mm';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const SOCKET = { url: 'ws://localhost:8000/ws' };
+export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
 //ORDEM FABRICO TIPO ANEXOS
@@ -27,7 +28,7 @@ export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
 export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }];
-export const PALETE_SIZES = [{ key: '970x970', value: "970x970" },{ key: '1080x1080', value: "1080x1080" },{ key: '760x760', value: "760x760" }];
+export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
 export const CONTENTORES_OPTIONS = [
     { label: <b>Camião</b>, value: 'Camião' },
     { label: <b>40HC</b>, value: '40HC' },

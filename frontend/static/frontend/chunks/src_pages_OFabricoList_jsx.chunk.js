@@ -458,7 +458,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 
 var FormOFabricoValidar = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.lazy(function () {
-  return Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_antd_es_result_index_js"), __webpack_require__.e("vendors-node_modules_antd_es_tabs_index_js"), __webpack_require__.e("vendors-node_modules_core-js_modules_es_number_to-fixed_js"), __webpack_require__.e("src_components_resultMessage_jsx"), __webpack_require__.e("src_components_iconButton_jsx"), __webpack_require__.e("src_pages_planeamento_ordemFabrico_FormOFabricoValidar_jsx")]).then(__webpack_require__.bind(__webpack_require__, /*! ./planeamento/ordemFabrico/FormOFabricoValidar */ "./src/pages/planeamento/ordemFabrico/FormOFabricoValidar.jsx"));
+  return Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_antd_es_result_index_js"), __webpack_require__.e("vendors-node_modules_core-js_modules_es_number_to-fixed_js"), __webpack_require__.e("vendors-node_modules_antd_es_tabs_index_js"), __webpack_require__.e("src_components_resultMessage_jsx"), __webpack_require__.e("src_components_iconButton_jsx"), __webpack_require__.e("src_pages_planeamento_ordemFabrico_FormOFabricoValidar_jsx")]).then(__webpack_require__.bind(__webpack_require__, /*! ./planeamento/ordemFabrico/FormOFabricoValidar */ "./src/pages/planeamento/ordemFabrico/FormOFabricoValidar.jsx"));
 });
 var FormMenuActions = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.lazy(function () {
   return Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_antd_es_tabs_index_js"), __webpack_require__.e("vendors-node_modules_ant-design_icons_es_icons_PaperClipOutlined_js-node_modules_antd_es_card-6f0df3"), __webpack_require__.e("vendors-node_modules_ant-design_icons_es_icons_HistoryOutlined_js-node_modules_sugar_index_js"), __webpack_require__.e("src_pages_currentline_FormMenuActions_jsx")]).then(__webpack_require__.bind(__webpack_require__, /*! ./currentline/FormMenuActions */ "./src/pages/currentline/FormMenuActions.jsx"));
@@ -470,7 +470,6 @@ var Option = antd__WEBPACK_IMPORTED_MODULE_62__["default"].Option;
 var confirm = antd__WEBPACK_IMPORTED_MODULE_63__["default"].confirm;
 
 var ButtonGroup = antd__WEBPACK_IMPORTED_MODULE_64__["default"].Group;
-
 
 var Title = antd__WEBPACK_IMPORTED_MODULE_65__["default"].Title;
 
@@ -1826,10 +1825,10 @@ var MenuActions = function MenuActions(_ref15) {
     footer: null,
     destroyOnClose: true,
     bodyStyle: {
-      height: "800px",
+      height: "calc(100vh - 60px)",
       backgroundColor: "#f0f0f0"
     },
-    width: "90%"
+    width: "100%"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement(components_YScroll__WEBPACK_IMPORTED_MODULE_60__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement(react__WEBPACK_IMPORTED_MODULE_39__.Suspense, {
     fallback: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement(react__WEBPACK_IMPORTED_MODULE_39__.Fragment, null)
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement(FormMenuActions, {
@@ -1871,7 +1870,7 @@ var MenuActions = function MenuActions(_ref15) {
       pagination: {
         enabled: true,
         page: 1,
-        pageSize: 10
+        pageSize: 20
       },
       filter: {},
       sort: [
@@ -2044,6 +2043,27 @@ var MenuActions = function MenuActions(_ref15) {
     uuid: "ofabricolist",
     include: _objectSpread({}, function (common) {
       return {
+        ofabrico: _objectSpread({
+          title: "Ordem Fabrico",
+          fixed: 'left',
+          width: 140,
+          render: function render(v) {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement("b", null, v);
+          }
+        }, common),
+        prf: _objectSpread({
+          title: "PRF",
+          fixed: 'left',
+          width: 140,
+          render: function render(v) {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement("b", null, v);
+          }
+        }, common),
+        iorder: _objectSpread({
+          title: "Encomenda(s)",
+          fixed: 'left',
+          width: 140
+        }, common),
         cod: _objectSpread({
           title: "Agg",
           width: 140,
@@ -2054,24 +2074,6 @@ var MenuActions = function MenuActions(_ref15) {
               }
             }, v);
           }
-        }, common),
-        ofabrico: _objectSpread({
-          title: "Ordem Fabrico",
-          width: 140,
-          render: function render(v) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement("b", null, v);
-          }
-        }, common),
-        prf: _objectSpread({
-          title: "PRF",
-          width: 140,
-          render: function render(v) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_39__.createElement("b", null, v);
-          }
-        }, common),
-        iorder: _objectSpread({
-          title: "Encomenda(s)",
-          width: 140
         }, common),
 
         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
@@ -2272,7 +2274,12 @@ var MenuActions = function MenuActions(_ref15) {
     },
     dataAPI: dataAPI,
     columns: columns,
-    onFetch: dataAPI.fetchPost //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+    onFetch: dataAPI.fetchPost,
+    scroll: {
+      x: config__WEBPACK_IMPORTED_MODULE_43__.SCREENSIZE_OPTIMIZED.width - 20,
+      y: '70vh',
+      scrollToFirstRowOnChange: true
+    } //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
 
   })));
 });

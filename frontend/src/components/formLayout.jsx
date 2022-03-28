@@ -113,7 +113,8 @@ export const WrapperForm = props => {
                 {type == 'modal' ? (
                     <Modal
                         {...rest}
-                        bodyStyle={{ height: !height ? '70vh' : height }}
+                        bodyStyle={{ height: `calc(${!height ? '70vh' : height} - 60px)` }}
+                        //bodyStyle={{ height: !height ? '70vh' : height }}
                         style={{ width: widthMode.width, minWidth: widthMode.width }}
                         width={widthMode.width}
                         title={titleForm}
@@ -327,7 +328,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                 const field = ("field" in line[col]) ? line[col].field : { type: "input" };
                                 const initialValue = ("initialValue" in line[col]) ? line[col].initialValue : undefined;
                                 return (
-                                    <Col key={`cf-${cidx}`} span={span} style={{paddingLeft:"1px",paddingRight:"1px"}}>
+                                    <Col key={`cf-${cidx}`} span={span} style={{ paddingLeft: "1px", paddingRight: "1px" }}>
                                         <Form.Item style={{ marginBottom: "0px" }} key={`fd-${col}`} name={`${col}`} label={label} {...(initialValue !== undefined && { initialValue: initialValue })} labelCol={{ style: { padding: "0px" } }}>
                                             {(typeof field === 'function') ? field() :
                                                 {

@@ -2084,7 +2084,7 @@ def computeProductionHours(aggid,cursor):
         goal_quality = 0.9
         hours = (((qty/(speed*width))/goal_time)/goal_quality)/60  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
         end_prev_date = start_prev_date + timedelta(hours=hours)
-        return {"hours":hours,"end_prev_date":end_prev_date}    
+        return {"hours":math.ceil(hours),"end_prev_date":end_prev_date}    
     return {"hours":0,"end_prev_date":None}
 
 # def computeProductionHours(data,cursor):
@@ -2385,7 +2385,7 @@ def sgpForProduction(data,aggid,user,cursor):
 
             tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
             enrolamento = {"1": "Anti-horário", "2":"Horário"}
-            delta = datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S")
+            #delta = datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S")
             dta = {
                 **atts,
                 "timestamp": datetime.now(),
@@ -2427,14 +2427,14 @@ def sgpForProduction(data,aggid,user,cursor):
                 "num_paletes_produzidas":0,                                
                 "data_prevista_inicio": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d"),
                 "hora_prevista_inicio": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%H:%M:%S"),
-                "data_prevista_fim": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d"),
-                "hora_prevista_fim": datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%H:%M:%S"),
+                "data_prevista_fim": hours["end_prev_date"].strftime("%Y-%m-%d"), #datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d"),
+                "hora_prevista_fim": hours["end_prev_date"].strftime("%H:%M:%S"),#datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S").strftime("%H:%M:%S"),
                 "num_paletes_stock_in":0,
                 "ofid":ordemfabrico["of_id"],
                 "draft_ordem_id":ordemfabrico["id"],
                 "agg_of_id_id":aggid,
                 "status":2,
-                "horas_previstas_producao": divmod(delta.total_seconds(), 3600)[0]
+                "horas_previstas_producao": hours['hours'] #divmod(delta.total_seconds(), 3600)[0]
             }
             #Save Current Settings
             dml = db.dml(TypeDml.INSERT, dta, "planeamento_ordemproducao")
@@ -3136,6 +3136,9 @@ def TempAggOFabricoLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
+    
+    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
+
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
@@ -3215,15 +3218,17 @@ def ValidarBobinagensList(request, format=None):
             {c(f'{dql.columns}')}
             from(
                 select pbm.*,pf.core
+                {',pbc.A1,pbc.A2,pbc.A3,pbc.A4,pbc.A5,pbc.A6,pbc.B1,pbc.B2,pbc.B3,pbc.B4,pbc.B5,pbc.B6,pbc.C1,pbc.C2,pbc.C3,pbc.C4,pbc.C5,pbc.C6' if typeList=='B' else '' } 
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
+                {'LEFT JOIN sistema_dev.producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 where pbm.valid=0 {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
                 {s(dql.sort)} {p(dql.paging)}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
             join producao_largura pl on pl.id = pb.largura_id
-            group by pbm.id
+            group by pbm.id {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
             {s(dql.sort)}
         """
     )

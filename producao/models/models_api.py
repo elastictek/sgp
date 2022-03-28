@@ -15,6 +15,35 @@ from django.contrib.auth.models import User
 from decimal import *
 
 #NEW MODELS
+class BobinagemConsumos(models.Model):
+    ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    A1 = models.DecimalField(verbose_name="A1", max_digits=12, decimal_places=5, null=True)
+    A2 = models.DecimalField(verbose_name="A2", max_digits=12, decimal_places=5, null=True)
+    A3 = models.DecimalField(verbose_name="A3", max_digits=12, decimal_places=5, null=True)
+    A4 = models.DecimalField(verbose_name="A4", max_digits=12, decimal_places=5, null=True)
+    A5 = models.DecimalField(verbose_name="A5", max_digits=12, decimal_places=5, null=True)
+    A6 = models.DecimalField(verbose_name="A6", max_digits=12, decimal_places=5, null=True)
+    B1 = models.DecimalField(verbose_name="B1", max_digits=12, decimal_places=5, null=True)
+    B2 = models.DecimalField(verbose_name="B2", max_digits=12, decimal_places=5, null=True)
+    B3 = models.DecimalField(verbose_name="B3", max_digits=12, decimal_places=5, null=True)
+    B4 = models.DecimalField(verbose_name="B4", max_digits=12, decimal_places=5, null=True)
+    B5 = models.DecimalField(verbose_name="B5", max_digits=12, decimal_places=5, null=True)
+    B6 = models.DecimalField(verbose_name="B6", max_digits=12, decimal_places=5, null=True)
+    C1 = models.DecimalField(verbose_name="C1", max_digits=12, decimal_places=5, null=True)
+    C2 = models.DecimalField(verbose_name="C2", max_digits=12, decimal_places=5, null=True)
+    C3 = models.DecimalField(verbose_name="C3", max_digits=12, decimal_places=5, null=True)
+    C4 = models.DecimalField(verbose_name="C4", max_digits=12, decimal_places=5, null=True)
+    C5 = models.DecimalField(verbose_name="C5", max_digits=12, decimal_places=5, null=True)
+    C6 = models.DecimalField(verbose_name="C6", max_digits=12, decimal_places=5, null=True)
+    metros = models.IntegerField(verbose_name="Metros", null=True)
+    nw_inf = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    nw_sup = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    peso = models.DecimalField(verbose_name="Peso", max_digits=12, decimal_places=5, null=True)
+    diametro = models.DecimalField(verbose_name="Diametro", max_digits=12, decimal_places=5, null=True)
+    inicio = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
+    fim = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
+    bobinagem = models.ForeignKey('producao.Bobinagem', on_delete=models.PROTECT, verbose_name="Bobinagem", null=True, blank=True)
+
 class Produtos(models.Model):
     produto_cod = models.CharField(max_length=80,verbose_name="Código Produto", null=False) #ADDED - CÓDIGO PRODUTO
 

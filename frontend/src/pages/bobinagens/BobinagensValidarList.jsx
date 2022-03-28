@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
-import { API_URL, GTIN } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
@@ -26,9 +25,9 @@ import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS } from 'config';
+import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title } = Typography;
-import { SocketContext } from '../App';
+import { SocketContext, MediaContext } from '../App';
 const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
 
 
@@ -85,8 +84,12 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
     { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
 ];
 
-const ToolbarTable = ({ form, dataAPI }) => {
+const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) => {
     const navigate = useNavigate();
+
+    const onChange = (v) => {
+        form.submit();
+    }
 
     const leftContent = (
         <>
@@ -101,9 +104,10 @@ const ToolbarTable = ({ form, dataAPI }) => {
 
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                <Form form={form} initialValues={{}}>
-                    <FormLayout id="tbt-of" schema={schema}>
-                    </FormLayout>
+                <Form form={form} initialValues={{ typelist: "A" }}>
+                    <Form.Item name="typelist">
+                        {typeListField({ onChange, typeList })}
+                    </Form.Item>
                 </Form>
             </div>
         </Space>
@@ -119,25 +123,18 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         switch (type) {
             case "filter":
                 (!changed) && setChanged(true);
-                console.log(values);
+                const {typelist, ...vals} = values;
                 const _values = {
-                    ...values,
-                    fbobinagem: getFilterValue(values?.fbobinagem, 'any'),
-                    fdata: getFilterRangeValues(values["fdata"]?.formatted),
-                    ftime: getFilterRangeValues(values["ftime"]?.formatted),
-                    fduracao: getFilterValue(values?.fduracao, '=='),
-                    fcliente: getFilterValue(values?.fcliente, 'any'),
-                    fdestino: getFilterValue(values?.fdestino, 'any'),
-                    //f_ofabrico: getFilterValue(values?.f_ofabrico, 'exact'),
-                    //f_agg: getFilterValue(values?.f_agg, 'exact'),
-                    //fmulti_customer: getFilterValue(values?.fmulti_customer, 'any'),
-                    //fmulti_order: getFilterValue(values?.fmulti_order, 'any'),
-                    //fmulti_item: getFilterValue(values?.fmulti_item, 'any'),
-                    //forderdate: getFilterRangeValues(values["forderdate"]?.formatted),
-                    //fstartprevdate: getFilterRangeValues(values["fstartprevdate"]?.formatted),
-                    //fendprevdate: getFilterRangeValues(values["fendprevdate"]?.formatted)
+                    ...vals,
+                    fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
+                    fdata: getFilterRangeValues(vals["fdata"]?.formatted),
+                    ftime: getFilterRangeValues(vals["ftime"]?.formatted),
+                    fduracao: getFilterValue(vals?.fduracao, '=='),
+                    fcliente: getFilterValue(vals?.fcliente, 'any'),
+                    fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
                 dataAPI.addFilters(_values);
+                dataAPI.addParameters({typelist})
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -339,6 +336,7 @@ const StyledBobine = styled.div`
 const useStyles = createUseStyles({
     columnBobines: {
         width: '25px',
+        minWidth: '25px',
         textAlign: "center",
         marginRight: "1px"
     }
@@ -708,6 +706,8 @@ export default () => {
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'data', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
+    const { windowDimension } = useContext(MediaContext);
+    const [typeList, setTypeList] = useState('A');
 
     /*     useEffect(() => {
             const cancelFetch = cancelToken();
@@ -717,6 +717,7 @@ export default () => {
         }, []); */
 
     useEffect(() => {
+        console.log(windowDimension)
         console.log("NOVA BOBINAGEM DETETADA...", dataSocket);
         const cancelFetch = cancelToken();
         dataAPI.first();
@@ -735,6 +736,18 @@ export default () => {
         },
     };
 
+    const typeListField = ({ onChange, setTypeList, typeList } = {}) => {
+        return (
+            <SelectField name="typelist" style={{ width: 150 }} keyField="value" valueField="label" onChange={onChange} options={
+                [{ value: "A", label: "Estado Bobines" },
+                { value: "B", label: "Consumo Bobinagem" }]} />
+            /*             <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
+                            [{ value: "A", label: "Estado Bobines" },
+                            { value: "B", label: "Consumo Bobinagem" }]
+                        } /> */
+        );
+    }
+
     const columns = setColumns(
         {
             dataAPI,
@@ -743,12 +756,12 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobinagem", width: 60, render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
-                        duracao: { title: "Duração", width: 20, render: (v, r) => v, ...common },
-                        core: { title: "Core", width: 5, render: (v, r) => v, ...common },
+                        duracao: { title: "Duração", width: 80, render: (v, r) => v, ...common },
+                        core: { title: "Core", width: 35, render: (v, r) => v, ...common },
                         comp: { title: "Comp.", render: (v, r) => v, editable: true, input: <InputNumber />, ...common },
                         comp_par: { title: "Comp. Emenda", render: (v, r) => v, ...common },
                         comp_cli: { title: "Comp. Cliente", render: (v, r) => v, ...common },
@@ -756,7 +769,6 @@ export default () => {
                         diam: { title: "Diâmetro mm", render: (v, r) => v, ...common },
                         nwinf: { title: "Nw Inf. m", render: (v, r) => v, ...common },
                         nwsup: { title: "Nw Sup. m", render: (v, r) => v, ...common },
-                        bobines: { title: <ColumnBobines n={28} />, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common }
                         //cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         //ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
                         //prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
@@ -785,7 +797,32 @@ export default () => {
                         //COLUNA2: { title: "Coluna 2", width: '160px', render: v => dayjs(v).format(DATE_FORMAT), ...common },
                         //COLUNA3: { title: "Coluna 3", width: '20%', render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common }
                     }
-                ))({ idx: 1, optional: false })
+                ))({ idx: 1, optional: false }),
+                ...((common) => (
+                    {
+                        ...(common.typeList == 'A' && { bobines: { title: <ColumnBobines n={28} />, width: 750, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common } }),
+                        ...(common.typeList == 'B' && { 
+                            A1: { title: 'A1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            A2: { title: 'A2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            A3: { title: 'A3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            A4: { title: 'A4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            A5: { title: 'A5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            A6: { title: 'A6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B1: { title: 'B1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B2: { title: 'B2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B3: { title: 'B3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B4: { title: 'B4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B5: { title: 'B5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            B6: { title: 'B6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C1: { title: 'C1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C2: { title: 'C2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C3: { title: 'C3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C4: { title: 'C4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C5: { title: 'C5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
+                            C6: { title: 'C6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common }
+                     })
+                    }
+                ))({ idx: 2, optional: false, typeList:formFilter.getFieldValue('typelist') }),
             },
             exclude: []
         }
@@ -795,7 +832,7 @@ export default () => {
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <ModalValidar show={showValidar} setShow={setShowValidar} />
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
+                <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
@@ -813,6 +850,7 @@ export default () => {
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
                     components={components}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>

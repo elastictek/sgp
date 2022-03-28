@@ -8,6 +8,7 @@ import 'antd/dist/antd.compact.less';
 import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { useImmer } from "use-immer";
+import useWindowDimensions from 'utils/useWindowDimensions';
 
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
@@ -52,18 +53,19 @@ const useMedia = () => {
     const isTablet = useMediaQuery({ minWidth: 768, maxWidth: 991 });
     const isMobile = useMediaQuery({ maxWidth: 767 });
     const isPortrait = useMediaQuery({ orientation: 'portrait' });
+    const windowDimension = useWindowDimensions();
     const [width, setWidth] = useState();
 
     useEffect(() => {
         const orientation = (isPortrait) ? "portrait" : "landscape";
         if (isBigScreen) {
-            setWidth({ width: 900, unit: "px", maxWidth: 80, maxUnit: "%", device: "bigscreen", orientation });
+            setWidth({ width: 900, unit: "px", maxWidth: 80, maxUnit: "%", device: "bigscreen", orientation, windowDimension });
         } else if (isDesktop) {
-            setWidth({ width: 800, unit: "px", maxWidth: 80, maxUnit: "%", device: "desktop", orientation });
+            setWidth({ width: 800, unit: "px", maxWidth: 80, maxUnit: "%", device: "desktop", orientation, windowDimension });
         } else if (isTablet) {
-            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "tablet", orientation });
+            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "tablet", orientation, windowDimension });
         } else {
-            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "mobile", orientation });
+            setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "mobile", orientation, windowDimension });
         }
     }, [isDesktop, isTablet, isMobile, isBigScreen]);
 

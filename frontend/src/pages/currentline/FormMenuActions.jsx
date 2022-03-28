@@ -19,6 +19,7 @@ import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
 import {Outlet,useNavigate} from "react-router-dom";
+import { MediaContext } from '../App';
 
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
@@ -347,12 +348,8 @@ const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
 const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
     const { artigospecs } = record;
 
-    useEffect(() => {
-        console.log("ENTREI NAs ESPECIFICAÇÕES", record)
-    }, []);
-
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: null, height: null }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record,/*  mode: "normal", type: 'modal', */ width: '900px', height: '600px' }))
     };
 
     return (

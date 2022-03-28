@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
-import { API_URL, GTIN } from "config";
+import { API_URL, GTIN, SCREENSIZE_OPTIMIZED, DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
@@ -41,7 +41,6 @@ const { confirm } = Modal;
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
-import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import { VerticalSpace } from 'components/formLayout';
 const { Title } = Typography;
 
@@ -688,8 +687,8 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
                 maskClosable={true}
                 footer={null}
                 destroyOnClose={true}
-                bodyStyle={{ height: "800px", backgroundColor: "#f0f0f0" }}
-                width={"90%"}
+                bodyStyle={{ height: "calc(100vh - 60px)" , backgroundColor: "#f0f0f0" }}
+                width={"100%"}
             >
                 <YScroll>
                     <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
@@ -708,7 +707,7 @@ export default () => {
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({
         payload: {
-            url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [
+            url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [
                 /* { column: 'status', direction: 'ASC', options: "NULLS FIRST" },  */
                 { column: 'ofabrico', direction: 'DESC' },
                 /* { column: 'completa' }, { column: 'end_date', direction: 'DESC' } */
@@ -792,10 +791,10 @@ export default () => {
             include: {
                 ...((common) => (
                     {
+                        ofabrico: { title: "Ordem Fabrico", fixed:'left', width: 140, render: v => <b>{v}</b>, ...common },
+                        prf: { title: "PRF", fixed:'left', width: 140, render: v => <b>{v}</b>, ...common },
+                        iorder: { title: "Encomenda(s)", fixed:'left', width: 140, ...common },
                         cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
-                        ofabrico: { title: "Ordem Fabrico", width: 140, render: v => <b>{v}</b>, ...common },
-                        prf: { title: "PRF", width: 140, render: v => <b>{v}</b>, ...common },
-                        iorder: { title: "Encomenda(s)", width: 140, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
                         estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
@@ -869,6 +868,7 @@ export default () => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
+                    scroll={{x:(SCREENSIZE_OPTIMIZED.width - 20),y:'70vh',scrollToFirstRowOnChange: true}}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
                 {/*                     </SubLayout.content>

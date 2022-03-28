@@ -53,36 +53,38 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var core_js_modules_es_object_to_string_js__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_object_to_string_js__WEBPACK_IMPORTED_MODULE_19__);
 /* harmony import */ var core_js_modules_web_dom_collections_iterator_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! core-js/modules/web.dom-collections.iterator.js */ "./node_modules/core-js/modules/web.dom-collections.iterator.js");
 /* harmony import */ var core_js_modules_web_dom_collections_iterator_js__WEBPACK_IMPORTED_MODULE_20___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_web_dom_collections_iterator_js__WEBPACK_IMPORTED_MODULE_20__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
-/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! dayjs */ "./node_modules/dayjs/dayjs.min.js");
-/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_22___default = /*#__PURE__*/__webpack_require__.n(dayjs__WEBPACK_IMPORTED_MODULE_22__);
-/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! joi */ "./node_modules/joi/dist/joi-browser.min.js");
-/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(joi__WEBPACK_IMPORTED_MODULE_23__);
-/* harmony import */ var utils_fetch__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! utils/fetch */ "./src/utils/fetch.js");
-/* harmony import */ var config__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! config */ "./src/config/index.js");
-/* harmony import */ var utils_useDataAPI__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! utils/useDataAPI */ "./src/utils/useDataAPI.js");
-/* harmony import */ var utils_schemaValidator__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! utils/schemaValidator */ "./src/utils/schemaValidator.js");
-/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
-/* harmony import */ var components_form__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! components/form */ "./src/components/form.jsx");
-/* harmony import */ var components_formLayout__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! components/formLayout */ "./src/components/formLayout.jsx");
-/* harmony import */ var components_Drawer__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! components/Drawer */ "./src/components/Drawer.jsx");
-/* harmony import */ var components_table__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! components/table */ "./src/components/table.jsx");
-/* harmony import */ var components_toolbar__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! components/toolbar */ "./src/components/toolbar.jsx");
-/* harmony import */ var components_portal__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! components/portal */ "./src/components/portal.jsx");
-/* harmony import */ var assets_morefilters_svg__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! assets/morefilters.svg */ "./src/assets/morefilters.svg");
-/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
-/* harmony import */ var components_YScroll__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! components/YScroll */ "./src/components/YScroll.jsx");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/button/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/typography/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/space/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/checkbox/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input-number/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/form/index.js");
-/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/spin/index.js");
-/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/LoadingOutlined.js");
-/* harmony import */ var use_immer__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! use-immer */ "./node_modules/use-immer/dist/use-immer.module.js");
+/* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! core-js/modules/es.array.map.js */ "./node_modules/core-js/modules/es.array.map.js");
+/* harmony import */ var core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_21___default = /*#__PURE__*/__webpack_require__.n(core_js_modules_es_array_map_js__WEBPACK_IMPORTED_MODULE_21__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_41__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
+/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! dayjs */ "./node_modules/dayjs/dayjs.min.js");
+/* harmony import */ var dayjs__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(dayjs__WEBPACK_IMPORTED_MODULE_23__);
+/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! joi */ "./node_modules/joi/dist/joi-browser.min.js");
+/* harmony import */ var joi__WEBPACK_IMPORTED_MODULE_24___default = /*#__PURE__*/__webpack_require__.n(joi__WEBPACK_IMPORTED_MODULE_24__);
+/* harmony import */ var utils_fetch__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! utils/fetch */ "./src/utils/fetch.js");
+/* harmony import */ var config__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! config */ "./src/config/index.js");
+/* harmony import */ var utils_useDataAPI__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! utils/useDataAPI */ "./src/utils/useDataAPI.js");
+/* harmony import */ var utils_schemaValidator__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! utils/schemaValidator */ "./src/utils/schemaValidator.js");
+/* harmony import */ var utils__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! utils */ "./src/utils/index.js");
+/* harmony import */ var components_form__WEBPACK_IMPORTED_MODULE_30__ = __webpack_require__(/*! components/form */ "./src/components/form.jsx");
+/* harmony import */ var components_formLayout__WEBPACK_IMPORTED_MODULE_31__ = __webpack_require__(/*! components/formLayout */ "./src/components/formLayout.jsx");
+/* harmony import */ var components_Drawer__WEBPACK_IMPORTED_MODULE_32__ = __webpack_require__(/*! components/Drawer */ "./src/components/Drawer.jsx");
+/* harmony import */ var components_table__WEBPACK_IMPORTED_MODULE_33__ = __webpack_require__(/*! components/table */ "./src/components/table.jsx");
+/* harmony import */ var components_toolbar__WEBPACK_IMPORTED_MODULE_34__ = __webpack_require__(/*! components/toolbar */ "./src/components/toolbar.jsx");
+/* harmony import */ var components_portal__WEBPACK_IMPORTED_MODULE_35__ = __webpack_require__(/*! components/portal */ "./src/components/portal.jsx");
+/* harmony import */ var assets_morefilters_svg__WEBPACK_IMPORTED_MODULE_36__ = __webpack_require__(/*! assets/morefilters.svg */ "./src/assets/morefilters.svg");
+/* harmony import */ var react_router_dom__WEBPACK_IMPORTED_MODULE_42__ = __webpack_require__(/*! react-router-dom */ "./node_modules/react-router/index.js");
+/* harmony import */ var components_YScroll__WEBPACK_IMPORTED_MODULE_37__ = __webpack_require__(/*! components/YScroll */ "./src/components/YScroll.jsx");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_38__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_39__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/button/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_40__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/typography/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_43__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/space/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_44__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/checkbox/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_45__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/input-number/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_46__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/form/index.js");
+/* harmony import */ var antd__WEBPACK_IMPORTED_MODULE_48__ = __webpack_require__(/*! antd */ "./node_modules/antd/es/spin/index.js");
+/* harmony import */ var _ant_design_icons__WEBPACK_IMPORTED_MODULE_49__ = __webpack_require__(/*! @ant-design/icons */ "./node_modules/@ant-design/icons/es/icons/LoadingOutlined.js");
+/* harmony import */ var use_immer__WEBPACK_IMPORTED_MODULE_47__ = __webpack_require__(/*! use-immer */ "./node_modules/use-immer/dist/use-immer.module.js");
 
 
 
@@ -128,6 +130,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 
 
+
 function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(0); } return Object.freeze(Object.defineProperties(strings, { raw: { value: Object.freeze(raw) } })); }
 
 
@@ -151,34 +154,44 @@ function _taggedTemplateLiteral(strings, raw) { if (!raw) { raw = strings.slice(
 
 
 
-var TextArea = antd__WEBPACK_IMPORTED_MODULE_37__["default"].TextArea;
+var TextArea = antd__WEBPACK_IMPORTED_MODULE_38__["default"].TextArea;
 
 
-var ButtonGroup = antd__WEBPACK_IMPORTED_MODULE_38__["default"].Group;
+var ButtonGroup = antd__WEBPACK_IMPORTED_MODULE_39__["default"].Group;
 
 
-var Title = antd__WEBPACK_IMPORTED_MODULE_39__["default"].Title;
-var ApproveButton = (0,styled_components__WEBPACK_IMPORTED_MODULE_40__["default"])(antd__WEBPACK_IMPORTED_MODULE_38__["default"])(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n  &&& {\n    background-color: #389e0d;\n    border-color: #389e0d;\n    color:#fff;\n    &:hover{\n        background-color: #52c41a;\n        border-color: #52c41a;\n    }\n  }\n"])));
+var Title = antd__WEBPACK_IMPORTED_MODULE_40__["default"].Title;
+var ApproveButton = (0,styled_components__WEBPACK_IMPORTED_MODULE_41__["default"])(antd__WEBPACK_IMPORTED_MODULE_39__["default"])(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n  &&& {\n    background-color: #389e0d;\n    border-color: #389e0d;\n    color:#fff;\n    &:hover{\n        background-color: #52c41a;\n        border-color: #52c41a;\n    }\n  }\n"])));
 
 var ToolbarTable = function ToolbarTable(_ref) {
-  var dataAPI = _ref.dataAPI;
-  var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_41__.useNavigate)();
-  var leftContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_42__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_38__["default"], {
+  var dataAPI = _ref.dataAPI,
+      onSubmit = _ref.onSubmit;
+  var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_42__.useNavigate)();
+  var leftContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_39__["default"], {
     type: "primary",
-    size: "small"
-  }, "Validar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(ApproveButton, {
-    size: "small"
-  }, "Aprovar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_38__["default"], {
+    size: "small",
+    onClick: function onClick() {
+      return onSubmit("validar");
+    }
+  }, "Validar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(ApproveButton, {
+    size: "small",
+    onClick: function onClick() {
+      return onSubmit("aprovar");
+    }
+  }, "Aprovar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_39__["default"], {
     danger: true,
-    size: "small"
+    size: "small",
+    onClick: function onClick() {
+      return onSubmit("hold");
+    }
   }, "Hold"));
-  var rightContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_42__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement("div", {
+  var rightContent = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row",
       whiteSpace: "nowrap"
     }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement("div", {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "row",
@@ -186,7 +199,7 @@ var ToolbarTable = function ToolbarTable(_ref) {
       whiteSpace: "nowrap"
     }
   }));
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(components_toolbar__WEBPACK_IMPORTED_MODULE_33__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(components_toolbar__WEBPACK_IMPORTED_MODULE_34__["default"], {
     left: leftContent,
     right: rightContent
   });
@@ -199,7 +212,7 @@ var FEstado = function FEstado(_ref2) {
       width = _ref2$width === void 0 ? "70px" : _ref2$width;
   var name = "st-".concat(index);
   var tabIndex = 100 + index;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_30__.SelectField, {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_31__.SelectField, {
     value: data.estado[name],
     name: name,
     tabIndex: tabIndex,
@@ -207,15 +220,19 @@ var FEstado = function FEstado(_ref2) {
       width: width
     },
     size: "small",
-    options: config__WEBPACK_IMPORTED_MODULE_25__.BOBINE_ESTADOS
+    options: config__WEBPACK_IMPORTED_MODULE_26__.BOBINE_ESTADOS
   });
 };
 
 var HeaderCol = function HeaderCol(_ref3) {
   var data = _ref3.data,
       name = _ref3.name,
-      title = _ref3.title;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_42__["default"], null, title, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], {
+      title = _ref3.title,
+      _onChange = _ref3.onChange;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], null, title, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+    onChange: function onChange(v) {
+      return _onChange("".concat(name, "-all"), v);
+    },
     checked: data["".concat(name, "-all")],
     name: "".concat(name, "-all")
   }));
@@ -228,7 +245,7 @@ var FLarguraReal = function FLarguraReal(_ref4) {
       width = _ref4$width === void 0 ? "60px" : _ref4$width;
   var name = "lr-".concat(index);
   var tabIndex = 200 + index;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_45__["default"], {
     tabIndex: tabIndex,
     controls: false,
     style: {
@@ -245,13 +262,14 @@ var FDefeitos = function FDefeitos(_ref5) {
       data = _ref5.data,
       _ref5$width = _ref5.width,
       width = _ref5$width === void 0 ? "100%" : _ref5$width,
-      _onChange = _ref5.onChange;
+      _onChange2 = _ref5.onChange;
   var name = "defeitos-".concat(index);
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_30__.SelectMultiField, {
+  var tabIndex = 300 + index;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(components_formLayout__WEBPACK_IMPORTED_MODULE_31__.SelectMultiField, {
     onChange: function onChange(v) {
-      return _onChange("defeitos", v, index);
+      return _onChange2("defeitos", v, index);
     },
-    tabIndex: 500 + index,
+    tabIndex: tabIndex,
     style: {
       width: width
     },
@@ -259,7 +277,7 @@ var FDefeitos = function FDefeitos(_ref5) {
     value: data.defeitos[index],
     allowClear: true,
     size: "small",
-    options: config__WEBPACK_IMPORTED_MODULE_25__.BOBINE_DEFEITOS
+    options: config__WEBPACK_IMPORTED_MODULE_26__.BOBINE_DEFEITOS
   });
 };
 
@@ -270,8 +288,8 @@ var FFalhaCorte = function FFalhaCorte(_ref6) {
       width = _ref6$width === void 0 ? "50px" : _ref6$width;
   var name1 = "fc-i-".concat(index);
   var name2 = "fc-e-".concat(index);
-  var tabIndex = 300 + index;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_42__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+  var tabIndex = 400 + index;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_45__["default"], {
     tabIndex: tabIndex,
     controls: false,
     style: {
@@ -280,7 +298,7 @@ var FFalhaCorte = function FFalhaCorte(_ref6) {
     disabled: true,
     name: name1,
     size: "small"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_45__["default"], {
     tabIndex: tabIndex,
     controls: false,
     style: {
@@ -299,8 +317,8 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       width = _ref7$width === void 0 ? "50px" : _ref7$width;
   var name1 = "ff-i-".concat(index);
   var name2 = "ff-e-".concat(index);
-  var tabIndex = 400 + index;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_42__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+  var tabIndex = 500 + index;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_43__["default"], null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_45__["default"], {
     tabIndex: tabIndex,
     controls: false,
     style: {
@@ -309,7 +327,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
     disabled: true,
     name: name1,
     size: "small"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_44__["default"], {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_45__["default"], {
     tabIndex: tabIndex,
     controls: false,
     style: {
@@ -324,22 +342,22 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (function (_ref8) {
   var data = _ref8.data;
 
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_21__.useState)(false),
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_22__.useState)(false),
       _useState2 = _slicedToArray(_useState, 2),
       loading = _useState2[0],
       setLoading = _useState2[1];
 
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_21__.useState)([]),
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_22__.useState)([]),
       _useState4 = _slicedToArray(_useState3, 2),
       selectedRows = _useState4[0],
       setSelectedRows = _useState4[1];
 
-  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_21__.useState)(false),
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_22__.useState)(false),
       _useState6 = _slicedToArray(_useState5, 2),
       showFilter = _useState6[0],
       setShowFilter = _useState6[1];
 
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_21__.useState)({
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_22__.useState)({
     show: false,
     data: {}
   }),
@@ -347,17 +365,18 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       showValidar = _useState8[0],
       setShowValidar = _useState8[1];
 
-  var _Form$useForm = antd__WEBPACK_IMPORTED_MODULE_45__["default"].useForm(),
+  var _Form$useForm = antd__WEBPACK_IMPORTED_MODULE_46__["default"].useForm(),
       _Form$useForm2 = _slicedToArray(_Form$useForm, 1),
       formFilter = _Form$useForm2[0];
 
-  var _useImmer = (0,use_immer__WEBPACK_IMPORTED_MODULE_46__.useImmer)({
+  var _useImmer = (0,use_immer__WEBPACK_IMPORTED_MODULE_47__.useImmer)({
+    'defeitos-all': 0,
     'ff-all': 0,
     'fc-all': 0,
     'st-all': 0,
     estado: {},
     l_real: {},
-    defeitos: {},
+    defeitos: [],
     fc: {},
     ff: {}
   }),
@@ -365,9 +384,9 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       formData = _useImmer2[0],
       setFormData = _useImmer2[1];
 
-  var dataAPI = (0,utils_useDataAPI__WEBPACK_IMPORTED_MODULE_26__.useDataAPI)({
+  var dataAPI = (0,utils_useDataAPI__WEBPACK_IMPORTED_MODULE_27__.useDataAPI)({
     payload: {
-      url: "".concat(config__WEBPACK_IMPORTED_MODULE_25__.API_URL, "/validarbobineslist/"),
+      url: "".concat(config__WEBPACK_IMPORTED_MODULE_26__.API_URL, "/validarbobineslist/"),
       parameters: {},
       pagination: {
         enabled: true,
@@ -381,9 +400,9 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       }]
     }
   });
-  (0,react__WEBPACK_IMPORTED_MODULE_21__.useEffect)(function () {
+  (0,react__WEBPACK_IMPORTED_MODULE_22__.useEffect)(function () {
     var bobinagem_id = data.bobinagem_id;
-    var cancelFetch = (0,utils_fetch__WEBPACK_IMPORTED_MODULE_24__.cancelToken)();
+    var cancelFetch = (0,utils_fetch__WEBPACK_IMPORTED_MODULE_25__.cancelToken)();
     dataAPI.first();
     dataAPI.addFilters({
       bobinagem_id: bobinagem_id
@@ -395,7 +414,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       return cancelFetch.cancel();
     };
   }, []);
-  (0,react__WEBPACK_IMPORTED_MODULE_21__.useEffect)(function () {
+  (0,react__WEBPACK_IMPORTED_MODULE_22__.useEffect)(function () {
     if (dataAPI.hasData()) {
       var _iterator = _createForOfIteratorHelper(dataAPI.getData().rows.entries()),
           _step;
@@ -409,6 +428,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           setFormData(function (draft) {
             draft.estado["st-".concat(i)] = v.estado;
             draft.l_real["lr-".concat(i)] = v.l_real;
+            draft.defeitos[i] = [];
           });
         };
 
@@ -430,14 +450,61 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
 
   var onChange = function onChange(type, value, index) {
     switch (type) {
-      case "defeitos":
+      case 'defeitos-all':
+        console.log("---------------", value);
         setFormData(function (draft) {
-          draft.defeitos[index] = value;
+          draft['defeitos-all'] = value.target.checked;
         });
+        break;
+
+      case "defeitos":
+        if (formData['defeitos-all']) {
+          setFormData(function (draft) {
+            draft.defeitos = formData.defeitos.map(function () {
+              return value;
+            });
+          });
+        } else {
+          setFormData(function (draft) {
+            draft.defeitos[index] = value;
+          });
+        }
+
         break;
     }
 
     console.log(formData);
+  };
+
+  var onSubmit = function onSubmit(type) {
+    var _defeitos = [];
+
+    for (var key in formData.defeitos) {
+      console.log(key, dataAPI.getData().rows[key], formData.defeitos["".concat(dataAPI.getData().rows[key].id)]);
+
+      var _t = formData.defeitos[key].map(function (v) {
+        return _defineProperty({}, v.key, 1);
+      });
+
+      console.log(dataAPI.getData().rows[key].id);
+
+      _defeitos.push({
+        id: dataAPI.getData().rows[key].id
+      });
+
+      console.log(_t);
+    }
+
+    switch (type) {
+      case "validar":
+        break;
+
+      case "hold":
+        break;
+
+      case "aprovar":
+        break;
+    }
   };
 
   var selectionRowKey = function selectionRowKey(record) {
@@ -449,7 +516,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       //cell: EditableCell,
     }
   };
-  var columns = (0,components_table__WEBPACK_IMPORTED_MODULE_32__.setColumns)({
+  var columns = (0,components_table__WEBPACK_IMPORTED_MODULE_33__.setColumns)({
     dataAPI: dataAPI,
     data: dataAPI.getData().rows,
     uuid: "bobineslist_validar",
@@ -459,7 +526,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           title: "Bobine",
           width: 125,
           render: function render(v) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement("span", {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement("span", {
               style: {
                 color: "#096dd9",
                 cursor: "pointer"
@@ -468,14 +535,15 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           }
         }, common),
         "A": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Estado",
             name: "st",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           width: 80,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(FEstado, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(FEstado, {
               width: "70px",
               index: i,
               data: formData
@@ -486,7 +554,7 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           title: "Largura Real",
           width: 90,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(FLarguraReal, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(FLarguraReal, {
               width: "60px",
               index: i,
               data: formData
@@ -494,13 +562,14 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           }
         }, common),
         "E": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Outros Defeitos",
             name: "defeitos",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(FDefeitos, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(FDefeitos, {
               width: "100%",
               index: i,
               data: formData,
@@ -509,14 +578,15 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           }
         }, common),
         "C": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Falha Corte",
             name: "fc",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           width: 70,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(FFalhaCorte, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(FFalhaCorte, {
               width: "50px",
               index: i,
               data: formData
@@ -524,14 +594,15 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           }
         }, common),
         "D": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Falha Filme",
             name: "ff",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           width: 70,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(FFalhaFilme, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(FFalhaFilme, {
               width: "50px",
               index: i,
               data: formData
@@ -539,38 +610,50 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
           }
         }, common),
         "F": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Prop. Obs.",
             name: "probs",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           width: 270,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(TextArea, {
-              autoSize: {
-                minRows: 1,
-                maxRows: 6
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(TextArea, {
+              style: {
+                height: "22px",
+                minHeight: "22px",
+                maxHeight: "122px",
+                overflowY: "hidden",
+                resize: "none"
               },
-              tabIndex: 500 + i,
+              tabIndex: 600 + i,
               name: "probs-i-".concat(i),
               size: "small"
             });
           }
         }, common),
         "G": _objectSpread({
-          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(HeaderCol, {
+          title: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(HeaderCol, {
             title: "Obs.",
             name: "obs",
-            data: formData
+            data: formData,
+            onChange: onChange
           }),
           width: 270,
           render: function render(v, r, i) {
-            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(TextArea, {
+            return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(TextArea, {
               autoSize: {
                 minRows: 1,
                 maxRows: 6
               },
-              tabIndex: 600 + i,
+              style: {
+                height: "22px",
+                minHeight: "22px",
+                maxHeight: "122px",
+                overflowY: "hidden",
+                resize: "none"
+              },
+              tabIndex: 700 + i,
               name: "obs-i-".concat(i),
               size: "small"
             });
@@ -584,9 +667,9 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
     })),
     exclude: []
   });
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(react__WEBPACK_IMPORTED_MODULE_21__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(antd__WEBPACK_IMPORTED_MODULE_47__["default"], {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(react__WEBPACK_IMPORTED_MODULE_22__.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(antd__WEBPACK_IMPORTED_MODULE_48__["default"], {
     spinning: loading,
-    indicator: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_48__["default"], {
+    indicator: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(_ant_design_icons__WEBPACK_IMPORTED_MODULE_49__["default"], {
       style: {
         fontSize: 24
       },
@@ -597,9 +680,10 @@ var FFalhaFilme = function FFalhaFilme(_ref7) {
       left: "50%",
       position: "absolute"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(ToolbarTable, {
-    dataAPI: dataAPI
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_21__.createElement(components_table__WEBPACK_IMPORTED_MODULE_32__["default"], {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(ToolbarTable, {
+    dataAPI: dataAPI,
+    onSubmit: onSubmit
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_22__.createElement(components_table__WEBPACK_IMPORTED_MODULE_33__["default"], {
     columnChooser: false,
     reload: false,
     header: false,
