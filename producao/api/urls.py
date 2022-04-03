@@ -120,6 +120,7 @@ urlpatterns = [
     #BOBINAGENS
     re_path(r'^validarbobinagenslist/$', views.ValidarBobinagensList),
     re_path(r'^validarbobineslist/$', views.ValidarBobinesList),
+    re_path(r'^validarbobinagem/$', views.ValidarBobinagem),
     #BOBINAGENS
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

@@ -15,6 +15,7 @@ Verificar os ficheiros
 	/home/sgp-app-dev/settings/appSettings.py
 	/home/sgp_dev_share/frontend/src/config/index.jsx
 
+yarn run build
 
 systemctl start gunicorn@sgp-app-dev
 systemctl start daphne@sgp-app-dev

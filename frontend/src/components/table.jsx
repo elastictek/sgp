@@ -143,7 +143,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
 const TableOptions = ({ columnChooser, reload, clearSort, checkedColumns, setCheckedColumns, dataAPI, columns, onFetch, toolbar }) => {
     return (
         <>
-            <Space>
+            <Space align='end'>
                 {React.isValidElement(toolbar) && toolbar}
                 {clearSort && typeof onFetch === 'function' && <ButtonIcon onClick={() => { dataAPI.resetSort(); onFetch(); }}><Icon component={ClearSort} /></ButtonIcon>}
                 {reload && typeof onFetch === 'function' && <ButtonIcon onClick={() => onFetch()}><ReloadOutlined /></ButtonIcon>}

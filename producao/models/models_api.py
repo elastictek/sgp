@@ -15,6 +15,19 @@ from django.contrib.auth.models import User
 from decimal import *
 
 #NEW MODELS
+class LotesDosers(models.Model):
+    n_lote = models.CharField(max_length=100,verbose_name="Nº Lote", null=False)
+    doser = models.CharField(max_length=2,verbose_name="Doseadora", null=False)
+    artigo_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=False) #ADDED - CÓDIGO ARTIGO SAGE ID
+    qty = models.DecimalField(verbose_name="Quantidade Total do Lote", max_digits=12, decimal_places=5, null=False)
+    qty_cons = models.DecimalField(verbose_name="Quantidade consumida (consumida durante a produção)", max_digits=12, decimal_places=5, null=False)
+    qty_cons = models.DecimalField(verbose_name="Quantidade atual (igual à qty cons, ou seja, consumida durante produção, é este o valor a ter em consideração, no entanto este valor pode ser ajustado manualmente )", max_digits=12, decimal_places=5, null=False)
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #(-1 - anulado, 0 não está na linha de produção, 1 na linha de produção)
+    t_stamp = models.DateTimeField(blank=False, null=False)
+    formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=False, blank=False)
+    audit_cs = models.ForeignKey('AuditCurrentSettings', on_delete=models.PROTECT, verbose_name="Audit Current Settings", null=False, blank=False)
+
+
 class BobinagemConsumos(models.Model):
     ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
     A1 = models.DecimalField(verbose_name="A1", max_digits=12, decimal_places=5, null=True)

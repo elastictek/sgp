@@ -105,7 +105,7 @@ const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) =
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
                 <Form form={form} initialValues={{ typelist: "A" }}>
-                    <Form.Item name="typelist">
+                    <Form.Item name="typelist" noStyle>
                         {typeListField({ onChange, typeList })}
                     </Form.Item>
                 </Form>
@@ -123,7 +123,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         switch (type) {
             case "filter":
                 (!changed) && setChanged(true);
-                const {typelist, ...vals} = values;
+                const { typelist, ...vals } = values;
                 const _values = {
                     ...vals,
                     fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
@@ -134,7 +134,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
                 dataAPI.addFilters(_values);
-                dataAPI.addParameters({typelist})
+                dataAPI.addParameters({ typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -322,14 +322,18 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
 const StyledBobine = styled.div`
     border:dashed 1px #000;
     background-color:${props => props.color};
+    color:${props => props.fontColor};
     border-radius:3px;
     margin-right:1px;
     text-align:center;
     width:25px;
-    font-size:9px;
+    font-size:8px;
     cursor:pointer;
     &:hover {
         border-color: #d9d9d9;
+    }
+    .lar{
+        font-size:9px;
     }
 `;
 
@@ -353,19 +357,19 @@ const ColumnBobines = ({ n }) => {
 
 const bColors = (estado) => {
     if (estado === "G") {
-        return "#237804";//"green";
+        return { color: "#237804", fontColor: "#fff" };//"green";
     } else if (estado === "DM") {
-        return "#fadb14";//"gold";
+        return { color: "#fadb14", fontColor: "#000" };//"gold";
     } else if (estado === "R") {
-        return "#ff1100";//"red";
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
     } else if (estado === "LAB") {
-        return "#13c2c2";//"cyan";
+        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
     } else if (estado === "BA") {
-        return "#ff1100";//"red";
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
     } else if (estado === "IND") {
-        return "#0050b3";//"blue";
+        return { color: "#0050b3", fontColor: "#fff" };//"blue";
     } else if (estado === "HOLD") {
-        return "#391085";//"purple";
+        return { color: "#391085", fontColor: "#fff" };//"purple";
     }
 }
 
@@ -373,14 +377,13 @@ const Bobines = ({ b, bm, setShow }) => {
     let bobines = b;
 
     const handleClick = () => {
-        console.log("OI", bm.id)
         setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {bobines.map((v, i) => {
-                return (<StyledBobine onClick={handleClick} color={bColors(v.estado)} key={`bob-${v.id}`}><b>{v.estado}</b><div>{v.lar}</div></StyledBobine>);
+                return (<StyledBobine onClick={handleClick} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${v.id}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>
     );
@@ -504,7 +507,7 @@ const ModalValidar = ({ show, setShow }) => {
                 width={"100%"}
             >
                 <YScroll>
-                    <Suspense fallback={<></>}>{<BobinesValidarList data={show.data} />}</Suspense>
+                    <Suspense fallback={<></>}>{<BobinesValidarList data={show.data} closeSelf={handleCancel} />}</Suspense>
                 </YScroll>
             </Modal>
         </>
@@ -703,7 +706,7 @@ export default () => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'data', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -717,8 +720,6 @@ export default () => {
         }, []); */
 
     useEffect(() => {
-        console.log(windowDimension)
-        console.log("NOVA BOBINAGEM DETETADA...", dataSocket);
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
@@ -748,6 +749,10 @@ export default () => {
         );
     }
 
+    const handleClick = (bm) => {
+        setShowValidar({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+    };
+
     const columns = setColumns(
         {
             dataAPI,
@@ -756,7 +761,7 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v,r) => <span onClick={()=>handleClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
@@ -801,28 +806,28 @@ export default () => {
                 ...((common) => (
                     {
                         ...(common.typeList == 'A' && { bobines: { title: <ColumnBobines n={28} />, width: 750, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common } }),
-                        ...(common.typeList == 'B' && { 
-                            A1: { title: 'A1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            A2: { title: 'A2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            A3: { title: 'A3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            A4: { title: 'A4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            A5: { title: 'A5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            A6: { title: 'A6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B1: { title: 'B1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B2: { title: 'B2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B3: { title: 'B3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B4: { title: 'B4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B5: { title: 'B5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            B6: { title: 'B6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C1: { title: 'C1 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C2: { title: 'C2 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C3: { title: 'C3 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C4: { title: 'C4 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C5: { title: 'C5 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common },
-                            C6: { title: 'C6 kg', width: 55, sorter: false, render: (v, r) => v?.toFixed(2), ...common }
-                     })
+                        ...(common.typeList == 'B' && {
+                            A1: { title: 'A1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            A2: { title: 'A2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            A3: { title: 'A3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            A4: { title: 'A4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            A5: { title: 'A5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            A6: { title: 'A6 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B1: { title: 'B1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B2: { title: 'B2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B3: { title: 'B3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B4: { title: 'B4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B5: { title: 'B5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            B6: { title: 'B6 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C1: { title: 'C1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C2: { title: 'C2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C3: { title: 'C3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C4: { title: 'C4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C5: { title: 'C5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
+                            C6: { title: 'C6 kg', width: 55, sorter: false, render: (v, r) => v, ...common }
+                        })
                     }
-                ))({ idx: 2, optional: false, typeList:formFilter.getFieldValue('typelist') }),
+                ))({ idx: 2, optional: false, typeList: formFilter.getFieldValue('typelist') }),
             },
             exclude: []
         }

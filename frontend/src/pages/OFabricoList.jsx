@@ -791,10 +791,10 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        ofabrico: { title: "Ordem Fabrico", fixed:'left', width: 140, render: v => <b>{v}</b>, ...common },
-                        prf: { title: "PRF", fixed:'left', width: 140, render: v => <b>{v}</b>, ...common },
-                        iorder: { title: "Encomenda(s)", fixed:'left', width: 140, ...common },
-                        cod: { title: "Agg", width: 140, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
+                        ofabrico: { title: "Ordem Fabrico", fixed:'left', width: 130, render: v => <b>{v}</b>, ...common },
+                        prf: { title: "PRF", width: 130, render: v => <b>{v}</b>, ...common },
+                        iorder: { title: "Encomenda(s)", width: 130, ...common },
+                        cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
                         estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */

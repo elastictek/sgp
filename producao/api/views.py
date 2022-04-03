@@ -3218,7 +3218,9 @@ def ValidarBobinagensList(request, format=None):
             {c(f'{dql.columns}')}
             from(
                 select pbm.*,pf.core
-                {',pbc.A1,pbc.A2,pbc.A3,pbc.A4,pbc.A5,pbc.A6,pbc.B1,pbc.B2,pbc.B3,pbc.B4,pbc.B5,pbc.B6,pbc.C1,pbc.C2,pbc.C3,pbc.C4,pbc.C5,pbc.C6' if typeList=='B' else '' } 
+                {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
+                      ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
+                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' } 
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
                 {'LEFT JOIN sistema_dev.producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
@@ -3243,28 +3245,30 @@ def ValidarBobinagensList(request, format=None):
         for x in range(0, 30):
             request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
         tmpsql = sql(lambda v:'',lambda v:v,lambda v:v)
-        tmpsql = f"""SELECT t.*,
-            concat(t.bobines->>'$[0].estado','\\n',t.bobines->>'$[0].lar') as '1',concat(t.bobines->>'$[1].estado','\\n',t.bobines->>'$[1].lar') as '2',
-            concat(t.bobines->>'$[2].estado','\\n',t.bobines->>'$[2].lar') as '3',concat(t.bobines->>'$[3].estado','\\n',t.bobines->>'$[3].lar') as '4',
-            concat(t.bobines->>'$[4].estado','\\n',t.bobines->>'$[4].lar') as '5',concat(t.bobines->>'$[5].estado','\\n',t.bobines->>'$[5].lar') as '6',
-            concat(t.bobines->>'$[6].estado','\\n',t.bobines->>'$[6].lar') as '7',concat(t.bobines->>'$[7].estado','\\n',t.bobines->>'$[7].lar') as '8',
-            concat(t.bobines->>'$[8].estado','\\n',t.bobines->>'$[8].lar') as '9',concat(t.bobines->>'$[9].estado','\\n',t.bobines->>'$[9].lar') as '10',
+        if typeList=='A':
+            tmpsql = f"""SELECT t.*,
+                concat(t.bobines->>'$[0].estado','\\n',t.bobines->>'$[0].lar') as '1',concat(t.bobines->>'$[1].estado','\\n',t.bobines->>'$[1].lar') as '2',
+                concat(t.bobines->>'$[2].estado','\\n',t.bobines->>'$[2].lar') as '3',concat(t.bobines->>'$[3].estado','\\n',t.bobines->>'$[3].lar') as '4',
+                concat(t.bobines->>'$[4].estado','\\n',t.bobines->>'$[4].lar') as '5',concat(t.bobines->>'$[5].estado','\\n',t.bobines->>'$[5].lar') as '6',
+                concat(t.bobines->>'$[6].estado','\\n',t.bobines->>'$[6].lar') as '7',concat(t.bobines->>'$[7].estado','\\n',t.bobines->>'$[7].lar') as '8',
+                concat(t.bobines->>'$[8].estado','\\n',t.bobines->>'$[8].lar') as '9',concat(t.bobines->>'$[9].estado','\\n',t.bobines->>'$[9].lar') as '10',
 
-            concat(t.bobines->>'$[10].estado','\\n',t.bobines->>'$[10].lar') as '11',concat(t.bobines->>'$[11].estado','\\n',t.bobines->>'$[11].lar') as '12',
-            concat(t.bobines->>'$[12].estado','\\n',t.bobines->>'$[12].lar') as '13',concat(t.bobines->>'$[13].estado','\\n',t.bobines->>'$[13].lar') as '14',
-            concat(t.bobines->>'$[14].estado','\\n',t.bobines->>'$[14].lar') as '15',concat(t.bobines->>'$[15].estado','\\n',t.bobines->>'$[15].lar') as '16',
-            concat(t.bobines->>'$[16].estado','\\n',t.bobines->>'$[16].lar') as '17',concat(t.bobines->>'$[17].estado','\\n',t.bobines->>'$[17].lar') as '18',
-            concat(t.bobines->>'$[18].estado','\\n',t.bobines->>'$[18].lar') as '19',concat(t.bobines->>'$[19].estado','\\n',t.bobines->>'$[19].lar') as '20',
+                concat(t.bobines->>'$[10].estado','\\n',t.bobines->>'$[10].lar') as '11',concat(t.bobines->>'$[11].estado','\\n',t.bobines->>'$[11].lar') as '12',
+                concat(t.bobines->>'$[12].estado','\\n',t.bobines->>'$[12].lar') as '13',concat(t.bobines->>'$[13].estado','\\n',t.bobines->>'$[13].lar') as '14',
+                concat(t.bobines->>'$[14].estado','\\n',t.bobines->>'$[14].lar') as '15',concat(t.bobines->>'$[15].estado','\\n',t.bobines->>'$[15].lar') as '16',
+                concat(t.bobines->>'$[16].estado','\\n',t.bobines->>'$[16].lar') as '17',concat(t.bobines->>'$[17].estado','\\n',t.bobines->>'$[17].lar') as '18',
+                concat(t.bobines->>'$[18].estado','\\n',t.bobines->>'$[18].lar') as '19',concat(t.bobines->>'$[19].estado','\\n',t.bobines->>'$[19].lar') as '20',
 
-            concat(t.bobines->>'$[20].estado','\\n',t.bobines->>'$[20].lar') as '21',concat(t.bobines->>'$[21].estado','\\n',t.bobines->>'$[21].lar') as '22',
-            concat(t.bobines->>'$[22].estado','\\n',t.bobines->>'$[22].lar') as '23',concat(t.bobines->>'$[23].estado','\\n',t.bobines->>'$[23].lar') as '24',
-            concat(t.bobines->>'$[24].estado','\\n',t.bobines->>'$[24].lar') as '25',concat(t.bobines->>'$[25].estado','\\n',t.bobines->>'$[25].lar') as '26',
-            concat(t.bobines->>'$[26].estado','\\n',t.bobines->>'$[26].lar') as '27',concat(t.bobines->>'$[27].estado','\\n',t.bobines->>'$[27].lar') as '28',
-            concat(t.bobines->>'$[28].estado','\\n',t.bobines->>'$[28].lar') as '29',concat(t.bobines->>'$[29].estado','\\n',t.bobines->>'$[29].lar') as '30'
-            from (
-            {tmpsql} 
-            ) t"""
+                concat(t.bobines->>'$[20].estado','\\n',t.bobines->>'$[20].lar') as '21',concat(t.bobines->>'$[21].estado','\\n',t.bobines->>'$[21].lar') as '22',
+                concat(t.bobines->>'$[22].estado','\\n',t.bobines->>'$[22].lar') as '23',concat(t.bobines->>'$[23].estado','\\n',t.bobines->>'$[23].lar') as '24',
+                concat(t.bobines->>'$[24].estado','\\n',t.bobines->>'$[24].lar') as '25',concat(t.bobines->>'$[25].estado','\\n',t.bobines->>'$[25].lar') as '26',
+                concat(t.bobines->>'$[26].estado','\\n',t.bobines->>'$[26].lar') as '27',concat(t.bobines->>'$[27].estado','\\n',t.bobines->>'$[27].lar') as '28',
+                concat(t.bobines->>'$[28].estado','\\n',t.bobines->>'$[28].lar') as '29',concat(t.bobines->>'$[29].estado','\\n',t.bobines->>'$[29].lar') as '30'
+                from (
+                {tmpsql} 
+                ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    print(sql)
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -3273,7 +3277,6 @@ def ValidarBobinagensList(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def ValidarBobinesList(request, format=None):
-    print(f"ggggg{request.data['filter']}")
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({})
@@ -3285,13 +3288,14 @@ def ValidarBobinesList(request, format=None):
     parameters = {**f.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""*"""
+    cols = f"""pb.*,pl.largura"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f""" 
         select
         {c(f'{dql.columns}')}
         FROM producao_bobine pb
+        join producao_largura pl on pb.largura_id=pl.id
         {f.text}
         {s(dql.sort)} {p(dql.paging)}            
         """
@@ -3300,6 +3304,44 @@ def ValidarBobinesList(request, format=None):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [],None)
     return Response(response)
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ValidarBobinagem(request, format=None):
+    data = request.data['parameters']
+
+    def checkIfIsValid(data, cursor):
+        exists = 0
+        if ("bobinagem_id" in data):
+            f = Filters({"id": data["bobinagem_id", "valid":0]})
+            f.where()
+            f.add(f'id = :id', True)
+            f.add(f'valid = :valid', True)
+            f.value("and")
+            exists = db.exists("producao_bobinagem", f, cursor).exists
+        return exists
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                #if checkIfIsValid(data,cursor)==0:
+                    if 'bobines' in data:
+                        for v in data['bobines']:
+                            id = v.pop("id", None)
+                            dml = db.dml(TypeDml.UPDATE, v, "producao_bobine", {'id': f'=={id}'}, None, False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                        dml = db.dml(TypeDml.UPDATE, {"valid": 1}, "producao_bobinagem", {'id': f'=={data["bobinagem_id"]}'}, None, False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    else:
+                        return Response({"status": "error", "title": "Não existem dados para validar/classificar!"})
+                #else:
+                #    return Response({"status": "error", "title": "Não existem dados para validar/classificar!"})
+        return Response({"status": "success", "id": None, "title": f"A Bobinagem {data['bobinagem_nome']} foi Validada/Classificada com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem_nome']}!"})
 
 #endregion
 

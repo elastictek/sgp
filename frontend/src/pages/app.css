@@ -1,3 +1,7 @@
 html, body {
     /* overflow: hidden; */
 }
+
+.ant-modal-confirm-body > .anticon + .ant-modal-confirm-title + .ant-modal-confirm-content {
+    margin-left: 0px !important;
+  }
