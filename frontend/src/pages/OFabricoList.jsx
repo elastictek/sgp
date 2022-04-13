@@ -22,6 +22,7 @@ import AlertMessages from "components/alertMessages";
 import ProgressBar from "components/ProgressBar";
 import ActionButton from "components/ActionButton";
 import TagButton from "components/TagButton";
+import ResponsiveModal from 'components/ResponsiveModal';
 import { GrStorage } from "react-icons/gr";
 import { RiRefreshLine } from "react-icons/ri";
 import { Outlet, useNavigate } from "react-router-dom";
@@ -644,7 +645,7 @@ const TitleMenuActions = ({ aggCod }) => {
     const v = useContext(SocketContext);
     const navigate = useNavigate();
 
-    useEffect(() => { }, [v]);
+    useEffect(() => { }, [v?.data?.bobinagens]);
 
     const onValidate = () => {
         navigate('/app/validateReellings', { state: {} });
@@ -655,7 +656,7 @@ const TitleMenuActions = ({ aggCod }) => {
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
                     <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                    {v !== null && <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(v.data).cnt}</span> Bobinagens por <Button size='small' style={{ paddingLeft: "0px" }} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />}
+                    {v !== null && <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(v.data?.bobinagens).cnt}</span> Bobinagens por <Button size='small' style={{ paddingLeft: "0px" }} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />}
                 </Space>
             </div>
         </div>
@@ -677,24 +678,21 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     };
 
     return (
-        <>
-            <Modal
-                title={<TitleMenuActions aggCod={aggCod} />}
-                visible={showMenuActions.show}
-                centered
-                onCancel={handleCancel}
-                confirmLoading={confirmLoading}
-                maskClosable={true}
-                footer={null}
-                destroyOnClose={true}
-                bodyStyle={{ height: "calc(100vh - 60px)" , backgroundColor: "#f0f0f0" }}
-                width={"100%"}
-            >
-                <YScroll>
-                    <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
-                </YScroll>
-            </Modal>
-        </>
+        <ResponsiveModal
+            title={<TitleMenuActions aggCod={aggCod} />}
+            visible={showMenuActions.show}
+            centered
+            responsive
+            onCancel={handleCancel}
+            maskClosable={true}
+            destroyOnClose={true}
+            fullWidthDevice={100}
+            bodyStyle={{ backgroundColor: "#f0f0f0" }}
+        >
+            <YScroll>
+                <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
+            </YScroll>
+        </ResponsiveModal>
     );
 };
 
@@ -791,7 +789,7 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        ofabrico: { title: "Ordem Fabrico", fixed:'left', width: 130, render: v => <b>{v}</b>, ...common },
+                        ofabrico: { title: "Ordem Fabrico", fixed: 'left', width: 130, render: v => <b>{v}</b>, ...common },
                         prf: { title: "PRF", width: 130, render: v => <b>{v}</b>, ...common },
                         iorder: { title: "Encomenda(s)", width: 130, ...common },
                         cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
@@ -868,7 +866,7 @@ export default () => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
-                    scroll={{x:(SCREENSIZE_OPTIMIZED.width - 20),y:'70vh',scrollToFirstRowOnChange: true}}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
                 {/*                     </SubLayout.content>

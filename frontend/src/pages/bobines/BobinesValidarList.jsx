@@ -292,7 +292,7 @@ export default ({ data, closeSelf }) => {
             //console.log(_t);
         }
         if (errors.length > 0) {
-            Modal.error({ title: 'Erro de validação/classificação', content: <div style={{ width: 'fit-content', maxWidth: '900px', height: "calc(100vh - 300px)" }}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div> });
+            Modal.error({ centered:true, width:"auto", style:{maxWidth:"768px"}, title: 'Erro de validação/classificação', content: <div style={{display:"flex"}}><div style={{maxHeight:"60vh",width:"100%"}}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div></div> });
         } else {
             setLoading(true);
             try {
@@ -301,7 +301,7 @@ export default ({ data, closeSelf }) => {
                     setResultMessage(response.data);
                 }
             } catch (e) {
-                Modal.error({ title: 'Erro de validação/classificação', content: <div style={{ height: "calc(100vh - 300px)" }}><YScroll>{e.message}</YScroll></div> });
+                Modal.error({ centered:true, width:"auto", style:{maxWidth:"768px"}, title: 'Erro de validação/classificação', content: <div style={{display:"flex"}}><div style={{maxHeight:"60vh",width:"100%"}}><YScroll>{e.message}</YScroll></div></div> });
             };
             setLoading(false);
         }
@@ -356,7 +356,7 @@ export default ({ data, closeSelf }) => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobine", width: 125, fixed:'left', render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        nome: { title: "Bobine", width: 125, fixed: 'left', render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         "A": { title: <HeaderCol title="Estado" name="st" data={formData} onChange={onChange} />, width: 80, render: (v, r, i) => <FEstado width="70px" index={i} data={formData} onChange={onChange} />, ...common },
                         largura: { title: "Lar. mm", width: 60, align: 'right', ...common },
                         "B": { title: "Largura Real", width: 90, render: (v, r, i) => <FLarguraReal width="60px" index={i} data={formData} onChange={onChange} />, ...common },

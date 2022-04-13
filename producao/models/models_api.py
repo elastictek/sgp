@@ -15,17 +15,48 @@ from django.contrib.auth.models import User
 from decimal import *
 
 #NEW MODELS
-class LotesDosers(models.Model):
-    n_lote = models.CharField(max_length=100,verbose_name="Nº Lote", null=False)
-    doser = models.CharField(max_length=2,verbose_name="Doseadora", null=False)
-    artigo_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=False) #ADDED - CÓDIGO ARTIGO SAGE ID
-    qty = models.DecimalField(verbose_name="Quantidade Total do Lote", max_digits=12, decimal_places=5, null=False)
-    qty_cons = models.DecimalField(verbose_name="Quantidade consumida (consumida durante a produção)", max_digits=12, decimal_places=5, null=False)
-    qty_cons = models.DecimalField(verbose_name="Quantidade atual (igual à qty cons, ou seja, consumida durante produção, é este o valor a ter em consideração, no entanto este valor pode ser ajustado manualmente )", max_digits=12, decimal_places=5, null=False)
+class QRCodes(models.Model):
+    cod = models.CharField(max_length=20,verbose_name="Código", null=False)
+    description = models.CharField(max_length=100,verbose_name="Descrição", null=False)
+    status = models.SmallIntegerField(default=0, verbose_name="Status")
+
+
+class LotesLinha(models.Model):
+    n_lote = models.CharField(max_length=100,verbose_name="Nº Lote", null=True)
+    artigo_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=True) #ADDED - CÓDIGO ARTIGO SAGE ID
+    qty_lote = models.DecimalField(default=0, verbose_name="Quantidade Total do Lote", max_digits=12, decimal_places=5, null=True)
+    qty_doser = models.DecimalField(default=0, verbose_name="Quantidade consumida no doseador (consumida durante a produção)", max_digits=12, decimal_places=5, null=True)
+    qty_consumed = models.DecimalField(default=0, verbose_name="Quantidade consumida (consumida durante a produção)", max_digits=12, decimal_places=5, null=True)
+    qty_acumulated = models.DecimalField(default=0, verbose_name="Quantidade Acumulada", max_digits=12, decimal_places=5, null=True)
+    qty_rest = models.DecimalField(default=0, verbose_name="Quantidade Acumulada Anterior )", max_digits=12, decimal_places=5, null=True)
     status = models.SmallIntegerField(default=0, verbose_name="Status") #(-1 - anulado, 0 não está na linha de produção, 1 na linha de produção)
+    type_mov = models.CharField(max_length=4,verbose_name="Tipo de Movimento", null=False) #IN - INPUT , OUT - OUTPUT , CONS - CONSUMED , CORR - MANUAL CONSUME CORRECTION   
+    item_id = models.IntegerField(verbose_name="Item ID", null=True) #(ID do Item da Formulação - (No caso da formulação ter alterado durante a produção este ID não corresponde ao id do item da formulação no planeamento))
     t_stamp = models.DateTimeField(blank=False, null=False)
-    formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=False, blank=False)
-    audit_cs = models.ForeignKey('AuditCurrentSettings', on_delete=models.PROTECT, verbose_name="Audit Current Settings", null=False, blank=False)
+    formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True)
+    cs = models.ForeignKey('CurrentSettings', on_delete=models.PROTECT, verbose_name="Current Settings", null=True)
+    ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    audit_cs = models.ForeignKey('AuditCurrentSettings', on_delete=models.PROTECT, verbose_name="Audit Current Settings", null=True)
+
+
+class LotesDosers(models.Model):
+    n_lote = models.CharField(max_length=100,verbose_name="Nº Lote", null=True)
+    doser = models.CharField(max_length=2,verbose_name="Doseadora", null=False)
+    artigo_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=True) #ADDED - CÓDIGO ARTIGO SAGE ID
+    qty_total_lote = models.DecimalField(default=0, verbose_name="Quantidade Total do Lote", max_digits=12, decimal_places=5, null=True)
+    qty_lote = models.DecimalField(default=0, verbose_name="Quantidade Total do Lote por doseador", max_digits=12, decimal_places=5, null=True)
+    qty_doser = models.DecimalField(default=0, verbose_name="Quantidade consumida no doseador (consumida durante a produção)", max_digits=12, decimal_places=5, null=True)
+    qty_consumed = models.DecimalField(default=0, verbose_name="Quantidade consumida (consumida durante a produção)", max_digits=12, decimal_places=5, null=True)
+    qty_acumulated = models.DecimalField(default=0, verbose_name="Quantidade Acumulada", max_digits=12, decimal_places=5, null=True)
+    qty_rest = models.DecimalField(default=0, verbose_name="Quantidade Acumulada Anterior )", max_digits=12, decimal_places=5, null=True)
+    status = models.SmallIntegerField(default=0, verbose_name="Status") #(-1 - anulado, 0 não está na linha de produção, 1 na linha de produção)
+    type_mov = models.CharField(max_length=4,verbose_name="Tipo de Movimento", null=False) #IN - INPUT , OUT - OUTPUT , CONS - CONSUMED , CORR - MANUAL CONSUME CORRECTION   
+    item_id = models.IntegerField(verbose_name="Item ID", null=True) #(ID do Item da Formulação - (No caso da formulação ter alterado durante a produção este ID não corresponde ao id do item da formulação no planeamento))
+    t_stamp = models.DateTimeField(blank=False, null=False)
+    formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True)
+    cs = models.ForeignKey('CurrentSettings', on_delete=models.PROTECT, verbose_name="Current Settings", null=True)
+    ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    audit_cs = models.ForeignKey('AuditCurrentSettings', on_delete=models.PROTECT, verbose_name="Audit Current Settings", null=True)
 
 
 class BobinagemConsumos(models.Model):

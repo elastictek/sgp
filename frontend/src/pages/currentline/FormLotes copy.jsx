@@ -14,7 +14,6 @@ import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
-import { SocketContext } from '../App';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -53,7 +52,7 @@ const TitleExtrusora = ({ value, extrusoraRef }) => {
         <>
             {show.current &&
                 <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [8, 1.5, 1.5, 5], label: { enabled: false } }}>
-                    <FieldItem><div style={{ fontWeight: 700/* , fontSize: "12px" */ }}>Extrusora {value}</div></FieldItem>
+                    <FieldItem><div style={{ fontWeight: 700, fontSize: "12px" }}>Extrusora {value}</div></FieldItem>
                     <FieldItem><div style={{ textAlign: "right" }}>Qtd. Requerida</div></FieldItem>
                     <FieldItem><div style={{ textAlign: "right" }}>Qtd. Disponível</div></FieldItem>
                     <FieldItem><div style={{ textAlign: "center" }}>Lotes</div></FieldItem>
@@ -96,14 +95,14 @@ const MenuExtrusoras = ({ setExtrusora, extrusora, setFocus }) => {
 
     return (
         <>
-            <StyledButtonMenu size='small' onClick={() => onSelect('A')} first={true} type={type(['A'])}>Extrusora A</StyledButtonMenu>
-            <StyledButtonMenu size='small' onClick={() => onSelect('BC')} type={type(['B', 'BC'])}>Extrusora B</StyledButtonMenu>
-            <StyledButtonMenu size='small' onClick={() => onSelect('C')} type={type(['C', 'BC'])}>Extrusora C</StyledButtonMenu>
+            <StyledButtonMenu size='large' onClick={() => onSelect('A')} first={true} type={type(['A'])}>Extrusora A</StyledButtonMenu>
+            <StyledButtonMenu size='large' onClick={() => onSelect('BC')} type={type(['B', 'BC'])}>Extrusora B</StyledButtonMenu>
+            <StyledButtonMenu size='large' onClick={() => onSelect('C')} type={type(['C', 'BC'])}>Extrusora C</StyledButtonMenu>
         </>
     );
 }
 
-const XXXXExtrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
+const Extrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
     const name = `lotes${id}`;
     return (
         <Form.List name={name}>
@@ -123,32 +122,32 @@ const XXXXExtrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
                                         /* style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" } */
                                     }}
                                 >
-                                    <Field name={[field.name, `mangueira`]} style={{ /* fontSize: "12px",  */backgroundColor: "#fff", alignSelf: "center" }}>
-                                        <SelectField tabIndex={1000} size="small" data={FORMULACAO_MANGUEIRAS[form.getFieldValue(name)[field.name]['extrusora']]} keyField="key" textField="key"
+                                    <Field name={[field.name, `mangueira`]} style={{ fontSize: "12px", backgroundColor: "#fff", alignSelf: "center" }}>
+                                        <SelectField tabIndex={1000} size="large" data={FORMULACAO_MANGUEIRAS[form.getFieldValue(name)[field.name]['extrusora']]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                         />
                                     </Field>
-                                    <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, /* fontSize: "12px" */ alignSelf: "center" }}>
-                                        <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                    <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, fontSize: "12px", alignSelf: "center" }}>
+                                        <SelectField size="large" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                             showSearch
                                             filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
                                         />
                                     </Field>
-                                    <FieldItem style={{ textAlign: "right", alignSelf: "center"/* , fontSize: "12px"  */ }}>
+                                    <FieldItem style={{ textAlign: "right", alignSelf: "center", fontSize: "12px" }}>
                                         <b>{form.getFieldValue(name)[field.name].qty}</b> kg
                                     </FieldItem>
 
                                     <FieldItem style={{
-                                        textAlign: "right", alignSelf: "center", /* fontSize: "12px", */
+                                        textAlign: "right", alignSelf: "center", fontSize: "12px",
                                         ...form.getFieldValue(name)[field.name].qty <= form.getFieldValue(name)[field.name].qty_available && { color: "#237804" }
                                     }}>
                                         <b>{form.getFieldValue(name)[field.name].qty_available}</b> kg
                                     </FieldItem>
-                                    <FieldItem style={{ alignSelf: "center", /* fontSize: "12px" */ }}>
+                                    <FieldItem style={{ alignSelf: "center", fontSize: "12px" }}>
                                         <Space size={2} wrap={true}>
                                             {form.getFieldValue(name)[field.name]?.lotes && form.getFieldValue(name)[field.name]?.lotes.map((v, idx) => {
-                                                return (<Tag style={{ /* fontSize: "11px", */ padding: "2px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
+                                                return (<Tag style={{ fontSize: "11px", padding: "2px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
                                             })}
                                         </Space>
                                     </FieldItem>
@@ -191,194 +190,95 @@ const XXXXExtrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
     );
 }
 
-const Extrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
-    const name = `doseadores-${id}`;
-    return (
-        <Form.List name={name}>
-            {(fields, { add, remove, move }) => {
-                return (
-                    <>
-                        {fields.map((field, index) => (
-                            <React.Fragment key={field.key}>
-
-                            </React.Fragment>
-                        ))}
-                    </>
-                );
-            }}
-        </Form.List>
-    );
-}
-
-const StyleLote = styled.div`
-    border: ${props => props.n > 0 ? "solid 1px #1890ff" : "rgba(0, 0, 0, 0.06)"};
-    background-color: ${props => props.n > 0 ? "#e6f7ff" : "rgb(250,250,250)"};
-    border-radius: 2px;
-    margin-right:5px;
-    padding:6px;
-    position:relative;
-    width:180px;
-`;
-
-const Lote = ({ value }) => {
-    return (
-        <StyleLote n={parseFloat(value.qty_lote_available).toFixed(2)}>
-            <div>{value.n_lote}</div>
-            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-                <div><span>{parseFloat(value.qty).toFixed(2)}</span> <span>{value.unit}</span></div>
-                <div><span style={{ color: parseFloat(value.qty_lote_available).toFixed(2) > 0 ? "green" : "red" }}>{parseFloat(value.qty_lote_available).toFixed(2)}</span> <span>{value.unit}</span></div>
-            </div>
-        </StyleLote>
-    );
-}
-
-const Doseador = ({ lotes, name, buffer, lotesAvailability }) => {
-    const [artigo, setArtigo] = useState();
-
-    useEffect(() => {
-        if (lotes?.length > 0) {
-            let ba = buffer.filter(v => v.ITMREF_0 == lotes[0].artigo_cod && v.LOT_0 == lotes[0].n_lote);
-            if (ba.length > 0) {
-                setArtigo({ des: ba[0].ITMDES1_0, cod: ba[0].ITMREF_0 });
-            }
-        }
-    }, [lotes]);
-
-    const getBufferArtigo = (artigo_cod, n_lote) => {
-        let ba = buffer.filter(v => v.ITMREF_0 == artigo_cod && v.LOT_0 == n_lote);
-        let la = lotesAvailability.filter(v => v.artigo_cod == artigo_cod && v.n_lote == n_lote);
-        let lai = {}
-        if (la.length > 0) {
-            lai = { qty_lote_available: la[0].qty_lote_available, group_id: la[0].group_id };
-        }
-        if (ba.length > 0) {
-            return { qty: ba[0].QTYPCU_0, unit: ba[0].PCUORI_0, des: ba[0].ITMDES1_0, artigo_cod: artigo_cod, n_lote: n_lote, ...lai };
-        }
-        return {};
-    }
-
-    return (
-        <tr>
-            <td rowSpan={1} style={{ border: "0px" }}><span style={{ fontWeight: 700, fontSize: "16px" }}>{name}</span></td>
-            {artigo && <td style={{ border: "1px solid rgba(0,0,0,.06)", backgroundColor: "#fafafa" }}>
-                <div><span style={{ fontWeight: 700 }}>{artigo.des}</span></div>
-                <div><span style={{ fontWeight: 500 }}>{artigo.cod}</span></div>
-            </td>
-            }
-            {!artigo && <td style={{ border: "1px dashed rgba(0,0,0,.06)" }}>
-                <div><span style={{ fontWeight: 700 }}></span></div>
-                <div><span style={{ fontWeight: 500 }}></span></div>
-            </td>
-            }
-            <td>
-                <div style={{ display: "flex", flexDirection: "row" }}>
-                    {lotes && lotes.map(v => {
-                        return <Lote key={`ld-${name}-${v.n_lote}`} value={getBufferArtigo(v.artigo_cod, v.n_lote)} />
-                    })}
-                </div>
-            </td>
-        </tr>
-
-
-
-    );
-}
-
-
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [changedValues, setChangedValues] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
+    const [operation, setOperation] = useState(setId(record.artigospecs_id));
     const [resultMessage, setResultMessage] = useState({ status: "none" });
     const [matPrimasLookup, setMatPrimasLookup] = useState([]);
     const extrusoraRef = useRef();
     const [inputRef, setInputFocus] = useFocus();
     const [extrusora, setExtrusora] = useState('A');
-    const [buffer, setBuffer] = useState(null);
-    const [settings, setSettings] = useState(null);
-    const [lotesDosers, setLotesDosers] = useState(null);
-    const [dosersSets, setDosersSets] = useState(null);
-    const [lotesAvailability, setLotesAvailability] = useState(null);
-    const { data: dataSocket } = useContext(SocketContext) || {};
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/lotespick`, {
         onOpen: () => console.log(`Connected to Web Socket`),
+        /*         onMessage: (v) => {
+                    if (lastJsonMessage) {
+                        console.log(v,lastJsonMessage);
+                    }
+                }, */
+        queryParams: { 'token': '123456' },
         onError: (event) => { console.error(event); },
         shouldReconnect: (closeEvent) => true,
         reconnectInterval: 3000
     });
 
-    useEffect(() => {
-        const cancelFetch = cancelToken();
+    const init = ({ lookup = false, token }) => {
         (async () => {
-            setMatPrimasLookup(await loadMateriasPrimasLookup({ token: cancelFetch }));
-            (setFormTitle) && setFormTitle({ title: `Lotes de Matéria Prima` });
+            if (lookup) {
+                setMatPrimasLookup(await loadMateriasPrimasLookup({ token }));
+            }
+
+            //Load das Matérias Primas em Buffer via Socket
+            const matPrimas = record.formulacao.items.map(({ matprima_cod }) => `'${matprima_cod}'`).join(',');
+            sendJsonMessage({ cmd: 'loadmatprimas', value: matPrimas, cs: record.id });
+
+            console.log("$$#$#$#$#$--", record.nonwovens)
+            console.log("$$#$#$#$#$--", record.quantity)
+            console.log("$$#$#$#$#$--", record.produto)
+            console.log("$$#$#$#$#$--", record.formulacao)
+            console.log("$$#$#$#$#$--", record.lotes)
+
+            const gsmNwSup = record.nonwovens.nw_des_sup.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
+            const gsmNwInf = record.nonwovens.nw_des_inf.split(new RegExp('gsm', 'i'))[0].trim().split(' ').pop();
+            const filmeSqm = Number(record.quantity.square_meters) * (Number(gsmNwSup) + Number(gsmNwInf)) / Number(record.produto.gsm);
+
+            const lotes = { A: [], B: [], C: [] };
+            if (record.lotes && record.lotes.length > 0) {
+                console.log("$$#$#$#$#$-lotes-", record.lotes);
+                throw 'TODO---------';
+            } else {
+                record.formulacao.items.forEach(v => {
+                    console.log(v.extrusora, "-------")
+                    const vitem = {
+                        qty_available: 0,
+                        lotes: [],
+                        qty: Math.round((filmeSqm * (Number(v.vglobal) / 100)), 2),
+                        type: 0, //lotes de extrusoras
+                        extrusora: v.extrusora,
+                        matprima_cod: v.matprima_cod
+                    };
+                    if (v.extrusora === 'BC') {
+                        lotes['B'].push({ ...vitem, extrusora: 'B' });
+                        lotes['C'].push({ ...vitem, extrusora: 'C' });
+                    } else {
+                        lotes[v.extrusora].push(vitem);
+                    }
+                    /* if (!('qty_available' in v)) v.qty_available = 0;
+                    if (!('lotes' in v)) v.lotes = [];
+                    if (!('qty' in v)) v.qty = Math.round((filmeSqm * (Number(v.vglobal) / 100)) * 0.1, 2);
+    
+                    console.log(v.vglobal, "-------", (filmeSqm * (Number(v.vglobal) / 100))) */
+
+                });
+
+            }
+
+
+
+
+            form.setFieldsValue({ lotesA: lotes['A'], lotesB: lotes['B'], lotesC: lotes['C'] /* groupBy(record.formulacao.items, 'extrusora') */ });
             setLoading(false);
         })();
+    }
+
+    useEffect(() => {
+        const cancelFetch = cancelToken();
+        init({ lookup: true, token: cancelFetch });
         return (() => cancelFetch.cancel("Form Lotes Cancelled"));
     }, []);
-
-    useEffect(() => {
-        console.log("MATERIAS PRIMAS---", matPrimasLookup)
-    }, [matPrimasLookup]);
-
-    useEffect(() => {
-        (async () => {
-            sendJsonMessage({ cmd: 'loadbuffer', value: {} });
-        })();
-    }, [dataSocket?.buffer]);
-
-    useEffect(() => {
-        (async () => {
-            sendJsonMessage({ cmd: 'loadlotesavailability', value: {} });
-        })();
-    }, [dataSocket?.availability]);
-
-    useEffect(() => {
-        (async () => {
-            console.log("################entreii")
-            sendJsonMessage({ cmd: 'loaddoserssets', value: {} });
-        })();
-    }, [dataSocket?.doserssets]);
-
-    // useEffect(() => {
-    //     (async () => {
-    //         sendJsonMessage({ cmd: 'loadinproduction', value: {} });
-    //     })();
-    // }, [dataSocket?.inproduction]);
-
-    useEffect(() => {
-        (async () => {
-            sendJsonMessage({ cmd: 'loadlotesdosers', value: {} });
-        })();
-    }, [dataSocket?.dosers]);
-
-    useEffect(() => {
-        if (lastJsonMessage) {
-            if (lastJsonMessage.item === "buffer") {
-                setBuffer([...lastJsonMessage.rows]);
-                console.log("BUFFER-->", lastJsonMessage.rows)
-            } else if (lastJsonMessage.item === "inproduction") {
-                setSettings({ ...lastJsonMessage.rows[0] });
-            } else if (lastJsonMessage.item === "lotesdosers") {
-                console.log("------>LOTESDOSERS<-----", lastJsonMessage.rows[0])
-                setLotesDosers([...lastJsonMessage.rows]);
-            } else if (lastJsonMessage.item === "lotesavailability") {
-                console.log("------>LOTESAVAILABILITY<-----", lastJsonMessage.rows)
-                setLotesAvailability([...lastJsonMessage.rows]);
-            } else if (lastJsonMessage.item === "doserssets") {
-                console.log("------>DOSERS SETS<-----", lastJsonMessage.rows)
-                setDosersSets({...lastJsonMessage.rows});
-            }
-        }
-    }, [lastJsonMessage]);
-
-    useEffect(() => {
-
-        console.log("aaaaaa lotes dosers", lotesDosers);
-
-    }, [lotesDosers]);
 
     const onValuesChange = (changedValues) => {
         console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
@@ -427,6 +327,106 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         closeParent();
     }
 
+    /*     const ItemLabelRenderer = ({ d }) => {
+            return (
+                <div>
+                    <div>{d["LOT_0"]}</div>
+                    <Space><div>{d["QTYPCU_0"]}{d["PCUORI_0"]}</div></Space>
+                </div>
+            );
+        } */
+
+    /*     const lotesRenderer = (d) => {
+            return { label: <ItemLabelRenderer d={d} />, key: d["LOT_0"], value: d["LOT_0"] };
+        } */
+
+    useEffect(() => {
+        if (lastJsonMessage && lastJsonMessage.length > 0) {
+            const eA = [];
+            const eB = [];
+            const eC = [];
+            let idx = -1;
+            if (extrusora === 'A') {
+                eA.push(...form.getFieldValue('lotesA'));
+                idx = eA.findIndex(v => v.extrusora === 'A' && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+                if (idx >= 0) {
+                    if (eA[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+                        eA[idx].lotes = [...eA[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eA[idx].qty_available = eA[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        console.log('picjeddddd',eA[idx].lotes.reduce((prev, v) => (v.qty + prev),0))
+                        //eA[idx].lotes.forEach(e => { eA[idx].qty_available += e.qty; });
+                        form.setFieldsValue({lotesA:eA});
+                    }
+                }
+            } else {
+                eB.push(...form.getFieldValue('lotesB'));
+                eC.push(...form.getFieldValue('lotesC'));
+                idx = eB.findIndex(v => v.extrusora === 'B' && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+                if (idx >= 0) {
+                    if (eB[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+                        eB[idx].lotes = [...eB[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eB[idx].qty_available = eB[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        //eB[idx].lotes.forEach(e => { eB[idx].qty_available += e.qty; });
+                        eC[idx].lotes = [...eC[idx].lotes,{ lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+                        eC[idx].qty_available = eC[idx].lotes.reduce((basket, itm) => (itm.qty + basket),0);
+                        //eC[idx].lotes.forEach(e => { eC[idx].qty_available += e.qty; });
+                        form.setFieldsValue({lotesB:eB,lotesC:eC});
+                    }
+                }
+            }
+           
+
+
+
+
+            // let _extrusora = extrusora;
+            // if (_extrusora === 'A') {
+            //     selExtrusora.push(...form.getFieldValue('lotesA'));
+            // } else {
+            //     selExtrusora.push(...form.getFieldValue('lotesB'));
+            //     _extrusora='B';
+            // }
+            // const idx = selExtrusora.findIndex(v => v.extrusora === _extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+            // if (idx >= 0) {
+            //     if (selExtrusora[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+            //         const lt = { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 };
+            //         selExtrusora[idx].lotes = [...selExtrusora[idx].lotes,{...lt}];
+            //         selExtrusora[idx].qty_available = selExtrusora[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         selExtrusora[idx].lotes.forEach(e => { selExtrusora[idx].qty_available += e.qty; });
+            //         if (extrusora==='BC'){
+            //             selExtrusora[idx].lotes = [...selExtrusora[idx].lotes,{...lt}];
+            //             selExtrusora[idx].qty_available = selExtrusora[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //             selExtrusora[idx].lotes.forEach(e => { selExtrusora[idx].qty_available += e.qty; });
+            //         }
+
+            //         console.log("TO PICKKKK",extrusora,selExtrusora,lt);
+            //         //fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+            //         ////fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         //fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
+            //         //form.setFieldsValue(fv);
+            //     }
+            // }
+
+            // const idx = fv.findIndex(v => v.extrusora === extrusora && v.matprima_cod === lastJsonMessage[0].ITMREF_0);
+            // if (idx >= 0) {
+            //     if (fv[idx].lotes.findIndex(v => v.lote === lastJsonMessage[0].LOT_0) === -1) {
+            //         fv[idx].lotes = [...fv[idx].lotes, { lote: lastJsonMessage[0].LOT_0, qty: Math.round(lastJsonMessage[0].QTYPCU_0, 2), unit: lastJsonMessage[0].PCUORI_0 }];
+            //         //fv[idx].qty_available = fv[idx].lotes.reduce((basket, itm) => (itm.qty + basket));
+            //         fv[idx].lotes.forEach(e => { fv[idx].qty_available += e.qty; });
+            //         form.setFieldsValue(fv);
+            //     }
+            // }
+            // /* const fv = form.getFieldsValue(true);
+            // const lotes = !("lotes" in fv) ? [] : fv.lotes;
+            // lotes.push({ lote_cod: lastJsonMessage[0].LOT_0 });
+            // fv.lotes = lotes; 
+            // form.setFieldsValue(fv);
+            // */
+
+        }
+        inputRef.current.value = '';
+
+    }, [lastJsonMessage]);
 
     const onManualPick = (v) => {
         sendJsonMessage({ cmd: 'pick', value: v.key, cs: record.id });
@@ -436,63 +436,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         if (e.keyCode == 9 || e.keyCode == 13) {
             if (inputRef.current.value !== '') {
                 e.preventDefault();
-                const v = inputRef.current.value.toUpperCase();
-                if (v === 'A1' | v === 'A2' | v === 'A3' | v === 'A4' | v === 'A5' | v === 'A6' | v === 'B1' | v === 'B2' | v === 'B3' | v === 'B4' | v === 'B5' | v === 'B6' | v === 'C1' | v === 'C2' | v === 'C3' | v === 'C4' | v === 'C5' | v === 'C6') {
-                    //Source / Type
-                    form.setFieldsValue({ source: v });
-                    inputRef.current.value = '';
-                } else {
-                    let fData = form.getFieldsValue(true);
-                    if (fData.source) {
-                        let ba = buffer.filter(v => v.ITMREF_0 == artigo_cod && v.LOT_0 == n_lote);
-                        console.log("PICKED", ba)
-                    }
-
-                }
-
-
-                /* sendJsonMessage({ cmd: 'pick', value: inputRef.current.value, cs: record.id }); */
-                // if (inputRef.current.value.toUpperCase().startsWith("MP-")) {
-                //     //Source / Type
-                //     form.setFieldsValue({ source: inputRef.current.value.toUpperCase().replace("MP-", "") });
-                //     inputRef.current.value = '';
-                // } else {
-                //     let fData = form.getFieldsValue(true);
-                //     if (fData.source) {
-                //         console.log("OI", inputRef.current.value, buffer, fData)
-                //         let artigoBuffer = buffer.filter(v => v.LOT_0 === inputRef.current.value);
-                //         if (artigoBuffer.length > 0) {
-                //             if (/A[1-6]/.test(fData.source)) {
-                //                 let idx = fData.lotesA.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
-                //                 fData.lotesA[idx]["mangueira"] = fData.source;
-                //                 const lotes = fData.lotesA[idx].lotes.filter(v => v.lote !== inputRef.current.value);
-                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
-                //                 fData.lotesA[idx].lotes = lotes;
-                //                 form.setFieldsValue({ lotesA: fData.lotesA })
-                //             } else if (/B[1-6]/.test(fData.source)) {
-                //                 let idx = fData.lotesB.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
-                //                 fData.lotesB[idx]["mangueira"] = fData.source;
-                //                 const lotes = fData.lotesB[idx].lotes.filter(v => v.lote !== inputRef.current.value);
-                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
-                //                 fData.lotesB[idx].lotes = lotes;
-                //                 form.setFieldsValue({ lotesB: fData.lotesB })
-                //             } else if (/C[1-6]/.test(fData.source)) {
-                //                 let idx = fData.lotesC.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
-                //                 fData.lotesC[idx]["mangueira"] = fData.source;
-                //                 const lotes = fData.lotesC[idx].lotes.filter(v => v.lote !== inputRef.current.value);
-                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
-                //                 fData.lotesC[idx].lotes = lotes;
-                //                 form.setFieldsValue({ lotesC: fData.lotesC });
-                //             }
-                //             inputRef.current.value = '';
-                //         }
-                //     }
-                // }
-
+                sendJsonMessage({ cmd: 'pick', value: inputRef.current.value, cs: record.id });
                 //setInputFocus();
             }
             //console.log("----",inputRef.current.state.value,'----',fv);
         } else {
+            console.log("xxxx->", e)
         }
     }
 
@@ -500,7 +449,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         <>
             <ResultMessage
                 result={resultMessage}
-                successButtonOK={<Button type="primary" key="goto-of" onClick={onSuccessOK}>Lotes de Matérias Primas</Button>}
+                successButtonOK={operation.key === "insert" && <Button type="primary" key="goto-of" onClick={onSuccessOK}>Lotes de Matérias Primas</Button>}
                 successButtonClose={<Button key="goto-close" onClick={() => onClose(true)}>Fechar</Button>}
                 errorButtonOK={<Button type="primary" key="goto-ok" onClick={onErrorOK}>OK</Button>}
                 errorButtonClose={<Button key="goto-close" onClick={onClose}>Fechar</Button>}
@@ -512,7 +461,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         id="LAY-LOTES"
                         guides={guides}
                         layout="vertical"
-                        style={{ width: "100%", padding: "0px", /* height: "65vh" */ /* , minWidth: "700px" */ }}
+                        style={{ width: "100%", padding: "0px", height: "65vh" /* , minWidth: "700px" */ }}
                         schema={schema}
                         field={{
                             forInput,
@@ -531,22 +480,28 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     >
 
                         <FieldSet wide={16} margin={false} field={{ wide: [4, 6, 6] }}>
-                            <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}>
-                                <Input size="small" />
-                                {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
+                            <FieldItem label={{ enabled: false }} style={{ textAlign: "center" }}>
+                                <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} />
+                            </FieldItem>
+                            <FieldItem label={{ enabled: false }}><input className="ant-input ant-input-lg" ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                            <Field required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
+                                <SelectDebounceField
+                                    defaultActiveFirstOption
+                                    placeholder="Lote Picagem Manual"
+                                    size="large"
+                                    keyField="LOT_0"
+                                    textField="LOT_0"
+                                    showSearch
+                                    showArrow
+                                    allowClear
+                                    onSelect={onManualPick}
+                                    fetchOptions={(v) => loadLotesLookup(v)}
+                                />
                             </Field>
-                            <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
                         </FieldSet>
 
                         <YScroll>
-                            <table cellPadding={2} cellSpacing={1} style={{ borderCollapse: "separate" }}>
-                                <tbody>
-                                    {lotesDosers && lotesDosers.map(v => {
-
-                                        return <Doseador key={`d-${v.doser}`} lotes={JSON.parse(v.lotes)} name={v.doser} buffer={buffer} lotesAvailability={lotesAvailability} />
-
-                                    })}
-                                    {/* <FieldSet layout="horizontal" margin={false}>
+                            <FieldSet layout="horizontal" margin={false}>
                                 <FieldSet layout="vertical" split={2} margin={false}>
                                     <Extrusora id='A' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
                                 </FieldSet>
@@ -554,9 +509,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                     <Extrusora id='B' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
                                     <Extrusora id='C' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
                                 </FieldSet>
-                            </FieldSet> */}
-                                </tbody>
-                            </table>
+                            </FieldSet>
                         </YScroll>
 
 

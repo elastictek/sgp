@@ -8,7 +8,7 @@ import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
-import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert } from "antd";
+import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined } from '@ant-design/icons';
@@ -18,7 +18,8 @@ import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
-import {Outlet,useNavigate} from "react-router-dom";
+import ResponsiveModal from 'components/ResponsiveModal';
+import { Outlet, useNavigate } from "react-router-dom";
 import { MediaContext } from '../App';
 
 const FormLotes = React.lazy(() => import('./FormLotes'));
@@ -65,43 +66,56 @@ const schema = (keys, excludeKeys) => {
 
 const colorsOfs = ['#f5222d', '#fa8c16', '#fadb14', '#52c41a', '#13c2c2', '#1890ff', '#722ed1', '#eb2f96'];
 
+const TitleLotes = ({ }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
+                <Space>
+                    <div><b style={{ textTransform: "capitalize" }}></b>Lotes em Linha de Produção</div>
+                </Space>
+            </div>
+        </div>
+    );
+}
+
 const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
+    const [confirmLoading, setConfirmLoading] = React.useState(false);
     const iref = useRef();
 
     const onVisible = () => {
         setShowWrapper(prev => ({ ...prev, show: !prev.show }));
     }
 
+    useEffect(() => {}, [showWrapper])
+
     return (
-        <WrapperForm
-            title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
-            type={showWrapper.type}
-            mode={showWrapper.mode}
-            width={showWrapper?.width}
-            height={showWrapper?.height}
-            destroyOnClose={true}
-            mask={true}
-            /* style={{ maginTop: "48px" }} */
-            setVisible={onVisible}
-            visible={showWrapper.show}
-            bodyStyle={{ height: "100%"/*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
-            footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
-        >
-            <YScroll>
-                {showWrapper.idcard === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "position" && <div>ssssssssssssssssssssssssssssssss</div>}
-                {/*                 {!showWrapper.type && <FormAggUpsert setFormTitle={setFormTitle} parentRef={iref} closeParent={onVisible} parentReload={parentReload} />}
-                {showWrapper.idcard === "paletes_stock" && <Suspense fallback={<></>}><FormPaletesStockUpsert setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "schema" && <Suspense fallback={<></>}><FormPaletizacao setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "settings" && <Suspense fallback={<></>}><FormSettings setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                {showWrapper.idcard === "attachments" && <Suspense fallback={<></>}><FormAttachments setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>} */}
-            </YScroll>
-        </WrapperForm>
+        <>
+            <ResponsiveModal
+                title={<TitleForm title={formTitle.title} subTitle={formTitle.subTitle} />}
+                visible={showWrapper.show}
+                centered
+                responsive
+                onCancel={onVisible}
+                confirmLoading={confirmLoading}
+                maskClosable={true}
+                destroyOnClose={true}
+                fullWidthDevice={2}
+                minFullHeight={showWrapper?.minFullHeight}
+                width={showWrapper?.width}
+                height={showWrapper?.height}
+                footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
+            >
+                <YScroll>
+                    {showWrapper.idcard === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                </YScroll>
+            </ResponsiveModal>
+
+        </>
     );
 }
 
@@ -111,7 +125,7 @@ const loadCurrentSettings = async (aggId, token) => {
 }
 
 const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
-    const { of_cod, cliente_nome, produto_cod, item_des,color } = ofItem;
+    const { of_cod, cliente_nome, produto_cod, item_des, color } = ofItem;
     const totais = useRef({});
 
     // const paletes = JSON.parse(aggItem?.n_paletes);
@@ -130,7 +144,7 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
                 setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'position':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
                 break;
         }
     }
@@ -258,7 +272,7 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     const { formulacao, cores, nonwovens } = record;
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "fullscreen", type: "modal" }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width:"100%" }))
     }
 
     useEffect(() => {
@@ -299,7 +313,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal", width: null, height: null }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: "1200px", height: null }))
     }
 
     return (
@@ -326,7 +340,7 @@ const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: null, height: null }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: "1000px", height: '800px', minFullHeight: 900 }))
     }
 
     return (
@@ -349,7 +363,7 @@ const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
     const { artigospecs } = record;
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record,/*  mode: "normal", type: 'modal', */ width: '900px', height: '600px' }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: '900px', height: '800px', minFullHeight: 900 }))
     };
 
     return (
@@ -376,7 +390,7 @@ const CardCortes = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "maximized", type: "modal", width: null, height: null }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: '1500px', height: '700px', minFullHeight: 800 }))
     }
 
     return (

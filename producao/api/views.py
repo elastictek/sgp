@@ -1359,6 +1359,28 @@ def CurrentSettingsGet(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
+def CurrentSettingsInProductionGet(request, format=None):
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select * from
+                (
+                SELECT acs.*, max(acs.id) over () mx_id 
+                from sistema_dev.producao_currentsettings cs
+                join sistema_dev.audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                ) t
+                where id=mx_id
+            """
+        ), cursor, {})
+        return Response(response)
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def LotesLookup(request, format=None):
     cols = ["ITMREF_0","UPDDATTIM_0","LOT_0", "QTYPCU_0", "PCUORI_0","LOC_0"]
     f = Filters(request.data['filter'])
@@ -1515,7 +1537,7 @@ def UpdateCurrentSettings(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def changeCurrSettingsStatus(request, format=None):
+def ChangeCurrSettingsStatus(request, format=None):
     data = request.data.get("parameters")
     try:
         with connections["default"].cursor() as cursor:
@@ -1532,7 +1554,9 @@ def changeCurrSettingsStatus(request, format=None):
     except Exception as error:
         return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})
     return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
-    
+
+
+
 
         # items = []
         # itms = collections.OrderedDict(sorted(data["specs"].items()))
@@ -2353,9 +2377,12 @@ def sgpForProduction(data,aggid,user,cursor):
         limites = []
 
         ops=[]
+        encss = []
         for idx, ordemfabrico in enumerate(ofs):
-            vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],user.id,cursor)
-            
+            if (ordemfabrico['encomenda_id'] not in encss):
+                vals = sgpSaveEncomendaCliente(ordemfabrico['cliente_id'],ordemfabrico['encomenda_id'],ordemfabrico['cliente_cod'],ordemfabrico['order_cod'],user.id,cursor)
+                encss.append(ordemfabrico['encomenda_id'])
+
             #Registar ordem de produção....
             _artigo = json.loads(ordemfabrico['artigo'])
             _emendas = json.loads(ordemfabrico['emendas'])
@@ -3345,6 +3372,12 @@ def ValidarBobinagem(request, format=None):
 
 #endregion
 
+
+#region PICAGEM DE LOTES
+
+
+
+#endregion
 
 
 

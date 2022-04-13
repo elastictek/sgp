@@ -114,7 +114,8 @@ urlpatterns = [
     re_path(r'^currentsettingsget/$', views.CurrentSettingsGet),
     re_path(r'^loteslookup/$', views.LotesLookup),
     re_path(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
-    re_path(r'^changecurrsettings/$', views.changeCurrSettingsStatus),
+    re_path(r'^changecurrsettings/$', views.ChangeCurrSettingsStatus),
+    re_path(r'^currentsettingsinproductionget/$', views.CurrentSettingsInProductionGet),
     #END CURRENT SETTINGS
 
     #BOBINAGENS
@@ -122,6 +123,10 @@ urlpatterns = [
     re_path(r'^validarbobineslist/$', views.ValidarBobinesList),
     re_path(r'^validarbobinagem/$', views.ValidarBobinagem),
     #BOBINAGENS
+
+    #PICAGEM LOTES
+
+    #PICAGEM LOTES
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 

@@ -1,4 +1,5 @@
 import os
+from sqlite3 import Cursor
 import sys
 import django
 
@@ -30,10 +31,57 @@ def executeAlerts():
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
-
     data = json.dumps(rows[0],default=str)
+
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM sistema_dev.ig_doseadores'), cursor, {})['rows']
+    dataDosersSets = json.dumps(rows[0],default=str)
+
+    
+
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f"""		
+                SELECT acs.id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                order by acs.id desc
+                limit 1
+         """), cursor, {})['rows']
+    dataInProd = json.dumps(rows[0],default=str)
+
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f"""		
+                select max(t_stamp) from lotesdosers limit 1
+         """), cursor, {})['rows']
+    dataDosers = json.dumps(rows[0],default=str)
+
+    with connections[connGatewayName].cursor() as cursor:
+        rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER' ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
+    dataBuffer = json.dumps(rows[0],default=str)
+
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f"""		
+                select SUM(t.qty_lote_available) available FROM (
+                SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
+                FROM loteslinha LOTES
+                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+                WHERE DOSERS.status=1
+            ) t
+         """), cursor, {})['rows']
+    dataLotesAvailability = json.dumps(rows[0],default=str)
+
     async_to_sync(channel_layer.group_send)(group_name,{
-        'type': "getAlerts", "data":data, "hash":hashlib.md5(data.encode()).hexdigest()
+        'type': "getAlerts", "data":{
+            "bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
+            "hash":{
+                "hash_bobinagens":hashlib.md5(data.encode()).hexdigest(),
+                "hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
+                "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
+                "hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
+                "hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
+                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
+            }
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
     Timer(5,executeAlerts).start()
@@ -104,9 +152,100 @@ class LotesPickConsumer(WebsocketConsumer):
             print(f'gggggggg--{rows}')
             cache.set(f'lotes-{cs}',rows,timeout=None)
         self.send(text_data=json.dumps({"status":"success"}))
+    
+    def loadBuffer(self, data):
+        connection = connections[connGatewayName].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT ST."ITMREF_0", ST."UPDDATTIM_0",ST."LOT_0", ST."QTYPCU_0", ST."PCUORI_0",ST."LOC_0", mprima."ITMDES1_0"
+            FROM "SAGE-PROD"."STOCK" ST
+            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER'
+            ORDER BY ST."UPDDATTIM_0" DESC
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"buffer"},default=str))
+
+    def loadInProductionSettings(self, data):
+        connection = connections["default"].cursor()
+        rows = db.executeSimpleList(lambda:(f"""		
+            select * from
+                (
+                SELECT acs.*, max(acs.id) over () mx_id, cs.id cs_id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                ) t
+                where id=mx_id
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"inproduction"},default=str))
+    
+    def loadLotesDosers(self, data):
+        print("loadlotesdosers")
+        connection = connections["default"].cursor()
+        rows = db.executeSimpleList(lambda:(f"""		
+            WITH DOSERS_GROUPS AS(
+            select * from(
+            SELECT id,doser,group_id,MAX(ld.id) over (PARTITION BY doser) max_id FROM lotesdosers ld
+            ) t where t.max_id=id
+            ),
+            LOTES_DOSERS AS (
+                SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
+                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+                from lotesdosers ld
+                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+                WHERE ld.loteslinha_id IS NOT NULL
+                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
+                ) t2
+                GROUP BY doser
+            )
+            select d.doser,ld.lotes
+            FROM JSON_TABLE(JSON_ARRAY('A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'),"$[*]" COLUMNS(doser VARCHAR(2) PATH "$")) d
+            LEFT JOIN LOTES_DOSERS ld on d.doser=ld.doser
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"lotesdosers"},default=str))
+
+    def loadLotesAvailability(self, data):
+        connection = connections["default"].cursor()
+        rows = db.executeSimpleList(lambda:(f"""		
+            select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+            FROM (
+                SELECT distinct
+                DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,
+                SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
+                qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
+                MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp #FIFO DATE TO ORDER ASC
+                FROM loteslinha LOTES
+                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+                WHERE DOSERS.status=1 #and (DOSERS.t_stamp<='2022-04-11 16:37:30')
+            ) t
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"lotesavailability"},default=str))
+
+    def loadDosersSets(self, data):
+        connection = connections["default"].cursor()
+        rows = db.executeSimpleList(lambda:(f"""		
+            SELECT * FROM sistema_dev.ig_doseadores order by ig_doseadores_ndx DESC LIMIT 1;
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"doserssets"},default=str))
+
+
 
     commands = {
+        'loadlotesdosers':loadLotesDosers,
+        'loadinproduction':loadInProductionSettings,
+        'loadbuffer':loadBuffer,
         'loadmatprimas':loadMatPrimas,
+        'loadlotesavailability':loadLotesAvailability,
+        'loaddoserssets':loadDosersSets,
         'pick':getLote
     }
 

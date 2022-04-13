@@ -40,7 +40,7 @@ export const TitleForm = ({ title, subTitle, toogleMaximize, toogleFullScreen, s
                 <h4>{title}</h4>
                 {subTitle && <h5>{subTitle}</h5>}
             </Title>
-            <div><div onClick={toogleMaximize}><BiWindow /></div><div onClick={toogleFullScreen}><AiOutlineFullscreen /></div></div>
+            {/* <div><div onClick={toogleMaximize}><BiWindow /></div><div onClick={toogleFullScreen}><AiOutlineFullscreen /></div></div> */}
         </div>
     );
 }
@@ -113,7 +113,7 @@ export const WrapperForm = props => {
                 {type == 'modal' ? (
                     <Modal
                         {...rest}
-                        bodyStyle={{ height: `calc(${!height ? '70vh' : height} - 60px)` }}
+                        bodyStyle={{ height: `calc(${!height ? '70vh' : height} - 130px)` }}
                         //bodyStyle={{ height: !height ? '70vh' : height }}
                         style={{ width: widthMode.width, minWidth: widthMode.width }}
                         width={widthMode.width}
@@ -913,31 +913,31 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
     //console.log("zzzzzzz->",children.type === DatePicker, children.type === InputAddon, children.type === Input,children.props)
     if (!type || type === 'C') {
         if (children.type === DatePicker) {
-            console.log("FIELD-> PICKER");
+            //console.log("FIELD-> PICKER");
             type = 'Picker';
         } else if (children.type === Input) {
-            console.log("FIELD-> INPUT");
+            //console.log("FIELD-> INPUT");
             type = 'Input';
         } else if (children.type === InputNumber) {
-            console.log("FIELD-> INPUTNUMBER");
+            //console.log("FIELD-> INPUTNUMBER");
             type = 'any';
         } else if (children.type === InputAddon) {
-            console.log("FIELD-> INPUTADDON");
+            //console.log("FIELD-> INPUTADDON");
             type = 'any';
         } else if (children.type === CheckboxField) {
-            console.log("FIELD-> CHECKBOXFIELD");
+            //console.log("FIELD-> CHECKBOXFIELD");
             type = 'CheckboxField';
         } else if (children.type === SwitchField) {
-            console.log("FIELD-> SWITCHFIELD");
+            //console.log("FIELD-> SWITCHFIELD");
             type = 'SwitchField';
         } else if (children.type === SelectDebounceField) {
-            console.log("FIELD-> SELECTDEBOUNCEFIELD");
+            //console.log("FIELD-> SELECTDEBOUNCEFIELD");
             type = 'SelectDebounceField';
         } else if (children.type === SelectField) {
-            console.log("FIELD-> SELECTFIELD");
+            //console.log("FIELD-> SELECTFIELD");
             type = 'SelectField';
         } else {
-            console.log("FIELD-> OTHER", children.props);
+            //console.log("FIELD-> OTHER", children.props);
             type = 'any';
         }
     }

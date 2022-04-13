@@ -14,6 +14,7 @@ import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
+import ResponsiveModal from "components/ResponsiveModal";
 import MoreFilters from 'assets/morefilters.svg';
 import { Outlet, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
@@ -494,22 +495,21 @@ const ModalValidar = ({ show, setShow }) => {
 
     return (
         <>
-            <Modal
-                title={<TitleValidar data={show.data}/* aggCod={aggCod} */ />}
+            <ResponsiveModal
+                title={<TitleValidar data={show.data} />}
                 visible={show.show}
                 centered
+                responsive
                 onCancel={handleCancel}
-                confirmLoading={confirmLoading}
                 maskClosable={true}
-                footer={null}
                 destroyOnClose={true}
-                bodyStyle={{ height: "calc(100vh - 60px)"/* , backgroundColor: "#f0f0f0" */ }}
-                width={"100%"}
+                fullWidthDevice={100}
+                bodyStyle={{ backgroundColor: "#f0f0f0" }}
             >
                 <YScroll>
                     <Suspense fallback={<></>}>{<BobinesValidarList data={show.data} closeSelf={handleCancel} />}</Suspense>
                 </YScroll>
-            </Modal>
+            </ResponsiveModal>
         </>
     );
 };
@@ -720,11 +720,12 @@ export default () => {
         }, []); */
 
     useEffect(() => {
+        console.log("oiiiiiiiiiiiiiiiiiiiii", dataSocket)
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket]);
+    }, [dataSocket?.bobinagens]);
 
     const selectionRowKey = (record) => {
         return `${record.id}`;
@@ -761,7 +762,7 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v,r) => <span onClick={()=>handleClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
