@@ -14,8 +14,9 @@ export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
+//CORES
+export const COLORS = ["#d50329","#2fb48e","#8dbbca","#dfcc88","#9e4f36","#bc5fcb","#02b5f7","#f0cd48"];
 //ORDEM FABRICO TIPO ANEXOS
-
 export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
 { value: "Packing List", key: "Packing List" },
 { value: "Orientação Qualidade", key: "Orientação Qualidade" },

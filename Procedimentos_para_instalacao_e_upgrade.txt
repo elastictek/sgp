@@ -5,14 +5,18 @@ systemctl stop daphne@sgp-app-dev
 cd /home/sgp-app-dev/
 git reset --hard
 sudo git pull https://github.com/elastictek/sgp.git
+
+Se der o seguinte erro "fatal: unsafe repository ('/home/sgp-app-dev' is owned by someone else)" executar:
+	git config --global --add safe.directory /home/sgp-app-dev
+
 cd frontend/
 yarn install
 yarn outdated
 yarn upgrade --latest
 
 Verificar os ficheiros
-	/home/sgp-app-dev/settings/local.py
-	/home/sgp-app-dev/settings/appSettings.py
+	/home/sgp-app-dev/sistema/settings/local.py
+	/home/sgp-app-dev/sistema/settings/appSettings.py
 	/home/sgp_dev_share/frontend/src/config/index.jsx
 
 yarn run build

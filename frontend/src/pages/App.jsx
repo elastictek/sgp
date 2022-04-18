@@ -80,7 +80,8 @@ const App = () => {
         queryParams: { /* 'token': '123456' */ },
         onError: (event) => { console.error(event); },
         shouldReconnect: (closeEvent) => true,
-        reconnectInterval: 3000
+        reconnectInterval: 5000,
+        reconnectAttempts:500
     });
 
     useEffect(() => {

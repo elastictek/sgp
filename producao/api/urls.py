@@ -125,7 +125,7 @@ urlpatterns = [
     #BOBINAGENS
 
     #PICAGEM LOTES
-
+    re_path(r'^pick/$', views.Pick),
     #PICAGEM LOTES
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

@@ -3375,6 +3375,137 @@ def ValidarBobinagem(request, format=None):
 
 #region PICAGEM DE LOTES
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Pick(request, format=None):
+    data = request.data['parameters']
+    print("#######################")
+    print(data["lotes"])
+    print("-----------------------")
+    print(data["dosers"])
+    print("-----------------------")
+    print(data["groups"])
+    print("#######################")
+
+    def getInOut(data, cursor):
+        plg = []
+        for key, value in data["lotes"].items():
+            if (value["artigo_cod"] is not None):
+                for item in value['lotes']:
+                    plg.append({"group_id":key,"artigo_cod":value["artigo_cod"],"n_lote":item["n_lote"],"qty_lote":item["qty_lote"]})
+        pgd = []
+        for key, value in data["dosers"].items():
+            if (value["artigo_cod"] is not None):
+                for item in value['dosers']:
+                    pgd.append({"group_id":key,"artigo_cod":value["artigo_cod"],"doser":item})
+        response = db.executeSimpleList(lambda: (
+        f"""
+            SELECT * FROM(
+            WITH PICK_LOTES_GROUPS AS(
+            SELECT * FROM (
+            SELECT t.*, ll.id,ll.type_mov, max(ll.id) over (partition by ll.artigo_cod,ll.n_lote) mx_id
+            FROM JSON_TABLE(
+            '{json.dumps(plg)}'
+            ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", n_lote VARCHAR(100) PATH "$.n_lote", qty_lote decimal(12,5) PATH "$.qty_lote")
+            ) t
+            LEFT JOIN loteslinha ll on ll.`group`=t.group_id and ll.artigo_cod=t.artigo_cod and ll.n_lote=t.n_lote
+            ) t WHERE (t.id=t.mx_id and t.type_mov='IN') OR t.id is null
+            ),
+            DOSERS_GROUPS AS(
+            select * from(
+            SELECT id,doser,group_id,MAX(ld.id) over (PARTITION BY doser) max_id FROM lotesdosers ld
+            ) t where t.max_id=id
+            ),
+            LOTES_DOSERS_BY_DOSER AS (
+                SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
+                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+                from lotesdosers ld
+                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+                WHERE ld.loteslinha_id IS NOT NULL
+                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
+                ) t2
+                GROUP BY doser
+            ),
+            LOTES_DOSERS_BY_LOTES AS (
+                SELECT 
+                t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
+                FROM(
+                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+                from lotesdosers ld
+                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+                WHERE ld.loteslinha_id IS NOT NULL
+                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
+                ) t2
+                #GROUP BY group_id,artigo_cod,n_lote
+            ),
+            PICK_DOSERS_GROUPS AS(
+            select * from
+            JSON_TABLE(
+            '{json.dumps(pgd)}'
+            ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", doser VARCHAR(2) PATH "$.doser")
+            ) t
+            )
+            select DISTINCT * FROM(
+            SELECT null group_id,null artigo_cod,null n_lote, null qty_lote,LD.doser pick_doser, NULL id, NULL doser,'OUT' mov
+            FROM LOTES_DOSERS_BY_LOTES LD 
+            LEFT JOIN PICK_DOSERS_GROUPS PDG ON PDG.group_id = LD.group_id AND PDG.artigo_cod=LD.artigo_cod AND LD.doser=PDG.doser #and PDG.doser=LD.doser
+            WHERE PDG.group_id is null
+            ) MOV_OUT
+            UNION
+            select t.group_id,t.artigo_cod,t.n_lote,t.qty_lote,t.pick_doser, t.id, LD.doser,'IN' mov from
+            (
+            SELECT PLG.*,PDG.doser pick_doser
+            FROM PICK_LOTES_GROUPS PLG
+            LEFT JOIN PICK_DOSERS_GROUPS PDG ON PDG.group_id = PLG.group_id AND PDG.artigo_cod=PLG.artigo_cod #and PDG.doser=LD.doser
+            #WHERE LD.doser<>PDG.doser OR LD.doser IS NULL
+            ) t
+            LEFT JOIN LOTES_DOSERS_BY_LOTES LD ON LD.group_id=t.group_id AND LD.artigo_cod=t.artigo_cod AND LD.n_lote=t.n_lote AND LD.doser=t.pick_doser
+            WHERE LD.group_id is null
+            ) t
+        """
+        ), cursor, {})
+        return response["rows"]
+
+
+
+
+    # def checkIfIsValid(data, cursor):
+    #     exists = 0
+    #     if ("bobinagem_id" in data):
+    #         f = Filters({"id": data["bobinagem_id", "valid":0]})
+    #         f.where()
+    #         f.add(f'id = :id', True)
+    #         f.add(f'valid = :valid', True)
+    #         f.value("and")
+    #         exists = db.exists("producao_bobinagem", f, cursor).exists
+    #     return exists
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                io = getInOut(data,cursor)
+                for item in io:
+                    if (item['mov']=='OUT'):
+                        dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"OUT"},"lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        print('OUT')
+                        print(item)
+                    if (item['mov']=='IN'):
+                        print(item)
+                        if item['id'] is None:
+                            dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"`group`":item["group_id"],"qty_lote":item["qty_lote"],"qty_artigo":0,"qty_consumed":0},"loteslinha",None,None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                            linhaId = cursor.lastrowid
+                            dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                        else:
+                            dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"group_id":item["group_id"],"loteslinha_id":item["id"],"qty_consumed":0},"lotesdosers",None,None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Registar!"})
 
 
 #endregion

@@ -182,8 +182,62 @@ class LotesPickConsumer(WebsocketConsumer):
         if len(rows)>0:
             self.send(text_data=json.dumps({"rows":rows,"item":"inproduction"},default=str))
     
-    def loadLotesDosers(self, data):
-        print("loadlotesdosers")
+    # def loadLotesDosers(self, data):
+    #     print("loadlotesdosers")
+    #     connection = connections["default"].cursor()
+    #     rows = db.executeSimpleList(lambda:(f"""		
+    #         WITH DOSERS_GROUPS AS(
+    #         select * from(
+    #         SELECT id,doser,group_id,MAX(ld.id) over (PARTITION BY doser) max_id FROM lotesdosers ld
+    #         ) t where t.max_id=id
+    #         ),
+    #         LOTES_DOSERS AS (
+    #             SELECT doser,group_id,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
+    #             select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+    #             from lotesdosers ld
+    #             JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+    #             WHERE ld.loteslinha_id IS NOT NULL
+    #             GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
+    #             ) t2
+    #             GROUP BY group_id,doser
+    #         )
+    #         select group_id,d.doser,ld.lotes
+    #         FROM JSON_TABLE(JSON_ARRAY('A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'),"$[*]" COLUMNS(doser VARCHAR(2) PATH "$")) d
+    #         LEFT JOIN LOTES_DOSERS ld on d.doser=ld.doser
+    #      """),connection,{})['rows']
+        
+    #     if len(rows)>0:
+    #         self.send(text_data=json.dumps({"rows":rows,"item":"lotesdosers"},default=str))
+
+    # def loadLotesAvailability(self, data):
+    #     connection = connections["default"].cursor()
+    #     rows = db.executeSimpleList(lambda:(f"""		
+    #         select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+    #         FROM (
+    #             SELECT distinct
+    #             DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,
+    #             SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
+    #             qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
+    #             MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp #FIFO DATE TO ORDER ASC
+    #             FROM loteslinha LOTES
+    #             LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+    #             WHERE DOSERS.status=1 #and (DOSERS.t_stamp<='2022-04-11 16:37:30')
+    #         ) t
+    #      """),connection,{})['rows']
+        
+    #     if len(rows)>0:
+    #         self.send(text_data=json.dumps({"rows":rows,"item":"lotesavailability"},default=str))
+
+    def loadDosersSets(self, data):
+        connection = connections["default"].cursor()
+        rows = db.executeSimpleList(lambda:(f"""		
+            SELECT * FROM sistema_dev.ig_doseadores order by ig_doseadores_ndx DESC LIMIT 1;
+         """),connection,{})['rows']
+        
+        if len(rows)>0:
+            self.send(text_data=json.dumps({"rows":rows,"item":"doserssets"},default=str))
+
+    def loadLotesDosers(self,data):
         connection = connections["default"].cursor()
         rows = db.executeSimpleList(lambda:(f"""		
             WITH DOSERS_GROUPS AS(
@@ -191,7 +245,7 @@ class LotesPickConsumer(WebsocketConsumer):
             SELECT id,doser,group_id,MAX(ld.id) over (PARTITION BY doser) max_id FROM lotesdosers ld
             ) t where t.max_id=id
             ),
-            LOTES_DOSERS AS (
+            LOTES_DOSERS_BY_DOSER AS (
                 SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
                 select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
                 from lotesdosers ld
@@ -200,18 +254,20 @@ class LotesPickConsumer(WebsocketConsumer):
                 GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
                 ) t2
                 GROUP BY doser
-            )
-            select d.doser,ld.lotes
-            FROM JSON_TABLE(JSON_ARRAY('A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'),"$[*]" COLUMNS(doser VARCHAR(2) PATH "$")) d
-            LEFT JOIN LOTES_DOSERS ld on d.doser=ld.doser
-         """),connection,{})['rows']
-        
-        if len(rows)>0:
-            self.send(text_data=json.dumps({"rows":rows,"item":"lotesdosers"},default=str))
-
-    def loadLotesAvailability(self, data):
-        connection = connections["default"].cursor()
-        rows = db.executeSimpleList(lambda:(f"""		
+            ),
+            LOTES_DOSERS_BY_LOTES AS (
+                SELECT 
+                t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
+                FROM(
+                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+                from lotesdosers ld
+                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+                WHERE ld.loteslinha_id IS NOT NULL
+                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
+                ) t2
+                #GROUP BY group_id,artigo_cod,n_lote
+            ),
+            LOTES_AVAILABLE AS (
             select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
             FROM (
                 SELECT distinct
@@ -223,28 +279,28 @@ class LotesPickConsumer(WebsocketConsumer):
                 LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
                 WHERE DOSERS.status=1 #and (DOSERS.t_stamp<='2022-04-11 16:37:30')
             ) t
+            )
+            SELECT LD.group_id,LD.artigo_cod,
+            JSON_ARRAYAGG(d.doser) dosers,
+            JSON_ARRAYAGG(JSON_OBJECT('n_lote',LA.n_lote,'qty_lote',LA.qty_lote,'qty_lote_consumed',LA.qty_lote_consumed,'qty_lote_available',LA.qty_lote_available)) lotes
+            FROM JSON_TABLE(JSON_ARRAY('A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'),"$[*]" COLUMNS(doser VARCHAR(2) PATH "$")) d
+            LEFT JOIN LOTES_DOSERS_BY_LOTES LD on LD.doser=d.doser
+            LEFT JOIN LOTES_AVAILABLE LA ON LA.group_id = LD.group_id AND LA.loteslinha_id=LD.loteslinha_id
+            group by group_id,artigo_cod
+            ORDER BY LA.min_t_stamp DESC
          """),connection,{})['rows']
-        
+        print("-------------------")
+        print(rows)
         if len(rows)>0:
-            self.send(text_data=json.dumps({"rows":rows,"item":"lotesavailability"},default=str))
-
-    def loadDosersSets(self, data):
-        connection = connections["default"].cursor()
-        rows = db.executeSimpleList(lambda:(f"""		
-            SELECT * FROM sistema_dev.ig_doseadores order by ig_doseadores_ndx DESC LIMIT 1;
-         """),connection,{})['rows']
-        
-        if len(rows)>0:
-            self.send(text_data=json.dumps({"rows":rows,"item":"doserssets"},default=str))
-
-
+            self.send(text_data=json.dumps({"rows":rows,"item":"lotesdosers"},default=str))
 
     commands = {
+        #'loadlotesdosers':loadLotesDosers,
         'loadlotesdosers':loadLotesDosers,
         'loadinproduction':loadInProductionSettings,
         'loadbuffer':loadBuffer,
         'loadmatprimas':loadMatPrimas,
-        'loadlotesavailability':loadLotesAvailability,
+        #'loadlotesavailability':loadLotesAvailability,
         'loaddoserssets':loadDosersSets,
         'pick':getLote
     }

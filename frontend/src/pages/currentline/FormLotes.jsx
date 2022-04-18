@@ -6,13 +6,14 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { getSchema } from "utils/schemaValidator";
 import { groupBy } from "utils";
+import uuIdInt from "utils/uuIdInt";
 import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon, SelectDebounceField, AutoCompleteField } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import YScroll from "components/YScroll";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
-import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET, COLORS } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { SocketContext } from '../App';
 
@@ -217,8 +218,25 @@ const StyleLote = styled.div`
     margin-right:5px;
     padding:6px;
     position:relative;
-    width:180px;
+    width:135px;
 `;
+
+
+const StyleDoser = styled.div(
+    (props) => css`
+        ${props.enabled &&
+        css`
+            border-radius: 2px;
+            margin-right:2px;
+            padding:6px;
+            position:relative;
+            border:solid 1px ${props => props.qty > 0 ? "#1890ff" : "#a8071a"};
+            background-color:${props => props.qty > 0 ? "#e6f7ff" : "#cf1322"};
+            color:${props => props.qty > 0 ? "#000" : "#fff"};
+            width:130px;
+        `}
+    `
+);
 
 const Lote = ({ value }) => {
     return (
@@ -232,14 +250,14 @@ const Lote = ({ value }) => {
     );
 }
 
-const Doseador = ({ lotes, name, buffer, lotesAvailability }) => {
+const Doseador = ({ lotes, name, buffer, lotesAvailability, dosersSets }) => {
     const [artigo, setArtigo] = useState();
 
     useEffect(() => {
         if (lotes?.length > 0) {
             let ba = buffer.filter(v => v.ITMREF_0 == lotes[0].artigo_cod && v.LOT_0 == lotes[0].n_lote);
             if (ba.length > 0) {
-                setArtigo({ des: ba[0].ITMDES1_0, cod: ba[0].ITMREF_0 });
+                setArtigo({ des: ba[0].ITMDES1_0, cod: ba[0].ITMREF_0, group: lotes[0].group_id });
             }
         }
     }, [lotes]);
@@ -258,9 +276,14 @@ const Doseador = ({ lotes, name, buffer, lotesAvailability }) => {
     }
 
     return (
-        <tr>
-            <td rowSpan={1} style={{ border: "0px" }}><span style={{ fontWeight: 700, fontSize: "16px" }}>{name}</span></td>
-            {artigo && <td style={{ border: "1px solid rgba(0,0,0,.06)", backgroundColor: "#fafafa" }}>
+        <>
+            <td>
+                {name}
+            </td>
+
+            {/*         <tr>
+            <td rowSpan={1} style={{ width: "40px", border: "0px", textAlign: "center", backgroundColor: COLORS[(!artigo?.group) ? 0 : artigo.group % 10] }}><span style={{ fontWeight: 700, fontSize: "16px" }}>{name}</span></td>
+            {artigo && <td style={{ border: "1px solid rgba(0,0,0,.06)", backgroundColor: "#bae7ff" }}>
                 <div><span style={{ fontWeight: 700 }}>{artigo.des}</span></div>
                 <div><span style={{ fontWeight: 500 }}>{artigo.cod}</span></div>
             </td>
@@ -270,6 +293,9 @@ const Doseador = ({ lotes, name, buffer, lotesAvailability }) => {
                 <div><span style={{ fontWeight: 500 }}></span></div>
             </td>
             }
+            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_S`]}%</span></td>
+            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_P`]}%</span></td>
+            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_D`]}g/cm&#xB3;</span></td>
             <td>
                 <div style={{ display: "flex", flexDirection: "row" }}>
                     {lotes && lotes.map(v => {
@@ -277,13 +303,170 @@ const Doseador = ({ lotes, name, buffer, lotesAvailability }) => {
                     })}
                 </div>
             </td>
-        </tr>
+        </tr> */}
+
+        </>
+
 
 
 
     );
 }
 
+
+const Lotes = ({ index, lotes, lotesAvailability }) => {
+    return (
+        <td>
+            <StyleLote n={0/* parseFloat(value.qty_lote_available).toFixed(2) */}>
+                aaaaaa{index}
+                {/* <div>{value.n_lote}</div>
+            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
+                <div><span>{parseFloat(value.qty).toFixed(2)}</span> <span>{value.unit}</span></div>
+                <div><span style={{ color: parseFloat(value.qty_lote_available).toFixed(2) > 0 ? "green" : "red" }}>{parseFloat(value.qty_lote_available).toFixed(2)}</span> <span>{value.unit}</span></div>
+            </div> */}
+            </StyleLote>
+        </td>
+    );
+}
+
+const StyleTable = styled.table`
+    width:100%;
+    border-collapse: separate;
+    /*border-spacing: 0px 20px;*/
+
+    & th{
+        border: none;
+        padding-top:5px;
+    }
+
+    & td:first-child {
+        border:solid 1px #d9d9d9;
+        border-left-radius:2px;
+        border-right:0px;
+        width:1px;
+    }
+    & td:last-child {
+        border:solid 1px #d9d9d9;
+        border-right-radius:2px;
+        border-left:0px;
+        width: 100%;
+    }
+    & td{
+        padding:4px 2px 4px 2px;
+        border-top:solid 1px #d9d9d9;
+        border-bottom:solid 1px #d9d9d9;
+        width:1px;
+        background-color:#f5f5f5;
+    }
+`;
+
+const Group = ({ children }) => {
+    return (
+        <>
+            <tr>
+                {children}
+            </tr>
+        </>
+    );
+}
+
+const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
+    const [designacao, setDesignacao] = useState();
+
+    useEffect(() => {
+        if (artigo_cod) {
+            const artigo = buffer.find(v => v.ITMREF_0 === artigo_cod);
+            setDesignacao(artigo.ITMDES1_0);
+        }
+        else {
+            setDesignacao('');
+        }
+    }, [artigo_cod]);
+
+    return (
+        <tr>
+            <th colSpan={20} style={{ fontSize: "14px" }}>
+                <div>{designacao}</div>
+            </th>
+        </tr>
+    );
+}
+
+const Artigo = ({ artigo_cod, lotes, children }) => {
+    return (
+        <>
+            <td>
+                <div>{artigo_cod}</div>
+                {lotes && lotes.map(v => {
+                    return (<div key={v.n_lote}>
+                        <div>{v.n_lote}</div>
+                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{v.qty_lote}kg</div><div>{v.qty_lote_available}kg</div></div>}
+                    </div>);
+                })}
+            </td>
+        </>
+    );
+}
+
+const DOSERS = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']
+const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
+    //const [dosersList, setDosersList] = useState([]);
+    const [qty, setQty] = useState();
+    useEffect(() => {
+        console.log("-------------------------------------", lotes)
+        if (lotes) {
+            setQty(lotes.map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
+        }
+        else {
+            setQty(0);
+        }
+    }, [lotes]);
+    // useEffect(() => {
+    //     const notUsed = []
+    //     for (let dos of DOSERS) {
+    //         if (dosersSets[0][`${dos}_S`] === 0) {
+    //             notUsed.push(dos);
+    //         }
+    //     }
+    //     let d = [...new Set(JSON.parse(dosers.dosers))].filter((el) => !notUsed.includes(el));
+    //     setDosersList(d);
+    //     setQty(JSON.parse(dosers.lotes).map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
+    // }, [dosers.dosers]);
+    return (
+        <>
+
+            {[...Array(18)].map((x, i) =>
+                <React.Fragment key={`dl-${group_id}-${i}`}>
+                    <td>
+
+
+
+                        <StyleDoser enabled={(dosers && dosers.length > i)} qty={qty}>
+
+                            <div style={{ textAlign: "center", fontWeight: 700, fontSize: '14px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
+                            {(dosers && dosers.length > i) &&
+                                <div style={{ display: "flex", flexDirection: "row" }}>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_S`]}%</div>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_P`]}%</div>
+                                    <div style={{ width: "70px", textAlign: "center" }}>{dosersSets[0][`${dosers[i]}_D`]}g/cm&#xB3;</div>
+                                </div>
+                            }
+
+                        </StyleDoser>
+
+
+
+
+                        {/*                         <div style={{ ...((dosersList.length > i) ? { width: "130px", border: 'solid 1px red', padding: '2px' } : {}) }}>
+
+                        </div> */}
+                    </td>
+                </React.Fragment>
+            )}
+
+        </>
+    );
+}
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
@@ -292,7 +475,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
-    const [matPrimasLookup, setMatPrimasLookup] = useState([]);
+    //const [matPrimasLookup, setMatPrimasLookup] = useState([]);
     const extrusoraRef = useRef();
     const [inputRef, setInputFocus] = useFocus();
     const [extrusora, setExtrusora] = useState('A');
@@ -300,7 +483,19 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [settings, setSettings] = useState(null);
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
-    const [lotesAvailability, setLotesAvailability] = useState(null);
+
+    const [dosers, setDosers] = useState({});
+    const [lotes, setLotes] = useState({});
+    const [groups, setGroups] = useState([]);
+    const [lin, setLin] = useState([]);
+    const [lout, setLout] = useState([]);
+    const [touched, setTouched] = useState(false);
+
+
+
+
+    //const [lotesAvailability, setLotesAvailability] = useState(null);
+    const [transformedData, setTransformedData] = useState({});
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/lotespick`, {
         onOpen: () => console.log(`Connected to Web Socket`),
@@ -312,16 +507,17 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     useEffect(() => {
         const cancelFetch = cancelToken();
         (async () => {
-            setMatPrimasLookup(await loadMateriasPrimasLookup({ token: cancelFetch }));
+            //setMatPrimasLookup(await loadMateriasPrimasLookup({ token: cancelFetch }));
             (setFormTitle) && setFormTitle({ title: `Lotes de Matéria Prima` });
+            form.setFieldsValue({ in: [], out: [] });
             setLoading(false);
         })();
         return (() => cancelFetch.cancel("Form Lotes Cancelled"));
     }, []);
 
-    useEffect(() => {
-        console.log("MATERIAS PRIMAS---", matPrimasLookup)
-    }, [matPrimasLookup]);
+    /*     useEffect(() => {
+            console.log("MATERIAS PRIMAS---", matPrimasLookup)
+        }, [matPrimasLookup]); */
 
     useEffect(() => {
         (async () => {
@@ -331,13 +527,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     useEffect(() => {
         (async () => {
-            sendJsonMessage({ cmd: 'loadlotesavailability', value: {} });
+            sendJsonMessage({ cmd: 'loadlotesdosers', value: {} });
         })();
-    }, [dataSocket?.availability]);
+    }, [dataSocket?.availability, dataSocket?.dosers]);
 
     useEffect(() => {
         (async () => {
-            console.log("################entreii")
             sendJsonMessage({ cmd: 'loaddoserssets', value: {} });
         })();
     }, [dataSocket?.doserssets]);
@@ -349,12 +544,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     // }, [dataSocket?.inproduction]);
 
     useEffect(() => {
-        (async () => {
-            sendJsonMessage({ cmd: 'loadlotesdosers', value: {} });
-        })();
-    }, [dataSocket?.dosers]);
-
-    useEffect(() => {
         if (lastJsonMessage) {
             if (lastJsonMessage.item === "buffer") {
                 setBuffer([...lastJsonMessage.rows]);
@@ -364,21 +553,40 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             } else if (lastJsonMessage.item === "lotesdosers") {
                 console.log("------>LOTESDOSERS<-----", lastJsonMessage.rows[0])
                 setLotesDosers([...lastJsonMessage.rows]);
-            } else if (lastJsonMessage.item === "lotesavailability") {
-                console.log("------>LOTESAVAILABILITY<-----", lastJsonMessage.rows)
-                setLotesAvailability([...lastJsonMessage.rows]);
             } else if (lastJsonMessage.item === "doserssets") {
                 console.log("------>DOSERS SETS<-----", lastJsonMessage.rows)
-                setDosersSets({...lastJsonMessage.rows});
+                setDosersSets({ ...lastJsonMessage.rows });
             }
         }
     }, [lastJsonMessage]);
 
     useEffect(() => {
+        if (lotesDosers && dosersSets) {
+            const notUsed = []
+            for (let dos of DOSERS) {
+                if (dosersSets[0][`${dos}_S`] === 0) {
+                    notUsed.push(dos);
+                }
+            }
+            if (!touched) {
+                let d = {};
+                let l = {};
+                let g = [];
+                for (let ld of lotesDosers) {
+                    g.push({ group_id: ld.group_id, artigo_cod: ld.artigo_cod });
+                    d = { ...d, [ld.group_id]: { artigo_cod: ld.artigo_cod, dosers: [...new Set(JSON.parse(ld.dosers))].filter((el) => !notUsed.includes(el)).sort() } };
+                    let _lt = JSON.parse(ld.lotes);
+                    l = { ...l, [ld.group_id]: { artigo_cod: ld.artigo_cod, lotes: _lt.filter((e, i) => _lt.findIndex(a => a.n_lote === e.n_lote) === i).filter((v, i) => v.qty_lote_available > 0 || i == 0) } };
+                }
+                console.log("ALTERADOOOOOO")
+                setGroups(g);
+                setDosers(d);
+                setLotes(l);
+            }
+        }
+    }, [lotesDosers, dosersSets]);
 
-        console.log("aaaaaa lotes dosers", lotesDosers);
-
-    }, [lotesDosers]);
+    useEffect(()=>{console.log("aaaaaaaaaaaaaaaaaaaa")},[lotes,dosers,groups]);
 
     const onValuesChange = (changedValues) => {
         console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
@@ -386,6 +594,21 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     const onFinish = async (values) => {
+
+
+        console.log("--------LOTES--", lotes);
+        console.log("--------DOSERS--", dosers);
+        console.log("--------GROUPS--", groups);
+        console.log("--------LOTESDOSERS--", lotesDosers);
+
+        const status = { error: [], warning: [], info: [], success: [] };
+        const response = await fetchPost({ url: `${API_URL}/pick/`, parameters: { lotes, dosers, groups } });
+        setTouched(false);
+        //setResultMessage(response.data);
+        //setFormStatus(status);
+
+        console.log("###################--", response.data, "-----", status);
+
         /* const status = { error: [], warning: [], info: [], success: [] };
         const v = schema().validate(values, { abortEarly: false });
         if (!v.error) {
@@ -435,17 +658,60 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const onPick = (e, a, b) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
             if (inputRef.current.value !== '') {
+                if (!touched) { setTouched(true); }
                 e.preventDefault();
                 const v = inputRef.current.value.toUpperCase();
-                if (v === 'A1' | v === 'A2' | v === 'A3' | v === 'A4' | v === 'A5' | v === 'A6' | v === 'B1' | v === 'B2' | v === 'B3' | v === 'B4' | v === 'B5' | v === 'B6' | v === 'C1' | v === 'C2' | v === 'C3' | v === 'C4' | v === 'C5' | v === 'C6') {
+                console.log(buffer);
+                if (DOSERS.includes(v)) {
                     //Source / Type
                     form.setFieldsValue({ source: v });
                     inputRef.current.value = '';
                 } else {
+                    //RVMAX0863000012;VM6202V21092802AB5033;650.00
+                    //RAAOX0000000080;A211593;550.00
+                    //RVMAX0862000013;VM6102V21080201AB5064;650.00
+                    //RKRTG0910000069;22094728;10.00
                     let fData = form.getFieldsValue(true);
+                    let picked = false;
                     if (fData.source) {
-                        let ba = buffer.filter(v => v.ITMREF_0 == artigo_cod && v.LOT_0 == n_lote);
-                        console.log("PICKED", ba)
+                        const pickData = v.split(';');
+                        const _dosers = { ...dosers };
+                        for (const k in _dosers) {
+                            if (_dosers[k].artigo_cod === pickData[0]) {
+                                picked = true;
+                                if (!_dosers[k].dosers.includes(fData.source)) {
+                                    _dosers[k].dosers.push(fData.source);
+                                }
+                            } else {
+                                _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
+                            }
+                        }
+                        if (!picked) {
+                            let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                            if (bufArtigo?.ITMREF_0) {
+                                const _lotes = { ...lotes };
+                                for (const k in _dosers) {
+                                    _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
+                                }
+                                const generator = uuIdInt(0);
+                                const _uid = generator.uuid();
+                                _dosers[`${_uid}`] = {
+                                    artigo_cod: bufArtigo.ITMREF_0,
+                                    dosers: [fData.source]
+                                };
+                                _lotes[`${_uid}`] = {
+                                    artigo_cod: bufArtigo.ITMREF_0,
+                                    lotes: [{ n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
+                                };
+                                console.log("##################-", _lotes);
+                                setGroups(prev => [...prev, { group_id: `${_uid}`, artigo_cod: bufArtigo.ITMREF_0 }]);
+                                setLotes(_lotes);
+                            }
+
+                        }
+                        setDosers(_dosers);
+
+                        console.log("PICKED", lotes, _dosers)
                     }
 
                 }
@@ -539,27 +805,27 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </FieldSet>
 
                         <YScroll>
-                            <table cellPadding={2} cellSpacing={1} style={{ borderCollapse: "separate" }}>
+                            <StyleTable cellPadding={2} cellSpacing={0}>
                                 <tbody>
-                                    {lotesDosers && lotesDosers.map(v => {
+                                    {(groups && dosersSets) && groups.map((v, i) => {
+                                        return (
+                                            <React.Fragment key={`grp-${v.group_id}`}>
+                                                <ArtigoDesignacao artigo_cod={v.artigo_cod} buffer={buffer} />
+                                                <Group>
+                                                    <Artigo artigo_cod={v.artigo_cod} lotes={lotes[v.group_id]?.lotes}></Artigo>
+                                                    <Dosers group_id={v.group_id} dosers={dosers[v.group_id]?.dosers} lotes={lotes[v.group_id]?.lotes} dosersSets={dosersSets} />
+                                                    <td></td>
+                                                </Group>
 
-                                        return <Doseador key={`d-${v.doser}`} lotes={JSON.parse(v.lotes)} name={v.doser} buffer={buffer} lotesAvailability={lotesAvailability} />
-
+                                            </React.Fragment>
+                                        );
                                     })}
-                                    {/* <FieldSet layout="horizontal" margin={false}>
-                                <FieldSet layout="vertical" split={2} margin={false}>
-                                    <Extrusora id='A' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
-                                </FieldSet>
-                                <FieldSet layout="vertical" split={2} margin={false}>
-                                    <Extrusora id='B' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
-                                    <Extrusora id='C' form={form} extrusoraRef={extrusoraRef} matPrimasLookup={matPrimasLookup} />
-                                </FieldSet>
-                            </FieldSet> */}
+
                                 </tbody>
-                            </table>
+                            </StyleTable>
                         </YScroll>
 
-
+                        <FieldItem wide={16} label={{ enabled: false }}><Button onClick={onFinish}>Confirmar</Button></FieldItem>
                     </FormLayout>
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
