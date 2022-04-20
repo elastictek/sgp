@@ -645,44 +645,49 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     let fData = form.getFieldsValue(true);
                     let picked = false;
                     if (fData.source) {
-                        const pickData = v.split(';');
-                        const _dosers = { ...dosers };
-                        for (const k in _dosers) {
-                            if (_dosers[k].artigo_cod === pickData[0]) {
-                                picked = true;
-                                if (!_dosers[k].dosers.includes(fData.source)) {
-                                    _dosers[k].dosers.push(fData.source);
-                                }
-                            } else {
-                                _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
-                            }
+                        let pickData = v.split(';');
+                        if (pickData.length < 2) {
+                            pickData = v.split('#');
                         }
-                        if (!picked) {
-                            let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
-                            if (bufArtigo?.ITMREF_0) {
-                                const _lotes = { ...lotes };
-                                for (const k in _dosers) {
+                        if (pickData.length > 1) {
+                            const _dosers = { ...dosers };
+                            for (const k in _dosers) {
+                                if (_dosers[k].artigo_cod === pickData[0]) {
+                                    picked = true;
+                                    if (!_dosers[k].dosers.includes(fData.source)) {
+                                        _dosers[k].dosers.push(fData.source);
+                                    }
+                                } else {
                                     _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
                                 }
-                                const generator = uuIdInt(0);
-                                const _uid = generator.uuid();
-                                _dosers[`${_uid}`] = {
-                                    artigo_cod: bufArtigo.ITMREF_0,
-                                    dosers: [fData.source]
-                                };
-                                _lotes[`${_uid}`] = {
-                                    artigo_cod: bufArtigo.ITMREF_0,
-                                    lotes: [{ n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
-                                };
-                                console.log("##################-", _lotes);
-                                setGroups(prev => [...prev, { group_id: `${_uid}`, artigo_cod: bufArtigo.ITMREF_0 }]);
-                                setLotes(_lotes);
                             }
+                            if (!picked) {
+                                let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                                if (bufArtigo?.ITMREF_0) {
+                                    const _lotes = { ...lotes };
+                                    for (const k in _dosers) {
+                                        _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
+                                    }
+                                    const generator = uuIdInt(0);
+                                    const _uid = generator.uuid();
+                                    _dosers[`${_uid}`] = {
+                                        artigo_cod: bufArtigo.ITMREF_0,
+                                        dosers: [fData.source]
+                                    };
+                                    _lotes[`${_uid}`] = {
+                                        artigo_cod: bufArtigo.ITMREF_0,
+                                        lotes: [{ n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
+                                    };
+                                    console.log("##################-", _lotes);
+                                    setGroups(prev => [...prev, { group_id: `${_uid}`, artigo_cod: bufArtigo.ITMREF_0 }]);
+                                    setLotes(_lotes);
+                                    form.setFieldsValue({ source: '' });
+                                }
 
+                            }
+                            setDosers(_dosers);
                         }
-                        setDosers(_dosers);
                         inputRef.current.value = '';
-                        console.log("PICKED", lotes, _dosers)
                     }
 
                 }
@@ -767,17 +772,20 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
-                        <FieldSet wide={16} margin={false} field={{ wide: [3, 3, 6, 1, 1, 1, 1] }}>
+                        <FieldSet wide={16} margin={false} field={{ wide: [3, 6, 7] }}>
                             <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}>
                                 <Input size="small" />
                                 {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
                             </Field>
                             <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
-                            <FieldItem label={{ enabled: false }}></FieldItem>
-                            <FieldItem style={{ minWidth: "80px", maxWidth: "80px" }} label={{ enabled: false }}><ConfirmButton disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton></FieldItem>
-                            <FieldItem style={{ minWidth: "80px", maxWidth: "80px" }} label={{ enabled: false }}><Button disabled={!touched} onClick={onFinish}>Cancelar</Button></FieldItem>
-                            <FieldItem style={{ minWidth: "125px", maxWidth: "125px" }} label={{ enabled: false }}><Button disabled={Object.keys(dosers).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button></FieldItem>
-                            <FieldItem style={{ minWidth: "125px", maxWidth: "125px" }} label={{ enabled: false }}><Button disabled={Object.keys(lotes).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button></FieldItem>
+                            <FieldItem label={{ enabled: false }}>
+                                <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
+                                    <ConfirmButton style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
+                                    <Button style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Cancelar</Button>
+                                    <Button style={{marginRight:"3px"}} disabled={Object.keys(dosers).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    <Button disabled={Object.keys(lotes).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
+                                </div>
+                            </FieldItem>
                         </FieldSet>
 
                         <YScroll>
