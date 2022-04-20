@@ -11,6 +11,7 @@ import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectFi
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import YScroll from "components/YScroll";
+import XScroll from "components/XScroll";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET, COLORS } from 'config';
@@ -18,7 +19,7 @@ import useWebSocket from 'react-use-websocket';
 import { SocketContext } from '../App';
 import ResponsiveModal from "components/ResponsiveModal";
 import TagButton from "components/TagButton";
-import { F } from 'ramda';
+
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -71,6 +72,7 @@ const StyleDoser = styled.div(
             background-color:${props => props.qty > 0 ? "#e6f7ff" : "#cf1322"};
             color:${props => props.qty > 0 ? "#000" : "#fff"};
             width:130px;
+            height:48px;
         `}
     `
 );
@@ -169,7 +171,6 @@ const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
     const onFinish = () => {
         setSubmitting(true);
         (async () => {
-            console.log("SUBMITTING", parameters, form.getFieldValue("dosers").map(v=>v.value));
             const response = await fetchPost({ url: `${API_URL}/saidadoser/`, parameters: { dosers: form.getFieldValue("dosers") } });
             if (response.data.status !== "error") {
                 onCancel();
@@ -197,10 +198,9 @@ const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
     </div>);
 }
 
-const StyleTable = styled.table`
+/* const StyleTable = styled.table`
     width:100%;
     border-collapse: separate;
-    /*border-spacing: 0px 20px;*/
 
     & th{
         border: none;
@@ -226,19 +226,57 @@ const StyleTable = styled.table`
         width:1px;
         background-color:#f5f5f5;
     }
+`; */
+
+const StyleTable = styled.table`
+    width:100%;
+    border-collapse: separate;
+    & td{
+        display: block;
+        width:100vw;
+    }
+    /*border-spacing: 0px 20px;*/
 `;
 
-const Group = ({ children }) => {
+/* const Group = ({ children }) => {
     return (
         <>
             <tr>
-                {children}
+                <td>
+                    {children}
+                </td>
             </tr>
         </>
+    );
+} */
+
+const Group = ({ children }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", marginBottom: "10px", border: "solid 1px #d9d9d9", borderRadius: "2px", background: "#f5f5f5", padding: "3px" }}>{children}</div>
     );
 }
 
 const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
+    const [designacao, setDesignacao] = useState();
+
+    useEffect(() => {
+        if (artigo_cod) {
+            const artigo = buffer.find(v => v.ITMREF_0 === artigo_cod);
+            setDesignacao(artigo.ITMDES1_0);
+        }
+        else {
+            setDesignacao('');
+        }
+    }, [artigo_cod]);
+
+    return (
+        <div style={{ width: "100%", fontSize: "14px", fontWeight: 700 }}>
+            {designacao}
+        </div>
+    );
+}
+
+/* const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
     const [designacao, setDesignacao] = useState();
 
     useEffect(() => {
@@ -258,13 +296,12 @@ const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
             </th>
         </tr>
     );
-}
+} */
 
-const Artigo = ({ artigo_cod, lotes, children }) => {
+/* const Artigo = ({ artigo_cod, lotes, children }) => {
     return (
         <>
             <td>
-                {/* <div>{artigo_cod}</div> */}
                 {lotes && lotes.map(v => {
                     return (<div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={v.n_lote}>
                         <div>{v.n_lote}</div>
@@ -274,10 +311,24 @@ const Artigo = ({ artigo_cod, lotes, children }) => {
             </td>
         </>
     );
+} */
+
+const Artigo = ({ artigo_cod, lotes, children }) => {
+    return (
+        <div style={{ minWidth: "180px", maxWidth: "180px", marginRight: "10px" }}>
+            {lotes && lotes.map(v => {
+                return (v.n_lote == null) ? <div key={v.n_lote} /> :
+                    <div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={v.n_lote}>
+                        <div>{v.n_lote}</div>
+                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>}
+                    </div>;
+            })}
+        </div>
+    );
 }
 
 const DOSERS = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']
-const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
+/* const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
     const [qty, setQty] = useState();
     useEffect(() => {
         if (lotes) {
@@ -307,6 +358,38 @@ const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
                 </React.Fragment>
             )}
         </>
+    );
+} */
+const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
+    const [qty, setQty] = useState();
+    useEffect(() => {
+        if (lotes) {
+            setQty(lotes.map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
+        }
+        else {
+            setQty(0);
+        }
+    }, [lotes]);
+
+    return (
+        <XScroll style={{ alignSelf: "center" }}>
+            <div style={{ display: "flex", flexDirection: "row", alignSelf: "center" }}>
+                {[...Array(18)].map((x, i) =>
+                    <React.Fragment key={`dl-${group_id}-${i}`}>
+                        <StyleDoser enabled={(dosers && dosers.length > i)} qty={qty}>
+                            <div style={{ textAlign: "center", fontWeight: 700, fontSize: '14px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
+                            {(dosers && dosers.length > i) &&
+                                <div style={{ display: "flex", flexDirection: "row" }}>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_S`]}%</div>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_P`]}%</div>
+                                    <div style={{ width: "70px", textAlign: "center" }}>{dosersSets[0][`${dosers[i]}_D`]}g/cm&#xB3;</div>
+                                </div>
+                            }
+                        </StyleDoser>
+                    </React.Fragment>
+                )}
+            </div>
+        </XScroll>
     );
 }
 
@@ -684,7 +767,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
-                        {console.log("lotesssssss", lotes)}
                         <FieldSet wide={16} margin={false} field={{ wide: [3, 3, 6, 1, 1, 1, 1] }}>
                             <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}>
                                 <Input size="small" />
@@ -699,24 +781,21 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </FieldSet>
 
                         <YScroll>
-                            <StyleTable cellPadding={2} cellSpacing={0}>
-                                <tbody>
-                                    {(groups && dosersSets) && groups.map((v, i) => {
-                                        return (
-                                            <React.Fragment key={`grp-${v.group_id}`}>
-                                                <ArtigoDesignacao artigo_cod={v.artigo_cod} buffer={buffer} />
-                                                <Group>
-                                                    <Artigo artigo_cod={v.artigo_cod} lotes={lotes[v.group_id]?.lotes}></Artigo>
-                                                    <Dosers group_id={v.group_id} dosers={dosers[v.group_id]?.dosers} lotes={lotes[v.group_id]?.lotes} dosersSets={dosersSets} />
-                                                    <td></td>
-                                                </Group>
+                            {(groups && dosersSets) && groups.map((v, i) => {
+                                return (
+                                    <React.Fragment key={`grp-${v.group_id}`}>
+                                        <ArtigoDesignacao artigo_cod={v.artigo_cod} buffer={buffer} />
+                                        <Group>
+                                            <Artigo artigo_cod={v.artigo_cod} lotes={lotes[v.group_id]?.lotes}></Artigo>
 
-                                            </React.Fragment>
-                                        );
-                                    })}
+                                            <Dosers group_id={v.group_id} dosers={dosers[v.group_id]?.dosers} lotes={lotes[v.group_id]?.lotes} dosersSets={dosersSets} />
 
-                                </tbody>
-                            </StyleTable>
+                                        </Group>
+
+                                    </React.Fragment>
+                                );
+                            })}
+
                         </YScroll>
 
 
