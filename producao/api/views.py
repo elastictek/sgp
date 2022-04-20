@@ -3545,12 +3545,43 @@ def SaidaMP(request, format=None):
 @permission_classes([IsAuthenticated])
 def SaidaDoser(request, format=None):
     data = request.data['parameters']
+    
+    def filterMultiSelect(data,name,field):
+        f = Filters(data)
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+        
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+            fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where()
+        f.value()
+        return f
+    fdosers = filterMultiSelect(data,'dosers','doser')
+
+    def getLastMoves(filter,cursor):
+        return db.executeSimpleList(lambda: (f"""
+            select * from (
+                SELECT 
+                id,type_mov,
+                doser,
+                MAX(id) over (partition by doser) mx_id
+                FROM sistema_dev.lotesdosers {filter.text} and `status`= 1
+            ) t WHERE mx_id=id and type_mov<>'OUT'
+        """), cursor, filter.parameters)['rows']
+
+
 
 
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                pass
+                lmoves = getLastMoves(fdosers,cursor)
+                for item in lmoves:
+                    dml = db.dml(TypeDml.INSERT,{"doser":item['doser'],"status":1,"qty_consumed":0,"type_mov":"OUT"},"lotesdosers",None,None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)    
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})

@@ -24,206 +24,40 @@ const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
 
-const setId = (id) => {
-    if (id) {
-        return { key: "update", values: { id } };
-    }
-    return { key: "insert", values: {} };
-}
-
-const loadMateriasPrimasLookup = async ({ token }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, sort: [], cancelToken: token });
-    return rows;
-}
-
-const loadLotesLookup = async (lote_cod, item_cod) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/loteslookup/`, pagination: { limit: 10 }, filter: { item_cod, loc_cod: 'BUFFER', lote_cod: `%${lote_cod}%` } });
-    return rows;
-}
-
-const TitleExtrusora = ({ value, extrusoraRef }) => {
-    const show = useRef(false);
-    useEffect(() => {
-        if (extrusoraRef.current !== value) {
-            show.current = true;
-            console.log("extrusora", value, extrusoraRef.current)
-            extrusoraRef.current = value;
-        } else {
-            show.current = false;
-        }
-    }, []);
-
-    return (
-        <>
-            {show.current &&
-                <FieldSet wide={16} layout="horizontal" margin={false} field={{ wide: [8, 1.5, 1.5, 5], label: { enabled: false } }}>
-                    <FieldItem><div style={{ fontWeight: 700/* , fontSize: "12px" */ }}>Extrusora {value}</div></FieldItem>
-                    <FieldItem><div style={{ textAlign: "right" }}>Qtd. Requerida</div></FieldItem>
-                    <FieldItem><div style={{ textAlign: "right" }}>Qtd. Disponível</div></FieldItem>
-                    <FieldItem><div style={{ textAlign: "center" }}>Lotes</div></FieldItem>
-                </FieldSet>
-            }
-        </>
-    )
-}
-
 const useFocus = () => {
     const htmlElRef = useRef(null)
     const setFocus = () => { htmlElRef.current && htmlElRef.current.focus() }
     return [htmlElRef, setFocus]
 }
 
-const StyledButtonMenu = styled(Button).withConfig({
-    shouldForwardProp: (prop) => !['first'].includes(prop)
-})`
-    border-radius:0px !important;
-    ${({ first = false }) => !first && css`border-left: 0px !important;`}
-`;
-
-const MenuExtrusoras = ({ setExtrusora, extrusora, setFocus }) => {
-    const onSelect = (v) => {
-        if (extrusora === 'BC' && v === 'BC') {
-            setExtrusora('C');
-        } else if (extrusora === 'BC' && v === 'C') {
-            setExtrusora('B');
-        } else {
-            setExtrusora(v);
-        }
-        setFocus();
-    }
-    const type = (v) => {
-        if (v.includes(extrusora)) {
-            return 'primary';
-        }
-        return 'default';
-    }
+const Wnd = ({ parameters, setParameters }) => {
+    const { modalProps = {} } = parameters;
+    const iref = useRef();
 
     return (
-        <>
-            <StyledButtonMenu size='small' onClick={() => onSelect('A')} first={true} type={type(['A'])}>Extrusora A</StyledButtonMenu>
-            <StyledButtonMenu size='small' onClick={() => onSelect('BC')} type={type(['B', 'BC'])}>Extrusora B</StyledButtonMenu>
-            <StyledButtonMenu size='small' onClick={() => onSelect('C')} type={type(['C', 'BC'])}>Extrusora C</StyledButtonMenu>
-        </>
+        <ResponsiveModal
+            title={parameters.title}
+            visible={parameters.visible}
+            centered
+            responsive
+            onCancel={setParameters}
+            maskClosable={true}
+            destroyOnClose={true}
+            fullWidthDevice={parameters.fullWidthDevice}
+            width={parameters.width}
+            height={parameters.height}
+            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
+            footer={<div ref={iref} id="wnd-wrapper" style={{ textAlign: 'right' }}></div>}
+            {...modalProps}
+        >
+            <YScroll>
+                {parameters.type == "saida_mp" && <Suspense fallback={<></>}><SaidaMP parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
+                {parameters.type == "saida_doseador" && <Suspense fallback={<></>}><SaidaDoser parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
+                {parameters.type == "reminder" && <Suspense fallback={<></>}><Reminder parameters={parameters} wndRef={iref} /></Suspense>}
+            </YScroll>
+        </ResponsiveModal>
     );
 }
-
-const XXXXExtrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
-    const name = `lotes${id}`;
-    return (
-        <Form.List name={name}>
-            {(fields, { add, remove, move }) => {
-                return (
-                    <>
-                        {fields.map((field, index) => (
-                            <React.Fragment key={field.key}>
-                                <TitleExtrusora extrusoraRef={extrusoraRef} value={form.getFieldValue(name)[field.name]['extrusora']} />
-                                {/* <FieldSet wide={8} layout="horizontal" margin={false} field={{ label: { enabled: false } }} style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }}> */}
-                                <FieldSet wide={16} margin={false}
-                                    /* style={{ ...(index % 2 == 0 && { backgroundColor: "#f5f5f5" }) }} */
-                                    field={{
-                                        label: { enabled: false },
-                                        style: { alignSelf: "center" },
-                                        wide: [1, 7, 1.5, 1.5, 5],
-                                        /* style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" } */
-                                    }}
-                                >
-                                    <Field name={[field.name, `mangueira`]} style={{ /* fontSize: "12px",  */backgroundColor: "#fff", alignSelf: "center" }}>
-                                        <SelectField tabIndex={1000} size="small" data={FORMULACAO_MANGUEIRAS[form.getFieldValue(name)[field.name]['extrusora']]} keyField="key" textField="key"
-                                            optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                        />
-                                    </Field>
-                                    <Field name={[field.name, `matprima_cod`]} forInput={false} style={{ fontWeight: 700, /* fontSize: "12px" */ alignSelf: "center" }}>
-                                        <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
-                                            optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                            showSearch
-                                            filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                                        />
-                                    </Field>
-                                    <FieldItem style={{ textAlign: "right", alignSelf: "center"/* , fontSize: "12px"  */ }}>
-                                        <b>{form.getFieldValue(name)[field.name].qty}</b> kg
-                                    </FieldItem>
-
-                                    <FieldItem style={{
-                                        textAlign: "right", alignSelf: "center", /* fontSize: "12px", */
-                                        ...form.getFieldValue(name)[field.name].qty <= form.getFieldValue(name)[field.name].qty_available && { color: "#237804" }
-                                    }}>
-                                        <b>{form.getFieldValue(name)[field.name].qty_available}</b> kg
-                                    </FieldItem>
-                                    <FieldItem style={{ alignSelf: "center", /* fontSize: "12px" */ }}>
-                                        <Space size={2} wrap={true}>
-                                            {form.getFieldValue(name)[field.name]?.lotes && form.getFieldValue(name)[field.name]?.lotes.map((v, idx) => {
-                                                return (<Tag style={{ /* fontSize: "11px", */ padding: "2px" }} closable key={`lot-${idx}`} color="orange">{v.lote} <b>{v.qty}</b> {v.unit.toLowerCase()}</Tag>);
-                                            })}
-                                        </Space>
-                                    </FieldItem>
-                                    {/* <Field name={[field.name, `lote_cod`]} required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false }}>
-                                                                                                                    <SelectDebounceField
-                                                            autoFocus={field.name == 0 ? true : false}
-                                                            tabIndex={0}
-                                                            defaultActiveFirstOption
-                                                            placeholder="Lote"
-                                                            size="small"
-                                                            keyField="LOT_0"
-                                                            textField="LOT_0"
-                                                            showSearch
-                                                            showArrow
-                                                            allowClear
-                                                            fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
-                                                        /> 
-                                                            <AutoCompleteField
-                                                                //autoFocus={field.name == 0 ? true : false}
-                                                                tabIndex={0}
-                                                                placeholder="Selecione o Lote"
-                                                                size="small"
-                                                                keyField="LOT_0"
-                                                                textField="LOT_0"
-                                                                dropdownMatchSelectWidth={250}
-                                                                allowClear
-                                                                backfill
-                                                                optionsRender={lotesRenderer}
-                                                                fetchOptions={(v) => loadLotesLookup(v, form.getFieldValue("formulacao")[field.name]['matprima_cod'])}
-                                                            />
-                                                        </Field> */}
-                                </FieldSet>
-                                {/*                                                         </FieldSet> */}
-                            </React.Fragment>
-                        ))}
-                    </>
-                );
-            }}
-        </Form.List>
-    );
-}
-
-const Extrusora = ({ extrusoraRef, form, id, matPrimasLookup }) => {
-    const name = `doseadores-${id}`;
-    return (
-        <Form.List name={name}>
-            {(fields, { add, remove, move }) => {
-                return (
-                    <>
-                        {fields.map((field, index) => (
-                            <React.Fragment key={field.key}>
-
-                            </React.Fragment>
-                        ))}
-                    </>
-                );
-            }}
-        </Form.List>
-    );
-}
-
-const StyleLote = styled.div`
-    border: ${props => props.n > 0 ? "solid 1px #1890ff" : "rgba(0, 0, 0, 0.06)"};
-    background-color: ${props => props.n > 0 ? "#e6f7ff" : "rgb(250,250,250)"};
-    border-radius: 2px;
-    margin-right:5px;
-    padding:6px;
-    position:relative;
-    width:135px;
-`;
-
 
 const StyleDoser = styled.div(
     (props) => css`
@@ -241,100 +75,6 @@ const StyleDoser = styled.div(
     `
 );
 
-const Lote = ({ value }) => {
-    return (
-        <StyleLote n={parseFloat(value.qty_lote_available).toFixed(2)}>
-            <div>{value.n_lote}</div>
-            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-                <div><span>{parseFloat(value.qty).toFixed(2)}</span> <span>{value.unit}</span></div>
-                <div><span style={{ color: parseFloat(value.qty_lote_available).toFixed(2) > 0 ? "green" : "red" }}>{parseFloat(value.qty_lote_available).toFixed(2)}</span> <span>{value.unit}</span></div>
-            </div>
-        </StyleLote>
-    );
-}
-
-const Doseador = ({ lotes, name, buffer, lotesAvailability, dosersSets }) => {
-    const [artigo, setArtigo] = useState();
-
-    useEffect(() => {
-        if (lotes?.length > 0) {
-            let ba = buffer.filter(v => v.ITMREF_0 == lotes[0].artigo_cod && v.LOT_0 == lotes[0].n_lote);
-            if (ba.length > 0) {
-                setArtigo({ des: ba[0].ITMDES1_0, cod: ba[0].ITMREF_0, group: lotes[0].group_id });
-            }
-        }
-    }, [lotes]);
-
-    const getBufferArtigo = (artigo_cod, n_lote) => {
-        let ba = buffer.filter(v => v.ITMREF_0 == artigo_cod && v.LOT_0 == n_lote);
-        let la = lotesAvailability.filter(v => v.artigo_cod == artigo_cod && v.n_lote == n_lote);
-        let lai = {}
-        if (la.length > 0) {
-            lai = { qty_lote_available: la[0].qty_lote_available, group_id: la[0].group_id };
-        }
-        if (ba.length > 0) {
-            return { qty: ba[0].QTYPCU_0, unit: ba[0].PCUORI_0, des: ba[0].ITMDES1_0, artigo_cod: artigo_cod, n_lote: n_lote, ...lai };
-        }
-        return {};
-    }
-
-    return (
-        <>
-            <td>
-                {name}
-            </td>
-
-            {/*         <tr>
-            <td rowSpan={1} style={{ width: "40px", border: "0px", textAlign: "center", backgroundColor: COLORS[(!artigo?.group) ? 0 : artigo.group % 10] }}><span style={{ fontWeight: 700, fontSize: "16px" }}>{name}</span></td>
-            {artigo && <td style={{ border: "1px solid rgba(0,0,0,.06)", backgroundColor: "#bae7ff" }}>
-                <div><span style={{ fontWeight: 700 }}>{artigo.des}</span></div>
-                <div><span style={{ fontWeight: 500 }}>{artigo.cod}</span></div>
-            </td>
-            }
-            {!artigo && <td style={{ border: "1px dashed rgba(0,0,0,.06)" }}>
-                <div><span style={{ fontWeight: 700 }}></span></div>
-                <div><span style={{ fontWeight: 500 }}></span></div>
-            </td>
-            }
-            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_S`]}%</span></td>
-            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_P`]}%</span></td>
-            <td><span style={{ fontWeight: 700 }}>{dosersSets[0][`${name}_D`]}g/cm&#xB3;</span></td>
-            <td>
-                <div style={{ display: "flex", flexDirection: "row" }}>
-                    {lotes && lotes.map(v => {
-                        return <Lote key={`ld-${name}-${v.n_lote}`} value={getBufferArtigo(v.artigo_cod, v.n_lote)} />
-                    })}
-                </div>
-            </td>
-        </tr> */}
-
-        </>
-
-
-
-
-    );
-}
-
-
-const Lotes = ({ index, lotes, lotesAvailability }) => {
-    return (
-        <td>
-            <StyleLote n={0/* parseFloat(value.qty_lote_available).toFixed(2) */}>
-                aaaaaa{index}
-                {/* <div>{value.n_lote}</div>
-            <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-                <div><span>{parseFloat(value.qty).toFixed(2)}</span> <span>{value.unit}</span></div>
-                <div><span style={{ color: parseFloat(value.qty_lote_available).toFixed(2) > 0 ? "green" : "red" }}>{parseFloat(value.qty_lote_available).toFixed(2)}</span> <span>{value.unit}</span></div>
-            </div> */}
-            </StyleLote>
-        </td>
-    );
-}
-
-
-
-
 const Reminder = ({ parameters }) => {
     useEffect(() => {
         parameters.form.setFieldsValue({ reminder: parameters.lote.qty_lote_available });
@@ -347,9 +87,6 @@ const Reminder = ({ parameters }) => {
         </Form>
     );
 }
-
-
-
 
 const SaidaMP = ({ parameters }) => {
     const { title, buffer } = parameters;
@@ -405,9 +142,10 @@ const SaidaMP = ({ parameters }) => {
     );
 }
 
-const SaidaDoser = ({ parameters, wndRef }) => {
+const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
     const { title } = parameters;
     const [form] = Form.useForm();
+    const [submitting, setSubmitting] = useState(false);
     const [dosers, setDosers] = useState([]);
 
     useEffect(() => {
@@ -425,20 +163,19 @@ const SaidaDoser = ({ parameters, wndRef }) => {
 
 
     const onCancel = () => {
-        //setModal(prev => ({ ...prev, visible: !prev.visible }))
+        setParameters(prev => ({ ...prev, visible: !prev.visible }))
     }
 
-    const onFinish = (lt) => {
-       // setSubmitting(true);
-
-/*         (async () => {
-            console.log("SUBMITTING", lt.artigo_cod, lt.n_lote, lt.qty_lote, lt, form.getFieldValue("reminder"));
-            const response = await fetchPost({ url: `${API_URL}/saidamp/`, parameters: { lote: lt, reminder: form.getFieldValue("reminder") } });
+    const onFinish = () => {
+        setSubmitting(true);
+        (async () => {
+            console.log("SUBMITTING", parameters, form.getFieldValue("dosers").map(v=>v.value));
+            const response = await fetchPost({ url: `${API_URL}/saidadoser/`, parameters: { dosers: form.getFieldValue("dosers") } });
             if (response.data.status !== "error") {
                 onCancel();
             }
             setSubmitting(false);
-        })(); */
+        })();
 
 
     }
@@ -451,44 +188,14 @@ const SaidaDoser = ({ parameters, wndRef }) => {
                 </FormLayout>
                 {wndRef && <Portal elId={wndRef.current}>
                     <Space>
-                        <Button type="primary" onClick={onFinish}>Registar</Button>
-                        <Button onClick={onCancel}>Cancelar</Button>
+                        <Button disabled={submitting} type="primary" onClick={onFinish}>Registar</Button>
+                        <Button disabled={submitting} onClick={onCancel}>Cancelar</Button>
                     </Space>
                 </Portal>}
             </Form>
         }
     </div>);
 }
-
-
-const Wnd = ({ parameters, setParameters }) => {
-    const { modalProps = {} } = parameters;
-    const iref = useRef();
-    return (
-        <ResponsiveModal
-            title={parameters.title}
-            visible={parameters.visible}
-            centered
-            responsive
-            onCancel={setParameters}
-            maskClosable={true}
-            destroyOnClose={true}
-            fullWidthDevice={parameters.fullWidthDevice}
-            width={parameters.width}
-            height={parameters.height}
-            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-            footer={<div ref={iref} id="wnd-wrapper" style={{ textAlign: 'right' }}></div>}
-            {...modalProps}
-        >
-            <YScroll>
-                {parameters.type == "saida_mp" && <Suspense fallback={<></>}><SaidaMP parameters={parameters} wndRef={iref} /></Suspense>}
-                {parameters.type == "saida_doseador" && <Suspense fallback={<></>}><SaidaDoser parameters={parameters} wndRef={iref} /></Suspense>}
-                {parameters.type == "reminder" && <Suspense fallback={<></>}><Reminder parameters={parameters} wndRef={iref} /></Suspense>}
-            </YScroll>
-        </ResponsiveModal>
-    );
-}
-
 
 const StyleTable = styled.table`
     width:100%;
@@ -571,10 +278,8 @@ const Artigo = ({ artigo_cod, lotes, children }) => {
 
 const DOSERS = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']
 const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
-    //const [dosersList, setDosersList] = useState([]);
     const [qty, setQty] = useState();
     useEffect(() => {
-        console.log("-------------------------------------", lotes)
         if (lotes) {
             setQty(lotes.map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
         }
@@ -582,28 +287,13 @@ const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
             setQty(0);
         }
     }, [lotes]);
-    // useEffect(() => {
-    //     const notUsed = []
-    //     for (let dos of DOSERS) {
-    //         if (dosersSets[0][`${dos}_S`] === 0) {
-    //             notUsed.push(dos);
-    //         }
-    //     }
-    //     let d = [...new Set(JSON.parse(dosers.dosers))].filter((el) => !notUsed.includes(el));
-    //     setDosersList(d);
-    //     setQty(JSON.parse(dosers.lotes).map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
-    // }, [dosers.dosers]);
+
     return (
         <>
-
             {[...Array(18)].map((x, i) =>
                 <React.Fragment key={`dl-${group_id}-${i}`}>
                     <td>
-
-
-
                         <StyleDoser enabled={(dosers && dosers.length > i)} qty={qty}>
-
                             <div style={{ textAlign: "center", fontWeight: 700, fontSize: '14px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
                             {(dosers && dosers.length > i) &&
                                 <div style={{ display: "flex", flexDirection: "row" }}>
@@ -612,19 +302,10 @@ const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
                                     <div style={{ width: "70px", textAlign: "center" }}>{dosersSets[0][`${dosers[i]}_D`]}g/cm&#xB3;</div>
                                 </div>
                             }
-
                         </StyleDoser>
-
-
-
-
-                        {/*                         <div style={{ ...((dosersList.length > i) ? { width: "130px", border: 'solid 1px red', padding: '2px' } : {}) }}>
-
-                        </div> */}
                     </td>
                 </React.Fragment>
             )}
-
         </>
     );
 }
