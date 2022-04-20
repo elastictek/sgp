@@ -782,8 +782,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
                                     <ConfirmButton style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
                                     <Button style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Cancelar</Button>
-                                    <Button style={{marginRight:"3px"}} disabled={Object.keys(dosers).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
-                                    <Button disabled={Object.keys(lotes).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
+                                    <Button style={{marginRight:"3px"}} disabled={Object.keys(dosers).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    <Button disabled={Object.keys(lotes).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>
                         </FieldSet>
@@ -799,7 +799,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                             <Dosers group_id={v.group_id} dosers={dosers[v.group_id]?.dosers} lotes={lotes[v.group_id]?.lotes} dosersSets={dosersSets} />
 
                                         </Group>
-
                                     </React.Fragment>
                                 );
                             })}
