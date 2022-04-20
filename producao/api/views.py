@@ -3377,8 +3377,6 @@ def ValidarBobinagem(request, format=None):
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
 def Pick(request, format=None):
     data = request.data['parameters']
     print("#######################")
@@ -3495,7 +3493,7 @@ def Pick(request, format=None):
                     if (item['mov']=='IN'):
                         print(item)
                         if item['id'] is None:
-                            dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"`group`":item["group_id"],"qty_lote":item["qty_lote"],"qty_consumed":0},"loteslinha",None,None,False)
+                            dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"`group`":item["group_id"],"qty_lote":item["qty_lote"]},"loteslinha",None,None,False)
                             db.execute(dml.statement, cursor, dml.parameters)
                             linhaId = cursor.lastrowid
                             dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
