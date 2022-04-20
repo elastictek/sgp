@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import Joi from 'joi';
@@ -7,7 +7,7 @@ import { API_URL } from "config";
 import { getSchema } from "utils/schemaValidator";
 import { groupBy } from "utils";
 import uuIdInt from "utils/uuIdInt";
-import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon, SelectDebounceField, AutoCompleteField } from "components/formLayout";
+import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon, SelectDebounceField, AutoCompleteField, SelectMultiField } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import YScroll from "components/YScroll";
@@ -16,6 +16,9 @@ import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Swit
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET, COLORS } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { SocketContext } from '../App';
+import ResponsiveModal from "components/ResponsiveModal";
+import TagButton from "components/TagButton";
+import { F } from 'ramda';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -227,8 +230,8 @@ const StyleDoser = styled.div(
         ${props.enabled &&
         css`
             border-radius: 2px;
-            margin-right:2px;
-            padding:6px;
+            margin-right:1px;
+            padding:1px;
             position:relative;
             border:solid 1px ${props => props.qty > 0 ? "#1890ff" : "#a8071a"};
             background-color:${props => props.qty > 0 ? "#e6f7ff" : "#cf1322"};
@@ -329,6 +332,164 @@ const Lotes = ({ index, lotes, lotesAvailability }) => {
     );
 }
 
+
+
+
+const Reminder = ({ parameters }) => {
+    useEffect(() => {
+        parameters.form.setFieldsValue({ reminder: parameters.lote.qty_lote_available });
+    }, [])
+    return (
+        <Form form={parameters.form}>
+            <FormLayout id="f-reminder">
+                <Field name="reminder" label={{ enabled: false, width: "60px", text: "Resto", pos: "left" }}><InputNumber precision={2} addonAfter="kg" size="small" min={0} max={parameters.lote.qty_lote} /></Field>
+            </FormLayout>
+        </Form>
+    );
+}
+
+
+
+
+const SaidaMP = ({ parameters }) => {
+    const { title, buffer } = parameters;
+    const [lotes, setLotes] = useState([]);
+    const [modal, setModal] = useState({ visible: false });
+    const [form] = Form.useForm();
+    const [submitting, setSubmitting] = useState(false);
+    const [lote, setLote] = useState();
+
+    const onCancel = () => {
+        setModal(prev => ({ ...prev, visible: !prev.visible }))
+    }
+
+    const onFinish = (lt) => {
+        setSubmitting(true);
+
+        (async () => {
+            console.log("SUBMITTING", lt.artigo_cod, lt.n_lote, lt.qty_lote, lt, form.getFieldValue("reminder"));
+            const response = await fetchPost({ url: `${API_URL}/saidamp/`, parameters: { lote: lt, reminder: form.getFieldValue("reminder") } });
+            if (response.data.status !== "error") {
+                onCancel();
+            }
+            setSubmitting(false);
+        })();
+
+
+    }
+
+    const onModal = (lt) => {
+        const modalProps = { footer: <div><Button type="primary" onClick={() => onFinish(lt)}>Registar</Button><Button onClick={onCancel}>Cancelar</Button></div> }
+        setModal(prev => ({ ...prev, lote: lt, visible: !prev.visible, width: "300px", height: "200px", fullWidthDevice: 1, title: "Resto de Matéria Prima", type: "reminder", form, modalProps }));
+    }
+
+    useEffect(() => {
+        const lt = [];
+        for (const [key, value] of Object.entries(parameters.lotes)) {
+            if (key !== 'null') {
+                const artigo = buffer.find(v => v.ITMREF_0 === value.artigo_cod);
+                for (const v of value.lotes) {
+                    lt.push({ artigo_cod: value.artigo_cod, artigo_des: artigo.ITMDES1_0, ...v });
+                }
+            }
+        }
+        setLotes(lt);
+    }, [parameters.lotes]);
+    return (
+        <div style={{ textAlign: "center" }}>
+            <Wnd parameters={modal} setParameters={onModal} />
+            {lotes.map((v, i) => {
+                return <div key={`lt-${i}`}><TagButton onClick={() => onModal(v)} style={{ height: "40px", marginBottom: "5px", width: "100%", textAlign: "center" }}>{v.artigo_des} <b>{v.n_lote}</b><br /> {parseFloat(v.qty_lote_available).toFixed(2)}kg </TagButton></div>
+            })}
+        </div>
+    );
+}
+
+const SaidaDoser = ({ parameters, wndRef }) => {
+    const { title } = parameters;
+    const [form] = Form.useForm();
+    const [dosers, setDosers] = useState([]);
+
+    useEffect(() => {
+        let d = [];
+        for (const [key, value] of Object.entries(parameters.dosers)) {
+            if (key !== 'null') {
+                for (let v of value.dosers) {
+                    d.push({ value: v });
+                }
+            }
+        }
+        setDosers(d);
+
+    }, [parameters.dosers]);
+
+
+    const onCancel = () => {
+        //setModal(prev => ({ ...prev, visible: !prev.visible }))
+    }
+
+    const onFinish = (lt) => {
+       // setSubmitting(true);
+
+/*         (async () => {
+            console.log("SUBMITTING", lt.artigo_cod, lt.n_lote, lt.qty_lote, lt, form.getFieldValue("reminder"));
+            const response = await fetchPost({ url: `${API_URL}/saidamp/`, parameters: { lote: lt, reminder: form.getFieldValue("reminder") } });
+            if (response.data.status !== "error") {
+                onCancel();
+            }
+            setSubmitting(false);
+        })(); */
+
+
+    }
+
+    return (<div>
+        {dosers.length > 0 &&
+            <Form form={form}>
+                <FormLayout id="f-dosers">
+                    <Field name="dosers" label={{ enabled: false, width: "60px", text: "Resto", pos: "left" }}><SelectMultiField allowClear size="small" options={dosers} /></Field>
+                </FormLayout>
+                {wndRef && <Portal elId={wndRef.current}>
+                    <Space>
+                        <Button type="primary" onClick={onFinish}>Registar</Button>
+                        <Button onClick={onCancel}>Cancelar</Button>
+                    </Space>
+                </Portal>}
+            </Form>
+        }
+    </div>);
+}
+
+
+const Wnd = ({ parameters, setParameters }) => {
+    const { modalProps = {} } = parameters;
+    const iref = useRef();
+    return (
+        <ResponsiveModal
+            title={parameters.title}
+            visible={parameters.visible}
+            centered
+            responsive
+            onCancel={setParameters}
+            maskClosable={true}
+            destroyOnClose={true}
+            fullWidthDevice={parameters.fullWidthDevice}
+            width={parameters.width}
+            height={parameters.height}
+            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
+            footer={<div ref={iref} id="wnd-wrapper" style={{ textAlign: 'right' }}></div>}
+            {...modalProps}
+        >
+            <YScroll>
+                {parameters.type == "saida_mp" && <Suspense fallback={<></>}><SaidaMP parameters={parameters} wndRef={iref} /></Suspense>}
+                {parameters.type == "saida_doseador" && <Suspense fallback={<></>}><SaidaDoser parameters={parameters} wndRef={iref} /></Suspense>}
+                {parameters.type == "reminder" && <Suspense fallback={<></>}><Reminder parameters={parameters} wndRef={iref} /></Suspense>}
+            </YScroll>
+        </ResponsiveModal>
+    );
+}
+
+
 const StyleTable = styled.table`
     width:100%;
     border-collapse: separate;
@@ -396,11 +557,11 @@ const Artigo = ({ artigo_cod, lotes, children }) => {
     return (
         <>
             <td>
-                <div>{artigo_cod}</div>
+                {/* <div>{artigo_cod}</div> */}
                 {lotes && lotes.map(v => {
-                    return (<div key={v.n_lote}>
+                    return (<div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={v.n_lote}>
                         <div>{v.n_lote}</div>
-                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{v.qty_lote}kg</div><div>{v.qty_lote_available}kg</div></div>}
+                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>}
                     </div>);
                 })}
             </td>
@@ -468,6 +629,28 @@ const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
     );
 }
 
+const ConfirmButton = styled(Button)`
+  &&& {
+    background-color: #389e0d;
+    border-color: #389e0d;
+    color:#fff;
+    &[disabled]{
+        color: rgba(0, 0, 0, 0.25);
+        border-color: #d9d9d9;
+        background: #f5f5f5;
+    }
+    &[disabled]:hover{
+        color: rgba(0, 0, 0, 0.25);
+        border-color: #d9d9d9;
+        background: #f5f5f5;
+    }
+    &:hover{
+        background-color: #52c41a;
+        border-color: #52c41a;
+    }
+  }
+`;
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -490,6 +673,31 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [lin, setLin] = useState([]);
     const [lout, setLout] = useState([]);
     const [touched, setTouched] = useState(false);
+
+    const [modalParameters, setModalParameters] = useState({ visible: false });
+    const onModalParameters = (parameters) => {
+        if (!parameters) {
+            setModalParameters(prev => ({ ...prev, visible: !prev.visible }));
+        } else {
+            switch (parameters.type) {
+                case "saida_mp":
+                    parameters = { ...parameters, width: "500px", height: "500px", fullWidthDevice: 1, title: "Saída de Matéria Prima", lotes, buffer };
+                    break;
+                case "saida_doseador":
+                    parameters = { ...parameters, width: "500px", height: "180px", fullWidthDevice: 1, title: "Saída de Doseador", dosers };
+                    break;
+            }
+            setModalParameters(prev => ({ visible: !prev.visible, ...parameters }));
+        }
+    }
+
+    useEffect(() => {
+        if (modalParameters.type === "saida_mp") {
+            setModalParameters(prev => ({ ...prev, lotes }));
+        } else if (modalParameters.type === "saida_doseador") {
+            setModalParameters(prev => ({ ...prev, dosers }));
+        }
+    }, [lotes, dosers])
 
 
 
@@ -578,7 +786,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     let _lt = JSON.parse(ld.lotes);
                     l = { ...l, [ld.group_id]: { artigo_cod: ld.artigo_cod, lotes: _lt.filter((e, i) => _lt.findIndex(a => a.n_lote === e.n_lote) === i).filter((v, i) => v.qty_lote_available > 0 || i == 0) } };
                 }
-                console.log("ALTERADOOOOOO")
                 setGroups(g);
                 setDosers(d);
                 setLotes(l);
@@ -586,7 +793,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         }
     }, [lotesDosers, dosersSets]);
 
-    useEffect(()=>{console.log("aaaaaaaaaaaaaaaaaaaa")},[lotes,dosers,groups]);
+    useEffect(() => { }, [lotes, dosers, groups]);
 
     const onValuesChange = (changedValues) => {
         console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
@@ -710,7 +917,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
                         }
                         setDosers(_dosers);
-
+                        inputRef.current.value = '';
                         console.log("PICKED", lotes, _dosers)
                     }
 
@@ -764,6 +971,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     return (
         <>
+            <Wnd parameters={modalParameters} setParameters={onModalParameters} />
             <ResultMessage
                 result={resultMessage}
                 successButtonOK={<Button type="primary" key="goto-of" onClick={onSuccessOK}>Lotes de Matérias Primas</Button>}
@@ -795,13 +1003,18 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
-
-                        <FieldSet wide={16} margin={false} field={{ wide: [4, 6, 6] }}>
+                        {console.log("lotesssssss", lotes)}
+                        <FieldSet wide={16} margin={false} field={{ wide: [3, 3, 6, 1, 1, 1, 1] }}>
                             <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}>
                                 <Input size="small" />
                                 {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
                             </Field>
                             <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                            <FieldItem label={{ enabled: false }}></FieldItem>
+                            <FieldItem style={{ minWidth: "80px", maxWidth: "80px" }} label={{ enabled: false }}><ConfirmButton disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton></FieldItem>
+                            <FieldItem style={{ minWidth: "80px", maxWidth: "80px" }} label={{ enabled: false }}><Button disabled={!touched} onClick={onFinish}>Cancelar</Button></FieldItem>
+                            <FieldItem style={{ minWidth: "125px", maxWidth: "125px" }} label={{ enabled: false }}><Button disabled={Object.keys(dosers).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button></FieldItem>
+                            <FieldItem style={{ minWidth: "125px", maxWidth: "125px" }} label={{ enabled: false }}><Button disabled={Object.keys(lotes).length === 0} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button></FieldItem>
                         </FieldSet>
 
                         <YScroll>
@@ -825,7 +1038,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             </StyleTable>
                         </YScroll>
 
-                        <FieldItem wide={16} label={{ enabled: false }}><Button onClick={onFinish}>Confirmar</Button></FieldItem>
+
                     </FormLayout>
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>

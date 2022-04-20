@@ -21,6 +21,7 @@ export default ({ children, footer = null, ...props }) => {
 
     useLayoutEffect(() => {
         if (responsive) {
+            console.log("####$#%%%-",ctx.deviceW,fullWidthDevice)
             if (ctx.deviceW <= fullWidthDevice) {
                 setRespWidth("100%");
             } else {

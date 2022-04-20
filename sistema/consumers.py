@@ -62,11 +62,18 @@ def executeAlerts():
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f"""		
-                select SUM(t.qty_lote_available) available FROM (
-                SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
-                FROM loteslinha LOTES
-                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
-                WHERE DOSERS.status=1
+            select SUM(t.qty_lote_available) available FROM (
+            SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
+            FROM (
+            select * from(
+                select
+                l.*,
+                l.t_stamp lt_stamp ,MAX(l.t_stamp) over (PARTITION BY l.artigo_cod,l.n_lote) max_t_stamp
+                FROM loteslinha l
+            ) t WHERE max_t_stamp=lt_stamp and `status`=1 and `group` is not null
+            ) LOTES
+            LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+            WHERE DOSERS.status=1
             ) t
          """), cursor, {})['rows']
     dataLotesAvailability = json.dumps(rows[0],default=str)
@@ -248,7 +255,14 @@ class LotesPickConsumer(WebsocketConsumer):
             LOTES_DOSERS_BY_DOSER AS (
                 SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
                 select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from lotesdosers ld
+                from (
+                    select * from(
+                    select
+                    DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
+                    FROM loteslinha LOTES
+                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                ) t WHERE max_t_stamp=lt_stamp and `status`=1
+                ) ld
                 JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
                 WHERE ld.loteslinha_id IS NOT NULL
                 GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
@@ -260,25 +274,35 @@ class LotesPickConsumer(WebsocketConsumer):
                 t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
                 FROM(
                 select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from lotesdosers ld
+                from (
+                    select * from(
+                        select
+                        DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
+                        FROM loteslinha LOTES
+                        LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                    ) t WHERE max_t_stamp=lt_stamp and `status`=1
+                ) ld
                 JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
                 WHERE ld.loteslinha_id IS NOT NULL
                 GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
                 ) t2
                 #GROUP BY group_id,artigo_cod,n_lote
             ),
-            LOTES_AVAILABLE AS (
-            select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
-            FROM (
-                SELECT distinct
-                DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,
-                SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
-                qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
-                MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp #FIFO DATE TO ORDER ASC
-                FROM loteslinha LOTES
-                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
-                WHERE DOSERS.status=1 #and (DOSERS.t_stamp<='2022-04-11 16:37:30')
-            ) t
+            LOTES_AVAILABLE AS(
+                select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+                FROM (
+                    select distinct * from (
+                    SELECT 
+                    DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
+                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
+                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
+                    MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
+                    MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
+                    FROM loteslinha LOTES
+                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                    WHERE LOTES.status=1 
+                    ) t WHERE  max_t_stamp=t_stamp and `status`=1
+                ) t
             )
             SELECT LD.group_id,LD.artigo_cod,
             JSON_ARRAYAGG(d.doser) dosers,

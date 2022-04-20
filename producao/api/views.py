@@ -3508,6 +3508,53 @@ def Pick(request, format=None):
         return Response({"status": "error", "title": f"Erro ao Registar!"})
 
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaidaMP(request, format=None):
+    data = request.data['parameters']
+    
+    def getLastMov(data,cursor):
+        print(data)
+        f = Filters({"artigo_cod": data['artigo_cod'], "n_lote":data["n_lote"], "status":1})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'artigo_cod = :artigo_cod', True)
+        f.add(f'n_lote = :n_lote', True)
+        f.add(f'status = :status', True)
+        f.value("and")   
+        return db.executeSimpleList(lambda: (f'SELECT type_mov FROM loteslinha {f.text} order by id desc limit 1'), cursor, f.parameters)['rows'][0]['type_mov']
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                lastmov = getLastMov(data['lote'],cursor)
+                if lastmov=='IN':
+                    dml = db.dml(TypeDml.INSERT,{"artigo_cod":data['lote']["artigo_cod"],"n_lote":data['lote']["n_lote"],"qty_reminder":data["reminder"],"status":1,"type_mov":"OUT"},"loteslinha",None,None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Registar!"})
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaidaDoser(request, format=None):
+    data = request.data['parameters']
+
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                pass
+        return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Registar!"})
+
 #endregion
 
 

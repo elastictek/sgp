@@ -126,6 +126,8 @@ urlpatterns = [
 
     #PICAGEM LOTES
     re_path(r'^pick/$', views.Pick),
+    re_path(r'^saidamp/$', views.SaidaMP),
+    re_path(r'^saidadoser/$', views.SaidaDoser),
     #PICAGEM LOTES
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
