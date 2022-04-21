@@ -35,10 +35,10 @@ const StyledToolbar = styled.div`
             border: 1px solid #dee2e6;
             border-radius: 3px;
         ` : `
-            padding-top: 5px;
-            padding-bottom: 5px;
-            padding-left: 24px;
-            padding-right: 24px;
+            padding-top: 1px;
+            padding-bottom: 1px;
+            padding-left: 1px;
+            padding-right: 1px;
         `
     }};
 

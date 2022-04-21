@@ -214,6 +214,8 @@ def OFabricoList(request, format=None):
             return 'and (sgp_op.status=3 and sgp_top.id is not null)'
         elif v['fofstatus'] == 'Finalizada':
             return 'and (sgp_op.status=9 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'IN(2,3)':
+            return 'and (sgp_op.status in (2,3) and sgp_top.id is not null)'
         return ''
 
     connection = connections[connGatewayName].cursor()

@@ -54,20 +54,16 @@ const HeaderA = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid 
             style={{ backgroundColor: `${backgroundColor}`, color: `${color}`, fontWeight: 500, textAlign: "center" }}
             field={{ noItemWrap: true, label: { enabled: false } }}
         >
-
-
-            <FieldSet wide={11} margin={false}
+            <FieldSet wide={7} margin={false}
                 field={{
-                    wide: [3, 11, 2],
+                    wide: [13, 3],
                     style: { border, borderLeft: "none", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }
                 }}
             >
-                <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} >Doseador</Field>
-                <Field>Matérias Primas</Field>
+                <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} >Matérias Primas</Field>
                 <Field >Densidade</Field>
             </FieldSet>
-
-            <FieldSet margin={false} wide={5} layout="vertical"
+            <FieldSet margin={false} wide={9} layout="vertical"
                 field={{ style: { border, borderLeft: "none" } }}
             >
                 <FieldSet field={{ wide: [16] }} margin={false}>
@@ -75,12 +71,12 @@ const HeaderA = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid 
                 </FieldSet>
                 <FieldSet margin={false}
                     field={{
-                        wide: [/* 3,  4,*/ 5, 5, 5, 1/* , 2, 3 */],
+                        wide: [/* 3,  */4, 4, 4, 3, 1/* , 2, 3 */],
                         style: { fontSize: "10px", border, borderLeft: "none", borderTop: "none", fontWeight: 400 }
                     }}
                 >
                     {/* <Field>Doseador</Field> */}
-                    {/* <Field>%A</Field> */}
+                    <Field>%A</Field>
                     <Field>Arranque</Field>
                     <Field>Tolerância</Field>
                     <Field>% Global</Field>
@@ -99,26 +95,25 @@ const HeaderBC = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid
             field={{ noItemWrap: true, label: { enabled: false } }}
             style={{ fontSize: "10px", backgroundColor: `${backgroundColor}`, color: `${color}`, textAlign: "center" }}
         >
-            <FieldSet wide={11} margin={false}
+            <FieldSet wide={7} margin={false}
                 field={{
-                    wide: [3, 11, 2],
+                    wide: [13, 3],
                     style: { border, borderLeft: "none" }
                 }}
             >
-                <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} ></Field>
-                <Field></Field>
+                <Field style={{ border }}></Field>
                 <Field></Field>
             </FieldSet>
-            <FieldSet margin={false} wide={5}>
+            <FieldSet margin={false} wide={9}>
                 <FieldSet margin={false}
                     field={{
-                        wide: [/* 3,  4,*/ 5, 5, 5, 1/*  2, 3 */],
+                        wide: [/* 3,  */4, 4, 4, 3, 1/*  2, 3 */],
                         label: { enabled: false },
                         style: { border, borderLeft: "none" }
                     }}
                 >
                     {/* <Field>Doseador</Field> */}
-                    {/*                     <Field>%B e C</Field> */}
+                    <Field>%B e C</Field>
                     <Field>Arranque</Field>
                     <Field>Tolerância</Field>
                     <Field>% Global</Field>
@@ -202,10 +197,10 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                         {fields.map((field, index) => (
 
                             <FieldSet key={field.key} wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
-                                <FieldSet wide={11} margin={false}
+                                <FieldSet wide={7} margin={false}
                                     field={{
-                                        wide: (id === "BC") ? [1.5, 1.5, 11, 2] : [3, 11, 2],
-                                        style: { border: "solid 1px #fff", borderLeft: "none" }
+                                        wide: [13, 3],
+                                        style: { border: "solid 1px #fff", borderLeft: "none", fontWeight: "10px" }
                                     }}
                                 >
                                     {/*                                     <Field name={[field.name, `mangueira_${id}`]}>
@@ -213,17 +208,7 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                         />
                                     </Field> */}
-                                    <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "B" : id}`]}>
-                                        <SelectField style={{fontWeight:700, color:"#096dd9"}} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "B" : id]} keyField="key" textField="key"
-                                            optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
-                                        />
-                                    </Field>
-                                    {id === "BC" && <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "C" : id}`]}>
-                                        <SelectField  style={{fontWeight:700, color:"#096dd9"}} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "C" : id]} keyField="key" textField="key"
-                                            optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
-                                        />
-                                    </Field>}
-                                    <Field name={[field.name, `matprima_cod_${id}`]} style={{ fontWeight: 700, border: "solid 1px #fff", borderLeft: "none" }}>
+                                    <Field name={[field.name, `matprima_cod_${id}`]}>
                                         <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
                                             optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                             showSearch
@@ -232,16 +217,16 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                                     </Field>
                                     <Field name={[field.name, `densidade_${id}`]}><InputNumber controls={false} size="small" min={0} max={50} precision={3} step={.025} /></Field>
                                 </FieldSet>
-                                <FieldSet margin={false} wide={5}>
+                                <FieldSet margin={false} wide={9}>
                                     <FieldSet margin={false}
                                         field={{
-                                            wide: [/* 3,  4,*/ 5, 5, 5, 1/* , 2, 3 */],
+                                            wide: [/* 3,  */4, 4, 4, 3, 1/* , 2, 3 */],
                                             label: { enabled: false },
                                             style: { border: "solid 1px #fff", borderLeft: "none", borderTop: "none" }
                                         }}
                                     >
                                         {/* <Field name={[field.name, "doseador"]}><Input size="small" /></Field> */}
-                                        {/*                                         <Field></Field> */}
+                                        <Field></Field>
                                         <Field name={[field.name, `arranque_${id}`]}><InputNumber size="small" controls={false} {...(forInput && { addonBefore: <IconButton onClick={() => adjust(index, id)}><MdAdjust /></IconButton> })} addonAfter={<b>%</b>} precision={2} min={0} max={100} /></Field>
                                         <Field name={[field.name, `tolerancia_${id}`]}><InputNumber size="small" controls={false} addonBefore="&plusmn;" addonAfter={<b>%</b>} maxLength={4} precision={1} min={0} max={100} /></Field>
                                         <Field style={{ textAlign: "center", border: "solid 1px #fff", borderLeft: "none", borderTop: "none" }}>{append(form.getFieldValue([name, field.name, "global"])?.toFixed(2), '%')}{/* <InputNumber size="small" addonAfter={<b>%</b>} maxLength={4} min={0} max={100} /> */}</Field>
@@ -255,8 +240,8 @@ const SubFormMateriasPrimas = ({ form, forInput, name, matPrimasLookup, sum = fa
                         ))}
                         {(sum && form.getFieldValue("totalGlobal") > 0) &&
                             <FieldSet wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
-                                <FieldSet wide={11} margin={false} />
-                                <FieldSet margin={false} wide={5}>
+                                <FieldSet wide={7} margin={false} />
+                                <FieldSet margin={false} wide={9}>
                                     <FieldSet margin={false}
                                         field={{
                                             wide: [12, 4],
@@ -317,8 +302,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [formulacoes, setFormulacoes] = useState([]);
 
     const transformData = ({ items, formulacao }) => {
-        let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, doseador_A:v.doseador_A, removeCtrl: true }));
-        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, doseador_B:v.doseador_B, doseador_C:v.doseador_C, removeCtrl: true }));
+        let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, removeCtrl: true }));
+        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, removeCtrl: true }));
         const cliente_cod = { key: record.formulacao?.cliente_cod, value: formulacao?.cliente_cod, label: formulacao?.cliente_nome };
         return { ...formulacao, cliente_cod, formu_materiasprimas_A, formu_materiasprimas_BC, totalGlobal: 100 };
     }
@@ -330,15 +315,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             }
             if (operation.key === "update") {
                 const { items, produto_id } = record.formulacao;
-                if (setFormTitle) {
-                    if (record.feature === "dosers_change") {
-                        setFormTitle({ title: `Definir Doseadores` });
-                    } else if (record.feature === "formulacao_change") {
-                        setFormTitle({ title: `Alterar Formulação` });
-                    } else {
-                        setFormTitle({ title: `Formulação` });
-                    }
-                }
+                (setFormTitle) && setFormTitle({ title: `Formulação` });
                 setFormulacoes(await loadFormulacaoesLookup({ produto_id, token }));
                 form.setFieldsValue(transformData({ items, formulacao: record?.formulacao }));
             }
@@ -400,7 +377,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 items.push({
                     tolerancia: v.tolerancia_A, arranque: v.arranque_A, vglobal: v.global,
                     densidade: v.densidade_A, extrusora: 'A', matprima_cod: v.matprima_cod_A,
-                    doseador_A:v.doseador_A,
                     matprima_des
                 });
             }
@@ -409,7 +385,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 items.push({
                     tolerancia: v.tolerancia_BC, arranque: v.arranque_BC, vglobal: v.global,
                     densidade: v.densidade_BC, extrusora: 'BC', matprima_cod: v.matprima_cod_BC,
-                    doseador_B:v.doseador_B,doseador_C:v.doseador_C,
                     matprima_des
                 });
             }
@@ -456,7 +431,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         id="LAY-FORMULACAO-UPSERT"
                         guides={guides}
                         layout="vertical"
-                        style={{ width: "100%", padding: "0px", /* height: "65vh" *//* , minWidth: "700px" */ }}
+                        style={{ width: "100%", padding: "0px", height: "65vh"/* , minWidth: "700px" */ }}
                         schema={schema}
                         field={{
                             forInput,

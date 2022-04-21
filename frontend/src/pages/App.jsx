@@ -13,8 +13,10 @@ import useWindowDimensions from 'utils/useWindowDimensions';
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
 const OFabricoList = lazy(() => import('./OFabricoList'));
+const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
+const FormLotes = lazy(() => import('./currentline/FormLotes'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
@@ -38,6 +40,9 @@ const RenderRouter = () => {
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
+                { path: "pick", element: <Suspense fallback={<Spin />}><FormLotes /></Suspense> },
+                { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
+                
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
         },

@@ -31,7 +31,8 @@ urlpatterns = [
     re_path(r'^$', TemplateView.as_view(template_name='index.html'), name='home'),
     re_path(r'^api/', include("producao.api.urls", namespace='api')),
     re_path(r'^plan-api/', include("planeamento.api.urls", namespace='plan-api')),
-    path(r'app/', include('frontend.urls'))
+    re_path(r'app/.*$', include('frontend.urls')),
+    #re_path(r'app/ofabricolist/$', include('frontend.urls'))
 ]
 
 if local:

@@ -434,8 +434,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [dosers, setDosers] = useState({});
     const [lotes, setLotes] = useState({});
     const [groups, setGroups] = useState([]);
-    const [lin, setLin] = useState([]);
-    const [lout, setLout] = useState([]);
     const [touched, setTouched] = useState(false);
 
     const [modalParameters, setModalParameters] = useState({ visible: false });
@@ -481,7 +479,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         (async () => {
             //setMatPrimasLookup(await loadMateriasPrimasLookup({ token: cancelFetch }));
             (setFormTitle) && setFormTitle({ title: `Lotes de Matéria Prima` });
-            form.setFieldsValue({ in: [], out: [] });
             setLoading(false);
         })();
         return (() => cancelFetch.cancel("Form Lotes Cancelled"));
@@ -562,6 +559,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const onValuesChange = (changedValues) => {
         console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
         setChangedValues(changedValues);
+    }
+
+    const onCancel = ()=>{
+        setTouched(false);
+        sendJsonMessage({ cmd: 'loadlotesdosers', value: {} });
     }
 
     const onFinish = async (values) => {
@@ -652,7 +654,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         if (pickData.length > 1) {
                             const _dosers = { ...dosers };
                             for (const k in _dosers) {
-                                if (_dosers[k].artigo_cod === pickData[0]) {
+                                if (_dosers[k].artigo_cod === pickData[0] && _dosers[k].dosers.includes(fData.source)) {
                                     picked = true;
                                     if (!_dosers[k].dosers.includes(fData.source)) {
                                         _dosers[k].dosers.push(fData.source);
@@ -678,12 +680,25 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                         artigo_cod: bufArtigo.ITMREF_0,
                                         lotes: [{ n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
                                     };
-                                    console.log("##################-", _lotes);
                                     setGroups(prev => [...prev, { group_id: `${_uid}`, artigo_cod: bufArtigo.ITMREF_0 }]);
                                     setLotes(_lotes);
                                     form.setFieldsValue({ source: '' });
                                 }
 
+                            } else {
+                                let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                                if (bufArtigo?.ITMREF_0) {
+                                    const _lotes = { ...lotes };
+                                    for (const k in _lotes) {
+                                        if (_lotes[k].artigo_cod == pickData[0]) {
+                                            if (!lotes[k].lotes.find(v => v.n_lote === pickData[1])) {
+                                                _lotes[k].lotes = [...lotes[k].lotes, { n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
+                                            }
+                                        }
+                                    }
+                                    setLotes(_lotes);
+                                    form.setFieldsValue({ source: '' });
+                                }
                             }
                             setDosers(_dosers);
                         }
@@ -780,9 +795,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                             <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
                             <FieldItem label={{ enabled: false }}>
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
-                                    <ConfirmButton style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
-                                    <Button style={{marginRight:"3px"}} disabled={!touched} onClick={onFinish}>Cancelar</Button>
-                                    <Button style={{marginRight:"3px"}} disabled={Object.keys(dosers).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
+                                    <Button style={{ marginRight: "3px" }} disabled={!touched} onClick={onCancel}>Cancelar</Button>
+                                    <Button style={{ marginRight: "3px" }} disabled={Object.keys(dosers).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
                                     <Button disabled={Object.keys(lotes).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>
