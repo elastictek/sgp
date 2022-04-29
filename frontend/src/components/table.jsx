@@ -161,9 +161,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
 
     const css = classNames(className, { [classes.stripRows]: stripRows, [classes.darkHeader]: darkHeader });
 
-
-
-    const onTableChange = (pagination, filters, sorter, { action }) => {
+     const onTableChange = (pagination, filters, sorter, { action }) => {
         switch (action) {
             case "sort":
                 dataAPI.addSort(sorter);

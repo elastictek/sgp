@@ -720,7 +720,6 @@ export default () => {
         }, []); */
 
     useEffect(() => {
-        console.log("oiiiiiiiiiiiiiiiiiiiii", dataSocket)
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });

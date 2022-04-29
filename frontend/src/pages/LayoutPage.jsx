@@ -97,6 +97,9 @@ export default () => {
                     <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
                         <div onClick={() => onModalVisible(null, 'ofabricoshortlist', "formulation_change")}>Alterar Formulação</div>
                     </li>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                        <div onClick={() => navigate('/app/stocklist')}>Lotes Stock</div>
+                    </li>
                     {/*                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
                         <div onClick={() => navigate('/app/ordemfabrico/formdetails', { state: { id: 48 } })}>Form Ordem Fabrico</div>
                     </li> */}

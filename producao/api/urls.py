@@ -130,6 +130,10 @@ urlpatterns = [
     re_path(r'^saidadoser/$', views.SaidaDoser),
     #PICAGEM LOTES
 
+    #MATERIAS-PRIMAS
+    re_path(r'^stocklist/$', views.StockList),
+    #MATERIAS-PRIMAS
+
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 
 

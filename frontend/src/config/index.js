@@ -14,6 +14,8 @@ export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
+//DOSERS
+export const DOSERS = [{value:'A1'}, {value:'A2'}, {value:'A3'}, {value:'A4'}, {value:'A5'}, {value:'A6'}, {value:'B1'}, {value:'B2'}, {value:'B3'}, {value:'B4'}, {value:'B5'}, {value:'B6'}, {value:'C1'}, {value:'C2'}, {value:'C3'}, {value:'C4'}, {value:'C5'}, {value:'C6'}]
 //CORES
 export const COLORS = ["#d50329","#2fb48e","#8dbbca","#dfcc88","#9e4f36","#bc5fcb","#02b5f7","#f0cd48"];
 //ORDEM FABRICO TIPO ANEXOS

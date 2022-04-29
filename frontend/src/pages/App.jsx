@@ -1,5 +1,6 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
-import ReactDOM from "react-dom";
+//import ReactDOM from "react-dom";
+import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useMediaQuery } from 'react-responsive';
@@ -15,6 +16,7 @@ const SOrders = lazy(() => import('./SOrders'));
 const OFabricoList = lazy(() => import('./OFabricoList'));
 const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
+const StockList = lazy(() => import('./artigos/StockList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
 const FormLotes = lazy(() => import('./currentline/FormLotes'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
@@ -42,6 +44,7 @@ const RenderRouter = () => {
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
                 { path: "pick", element: <Suspense fallback={<Spin />}><FormLotes /></Suspense> },
                 { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
+                { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
                 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
@@ -140,6 +143,6 @@ const App = () => {
 export default App;
 
 const container = document.getElementById("app");
-//const root = createRoot(container);
-//root.render(<App />);
-ReactDOM.render(<App />, container);
+const root = ReactDOM.createRoot(container);
+root.render(<App />);
+//ReactDOM.render(<App />, container);

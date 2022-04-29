@@ -336,6 +336,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                                     rangedate: <RangeDateField allowClear {...field} />,
                                                     rangetime: <RangeTimeField allowClear {...field} />,
                                                     selectmulti: <SelectMultiField allowClear {...field} />,
+                                                    select: <SelectField allowClear {...field} />,
                                                     checkbox: <CheckboxField {...field}>{labelChk}</CheckboxField>
                                                 }[field?.type] || <Input style={{ ...itemWidth }} allowClear {...field} />
                                             }

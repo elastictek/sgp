@@ -163,7 +163,7 @@ class LotesPickConsumer(WebsocketConsumer):
     def loadBuffer(self, data):
         connection = connections[connGatewayName].cursor()
         rows = dbgw.executeSimpleList(lambda:(f"""		
-            SELECT ST."ITMREF_0", ST."UPDDATTIM_0",ST."LOT_0", ST."QTYPCU_0", ST."PCUORI_0",ST."LOC_0", mprima."ITMDES1_0"
+            SELECT ST."ROWID",ST."ITMREF_0", ST."UPDDATTIM_0",ST."LOT_0", ST."QTYPCU_0", ST."PCUORI_0",ST."LOC_0", mprima."ITMDES1_0"
             FROM "SAGE-PROD"."STOCK" ST
             JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
             Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER'
@@ -253,60 +253,60 @@ class LotesPickConsumer(WebsocketConsumer):
             ) t where t.max_id=id
             ),
             LOTES_DOSERS_BY_DOSER AS (
-                SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
-                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from (
-                    select * from(
+            SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'lote_id',lote_id,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
+            select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,lote_id,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+            from (
+                select * from(
+                select
+                DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
+                FROM loteslinha LOTES
+                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+            ) t WHERE max_t_stamp=lt_stamp and `status`=1
+            ) ld
+            JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+            WHERE ld.loteslinha_id IS NOT NULL
+            GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.lote_id,ld.n_lote,ld.loteslinha_id
+            ) t2
+            GROUP BY doser
+            ),
+            LOTES_DOSERS_BY_LOTES AS (
+            SELECT 
+            t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
+            FROM(
+            select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.lote_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
+            from (
+                select * from(
                     select
-                    DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
+                    DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
                     FROM loteslinha LOTES
                     LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
                 ) t WHERE max_t_stamp=lt_stamp and `status`=1
-                ) ld
-                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
-                WHERE ld.loteslinha_id IS NOT NULL
-                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
-                ) t2
-                GROUP BY doser
-            ),
-            LOTES_DOSERS_BY_LOTES AS (
-                SELECT 
-                t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
-                FROM(
-                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from (
-                    select * from(
-                        select
-                        DOSERS.*, LOTES.t_stamp lt_stamp ,MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
-                        FROM loteslinha LOTES
-                        LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
-                    ) t WHERE max_t_stamp=lt_stamp and `status`=1
-                ) ld
-                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
-                WHERE ld.loteslinha_id IS NOT NULL
-                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
-                ) t2
-                #GROUP BY group_id,artigo_cod,n_lote
+            ) ld
+            JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
+            WHERE ld.loteslinha_id IS NOT NULL
+            GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.lote_id,ld.n_lote,ld.loteslinha_id
+            ) t2
+            #GROUP BY group_id,artigo_cod,n_lote
             ),
             LOTES_AVAILABLE AS(
-                select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
-                FROM (
-                    select distinct * from (
-                    SELECT 
-                    DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
-                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
-                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
-                    MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
-                    MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp
-                    FROM loteslinha LOTES
-                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
-                    WHERE LOTES.status=1 
-                    ) t WHERE  max_t_stamp=t_stamp and `status`=1
-                ) t
+            select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+            FROM (
+                select distinct * from (
+                SELECT 
+                DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
+                SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_consumed,
+                qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_available,
+                MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
+                MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
+                FROM loteslinha LOTES
+                LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                WHERE LOTES.status=1 
+                ) t WHERE  max_t_stamp=t_stamp and `status`=1
+            ) t
             )
             SELECT LD.group_id,LD.artigo_cod,
             JSON_ARRAYAGG(d.doser) dosers,
-            JSON_ARRAYAGG(JSON_OBJECT('n_lote',LA.n_lote,'qty_lote',LA.qty_lote,'qty_lote_consumed',LA.qty_lote_consumed,'qty_lote_available',LA.qty_lote_available)) lotes
+            JSON_ARRAYAGG(JSON_OBJECT('lote_id',LA.lote_id,'n_lote',LA.n_lote,'qty_lote',LA.qty_lote,'qty_lote_consumed',LA.qty_lote_consumed,'qty_lote_available',LA.qty_lote_available)) lotes
             FROM JSON_TABLE(JSON_ARRAY('A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'),"$[*]" COLUMNS(doser VARCHAR(2) PATH "$")) d
             LEFT JOIN LOTES_DOSERS_BY_LOTES LD on LD.doser=d.doser
             LEFT JOIN LOTES_AVAILABLE LA ON LA.group_id = LD.group_id AND LA.loteslinha_id=LD.loteslinha_id

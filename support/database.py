@@ -202,13 +202,13 @@ class BaseSql:
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                print(f'SIMPLE LIST SQL--> {sql()}')
-                print(f'PARAMS--> {parameters}')
+                #print(f'SIMPLE LIST SQL--> {sql()}')
+                #print(f'PARAMS--> {parameters}')
                 cursor.execute(sql(), parameters)
                 rows = fetchall(cursor, ignore)
         else:
-            print(f'SIMPLE LIST SQL--> {sql()}')
-            print(f'PARAMS--> {parameters}')
+            #print(f'SIMPLE LIST SQL--> {sql()}')
+            #print(f'PARAMS--> {parameters}')
             connOrCursor.execute(sql(), parameters)
             rows = fetchall(connOrCursor, ignore)
         return {"rows": rows}
@@ -683,7 +683,7 @@ class Filters:
 
 def FiltersParser(data, fields={}, encloseColumns=True):
     filters, parameters = [], {}
-    pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)'
+    pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
     for key, f in data.items():
         if f == None:
             continue
@@ -697,7 +697,10 @@ def FiltersParser(data, fields={}, encloseColumns=True):
         op = (result.group(1) if not opNot else result.group(
             1)[1:]) if result else '='
         value = result.group(2) if result else f
-        if op == '==':
+        if op == '@:':
+            filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
+            parameters[f'auto_{key}'] = value
+        elif op == '==':
             filters.append(
                 f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
             parameters[f'auto_{key}'] = value

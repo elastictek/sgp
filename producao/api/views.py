@@ -372,8 +372,8 @@ def OFabricoList(request, format=None):
     #     """
     # ), connection, parameters, [])
 
-    ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM "SGP-DEV".planeamento_ordemproducao where id>679"""),connection,{})
-    print(f'----------------------{ret}')
+    #ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM "SGP-DEV".planeamento_ordemproducao where id>679"""),connection,{})
+    #print(f'----------------------{ret}')
     return Response(response)
 
 
@@ -565,6 +565,156 @@ def IgnorarOrdemFabrico(request, format=None):
         return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Ignorada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Ignorar Ordem de Fabrico!"})
+
+
+#region MATERIAS-PRIMAS
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def StockList(request, format=None):
+    connection = connections[connGatewayName].cursor()    
+    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        "qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['matprima_cod', 'matprima_des']}
+    }, False, "and" if f.hasFilters else False)    
+
+    def filterLocationMultiSelect(data,name,field):
+        f = Filters(data)
+        fP = {}
+        v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+        dt = [o['value'] for o in v]
+        value = 'in:' + ','.join(f"{w}" for w in dt)
+        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ST.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value()
+        return f
+    
+    def filterDosersMultiSelect(data,name,hasFilters):
+        v = data[name] if name in data else []
+        dt = [o['value'] for o in v]
+        value = '|'.join(f"{w}" for w in dt)
+        if not value:
+            return ""
+        _filter = f"""{"and" if hasFilters else "WHERE"} frm @? '$[*] ? (@.doseador like_regex "{value}" )'"""
+        return _filter
+
+    fdosers = filterDosersMultiSelect(request.data['filter'],'fmulti_dosers', (True if f.hasFilters or f2['hasFilters'] else False))
+    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"')
+
+
+
+    # f2 = filterMulti(request.data['filter'], {
+    #     'fmulti_location': {"keys": ['matprima_cod', 'matprima_des'], "table": 'enc'}
+    # }, False, "and" if f.hasFilters else False)
+    parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
+    
+    # print(f2["text"])
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    cols = f'''rowid,loc,qty_lote, unit, inbuffer,frm,ofs,picked,matprima_cod,matprima_des,n_lote,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov'''
+    sql = lambda p, c, s: (
+        f"""
+        SELECT {c(f'{cols}')} FROM(
+            WITH LOTES_EM_LINHA AS(
+            select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+            FROM (
+                select distinct * from (
+                SELECT 
+                DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS."status",
+                SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
+                qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
+                MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, --FIFO DATE TO ORDER ASC
+                MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp,
+                MAX(LOTES.type_mov) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_type_mov
+                FROM "SGP-DEV".loteslinha LOTES
+                LEFT JOIN "SGP-DEV".lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                WHERE LOTES.status=1 
+                ) t WHERE  max_t_stamp=t_stamp and "status"=1
+            ) t
+            ),
+            BASE AS(
+                SELECT * FROM(SELECT acs.*, max(acs.id) over () mx_id, cs.id cs_id 
+                from "SGP-DEV".producao_currentsettings cs
+                join "SGP-DEV".audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3) BASE where BASE.id=BASE.mx_id
+            ),
+            OFS AS(
+                SELECT jsonb_agg(json_build_object(
+                    'of_cod',dta.value->>'of_cod','order_cod',dta.value->>'order_cod',
+                    'prf_cod',dta.value->>'prf_cod','item_cod',dta.value->>'item_cod',
+                    'item_des',dta.value->>'item_des','cliente_nome',dta.value->>'cliente_nome')) ofs 
+                FROM BASE
+                JOIN jsonb_array_elements(BASE.ofs::jsonb) dta ON true
+            ),
+            FORMULACAO AS(
+                SELECT 
+                    fitems::jsonb->>'matprima_cod' matprima_cod,
+                    fitems::jsonb->>'matprima_des' matprima_des, 
+                    jsonb_agg(json_build_object(
+                        'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
+                        'arranque',fitems::jsonb->>'arranque',
+                        'densidade',fitems::jsonb->>'densidade'
+                    )) frm
+                FROM BASE
+                join jsonb_array_elements(BASE.formulacao::jsonb->'items') fitems on true
+                group by matprima_cod,matprima_des
+            ),
+            SETTINGS AS(
+                select * from FORMULACAO
+                JOIN OFS ON true
+            )
+            SELECT 
+            ST."LOC_0" loc,ST."ROWID" rowid,
+            CASE WHEN ST."ITMREF_0" IS NULL THEN matprima_cod ELSE ST."ITMREF_0" END matprima_cod,
+            CASE WHEN ST."LOT_0" IS NULL THEN n_lote ELSE ST."LOT_0" END n_lote,
+            CASE WHEN mprima."ITMDES1_0" IS NULL THEN matprima_des ELSE mprima."ITMDES1_0" END matprima_des,
+            CASE WHEN ST."ITMREF_0" IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END inbuffer,
+            CASE WHEN max_type_mov IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END picked,
+            SETTINGS.frm,SETTINGS.ofs,
+            ST."QTYPCU_0" qty_lote, ST."PCU_0" unit,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov 
+            FROM "SAGE-PROD"."STOCK" ST
+            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            LEFT JOIN SETTINGS ON ST."ITMREF_0" = SETTINGS.matprima_cod
+            LEFT JOIN LOTES_EM_LINHA LL ON LL.artigo_cod=ST."ITMREF_0" AND LL.n_lote=ST."LOT_0" {flocation.text}
+            WHERE 
+            (LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM') AND
+            ST."STOFCY_0" = 'E01' {flocation.text}/*and ST."LOC_0"='BUFFER'*/ {"AND frm IS NOT NULL" if any(obj.get('value') == 'B' for obj in typeList) else ""} --AND ST."ITMREF_0"='RAPRA0000000078'
+            --ORDER BY frm ASC, ST."ITMREF_0",ST."LOT_0"
+        ) t
+         {f.text} {f2["text"]} {fdosers}
+        {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    print("aaaa")
+    print(typeList)
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+
+#endregion
+
+
 
 #region CLIENTES
 @api_view(['POST'])
@@ -3165,7 +3315,7 @@ def TempAggOFabricoLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
-    
+
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
 
     f = Filters(request.data['filter'])
@@ -3297,7 +3447,6 @@ def ValidarBobinagensList(request, format=None):
                 {tmpsql} 
                 ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    print(sql)
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -3382,127 +3531,184 @@ def ValidarBobinagem(request, format=None):
 def Pick(request, format=None):
     data = request.data['parameters']
     print("#######################")
-    print(data["lotes"])
-    print("-----------------------")
-    print(data["dosers"])
-    print("-----------------------")
-    print(data["groups"])
-    print("#######################")
-
+    
     def getInOut(data, cursor):
         plg = []
-        for key, value in data["lotes"].items():
-            if (value["artigo_cod"] is not None):
-                for item in value['lotes']:
-                    plg.append({"group_id":key,"artigo_cod":value["artigo_cod"],"n_lote":item["n_lote"],"qty_lote":item["qty_lote"]})
-        pgd = []
-        for key, value in data["dosers"].items():
-            if (value["artigo_cod"] is not None):
-                for item in value['dosers']:
-                    pgd.append({"group_id":key,"artigo_cod":value["artigo_cod"],"doser":item})
+        #pgd = []
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+        print(data)
+        if ("pickItems" in data):
+            plg=data["pickItems"]
+        else:
+            for artigo_key, artigo_value in data["artigos"].items():
+                for group_key, group_value in artigo_value.items():
+                    if group_key!='undefined':
+                        if ('lotes' in group_value):
+                            for lote_value in group_value['lotes']:
+                                for doser_value in group_value['dosers']:
+                                    print(lote_value)
+                                    plg.append({"group_id":group_key, "lote_id":lote_value["lote_id"], "artigo_cod":artigo_key,"n_lote":lote_value["n_lote"],"qty_lote":lote_value["qty_lote"], "doser":doser_value})
+                        #if ('dosers' in group_value):
+                        #    for doser_value in group_value['dosers']:
+                        #        print("DOSERVALUES")
+                        #        print(doser_value)
+                        #        pgd.append({"group_id":group_key,"artigo_cod":artigo_key,"doser":doser_value})
+        print("...................")
+        print(plg)
+        print("ooooooooooooooooooooo")
+        #print(pgd)
+        #print("ooooooooooooooooooooo")
+
         response = db.executeSimpleList(lambda: (
         f"""
-            SELECT * FROM(
-            WITH PICK_LOTES_GROUPS AS(
+            
+           WITH PICK_LOTES_GROUPS AS(
+                SELECT * FROM JSON_TABLE(
+                '{json.dumps(plg)}'
+                ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", lote_id INT PATH "$.lote_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", n_lote VARCHAR(100) PATH "$.n_lote", doser VARCHAR(2) PATH "$.doser", qty_lote decimal(12,5) PATH "$.qty_lote")
+                ) t
+            ),
+            LOTES_AVAILABLE AS(
+                select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+                FROM (
+                    select distinct * from (
+                    SELECT 
+                    DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
+                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_consumed,
+                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_available,
+                    MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
+                    MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
+                    FROM loteslinha LOTES
+                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                    WHERE LOTES.status=1 
+                    ) t WHERE  max_t_stamp=t_stamp and `status`=1
+                ) t #WHERE qty_lote_available>0
+            ),
+            DOSERS_LASTMOV_OUT AS(
             SELECT * FROM (
-            SELECT t.*, ll.id,ll.type_mov, max(ll.id) over (partition by ll.artigo_cod,ll.n_lote) mx_id
-            FROM JSON_TABLE(
-            '{json.dumps(plg)}'
-            ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", n_lote VARCHAR(100) PATH "$.n_lote", qty_lote decimal(12,5) PATH "$.qty_lote")
-            ) t
-            LEFT JOIN loteslinha ll on ll.`group`=t.group_id and ll.artigo_cod=t.artigo_cod and ll.n_lote=t.n_lote
-            ) t WHERE (t.id=t.mx_id and t.type_mov='IN') OR t.id is null
+                select ld.id,loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,
+                max(ld.id) over (partition by ld.doser) mx_id 
+                from lotesdosers ld	where `status`=1 and type_mov = 'OUT'
+            ) t 
+            WHERE t.mx_id=t.id
             ),
-            DOSERS_GROUPS AS(
-            select * from(
-            SELECT id,doser,group_id,MAX(ld.id) over (PARTITION BY doser) max_id FROM lotesdosers ld
-            ) t where t.max_id=id
+            LOTESDOSERS_ARTIGO AS(
+                SELECT * FROM (
+                    select ld.id,ld.loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,max(ld.id) over (partition by ld.artigo_cod,ld.doser) mx_id 
+                    from lotesdosers ld
+                    LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON ld.doser=DOUT.doser
+                    where ld.`status`=1 and ld.type_mov <> 'C' and ld.id>IFNULL(DOUT.id,0)
+                ) t 
+                WHERE t.mx_id=t.id and t.type_mov='IN'
             ),
-            LOTES_DOSERS_BY_DOSER AS (
-                SELECT doser,JSON_ARRAYAGG(JSON_OBJECT('group_id',group_id,'artigo_cod',artigo_cod,'n_lote',n_lote,'loteslinha_id',loteslinha_id,'t_stamp',mint_stamp)) lotes FROM(
-                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from lotesdosers ld
-                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
-                WHERE ld.loteslinha_id IS NOT NULL
-                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
-                ) t2
-                GROUP BY doser
+            LOTESDOSERS_LOTE AS(
+                SELECT * FROM (
+                    select ld.id,ld.loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,
+                    count(*) over (partition by ld.lote_id) cnt_dosers, 
+                    max(ld.id) over (partition by ld.lote_id,ld.doser) mx_id 
+                    from lotesdosers ld
+                    LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON ld.doser=DOUT.doser
+                    where ld.`status`=1 and ld.type_mov <> 'C' and ld.id>IFNULL(DOUT.id,0)
+                ) t 
+                WHERE t.mx_id=t.id and t.type_mov='IN'
             ),
-            LOTES_DOSERS_BY_LOTES AS (
+            ACTUAL_GROUPS AS(
+                #VERIFICA SE O LOTE PICADO JÁ FOI PREVIAMENTE PICADO
+                select 
+                PLG.*,
+                d.id loteslinha_id, #SE NULL DAR ENTRADA EM LOTESLINHA
+                LDL.lote_id loteid_doser, #SE NULL DAR ENTRADA DO LOTE/DOSER EM LOTESDOSERS, SENÃO JÁ EXISTE E IGNORAR
+                CASE WHEN d.`group` IS NOT NULL THEN d.`group` ELSE CASE WHEN LDA.group_id IS NOT NULL THEN LDA.group_id ELSE PLG.group_id END END group_final
+                FROM PICK_LOTES_GROUPS PLG
+                LEFT JOIN (
+                select ll.id,ll.artigo_cod,ll.n_lote,ll.lote_id,ll.type_mov,ll.`group`,max(ll.id) over (partition by ll.artigo_cod, ll.lote_id, ll.n_lote) mx_id 
+                from loteslinha ll
+                where `status`=1
+                ) d ON d.mx_id=d.id AND d.type_mov='IN' AND PLG.lote_id = d.lote_id
+                LEFT JOIN LOTESDOSERS_ARTIGO LDA ON PLG.artigo_cod=LDA.artigo_cod and LDA.doser=PLG.doser
+                LEFT JOIN LOTESDOSERS_LOTE LDL ON PLG.lote_id = LDL.lote_id and PLG.doser = LDL.doser
+            ),
+            IN_LINE AS (
+            SELECT 
+            /*LA.group_id lote_available_group_id, LA.qty_lote_available,*/ 
+            AG.lote_id,AG.artigo_cod,AG.n_lote,AG.doser,AG.loteslinha_id,AG.loteid_doser,AG.group_final group_id,AG.qty_lote,'IN' mov
+            FROM ACTUAL_GROUPS AG
+            LEFT JOIN LOTES_AVAILABLE LA ON LA.lote_id=AG.lote_id
+            WHERE (AG.loteid_doser is null or AG.loteslinha_id is null) and (LA.group_id is null or LA.qty_lote_available>0)
+            ),
+            OUT_DOSER_LINE AS (
+                SELECT LL.lote_id,LL.artigo_cod,LL.n_lote,LL.doser,LL.loteslinha_id,LL.id loteid_doser,LL.group_id,null qty_lote, CASE WHEN I.lote_id IS NULL THEN 'OUT' ELSE NULL END mov
+                FROM LOTESDOSERS_LOTE LL
+                LEFT JOIN IN_LINE I ON LL.group_id = I.group_id AND LL.doser=I.doser
+                #WHERE I.lote_id IS NULL
+            ),
+            OUT_LINE AS (
                 SELECT 
-                t2.*#group_id, artigo_cod,n_lote,loteslinha_id, JSON_ARRAYAGG(JSON_OBJECT('doser',doser,'t_stamp',mint_stamp)) lotes 
-                FROM(
-                select ld.group_id,ld.doser,ld.artigo_cod,loteslinha_id,ld.n_lote,MIN(ld.t_stamp) mint_stamp #JSON_ARRAYAGG(JSON_OBJECT('artigo_cod',ld.artigo_cod,'n_lote',ld.n_lote,'t_stamp',ld.t_stamp))
-                from lotesdosers ld
-                JOIN DOSERS_GROUPS dg on ld.doser=dg.doser and ld.group_id=dg.group_id
-                WHERE ld.loteslinha_id IS NOT NULL
-                GROUP BY ld.group_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.loteslinha_id
-                ) t2
-                #GROUP BY group_id,artigo_cod,n_lote
-            ),
-            PICK_DOSERS_GROUPS AS(
-            select * from
-            JSON_TABLE(
-            '{json.dumps(pgd)}'
-            ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", doser VARCHAR(2) PATH "$.doser")
-            ) t
+                LDL.lote_id,LDL.artigo_cod,LDL.n_lote,LDL.doser,LDL.loteslinha_id,LDL.id loteid_doser,LDL.group_id,null qty_lote,
+                CASE WHEN (LDL.cnt_dosers <= count(*) over (partition by LDL.lote_id)) THEN 'OUT_LINE' ELSE 'OUT' END mov
+                FROM IN_LINE IL
+                JOIN LOTESDOSERS_LOTE LDL ON LDL.doser=IL.doser
+                WHERE IL.group_id<>LDL.group_id
             )
-            select DISTINCT * FROM(
-            SELECT null group_id,null artigo_cod,null n_lote, null qty_lote,LD.doser pick_doser, NULL id, NULL doser,'OUT' mov
-            FROM LOTES_DOSERS_BY_LOTES LD 
-            LEFT JOIN PICK_DOSERS_GROUPS PDG ON PDG.group_id = LD.group_id AND PDG.artigo_cod=LD.artigo_cod AND LD.doser=PDG.doser #and PDG.doser=LD.doser
-            WHERE PDG.group_id is null
-            ) MOV_OUT
+            SELECT * FROM OUT_LINE
             UNION
-            select t.group_id,t.artigo_cod,t.n_lote,t.qty_lote,t.pick_doser, t.id, LD.doser,'IN' mov from
-            (
-            SELECT PLG.*,PDG.doser pick_doser
-            FROM PICK_LOTES_GROUPS PLG
-            LEFT JOIN PICK_DOSERS_GROUPS PDG ON PDG.group_id = PLG.group_id AND PDG.artigo_cod=PLG.artigo_cod #and PDG.doser=LD.doser
-            #WHERE LD.doser<>PDG.doser OR LD.doser IS NULL
-            ) t
-            LEFT JOIN LOTES_DOSERS_BY_LOTES LD ON LD.group_id=t.group_id AND LD.artigo_cod=t.artigo_cod AND LD.n_lote=t.n_lote AND LD.doser=t.pick_doser
-            WHERE LD.group_id is null
-            ) t
+            SELECT * FROM IN_LINE
+
         """
         ), cursor, {})
         return response["rows"]
-
-
-
-
-    # def checkIfIsValid(data, cursor):
-    #     exists = 0
-    #     if ("bobinagem_id" in data):
-    #         f = Filters({"id": data["bobinagem_id", "valid":0]})
-    #         f.where()
-    #         f.add(f'id = :id', True)
-    #         f.add(f'valid = :valid', True)
-    #         f.value("and")
-    #         exists = db.exists("producao_bobinagem", f, cursor).exists
-    #     return exists
 
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 io = getInOut(data,cursor)
+                _inline = {}
+                _indoser = {}
+                _out = {}
+                _outline = {}
                 for item in io:
-                    if (item['mov']=='OUT'):
-                        dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"OUT"},"lotesdosers",None,None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        print('OUT')
-                        print(item)
+                    if ((item['mov']=='OUT' or item['mov']=='OUT_LINE') and f'{item["lote_id"]}-{item["doser"]}' not in _out):
+                         dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"OUT","status":1},"lotesdosers",None,None,False)
+                         db.execute(dml.statement, cursor, dml.parameters)
+                         _out[f'{item["lote_id"]}-{item["doser"]}'] = True
+                         print('OUT')
+                         print(item)
+                    if (item['mov']=='OUT_LINE' and f'{item["lote_id"]}' not in _outline):
+                         dml = db.dml(TypeDml.INSERT,{"lote_id":item["lote_id"],"n_lote":item["n_lote"],"artigo_cod":item["artigo_cod"],"type_mov":"OUT","status":1},"loteslinha",None,None,False)
+                         db.execute(dml.statement, cursor, dml.parameters)
+                         _outline[f'{item["lote_id"]}'] = True
                     if (item['mov']=='IN'):
-                        print(item)
-                        if item['id'] is None:
-                            dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"`group`":item["group_id"],"qty_lote":item["qty_lote"]},"loteslinha",None,None,False)
-                            db.execute(dml.statement, cursor, dml.parameters)
-                            linhaId = cursor.lastrowid
-                            dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
-                            db.execute(dml.statement, cursor, dml.parameters)
-                        else:
-                            dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"group_id":item["group_id"],"loteslinha_id":item["id"],"qty_consumed":0},"lotesdosers",None,None,False)
-                            db.execute(dml.statement, cursor, dml.parameters)
+                        if item['loteslinha_id'] is None and item['loteid_doser'] is None:
+                            if  f'{item["lote_id"]}' not in _inline:
+                                print("INSERT IN LINE")
+                                dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"`group`":item["group_id"],"qty_lote":item["qty_lote"]},"loteslinha",None,None,False)
+                                db.execute(dml.statement, cursor, dml.parameters)
+                                _inline[f'{item["lote_id"]}'] = cursor.lastrowid
+                        if item['loteslinha_id'] is None or item['loteid_doser'] is None:
+                            if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
+                                print("INSERT IN LOTE DOSER")
+                                linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
+                                dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                                db.execute(dml.statement, cursor, dml.parameters)
+                                _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
+                    #     print(item)
+                    #     if item['id'] is None:
+                    #         linharow = db.executeSimpleList(lambda: (f"""
+                    #                 SELECT ll.id
+                    #                 FROM loteslinha ll
+                    #                 join (SELECT MAX(id) id FROM loteslinha WHERE lote_id={item["lote_id"]} AND `status`=1) mx on ll.id=mx.id
+                    #                 WHERE type_mov='IN' AND `status`=1
+                    #         """), cursor, {})['rows']
+                    #         linhaId = linharow[0]['id'] if len(linharow) else None
+                    #         if linhaId is None:
+                    #             dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"`group`":item["group_id"],"qty_lote":item["qty_lote"]},"loteslinha",None,None,False)
+                    #             db.execute(dml.statement, cursor, dml.parameters)
+                    #             linhaId = cursor.lastrowid
+                    #         dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                    #         db.execute(dml.statement, cursor, dml.parameters)
+                    #     else:
+                    #         dml = db.dml(TypeDml.INSERT,{"doser":item["pick_doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":item["group_id"],"loteslinha_id":item["id"],"qty_consumed":0},"lotesdosers",None,None,False)
+                    #         db.execute(dml.statement, cursor, dml.parameters)
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
@@ -3515,9 +3721,7 @@ def Pick(request, format=None):
 @permission_classes([IsAuthenticated])
 def SaidaMP(request, format=None):
     data = request.data['parameters']
-    
     def getLastMov(data,cursor):
-        print(data)
         f = Filters({"artigo_cod": data['artigo_cod'], "n_lote":data["n_lote"], "status":1})
         f.setParameters({}, False)
         f.where()
@@ -3525,6 +3729,8 @@ def SaidaMP(request, format=None):
         f.add(f'n_lote = :n_lote', True)
         f.add(f'status = :status', True)
         f.value("and")   
+        print(f.text)
+        print(f.parameters)
         return db.executeSimpleList(lambda: (f'SELECT type_mov FROM loteslinha {f.text} order by id desc limit 1'), cursor, f.parameters)['rows'][0]['type_mov']
 
     try:
@@ -3532,7 +3738,7 @@ def SaidaMP(request, format=None):
             with connections["default"].cursor() as cursor:
                 lastmov = getLastMov(data['lote'],cursor)
                 if lastmov=='IN':
-                    dml = db.dml(TypeDml.INSERT,{"artigo_cod":data['lote']["artigo_cod"],"n_lote":data['lote']["n_lote"],"qty_reminder":data["reminder"],"status":1,"type_mov":"OUT"},"loteslinha",None,None,False)
+                    dml = db.dml(TypeDml.INSERT,{"lote_id":data['lote']["lote_id"],"artigo_cod":data['lote']["artigo_cod"],"n_lote":data['lote']["n_lote"],"qty_reminder":data["reminder"],"status":1,"type_mov":"OUT"},"loteslinha",None,None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:

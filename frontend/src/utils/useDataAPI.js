@@ -12,7 +12,6 @@ export const useDataAPI = ({ payload } = {}) => {
         url: payload.url,
     });
 
-
     var action = [];
     var _sort = [];
     var _filter = payload?.filter;
@@ -59,7 +58,7 @@ export const useDataAPI = ({ payload } = {}) => {
     }
     const currentPage = (page = 1, applyState = false) => {
         addAction('nav');
-        _pagination = { ...dataState.pagination, page: ((page <= 1) ? 1 : page) }
+        _pagination = { ...dataState.pagination, page: ((page <= 1) ? 1 : page) };
         if (applyState) {
             setDataState(prev => ({ ...prev, pagination: { ...prev.pagination, page: ((page <= 1) ? 1 : page) } }));
         }
@@ -171,6 +170,7 @@ export const useDataAPI = ({ payload } = {}) => {
     const getPagination = (fromState = false) => {
         
         if (fromState) {
+            console.log("return true pagination--------->",dataState.pagination)
             return { ...dataState.pagination };
         } else {
             return { ..._pagination };
@@ -236,11 +236,9 @@ export const useDataAPI = ({ payload } = {}) => {
     const _fetchPost = ({ url, token } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = getPayload();
-        console.log("BEFORE FETCH POST->", payload);
         setIsLoading(true);
         (async () => {
             const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
-            console.log("FETCHEDDDDD---",dt)
             setData(dt, payload);
             setIsLoading(false);
         })();

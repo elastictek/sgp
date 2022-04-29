@@ -5,15 +5,16 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { getSchema } from "utils/schemaValidator";
+import { groupBy } from "utils";
 import uuIdInt from "utils/uuIdInt";
-import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, SelectMultiField } from "components/formLayout";
+import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectField, CheckboxField, HorizontalRule, VerticalSpace, InputAddon, SelectDebounceField, AutoCompleteField, SelectMultiField } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import YScroll from "components/YScroll";
 import XScroll from "components/XScroll";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
-import { SOCKET } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET, COLORS } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { SocketContext } from '../App';
 import ResponsiveModal from "components/ResponsiveModal";
@@ -71,7 +72,7 @@ const StyleDoser = styled.div(
             background-color:${props => props.qty > 0 ? "#e6f7ff" : "#cf1322"};
             color:${props => props.qty > 0 ? "#000" : "#fff"};
             width:130px;
-            height:40px;
+            height:48px;
         `}
     `
 );
@@ -122,23 +123,7 @@ const SaidaMP = ({ parameters }) => {
     }
 
     useEffect(() => {
-
-
-
-        let mp = [];
-        //let d = [];
-        Object.keys(parameters.artigos).forEach(v => {
-            let k = Object.keys(parameters.artigos[v])[0];
-            if (k !== "undefined") {
-                const artigo = buffer.find(n => n.ITMREF_0 === v);
-                for (let y of parameters.artigos[v][k].lotes) {
-                    mp.push({ artigo_cod: v, artigo_des: artigo.ITMDES1_0, ...y });
-                }
-            }
-        });
-
-
-/*         const lt = [];
+        const lt = [];
         for (const [key, value] of Object.entries(parameters.lotes)) {
             if (key !== 'null') {
                 const artigo = buffer.find(v => v.ITMREF_0 === value.artigo_cod);
@@ -146,9 +131,9 @@ const SaidaMP = ({ parameters }) => {
                     lt.push({ artigo_cod: value.artigo_cod, artigo_des: artigo.ITMDES1_0, ...v });
                 }
             }
-        } */
-        setLotes(mp);
-    }, [parameters.artigos]);
+        }
+        setLotes(lt);
+    }, [parameters.lotes]);
     return (
         <div style={{ textAlign: "center" }}>
             <Wnd parameters={modal} setParameters={onModal} />
@@ -167,16 +152,17 @@ const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
 
     useEffect(() => {
         let d = [];
-        Object.keys(parameters.artigos).forEach(v => {
-            let k = Object.keys(parameters.artigos[v])[0];
-            if (k !== "undefined") {
-                for (let v of parameters.artigos[v][k].dosers) {
+        for (const [key, value] of Object.entries(parameters.dosers)) {
+            if (key !== 'null') {
+                for (let v of value.dosers) {
                     d.push({ value: v });
                 }
             }
-        });
+        }
         setDosers(d);
+
     }, [parameters.dosers]);
+
 
     const onCancel = () => {
         setParameters(prev => ({ ...prev, visible: !prev.visible }))
@@ -212,6 +198,58 @@ const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
     </div>);
 }
 
+/* const StyleTable = styled.table`
+    width:100%;
+    border-collapse: separate;
+
+    & th{
+        border: none;
+        padding-top:5px;
+    }
+
+    & td:first-child {
+        border:solid 1px #d9d9d9;
+        border-left-radius:2px;
+        border-right:0px;
+        width:1px;
+    }
+    & td:last-child {
+        border:solid 1px #d9d9d9;
+        border-right-radius:2px;
+        border-left:0px;
+        width: 100%;
+    }
+    & td{
+        padding:4px 2px 4px 2px;
+        border-top:solid 1px #d9d9d9;
+        border-bottom:solid 1px #d9d9d9;
+        width:1px;
+        background-color:#f5f5f5;
+    }
+`; */
+
+const StyleTable = styled.table`
+    width:100%;
+    border-collapse: separate;
+    & td{
+        display: block;
+        width:100vw;
+    }
+    /*border-spacing: 0px 20px;*/
+`;
+
+/* const Group = ({ children }) => {
+    return (
+        <>
+            <tr>
+                <td>
+                    {children}
+                </td>
+            </tr>
+        </>
+    );
+} */
+
 const Group = ({ children }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row", marginBottom: "10px", border: "solid 1px #d9d9d9", borderRadius: "2px", background: "#f5f5f5", padding: "3px" }}>{children}</div>
@@ -219,37 +257,70 @@ const Group = ({ children }) => {
 }
 
 const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
-    const [designacao, setDesignacao] = useState({});
+    const [designacao, setDesignacao] = useState();
+
     useEffect(() => {
         if (artigo_cod) {
             const artigo = buffer.find(v => v.ITMREF_0 === artigo_cod);
-            if (!artigo) {
-                setDesignacao({ txt: artigo_cod, buffer: false });
-            } else {
-                setDesignacao({ txt: artigo.ITMDES1_0, buffer: true });
-            }
+            setDesignacao(artigo.ITMDES1_0);
+        }
+        else {
+            setDesignacao('');
         }
     }, [artigo_cod]);
 
     return (
-        <>
-            {designacao &&
-                <div style={{ width: "100%", fontSize: "14px", fontWeight: 700, color: (designacao.buffer ? "#000" : "#ff4d4f") }}>
-                    {designacao.txt}
-                </div>
-            }
-        </>
+        <div style={{ width: "100%", fontSize: "14px", fontWeight: 700 }}>
+            {designacao}
+        </div>
     );
 }
 
-const Lotes = ({ lotes }) => {
+/* const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
+    const [designacao, setDesignacao] = useState();
+
+    useEffect(() => {
+        if (artigo_cod) {
+            const artigo = buffer.find(v => v.ITMREF_0 === artigo_cod);
+            setDesignacao(artigo.ITMDES1_0);
+        }
+        else {
+            setDesignacao('');
+        }
+    }, [artigo_cod]);
+
+    return (
+        <tr>
+            <th colSpan={20} style={{ fontSize: "14px" }}>
+                <div>{designacao}</div>
+            </th>
+        </tr>
+    );
+} */
+
+/* const Artigo = ({ artigo_cod, lotes, children }) => {
+    return (
+        <>
+            <td>
+                {lotes && lotes.map(v => {
+                    return (<div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={v.n_lote}>
+                        <div>{v.n_lote}</div>
+                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>}
+                    </div>);
+                })}
+            </td>
+        </>
+    );
+} */
+
+const Artigo = ({ artigo_cod, lotes, children }) => {
     return (
         <div style={{ minWidth: "180px", maxWidth: "180px", marginRight: "10px" }}>
             {lotes && lotes.map(v => {
-                return (v.n_lote === null) ? <div key={v.n_lote} /> :
-                    <div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={`lid-${v.lote_id}`}>
+                return (v.n_lote == null) ? <div key={v.n_lote} /> :
+                    <div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={v.n_lote}>
                         <div>{v.n_lote}</div>
-                        {/* {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>} */}
+                        {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>}
                     </div>;
             })}
         </div>
@@ -257,11 +328,42 @@ const Lotes = ({ lotes }) => {
 }
 
 const DOSERS = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6']
-
-const Dosers = ({ dosers, lotes, dosersSets }) => {
+/* const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
     const [qty, setQty] = useState();
     useEffect(() => {
-        if (lotes && lotes.length > 0) {
+        if (lotes) {
+            setQty(lotes.map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
+        }
+        else {
+            setQty(0);
+        }
+    }, [lotes]);
+
+    return (
+        <>
+            {[...Array(18)].map((x, i) =>
+                <React.Fragment key={`dl-${group_id}-${i}`}>
+                    <td>
+                        <StyleDoser enabled={(dosers && dosers.length > i)} qty={qty}>
+                            <div style={{ textAlign: "center", fontWeight: 700, fontSize: '14px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
+                            {(dosers && dosers.length > i) &&
+                                <div style={{ display: "flex", flexDirection: "row" }}>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_S`]}%</div>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_P`]}%</div>
+                                    <div style={{ width: "70px", textAlign: "center" }}>{dosersSets[0][`${dosers[i]}_D`]}g/cm&#xB3;</div>
+                                </div>
+                            }
+                        </StyleDoser>
+                    </td>
+                </React.Fragment>
+            )}
+        </>
+    );
+} */
+const Dosers = ({ group_id, dosers, lotes, dosersSets }) => {
+    const [qty, setQty] = useState();
+    useEffect(() => {
+        if (lotes) {
             setQty(lotes.map(item => item.qty_lote_available).reduce((prev, next) => prev + next));
         }
         else {
@@ -272,13 +374,13 @@ const Dosers = ({ dosers, lotes, dosersSets }) => {
     return (
         <XScroll style={{ alignSelf: "center" }}>
             <div style={{ display: "flex", flexDirection: "row", alignSelf: "center" }}>
-                {dosers.map((x, i) =>
-                    <React.Fragment key={`dl-${x}-${i}`}>
+                {[...Array(18)].map((x, i) =>
+                    <React.Fragment key={`dl-${group_id}-${i}`}>
                         <StyleDoser enabled={(dosers && dosers.length > i)} qty={qty}>
-                            <div style={{ textAlign: "center", fontWeight: 700, fontSize: '12px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
+                            <div style={{ textAlign: "center", fontWeight: 700, fontSize: '14px' }}>{(dosers && dosers.length > i) && dosers[i]}</div>
                             {(dosers && dosers.length > i) &&
-                                <div style={{ display: "flex", flexDirection: "row", fontSize: '10px' }}>
-                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9", color: (qty > 0) ? "#52c41a" : "#b7eb8f", fontWeight: 700 }}>{dosersSets[0][`${dosers[i]}_S`]}%</div>
+                                <div style={{ display: "flex", flexDirection: "row" }}>
+                                    <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_S`]}%</div>
                                     <div style={{ width: "30px", textAlign: "center", borderRight: "solid 1px #d9d9d9" }}>{dosersSets[0][`${dosers[i]}_P`]}%</div>
                                     <div style={{ width: "70px", textAlign: "center" }}>{dosersSets[0][`${dosers[i]}_D`]}g/cm&#xB3;</div>
                                 </div>
@@ -320,13 +422,18 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
+    //const [matPrimasLookup, setMatPrimasLookup] = useState([]);
+    const extrusoraRef = useRef();
     const [inputRef, setInputFocus] = useFocus();
+    const [extrusora, setExtrusora] = useState('A');
     const [buffer, setBuffer] = useState(null);
     const [settings, setSettings] = useState(null);
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
 
-    const [artigos, setArtigos] = useState();
+    const [dosers, setDosers] = useState({});
+    const [lotes, setLotes] = useState({});
+    const [groups, setGroups] = useState([]);
     const [touched, setTouched] = useState(false);
 
     const [modalParameters, setModalParameters] = useState({ visible: false });
@@ -336,10 +443,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         } else {
             switch (parameters.type) {
                 case "saida_mp":
-                    parameters = { ...parameters, width: "500px", height: "500px", fullWidthDevice: 1, title: "Saída de Matéria Prima", artigos, buffer };
+                    parameters = { ...parameters, width: "500px", height: "500px", fullWidthDevice: 1, title: "Saída de Matéria Prima", lotes, buffer };
                     break;
                 case "saida_doseador":
-                    parameters = { ...parameters, width: "500px", height: "180px", fullWidthDevice: 1, title: "Saída de Doseador", artigos };
+                    parameters = { ...parameters, width: "500px", height: "180px", fullWidthDevice: 1, title: "Saída de Doseador", dosers };
                     break;
             }
             setModalParameters(prev => ({ visible: !prev.visible, ...parameters }));
@@ -348,13 +455,17 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     useEffect(() => {
         if (modalParameters.type === "saida_mp") {
-            setModalParameters(prev => ({ ...prev, artigos }));
+            setModalParameters(prev => ({ ...prev, lotes }));
         } else if (modalParameters.type === "saida_doseador") {
-            setModalParameters(prev => ({ ...prev, artigos }));
+            setModalParameters(prev => ({ ...prev, dosers }));
         }
-    }, [artigos]);
+    }, [lotes, dosers])
 
 
+
+
+    //const [lotesAvailability, setLotesAvailability] = useState(null);
+    const [transformedData, setTransformedData] = useState({});
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/lotespick`, {
         onOpen: () => console.log(`Connected to Web Socket`),
@@ -366,11 +477,16 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     useEffect(() => {
         const cancelFetch = cancelToken();
         (async () => {
+            //setMatPrimasLookup(await loadMateriasPrimasLookup({ token: cancelFetch }));
             (setFormTitle) && setFormTitle({ title: `Lotes de Matéria Prima` });
             setLoading(false);
         })();
         return (() => cancelFetch.cancel("Form Lotes Cancelled"));
     }, []);
+
+    /*     useEffect(() => {
+            console.log("MATERIAS PRIMAS---", matPrimasLookup)
+        }, [matPrimasLookup]); */
 
     useEffect(() => {
         (async () => {
@@ -414,51 +530,41 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         }
     }, [lastJsonMessage]);
 
-    const pickedDoser = (doser, artigo) => {
-        if (doser) {
-            for (let ld of lotesDosers) {
-                if (ld.group_id !== null) {
-                    if (ld.dosers.includes(doser) && ld.artigo_cod === artigo) {
-                        return { artigo_cod: ld.artigo_cod, group_id: ld.group_id, lotes: JSON.parse(ld.lotes) };
+    useEffect(() => {
+        if (lotesDosers && dosersSets && settings) {
+            const notUsed = []
+            for (let dos of DOSERS) {
+                if (dosersSets[0][`${dos}_S`] === 0) {
+                    notUsed.push(dos);
+                }
+            }
+            if (!touched) {
+                let d = {};
+                let l = {};
+                let g = [];
+                for (let ld of lotesDosers) {
+                    if (ld.group_id !== null) {
+                        g.push({ group_id: ld.group_id, artigo_cod: ld.artigo_cod });
+                        d = { ...d, [ld.group_id]: { artigo_cod: ld.artigo_cod, dosers: [...new Set(JSON.parse(ld.dosers))].filter((el) => !notUsed.includes(el)).sort() } };
+                        let _lt = JSON.parse(ld.lotes);
+                        l = { ...l, [ld.group_id]: { artigo_cod: ld.artigo_cod, lotes: _lt.filter((e, i) => _lt.findIndex(a => a.n_lote === e.n_lote) === i).filter((v, i) => v.qty_lote_available > 0 || i == 0) } };
                     }
                 }
+                console.log("LOADED FORMULAÇÃO", JSON.parse(settings.formulacao).items);
+                console.log("LOADED GROUPS", g);
+                console.log("LOADED DOSERS", d);
+                console.log("LOADED LOTES", l);
+                setGroups(g);
+                setDosers(d);
+                setLotes(l);
             }
-        }
-        return { lotes: [] };
-    }
-
-    useEffect(() => {
-        if (lotesDosers && dosersSets && settings && !touched) {
-            console.log("LOADED FORMULAÇÃO", JSON.parse(settings.formulacao).items);
-            console.log("LOADED LOTES", lotesDosers);
-            const items = JSON.parse(settings.formulacao).items;
-            const _artigos = {};
-            for (let itemForm of items) {
-                if (!(itemForm.matprima_cod in _artigos)) {
-                    _artigos[itemForm.matprima_cod] = {};
-                }
-                let _doser = null;
-                if (itemForm?.doseador_A) {
-                    _doser = itemForm.doseador_A;
-                } else if (itemForm?.doseador_B) {
-                    _doser = itemForm.doseador_B;
-                } else if (itemForm?.doseador_C) {
-                    _doser = itemForm.doseador_C;
-                }
-                let _pd = pickedDoser(_doser, itemForm.matprima_cod);
-                let _grp = _pd?.group_id;
-                if (!(_grp in _artigos[itemForm.matprima_cod])) {
-                    _artigos[itemForm.matprima_cod][_grp] = { dosers: [], lotes: [] };
-                }
-                _artigos[itemForm.matprima_cod][_grp].dosers.push(_doser);
-                let arrlotes = [..._artigos[itemForm.matprima_cod][_grp].lotes,..._pd.lotes];
-                _artigos[itemForm.matprima_cod][_grp].lotes = arrlotes.filter((a, i) => arrlotes.findIndex((s) => a.lote_id === s.lote_id) === i);
-            }
-            setArtigos(_artigos);
         }
     }, [lotesDosers, dosersSets, settings]);
 
+    useEffect(() => { }, [lotes, dosers, groups]);
+
     const onValuesChange = (changedValues) => {
+        console.log("CHANGEDDDDD--", changedValues, " EXTRUSORA SELECIONADA--", extrusora);
         setChangedValues(changedValues);
     }
 
@@ -468,9 +574,44 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     const onFinish = async (values) => {
+
+
+        console.log("--------LOTES--", lotes);
+        console.log("--------DOSERS--", dosers);
+        console.log("--------GROUPS--", groups);
+        console.log("--------LOTESDOSERS--", lotesDosers);
+
         const status = { error: [], warning: [], info: [], success: [] };
-        const response = await fetchPost({ url: `${API_URL}/pick/`, parameters: { artigos } });
+        const response = await fetchPost({ url: `${API_URL}/pick/`, parameters: { lotes, dosers, groups } });
         setTouched(false);
+        //setResultMessage(response.data);
+        //setFormStatus(status);
+
+        console.log("###################--", response.data, "-----", status);
+
+        /* const status = { error: [], warning: [], info: [], success: [] };
+        const v = schema().validate(values, { abortEarly: false });
+        if (!v.error) {
+            let error = false;
+            for (let k in values) {
+                if (values[k] === undefined && k !== "cliente_cod" && k !== "designacao") {
+                    error = true;
+                    break;
+                }
+            }
+            if (error) {
+                status.error.push({ message: "Os items têm de estar preenchidos!" });
+            }
+            if (status.error.length === 0) {
+                const { cliente_cod: { value: cliente_cod, label: cliente_nome } = {} } = values;
+                const response = await fetchPost({ url: `${API_URL}/newartigospecs/`, parameters: { ...form.getFieldsValue(true), produto_id: ctx.produto_id, cliente_cod, cliente_nome } });
+                if (response.data.status !== "error") {
+                    parentReload({ artigospecs_id: record.artigospecs_id }, "init");
+                }
+                setResultMessage(response.data);
+            }
+        }
+        setFormStatus(status); */
     }
 
     const onSuccessOK = () => {
@@ -489,91 +630,133 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         closeParent();
     }
 
+
+    const onManualPick = (v) => {
+        sendJsonMessage({ cmd: 'pick', value: v.key, cs: record.id });
+    }
+
     const onPick = (e, a, b) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
             if (inputRef.current.value !== '') {
                 if (!touched) { setTouched(true); }
                 e.preventDefault();
                 const v = inputRef.current.value.toUpperCase();
+                console.log(buffer);
                 if (DOSERS.includes(v)) {
                     //Source / Type
                     form.setFieldsValue({ source: v });
                     inputRef.current.value = '';
                 } else {
+                    //RVMAX0863000012;VM6202V21092802AB5033;650.00
+                    //RAAOX0000000080;A211593;550.00
+                    //RVMAX0862000013;VM6102V21080201AB5064;650.00
+                    //RKRTG0910000069;22094728;10.00
                     let fData = form.getFieldsValue(true);
                     let picked = false;
                     if (fData.source) {
-                        let _artigos = { ...artigos };
-
                         let pickData = v.split(';');
                         if (pickData.length < 2) {
                             pickData = v.split('#');
                         }
                         if (pickData.length > 1) {
-                            //Check se o artigo está na formulação
-                            if (!(pickData[0] in _artigos)) return;
-                            //Check se o doseador corresponde ao artigo e formulação
-                            let allowPick = false;
-                            let _group = null;
-                            let _groupLote = null;
-                            for (let v of Object.keys(_artigos[pickData[0]])) {
-                                if (_artigos[pickData[0]][v].dosers.includes(fData.source)) {
-                                    _group = v;
-                                    allowPick = true;
-                                }
-                                //Check if Lote is already picked by other doser/same and store group
-                                if (_artigos[pickData[0]][v].lotes.some(d => d.n_lote === pickData[1])) {
-                                    _groupLote = v;
+                            const _dosers = { ...dosers };
+                            for (const k in _dosers) {
+                                if (_dosers[k].artigo_cod === pickData[0] && _dosers[k].dosers.includes(fData.source)) {
+                                    picked = true;
+                                    if (!_dosers[k].dosers.includes(fData.source)) {
+                                        _dosers[k].dosers.push(fData.source);
+                                    }
+                                } else {
+                                    _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
                                 }
                             }
-                            if (allowPick) {
-                                console.log("-----ALLOW PICK-----")
-                                //Check if is in Buffer
+                            if (!picked) {
                                 let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
-                                if (bufArtigo) {
-                                    console.log("-----BUFFER ARTIGO-----", bufArtigo, _group)
-                                    if (_group === "undefined") {
-                                        console.log("-----UNDEFINED GROUP-----")
-                                        //Remove doser from undefined group
-                                        _artigos[pickData[0]][_group].dosers = _artigos[pickData[0]][_group].dosers.filter(v => v !== fData.source);
-                                        if (_groupLote === null) {
-                                            //Lote not picked
-                                            const _uid = uuIdInt(0).uuid();
-                                            _artigos[pickData[0]][_uid] = { newgroup: true, dosers: [fData.source], lotes: [{ lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }] };
-                                        } else {
-                                            //Lote already picked
-                                            _artigos[pickData[0]][_groupLote].dosers.push(fData.source);
-                                        }
-                                        console.log("PODE PICAR.......criar grupo e remover doser do grupo anterior e  adicionar lote!", _group, _groupLote)
-                                    } else {
-                                        console.log("-----HAS GROUP-----", _artigos[pickData[0]][_group])
-                                        let _newDosers = [];
-                                        let _newLotes = [];
-                                        if (!_artigos[pickData[0]][_group]?.newgroup) {
-                                            //Verificar se já existe algum lote picado onde tenha sido criado um novo grupo...
-                                            let newgroups = Object.keys(_artigos[pickData[0]]).filter(key => _artigos[pickData[0]][key]?.newgroup === true && _artigos[pickData[0]][key].lotes.some(v => v.lote_id === bufArtigo.ROWID));
-                                            for (let v of newgroups) {
-                                                _newDosers.push(..._artigos[pickData[0]][v]?.dosers);
-                                                _newLotes.push(..._artigos[pickData[0]][v]?.lotes);
-                                                delete _artigos[pickData[0]][v];
-                                            }
-                                            console.log("NEW GROUPS-->", newgroups, _newDosers);
-                                        }
-                                        const _dosers = [...new Set([..._newDosers, ..._artigos[pickData[0]][_group].dosers, fData.source])];
-                                        const _lotes = [..._newLotes, ..._artigos[pickData[0]][_group].lotes, { lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }];
-                                        _artigos[pickData[0]][_group] = { dosers: _dosers, lotes: _lotes.filter((a, i) => _lotes.findIndex((s) => a.lote_id === s.lote_id) === i) };
-                                        console.log("PODE PICAR.......e adicionar lote!", _group);
+                                if (bufArtigo?.ITMREF_0) {
+                                    const _lotes = { ...lotes };
+                                    for (const k in _dosers) {
+                                        _dosers[k].dosers = _dosers[k].dosers.filter(v => v !== fData.source);
                                     }
-                                    setArtigos(_artigos);
+                                    const generator = uuIdInt(0);
+                                    const _uid = generator.uuid();
+                                    _dosers[`${_uid}`] = {
+                                        artigo_cod: bufArtigo.ITMREF_0,
+                                        dosers: [fData.source]
+                                    };
+                                    _lotes[`${_uid}`] = {
+                                        artigo_cod: bufArtigo.ITMREF_0,
+                                        lotes: [{ n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
+                                    };
+                                    setGroups(prev => [...prev, { group_id: `${_uid}`, artigo_cod: bufArtigo.ITMREF_0 }]);
+                                    setLotes(_lotes);
+                                    form.setFieldsValue({ source: '' });
+                                }
+
+                            } else {
+                                let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                                if (bufArtigo?.ITMREF_0) {
+                                    const _lotes = { ...lotes };
+                                    for (const k in _lotes) {
+                                        if (_lotes[k].artigo_cod == pickData[0]) {
+                                            if (!lotes[k].lotes.find(v => v.n_lote === pickData[1])) {
+                                                _lotes[k].lotes = [...lotes[k].lotes, { n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }]
+                                            }
+                                        }
+                                    }
+                                    setLotes(_lotes);
                                     form.setFieldsValue({ source: '' });
                                 }
                             }
+                            setDosers(_dosers);
                         }
                         inputRef.current.value = '';
                     }
+
                 }
+
+
+                /* sendJsonMessage({ cmd: 'pick', value: inputRef.current.value, cs: record.id }); */
+                // if (inputRef.current.value.toUpperCase().startsWith("MP-")) {
+                //     //Source / Type
+                //     form.setFieldsValue({ source: inputRef.current.value.toUpperCase().replace("MP-", "") });
+                //     inputRef.current.value = '';
+                // } else {
+                //     let fData = form.getFieldsValue(true);
+                //     if (fData.source) {
+                //         console.log("OI", inputRef.current.value, buffer, fData)
+                //         let artigoBuffer = buffer.filter(v => v.LOT_0 === inputRef.current.value);
+                //         if (artigoBuffer.length > 0) {
+                //             if (/A[1-6]/.test(fData.source)) {
+                //                 let idx = fData.lotesA.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
+                //                 fData.lotesA[idx]["mangueira"] = fData.source;
+                //                 const lotes = fData.lotesA[idx].lotes.filter(v => v.lote !== inputRef.current.value);
+                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
+                //                 fData.lotesA[idx].lotes = lotes;
+                //                 form.setFieldsValue({ lotesA: fData.lotesA })
+                //             } else if (/B[1-6]/.test(fData.source)) {
+                //                 let idx = fData.lotesB.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
+                //                 fData.lotesB[idx]["mangueira"] = fData.source;
+                //                 const lotes = fData.lotesB[idx].lotes.filter(v => v.lote !== inputRef.current.value);
+                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
+                //                 fData.lotesB[idx].lotes = lotes;
+                //                 form.setFieldsValue({ lotesB: fData.lotesB })
+                //             } else if (/C[1-6]/.test(fData.source)) {
+                //                 let idx = fData.lotesC.findIndex(v => v.matprima_cod === artigoBuffer[0].ITMREF_0);
+                //                 fData.lotesC[idx]["mangueira"] = fData.source;
+                //                 const lotes = fData.lotesC[idx].lotes.filter(v => v.lote !== inputRef.current.value);
+                //                 lotes.push({ lote: inputRef.current.value, unit: artigoBuffer[0].PCUORI_0, qty: parseFloat(artigoBuffer[0].QTYPCU_0).toFixed(2) });
+                //                 fData.lotesC[idx].lotes = lotes;
+                //                 form.setFieldsValue({ lotesC: fData.lotesC });
+                //             }
+                //             inputRef.current.value = '';
+                //         }
+                //     }
+                // }
+
                 //setInputFocus();
             }
+            //console.log("----",inputRef.current.state.value,'----',fv);
+        } else {
         }
     }
 
@@ -621,37 +804,39 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
                                     <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
                                     <Button style={{ marginRight: "3px" }} disabled={!touched} onClick={onCancel}>Cancelar</Button>
-                                    <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
-                                    <Button disabled={touched} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
+                                    <Button style={{ marginRight: "3px" }} disabled={Object.keys(dosers).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    <Button disabled={Object.keys(lotes).length === 0 || touched} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>
                         </FieldSet>
 
                         <YScroll>
-
-                            {artigos && Object.keys(artigos).map((k, i) => {
+                            {(groups && dosersSets) && groups.map((v, i) => {
                                 return (
-                                    <React.Fragment key={`art-${k}`}>
-                                        <ArtigoDesignacao artigo_cod={k} buffer={buffer} />
-                                        {Object.keys(artigos[k]).map((kg, ig) => {
-                                            return (
-                                                <React.Fragment key={`grp-${k}-${ig}`}>
-                                                    {(artigos[k][kg].lotes.length > 0 || artigos[k][kg].dosers.length > 0) && <Group>
-                                                        {artigos[k][kg].dosers.length > 0 && <Lotes lotes={artigos[k][kg].lotes} />}
-                                                        {artigos[k][kg].dosers.length > 0 && <Dosers dosers={artigos[k][kg].dosers} lotes={artigos[k][kg].lotes} dosersSets={dosersSets} />}
-                                                    </Group>}
-                                                </React.Fragment>
-                                            );
-                                        })}
+                                    <React.Fragment key={`grp-${v.group_id}`}>
+                                        <ArtigoDesignacao artigo_cod={v.artigo_cod} buffer={buffer} />
+                                        <Group>
+                                            <Artigo artigo_cod={v.artigo_cod} lotes={lotes[v.group_id]?.lotes}></Artigo>
 
+                                            <Dosers group_id={v.group_id} dosers={dosers[v.group_id]?.dosers} lotes={lotes[v.group_id]?.lotes} dosersSets={dosersSets} />
+
+                                        </Group>
                                     </React.Fragment>
-                                )
+                                );
                             })}
 
                         </YScroll>
 
+
                     </FormLayout>
                 </Form>
+                {parentRef && <Portal elId={parentRef.current}>
+                    <Space>
+                        <Button type="primary" onClick={() => form.submit()}>Registar</Button>
+                        <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
+                    </Space>
+                </Portal>
+                }
             </ResultMessage>
         </>
     );
