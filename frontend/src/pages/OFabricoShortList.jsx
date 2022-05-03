@@ -108,9 +108,9 @@ export default ({ feature }) => {
 
     const onModalVisible = (e, parameters) => {
         if (!parameters) {
-            setModalParameters(prev => ({ visible: !prev.visible }));
+            setModalParameters(prev => ({ visible: false }));
         } else {
-            setModalParameters(prev => ({ visible: !prev.visible, width: "900px", height: "700px", fullWidthDevice: 3, parameters }));
+            setModalParameters(prev => ({ visible: !prev.visible, width: "900px", height: "750px", fullWidthDevice: 3, parameters }));
         }
     }
 

@@ -1,4 +1,4 @@
-UPGRADE APP
+#UPGRADE APP
 
 systemctl stop gunicorn@sgp-app-dev
 systemctl stop daphne@sgp-app-dev
@@ -6,15 +6,20 @@ cd /home/sgp-app-dev/
 git reset --hard
 sudo git pull https://github.com/elastictek/sgp.git
 
-Se der o seguinte erro "fatal: unsafe repository ('/home/sgp-app-dev' is owned by someone else)" executar:
+#Se der o seguinte erro "fatal: unsafe repository ('/home/sgp-app-dev' is owned by someone else)" executar:
 	git config --global --add safe.directory /home/sgp-app-dev
+
+python manage.py migrate
+
+#Importar as estruturas de tabelas em mysql		01.post_import_mysql_yyyymmdd.sql
+#Atualizar as tabelas em postgres (gateway) 	02.postgres_update_schemas.sql
 
 cd frontend/
 yarn install
 yarn outdated
 yarn upgrade --latest
 
-Verificar os ficheiros
+#Verificar os ficheiros
 	/home/sgp-app-dev/sistema/settings/local.py
 	/home/sgp-app-dev/sistema/settings/appSettings.py
 	/home/sgp_dev_share/frontend/src/config/index.jsx

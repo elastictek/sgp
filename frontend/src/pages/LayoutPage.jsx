@@ -53,7 +53,7 @@ export default () => {
 
     const onModalVisible = (e, type, feature) => {
         if (!type) {
-            setModalParameters(prev => ({ visible: !prev.visible }));
+            setModalParameters(prev => ({ visible: false }));
         } else {
             switch (type) {
                 case "lotesmp": setModalParameters(prev => ({ visible: !prev.visible, type, fullWidthDevice: 100, title: "Lotes em Linha de Produção", data: {} })); break;

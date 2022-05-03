@@ -645,16 +645,16 @@ def StockList(request, format=None):
                 MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, --FIFO DATE TO ORDER ASC
                 MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp,
                 MAX(LOTES.type_mov) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_type_mov
-                FROM "SGP-DEV".loteslinha LOTES
-                LEFT JOIN "SGP-DEV".lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+                FROM {sgpAlias}.loteslinha LOTES
+                LEFT JOIN {sgpAlias}.lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
                 WHERE LOTES.status=1 
                 ) t WHERE  max_t_stamp=t_stamp and "status"=1
             ) t
             ),
             BASE AS(
                 SELECT * FROM(SELECT acs.*, max(acs.id) over () mx_id, cs.id cs_id 
-                from "SGP-DEV".producao_currentsettings cs
-                join "SGP-DEV".audit_currentsettings acs on cs.id=acs.contextid
+                from {sgpAlias}.producao_currentsettings cs
+                join {sgpAlias}.audit_currentsettings acs on cs.id=acs.contextid
                 where cs.status=3) BASE where BASE.id=BASE.mx_id
             ),
             OFS AS(
@@ -1518,8 +1518,8 @@ def CurrentSettingsInProductionGet(request, format=None):
                 select * from
                 (
                 SELECT acs.*, max(acs.id) over () mx_id 
-                from sistema_dev.producao_currentsettings cs
-                join sistema_dev.audit_currentsettings acs on cs.id=acs.contextid
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
                 where cs.status=3
                 ) t
                 where id=mx_id
@@ -1570,10 +1570,10 @@ def UpdateCurrentSettings(request, format=None):
     f.where()
     f.add(f'id = :csid', True)
     f.value("and")
-    if data['type'] == 'formulacao':
+    if data['type'].startswith('formulacao'):
         dta = {
             "formulacao":json.dumps(data['formulacao'], ensure_ascii=False),
-            "type_op":"formulacao"
+            "type_op":data['type']
         }
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
@@ -3402,7 +3402,7 @@ def ValidarBobinagensList(request, format=None):
                       ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' } 
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-                {'LEFT JOIN sistema_dev.producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
+                {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 where pbm.valid=0 {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
                 {s(dql.sort)} {p(dql.paging)}
@@ -3774,7 +3774,7 @@ def SaidaDoser(request, format=None):
                 id,type_mov,
                 doser,
                 MAX(id) over (partition by doser) mx_id
-                FROM sistema_dev.lotesdosers {filter.text} and `status`= 1
+                FROM lotesdosers {filter.text} and `status`= 1
             ) t WHERE mx_id=id and type_mov<>'OUT'
         """), cursor, filter.parameters)['rows']
 

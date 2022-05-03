@@ -244,11 +244,11 @@ const ArtigoDesignacao = ({ artigo_cod, buffer }) => {
 
 const Lotes = ({ lotes }) => {
     return (
-        <div style={{ minWidth: "180px", maxWidth: "180px", marginRight: "10px" }}>
+        <div style={{ minWidth: "220px", maxWidth: "220px", marginRight: "10px" }}>
             {lotes && lotes.map(v => {
                 return (v.n_lote === null) ? <div key={v.n_lote} /> :
                     <div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={`lid-${v.lote_id}`}>
-                        <div>{v.n_lote}</div>
+                        <div style={{display:"flex",flexDirection:"row",justifyContent:"space-between"}}>{v.n_lote}<div><b>{parseFloat(v.qty_lote_available).toFixed(2)}</b>kg</div></div>
                         {/* {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>} */}
                     </div>;
             })}
@@ -325,6 +325,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [settings, setSettings] = useState(null);
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
+    
 
     const [artigos, setArtigos] = useState();
     const [touched, setTouched] = useState(false);

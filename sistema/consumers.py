@@ -34,7 +34,7 @@ def executeAlerts():
     data = json.dumps(rows[0],default=str)
 
     with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM sistema_dev.ig_doseadores'), cursor, {})['rows']
+        rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
     dataDosersSets = json.dumps(rows[0],default=str)
 
     
@@ -238,7 +238,7 @@ class LotesPickConsumer(WebsocketConsumer):
     def loadDosersSets(self, data):
         connection = connections["default"].cursor()
         rows = db.executeSimpleList(lambda:(f"""		
-            SELECT * FROM sistema_dev.ig_doseadores order by ig_doseadores_ndx DESC LIMIT 1;
+            SELECT * FROM ig_doseadores order by ig_doseadores_ndx DESC LIMIT 1;
          """),connection,{})['rows']
         
         if len(rows)>0:
@@ -311,7 +311,7 @@ class LotesPickConsumer(WebsocketConsumer):
             LEFT JOIN LOTES_DOSERS_BY_LOTES LD on LD.doser=d.doser
             LEFT JOIN LOTES_AVAILABLE LA ON LA.group_id = LD.group_id AND LA.loteslinha_id=LD.loteslinha_id
             group by group_id,artigo_cod
-            ORDER BY LA.min_t_stamp DESC
+            #ORDER BY LA.min_t_stamp DESC
          """),connection,{})['rows']
         print("-------------------")
         print(rows)
