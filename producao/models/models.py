@@ -541,6 +541,7 @@ class Bobinagem(models.Model):
     area_ba=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Área BA", default = 0)
     valid = models.SmallIntegerField(default=1, verbose_name="Bobinagem Validada")
     audit_current_settings=models.ForeignKey('producao.AuditCurrentSettings', on_delete = models.PROTECT, verbose_name = "Audit Current Settings", null = True) #ADDED
+    ig_bobinagem_id=models.IntegerField(verbose_name = "IG_BOBINAGEM", null = True, blank = True, default = 0) #ADDED
     def __str__(self):
         return self.nome
 

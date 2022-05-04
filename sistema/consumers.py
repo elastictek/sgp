@@ -30,6 +30,10 @@ def executeAlerts():
     print(f"{val}")
 
     with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
+    dataig_bobinagens = json.dumps(rows[0],default=str)
+
+    with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
     data = json.dumps(rows[0],default=str)
 
@@ -48,7 +52,7 @@ def executeAlerts():
                 order by acs.id desc
                 limit 1
          """), cursor, {})['rows']
-    dataInProd = json.dumps(rows[0],default=str)
+    dataInProd = json.dumps(rows[0] if len(rows)>0 else {},default=str)
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f"""		
@@ -80,8 +84,9 @@ def executeAlerts():
 
     async_to_sync(channel_layer.group_send)(group_name,{
         'type': "getAlerts", "data":{
-            "bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
+            "igbobinagens":dataig_bobinagens,"bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
             "hash":{
+                "hash_igbobinagens":hashlib.md5(dataig_bobinagens.encode()).hexdigest(),
                 "hash_bobinagens":hashlib.md5(data.encode()).hexdigest(),
                 "hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),

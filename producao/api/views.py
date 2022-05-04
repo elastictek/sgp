@@ -716,6 +716,46 @@ def StockList(request, format=None):
 
 
 
+#region LOGS
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def LineLogList(request, format=None):
+    connection = connections["default"].cursor()    
+    #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        #"picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+
+    cols = f'''*'''
+    sql = lambda p, c, s: (
+        f"""
+        SELECT {c(f'{cols}')} FROM ig_bobinagens
+        {f.text}
+        {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+
+#endregion
+
 #region CLIENTES
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

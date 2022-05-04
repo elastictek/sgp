@@ -127,26 +127,27 @@ const SaidaMP = ({ parameters }) => {
 
         let mp = [];
         //let d = [];
-        Object.keys(parameters.artigos).forEach(v => {
-            let k = Object.keys(parameters.artigos[v])[0];
-            if (k !== "undefined") {
-                const artigo = buffer.find(n => n.ITMREF_0 === v);
-                for (let y of parameters.artigos[v][k].lotes) {
-                    mp.push({ artigo_cod: v, artigo_des: artigo.ITMDES1_0, ...y });
+        if (parameters?.artigos) {
+            Object.keys(parameters.artigos).forEach(v => {
+                let k = Object.keys(parameters.artigos[v])[0];
+                if (k !== "undefined") {
+                    const artigo = buffer.find(n => n.ITMREF_0 === v);
+                    for (let y of parameters.artigos[v][k].lotes) {
+                        mp.push({ artigo_cod: v, artigo_des: artigo.ITMDES1_0, ...y });
+                    }
                 }
-            }
-        });
+            });
+        }
 
-
-/*         const lt = [];
-        for (const [key, value] of Object.entries(parameters.lotes)) {
-            if (key !== 'null') {
-                const artigo = buffer.find(v => v.ITMREF_0 === value.artigo_cod);
-                for (const v of value.lotes) {
-                    lt.push({ artigo_cod: value.artigo_cod, artigo_des: artigo.ITMDES1_0, ...v });
-                }
-            }
-        } */
+        /*         const lt = [];
+                for (const [key, value] of Object.entries(parameters.lotes)) {
+                    if (key !== 'null') {
+                        const artigo = buffer.find(v => v.ITMREF_0 === value.artigo_cod);
+                        for (const v of value.lotes) {
+                            lt.push({ artigo_cod: value.artigo_cod, artigo_des: artigo.ITMDES1_0, ...v });
+                        }
+                    }
+                } */
         setLotes(mp);
     }, [parameters.artigos]);
     return (
@@ -167,14 +168,16 @@ const SaidaDoser = ({ parameters, wndRef, setParameters }) => {
 
     useEffect(() => {
         let d = [];
-        Object.keys(parameters.artigos).forEach(v => {
-            let k = Object.keys(parameters.artigos[v])[0];
-            if (k !== "undefined") {
-                for (let v of parameters.artigos[v][k].dosers) {
-                    d.push({ value: v });
+        if (parameters?.artigos) {
+            Object.keys(parameters.artigos).forEach(v => {
+                let k = Object.keys(parameters.artigos[v])[0];
+                if (k !== "undefined") {
+                    for (let v of parameters.artigos[v][k].dosers) {
+                        d.push({ value: v });
+                    }
                 }
-            }
-        });
+            });
+        }
         setDosers(d);
     }, [parameters.dosers]);
 
@@ -248,7 +251,7 @@ const Lotes = ({ lotes }) => {
             {lotes && lotes.map(v => {
                 return (v.n_lote === null) ? <div key={v.n_lote} /> :
                     <div style={{ borderBottom: "dashed 1px #d9d9d9" }} key={`lid-${v.lote_id}`}>
-                        <div style={{display:"flex",flexDirection:"row",justifyContent:"space-between"}}>{v.n_lote}<div><b>{parseFloat(v.qty_lote_available).toFixed(2)}</b>kg</div></div>
+                        <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}>{v.n_lote}<div><b>{parseFloat(v.qty_lote_available).toFixed(2)}</b>kg</div></div>
                         {/* {v.n_lote && <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between" }}><div>{parseFloat(v.qty_lote).toFixed(2)}kg</div><div>{parseFloat(v.qty_lote_available).toFixed(2)}kg</div></div>} */}
                     </div>;
             })}
@@ -325,7 +328,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [settings, setSettings] = useState(null);
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
-    
+
 
     const [artigos, setArtigos] = useState();
     const [touched, setTouched] = useState(false);
@@ -452,7 +455,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     _artigos[itemForm.matprima_cod][_grp] = { dosers: [], lotes: [] };
                 }
                 _artigos[itemForm.matprima_cod][_grp].dosers.push(_doser);
-                let arrlotes = [..._artigos[itemForm.matprima_cod][_grp].lotes,..._pd.lotes];
+                let arrlotes = [..._artigos[itemForm.matprima_cod][_grp].lotes, ..._pd.lotes];
                 _artigos[itemForm.matprima_cod][_grp].lotes = arrlotes.filter((a, i) => arrlotes.findIndex((s) => a.lote_id === s.lote_id) === i);
             }
             setArtigos(_artigos);

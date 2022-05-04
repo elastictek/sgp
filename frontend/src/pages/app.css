@@ -1,7 +1,41 @@
-html, body {
+html,
+body {
     /* overflow: hidden; */
 }
 
-.ant-modal-confirm-body > .anticon + .ant-modal-confirm-title + .ant-modal-confirm-content {
+.ant-modal-confirm-body>.anticon+.ant-modal-confirm-title+.ant-modal-confirm-content {
     margin-left: 0px !important;
-  }
+}
+
+
+.ant-table-body {
+    scrollbar-color: rgba(105, 112, 125, .5) transparent;
+    scrollbar-width: thin;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ant-table-body::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+    background-color: rgba(105, 112, 125, .5);
+    background-clip: content-box;
+    border-radius: 16px;
+    border: 6px solid transparent;
+}
+
+.ant-table-body::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
+.ant-table-body:focus {
+    outline: none;
+}
+
+.ant-table-body:focus:focus-visible {
+    outline-style: auto;
+}
