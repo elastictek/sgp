@@ -9,10 +9,12 @@ sudo git pull https://github.com/elastictek/sgp.git
 #Se der o seguinte erro "fatal: unsafe repository ('/home/sgp-app-dev' is owned by someone else)" executar:
 	git config --global --add safe.directory /home/sgp-app-dev
 
-python manage.py migrate
+python3 manage.py migrate
 
 #Importar as estruturas de tabelas em mysql		01.post_import_mysql_yyyymmdd.sql
 #Atualizar as tabelas em postgres (gateway) 	02.postgres_update_schemas.sql
+
+
 
 cd frontend/
 yarn install

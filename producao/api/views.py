@@ -145,7 +145,7 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
     return {"hasFilters": hasFilters, "text": txt, "parameters": p}
 
 
-def rangeP(data, key, field, fieldDiff=None):
+def rangeP(data, key, field, fieldDiff=None,pName=None):
     ret = {}
     if data is None:
         return ret
@@ -153,7 +153,27 @@ def rangeP(data, key, field, fieldDiff=None):
         hasNone = False
         for i, v in enumerate(data):
             if v is not None:
-                ret[f'{key[i]}_{i}'] = {"key": key[i], "value": v, "field": field}
+                ret[f'{pName}{key[i]}_{i}'] = {"key": key[i], "value": v, "field": field}
+            else:
+                hasNone = True
+        if hasNone == False and len(data)==2 and fieldDiff is not None:
+            ret[f'{pName}{key[0]}_{key[1]}'] = {"key": key, "value": ">=0", "field": fieldDiff}
+    else:    
+        for i, v in enumerate(data):
+            if v is not None:
+                ret[f'{pName}{key}_{i}'] = {"key": key, "value": v, "field": field}
+    return ret
+
+def rangeP2(data, key, field1, field2, fieldDiff=None):
+    ret = {}
+    field=False
+    if data is None:
+        return ret
+    if isinstance(key, list):
+        hasNone = False
+        for i, v in enumerate(data):
+            if v is not None:
+                ret[f'{key[i]}_{i}'] = {"key": key[i], "value": v, "field": field1 if field is False else field2}
             else:
                 hasNone = True
         if hasNone == False and len(data)==2 and fieldDiff is not None:
@@ -161,7 +181,7 @@ def rangeP(data, key, field, fieldDiff=None):
     else:    
         for i, v in enumerate(data):
             if v is not None:
-                ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field}
+                ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field1 if field is False else field2}
     return ret
 
 #Ordens de Fabrico
@@ -726,8 +746,14 @@ def LineLogList(request, format=None):
     connection = connections["default"].cursor()    
     #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
     f = Filters(request.data['filter'])
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    print(request.data['filter'])
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     f.setParameters({
-        #"picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
+        **rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
+        **rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
+        "bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
         #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
         #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
         #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
@@ -736,15 +762,36 @@ def LineLogList(request, format=None):
     f.where()
     f.auto()
     f.value("and")
-    parameters = {**f.parameters}
+
+
+    def filterEventoMultiSelect(data,name,field,hasFilters):
+        f = Filters(data)
+        fP = {}
+        v = None if name not in data else data[name]
+        if v is None:
+            value=None
+        else:
+            dt = [o['value'] for o in v]
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ig.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and" if hasFilters else "where")
+        f.value()
+        return f
+    fevento = filterEventoMultiSelect(request.data['filter'],'fevento','type',(True if f.hasFilters else False))
+
+    parameters = {**f.parameters, **fevento.parameters}
 
     dql = db.dql(request.data, False)
 
-    cols = f'''*'''
+    cols = f'''ig.*,pbm.nome'''
     sql = lambda p, c, s: (
         f"""
-        SELECT {c(f'{cols}')} FROM ig_bobinagens
-        {f.text}
+        SELECT {c(f'{cols}')} 
+        FROM ig_bobinagens ig
+        LEFT JOIN producao_bobinagem pbm ON pbm.ig_bobinagem_id=ig.id
+        {f.text} {fevento.text}
         {s(dql.sort)} {p(dql.paging)}
         """
     )
