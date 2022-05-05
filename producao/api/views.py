@@ -392,7 +392,7 @@ def OFabricoList(request, format=None):
     #     """
     # ), connection, parameters, [])
 
-    #ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM "SGP-DEV".planeamento_ordemproducao where id>679"""),connection,{})
+    #ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM {sgpAlias}.planeamento_ordemproducao where id>679"""),connection,{})
     #print(f'----------------------{ret}')
     return Response(response)
 
@@ -711,8 +711,8 @@ def StockList(request, format=None):
             CASE WHEN max_type_mov IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END picked,
             SETTINGS.frm,SETTINGS.ofs,
             ST."QTYPCU_0" qty_lote, ST."PCU_0" unit,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov 
-            FROM "SAGE-PROD"."STOCK" ST
-            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            FROM {sageAlias}."STOCK" ST
+            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
             LEFT JOIN SETTINGS ON ST."ITMREF_0" = SETTINGS.matprima_cod
             LEFT JOIN LOTES_EM_LINHA LL ON LL.artigo_cod=ST."ITMREF_0" AND LL.n_lote=ST."LOT_0" {flocation.text}
             WHERE 
@@ -855,7 +855,8 @@ def StockLogList(request, format=None):
 # group by contextid,artigo_cod,n_lote
 
 
-
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
     parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
     cols = f'''ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
@@ -866,8 +867,8 @@ def StockLogList(request, format=None):
         f"""
         SELECT * FROM (
             SELECT {c(f'{cols}')} 
-            FROM "SGP-DEV".loteslinha ll
-            LEFT JOIN "SGP-DEV".lotesdosers ld on ld.loteslinha_id=ll.id
+            FROM {sgpAlias}.loteslinha ll
+            LEFT JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
             {f.text}
         ) t
         {s(dql.sort)} {p(dql.paging)}
