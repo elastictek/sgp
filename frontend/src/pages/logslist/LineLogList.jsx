@@ -285,7 +285,7 @@ const ExclamationButton = styled(Button)`
 
 const AssignOFColumn = ({ v, e }) => {
     return (<>
-        {v && <b>v</b>}
+        {v && <b>{v}</b>}
         {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />}/>}
     </>);
 }

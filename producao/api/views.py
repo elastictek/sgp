@@ -840,6 +840,22 @@ def StockLogList(request, format=None):
         return f
     #fevento = filterEventoMultiSelect(request.data['filter'],'fevento','type',(True if f.hasFilters else False))
     #parameters = {**f.parameters, **fevento.parameters}
+
+#group by
+# SELECT contextid,artigo_cod,n_lote,sum(qty_to_consume) FROM (
+# SELECT ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+# CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+# ld.type_mov type_mov_doser,
+# ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,acs.contextid
+# FROM "SGP-PROD".loteslinha ll
+# LEFT JOIN "SGP-PROD".lotesdosers ld on ld.loteslinha_id=ll.id
+# LEFT JOIN "SGP-PROD".producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+# LEFT JOIN "SGP-PROD".audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+# ) t
+# group by contextid,artigo_cod,n_lote
+
+
+
     parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
     cols = f'''ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
