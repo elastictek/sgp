@@ -45,7 +45,7 @@
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
     "@elastic/datemath": "^5.0.3",
-    "@elastic/eui": "^55.1.0",
+    "@elastic/eui": "^56.0.0",
     "@emotion/react": "^11.8.2",
     "antd": "^4.20.2",
     "axios": "^0.27.2",

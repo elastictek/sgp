@@ -286,8 +286,13 @@ const ExclamationButton = styled(Button)`
 const AssignOFColumn = ({ v, e }) => {
     return (<>
         {v && <b>v</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />}/>}
+        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} />}
     </>);
+}
+
+const Quantity = ({ v, unit = "kg" }) => {
+    return (<div style={{ display: "flex", flexDirection: "row" }}>{v && <><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div><div>{unit}</div></>}</div>);
+
 }
 
 export default () => {
@@ -297,7 +302,13 @@ export default () => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
+    const dataAPI = useDataAPI({
+        payload: {
+            url: `${API_URL}/stockloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
+                { column: 'idlinha', direction: 'ASC' }, { column: 'iddoser', direction: 'ASC' },
+            ]
+        }
+    });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -310,63 +321,38 @@ export default () => {
     }, [dataSocket?.igbobinagens]);
 
     const selectionRowKey = (record) => {
-        return `${record.id}`;
+        return `${record.idlinha}-${record.iddoser}`;
     }
 
-    const doserConsume = (d, dlag, dreset, event) => {
-        if (event !== 1) {
-            return null;
-        }
-        let _d = noValue(d, 0);
-        let _dlag = noValue(dlag, 0);
-        let _dreset = noValue(dreset, 0);
-        return <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{((((_d < _dlag) ? _dreset : 0) + _d) - _dlag).toFixed(2)}</div>kg</div>
-
-    }
+    /*
+     
+    ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+                ld.type_mov type_mov_doser,
+                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id
+      
+     */
 
     const columns = setColumns(
         {
             dataAPI,
             data: dataAPI.getData().rows,
-            uuid: "logigbobinagem",
+            uuid: "loglotesdosers",
             include: {
                 ...((common) => (
                     {
-                        type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
-                        , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , nome: { title: "Bobinagem", width: 100, align:"center", style:{backgroundColor:"undet"}, render: (v, r) => <AssignOFColumn v={v} e={r.type} />, ...common }
-                        , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
-                        , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, metros_evento_estado: { title: "metros_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        //, n_trocas: { title: "n_trocas", width: 90, render: (v, r) => v, ...common }
-                        , nw_inf: { title: "NW Inf.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_inf_evento_estado: { title: "nw_inf_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , nw_sup: { title: "NW Sup.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_sup_evento_estado: { title: "nw_sup_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , peso: { title: "Peso", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div>kg</div>, ...common }
-
-                        , A1: { title: "A1", width: 90, render: (v, r) => doserConsume(r.A1, r.A1_LAG, r.A1_RESET, r.type), ...common }
-                        , A2: { title: "A2", width: 90, render: (v, r) => doserConsume(r.A2, r.A2_LAG, r.A2_RESET, r.type), ...common }
-                        , A3: { title: "A3", width: 90, render: (v, r) => doserConsume(r.A3, r.A3_LAG, r.A3_RESET, r.type), ...common }
-                        , A4: { title: "A4", width: 90, render: (v, r) => doserConsume(r.A4, r.A4_LAG, r.A4_RESET, r.type), ...common }
-                        , A5: { title: "A5", width: 90, render: (v, r) => doserConsume(r.A5, r.A5_LAG, r.A5_RESET, r.type), ...common }
-                        , A6: { title: "A6", width: 90, render: (v, r) => doserConsume(r.A6, r.A6_LAG, r.A6_RESET, r.type), ...common }
-
-                        , B1: { title: "B1", width: 90, render: (v, r) => doserConsume(r.B1, r.B1_LBG, r.B1_RESET, r.type), ...common }
-                        , B2: { title: "B2", width: 90, render: (v, r) => doserConsume(r.B2, r.B2_LBG, r.B2_RESET, r.type), ...common }
-                        , B3: { title: "B3", width: 90, render: (v, r) => doserConsume(r.B3, r.B3_LBG, r.B3_RESET, r.type), ...common }
-                        , B4: { title: "B4", width: 90, render: (v, r) => doserConsume(r.B4, r.B4_LBG, r.B4_RESET, r.type), ...common }
-                        , B5: { title: "B5", width: 90, render: (v, r) => doserConsume(r.B5, r.B5_LBG, r.B5_RESET, r.type), ...common }
-                        , B6: { title: "B6", width: 90, render: (v, r) => doserConsume(r.B6, r.B6_LBG, r.B6_RESET, r.type), ...common }
-
-                        , C1: { title: "C1", width: 90, render: (v, r) => doserConsume(r.C1, r.C1_LAG, r.C1_RESET, r.type), ...common }
-                        , C2: { title: "C2", width: 90, render: (v, r) => doserConsume(r.C2, r.C2_LAG, r.C2_RESET, r.type), ...common }
-                        , C3: { title: "C3", width: 90, render: (v, r) => doserConsume(r.C3, r.C3_LAG, r.C3_RESET, r.type), ...common }
-                        , C4: { title: "C4", width: 90, render: (v, r) => doserConsume(r.C4, r.C4_LAG, r.C4_RESET, r.type), ...common }
-                        , C5: { title: "C5", width: 90, render: (v, r) => doserConsume(r.C5, r.C5_LAG, r.C5_RESET, r.type), ...common }
-                        , C6: { title: "C6", width: 90, render: (v, r) => doserConsume(r.C6, r.C6_LAG, r.C6_RESET, r.type), ...common }
-                        , id: { title: "ID", width: 60, render: (v, r) => v, ...common }
+                        doser: { title: "doser", width: 60, render: (v, r) => v, ...common },
+                        t_stamp: { title: "Data", width: 60, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
+                        artigo_cod: { title: "Artigo", width: 60, render: (v, r) => v, ...common },
+                        n_lote: { title: "Lote", width: 60, render: (v, r) => v, ...common },
+                        type_mov_linha: { title: "Mov. Linha", width: 60, render: (v, r) => v, ...common },
+                        type_mov_doser: { title: "Mov. Dos.", width: 60, render: (v, r) => v, ...common },
+                        qty_lote: { title: "Qtd. Lote", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                        qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                        qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                        qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                        group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
+                        ig_bobinagem_id: { title: "IGID", width: 60, render: (v, r) => v, ...common },
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -382,7 +368,7 @@ export default () => {
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Log Movimentos de Linha</Title>}
+                    title={<Title level={4}>Log Movimento de Lotes</Title>}
                     columnChooser={false}
                     reload
                     rowHover={false}

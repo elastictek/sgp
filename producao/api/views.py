@@ -800,6 +800,67 @@ def LineLogList(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def StockLogList(request, format=None):
+    connection = connections[connGatewayName].cursor()    
+    #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
+        #**rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
+        #**rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
+        #"bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
+        #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+
+    def filterEventoMultiSelect(data,name,field,hasFilters):
+        f = Filters(data)
+        fP = {}
+        v = None if name not in data else data[name]
+        if v is None:
+            value=None
+        else:
+            dt = [o['value'] for o in v]
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ig.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and" if hasFilters else "where")
+        f.value()
+        return f
+    #fevento = filterEventoMultiSelect(request.data['filter'],'fevento','type',(True if f.hasFilters else False))
+    #parameters = {**f.parameters, **fevento.parameters}
+    parameters = {**f.parameters}
+    dql = dbgw.dql(request.data, False)
+    cols = f'''ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+            CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+            ld.type_mov type_mov_doser,
+            ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id'''
+    sql = lambda p, c, s: (
+        f"""
+        SELECT * FROM (
+            SELECT {c(f'{cols}')} 
+            FROM "SGP-DEV".loteslinha ll
+            LEFT JOIN "SGP-DEV".lotesdosers ld on ld.loteslinha_id=ll.id
+            {f.text}
+        ) t
+        {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [])
+    return Response(response)
 
 #endregion
 
@@ -1658,6 +1719,16 @@ def UpdateCurrentSettings(request, format=None):
     f.add(f'id = :csid', True)
     f.value("and")
     if data['type'].startswith('formulacao'):
+        ok=1
+        for v in data['formulacao']['items']:
+            if "doseador_A" in v:
+                pass
+            elif  "doseador_B" in v or "doseador_C" in v:
+                pass
+            else:
+                ok=0
+                break
+        data["formulacao"]["valid"] = ok
         dta = {
             "formulacao":json.dumps(data['formulacao'], ensure_ascii=False),
             "type_op":data['type']
@@ -1769,26 +1840,75 @@ def UpdateCurrentSettings(request, format=None):
         except Exception as error:
             return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
 
-        print(f'dataaaaaaa{dml.statement}')
-        pass
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def ChangeCurrSettingsStatus(request, format=None):
     data = request.data.get("parameters")
+    def checkOfIsValid(id,data,cursor):
+        f = Filters({"id": id})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")   
+        return db.executeSimpleList(lambda: (f"""
+            SELECT CASE WHEN 
+            JSON_EXTRACT(formulacao, "$.valid")=1 AND 
+            JSON_EXTRACT(cortes, "$.id") IS NOT NULL AND 
+            JSON_EXTRACT(cortesordem, "$.id") IS NOT NULL 
+            THEN 1 ELSE 0 END 
+            valid
+            FROM producao_currentsettings 
+            {f.text}
+        """), cursor, f.parameters)['rows'][0]['valid']
+
+    def updateOP(id,data,cursor,status_str):
+        dml = db.dml(TypeDml.UPDATE,{"id":id},"planeamento_ordemproducao",{},None,False)
+        dml.statement = f"""
+                update planeamento_ordemproducao op
+                join (select t.ofid from
+                (SELECT JSON_EXTRACT(ofs, "$[*].of_id") ofids FROM producao_currentsettings where id=%(id)s) ofs
+                join JSON_TABLE(CAST(ofids as JSON), "$[*]" COLUMNS(ofid INT PATH "$")) t ON TRUE
+                ) t on op.id=t.ofid
+                set 
+                {status_str}
+        """
+        db.execute(dml.statement, cursor, dml.parameters)
+
     try:
         with connections["default"].cursor() as cursor:
             if (data["status"]==3):
+                print("Em producao")
                 exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
                 if (exists==0):
-                    dml = db.dml(TypeDml.UPDATE, {"status":3} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    return Response({"status": "success", "id":0, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+                    #CHECK IF DOSERS AND CUTS ARE CORRECTLY DEFINED
+                    if checkOfIsValid(data["id"],data,cursor)==1:
+                        dml = db.dml(TypeDml.UPDATE, {"status":3} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,"`status`=3,ativa=1,completa=0")
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Iniciada!', "subTitle":f""})
+                    else:
+                        return Response({"status": "error", "id":0, "title": f'A formulação ou Posição dos Cortes não estão corretamente definidos !', "subTitle":""})
             elif (data["status"]==0):
+                print("redo plan....")
                 pass
             elif (data["status"]==1):
+                print("stop")
+                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
+                if (exists==1):
+                        dml = db.dml(TypeDml.UPDATE, {"status":1} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,"`status`=2,ativa=0,completa=0")
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada!', "subTitle":f""})
+            elif (data["status"]==9):
+                print("finish")
+                exists = db.exists("producao_currentsettings",{"status":"<9"},cursor).exists
+                if (exists==1):
+                        dml = db.dml(TypeDml.UPDATE, {"status":9} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,"`status`=9,ativa=0,completa=1")
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Finalizada!', "subTitle":f""})
                 pass
     except Exception as error:
         return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})

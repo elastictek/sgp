@@ -20,6 +20,7 @@ const StockList = lazy(() => import('./artigos/StockList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
 const FormLotes = lazy(() => import('./currentline/FormLotes'));
 const LineLogList = lazy(() => import('./logslist/LineLogList'));
+const StockLogList = lazy(() => import('./logslist/StockLogList'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
@@ -47,6 +48,7 @@ const RenderRouter = () => {
                 { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
                 { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
                 { path: "logslist/lineloglist", element: <Suspense fallback={<Spin />}><LineLogList /></Suspense> },
+                { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

@@ -70,7 +70,11 @@ const useStyles = createUseStyles({
 
 
 const StyledTable = styled(Table)`
-  
+    && tbody > tr:hover > td {
+        ${({ rowHover }) => !rowHover && `
+            background-color: unset;
+        `}
+    }
     .ant-table-cell {
         padding: 1px 3px !important;
     }
@@ -93,7 +97,7 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
     if (!uuid) {
         throw new Error('uuid is required')
     }
-    const ret = { all: [], notOptional: [], report: {}, width:0, uuid };
+    const ret = { all: [], notOptional: [], report: {}, width: 0, uuid };
     if (!data) return;
     var keys = []
     if (Array.isArray(include) && include.length > 0) {
@@ -114,25 +118,25 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
             sorter: sort && { multiple: i },
             sortOrder: sort && dataAPI.sortOrder(v),
             optional,
-            ellipsis:true,
+            ellipsis: true,
             ...rOptions
         }
 
-        if (c.editable){
-            c["onCell"]=(record) => ({
+        if (c.editable) {
+            c["onCell"] = (record) => ({
                 record,
                 editable: c.editable,
                 dataIndex: c.dataIndex,
                 title: c.title,
-                input:c?.input
+                input: c?.input
                 //handleSave: this.handleSave,
-              });
+            });
         }
 
         if (!c.optional) {
             ret.notOptional.push(c);
         }
-        ret.width+=(c?.width) ? c.width : 0;
+        ret.width += (c?.width) ? c.width : 0;
         ret.report[c.dataIndex] = { ...(c.width && { width: c.width }), title: c.title };
         ret.all.push(c);
     }
@@ -153,7 +157,7 @@ const TableOptions = ({ columnChooser, reload, clearSort, checkedColumns, setChe
 }
 
 
-export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
+export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, rowHover=true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
     const classes = useStyles();
     const { rowKey, onSelection, enabled: selectionEnabled = false, multiple = false, selectedRows, setSelectedRows } = selection;
     /*     const [selectedRows, setSelectedRows] = useState([]); */
@@ -161,7 +165,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
 
     const css = classNames(className, { [classes.stripRows]: stripRows, [classes.darkHeader]: darkHeader });
 
-     const onTableChange = (pagination, filters, sorter, { action }) => {
+    const onTableChange = (pagination, filters, sorter, { action }) => {
         switch (action) {
             case "sort":
                 dataAPI.addSort(sorter);
@@ -229,6 +233,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
                     rowKey={rowKey}
                     className={css}
                     bordered
+                    rowHover={rowHover}
                     {...selectionEnabled && {
                         onRow: (record, rowIndex) => { return { onClick: () => onRowClick(record, rowIndex, rowKey) } },
                         rowSelection: { selectedRowKeys: selectedRows, onChange/* , columnWidth: 0, renderCell: () => "" */ }

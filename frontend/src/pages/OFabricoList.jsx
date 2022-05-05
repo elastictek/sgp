@@ -604,7 +604,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico) && <>
-                <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "98px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+                <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
                 {/*                 <Dropdown overlay={() => menu(['ignorar'], onShowConfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
                 </Dropdown> */}
@@ -622,7 +622,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
                 </Dropdown>
             </>} */}
             {status == 3 && <>
-                <TagButton onClick={() => onShowMenuActions()} style={{ width: "105px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+                <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
             </>}
             {/*             {status == 3 && <>
                 <TagButton onClick={() => showPopconfirm('iniciar')} style={{ width: "98px", textAlign: "center" }} icon={<ClockCircleOutlined />} color="warning">A Aguardar</TagButton>
@@ -631,7 +631,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
                 </Dropdown>
             </>} */}
             {status == 9 && <>
-                <Tag /* onClick={showPopConfirm}  */ style={{ width: "98px", textAlign: "center" }} color="error">Finalizada</Tag>
+                <Tag /* onClick={showPopConfirm}  */ style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</Tag>
                 {/*                 <Dropdown overlay={() => menu(['reabrir'], showPopconfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
                 </Dropdown> */}

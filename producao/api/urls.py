@@ -136,6 +136,8 @@ urlpatterns = [
 
     #LOGS
     re_path(r'^lineloglist/$',views.LineLogList),
+    re_path(r'^stockloglist/$',views.StockLogList),
+    
     #LOGS
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),

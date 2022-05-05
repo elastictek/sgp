@@ -423,7 +423,14 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     const changeStatus = async (status) => {
         const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
         if (response.data.status !== "error") {
+            Modal.success({content: response.data.title});
             parentReload({ aggId: record.agg_of_id });
+
+        }else{
+            Modal.error({
+                title: 'Erro ao alterar estado da Ordem de Fabrico',
+                content: response.data.title,
+              });
         }
     }
 
@@ -443,6 +450,8 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
                 {record.status == 3 &&
                     <>
                         <Button block size="large" style={{ background: "red", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(1)}>Parar/Suspender Produção</Button>
+                        <VerticalSpace height="5px" />
+                        <Button block size="large" style={{ background: "#40a9ff", color: "#000", fontWeight: 700 }} onClick={() => changeStatus(9)}>Finalizar Produção</Button>
                     </>
                 }
                 {/* <div>
