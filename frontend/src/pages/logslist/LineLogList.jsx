@@ -39,11 +39,51 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
 
+const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
+
+
+
 const useStyles = createUseStyles({
     noRelationRow: {
         backgroundColor: '#ffa39e'
     }
 });
+
+const TitleWnd = ({ title }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
+                <Space>
+                    <div><b style={{ textTransform: "capitalize" }}></b>{title}</div>
+                </Space>
+            </div>
+        </div>
+    );
+}
+
+const Wnd = ({ parameters, setVisible }) => {
+    return (
+        <ResponsiveModal
+            title={<TitleWnd title={parameters.title} />}
+            visible={parameters.visible}
+            centered
+            responsive
+            onCancel={setVisible}
+            maskClosable={true}
+            destroyOnClose={true}
+            fullWidthDevice={parameters.fullWidthDevice}
+            width={parameters?.width}
+            height={parameters?.height}
+            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
+        >
+            <YScroll>
+                {parameters.type === "ofabricotimelinelist" && <Suspense fallback={<></>}><OFabricoTimeLineShortList params={parameters} parentClose={setVisible} /></Suspense>}
+            </YScroll>
+        </ResponsiveModal>
+    );
+
+}
+
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -274,19 +314,20 @@ const EventColumn = ({ v }) => {
 const ExclamationButton = styled(Button)`
   &&& {
     background-color: #ffa940;
-    border-color: #873800;
+    border-color: #ffc069;
     color:#fff;
     &:hover{
-        background-color: #52c41a;
-        border-color: #52c41a;
+        background-color: #fa8c16;
+        border-color: #ffe7ba;
     }
   }
 `;
 
-const AssignOFColumn = ({ v, e }) => {
+const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
+
     return (<>
         {v && <b>{v}</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />}/>}
+        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
     </>);
 }
 
@@ -301,6 +342,19 @@ export default () => {
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
+    const [modalParameters, setModalParameters] = useState({ visible: false });
+
+    const onModalVisible = (e, type, params) => {
+        if (!type) {
+            setModalParameters(prev => ({ visible: false }));
+        } else {
+            switch (type) {
+                case "ofabricotimelinelist":
+                    let title = "Ordens de Fabrico";
+                    setModalParameters(prev => ({ visible: !prev.visible, type, width: "900px", height: "500px", fullWidthDevice: 2, data: { ...params }, title })); break;
+            }
+        }
+    }
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -324,6 +378,14 @@ export default () => {
 
     }
 
+    const reload = () => {
+        dataAPI.fetchPost();
+    }
+
+    const onAssignOF = (id, fim_ts) => {
+        onModalVisible(null, 'ofabricotimelinelist', { id, fim_ts, parentReload: reload });
+    }
+
     const columns = setColumns(
         {
             dataAPI,
@@ -335,7 +397,7 @@ export default () => {
                         type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
                         , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
                         , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , nome: { title: "Bobinagem", width: 100, align:"center", style:{backgroundColor:"undet"}, render: (v, r) => <AssignOFColumn v={v} e={r.type} />, ...common }
+                        , nome: { title: "Bobinagem", width: 100, align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={onAssignOF} />, ...common }
                         , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
                         , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
                         //, metros_evento_estado: { title: "metros_evento_estado", width: 90, render: (v, r) => v, ...common }
@@ -376,13 +438,14 @@ export default () => {
 
     return (
         <>
+            <Wnd parameters={modalParameters} setVisible={onModalVisible} />
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Log Movimentos de Linha</Title>}
+                    title={<Title level={4}>Eventos da Linha de Produção</Title>}
                     columnChooser={false}
                     reload
                     rowHover={false}

@@ -135,8 +135,10 @@ urlpatterns = [
     #MATERIAS-PRIMAS
 
     #LOGS
+    re_path(r'^ofabricotimelinelist',views.OFabricoTimeLineList),
     re_path(r'^lineloglist/$',views.LineLogList),
     re_path(r'^stockloglist/$',views.StockLogList),
+    re_path(r'^createbobinagem/$',views.CreateBobinagem),
     
     #LOGS
 

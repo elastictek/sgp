@@ -368,7 +368,7 @@ export default () => {
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Log Movimento de Lotes</Title>}
+                    title={<Title level={4}>Movimento de Lotes</Title>}
                     columnChooser={false}
                     reload
                     rowHover={false}

@@ -22,6 +22,7 @@ from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.myUtils import  ifNull
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -737,6 +738,51 @@ def StockList(request, format=None):
 
 
 #region LOGS
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def OFabricoTimeLineList(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "max_date": {"value": lambda v: v.get('fim_ts'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where(False,"and")
+    f.add("(t.max_date >=:max_date and t.astatus in (9,1)) or (t.max_date <=:max_date and t.astatus in (3))",True)
+    f.value("and")
+
+
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    cols = f'''t.*,cs.`status`'''
+    sql = lambda p, c, s: (
+        f"""
+        select {c(f'{cols}')}  from (
+            select 
+            id,
+            min(`timestamp`) over (partition by contextid) min_date,
+            max(`timestamp`) over (partition by contextid) max_date,
+            max(id) over (partition by contextid) max_id,
+            contextid,
+            JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs,
+            JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
+            `status` astatus,`timestamp` 
+            from audit_currentsettings acs where `status` in (9,1,3)
+        ) t 
+        JOIN producao_currentsettings cs on t.contextid=cs.id
+        WHERE t.id=t.max_id
+        {f.text}
+        {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    print("ssssssssssssssssssssssssssssssssssssssssssssssssss")
+    print(sql)
+    print(parameters)
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -746,9 +792,6 @@ def LineLogList(request, format=None):
     connection = connections["default"].cursor()    
     #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
     f = Filters(request.data['filter'])
-    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-    print(request.data['filter'])
-    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     f.setParameters({
         #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
         **rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
@@ -868,7 +911,7 @@ def StockLogList(request, format=None):
         SELECT * FROM (
             SELECT {c(f'{cols}')} 
             FROM {sgpAlias}.loteslinha ll
-            LEFT JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
+            FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
             {f.text}
         ) t
         {s(dql.sort)} {p(dql.paging)}
@@ -878,6 +921,64 @@ def StockLogList(request, format=None):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     response = dbgw.executeList(sql, connection, parameters, [])
     return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CreateBobinagem(request, format=None):
+    data = request.data.get("parameters")
+    #{'acs_id': 106, 'cs_id': 21, 'ig_id': 2465}
+    def getIgBobinagem(data,cursor):
+        f = Filters({"id": data["ig_id"]})
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")  
+        f1 = Filters({"idigd": data["ig_id"]})
+        f1.where()
+        f1.add(f'ig_bobinagem_id = :idigd', True)
+        f1.value("and")
+        parameters={**f.parameters,**f1.parameters}
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM ig_bobinagens {f.text} and NOT EXISTS(SELECT id from producao_bobinagem {f1.text})'), cursor, parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                igb = getIgBobinagem(data,cursor)
+                if igb is not None:
+                    args = (igb["id"], igb["diametro"],igb["metros"],igb["peso"],igb["nw_inf"],igb["nw_sup"],igb["inicio_ts"],igb["fim_ts"],
+                    (ifNull(igb["A1_RESET"],0) if igb["A1"] < igb["A1_LAG"] else 0)  + ifNull(igb["A1"],0)-ifNull(igb["A1_LAG"],0),
+                    (ifNull(igb["A2_RESET"],0) if igb["A2"] < igb["A2_LAG"] else 0)  + ifNull(igb["A2"],0)-ifNull(igb["A2_LAG"],0),
+                    (ifNull(igb["A3_RESET"],0) if igb["A3"] < igb["A3_LAG"] else 0)  + ifNull(igb["A3"],0)-ifNull(igb["A3_LAG"],0),
+                    (ifNull(igb["A4_RESET"],0) if igb["A4"] < igb["A4_LAG"] else 0)  + ifNull(igb["A4"],0)-ifNull(igb["A4_LAG"],0),
+                    (ifNull(igb["A5_RESET"],0) if igb["A5"] < igb["A5_LAG"] else 0)  + ifNull(igb["A5"],0)-ifNull(igb["A5_LAG"],0),
+                    (ifNull(igb["A6_RESET"],0) if igb["A6"] < igb["A6_LAG"] else 0)  + ifNull(igb["A6"],0)-ifNull(igb["A6_LAG"],0),
+
+                    (ifNull(igb["B1_RESET"],0) if igb["B1"] < igb["B1_LAG"] else 0)  + ifNull(igb["B1"],0)-ifNull(igb["B1_LAG"],0),
+                    (ifNull(igb["B2_RESET"],0) if igb["B2"] < igb["B2_LAG"] else 0)  + ifNull(igb["B2"],0)-ifNull(igb["B2_LAG"],0),
+                    (ifNull(igb["B3_RESET"],0) if igb["B3"] < igb["B3_LAG"] else 0)  + ifNull(igb["B3"],0)-ifNull(igb["B3_LAG"],0),
+                    (ifNull(igb["B4_RESET"],0) if igb["B4"] < igb["B4_LAG"] else 0)  + ifNull(igb["B4"],0)-ifNull(igb["B4_LAG"],0),
+                    (ifNull(igb["B5_RESET"],0) if igb["B5"] < igb["B5_LAG"] else 0)  + ifNull(igb["B5"],0)-ifNull(igb["B5_LAG"],0),
+                    (ifNull(igb["B6_RESET"],0) if igb["B6"] < igb["B6_LAG"] else 0)  + ifNull(igb["B6"],0)-ifNull(igb["B6_LAG"],0),
+
+                    (ifNull(igb["C1_RESET"],0) if igb["C1"] < igb["C1_LAG"] else 0)  + ifNull(igb["C1"],0)-ifNull(igb["C1_LAG"],0),
+                    (ifNull(igb["C2_RESET"],0) if igb["C2"] < igb["C2_LAG"] else 0)  + ifNull(igb["C2"],0)-ifNull(igb["C2_LAG"],0),
+                    (ifNull(igb["C3_RESET"],0) if igb["C3"] < igb["C3_LAG"] else 0)  + ifNull(igb["C3"],0)-ifNull(igb["C3_LAG"],0),
+                    (ifNull(igb["C4_RESET"],0) if igb["C4"] < igb["C4_LAG"] else 0)  + ifNull(igb["C4"],0)-ifNull(igb["C4_LAG"],0),
+                    (ifNull(igb["C5_RESET"],0) if igb["C5"] < igb["C5_LAG"] else 0)  + ifNull(igb["C5"],0)-ifNull(igb["C5_LAG"],0),
+                    (ifNull(igb["C6_RESET"],0) if igb["C6"] < igb["C6_LAG"] else 0)  + ifNull(igb["C6"],0)-ifNull(igb["C6_LAG"],0),
+                    data["acs_id"],data["cs_id"]                    
+                    )
+                    cursor.callproc('create_bobinagem',args)
+                else:
+                    return Response({"status": "error", "title": "Não é possível criar a Bobinagem, o evento já está associado a uma bobinagem!"})
+                pass
+                return Response({"status": "success", "id":0, "title": "Bobinagem Criada com Sucesso!", "subTitle":''})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao Criar Bobinagem!"})
 
 #endregion
 
@@ -2877,7 +2978,7 @@ def sgpForProduction(data,aggid,user,cursor):
             "paletizacao":json.dumps(paletizacao, ensure_ascii=False),
             "cores":json.dumps(cores, ensure_ascii=False),
             "limites":json.dumps(limites, ensure_ascii=False),
-            "status":1,
+            "status":2,
             "start_prev_date": datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S"),
             "end_prev_date":hours["end_prev_date"],
             "horas_previstas_producao": hours["hours"],#divmod(delta.total_seconds(), 3600)[0],
