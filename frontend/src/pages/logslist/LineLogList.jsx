@@ -247,8 +247,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             "export": type.key,
             cols: columns
         }
-        delete requestData.parameters.cols.bobines;
-        requestData.parameters.cols.area.title = "Área m2";
         const response = await fetchPostBlob(requestData);
         switch (type.key) {
             case "pdf":

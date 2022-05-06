@@ -761,8 +761,8 @@ def OFabricoTimeLineList(request, format=None):
         select {c(f'{cols}')}  from (
             select 
             id,
-            min(`timestamp`) over (partition by contextid) min_date,
-            max(`timestamp`) over (partition by contextid) max_date,
+            min(start_prev_date) over (partition by contextid) min_date,
+            max(end_prev_date) over (partition by contextid) max_date,
             max(id) over (partition by contextid) max_id,
             contextid,
             JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs,
