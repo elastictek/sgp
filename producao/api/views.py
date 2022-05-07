@@ -749,7 +749,7 @@ def OFabricoTimeLineList(request, format=None):
         "max_date": {"value": lambda v: v.get('fim_ts'), "field": lambda k, v: f'{k}'}
     }, True)
     f.where(False,"and")
-    f.add("(t.max_date >=:max_date and t.astatus in (9,1)) or (t.max_date <=:min_date and t.astatus in (3))",True)
+    f.add("(t.max_date >=:max_date and t.astatus in (9,1)) or (t.min_date <=:max_date and t.astatus in (3))",True)
     f.value("and")
 
 
