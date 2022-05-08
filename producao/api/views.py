@@ -744,15 +744,12 @@ def StockList(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def BobinesOriginaisList(request, format=None):
-    connection = connections[connGatewayName].cursor()    
+    connection = connections["default"].cursor()    
     f = Filters(request.data['filter'])
     f.setParameters({}, True)
     f.where()
     f.auto()
     f.value("and")
-
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
 
     fbs=""
     if 'fbobines' in request.data['filter']:
@@ -763,46 +760,44 @@ def BobinesOriginaisList(request, format=None):
     if 'fbobinagens' in request.data['filter']:
         fbms = request.data['filter']['fbobinagens']
         fbms = re.sub(f""""|'""","",fbms)
-        fbms = f"pb0.bobinagem_id in ( select id from {sgpAlias}.producao_bobinagem where nome in ('" + re.sub("\n|,","','",fbms).strip(f""""',""") + "') )"
+        fbms = f"pb0.bobinagem_id in ( select id from producao_bobinagem where nome in ('" + re.sub("\n|,","','",fbms).strip(f""""',""") + "') )"
     fps=""
     if 'fpaletes' in request.data['filter']:
         fps = request.data['filter']['fpaletes']
         fps = re.sub(f""""|'""","",fps)
-        fps = f"pb0.palete_id in ( select id from {sgpAlias}.producao_palete where nome in ('" + re.sub("\n|,","','",fps).strip(f""""',""") + "') )"
+        fps = f"pb0.palete_id in ( select id from producao_palete where nome in ('" + re.sub("\n|,","','",fps).strip(f""""',""") + "') )"
 
     fs = ' or '.join(x for x in [fbs,fbms,fps] if x)
     fs = f'WHERE ({fs})' if fs else ''
 
     parameters = {**f.parameters}
     data = {**request.data,"pagination":{"enabled":False,"limit":5000}} if "pagination" not in request.data or not request.data["pagination"]["enabled"] else request.data
-    dql = dbgw.dql(data, False)
+    #dql = db.dql(data, False)
     cols = f'''
-        row_number() over() rowid,
-        plt.nome,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4, original_lvl5,
-        root,emenda,emenda_lvl1,emenda_lvl2,emenda_lvl3,emenda_lvl4
-        ,comp0,comp1,comp2,comp3,comp4,comp5,
-        b1,b2,b3,b4,b5,
-        --nextl1,nextl2,nextl3,nextl4,nextl5,
-        --N1,N2,N3,N4,N5,
-        nretrabalhos
-        --,(
-        --SUM(N1) OVER (PARTITION BY bobine) +
-        --SUM(N2) OVER (PARTITION BY bobine,original_lvl1) +
-        --SUM(N3) OVER (PARTITION BY bobine,original_lvl1,original_lvl2) +
-        --SUM(N4) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3) +
-        --SUM(N5) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3,original_lvl4)
-        --) ST
+            row_number() over() rowid,
+            plt.nome,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4, original_lvl5,
+            root,emenda,emenda_lvl1,emenda_lvl2,emenda_lvl3,emenda_lvl4
+            ,comp0,comp1,comp2,comp3,comp4,comp5,
+            b1,b2,b3,b4,b5,
+            #nextl1,nextl2,nextl3,nextl4,nextl5,
+            #N1,N2,N3,N4,N5,
+            nretrabalhos
+            #,(
+            #SUM(N1) OVER (PARTITION BY bobine) +
+            #SUM(N2) OVER (PARTITION BY bobine,original_lvl1) +
+            #SUM(N3) OVER (PARTITION BY bobine,original_lvl1,original_lvl2) +        
+            #SUM(N4) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3) +
+            #SUM(N5) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3,original_lvl4)
+            #) ST
     '''
     sql = lambda: (
         f"""
 
-        select {cols} 
-        from (
-
+            select {cols} FROM (
             select
-            palete_id,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4, 
+            palete_id,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4,
             original_lvl5,
-            COALESCE(original_lvl5, COALESCE(original_lvl4, COALESCE(original_lvl3, COALESCE(original_lvl2, original_lvl1)))) root
+            IFNULL(original_lvl5, IFNULL(original_lvl4, IFNULL(original_lvl3, IFNULL(original_lvl2, original_lvl1)))) root
 
             ,case when (original_lvl5 is not null) THEN 5
             ELSE (case when (original_lvl4 is not null) THEN 4
@@ -810,67 +805,68 @@ def BobinesOriginaisList(request, format=None):
             ELSE (case when (original_lvl2 is not null) THEN 2
             ELSE (case when (original_lvl1 is not null) THEN 1
             ELSE 0 END) END) END) END) END nretrabalhos,
-            (select array_agg(jsonb_build_object('bobine',original_lvl5,'emenda',emenda,'metros',metros)) from "SGP-PROD".producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
-            (select array_agg(jsonb_build_object('bobine',original_lvl4,'emenda',emenda,'metros',metros)) from "SGP-PROD".producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
-            (select array_agg(jsonb_build_object('bobine',original_lvl3,'emenda',emenda,'metros',metros)) from "SGP-PROD".producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
-            (select array_agg(jsonb_build_object('bobine',original_lvl2,'emenda',emenda,'metros',metros)) from "SGP-PROD".producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
-            (select array_agg(jsonb_build_object('bobine',original_lvl1,'emenda',emenda,'metros',metros)) from "SGP-PROD".producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
-                ,comp0,comp1,comp2,comp3,comp4,comp5
-                ,b1,b2,b3,b4,b5
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros)) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros)) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros)) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros)) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros)) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
+            ,comp0,comp1,comp2,comp3,comp4,comp5
+            ,b1,b2,b3,b4,b5
 
             from (
-                
-                
-                
-            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1, pb2.nome original_lvl2,
-            pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,      
+
+
+            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1, 
+            pb2.nome original_lvl2,
+            pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,
             pb0.bobinagem_id bm0,pb0.id b0, pb0.comp comp0,
             pb.bobinagem_id bm1,pb.id b1, case when pb.comp=0 then pbm.comp else pb.comp end comp1,
             pb2.bobinagem_id bm2,pb2.id b2, case when pb2.comp=0 then pbm2.comp else pb2.comp end comp2,
             pb3.bobinagem_id bm3,pb3.id b3, case when pb3.comp=0 then pbm3.comp else pb3.comp end comp3,
             pb4.bobinagem_id bm4,pb4.id b4, case when pb4.comp=0 then pbm4.comp else pb4.comp end comp4,
             pb5.bobinagem_id bm5,pb5.id b5, case when pb5.comp=0 then pbm5.comp else pb5.comp end comp5
-        
-        FROM {sgpAlias}.producao_bobine pb0
 
-        /*NÍVEL 1*/
-        join {sgpAlias}.producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id
-        left join {sgpAlias}.producao_bobine pb on pem.bobine_id = pb.id
-        left join {sgpAlias}.producao_bobinagem pbm on pb.bobinagem_id = pbm.id
-        /**/
+            FROM producao_bobine pb0
 
-        /*NÍVEL 2*/
-        left join {sgpAlias}.producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id
-        left join {sgpAlias}.producao_bobine pb2 on pem2.bobine_id = pb2.id
-        left join {sgpAlias}.producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id
-        /**/
+            /*NÍVEL 1*/
+            join producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id 
+            left join producao_bobine pb on pem.bobine_id = pb.id
+            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id    
+            /**/
 
-        /*NÍVEL 3*/
-        left join {sgpAlias}.producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id
-        left join {sgpAlias}.producao_bobine pb3 on pem3.bobine_id = pb3.id
-        left join {sgpAlias}.producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id
-        /**/
+            /*NÍVEL 2*/
+            left join producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id
+            left join producao_bobine pb2 on pem2.bobine_id = pb2.id        
+            left join producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id 
+            /**/
 
-        /*NÍVEL 4*/
-        left join {sgpAlias}.producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id
-        left join {sgpAlias}.producao_bobine pb4 on pem4.bobine_id = pb4.id
-        left join {sgpAlias}.producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id
-        /**/
+            /*NÍVEL 3*/
+            left join producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id
+            left join producao_bobine pb3 on pem3.bobine_id = pb3.id        
+            left join producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id 
+            /**/
 
-        /*NÍVEL 5*/
-        left join {sgpAlias}.producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id
-        left join {sgpAlias}.producao_bobine pb5 on pem5.bobine_id = pb5.id
-        left join {sgpAlias}.producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id
-        /**/
-        {fs}
-        ) tb0 {dql.limit}) tb1
-        JOIN {sgpAlias}.producao_palete plt on tb1.palete_id=plt.id
+            /*NÍVEL 4*/
+            left join producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id
+            left join producao_bobine pb4 on pem4.bobine_id = pb4.id        
+            left join producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id 
+            /**/
+
+            /*NÍVEL 5*/
+            left join producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id
+            left join producao_bobine pb5 on pem5.bobine_id = pb5.id        
+            left join producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id 
+            /**/
+             {fs}
+
+            ) tb0 LIMIT 5000) tb1
+            JOIN producao_palete plt on tb1.palete_id=plt.id
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     if fs:
-        response = dbgw.executeSimpleList(sql, connection, parameters, [])
+        response = db.executeSimpleList(sql, connection, parameters, [])
     else:
         return Response([])
     return Response(response)

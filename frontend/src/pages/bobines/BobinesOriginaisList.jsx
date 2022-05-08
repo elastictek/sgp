@@ -279,15 +279,15 @@ export default () => {
                         nome: { title: "Palete", fixed: "left", width: 80, render: (v, r) => v, ...common },
                         bobine: { title: "Bobine", fixed: "left", width: 120, render: (v, r) => <b>{v}</b>, ...common },
                         comp0: { title: "Comp.", width: 80, render: (v, r) => v, ...common },
-                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => v, ...common },
+                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
                         comp1: { title: "Comp. N1", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => v, ...common },
+                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
                         comp2: { title: "Comp. N2", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => v, ...common },
+                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
                         comp3: { title: "Comp. N3", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => v, ...common },
+                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
                         comp4: { title: "Comp. N4", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => v, ...common },
+                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
                         comp5: { title: "Comp. N5", width: 80, render: (v, r) => v !== 0 && v, ...common },
                         root: { title: "Raíz", width: 120, render: (v, r) => v, ...common },
                         nretrabalhos: { title: "Nº Níveis", width: 60, render: (v, r) => v, ...common },
@@ -307,9 +307,9 @@ export default () => {
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} />
-                {elFilterTags && <Portal elId={elFilterTags}>
+                {/* {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                </Portal>}
+                </Portal>} */}
                 <Table
                     title={<Title level={4}>{mainTitle}</Title>}
                     columnChooser={false}
