@@ -405,12 +405,9 @@ class MySqlSql(BaseSql):
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
         ret.sort = self._BaseSql__getSort(data)
-        pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None,
-                      "offset": 0, "enabled": False, **data.get('pagination', {})}
-        ret.currentPage = pagination.get('currentPage') if pagination.get(
-            'page') is None else pagination.get('page')
-        limit, pageSize, offset, enabled = pagination.get('limit'), pagination.get(
-            'pageSize'), pagination.get('offset'), pagination.get('enabled')
+        pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None, "offset": 0, "enabled": False, **data.get('pagination', {})}
+        ret.currentPage = pagination.get('currentPage') if pagination.get('page') is None else pagination.get('page')
+        limit, pageSize, offset, enabled = pagination.get('limit'), pagination.get('pageSize'), pagination.get('offset'), pagination.get('enabled')
         if enabled:
             a = (0 if offset < 0 else offset) + \
                 (((1 if ret.currentPage <= 0 else ret.currentPage) - 1) * pageSize)

@@ -42,6 +42,8 @@ import { SocketContext, MediaContext } from '../App';
 const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
 
 
+const mainTitle ='Eventos da Linha de Produção';
+
 
 const useStyles = createUseStyles({
     noRelationRow: {
@@ -243,7 +245,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             "config": "default",
             "orientation": "landscape",
             "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": "Ordens de Fabrico",
+            "title": mainTitle,
             "export": type.key,
             cols: columns
         }
@@ -372,6 +374,7 @@ export default () => {
         let _d = noValue(d, 0);
         let _dlag = noValue(dlag, 0);
         let _dreset = noValue(dreset, 0);
+        console.log(_d,"-",_dlag,"-",_dreset);
         return <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{((((_d < _dlag) ? _dreset : 0) + _d) - _dlag).toFixed(2)}</div>kg</div>
 
     }
@@ -443,7 +446,7 @@ export default () => {
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Eventos da Linha de Produção</Title>}
+                    title={<Title level={4}>{mainTitle}</Title>}
                     columnChooser={false}
                     reload
                     rowHover={false}

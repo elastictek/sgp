@@ -134,13 +134,14 @@ urlpatterns = [
     re_path(r'^stocklist/$', views.StockList),
     #MATERIAS-PRIMAS
 
-    #LOGS
+    #REPORTS
     re_path(r'^ofabricotimelinelist',views.OFabricoTimeLineList),
     re_path(r'^lineloglist/$',views.LineLogList),
     re_path(r'^stockloglist/$',views.StockLogList),
     re_path(r'^createbobinagem/$',views.CreateBobinagem),
-    
-    #LOGS
+    re_path(r'^bobinesoriginaislist/$',views.BobinesOriginaisList),
+    #REPORTS
+
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 

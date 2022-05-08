@@ -106,6 +106,9 @@ export default () => {
                     <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
                         <div onClick={() => navigate('/app/logslist/stockloglist')}>Log de Stocks</div>
                     </li>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                        <div onClick={() => navigate('/app/bobines/bobinesoriginaislist')}>Bobines Originais</div>
+                    </li>
                     {/*                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
                         <div onClick={() => navigate('/app/ordemfabrico/formdetails', { state: { id: 48 } })}>Form Ordem Fabrico</div>
                     </li> */}

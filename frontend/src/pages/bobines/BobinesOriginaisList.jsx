@@ -18,17 +18,6 @@ import ResponsiveModal from "components/ResponsiveModal";
 import MoreFilters from 'assets/morefilters.svg';
 import { Outlet, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
-import { MdAdjust } from 'react-icons/md';
-import { GiBandageRoll } from 'react-icons/gi';
-import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
-import { VscDebugStart } from 'react-icons/vsc';
-import { BsFillStopFill } from 'react-icons/bs';
-import { IoCodeWorkingOutline } from 'react-icons/io5';
-
-
-
-
-
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
@@ -38,25 +27,18 @@ const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
+const { TextArea } = Input;
 
 
-const mainTitle = 'Movimento de Lotes';
+const mainTitle = 'Rastreabilidade de Bobines (Originais)';
 
-const useStyles = createUseStyles({
-    noRelationRow: {
-        backgroundColor: '#ffa39e'
-    }
-});
+const useStyles = createUseStyles({});
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
 
-const filterRules = (keys) => {
-    return getSchema({
-        //field1: Joi.string().label("Designação")
-    }, keys).unknown(true);
-}
+const filterRules = (keys) => { return getSchema({}, keys).unknown(true); }
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 
@@ -93,37 +75,30 @@ const ToolbarTable = ({ form, dataAPI }) => {
     );
 }
 
-const HasBobinagemField = () => (
-    <SelectField
-        placeholder="Relação"
-        size="small"
-        dropdownMatchSelectWidth={250}
-        allowClear
-        options={[{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }]}
-    />
-);
-
-const EventField = () => (
-    <SelectMultiField
-        placeholder="Evento"
-        size="small"
-        dropdownMatchSelectWidth={250}
-        allowClear
-        options={[{ value: 1, label: "Troca Bobinagem" },
-        { value: 8, label: "Working" },
-        { value: 9, label: "Stop" },
-        { value: 7, label: "Start" },
-        { value: 6, label: "NW Superiror" },
-        { value: 5, label: "NW Inferior" },
-        ]}
-    />
-);
+const BobinesFilterField = ()=>{
+    return(
+        <TextArea rows={4} placeholder="Lista de Bobines" maxLength={20000} allowClear/>
+    );
+}
+const BobinagensFilterField = ()=>{
+    return(
+        <TextArea rows={4} placeholder="Lista de Bobinagens" maxLength={20000} allowClear />
+    );
+}
+const PaletesFilterField = ()=>{
+    return(
+        <TextArea rows={4} placeholder="Lista de Paletes" maxLength={20000} allowClear/>
+    );
+}
 
 const filterSchema = ({ }) => [
-    { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
+    { fbobines: { label: "Bobines", field: BobinesFilterField } },
+    { fbobinagens: { label: "Bobinagens", field: BobinagensFilterField } },
+    { fpaletes: { label: "Paletes", field: PaletesFilterField } },
+    /* { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
     { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
     { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
-    { fevento: { label: "Evento", field: EventField } }
+    { fevento: { label: "Evento", field: EventField } } */
 ];
 
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
@@ -134,9 +109,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 (!changed) && setChanged(true);
                 const { typelist, ...vals } = values;
                 const _values = {
-                    ...vals,
-                    fdate: getFilterRangeValues(values["fdate"]?.formatted),
-                    ftime: getFilterRangeValues(values["ftime"]?.formatted),
+                    ...vals
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })
@@ -259,41 +232,15 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
     );
 }
 
-const EventColumn = ({ v }) => {
-    return (<>
 
-        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
-        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
-        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
-        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
-        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
-        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
-
-    </>);
-}
-
-const ExclamationButton = styled(Button)`
-  &&& {
-    background-color: #ffa940;
-    border-color: #873800;
-    color:#fff;
-    &:hover{
-        background-color: #52c41a;
-        border-color: #52c41a;
-    }
-  }
-`;
-
-const AssignOFColumn = ({ v, e }) => {
-    return (<>
-        {v && <b>v</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} />}
-    </>);
-}
 
 const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v && <><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div><div>{unit}</div></>}</div>);
 
+}
+
+const Teste = ({ r, v }) => {
+    return (<div>{v}</div>);
 }
 
 export default () => {
@@ -304,11 +251,7 @@ export default () => {
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({
-        payload: {
-            url: `${API_URL}/stockloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
-                { column: 'idlinha', direction: 'ASC' }, { column: 'iddoser', direction: 'ASC' },
-            ]
-        }
+        payload: { url: `${API_URL}/bobinesoriginaislist/`, parameters: {}, pagination: { enabled: false, page: 1, pageSize: 15 }, filter: {}, sort: [] }
     });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
@@ -319,41 +262,40 @@ export default () => {
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket?.igbobinagens]);
+    }, []);
 
     const selectionRowKey = (record) => {
-        return `${record.idlinha}-${record.iddoser}`;
+        return `bo-${record.rowid}`;
     }
-
-    /*
-     
-    ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
-                ld.type_mov type_mov_doser,
-                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id
-      
-     */
 
     const columns = setColumns(
         {
             dataAPI,
             data: dataAPI.getData().rows,
-            uuid: "loglotesdosers",
+            uuid: "bobinesoriginaislist",
             include: {
                 ...((common) => (
                     {
-                        doser: { title: "doser", width: 60, render: (v, r) => v, ...common },
-                        t_stamp: { title: "Data", width: 60, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
-                        artigo_cod: { title: "Artigo", width: 60, render: (v, r) => v, ...common },
-                        n_lote: { title: "Lote", width: 60, render: (v, r) => v, ...common },
-                        type_mov_linha: { title: "Mov. Linha", width: 60, render: (v, r) => v, ...common },
-                        type_mov_doser: { title: "Mov. Dos.", width: 60, render: (v, r) => v, ...common },
-                        qty_lote: { title: "Qtd. Lote", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
-                        ig_bobinagem_id: { title: "IGID", width: 60, render: (v, r) => v, ...common },
+                        nome: { title: "Palete", fixed: "left", width: 80, render: (v, r) => v, ...common },
+                        bobine: { title: "Bobine", fixed: "left", width: 120, render: (v, r) => <b>{v}</b>, ...common },
+                        comp0: { title: "Comp.", width: 80, render: (v, r) => v, ...common },
+                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => v, ...common },
+                        comp1: { title: "Comp. N1", width: 80, render: (v, r) => v !== 0 && v, ...common },
+                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => v, ...common },
+                        comp2: { title: "Comp. N2", width: 80, render: (v, r) => v !== 0 && v, ...common },
+                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => v, ...common },
+                        comp3: { title: "Comp. N3", width: 80, render: (v, r) => v !== 0 && v, ...common },
+                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => v, ...common },
+                        comp4: { title: "Comp. N4", width: 80, render: (v, r) => v !== 0 && v, ...common },
+                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => v, ...common },
+                        comp5: { title: "Comp. N5", width: 80, render: (v, r) => v !== 0 && v, ...common },
+                        root: { title: "Raíz", width: 120, render: (v, r) => v, ...common },
+                        nretrabalhos: { title: "Nº Níveis", width: 60, render: (v, r) => v, ...common },
+                        emenda: { title: "Emenda", ellipsis: true, width: 560, render: (v, r) => v, ...common },
+                        emenda_lvl1: { title: "Emenda Nível 1", ellipsis: true, width: 460, render: (v, r) => v, ...common },
+                        emenda_lvl2: { title: "Emenda Nível 2", ellipsis: true, width: 360, render: (v, r) => v, ...common },
+                        emenda_lvl3: { title: "Emenda Nível 3", ellipsis: true, width: 360, render: (v, r) => v, ...common },
+                        emenda_lvl4: { title: "Emenda Nível 4", ellipsis: true, width: 360, render: (v, r) => v, ...common },
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -375,7 +317,6 @@ export default () => {
                     rowHover={false}
                     stripRows={false}
                     darkHeader
-                    rowClassName={(record) => (record.nome || record.type !== 1) ? 'data-row' : `data-row ${classes.noRelationRow}`}
                     size="small"
                     toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
                     selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}

@@ -10,7 +10,7 @@ const paramType = (method) => (method == "get") ? "params" : "data";
 export const cancelToken = () => CancelToken.source();
 
 const serverRequest = async (request, fetch = true) => {
-  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = request;
+  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken } = request;
   //let source = CancelToken.source();
   const params = (fetch) ? { method, responseType, [paramType(method)]: { sort, filter, pagination, parameters } } : { method, responseType, [paramType(method)]: { ...parameters } };
   if (cancelToken) {
