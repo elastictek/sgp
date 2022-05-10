@@ -67,46 +67,45 @@ export default () => {
     return (
         <div>
             <Wnd parameters={modalParameters} setVisible={onModalVisible} />
-            <div style={{ height: PAGE_TOOLBAR_HEIGHT, maxHeight: PAGE_TOOLBAR_HEIGHT, overflow: "hidden", overflowY: "auto" }}>
-                LAYOUT PAGE
+            <div style={{ height: PAGE_TOOLBAR_HEIGHT, maxHeight: PAGE_TOOLBAR_HEIGHT, overflow: "hidden", overflowY: "auto", }}>
                 <ul style={{ listStyleType: "none", margin: 0, padding: 0 }}>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginLeft: "10px", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginLeft: "10px", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => { navigate('/app'); window.location.reload(); }}>Refresh</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => navigate('/app')}>Home</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => navigate('/')}>Home SGP</div>
                     </li>
                     {/*                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
                         <div onClick={() => navigate('/app/sorders')}>Encomendas</div>
                     </li> */}
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => navigate('/app/ofabricolist')}>Ordens Fabrico</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => navigate('/app/validateReellings')}>Validar Bobinagens</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => onModalVisible(null, 'lotesmp')}>Lotes MP</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => onModalVisible(null, 'ofabricoshortlist', "dosers_change")}>Alterar Doseadores</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => onModalVisible(null, 'ofabricoshortlist', "formulation_change")}>Alterar Formulação</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
-                        <div onClick={() => navigate('/app/stocklist')}>Lotes Stock</div>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
+                        <div onClick={() => navigate('/app/stocklist')}>Lotes Stock (Formulacao Ativa)</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
-                        <div onClick={() => navigate('/app/logslist/lineloglist')}>Log da Linha</div>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
+                        <div onClick={() => navigate('/app/logslist/lineloglist')}>Eventos da Linha</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
-                        <div onClick={() => navigate('/app/logslist/stockloglist')}>Log de Stocks</div>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
+                        <div onClick={() => navigate('/app/logslist/stockloglist')}>Movimento de Lotes</div>
                     </li>
-                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center" }}>
+                    <li style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height:PAGE_TOOLBAR_HEIGHT }}>
                         <div onClick={() => navigate('/app/bobines/bobinesoriginaislist')}>Bobines Originais</div>
                     </li>
                     {/*                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>

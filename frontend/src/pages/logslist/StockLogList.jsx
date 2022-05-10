@@ -342,7 +342,8 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        doser: { title: "doser", width: 60, render: (v, r) => v, ...common },
+                        nome: { title: "Bobinagem", width: 120, render: (v, r) => <b>{v}</b>, ...common },
+                        doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
                         t_stamp: { title: "Data", width: 60, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
                         artigo_cod: { title: "Artigo", width: 60, render: (v, r) => v, ...common },
                         n_lote: { title: "Lote", width: 60, render: (v, r) => v, ...common },
@@ -353,7 +354,7 @@ export default () => {
                         qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                         qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                         group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
-                        ig_bobinagem_id: { title: "IGID", width: 60, render: (v, r) => v, ...common },
+                        ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common },
                     }
                 ))({ idx: 1, optional: false })
             },

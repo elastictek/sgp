@@ -43,7 +43,6 @@ import psycopg2
 # from psycopg2 import pool
 
 
-
 # postgreSQL_pool = psycopg2.pool.SimpleConnectionPool(1, 20, user="postgres",
 #                                                          password="Inf0rmat1ca",
 #                                                          host="192.168.0.16",
@@ -312,9 +311,6 @@ def OFabricoList(request, format=None):
         {s(dql.sort)} {p(dql.paging)}
         """
     )
-
-    print("###############################################################")
-    print(parameters)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
 
@@ -746,7 +742,9 @@ def StockList(request, format=None):
 def BobinesOriginaisList(request, format=None):
     connection = connections["default"].cursor()    
     f = Filters(request.data['filter'])
-    f.setParameters({}, True)
+    f.setParameters({
+        **rangeP(f.filterData.get('fbobinedate'), 'data', lambda k, v: f'pbm0.{k}')
+    }, True)
     f.where()
     f.auto()
     f.value("and")
@@ -768,7 +766,10 @@ def BobinesOriginaisList(request, format=None):
         fps = f"pb0.palete_id in ( select id from producao_palete where nome in ('" + re.sub("\n|,","','",fps).strip(f""""',""") + "') )"
 
     fs = ' or '.join(x for x in [fbs,fbms,fps] if x)
-    fs = f'WHERE ({fs})' if fs else ''
+    if f.hasFilters:
+        fs=f"{f.text} {f'AND ({fs})' if fs else ''}"
+    else:
+        fs = f'WHERE ({fs})' if fs else ''
 
     parameters = {**f.parameters}
     data = {**request.data,"pagination":{"enabled":False,"limit":5000}} if "pagination" not in request.data or not request.data["pagination"]["enabled"] else request.data
@@ -827,11 +828,12 @@ def BobinesOriginaisList(request, format=None):
             pb5.bobinagem_id bm5,pb5.id b5, case when pb5.comp=0 then pbm5.comp else pb5.comp end comp5
 
             FROM producao_bobine pb0
+            JOIN producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id    
 
             /*NÍVEL 1*/
             join producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id 
             left join producao_bobine pb on pem.bobine_id = pb.id
-            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id    
+            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id
             /**/
 
             /*NÍVEL 2*/
@@ -863,6 +865,8 @@ def BobinesOriginaisList(request, format=None):
             JOIN producao_palete plt on tb1.palete_id=plt.id
         """
     )
+    print(sql())
+    print(parameters)
     if ("export" in request.data["parameters"]):
         return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     if fs:
@@ -1039,13 +1043,14 @@ def StockLogList(request, format=None):
     cols = f'''ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
             CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
             ld.type_mov type_mov_doser,
-            ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id'''
+            ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp'''
     sql = lambda p, c, s: (
         f"""
-        SELECT * FROM (
+            SELECT * FROM (
             SELECT {c(f'{cols}')} 
             FROM {sgpAlias}.loteslinha ll
             FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
+            LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
             {f.text}
         ) t
         {s(dql.sort)} {p(dql.paging)}

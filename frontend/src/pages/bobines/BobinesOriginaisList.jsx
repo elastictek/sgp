@@ -25,7 +25,7 @@ import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
-const { Title } = Typography;
+const { Title,Text } = Typography;
 import { SocketContext, MediaContext } from '../App';
 const { TextArea } = Input;
 
@@ -95,6 +95,7 @@ const filterSchema = ({ }) => [
     { fbobines: { label: "Bobines", field: BobinesFilterField } },
     { fbobinagens: { label: "Bobinagens", field: BobinagensFilterField } },
     { fpaletes: { label: "Paletes", field: PaletesFilterField } },
+    { fbobinedate: { label: "Data Bobine", field: { type: "rangedate", size: 'small' } } }
     /* { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
     { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
     { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
@@ -109,7 +110,8 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 (!changed) && setChanged(true);
                 const { typelist, ...vals } = values;
                 const _values = {
-                    ...vals
+                    ...vals,
+                    fbobinedate: getFilterRangeValues(values["fbobinedate"]?.formatted)
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })
@@ -210,11 +212,8 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     field={{ guides: false, wide: [4, 4, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
                     fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                 >
-                    <Field name="fdate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Início/Fim", pos: "top" }}>
+                     <Field name="fbobinedate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Bobine", pos: "top" }}>
                         <RangeDateField size='small' />
-                    </Field>
-                    <Field name="ftime" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Hora Início/Fim", pos: "top" }}>
-                        <RangeTimeField size='small' format={TIME_FORMAT} />
                     </Field>
                     <FieldItem label={{ enabled: false }}>
                         <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
@@ -279,15 +278,15 @@ export default () => {
                         nome: { title: "Palete", fixed: "left", width: 80, render: (v, r) => v, ...common },
                         bobine: { title: "Bobine", fixed: "left", width: 120, render: (v, r) => <b>{v}</b>, ...common },
                         comp0: { title: "Comp.", width: 80, render: (v, r) => v, ...common },
-                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
+                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
                         comp1: { title: "Comp. N1", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
+                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
                         comp2: { title: "Comp. N2", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
+                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
                         comp3: { title: "Comp. N3", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
+                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
                         comp4: { title: "Comp. N4", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => <div style={{color:"#0050b3", fontWeight:700}}>{v}</div>, ...common },
+                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
                         comp5: { title: "Comp. N5", width: 80, render: (v, r) => v !== 0 && v, ...common },
                         root: { title: "Raíz", width: 120, render: (v, r) => v, ...common },
                         nretrabalhos: { title: "Nº Níveis", width: 60, render: (v, r) => v, ...common },
@@ -314,8 +313,8 @@ export default () => {
                     title={<Title level={4}>{mainTitle}</Title>}
                     columnChooser={false}
                     reload
-                    rowHover={false}
-                    stripRows={false}
+                    rowHover
+                    stripRows
                     darkHeader
                     size="small"
                     toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
