@@ -29,8 +29,7 @@ const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
-const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
-import { Wnd, ColumnBobines, Bobines, typeListField } from "./commons";
+import {Wnd, ColumnBobines, Bobines, typeListField} from "./commons";
 
 
 const schema = (keys, excludeKeys) => {
@@ -70,20 +69,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
         }
     },
     { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' } } },
-    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
-    //{ f_ofabrico: { label: "Ordem de Fabrico" } },
-    //{ f_agg: { label: "Agregação Ordem de Fabrico" } },
-    //{ fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue: 'all', ignoreFilterTag: (v) => v === 'all' } },
-    //{ fmulti_order: { label: "Nº Encomenda/Nº Proforma", field: ordersField } },
-    //{ fmulti_customer: { label: "Nº/Nome de Cliente", field: customersField } },
-    //{ fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
-    //{ forderdate: { label: "Data Encomenda", field: { type: "rangedate", size: 'small' } } },
-    //{ fstartprevdate: { label: "Data Prevista Início", field: { type: "rangedate", size: 'small' } } },
-    //{ fendprevdate: { label: "Data Prevista Fim", field: { type: "rangedate", size: 'small' } } },
-
-    /* { SHIDAT_0: { label: "Data Expedição", field: { type: "rangedate" } } },
-    { LASDLVNUM_0: { label: "Nº Última Expedição" } },
-    { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
+    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } }
 ];
 
 const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) => {
@@ -321,13 +307,21 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
     );
 }
 
+
+
+
+
+
+
+
+
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {feature:"fixconsumos"}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -338,14 +332,14 @@ export default () => {
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket?.bobinagens]);
+    }, []);
 
     const selectionRowKey = (record) => {
         return `${record.id}`;
     }
 
     const handleWndClick = (bm) => {
-        setShowValidar({ show: true, data: { title:`Validar e Classificar Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+        setShowValidar({ show: true, data: { title:`Corrigir Consumos Bobinagem ${bm.nome}`,bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     const columns = setColumns(
@@ -368,7 +362,7 @@ export default () => {
                         area: { title: <span>Área m&#178;</span>, render: (v, r) => v, ...common },
                         diam: { title: "Diâmetro mm", render: (v, r) => v, ...common },
                         nwinf: { title: "Nw Inf. m", render: (v, r) => v, ...common },
-                        nwsup: { title: "Nw Sup. m", render: (v, r) => v, ...common }
+                        nwsup: { title: "Nw Sup. m", render: (v, r) => v, ...common },
                     }
                 ))({ idx: 1, optional: false }),
                 ...((common) => (
@@ -408,15 +402,13 @@ export default () => {
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <Wnd show={showValidar} setShow={setShowValidar}>
-                    <Suspense fallback={<></>}>{<BobinesValidarList data={showValidar.data} closeSelf={handleWndCancel} />}</Suspense>
-                </Wnd>
+                <Wnd show={showValidar} setShow={setShowValidar} />
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Validar Bobinagens da Linha 1</Title>}
+                    title={<Title level={4}>Corrigir Consumo de Lotes</Title>}
                     columnChooser={false}
                     reload
                     stripRows
@@ -429,7 +421,6 @@ export default () => {
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
                     scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>
         </>

@@ -22,6 +22,7 @@ const FormLotes = lazy(() => import('./currentline/FormLotes'));
 const LineLogList = lazy(() => import('./logslist/LineLogList'));
 const StockLogList = lazy(() => import('./logslist/StockLogList'));
 const BobinesOriginaisList = lazy(() => import('./bobines/BobinesOriginaisList'));
+const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
@@ -51,6 +52,7 @@ const RenderRouter = () => {
                 { path: "logslist/lineloglist", element: <Suspense fallback={<Spin />}><LineLogList /></Suspense> },
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
                 { path: "bobines/bobinesoriginaislist", element: <Suspense fallback={<Spin />}><BobinesOriginaisList /></Suspense> },
+                { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

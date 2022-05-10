@@ -1,5 +1,6 @@
 import base64
 from operator import eq
+from pyexpat import features
 import re
 from typing import List
 from wsgiref.util import FileWrapper
@@ -3779,8 +3780,9 @@ def TempAggOFabricoLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
-
+    feature = request.data['parameters']['feature'] if 'feature' in request.data['parameters'] else None
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
+
 
     f = Filters(request.data['filter'])
     f.setParameters({
@@ -3861,9 +3863,13 @@ def ValidarBobinagensList(request, format=None):
             {c(f'{dql.columns}')}
             from(
                 select pbm.*,pf.core
+                {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
+                (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
+                ''' if feature=='fixconsumos' else ''}
                 {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
                       ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
-                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' } 
+                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
+
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
@@ -3873,16 +3879,22 @@ def ValidarBobinagensList(request, format=None):
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
             join producao_largura pl on pl.id = pb.largura_id
+            {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
             group by pbm.id {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
             {s(dql.sort)}
         """
     )
     sqlCount = f""" 
-            SELECT count(*) 
-            FROM producao_bobinagem pbm
-            join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-            where pbm.valid=0  {f.text} {f2["text"]}
-            {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if (festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters) else '' }
+            SELECT count(*) FROM (
+                SELECT
+                pbm.id 
+                {f''',(select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes''' if feature=='fixconsumos' else ''}
+                FROM producao_bobinagem pbm
+                join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
+                where pbm.valid=0  {f.text} {f2["text"]}
+                {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if (festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters) else '' }
+            ) t
+            {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
         """
     if ("export" in request.data["parameters"]):
         for x in range(0, 30):
