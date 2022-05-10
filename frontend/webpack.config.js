@@ -103,6 +103,7 @@ module.exports = (env, argv) => {
             rules: [
                 {
                     test: /\.(js|jsx)$/,
+                    include: path.resolve(rootPath, "src"),
                     exclude: /node_modules/,
                     use: {
                         loader: "babel-loader", options: {
