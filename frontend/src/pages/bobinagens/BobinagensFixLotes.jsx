@@ -137,54 +137,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         }
     }
 
-    /*     const fetchCustomers = async (value) => {
-            const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellcustomerslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_customer"]: `%${value.replaceAll(' ', '%%')}%` } });
-            return rows;
-        }
-        const fetchOrders = async (value) => {
-            const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellorderslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_order"]: `%${value.replaceAll(' ', '%%')}%` } });
-            console.log("FETECHED", rows)
-            return rows;
-        }
-        const fetchItems = async (value) => {
-            const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellitemslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_item"]: `%${value.replaceAll(' ', '%%')}%` } });
-            return rows;
-        }
-     */
-    /* const customersField = () => (
-        <AutoCompleteField
-            placeholder="Cliente"
-            size="small"
-            keyField="BPCNAM_0"
-            textField="BPCNAM_0"
-            dropdownMatchSelectWidth={250}
-            allowClear
-            fetchOptions={fetchCustomers}
-        />
-    );
-    const ordersField = () => (
-        <AutoCompleteField
-            placeholder="Encomenda/Prf"
-            size="small"
-            keyField="SOHNUM_0"
-            textField="computed"
-            dropdownMatchSelectWidth={250}
-            allowClear
-            fetchOptions={fetchOrders}
-        />
-    );
-    const itemsField = () => (
-        <AutoCompleteField
-            placeholder="Artigo"
-            size="small"
-            keyField="ITMREF_0"
-            textField="computed"
-            dropdownMatchSelectWidth={250}
-            allowClear
-            fetchOptions={fetchItems}
-        />
-    ); */
-
     const downloadFile = (data, filename, mime, bom) => {
         var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
         var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
@@ -237,12 +189,10 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             "config": "default",
             "orientation": "landscape",
             "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": "Ordens de Fabrico",
+            "title": "Bobinagens, Corrigir Consumo de Lotes",
             "export": type.key,
             cols: columns
         }
-        delete requestData.parameters.cols.bobines;
-        requestData.parameters.cols.area.title = "Área m2";
         const response = await fetchPostBlob(requestData);
         switch (type.key) {
             case "pdf":
@@ -307,14 +257,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
     );
 }
 
-
-
-
-
-
-
-
-
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -351,7 +293,7 @@ export default () => {
                 ...((common) => (
                     {
                         nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
-                        ofs: { title: "Of's", width: 200, render: (v, r) => v, ...common },
+                        ofs: { title: "Of's", width: 200, render: (v, r) => v.replaceAll('"', ""), ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },

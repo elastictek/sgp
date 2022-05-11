@@ -53,6 +53,7 @@ class LotesDosers(models.Model):
     type_mov = models.CharField(max_length=4,verbose_name="Tipo de Movimento", null=False) #IN - INPUT , OUT - OUTPUT , CONS - CONSUMED , CORR - MANUAL CONSUME CORRECTION   
     item_id = models.IntegerField(verbose_name="Item ID", null=True) #(ID do Item da Formulação - (No caso da formulação ter alterado durante a produção este ID não corresponde ao id do item da formulação no planeamento))
     t_stamp = models.DateTimeField(blank=False, null=False)
+    t_stamp_fix = models.DateTimeField(null=True)
     formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True)
     cs = models.ForeignKey('CurrentSettings', on_delete=models.PROTECT, verbose_name="Current Settings", null=True)
     ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
