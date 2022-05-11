@@ -197,6 +197,10 @@ export const useDataAPI = ({ payload } = {}) => {
         return { ...dataState.filter, ..._filter };
     }
 
+    const getParameters = () => {
+        return { ...dataState.parameters, ..._parameters };
+    }
+
     const sortOrder = (columnkey) => {
         if (dataState.sort) {
             let item = dataState.sort.find(v => (v.column === columnkey));
@@ -300,6 +304,7 @@ export const useDataAPI = ({ payload } = {}) => {
         getPagination,
         getPageSize,
         getPostRequest,
+        getParameters,
         getSort,
         getData,
         sortOrder,

@@ -3869,9 +3869,10 @@ def ValidarBobinagensList(request, format=None):
                 {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
                       ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
                       ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
-
+                ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
+                join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 where pbm.valid=0 {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }

@@ -29,7 +29,7 @@ const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
-import {Wnd, ColumnBobines, Bobines, typeListField} from "./commons";
+import { Wnd, ColumnBobines, Bobines, typeListField } from "./commons";
 
 
 const schema = (keys, excludeKeys) => {
@@ -122,7 +122,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
                 dataAPI.addFilters(_values);
-                dataAPI.addParameters({ typelist })
+                dataAPI.addParameters({ ...dataAPI.getParameters(), typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -321,7 +321,7 @@ export default () => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {feature:"fixconsumos"}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: { feature: "fixconsumos" }, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -339,7 +339,7 @@ export default () => {
     }
 
     const handleWndClick = (bm) => {
-        setShowValidar({ show: true, data: { title:`Corrigir Consumos Bobinagem ${bm.nome}`,bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+        setShowValidar({ show: true, data: { title: `Corrigir Consumos Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     const columns = setColumns(
@@ -351,6 +351,7 @@ export default () => {
                 ...((common) => (
                     {
                         nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        ofs: { title: "Of's", width: 200, render: (v, r) => v, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },

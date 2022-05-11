@@ -300,7 +300,7 @@ export const FilterTags = ({ form, filters, schema, rules }) => {
             if (ignore(k, value) || value === undefined || value === "") {
             } else {
                 let label = getLabel(k);
-                return <Tag color="geekblue" closable onClose={() => onClose(k)} key={`t${k}`}>{label} : <b> {v} </b></Tag>
+                return <Tag color="geekblue" closable onClose={() => onClose(k)} key={`t${k}`}>{label}{/*  : <b> {v} </b> */}</Tag>
             }
         });
     }

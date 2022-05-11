@@ -96,8 +96,11 @@ export default () => {
                     <li onClick={() => onModalVisible(null, 'ofabricoshortlist', "formulation_change")} style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height: PAGE_TOOLBAR_HEIGHT }}>
                         <div >Alterar Formulação</div>
                     </li>
+                    <li onClick={() => onModalVisible(null, 'ofabricoshortlist', "lotes_stock")} style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height: PAGE_TOOLBAR_HEIGHT }}>
+                        <div >Stock (Por Ordem de Fabrico)</div>
+                    </li>
                     <li onClick={() => navigate('/app/stocklist')} style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height: PAGE_TOOLBAR_HEIGHT }}>
-                        <div >Lotes Stock (Formulacao Ativa)</div>
+                        <div >Stock (Formulacao Ativa)</div>
                     </li>
                     <li onClick={() => navigate('/app/logslist/lineloglist')} style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height: PAGE_TOOLBAR_HEIGHT }}>
                         <div >Eventos da Linha</div>
