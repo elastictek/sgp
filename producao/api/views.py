@@ -594,6 +594,10 @@ def IgnorarOrdemFabrico(request, format=None):
 def StockList(request, format=None):
     connection = connections[connGatewayName].cursor()    
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print(request.data['filter'])
+    
     f = Filters(request.data['filter'])
     f.setParameters({
         "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
@@ -722,8 +726,7 @@ def StockList(request, format=None):
         {s(dql.sort)} {p(dql.paging)}
         """
     )
-    print("aaaa")
-    print(typeList)
+    print(sql)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     response = dbgw.executeList(sql, connection, parameters, [])
@@ -3997,6 +4000,96 @@ def ValidarBobinagem(request, format=None):
         return Response({"status": "success", "id": None, "title": f"A Bobinagem {data['bobinagem_nome']} foi Validada/Classificada com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem_nome']}!"})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def FixSimulatorList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({})
+    f.where()
+    f.add("bobinagem_id = :bobinagem_id",True)
+    f.value()
+    
+
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    sql = lambda p, c, s: (
+        f""" 
+        SELECT * FROM(		
+            WITH CONSUMOS AS(
+            select id,doser,qty_to_consume cons,ig_bobinagem_id,t_stamp from lotesdosers where status=1 AND type_mov='C' and ig_bobinagem_id in (2619)
+            ),
+            QTY_LOTES_AVAILABLE AS(
+                select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+                FROM (
+                    select distinct * from (
+                    SELECT 
+                    DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
+                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_consumed,
+                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_available,
+                    MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
+                    MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
+                    FROM loteslinha LOTES
+                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  and DOSERS.status<>0
+                    WHERE LOTES.status=-1 
+                    ) t WHERE  max_t_stamp=t_stamp
+                ) t where qty_lote_available>0
+            ),
+            GROUP_DOSER AS(
+                SELECT DOSERS.doser,DOSERS.group_id,COUNT(*) OVER (PARTITION BY group_id) n_dosers FROM lotesdosers DOSERS 
+                WHERE DOSERS.status=-1 AND DOSERS.id in(SELECT DISTINCT MAX(id) OVER (PARTITION BY D.doser) FROM lotesdosers D WHERE D.`status`=-1 AND D.type_mov<>'C')
+            ),
+            CONS_BY_LOTE AS(
+            SELECT 
+            C.id, GD.group_id, QLA.min_t_stamp,C.doser, QLA.artigo_cod, QLA.lote_id, QLA.n_lote,QLA.loteslinha_id, C.ig_bobinagem_id, GD.n_dosers,
+            QLA.qty_lote,QLA.qty_lote_consumed,QLA.qty_lote_available,QLA.qty_artigo_available, C.t_stamp,
+            C.cons qty_to_consume,
+            SUM(CASE WHEN QLA.n_lote IS NULL THEN NULL ELSE C.cons END) OVER (PARTITION BY QLA.artigo_cod, QLA.lote_id,QLA.n_lote,C.ig_bobinagem_id) qty_to_consume_lote,
+            (C.cons/SUM(CASE WHEN QLA.n_lote IS NULL THEN NULL ELSE C.cons END) OVER (PARTITION BY QLA.artigo_cod, QLA.lote_id,QLA.n_lote,C.ig_bobinagem_id)) percent_to_consume,
+            CASE WHEN LAG(GD.doser,1) OVER (ORDER BY GD.group_id IS NULL, group_id, C.ig_bobinagem_id, GD.doser, min_t_stamp) is null or LAG(GD.doser,1) OVER (ORDER BY GD.group_id IS NULL, group_id,C.ig_bobinagem_id, GD.doser, min_t_stamp) <> GD.doser THEN 1 ELSE 0 END doser_changed,
+            CASE WHEN ((SUM(CASE WHEN QLA.n_lote IS NULL THEN NULL ELSE C.cons END) OVER (PARTITION BY QLA.artigo_cod, QLA.lote_id, QLA.n_lote,C.ig_bobinagem_id)) > QLA.qty_lote_available) THEN 1 ELSE 0 END qty_exceeds
+            FROM CONSUMOS C
+            LEFT JOIN GROUP_DOSER GD ON GD.doser=C.doser
+            LEFT JOIN QTY_LOTES_AVAILABLE QLA ON GD.group_id = QLA.group_id
+            order by GD.group_id IS NULL, group_id, GD.doser, min_t_stamp
+            )
+            #SELECT * FROM CONS_BY_LOTE
+            SELECT 
+            id,doser,lote_id,n_lote,artigo_cod,1 `status`,t_stamp, now() t_stamp_fix,to_consume_cumulative qty_consumed,'C' type_mov,
+            CASE WHEN to_consume_cumulative >= 0 THEN NULL ELSE loteslinha_id END loteslinha_id,
+            group_id, ig_bobinagem_id, qty_to_consume,qty_lote,
+            CASE WHEN n_lote is null THEN qty_to_consume ELSE (SUM(to_consume_cumulative) over(partition by doser) + qty_to_consume) END lacks_consume,
+            CASE WHEN n_lote is null THEN 0 else SUM(to_consume_cumulative) over(partition by lote_id) END qty_lote_consumed,
+            CASE WHEN n_lote is null THEN 0 else SUM(to_consume_cumulative) over(partition by artigo_cod) END qty_artigo_consumed
+            FROM (
+
+                SELECT 
+                    CBL.qty_lote,CBL.qty_artigo_available, CBL.t_stamp, CBL.id, CBL.doser,CBL.lote_id,CBL.n_lote,CBL.artigo_cod,CBL.loteslinha_id,CBL.group_id,CBL.qty_to_consume,CBL.ig_bobinagem_id,
+                    CASE WHEN doser_changed=1 THEN @rest_dosers:=qty_to_consume_lote ELSE @rest_dosers END rest_dosers,
+                    CASE WHEN doser_changed=1 THEN @rest_doser:=qty_to_consume ELSE @rest_doser END rest_doser,
+                    @auxdosers:=@rest_dosers auxdosers,
+                    @auxdoser:=@rest_doser auxdoser,
+                    CASE WHEN @rest_doser=0 THEN 1 ELSE 0 END all_consumed_doser,
+                    -1*(CASE WHEN @auxdosers > qty_lote_available THEN qty_lote_available*percent_to_consume ELSE @rest_doser END) to_consume_cumulative,
+                    CASE WHEN @auxdosers > qty_lote_available THEN @rest_dosers:=@rest_dosers-(qty_lote_available*percent_to_consume) ELSE @rest_dosers:=@rest_dosers-@rest_doser END updated_rest_dosers,
+                    CASE WHEN @auxdosers > qty_lote_available THEN @rest_doser:=@rest_doser-(qty_lote_available*percent_to_consume) ELSE @rest_doser:=0 END updated_rest_doser
+                FROM CONS_BY_LOTE CBL
+
+            ) t where not (all_consumed_doser=1 and to_consume_cumulative=0)
+
+            )t
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [],None)
+    return Response(response)
+
 
 #endregion
 

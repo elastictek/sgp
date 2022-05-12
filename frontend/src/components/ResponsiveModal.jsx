@@ -6,10 +6,8 @@ import { MediaContext } from '../pages/App';
 
 const computeHeight = (height, footer) => {
     if (footer) {
-        console.log("CALCULATE -- > ",`calc(${height} - 120px)`);
         return `calc(${height} - 120px)`;
     }
-    console.log("CALCULATE -- > ",`calc(${height} - 60px)`);
     return `calc(${height} - 60px)`;
 }
 
@@ -21,7 +19,6 @@ export default ({ children, footer = null, ...props }) => {
 
     useLayoutEffect(() => {
         if (responsive) {
-            console.log("####$#%%%-",ctx.deviceW,fullWidthDevice)
             if (ctx.deviceW <= fullWidthDevice) {
                 setRespWidth("100%");
             } else {

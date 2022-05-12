@@ -332,7 +332,7 @@ const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
 }
 
 export default () => {
-    const classes = useStyles()
+    const classes = useStyles();
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);

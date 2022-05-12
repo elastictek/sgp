@@ -57,6 +57,8 @@ class LotesDosers(models.Model):
     formulacao = models.ForeignKey('producao.Formulacao', on_delete=models.PROTECT, verbose_name="Formulação", null=True)
     cs = models.ForeignKey('CurrentSettings', on_delete=models.PROTECT, verbose_name="Current Settings", null=True)
     ig_bobinagem_id = models.IntegerField(verbose_name="Id IG BOBINAGEM", null=True)
+    order = models.IntegerField(verbose_name="Ordem principal", null=True)
+    sub_order = models.IntegerField(verbose_name="sub Ordem", null=True)
     audit_cs = models.ForeignKey('AuditCurrentSettings', on_delete=models.PROTECT, verbose_name="Audit Current Settings", null=True)
 
 

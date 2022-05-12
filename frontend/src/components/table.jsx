@@ -78,6 +78,30 @@ const StyledTable = styled(Table)`
     .ant-table-cell {
         padding: 1px 3px !important;
     }
+
+    && tbody {
+        scrollbar-color: rgba(105, 112, 125, .5) transparent;
+        scrollbar-width: thin;
+        height: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    
+    && tbody ::-webkit-scrollbar {
+        width: 16px;
+        height: 16px;
+    }
+    
+    && tbody ::-webkit-scrollbar-thumb {
+        background-color: rgba(105, 112, 125, .5);
+        background-clip: content-box;
+        border-radius: 16px;
+        border: 6px solid transparent;
+    }
+    
+    && tbody ::-webkit-scrollbar-corner {
+        background-color: transparent;
+    }
 `;
 
 

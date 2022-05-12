@@ -22,7 +22,7 @@ import { MdAdjust } from 'react-icons/md';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, AppstoreAddOutlined } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
@@ -30,6 +30,8 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
 import { Wnd, ColumnBobines, Bobines, typeListField } from "./commons";
+const FixSimulatorList = lazy(() => import('./FixSimulatorList'));
+const StockList = lazy(() => import('../artigos/StockList'));
 
 
 const schema = (keys, excludeKeys) => {
@@ -280,8 +282,14 @@ export default () => {
         return `${record.id}`;
     }
 
-    const handleWndClick = (bm) => {
-        setShowValidar({ show: true, data: { title: `Corrigir Consumos Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+    const handleWndClick = (bm, type) => {
+        let title = '';
+        if (type==="preview"){
+            title=`Previsualização: Corrigir Consumos Bobinagem ${bm.nome}`;
+        }else if (type==="addlotes"){
+            title=`Stock Matérias Primas para Ordem de Fabrico  ${bm.ofs}`;
+        } 
+        setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, bobinagem_id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, acs_id:bm.audit_current_settings_id } });
     };
 
     const columns = setColumns(
@@ -292,8 +300,8 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
-                        ofs: { title: "Of's", width: 200, render: (v, r) => v.replaceAll('"', ""), ...common },
+                        nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r, "preview")} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        ofs: { title: "Of's", width: 200, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><Button onClick={() => handleWndClick(r, "addlotes")} style={{ marginRight: "2px" }} size="small" icon={<AppstoreAddOutlined title="Adicionar Lotes à Ordem de Fabrico" />} /><div>{v.replaceAll('"', "")}</div></div>, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
                         inico: { title: "Início", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
@@ -345,13 +353,16 @@ export default () => {
     return (
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <Wnd show={showValidar} setShow={setShowValidar} />
+                <Wnd show={showValidar} setShow={setShowValidar}>
+                    {showValidar.type === "preview" && <Suspense fallback={<></>}>{<FixSimulatorList data={showValidar.data} closeSelf={handleWndCancel} />}</Suspense>}
+                    {showValidar.type === "addlotes" && <Suspense fallback={<Spin />}><StockList type={showValidar.type} data={showValidar.data} closeSelf={handleWndCancel}/></Suspense>}
+                </Wnd>
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Corrigir Consumo de Lotes</Title>}
+                    title={<Title level={4}>Bobinagens Sem Consumos!</Title>}
                     columnChooser={false}
                     reload
                     stripRows

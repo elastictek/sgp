@@ -112,7 +112,7 @@ export default () => {
                         <div >Bobines Originais</div>
                     </li>
                     <li onClick={() => navigate('/app/bobinagens/fixlotes')} style={{ float: "left", cursor: "pointer", color: "blue", marginRight: "10px", backgroundColor: "lightgray", width: "120px", textAlign: "center", height: PAGE_TOOLBAR_HEIGHT }}>
-                        <div>Corrigir Consumos de Bobinagens</div>
+                        <div>Bobinagens Sem consumos!</div>
                     </li>
                     {/*                     <li style={{float: "left",cursor:"pointer", color:"blue", marginRight:"10px", backgroundColor: "lightgray", width:"120px", textAlign: "center"}}>
                         <div onClick={() => navigate('/app/ordemfabrico/formdetails', { state: { id: 48 } })}>Form Ordem Fabrico</div>

@@ -46,7 +46,7 @@ export const Wnd = ({ show, setShow, children }) => {
     const [confirmLoading, setConfirmLoading] = React.useState(false);
 
     const handleCancel = () => {
-        setShow({ show: false, data: {} });
+        setShow({...show, show: false, data: {} });
     };
 
     return (
@@ -59,8 +59,11 @@ export const Wnd = ({ show, setShow, children }) => {
                 onCancel={handleCancel}
                 maskClosable={true}
                 destroyOnClose={true}
-                fullWidthDevice={100}
-                bodyStyle={{ backgroundColor: "#f0f0f0" }}
+                fullWidthDevice={show?.fullWidthDevice ? show.fullWidthDevice : 100}
+                minFullHeight={show?.minFullHeight}
+                width={show?.width}
+                height={show?.height}
+                /* bodyStyle={{ backgroundColor: "#f0f0f0" }} */
             >
                 <YScroll>
                     {children}

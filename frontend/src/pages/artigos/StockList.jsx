@@ -47,12 +47,12 @@ const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { valu
 const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
-    { fmulti_dosers: {label: 'Doseador Formulação', field: {type: 'selectmulti', size: 'small', options: DOSERS}}},
+    { fmulti_dosers: { label: 'Doseador Formulação', field: { type: 'selectmulti', size: 'small', options: DOSERS } } },
     { fqty_lote: { label: "Qtd. Lote", field: { type: 'input', size: 'small' } } },
     { fqty_lote_available: { label: "Qtd. Lote Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
     { fqty_artigo_available: { label: "Qtd. Artigo Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
-    { fmulti_location: {label: 'Localização', field: {type: 'selectmulti', size: 'small', options: [{ value: "ARM", label: "ARM" }, { value: "BUFFER", label: "BUF" }]}}},
-    { fpicked: {label: 'Na Linha', field: {type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }]}}},
+    { fmulti_location: { label: 'Localização', field: { type: 'selectmulti', size: 'small', options: [{ value: "ARM", label: "ARM" }, { value: "BUFFER", label: "BUF" }] } } },
+    { fpicked: { label: 'Na Linha', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] } } },
     //{ f_ofabrico: { label: "Ordem de Fabrico" } },
     //{ f_agg: { label: "Agregação Ordem de Fabrico" } },
     //{ fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue: 'all', ignoreFilterTag: (v) => v === 'all' } },
@@ -288,7 +288,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     layout="horizontal"
                     style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
                     schema={schema}
-                    field={{ guides: false, wide: [3, 4, 3,2, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
+                    field={{ guides: false, wide: [3, 4, 3, 2, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
                     fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                 >
                     <Field name="fmulti_location" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Localização", pos: "top" }}>
@@ -517,7 +517,7 @@ const Formulacao = ({ data, rowIndex }) => {
     const formulacao = JSON.parse(data);
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>{formulacao && formulacao.map((v, i) => {
-            return (<Tag style={{fontWeight:"10px", width:"150px"}} color="blue" key={`frm-${rowIndex}-${i}`}><b>{v.doseador.replace(/(^,)|(,$)/g, '')}</b>: {v.arranque}% | {v.densidade}g/cm&#xB3;</Tag>);
+            return (<Tag style={{ fontWeight: "10px", width: "150px" }} color="blue" key={`frm-${rowIndex}-${i}`}><b>{v.doseador.replace(/(^,)|(,$)/g, '')}</b>: {v.arranque}% | {v.densidade}g/cm&#xB3;</Tag>);
         })}</div>
     );
 }
@@ -532,39 +532,39 @@ const Formulacao = ({ data, rowIndex }) => {
     );
 } */
 
-const ColumnToLine = ({record, dataAPI})=>{
-    const toLine = record.loc==="BUFFER" && !record.picked ;
+const ColumnToLine = ({ record, dataAPI }) => {
+    const toLine = record.loc === "BUFFER" && !record.picked;
 
-    const onClick = async ()=>{
+    const onClick = async () => {
         //{"group_id": "3462729180381184", "lote_id": "9589", "artigo_cod": "RVMAX0863000012","n_lote": "VM6202V21092801AB50296", "qty_lote": "650.00", "doser": "A1"}, 
         const _uid = uuIdInt(0).uuid();
         const pickItems = [];
-        for (let itm of JSON.parse(record.frm)){
-            for (let m of itm.doseador.split(',')){
-                if (m){
-                    const pick = {"group_id": _uid, "lote_id": record.rowid, "artigo_cod": record.matprima_cod,"n_lote": record.n_lote, "qty_lote": record.qty_lote, "doser": m};
+        for (let itm of JSON.parse(record.frm)) {
+            for (let m of itm.doseador.split(',')) {
+                if (m) {
+                    const pick = { "group_id": _uid, "lote_id": record.rowid, "artigo_cod": record.matprima_cod, "n_lote": record.n_lote, "qty_lote": record.qty_lote, "doser": m };
                     pickItems.push(pick);
                 }
-            }            
+            }
         }
-        if (pickItems.length>0){
+        if (pickItems.length > 0) {
             const response = await fetchPost({ url: `${API_URL}/pick/`, parameters: { pickItems } });
             dataAPI.fetchPost();
         }
-        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa",pickItems)
-        
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa", pickItems)
+
     }
 
-    return(<>{toLine && <Tooltip title="Transferir para a Linha"><Button onClick={onClick} size="small" icon={<SwapRightOutlined />}></Button></Tooltip>}</>);
+    return (<>{toLine && <Tooltip title="Transferir para a Linha"><Button onClick={onClick} size="small" icon={<SwapRightOutlined />}></Button></Tooltip>}</>);
 }
 
-export default () => {
+export default ({ type, data }) => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/stocklist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/stocklist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: { acs_id: data?.acs_id }, sort: [] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -586,14 +586,14 @@ export default () => {
         return (
             <>
 /*             <SelectMultiField
-                style={{ minWidth: "200px" }}
-                name="typelist"
-                size="small"
-                dropdownMatchSelectWidth={250}
-                allowClear
-                options={[{ value: "A", label: "Lotes na Linha" }, { value: "!A", label: "Lotes fora da Linha" }, { value: "B", label: "Artigos/Lotes na formulação" }, { value: "C", label: "Agrupar Por Artigo" }]}
-                onChange={onChange}
-            /> */
+                    style={{ minWidth: "200px" }}
+                    name="typelist"
+                    size="small"
+                    dropdownMatchSelectWidth={250}
+                    allowClear
+                    options={[{ value: "A", label: "Lotes na Linha" }, { value: "!A", label: "Lotes fora da Linha" }, { value: "B", label: "Artigos/Lotes na formulação" }, { value: "C", label: "Agrupar Por Artigo" }]}
+                    onChange={onChange}
+                /> */
             </>
         );
     }
@@ -606,9 +606,9 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        matprima_cod: { title: "Matéria Prima", width: 120, fixed: 'left', render: (v, r) => v, ...common },
-                        matprima_des: { title: "Designação", width: 190, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
+                        matprima_des: { title: "Matéria Prima", width: 190, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         n_lote: { title: "Lote", width: 180, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
+                        matprima_cod: { title: "Cod. MP", width: 120, render: (v, r) => v, ...common },
                         loc: { title: "Loc.", width: 50, render: (v, r) => v, ...common },
                         //inbuffer: { title: "Buffer", width: 30, align: 'center', render: (v, r) => v === 1 && <CheckSquareTwoTone twoToneColor="#389e0d" style={{ fontSize: '16px' }} />, ...common },
                         picked: { title: "Linha", width: 30, align: 'center', render: (v, r) => v === 1 && <CheckSquareTwoTone twoToneColor="#389e0d" style={{ fontSize: '16px' }} />, ...common },
@@ -616,7 +616,7 @@ export default () => {
                         qty_lote_available: { title: "Qtd. Lote Disponível", width: 120, render: (v, r) => v && `${parseFloat(v).toFixed(2)} ${r.unit}`, ...common },
                         qty_lote_consumed: { title: "Qtd. Lote Comsumido", width: 120, render: (v, r) => v && `${parseFloat(v).toFixed(2)} ${r.unit}`, ...common },
                         qty_artigo_available: { title: "Qtd. Artigo Disponível", width: 120, render: (v, r) => v && `${parseFloat(v).toFixed(2)} ${r.unit}`, ...common },
-                        action_line: { title: "", align:"center", width: 60, render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} />, ...common },
+                        action_line: { title: "", align: "center", width: 60, render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} />, ...common },
                         frm: { title: "Formulação", render: (v, r, i) => <Formulacao rowIndex={i} data={v} />, ...common },
                         //ofs: { title: "Ordens Fabrico", render: (v, r, i) => <Ofs rowIndex={i} data={v} />, ...common },
                         //extrusora: { title: "Extrusora", width: 30, render: (v, r) => v, ...common },
@@ -678,7 +678,7 @@ export default () => {
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Matéria Prima em Stock (Currente)</Title>}
+                    title={!type && <Title level={4}>Matéria Prima em Stock (Currente)</Title>}
                     columnChooser={false}
                     reload
                     stripRows
