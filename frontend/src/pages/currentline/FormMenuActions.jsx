@@ -12,21 +12,25 @@ import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Co
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined } from '@ant-design/icons';
-import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT } from 'config';
 import { remove } from 'ramda';
+import Table, { setColumns } from "components/table";
+import { useDataAPI } from "utils/useDataAPI";
+
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
 import { Outlet, useNavigate } from "react-router-dom";
-import { MediaContext } from '../App';
 
+import { SocketContext, MediaContext } from '../App';
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
 const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoriaUpsert'));
 const FormSpecs = React.lazy(() => import('./FormSpecsUpsert'));
 const FormCortes = React.lazy(() => import('./FormCortes'));
+const BobinesValidarList = React.lazy(() => import('../bobines/BobinesValidarList'));
 
 
 const StyledCard = styled(Card)`
@@ -84,10 +88,10 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const iref = useRef();
 
     const onVisible = () => {
-        setShowWrapper(prev => ({ ...prev, show: !prev.show }));
+        setShowWrapper(prev => ({ ...prev, show: false }));
     }
 
-    useEffect(() => {}, [showWrapper])
+    useEffect(() => { }, [showWrapper])
 
     return (
         <>
@@ -107,11 +111,13 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
                 footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
             >
                 <YScroll>
-                    {showWrapper.idcard === "lotes" && <Suspense fallback={<></>}><FormLotes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                    {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                    {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                    {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
-                    {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "lotes" && <Suspense fallback={<></>}><FormLotes forInput={showWrapper.record?.forInput} setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "gamaoperatoria" && <Suspense fallback={<></>}><FormGamaOperatoria forInput={showWrapper.record?.forInput} setFormTitle={setFormTitle} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "cortes" && <Suspense fallback={<></>}><FormCortes setFormTitle={setFormTitle} forInput={showWrapper.record?.forInput} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} forInput={showWrapper.record?.forInput} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} forInput={showWrapper.record?.forInput} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
+                    {showWrapper.idcard === "validarbobinagens" && <Suspense fallback={<></>}>{<BobinesValidarList setFormTitle={setFormTitle} data={showWrapper.record} closeSelf={onVisible} />}</Suspense>}
+
                 </YScroll>
             </ResponsiveModal>
 
@@ -272,7 +278,7 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     const { formulacao, cores, nonwovens } = record;
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width:"100%" }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: "100%" }))
     }
 
     useEffect(() => {
@@ -312,8 +318,8 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
         console.log("ENTREI NA FORMULAÇÃO", record)
     }, []);
 
-    const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: "1200px", height: null }))
+    const onEdit = (feature = {}) => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { ...record, ...feature }, width: "1200px", height: null }))
     }
 
     return (
@@ -321,7 +327,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
+                extra={<Space><Button onClick={() => onEdit({ feature: "dosers_change", forInput: false })}>Alterar Doseadores</Button><Button onClick={() => onEdit({ feature: "formulation_change", forInput: true })} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -390,15 +396,15 @@ const CardCortes = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: '1500px', height: '700px', minFullHeight: 800 }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record, width: '1500px', height: '700px', minFullHeight: 800 }))
     }
 
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
-            <Card hoverable
+            <Card hoverable onClick={onEdit}
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
+                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onEdit(); }} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -423,14 +429,14 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     const changeStatus = async (status) => {
         const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
         if (response.data.status !== "error") {
-            Modal.success({content: response.data.title});
+            Modal.success({ content: response.data.title });
             parentReload({ aggId: record.agg_of_id });
 
-        }else{
+        } else {
             Modal.error({
                 title: 'Erro ao alterar estado da Ordem de Fabrico',
                 content: response.data.title,
-              });
+            });
         }
     }
 
@@ -472,30 +478,117 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     );
 }
 
+const CardValidarBobinagens = ({ menuItem, record, setShowForm }) => {
+    const [loading, setLoading] = useState(false);
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
+
+    useEffect(() => {
+        const cancelFetch = cancelToken();
+        //dataAPI.first();
+        dataAPI.fetchPost({ token: cancelFetch });
+        return (() => cancelFetch.cancel());
+    }, []);
+
+    const handleWndClick = (r) => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { bobinagem_id: r.id }, width: '1500px', height: '700px', minFullHeight: 800 }))
+    }
+
+    const selectionRowKey = (record) => {
+        return `bob-${record.id}`;
+    }
+
+    const columns = setColumns(
+        {
+            dataAPI,
+            data: dataAPI.getData().rows,
+            uuid: "bobinagenslist_validar",
+            include: {
+                ...((common) => (
+                    {
+                        nome: { title: "Bobinagem", sort: false, width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
+                        inico: { title: "Início", sort: false, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        fim: { title: "Fim", sort: false, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        duracao: { title: "Duração", sort: false, width: 80, render: (v, r) => v, ...common },
+                        core: { title: "Core", sort: false, width: 35, render: (v, r) => v, ...common },
+                        comp: { title: "Comp.", sort: false, render: (v, r) => v, input: <InputNumber />, ...common },
+                        comp_par: { title: "Comp. Emenda", sort: false, render: (v, r) => v, ...common },
+                        comp_cli: { title: "Comp. Cliente", sort: false, render: (v, r) => v, ...common },
+                        area: { title: <span>Área m&#178;</span>, sort: false, render: (v, r) => v, ...common },
+                        diam: { title: "Diâmetro mm", sort: false, render: (v, r) => v, ...common },
+                        nwinf: { title: "Nw Inf. m", sort: false, render: (v, r) => v, ...common },
+                        nwsup: { title: "Nw Sup. m", sort: false, render: (v, r) => v, ...common }
+                    }
+                ))({ idx: 1, optional: false })
+            },
+            exclude: []
+        }
+    );
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable/*  onClick={onEdit} */
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                /* extra={<Space><Button onClick={(e) => { e.stopPropagation(); onEdit(); }} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>} */
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
+            >
+                <YScroll>
+                    <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+                        <Table
+                            columnChooser={false}
+                            reload
+                            header={false}
+                            stripRows
+                            darkHeader
+                            size="small"
+                            selection={{ enabled: false, rowKey: record => selectionRowKey(record) }}
+                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                            dataAPI={dataAPI}
+                            columns={columns}
+                            onFetch={dataAPI.fetchPost}
+                        />
+                    </Spin>
+                </YScroll>
+            </Card>
+        </div>
+    );
+}
+
+
 const menuItems = [
+    {
+        idcard: "operacoes",
+        title: "Operações"
+    },
     {
         idcard: "planificacao",
         title: "Planificação",
-    }, {
+    },/* , {
         idcard: "lotes",
         title: "Lotes de Matérias Primas"
-    }, {
-        idcard: "especificacoes",
-        title: "Especificações"
-    }, {
+    }, */ {
         idcard: "formulacao",
         title: "Formulação",
+        span: 4
+    },
+    {
+        idcard: "validarbobinagens",
+        title: "Bobinagens para Validação",
         span: 3
-    }, {
-        idcard: "operacoes",
-        title: "Operações"
+    },
+    {
+        idcard: "cortes",
+        title: "Cortes",
+        span: 3
+    },
+    {
+        idcard: "especificacoes",
+        title: "Especificações",
+        span: 2
     }, {
         idcard: "gamaoperatoria",
         title: "Gama Operatória",
-        span: 2
-    }, {
-        idcard: "cortes",
-        title: "Cortes",
         span: 3
     }
 ];
@@ -505,7 +598,14 @@ export default ({ aggId }) => {
     const [showForm, setShowForm] = useState({ show: false, type: 'modal', mode: "fullscreen" });
     const [guides, setGuides] = useState(false);
     const [currentSettings, setCurrentSettings] = useState({});
+    const { data: dataSocket } = useContext(SocketContext) || {};
 
+    useEffect(() => {
+        console.log("--------------------------------",dataSocket);
+        const cancelFetch = cancelToken();
+        loadData({ aggId, token: cancelFetch });
+        return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+    }, [dataSocket?.bobinagens, dataSocket?.inproduction]);
 
 
     useEffect(() => {
@@ -607,6 +707,8 @@ export default ({ aggId }) => {
                                 return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} />);
                             case "operacoes":
                                 return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                            case "validarbobinagens":
+                                return (<CardValidarBobinagens key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}

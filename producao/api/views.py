@@ -990,8 +990,10 @@ def LineLogList(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def StockLogList(request, format=None):
-    connection = connections[connGatewayName].cursor()    
-    #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    connection = connections[connGatewayName].cursor()
+    print("#$#$$%&$%$%$%$##$#$#$#$#$#")
+    print(request.data)
+    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
     f = Filters(request.data['filter'])
     f.setParameters({
         #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
@@ -1044,22 +1046,59 @@ def StockLogList(request, format=None):
     sageAlias = dbgw.dbAlias.get("sage")
     parameters = {**f.parameters}
     dql = dbgw.dql(request.data, False)
-    cols = f'''ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
-            CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
-            ld.type_mov type_mov_doser,
-            ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp'''
-    sql = lambda p, c, s: (
-        f"""
-            SELECT * FROM (
-            SELECT {c(f'{cols}')} 
-            FROM {sgpAlias}.loteslinha ll
-            FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
-            LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
-            {f.text}
-        ) t
-        {s(dql.sort)} {p(dql.paging)}
-        """
-    )
+
+    if typeList=='A':
+        cols = f'''row_number() over() rowid,nome,"order",sub_order,id,grp,ig_bobinagem_id,dosers,maxid,type_mov,qty_bobinagem_to_consume,artigo_cod, n_lote,qty_lote'''
+        sql = lambda p, c, s: (f"""
+            SELECT {c(f'{cols}')} FROM(
+            WITH IO AS(
+            SELECT * FROM(
+                SELECT
+                t."order", t."sub_order", t.id,t.grp,t.ig_bobinagem_id,
+                CASE WHEN t.type_mov='C' THEN string_agg(t.doser,',') over w ELSE string_agg(t.doser,',') over wio END dosers,	
+                max(t.id) over wio maxid,
+                t.type_mov,	t.qty_bobinagem_to_consume,	t.artigo_cod, t.n_lote,	t.qty_lote
+            FROM (
+                SELECT 
+                    ld.id,ld.doser,
+                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.lote_id END lote_id,
+                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.artigo_cod END artigo_cod,
+                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.n_lote END n_lote,
+                    CASE WHEN ld.type_mov='C' THEN sum(ld.qty_to_consume) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_to_consume,
+                    ld.type_mov,ll.qty_lote,ld.qty_to_consume,ld.ig_bobinagem_id,ld."order",ld.sub_order,
+                    ROW_NUMBER() OVER(ORDER BY ld."order", ld."sub_order") -  ROW_NUMBER() OVER(PARTITION BY ld.type_mov ORDER BY ld."order", ld."sub_order") grp
+                FROM {sgpAlias}.loteslinha ll
+                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
+            ) t
+            WINDOW w AS (PARTITION BY t.grp,t.ig_bobinagem_id),wio AS (PARTITION BY t.grp,t.ig_bobinagem_id,t.lote_id)
+            order by t."order",t."sub_order"
+            ) tbl where tbl.id=tbl.maxid
+            )
+            SELECT pbm.nome,IO.* 
+            FROM IO
+            LEFT JOIN {sgpAlias}.producao_bobinagem pbm ON pbm.ig_bobinagem_id=IO.ig_bobinagem_id
+            order by "order",sub_order
+            ) t
+            {s(dql.sort)} {p(dql.paging)}
+        """)
+
+    if typeList=='B':
+        cols = f'''row_number() over() rowid,ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+                ld.type_mov type_mov_doser,
+                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp'''
+        sql = lambda p, c, s: (
+            f"""
+                SELECT * FROM (
+                SELECT {c(f'{cols}')} 
+                FROM {sgpAlias}.loteslinha ll
+                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
+                LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+                {f.text}
+            ) t
+            {s(dql.sort)} {p(dql.paging)}
+            """
+        )
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     response = dbgw.executeList(sql, connection, parameters, [])
@@ -1896,12 +1935,16 @@ def ArtigoSpecsItemsGet(request, format=None):
 def CurrentSettingsGet(request, format=None):
     cols = ['*']
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        "st": {"value": 3, "field": lambda k, v: f'{k}'},
+    }, False)
     f.where()
-    f.add(f'agg_of_id = :aggId', True)
+    f.add(f'agg_of_id = :aggId', lambda v:(v!=None))
+    f.add(f'status = :st',lambda v:"aggId" not in request.data['filter'])
     f.value("and")
     parameters = {**f.parameters}
     
+
     dql = db.dql(request.data, False, False)
     dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
@@ -3879,7 +3922,7 @@ def ValidarBobinagensList(request, format=None):
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 where pbm.valid=0 {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
-                {s(dql.sort)} {p(dql.paging)}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
             join producao_largura pl on pl.id = pb.largura_id
@@ -4238,28 +4281,42 @@ def Pick(request, format=None):
                 _outline = {}
                 for item in io:
                     if ((item['mov']=='OUT' or item['mov']=='OUT_LINE') and f'{item["lote_id"]}-{item["doser"]}' not in _out):
-                         dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"OUT","status":1},"lotesdosers",None,None,False)
-                         db.execute(dml.statement, cursor, dml.parameters)
-                         _out[f'{item["lote_id"]}-{item["doser"]}'] = True
-                         print('OUT')
-                         print(item)
+                        dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"OUT","status":1},"lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        lastid = cursor.lastrowid
+                        dml = db.dml(TypeDml.UPDATE,{},"lotesdosers",{"id":f'=={lastid}'},None,False)
+                        statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                        db.execute(statement, cursor, dml.parameters)
+                        _out[f'{item["lote_id"]}-{item["doser"]}'] = True
                     if (item['mov']=='OUT_LINE' and f'{item["lote_id"]}' not in _outline):
-                         dml = db.dml(TypeDml.INSERT,{"lote_id":item["lote_id"],"n_lote":item["n_lote"],"artigo_cod":item["artigo_cod"],"type_mov":"OUT","status":1},"loteslinha",None,None,False)
-                         db.execute(dml.statement, cursor, dml.parameters)
-                         _outline[f'{item["lote_id"]}'] = True
+                        dml = db.dml(TypeDml.INSERT,{"lote_id":item["lote_id"],"n_lote":item["n_lote"],"artigo_cod":item["artigo_cod"],"type_mov":"OUT","status":1},"loteslinha",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        lastid = cursor.lastrowid
+                        dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                        statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                        db.execute(statement, cursor, dml.parameters)
+                        _outline[f'{item["lote_id"]}'] = True
                     if (item['mov']=='IN'):
                         if item['loteslinha_id'] is None and item['loteid_doser'] is None:
                             if  f'{item["lote_id"]}' not in _inline:
                                 print("INSERT IN LINE")
                                 dml = db.dml(TypeDml.INSERT,{"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"`group`":item["group_id"],"qty_lote":item["qty_lote"]},"loteslinha",None,None,False)
                                 db.execute(dml.statement, cursor, dml.parameters)
-                                _inline[f'{item["lote_id"]}'] = cursor.lastrowid
+                                lastid = cursor.lastrowid
+                                _inline[f'{item["lote_id"]}'] = lastid                              
+                                dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                                statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                                db.execute(statement, cursor, dml.parameters)
                         if item['loteslinha_id'] is None or item['loteid_doser'] is None:
                             if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
                                 print("INSERT IN LOTE DOSER")
                                 linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
                                 dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"IN","status":1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":item["group_id"],"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
                                 db.execute(dml.statement, cursor, dml.parameters)
+                                lastid = cursor.lastrowid
+                                dml = db.dml(TypeDml.UPDATE,{},"lotesdosers",{"id":f'=={lastid}'},None,False)
+                                statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                                db.execute(statement, cursor, dml.parameters)
                                 _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
                     #     print(item)
                     #     if item['id'] is None:
@@ -4310,6 +4367,10 @@ def SaidaMP(request, format=None):
                 if lastmov=='IN':
                     dml = db.dml(TypeDml.INSERT,{"lote_id":data['lote']["lote_id"],"artigo_cod":data['lote']["artigo_cod"],"n_lote":data['lote']["n_lote"],"qty_reminder":data["reminder"],"status":1,"type_mov":"OUT"},"loteslinha",None,None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
+                    lastid = cursor.lastrowid
+                    dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                    statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                    db.execute(statement, cursor, dml.parameters)
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
@@ -4357,7 +4418,11 @@ def SaidaDoser(request, format=None):
                 lmoves = getLastMoves(fdosers,cursor)
                 for item in lmoves:
                     dml = db.dml(TypeDml.INSERT,{"doser":item['doser'],"status":1,"qty_consumed":0,"type_mov":"OUT"},"lotesdosers",None,None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)    
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    lastid = cursor.lastrowid
+                    dml = db.dml(TypeDml.UPDATE,{},"lotesdosers",{"id":f'=={lastid}'},None,False)
+                    statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                    db.execute(statement, cursor, dml.parameters)  
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})

@@ -60,12 +60,16 @@ const filterRules = (keys) => {
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 
-const ToolbarTable = ({ form, dataAPI }) => {
-    const navigate = useNavigate();
+const typeListField = ({ onChange, setTypeList, typeList } = {}) => {
+    return (
+        <SelectField name="typelist" style={{ width: 150 }} keyField="value" valueField="label" onChange={onChange} options={
+            [{ value: "A", label: "Resumido" },
+            { value: "B", label: "Detalhado" }]} />
+    );
+}
 
-    const onChange = (v) => {
-        form.submit();
-    }
+const ToolbarTable = ({ form, dataAPI, typeListField, onChange }) => {
+    const navigate = useNavigate();
 
     const leftContent = (
         <>
@@ -80,11 +84,11 @@ const ToolbarTable = ({ form, dataAPI }) => {
 
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                {/* <Form form={form} initialValues={{ typelist: [] }}>
+                <Form form={form} initialValues={{ typelist: 'A' }}>
                     <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
+                        {typeListField({ onChange })}
                     </Form.Item>
-                </Form> */}
+                </Form>
             </div>
         </Space>
     );
@@ -292,8 +296,7 @@ const AssignOFColumn = ({ v, e }) => {
 }
 
 const Quantity = ({ v, unit = "kg" }) => {
-    return (<div style={{ display: "flex", flexDirection: "row" }}>{v && <><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div><div>{unit}</div></>}</div>);
-
+    return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
 export default () => {
@@ -306,24 +309,34 @@ export default () => {
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/stockloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
-                { column: 'idlinha', direction: 'ASC' }, { column: 'iddoser', direction: 'ASC' },
+                /* { column: 'idlinha', direction: 'ASC' }, { column: 'iddoser', direction: 'ASC' }, */
             ]
         }
     });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
+    const [typeList, setTypeList] = useState('A');
 
     useEffect(() => {
         const cancelFetch = cancelToken();
+        dataAPI.addParameters({ typelist: 'A' });
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket?.igbobinagens]);
+    }, []);
 
     const selectionRowKey = (record) => {
-        return `${record.idlinha}-${record.iddoser}`;
+        return `${record.rowid}`;
     }
+
+    const onTypeListChange = (v) => {
+        dataAPI.addParameters({ typelist: v });
+        dataAPI.first();
+        dataAPI.fetchPost();
+    }
+
+
 
     /*
      
@@ -342,21 +355,38 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobinagem", width: 120, render: (v, r) => <b>{v}</b>, ...common },
-                        doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
-                        t_stamp: { title: "Data", width: 60, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
-                        artigo_cod: { title: "Artigo", width: 60, render: (v, r) => v, ...common },
-                        n_lote: { title: "Lote", width: 60, render: (v, r) => v, ...common },
-                        type_mov_linha: { title: "Mov. Linha", width: 60, render: (v, r) => v, ...common },
-                        type_mov_doser: { title: "Mov. Dos.", width: 60, render: (v, r) => v, ...common },
-                        qty_lote: { title: "Qtd. Lote", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                        group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
-                        ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common },
+
+                        ...(common.typeList == 'B' && {
+                            nome: { title: "Bobinagem", width: 120, render: (v, r) => <b>{v}</b>, ...common },
+                            doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
+                            t_stamp: { title: "Data", width: 60, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
+                            artigo_cod: { title: "Artigo", width: 60, render: (v, r) => v, ...common },
+                            n_lote: { title: "Lote", width: 60, render: (v, r) => v, ...common },
+                            type_mov_linha: { title: "Mov. Linha", width: 60, render: (v, r) => v, ...common },
+                            type_mov_doser: { title: "Mov. Dos.", width: 60, render: (v, r) => v, ...common },
+                            qty_lote: { title: "Qtd. Lote", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
+                            ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
+                        }),
+                        ...(common.typeList == 'A' && {
+                            type_mov: { title: "Mov.", align:"center", width: 60, render: (v, r) => v, ...common },
+                            nome: { title: "Bobinagem", width: 100, render: (v, r) => <b>{v}</b>, ...common },
+                            artigo_cod: { title: "Artigo", width: 250, render: (v, r) => v, ...common },
+                            n_lote: { title: "Lote", width: 250, render: (v, r) => v, ...common },
+                            qty_lote: { title: "Qtd. Consumida", width: 150, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_bobinagem_to_consume: { title: "Qtd. a Consumir", width: 150, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            dosers: { title: "Doser", render: (v, r) => v, ...common }
+                        })
+
+
+
+
+
                     }
-                ))({ idx: 1, optional: false })
+                ))({ idx: 1, optional: false, typeList: formFilter.getFieldValue('typelist') })
             },
             exclude: []
         }
@@ -364,8 +394,8 @@ export default () => {
 
     return (
         <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
+                <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} onChange={onTypeListChange} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}

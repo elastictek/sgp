@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
-import { Route, Routes, useRoutes, BrowserRouter } from 'react-router-dom';
+import { Route, Routes, useRoutes, BrowserRouter,Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
@@ -53,7 +53,7 @@ const RenderRouter = () => {
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
                 { path: "bobines/bobinesoriginaislist", element: <Suspense fallback={<Spin />}><BobinesOriginaisList /></Suspense> },
                 { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
-
+                
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
         },

@@ -62,7 +62,6 @@ const Wnd = ({ parameters, setVisible }) => {
 
 const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
-
 }
 
 export default ({ data }) => {

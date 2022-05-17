@@ -170,7 +170,7 @@ export const useDataAPI = ({ payload } = {}) => {
     const getPagination = (fromState = false) => {
         
         if (fromState) {
-            console.log("return true pagination--------->",dataState.pagination)
+            //console.log("return true pagination--------->",dataState.pagination)
             return { ...dataState.pagination };
         } else {
             return { ..._pagination };
@@ -218,6 +218,7 @@ export const useDataAPI = ({ payload } = {}) => {
     }
 
     const setData = (data, payload) => {
+        console.log("SETTING DATA",payload.pagination,(isAction('nav') || isAction('pageSize')))
         setDataState(prev => ({
             ...prev,
             ...((isAction('nav') || isAction('pageSize')) && { pagination: { ...prev.pagination, ...payload.pagination } }),
@@ -259,8 +260,9 @@ export const useDataAPI = ({ payload } = {}) => {
             case "previous": previous(); break;
             case "next": next(); break;
             case "last": last(); break;
-            default: currentPage(page);
+            default: currentPage(page,true);
         }
+
         if (onFetch) {
             onFetch();
         }
