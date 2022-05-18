@@ -977,7 +977,7 @@ def LineLogList(request, format=None):
         FROM ig_bobinagens ig
         LEFT JOIN producao_bobinagem pbm ON pbm.ig_bobinagem_id=ig.id
         {f.text} {fevento.text}
-        {s(dql.sort)} {p(dql.paging)}
+        {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     if ("export" in request.data["parameters"]):

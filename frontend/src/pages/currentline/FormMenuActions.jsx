@@ -11,7 +11,7 @@ import YScroll from "components/YScroll";
 import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
-import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined } from '@ant-design/icons';
+import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT } from 'config';
 import { remove } from 'ramda';
 import Table, { setColumns } from "components/table";
@@ -24,6 +24,14 @@ import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
 import { Outlet, useNavigate } from "react-router-dom";
 
+import { GiBandageRoll } from 'react-icons/gi';
+import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
+import { VscDebugStart } from 'react-icons/vsc';
+import { BsFillStopFill } from 'react-icons/bs';
+import { IoCodeWorkingOutline } from 'react-icons/io5';
+import { BiWindowOpen } from 'react-icons/bi';
+
+
 import { SocketContext, MediaContext } from '../App';
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
@@ -31,6 +39,10 @@ const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoriaUpsert')
 const FormSpecs = React.lazy(() => import('./FormSpecsUpsert'));
 const FormCortes = React.lazy(() => import('./FormCortes'));
 const BobinesValidarList = React.lazy(() => import('../bobines/BobinesValidarList'));
+const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
+const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
+
+
 
 
 const StyledCard = styled(Card)`
@@ -117,7 +129,8 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
                     {showWrapper.idcard === "especificacoes" && <Suspense fallback={<></>}><FormSpecs setFormTitle={setFormTitle} forInput={showWrapper.record?.forInput} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                     {showWrapper.idcard === "formulacao" && <Suspense fallback={<></>}><FormFormulacao setFormTitle={setFormTitle} forInput={showWrapper.record?.forInput} record={showWrapper.record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} /></Suspense>}
                     {showWrapper.idcard === "validarbobinagens" && <Suspense fallback={<></>}>{<BobinesValidarList setFormTitle={setFormTitle} data={showWrapper.record} closeSelf={onVisible} />}</Suspense>}
-
+                    {showWrapper.idcard === "linelogs" && <Suspense fallback={<></>}>{<LineLogList setFormTitle={setFormTitle} closeSelf={onVisible} />}</Suspense>}
+                    {showWrapper.idcard === "ofabricotimelinelist" && <Suspense fallback={<></>}><OFabricoTimeLineShortList params={showWrapper.record} parentClose={onVisible} /></Suspense>}
                 </YScroll>
             </ResponsiveModal>
 
@@ -319,7 +332,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
     }, []);
 
     const onEdit = (feature = {}) => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { ...record, ...feature }, width: "1200px", height: null }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { ...record, ...feature }, width: "1200px", height: "800px", minFullHeight: 800 }))
     }
 
     return (
@@ -327,7 +340,7 @@ const CardFormulacao = ({ menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Space><Button onClick={() => onEdit({ feature: "dosers_change", forInput: false })}>Alterar Doseadores</Button><Button onClick={() => onEdit({ feature: "formulation_change", forInput: true })} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
+                extra={<Space><Button onClick={() => onEdit({ feature: "dosers_change", forInput: false })}>Doseadores</Button><Button onClick={() => onEdit({ feature: "formulation_change", forInput: true })} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -555,6 +568,118 @@ const CardValidarBobinagens = ({ menuItem, record, setShowForm }) => {
     );
 }
 
+const EventColumn = ({ v }) => {
+    return (<>
+
+        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
+        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
+        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
+        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
+        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
+        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
+
+    </>);
+}
+
+const ExclamationButton = styled(Button)`
+  &&& {
+    background-color: #ffa940;
+    border-color: #ffc069;
+    color:#fff;
+    &:hover{
+        background-color: #fa8c16;
+        border-color: #ffe7ba;
+    }
+  }
+`;
+
+const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
+
+    return (<>
+        {v && <b>{v}</b>}
+        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
+    </>);
+}
+
+const CardEventosLinha = ({ menuItem, record, setShowForm }) => {
+    const [loading, setLoading] = useState(false);
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
+
+    useEffect(() => {
+        const cancelFetch = cancelToken();
+        //dataAPI.first();
+        dataAPI.fetchPost({ token: cancelFetch });
+        return (() => cancelFetch.cancel());
+    }, []);
+
+    const reload=()=>{
+        dataAPI.fetchPost();
+    }
+
+    const handleWndClick = (icard, ig_id,fim_ts) => {
+        setShowForm(prev => ({ ...prev, idcard: icard, show: true, record: { data: { id: ig_id, fim_ts, parentReload:reload } }, width: "900px", height: "500px", fullWidthDevice: 2 }))
+    }
+    const onView = () => {
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record, width: '1500px', height: '800px', minFullHeight: 800 }))
+    }
+
+    const selectionRowKey = (record) => {
+        return `ev-${record.id}`;
+    }
+
+    const columns = setColumns(
+        {
+            dataAPI,
+            data: dataAPI.getData().rows,
+            uuid: "evventline_list",
+            include: {
+                ...((common) => (
+                    {
+                        type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
+                        , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
+                        , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
+                        , nome: { title: "Bobinagem", width: 100, align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={() => handleWndClick("ofabricotimelinelist", r.id,r.fim_ts)} />, ...common }
+                        , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
+                        , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
+                        , nw_inf: { title: "NW Inf.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
+                        , nw_sup: { title: "NW Sup.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
+                        , peso: { title: "Peso", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div>kg</div>, ...common }
+                    }
+                ))({ idx: 1, optional: false })
+            },
+            exclude: []
+        }
+    );
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{fontSize:"16px",marginTop:"4px"}} />} /></Space>}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
+            >
+                <YScroll>
+                    <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+                        <Table
+                            columnChooser={false}
+                            reload
+                            header={false}
+                            stripRows
+                            darkHeader
+                            size="small"
+                            selection={{ enabled: false, rowKey: record => selectionRowKey(record) }}
+                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                            dataAPI={dataAPI}
+                            columns={columns}
+                            onFetch={dataAPI.fetchPost}
+                        />
+                    </Spin>
+                </YScroll>
+            </Card>
+        </div>
+    );
+}
 
 const menuItems = [
     {
@@ -583,6 +708,12 @@ const menuItems = [
         span: 3
     },
     {
+        idcard: "linelogs",
+        title: "Eventos de Linha",
+        span: 3
+    },
+
+    {
         idcard: "especificacoes",
         title: "Especificações",
         span: 2
@@ -601,11 +732,11 @@ export default ({ aggId }) => {
     const { data: dataSocket } = useContext(SocketContext) || {};
 
     useEffect(() => {
-        console.log("--------------------------------",dataSocket);
+        console.log("--------------------------------", dataSocket);
         const cancelFetch = cancelToken();
         loadData({ aggId, token: cancelFetch });
         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
-    }, [dataSocket?.bobinagens, dataSocket?.inproduction]);
+    }, [dataSocket?.bobinagens, dataSocket?.inproduction,dataSocket?.igbobinagens]);
 
 
     useEffect(() => {
@@ -709,6 +840,8 @@ export default ({ aggId }) => {
                                 return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "validarbobinagens":
                                 return (<CardValidarBobinagens key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                            case "linelogs":
+                                return (<CardEventosLinha key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}

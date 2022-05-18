@@ -108,7 +108,7 @@ const ToolbarTable = ({ form, dataAPI }) => {
 
     const leftContent = (
         <>
-            <button onClick={() => navigate(-1)}>go back</button>
+            {/* <button onClick={() => navigate(-1)}>go back</button> */}
             {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prer.visible }))}>Flyout</Button> */}
         </>
     );
@@ -128,7 +128,7 @@ const ToolbarTable = ({ form, dataAPI }) => {
         </Space>
     );
     return (
-        <Toolbar left={leftContent} right={rightContent} />
+        <>{/* <Toolbar left={leftContent} right={rightContent} /> */}</>
     );
 }
 
