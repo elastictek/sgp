@@ -31,7 +31,7 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
@@ -299,6 +299,16 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
+const Action = ({ v, r }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row" }}>
+            <Button /* onClick={() => handleWndClick(r, "addlotes")} */ style={{ marginRight: "2px" }} size="small" icon={<UploadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Acima" />} />
+            <Button /* onClick={() => handleWndClick(r, "addlotes")} */ style={{ marginRight: "4px" }} size="small" icon={<DownloadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Abaixo" />} />
+            <div>{v}</div>
+        </div>
+    );
+}
+
 export default () => {
     const classes = useStyles()
     const [loading, setLoading] = useState(false);
@@ -372,11 +382,13 @@ export default () => {
                             ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
                         }),
                         ...(common.typeList == 'A' && {
-                            type_mov: { title: "Mov.", align:"center", width: 60, render: (v, r) => v, ...common },
-                            nome: { title: "Bobinagem", width: 100, render: (v, r) => <b>{v}</b>, ...common },
+                            type_mov: { title: "Mov.", align: "center", width: 60, render: (v, r) => v, ...common },
+                            nome: { title: "Bobinagem", width: 180, render: (v, r) => <Action v={v} r={r} />, ...common },
+                            ofs: { title: "Ordens Fabrico", width: "200", render: (v, r) => <div>{v && v.replaceAll('"', "")}</div>, ...common },
                             artigo_cod: { title: "Artigo", width: 250, render: (v, r) => v, ...common },
                             n_lote: { title: "Lote", width: 250, render: (v, r) => v, ...common },
-                            qty_lote: { title: "Qtd. Consumida", width: 150, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_lote: { title: "Qtd. IN/OUT", width: 150, render: (v, r) => r.type_mov!=="C" && <Quantity v={v} unit="kg" />, ...common },
+                            qty_bobinagem_consumed: { title: "Qtd. Consumida", width: 150, render: (v, r) => r.type_mov==="C" && <Quantity v={v} unit="kg"/>, ...common },
                             qty_bobinagem_to_consume: { title: "Qtd. a Consumir", width: 150, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                             dosers: { title: "Doser", render: (v, r) => v, ...common }
                         })

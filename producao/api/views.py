@@ -1048,38 +1048,45 @@ def StockLogList(request, format=None):
     dql = dbgw.dql(request.data, False)
 
     if typeList=='A':
-        cols = f'''row_number() over() rowid,nome,"order",sub_order,id,grp,ig_bobinagem_id,dosers,maxid,type_mov,qty_bobinagem_to_consume,artigo_cod, n_lote,qty_lote'''
+        cols = f'''row_number() over() rowid,nome,"order",id,grp,status,doser_closed,linha_closed,ig_bobinagem_id,dosers,maxid,type_mov,
+        qty_bobinagem_to_consume,qty_bobinagem_consumed,artigo_cod, n_lote,qty_lote, no_lotes,erro_consumos,ofs'''
         sql = lambda p, c, s: (f"""
-            SELECT {c(f'{cols}')} FROM(
-            WITH IO AS(
-            SELECT * FROM(
+                SELECT {c(f'{cols}')} FROM( 
+                WITH IO AS(
+                SELECT * FROM(
                 SELECT
-                t."order", t."sub_order", t.id,t.grp,t.ig_bobinagem_id,
-                CASE WHEN t.type_mov='C' THEN string_agg(t.doser,',') over w ELSE string_agg(t.doser,',') over wio END dosers,	
+                t."order", t.id,t.grp,t.ig_bobinagem_id,t.no_lotes,t.status,t.doser_closed,t.linha_closed,
+                CASE WHEN t.type_mov='C' THEN string_agg(t.doser,',') over w ELSE string_agg(t.doser,',') over wio END dosers,
                 max(t.id) over wio maxid,
-                t.type_mov,	t.qty_bobinagem_to_consume,	t.artigo_cod, t.n_lote,	t.qty_lote
-            FROM (
-                SELECT 
-                    ld.id,ld.doser,
-                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.lote_id END lote_id,
-                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.artigo_cod END artigo_cod,
-                    CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.n_lote END n_lote,
-                    CASE WHEN ld.type_mov='C' THEN sum(ld.qty_to_consume) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_to_consume,
-                    ld.type_mov,ll.qty_lote,ld.qty_to_consume,ld.ig_bobinagem_id,ld."order",ld.sub_order,
-                    ROW_NUMBER() OVER(ORDER BY ld."order", ld."sub_order") -  ROW_NUMBER() OVER(PARTITION BY ld.type_mov ORDER BY ld."order", ld."sub_order") grp
+                t.type_mov,t.qty_bobinagem_to_consume,t.qty_bobinagem_consumed,t.artigo_cod,t.n_lote,t.qty_lote,
+                CASE WHEN (t.no_lotes=0 and (t.qty_bobinagem_to_consume+t.qty_bobinagem_consumed) <> 0) or t.no_lotes>0 THEN 1 ELSE 0 END erro_consumos
+                FROM (
+                SELECT
+                ld.id,ld.doser,ld.status,ld.closed doser_closed,ll.closed linha_closed,
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.lote_id END lote_id,  
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.artigo_cod END artigo_cod,
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.n_lote END n_lote,
+                CASE WHEN ld.type_mov='C' THEN sum(CASE WHEN ld.lote_id is null THEN 1 ELSE 0 END) over (partition by ld.ig_bobinagem_id) ELSE null END no_lotes,
+                CASE WHEN ld.type_mov='C' THEN sum(ld.qty_to_consume) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_to_consume,
+                CASE WHEN ld.type_mov='C' THEN sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_consumed,
+                ld.type_mov,ll.qty_lote,ld.qty_to_consume,ld.ig_bobinagem_id,ld."order",
+                ROW_NUMBER() OVER(ORDER BY ld."order") -  ROW_NUMBER() OVER(PARTITION BY ld.type_mov ORDER BY ld."order") grp
                 FROM {sgpAlias}.loteslinha ll
-                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
-            ) t
-            WINDOW w AS (PARTITION BY t.grp,t.ig_bobinagem_id),wio AS (PARTITION BY t.grp,t.ig_bobinagem_id,t.lote_id)
-            order by t."order",t."sub_order"
-            ) tbl where tbl.id=tbl.maxid
-            )
-            SELECT pbm.nome,IO.* 
-            FROM IO
-            LEFT JOIN {sgpAlias}.producao_bobinagem pbm ON pbm.ig_bobinagem_id=IO.ig_bobinagem_id
-            order by "order",sub_order
-            ) t
-            {s(dql.sort)} {p(dql.paging)}
+                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id and ld.status<>0   
+                WHERE ll.status<>0 or ll.status is null
+                ) t
+                WINDOW w AS (PARTITION BY t.grp,t.ig_bobinagem_id),wio AS (PARTITION BY t.grp,t.ig_bobinagem_id,t.lote_id)
+                order by t."order"
+                ) tbl where tbl.id=tbl.maxid
+                )
+                SELECT pbm.nome,IO.*,
+                (select jsonb_agg(tx -> 'of_cod') from jsonb_array_elements(acs.ofs::jsonb) as x(tx)) as ofs
+                FROM IO
+                LEFT JOIN {sgpAlias}.producao_bobinagem pbm ON pbm.ig_bobinagem_id=IO.ig_bobinagem_id
+                LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                order by "order"
+                ) t
+                {s(dql.sort)} {p(dql.paging)}
         """)
 
     if typeList=='B':

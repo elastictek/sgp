@@ -491,7 +491,7 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     );
 }
 
-const CardValidarBobinagens = ({ menuItem, record, setShowForm }) => {
+const CardValidarBobinagens = ({ socket, menuItem, record, setShowForm }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
 
@@ -500,10 +500,10 @@ const CardValidarBobinagens = ({ menuItem, record, setShowForm }) => {
         //dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, []);
+    }, [socket]);
 
     const handleWndClick = (r) => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { bobinagem_id: r.id }, width: '1500px', height: '700px', minFullHeight: 800 }))
+        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { bobinagem_id: r.id,bobinagem_nome: r.nome }, width: '1500px', height: '700px', minFullHeight: 800 }))
     }
 
     const selectionRowKey = (record) => {
@@ -601,7 +601,7 @@ const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
     </>);
 }
 
-const CardEventosLinha = ({ menuItem, record, setShowForm }) => {
+const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
 
@@ -610,7 +610,7 @@ const CardEventosLinha = ({ menuItem, record, setShowForm }) => {
         //dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, []);
+    }, [socket]);
 
     const reload=()=>{
         dataAPI.fetchPost();
@@ -736,7 +736,7 @@ export default ({ aggId }) => {
         const cancelFetch = cancelToken();
         loadData({ aggId, token: cancelFetch });
         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
-    }, [dataSocket?.bobinagens, dataSocket?.inproduction,dataSocket?.igbobinagens]);
+    }, [dataSocket?.inproduction]);
 
 
     useEffect(() => {
@@ -839,9 +839,9 @@ export default ({ aggId }) => {
                             case "operacoes":
                                 return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "validarbobinagens":
-                                return (<CardValidarBobinagens key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                                return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "linelogs":
-                                return (<CardEventosLinha key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                                return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}

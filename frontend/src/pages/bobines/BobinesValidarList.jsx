@@ -240,42 +240,66 @@ export default ({ data, closeSelf }) => {
         const vData = [];
         const _all_defeitos = BOBINE_DEFEITOS.reduce((obj, item) => (obj[item.value] = 0, obj), {});
         const errors = [];
-        for (let [i, v] of formData.defeitos.entries()) {
-            const _defeitos = formData.defeitos[i].reduce((obj, item) => (obj[item.value] = 1, obj), {});
+        let fData={...formData, st:[...formData.st]};
+        let warns = false;
+         switch (type) {
+            case "validar": break;
+            case "hold": 
+            for (let [i, v] of fData.st.entries()) {
+                if (v=="LAB" || v=="DM"){
+                    fData.st[i]="HOLD";
+                }else{
+                    warns=true;           
+                }
+            }
+            break;
+            case "aprovar":
+                for (let [i, v] of fData.st.entries()) {
+                    if (v=="LAB" || v=="HOLD"){
+                        fData.st[i]="G";
+                    }else{
+                        warns=true;             
+                    }
+                }
+                break;
+        }
 
-            if (formData.st[i] === 'DM12' || formData.st[i] === 'R') {
-                if (formData.defeitos[i].length === 0) {
+        for (let [i, v] of fData.defeitos.entries()) {
+            const _defeitos = fData.defeitos[i].reduce((obj, item) => (obj[item.value] = 1, obj), {});
+
+            if (fData.st[i] === 'DM12' || fData.st[i] === 'R') {
+                if (fData.defeitos[i].length === 0) {
                     errors.push(<li key={`err-${i}`}>A Bobine {i} Classificadas como DM ou R tem de ter pelo menos um defeito!</li>);
                 }
-                if (formData.defeitos[i].some(a => a.value === 'fc')) {
+                if (fData.defeitos[i].some(a => a.value === 'fc')) {
                     //Tem falha de corte
-                    if (formData.fc[i]?.init === null || formData.fc[i]?.end === null) {
+                    if (fData.fc[i]?.init === null || fData.fc[i]?.end === null) {
                         errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de corte!</li>);
-                    } else if (formData.fc[i]?.init > formData.fc[i]?.end) {
+                    } else if (fData.fc[i]?.init > fData.fc[i]?.end) {
                         errors.push(<li key={`err-${i}`}>A falha de Corte na Bobine {i} tem de ser um intervalo válido!</li>);
                     }
                 }
-                if (formData.defeitos[i].some(a => a.value === 'ff')) {
+                if (fData.defeitos[i].some(a => a.value === 'ff')) {
                     //Tem falha de filme
-                    if (formData.ff[i]?.init === null || formData.ff[i]?.end === null) {
+                    if (fData.ff[i]?.init === null || fData.ff[i]?.end === null) {
                         errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de filme!</li>);
-                    } else if (formData.ff[i]?.init > formData.ff[i]?.end) {
+                    } else if (fData.ff[i]?.init > fData.ff[i]?.end) {
                         errors.push(<li key={`err-${i}`}>A falha de Filme na Bobine {i} tem de ser um intervalo válido!</li>);
                     }
                 }
-                if (formData.defeitos[i].some(a => a.value === 'fmp') && !formData.obs[i]) {
+                if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
                     errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
                 }
-                if (formData.defeitos[i].some(a => a.value === 'fmp') && !formData.obs[i]) {
+                if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
                     errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
                 }
-                if (formData.defeitos[i].some(a => a.value === 'buraco') && !formData.obs[i]) {
+                if (fData.defeitos[i].some(a => a.value === 'buraco') && !fData.obs[i]) {
                     errors.push(<li key={`err-${i}`}>Buracos na Bobine {i}, tem de preencher os Metros de Desbobinagem nas Observações!</li>);
                 }
-                if (formData.defeitos[i].some(a => a.value === 'esp') && !formData.probs[i]) {
+                if (fData.defeitos[i].some(a => a.value === 'esp') && !fData.probs[i]) {
                     errors.push(<li key={`err-${i}`}>Gramagem na Bobine {i}, tem de preencher as Propriedades Observações!</li>);
                 }
-                if (formData.defeitos[i].some(a => a.value === 'prop') && !formData.probs[i]) {
+                if (fData.defeitos[i].some(a => a.value === 'prop') && !fData.probs[i]) {
                     errors.push(<li key={`err-${i}`}>Propriedades Bobine {i}, tem de preencher as Propriedades Observações!</li>);
                 }
             }
@@ -283,16 +307,18 @@ export default ({ data, closeSelf }) => {
 
 
 
-            vData.push({ id: dataAPI.getData().rows[i].id, l_real: formData.l_real[i], estado: formData.st[i], prop_obs: formData.probs[i], obs: formData.obs[i], ..._all_defeitos, ..._defeitos });
+            vData.push({ id: dataAPI.getData().rows[i].id, l_real: fData.l_real[i], estado: fData.st[i], prop_obs: fData.probs[i], obs: fData.obs[i], ..._all_defeitos, ..._defeitos });
 
-            //console.log(key, dataAPI.getData().rows[key], formData.defeitos[`${dataAPI.getData().rows[key].id}`])
-            //const _t = formData.defeitos[key].map(v => ({ [v.key]: 1 }));
+            //console.log(key, dataAPI.getData().rows[key], fData.defeitos[`${dataAPI.getData().rows[key].id}`])
+            //const _t = fData.defeitos[key].map(v => ({ [v.key]: 1 }));
             //console.log(dataAPI.getData().rows[key].id);
             //_defeitos.push({ id: dataAPI.getData().rows[key].id })
             //console.log(_t);
         }
+
+
         if (errors.length > 0) {
-            Modal.error({ centered:true, width:"auto", style:{maxWidth:"768px"}, title: 'Erro de validação/classificação', content: <div style={{display:"flex"}}><div style={{maxHeight:"60vh",width:"100%"}}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div></div> });
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div></div> });
         } else {
             setLoading(true);
             try {
@@ -301,7 +327,7 @@ export default ({ data, closeSelf }) => {
                     setResultMessage(response.data);
                 }
             } catch (e) {
-                Modal.error({ centered:true, width:"auto", style:{maxWidth:"768px"}, title: 'Erro de validação/classificação', content: <div style={{display:"flex"}}><div style={{maxHeight:"60vh",width:"100%"}}><YScroll>{e.message}</YScroll></div></div> });
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
             };
             setLoading(false);
         }
@@ -330,11 +356,7 @@ export default ({ data, closeSelf }) => {
 
 
 
-        switch (type) {
-            case "validar": break;
-            case "hold": break;
-            case "aprovar": break;
-        }
+
     }
 
     const selectionRowKey = (record) => {
