@@ -128,12 +128,14 @@ urlpatterns = [
 
     #PICAGEM LOTES
     re_path(r'^pick/$', views.Pick),
+    re_path(r'^pickmanual/$', views.PickManual),
     re_path(r'^saidamp/$', views.SaidaMP),
     re_path(r'^saidadoser/$', views.SaidaDoser),
     #PICAGEM LOTES
 
     #MATERIAS-PRIMAS
     re_path(r'^stocklist/$', views.StockList),
+    re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
     #MATERIAS-PRIMAS
 
     #REPORTS

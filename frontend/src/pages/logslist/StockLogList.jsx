@@ -24,7 +24,8 @@ import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-i
 import { VscDebugStart } from 'react-icons/vsc';
 import { BsFillStopFill } from 'react-icons/bs';
 import { IoCodeWorkingOutline } from 'react-icons/io5';
-
+import { Wnd } from "./commons";
+const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobinagem'));
 
 
 
@@ -299,11 +300,11 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
-const Action = ({ v, r }) => {
+const Action = ({ v, r, onClick }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
-            <Button /* onClick={() => handleWndClick(r, "addlotes")} */ style={{ marginRight: "2px" }} size="small" icon={<UploadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Acima" />} />
-            <Button /* onClick={() => handleWndClick(r, "addlotes")} */ style={{ marginRight: "4px" }} size="small" icon={<DownloadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Abaixo" />} />
+            <Button onClick={() => onClick(r, "addlotes","up")} style={{ marginRight: "2px" }} size="small" icon={<UploadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Acima" />} />
+            <Button onClick={() => onClick(r, "addlotes","down")} style={{ marginRight: "4px" }} size="small" icon={<DownloadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Abaixo" />} />
             <div>{v}</div>
         </div>
     );
@@ -347,15 +348,13 @@ export default () => {
     }
 
 
-
-    /*
-     
-    ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
-                ld.type_mov type_mov_doser,
-                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id
-      
-     */
+    const handleWndClick = (bm, type, direction) => {
+        let title = '';
+        if (type==="addlotes"){
+            title=`Stock Matérias Primas ${bm.ofs}`;
+        } 
+        setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order:bm.order, direction } });
+    };
 
     const columns = setColumns(
         {
@@ -383,12 +382,12 @@ export default () => {
                         }),
                         ...(common.typeList == 'A' && {
                             type_mov: { title: "Mov.", align: "center", width: 60, render: (v, r) => v, ...common },
-                            nome: { title: "Bobinagem", width: 180, render: (v, r) => <Action v={v} r={r} />, ...common },
+                            nome: { title: "Bobinagem", width: 180, render: (v, r) => <Action onClick={handleWndClick} v={v} r={r} />, ...common },
                             ofs: { title: "Ordens Fabrico", width: "200", render: (v, r) => <div>{v && v.replaceAll('"', "")}</div>, ...common },
                             artigo_cod: { title: "Artigo", width: 250, render: (v, r) => v, ...common },
                             n_lote: { title: "Lote", width: 250, render: (v, r) => v, ...common },
-                            qty_lote: { title: "Qtd. IN/OUT", width: 150, render: (v, r) => r.type_mov!=="C" && <Quantity v={v} unit="kg" />, ...common },
-                            qty_bobinagem_consumed: { title: "Qtd. Consumida", width: 150, render: (v, r) => r.type_mov==="C" && <Quantity v={v} unit="kg"/>, ...common },
+                            qty_lote: { title: "Qtd. IN/OUT", width: 150, render: (v, r) => r.type_mov !== "C" && <Quantity v={v} unit="kg" />, ...common },
+                            qty_bobinagem_consumed: { title: "Qtd. Consumida", width: 150, render: (v, r) => r.type_mov === "C" && <Quantity v={v} unit="kg" />, ...common },
                             qty_bobinagem_to_consume: { title: "Qtd. a Consumir", width: 150, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                             dosers: { title: "Doser", render: (v, r) => v, ...common }
                         })
@@ -404,9 +403,16 @@ export default () => {
         }
     );
 
+    const handleWndCancel = () => {
+        setShowValidar({ show: false, data: {} });
+    };
+
     return (
         <>
             <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
+                <Wnd show={showValidar} setShow={setShowValidar}>
+                    {showValidar.type === "addlotes" && <Suspense fallback={<Spin />}><StockListByIgBobinagem type={showValidar.type} data={showValidar.data} closeSelf={handleWndCancel} /></Suspense>}
+                </Wnd>
                 <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} onChange={onTypeListChange} />
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
