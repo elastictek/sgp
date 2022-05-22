@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense, memo } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import { PAGE_TOOLBAR_HEIGHT, ROOT_URL } from "config"
@@ -6,6 +6,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
 import YScroll from "components/YScroll";
 import ResponsiveModal from "components/ResponsiveModal";
+import Modalv4 from "components/Modalv4";
 import { Layout, Menu, Breadcrumb, Popover } from 'antd';
 const { Header, Content, Footer } = Layout;
 import Icon, { HomeOutlined, MenuOutlined } from "@ant-design/icons";
@@ -56,11 +57,11 @@ const useStyles = createUseStyles({
     popover: {
         '& .ant-popover-arrow-content:before': {
             background: '#001529 !important',
-            display:"none"
+            display: "none"
         },
         '& .ant-popover-arrow-content:before': {
             background: '#001529 !important',
-            display:"none"
+            display: "none"
         },
         '& .ant-popover-inner': {
             background: '#001529 !important'
@@ -97,6 +98,9 @@ const ItemMenu = styled.div`
 
 
 
+
+
+
 export default () => {
     const [modalParameters, setModalParameters] = useState({ visible: false });
     const navigate = useNavigate();
@@ -124,7 +128,7 @@ export default () => {
                 </ul>
             </MenuColumn>
             <MenuColumn>
-            <ul style={{ listStyle: "none" }}>
+                <ul style={{ listStyle: "none" }}>
                     <TitleMenu level={4}>Matérias Primas</TitleMenu>
                     <li><ItemMenu onClick={() => onClick({ key: 'i-picar-granulado' })}>Picagem de Granulado</ItemMenu></li>
                 </ul>
@@ -137,19 +141,25 @@ export default () => {
                 </ul>
             </MenuColumn>
             <MenuColumn>
-            <ul style={{ listStyle: "none" }}>
+                <ul style={{ listStyle: "none" }}>
                     <TitleMenu level={4}>Listas/Relatórios</TitleMenu>
                     <li><ItemMenu onClick={() => onClick({ key: 'i-lineloglist' })}>Eventos da Linha</ItemMenu></li>
                     <li><ItemMenu onClick={() => onClick({ key: 'i-stockloglist' })}>Movimento de Lotes</ItemMenu></li>
                     <li><ItemMenu onClick={() => onClick({ key: 'i-bobinesoriginaislist' })}>Bobines Originais</ItemMenu></li>
                     <li><ItemMenu onClick={() => onClick({ key: 'i-fixlotes' })}>Erros de Consumos (Bobinagens)</ItemMenu></li>
+                    <li onClick={() => Modalv4.show({
+                        onOk: () => { }, onCancel: () => { }, title: "teste", width: "500px", height: "400px", fullWidthDevice: 2,
+                        content:<div><Modalv4/><Button onClick={() => Modalv4.show({ onOk: () => { }, onCancel:()=>{},content:<div>ddddd</div> })}>teste</Button></div>
+                    })}>
+                        aaaa
+                    </li>
                 </ul>
             </MenuColumn>
         </div>
     );
 
     const items = [
-        { key: 'i-home', icon: <Popover /* trigger="click" */ overlayClassName={classes.popover} content={content} overlayStyle={{ width: '100%' }} placement="bottomLeft" arrowPointAtCenter><MenuOutlined style={{ fontSize: '20px' }}/></Popover> },
+        { key: 'i-home', icon: <Popover /* trigger="click" */ overlayClassName={classes.popover} content={content} overlayStyle={{ width: '100%' }} placement="bottomLeft" arrowPointAtCenter><MenuOutlined style={{ fontSize: '20px' }} /></Popover> },
         { key: 'i-app', label: "App" },
         { key: 'i-plan', label: "Planeamento", children: [{ key: 'i-ofs', label: 'Ordens de Fabrico' }] },
         {
@@ -216,7 +226,7 @@ export default () => {
 
         <>
             <Wnd parameters={modalParameters} setVisible={onModalVisible} />
-
+            <Modalv4 />
 
             <Layout className="layout">
                 <Header style={{ height: "32px", lineHeight: "32px" }}>

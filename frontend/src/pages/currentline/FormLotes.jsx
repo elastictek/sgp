@@ -11,6 +11,7 @@ import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
 import YScroll from "components/YScroll";
 import XScroll from "components/XScroll";
+import Modalv4 from "components/Modalv4";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { SOCKET } from 'config';
@@ -30,34 +31,34 @@ const useFocus = () => {
     return [htmlElRef, setFocus]
 }
 
-const Wnd = ({ parameters, setParameters }) => {
-    const { modalProps = {} } = parameters;
-    const iref = useRef();
+// const Wnd = ({ parameters, setParameters }) => {
+//     const { modalProps = {} } = parameters;
+//     const iref = useRef();
 
-    return (
-        <ResponsiveModal
-            title={parameters.title}
-            visible={parameters.visible}
-            centered
-            responsive
-            onCancel={setParameters}
-            maskClosable={true}
-            destroyOnClose={true}
-            fullWidthDevice={parameters.fullWidthDevice}
-            width={parameters.width}
-            height={parameters.height}
-            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-            footer={<div ref={iref} id="wnd-wrapper" style={{ textAlign: 'right' }}></div>}
-            {...modalProps}
-        >
-            <YScroll>
-                {parameters.type == "saida_mp" && <Suspense fallback={<></>}><SaidaMP parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
-                {parameters.type == "saida_doseador" && <Suspense fallback={<></>}><SaidaDoser parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
-                {parameters.type == "reminder" && <Suspense fallback={<></>}><Reminder parameters={parameters} wndRef={iref} /></Suspense>}
-            </YScroll>
-        </ResponsiveModal>
-    );
-}
+//     return (
+//         <ResponsiveModal
+//             title={parameters.title}
+//             visible={parameters.visible}
+//             centered
+//             responsive
+//             onCancel={setParameters}
+//             maskClosable={true}
+//             destroyOnClose={true}
+//             fullWidthDevice={parameters.fullWidthDevice}
+//             width={parameters.width}
+//             height={parameters.height}
+//             bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
+//             footer={<div ref={iref} id="wnd-wrapper" style={{ textAlign: 'right' }}></div>}
+//             {...modalProps}
+//         >
+//             <YScroll>
+//                 {parameters.type == "saida_mp" && <Suspense fallback={<></>}><SaidaMP parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
+//                 {parameters.type == "saida_doseador" && <Suspense fallback={<></>}><SaidaDoser parameters={parameters} wndRef={iref} setParameters={setParameters} /></Suspense>}
+//                 {parameters.type == "reminder" && <Suspense fallback={<></>}><Reminder parameters={parameters} wndRef={iref} /></Suspense>}
+//             </YScroll>
+//         </ResponsiveModal>
+//     );
+// }
 
 const StyleDoser = styled.div(
     (props) => css`
@@ -92,14 +93,14 @@ const Reminder = ({ parameters }) => {
 const SaidaMP = ({ parameters }) => {
     const { title, buffer } = parameters;
     const [lotes, setLotes] = useState([]);
-    const [modal, setModal] = useState({ visible: false });
+    /* const [modal, setModal] = useState({ visible: false }); */
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
     const [lote, setLote] = useState();
 
-    const onCancel = () => {
-        setModal(prev => ({ ...prev, visible: !prev.visible }))
-    }
+    /*     const onCancel = () => {
+            setModal(prev => ({ ...prev, visible: !prev.visible }))
+        } */
 
     const onFinish = (lt) => {
         setSubmitting(true);
@@ -117,8 +118,13 @@ const SaidaMP = ({ parameters }) => {
     }
 
     const onModal = (lt) => {
-        const modalProps = { footer: <div><Button type="primary" onClick={() => onFinish(lt)}>Registar</Button><Button onClick={onCancel}>Cancelar</Button></div> }
-        setModal(prev => ({ ...prev, lote: lt, visible: !prev.visible, width: "300px", height: "200px", fullWidthDevice: 1, title: "Resto de Matéria Prima", type: "reminder", form, modalProps }));
+        Modalv4.show({
+            width: "300px", height: "200px", fullWidthDevice: 1, title: "Resto de Matéria Prima",
+            footer: <div><Button type="primary" onClick={() => onFinish(lt)}>Registar</Button><Button onClick={onCancel}>Cancelar</Button></div>,
+            content: <Suspense fallback={<></>}><Reminder parameters={{ lote: lt, form }} /></Suspense>
+        });
+        //const modalProps = { footer: <div><Button type="primary" onClick={() => onFinish(lt)}>Registar</Button><Button onClick={onCancel}>Cancelar</Button></div> }
+        //setModal(prev => ({ ...prev, lote: lt, visible: !prev.visible, width: "300px", height: "200px", fullWidthDevice: 1, title: "Resto de Matéria Prima", type: "reminder", form, modalProps }));
     }
 
     useEffect(() => {
@@ -152,7 +158,7 @@ const SaidaMP = ({ parameters }) => {
     }, [parameters.artigos]);
     return (
         <div style={{ textAlign: "center" }}>
-            <Wnd parameters={modal} setParameters={onModal} />
+            {/* <Wnd parameters={modal} setParameters={onModal} /> */}
             {lotes.map((v, i) => {
                 return <div key={`lt-${i}`}><TagButton onClick={() => onModal(v)} style={{ height: "40px", marginBottom: "5px", width: "100%", textAlign: "center" }}>{v.artigo_des} <b>{v.n_lote}</b><br /> {parseFloat(v.qty_lote_available).toFixed(2)}kg </TagButton></div>
             })}
@@ -323,40 +329,36 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [guides, setGuides] = useState(false);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
-    const [inputRef, setInputFocus] = useFocus();
+    //const [inputRef, setInputFocus] = useFocus();
+    const inputRef = useRef("");
     const [buffer, setBuffer] = useState(null);
     const [settings, setSettings] = useState(null);
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
+    const [focusStyle, setFocusStyle] = useState({});
 
 
     const [artigos, setArtigos] = useState();
     const [touched, setTouched] = useState(false);
 
-    const [modalParameters, setModalParameters] = useState({ visible: false });
-    const onModalParameters = (parameters) => {
-        if (!parameters) {
-            setModalParameters(prev => ({ ...prev, visible: !prev.visible }));
-        } else {
-            switch (parameters.type) {
-                case "saida_mp":
-                    parameters = { ...parameters, width: "500px", height: "500px", fullWidthDevice: 1, title: "Saída de Matéria Prima", artigos, buffer };
-                    break;
-                case "saida_doseador":
-                    parameters = { ...parameters, width: "500px", height: "180px", fullWidthDevice: 1, title: "Saída de Doseador", artigos };
-                    break;
-            }
-            setModalParameters(prev => ({ visible: !prev.visible, ...parameters }));
+    const onModal = (parameters) => {
+        switch (parameters.type) {
+            case "saida_mp":
+                Modalv4.show({ width: "500px", height: "500px", fullWidthDevice: 1, title: "Saída de Matéria Prima", content: <><Modalv4 /><Suspense fallback={<></>}><SaidaMP parameters={{ artigos, buffer }} /></Suspense></> });
+                break;
+            case "saida_doseador":
+                Modalv4.show({ width: "500px", height: "180px", fullWidthDevice: 1, title: "Saída de Doseador", content: <Suspense fallback={<></>}><SaidaDoser parameters={{ artigos }} /></Suspense> });
+                break;
         }
     }
 
-    useEffect(() => {
-        if (modalParameters.type === "saida_mp") {
-            setModalParameters(prev => ({ ...prev, artigos }));
-        } else if (modalParameters.type === "saida_doseador") {
-            setModalParameters(prev => ({ ...prev, artigos }));
-        }
-    }, [artigos]);
+    /*     useEffect(() => {
+            if (modalParameters.type === "saida_mp") {
+                setModalParameters(prev => ({ ...prev, artigos }));
+            } else if (modalParameters.type === "saida_doseador") {
+                setModalParameters(prev => ({ ...prev, artigos }));
+            }
+        }, [artigos]); */
 
 
     const { data: dataSocket } = useContext(SocketContext) || {};
@@ -431,12 +433,24 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         return { lotes: [] };
     }
 
+    const _pushArtigos = (_artigos, _doser, itemForm) => {
+        let _pd = pickedDoser(_doser, itemForm.matprima_cod);
+        let _grp = _pd?.group_id;
+        if (!(_grp in _artigos[itemForm.matprima_cod])) {
+            _artigos[itemForm.matprima_cod][_grp] = { dosers: [], lotes: [] };
+        }
+        _artigos[itemForm.matprima_cod][_grp].dosers.push(_doser);
+        let arrlotes = [..._artigos[itemForm.matprima_cod][_grp].lotes, ..._pd.lotes];
+        _artigos[itemForm.matprima_cod][_grp].lotes = arrlotes.filter((a, i) => arrlotes.findIndex((s) => a.lote_id === s.lote_id) === i);
+    }
+
     useEffect(() => {
         if (lotesDosers && dosersSets && settings && !touched) {
             console.log("LOADED FORMULAÇÃO", JSON.parse(settings.formulacao).items);
             console.log("LOADED LOTES", lotesDosers);
             const items = JSON.parse(settings.formulacao).items;
             const _artigos = {};
+
             for (let itemForm of items) {
                 if (!(itemForm.matprima_cod in _artigos)) {
                     _artigos[itemForm.matprima_cod] = {};
@@ -444,19 +458,16 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 let _doser = null;
                 if (itemForm?.doseador_A) {
                     _doser = itemForm.doseador_A;
-                } else if (itemForm?.doseador_B) {
+                    _pushArtigos(_artigos, _doser, itemForm);
+                }
+                if (itemForm?.doseador_B) {
                     _doser = itemForm.doseador_B;
-                } else if (itemForm?.doseador_C) {
+                    _pushArtigos(_artigos, _doser, itemForm);
+                }
+                if (itemForm?.doseador_C) {
                     _doser = itemForm.doseador_C;
+                    _pushArtigos(_artigos, _doser, itemForm);
                 }
-                let _pd = pickedDoser(_doser, itemForm.matprima_cod);
-                let _grp = _pd?.group_id;
-                if (!(_grp in _artigos[itemForm.matprima_cod])) {
-                    _artigos[itemForm.matprima_cod][_grp] = { dosers: [], lotes: [] };
-                }
-                _artigos[itemForm.matprima_cod][_grp].dosers.push(_doser);
-                let arrlotes = [..._artigos[itemForm.matprima_cod][_grp].lotes, ..._pd.lotes];
-                _artigos[itemForm.matprima_cod][_grp].lotes = arrlotes.filter((a, i) => arrlotes.findIndex((s) => a.lote_id === s.lote_id) === i);
             }
             setArtigos(_artigos);
         }
@@ -493,16 +504,21 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         closeParent();
     }
 
-    const onPick = (e, a, b) => {
+    const keydownHandler = (event) => {
+        event.preventDefault();
+        onPick(event);
+    };
+
+    const onPick = (e) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
-            if (inputRef.current.value !== '') {
+            if (inputRef.current !== '') {
                 if (!touched) { setTouched(true); }
                 e.preventDefault();
-                const v = inputRef.current.value.toUpperCase();
+                const v = inputRef.current.toUpperCase();
                 if (DOSERS.includes(v)) {
                     //Source / Type
                     form.setFieldsValue({ source: v });
-                    inputRef.current.value = '';
+                    inputRef.current = '';
                 } else {
                     let fData = form.getFieldsValue(true);
                     let picked = false;
@@ -573,17 +589,24 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 }
                             }
                         }
-                        inputRef.current.value = '';
+                        inputRef.current = '';
                     }
                 }
                 //setInputFocus();
             }
+        } else {
+            inputRef.current = `${inputRef.current}${e.key}`;
+            console.log(inputRef.current);
         }
     }
 
+    const onFocus = (f) => {
+        setFocusStyle(f ? { boxShadow: "inset 0px 0px 40px 40px #DBA632" } : {});
+    }
+
     return (
-        <>
-            <Wnd parameters={modalParameters} setParameters={onModalParameters} />
+        <div onKeyDown={keydownHandler} tabIndex={1000} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
+            <Modalv4 />
             <ResultMessage
                 result={resultMessage}
                 successButtonOK={<Button type="primary" key="goto-of" onClick={onSuccessOK}>Lotes de Matérias Primas</Button>}
@@ -620,13 +643,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <Input size="small" />
                                 {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
                             </Field>
-                            <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                            <FieldItem label={{ enabled: false }}>{/* <input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /> */}</FieldItem>
                             <FieldItem label={{ enabled: false }}>
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
                                     <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
                                     <Button style={{ marginRight: "3px" }} disabled={!touched} onClick={onCancel}>Cancelar</Button>
-                                    <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModalParameters({ type: "saida_doseador" })}>Saída de Doseador</Button>
-                                    <Button disabled={touched} type='primary' onClick={() => onModalParameters({ type: "saida_mp" })}>Saída de MP</Button>
+                                    <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModal({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    <Button disabled={touched} type='primary' onClick={() => onModal({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>
                         </FieldSet>
@@ -657,6 +680,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     </FormLayout>
                 </Form>
             </ResultMessage>
-        </>
+        </div>
     );
 }
