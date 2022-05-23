@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, memo } from 'react';
-import { Space } from "antd";
+import { Space, Button } from "antd";
 import YScroll from "components/YScroll";
 import ResponsiveModal from "components/ResponsiveModal";
 
@@ -15,11 +15,19 @@ const TitleWnd = ({ title }) => {
     );
 }
 
+const Footer = ({ handleOk, handleCancel, iref }) => {
+    return <div ref={iref} style={{ textAlign: 'right' }}>
+        <Button onClick={handleCancel} size="small">Cancelar</Button>,
+        <Button type="primary" onClick={handleOk} size="small">Confirmar</Button>
+    </div>;
+}
+
 const Modalv4 = memo(
     (props) => {
         const [visible, setVisible] = useState(false);
         const payloadRef = useRef({});
         const iref = useRef();
+        const propsToChild = payloadRef?.current?.propsToChild ? payloadRef?.current?.propsToChild : false;
 
         useEffect(() => {
             const lastShow = Modalv4.show;
@@ -49,10 +57,10 @@ const Modalv4 = memo(
                 width={payloadRef?.current?.width}
                 height={payloadRef?.current?.height}
                 bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-                footer={payloadRef?.current?.footer ? payloadRef?.current?.footer : <div ref={iref} style={{ textAlign: 'right' }}></div>}
+                footer={payloadRef?.current?.footer ? payloadRef?.current?.footer : <Footer handleOk={wrapWithClose(payloadRef?.current?.onOk)} handleCancel={wrapWithClose(payloadRef?.current?.onCancel)} iref={iref} />}
             >
                 <YScroll>
-                    {payloadRef?.current?.content && React.cloneElement(payloadRef.current.content, { ...payloadRef.current.content.props, wndRef: iref })}
+                    {payloadRef?.current?.content && React.cloneElement(payloadRef.current.content, { ...payloadRef.current.content.props, ...propsToChild && {wndRef: iref} })}
                 </YScroll>
             </ResponsiveModal>
         );

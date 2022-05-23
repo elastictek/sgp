@@ -61,7 +61,7 @@ def executeAlerts():
     dataDosers = json.dumps(rows[0],default=str)
 
     with connections[connGatewayName].cursor() as cursor:
-        rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER' ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
+        rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%') ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
     dataBuffer = json.dumps(rows[0],default=str)
 
     with connections["default"].cursor() as cursor:
@@ -153,7 +153,7 @@ class LotesPickConsumer(WebsocketConsumer):
         connection = connections[connGatewayName].cursor()
         rows = dbgw.executeSimpleList(lambda:(f"""		
             SELECT ST."ITMREF_0", ST."UPDDATTIM_0",ST."LOT_0", ST."QTYPCU_0", ST."PCUORI_0",ST."LOC_0"
-            FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER' 
+            FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%')
             and "ITMREF_0" in (
             {matPrimas}
             )
@@ -161,7 +161,6 @@ class LotesPickConsumer(WebsocketConsumer):
          """),connection,{})['rows']
         
         if len(rows)>0:
-            print(f'gggggggg--{rows}')
             cache.set(f'lotes-{cs}',rows,timeout=None)
         self.send(text_data=json.dumps({"status":"success"}))
     
@@ -171,7 +170,7 @@ class LotesPickConsumer(WebsocketConsumer):
             SELECT ST."ROWID",ST."ITMREF_0", ST."UPDDATTIM_0",ST."LOT_0", ST."QTYPCU_0", ST."PCUORI_0",ST."LOC_0", mprima."ITMDES1_0"
             FROM "SAGE-PROD"."STOCK" ST
             JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            Where ST."STOFCY_0" = 'E01' and "LOC_0"='BUFFER'
+            Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%')
             ORDER BY ST."UPDDATTIM_0" DESC
          """),connection,{})['rows']
         

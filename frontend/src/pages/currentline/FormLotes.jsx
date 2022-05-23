@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import Joi from 'joi';
+import Joi, { alternatives } from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { getSchema } from "utils/schemaValidator";
@@ -506,11 +506,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     const keydownHandler = (event) => {
         event.preventDefault();
+        console.log("aaaaaaaaaa", event.keyCode)
         onPick(event);
     };
 
     const onPick = (e) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
+            form.setFieldsValue({ viewer: '' });
             if (inputRef.current !== '') {
                 if (!touched) { setTouched(true); }
                 e.preventDefault();
@@ -594,8 +596,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 }
                 //setInputFocus();
             }
+        }
+        else if (e.keyCode === "Escape") {
+            inputRef.current = '';
+            form.setFieldsValue({ viewer: inputRef.current });
         } else {
             inputRef.current = `${inputRef.current}${e.key}`;
+            form.setFieldsValue({ viewer: inputRef.current });
             console.log(inputRef.current);
         }
     }
@@ -604,8 +611,24 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         setFocusStyle(f ? { boxShadow: "inset 0px 0px 40px 40px #DBA632" } : {});
     }
 
+/*     const InputManual = ({ inputRef }) => {
+        const [valor,setValor] = useState('');
+        return (
+            <Input tabIndex={-1} onChange={(v) => inputRef.current = `${inputRef.current}${v}`} value={inputRef.current.value} />
+        );
+    }
+
+    const onManualInput = (e) => {
+        Modalv4.show({
+            title: "Insira o valor", width: "200px", height: "180px",
+            content: <InputManual inputRef={inputRef} />,
+            onOk: () => { },
+            onCancel: () => inputRef.current = ''
+        });
+    } */
+
     return (
-        <div onKeyDown={keydownHandler} tabIndex={1000} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
+        <div onKeyDown={keydownHandler} tabIndex={-1} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
             <Modalv4 />
             <ResultMessage
                 result={resultMessage}
@@ -643,12 +666,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <Input size="small" />
                                 {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
                             </Field>
-                            <FieldItem label={{ enabled: false }}>{/* <input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /> */}</FieldItem>
+                            <Field name="viewer" forInput={false} label={{ enabled: false }}><Input size='small'/*  onDoubleClick={onManualInput} */ /></Field>
                             <FieldItem label={{ enabled: false }}>
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
                                     <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>
                                     <Button style={{ marginRight: "3px" }} disabled={!touched} onClick={onCancel}>Cancelar</Button>
-                                    <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModal({ type: "saida_doseador" })}>Saída de Doseador</Button>
+                                    {/* <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModal({ type: "saida_doseador" })}>Saída de Doseador</Button> */}
                                     <Button disabled={touched} type='primary' onClick={() => onModal({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>

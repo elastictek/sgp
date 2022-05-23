@@ -948,10 +948,10 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
         <>
             {"value" in rest ? <>
                 {(() => {
-                    const value = rest.value;
+                    const {value, ...rprops} = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value}</div>);
                         case 'CheckboxField':
                             return (
                                 <CheckboxField {...children.props} value={value} disabled={true} />
@@ -970,11 +970,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
                             ) */
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {
@@ -986,19 +986,19 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }} {...rprops}>{text}</div>
                             )
                         default:
 
                             if ("addonAfter" in children.props || "addonAfter" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }} {...rprops}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value}</div>);
                     }
 
                 })()}

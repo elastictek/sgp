@@ -346,9 +346,9 @@ export default ({ type, data }) => {
             include: {
                 ...((common) => (
                     {
+                        action_line: { title: "", align: "center", width: 60, fixed:"left", render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} data={data} />, ...common },
                         ITMDES1_0: { title: "Matéria Prima", width: 190, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         LOT_0: { title: "Lote", width: 180, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
-                        action_line: { title: "", align: "center", width: 60, render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} data={data} />, ...common },
                         ITMREF_0: { title: "Cod. MP", width: 120, render: (v, r) => v, ...common },
                         QTYPCU_0: { title: "Qtd. Lote", width: 120, render: (v, r) => v && `${parseFloat(v).toFixed(2)} ${r.PCU_0}`, ...common },
                         frm: { title: "Formulação", render: (v, r, i) => <Formulacao rowIndex={i} data={v} />, ...common }

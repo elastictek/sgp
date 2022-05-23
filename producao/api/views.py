@@ -773,7 +773,7 @@ def StockListByIgBobinagem(request, format=None):
             JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"  
             JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
             WHERE 
-            ST."LOC_0" in ('BUFFER') AND NOT EXISTS(SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
+           (ST."LOC_0" in ('BUFFER') OR mprima."ITMREF_0" LIKE 'R000%%') AND NOT EXISTS(SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
             )
             select {c(f'{cols}')}
             from LOTESAVAILABLE
@@ -4442,83 +4442,89 @@ def Pick(request, format=None):
                 ,"$[*]" COLUMNS(rowid FOR ORDINALITY, group_id BIGINT(16) PATH "$.group_id", lote_id INT PATH "$.lote_id", artigo_cod VARCHAR(100) PATH "$.artigo_cod", n_lote VARCHAR(100) PATH "$.n_lote", doser VARCHAR(2) PATH "$.doser", qty_lote decimal(12,5) PATH "$.qty_lote")
                 ) t
             ),
+            VIEW_LINHA AS(SELECT * FROM loteslinha where `status` =1 AND closed=0),
+            VIEW_DOSERS AS(
+                    SELECT id,doser,n_lote,artigo_cod,t_stamp,qty_consumed,type_mov,loteslinha_id,group_id,ig_bobinagem_id,qty_to_consume,lote_id,t_stamp_fix,`order`,closed 
+                    FROM lotesdosers 
+                    where `status` = 1 AND closed=0
+            ),
             LOTES_AVAILABLE AS(
                 select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
-                FROM (
-                    select distinct * from (
-                    SELECT 
-                    DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS.`status`,
-                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_consumed,
-                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) qty_lote_available,
-                    MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) min_t_stamp, #FIFO DATE TO ORDER ASC
-                    MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote) max_t_stamp
-                    FROM loteslinha LOTES
-                    LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
-                    WHERE LOTES.status=1 
-                    ) t WHERE  max_t_stamp=t_stamp and `status`=1
-                ) t #WHERE qty_lote_available>0
+                    FROM (
+                        SELECT DISTINCT * FROM (
+                        SELECT 
+                        DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,DOSERS.`order`,
+                        SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_consumed,
+                        qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_available,
+                        MIN(DOSERS.`order`) over (PARTITION BY LOTES.lote_id) min_order, #FIFO DATE TO ORDER ASC
+                        MAX(DOSERS.`order`) over (PARTITION BY LOTES.lote_id) max_order
+                        FROM VIEW_LINHA LOTES
+                        LEFT JOIN VIEW_DOSERS DOSERS ON LOTES.id=DOSERS.loteslinha_id
+                        WHERE DOSERS.group_id is not null
+                        ) t WHERE  max_order=`order`
+                    ) t WHERE qty_lote_available>0
             ),
             DOSERS_LASTMOV_OUT AS(
-            SELECT * FROM (
-                select ld.id,loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,
-                max(ld.id) over (partition by ld.doser) mx_id 
-                from lotesdosers ld	where `status`=1 and type_mov = 'OUT'
-            ) t 
-            WHERE t.mx_id=t.id
+                SELECT * FROM (
+                    select DOSERS.id,DOSERS.`order`,DOSERS.loteslinha_id,DOSERS.doser,DOSERS.artigo_cod,DOSERS.n_lote,DOSERS.lote_id,DOSERS.type_mov,DOSERS.group_id,
+                    max(DOSERS.`order`) over (partition by DOSERS.doser) mx_order 
+                    from VIEW_DOSERS DOSERS	where type_mov = 'OUT'
+                ) t 
+                WHERE t.mx_order=t.`order`
             ),
             LOTESDOSERS_ARTIGO AS(
                 SELECT * FROM (
-                    select ld.id,ld.loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,max(ld.id) over (partition by ld.artigo_cod,ld.doser) mx_id 
-                    from lotesdosers ld
-                    LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON ld.doser=DOUT.doser
-                    where ld.`status`=1 and ld.type_mov <> 'C' and ld.id>IFNULL(DOUT.id,0)
+                    select DOSERS.id,DOSERS.`order`,DOSERS.loteslinha_id,DOSERS.doser,DOSERS.artigo_cod,DOSERS.n_lote,
+                    DOSERS.lote_id,DOSERS.type_mov,DOSERS.group_id,max(DOSERS.`order`) over (partition by DOSERS.artigo_cod,DOSERS.doser) mx_order 
+                    from VIEW_DOSERS DOSERS
+                    LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON DOSERS.doser=DOUT.doser
+                    where DOSERS.type_mov <> 'C' and DOSERS.`order`>IFNULL(DOUT.`order`,0)
                 ) t 
-                WHERE t.mx_id=t.id and t.type_mov='IN'
+                WHERE t.mx_order=t.`order` and t.type_mov='IN'
             ),
             LOTESDOSERS_LOTE AS(
-                SELECT * FROM (
-                    select ld.id,ld.loteslinha_id,ld.doser,ld.artigo_cod,ld.n_lote,ld.lote_id,ld.type_mov,ld.group_id,
-                    count(*) over (partition by ld.lote_id) cnt_dosers, 
-                    max(ld.id) over (partition by ld.lote_id,ld.doser) mx_id 
-                    from lotesdosers ld
-                    LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON ld.doser=DOUT.doser
-                    where ld.`status`=1 and ld.type_mov <> 'C' and ld.id>IFNULL(DOUT.id,0)
-                ) t 
-                WHERE t.mx_id=t.id and t.type_mov='IN'
+                	SELECT * FROM (
+                        select DOSERS.id,DOSERS.`order`,DOSERS.loteslinha_id,DOSERS.doser,DOSERS.artigo_cod,DOSERS.n_lote,DOSERS.lote_id,DOSERS.type_mov,DOSERS.group_id,
+                        count(*) over (partition by DOSERS.lote_id) cnt_dosers, 
+                        max(DOSERS.`order`) over (partition by DOSERS.lote_id,DOSERS.doser) mx_order
+                        from VIEW_DOSERS DOSERS
+                        LEFT JOIN DOSERS_LASTMOV_OUT DOUT ON DOSERS.doser=DOUT.doser
+                        where DOSERS.type_mov <> 'C' and DOSERS.`order`>IFNULL(DOUT.`order`,0)
+                    ) t 
+                    WHERE t.mx_order=t.`order` and t.type_mov='IN'
             ),
             ACTUAL_GROUPS AS(
-                #VERIFICA SE O LOTE PICADO JÁ FOI PREVIAMENTE PICADO
+               #VERIFICA SE O LOTE PICADO JÁ FOI PREVIAMENTE PICADO
                 select 
                 PLG.*,
                 d.id loteslinha_id, #SE NULL DAR ENTRADA EM LOTESLINHA
-                LDL.lote_id loteid_doser, #SE NULL DAR ENTRADA DO LOTE/DOSER EM LOTESDOSERS, SENÃO JÁ EXISTE E IGNORAR
+                LDL.`order`,LDL.lote_id loteid_doser, #SE NULL DAR ENTRADA DO LOTE/DOSER EM LOTESDOSERS, SENÃO JÁ EXISTE E IGNORAR
                 CASE WHEN d.`group` IS NOT NULL THEN d.`group` ELSE CASE WHEN LDA.group_id IS NOT NULL THEN LDA.group_id ELSE PLG.group_id END END group_final
                 FROM PICK_LOTES_GROUPS PLG
                 LEFT JOIN (
-                select ll.id,ll.artigo_cod,ll.n_lote,ll.lote_id,ll.type_mov,ll.`group`,max(ll.id) over (partition by ll.artigo_cod, ll.lote_id, ll.n_lote) mx_id 
-                from loteslinha ll
-                where `status`=1
-                ) d ON d.mx_id=d.id AND d.type_mov='IN' AND PLG.lote_id = d.lote_id
+                    select ll.id,ll.`order`,ll.artigo_cod,ll.n_lote,ll.lote_id,ll.type_mov,ll.`group`,max(ll.`order`) over (partition by ll.lote_id) mx_order 
+                    from VIEW_LINHA ll
+                ) d ON d.mx_order=d.`order` AND d.type_mov='IN' AND PLG.lote_id = d.lote_id
                 LEFT JOIN LOTESDOSERS_ARTIGO LDA ON PLG.artigo_cod=LDA.artigo_cod and LDA.doser=PLG.doser
                 LEFT JOIN LOTESDOSERS_LOTE LDL ON PLG.lote_id = LDL.lote_id and PLG.doser = LDL.doser
             ),
             IN_LINE AS (
-            SELECT 
-            /*LA.group_id lote_available_group_id, LA.qty_lote_available,*/ 
-            AG.lote_id,AG.artigo_cod,AG.n_lote,AG.doser,AG.loteslinha_id,AG.loteid_doser,AG.group_final group_id,AG.qty_lote,'IN' mov
-            FROM ACTUAL_GROUPS AG
-            LEFT JOIN LOTES_AVAILABLE LA ON LA.lote_id=AG.lote_id
-            WHERE (AG.loteid_doser is null or AG.loteslinha_id is null) and (LA.group_id is null or LA.qty_lote_available>0)
+                SELECT 
+                /*LA.group_id lote_available_group_id, LA.qty_lote_available,*/ 
+                AG.`order`,AG.lote_id,AG.artigo_cod,AG.n_lote,AG.doser,AG.loteslinha_id,AG.loteid_doser,AG.group_final group_id,AG.qty_lote,'IN' mov
+                FROM ACTUAL_GROUPS AG
+                LEFT JOIN LOTES_AVAILABLE LA ON LA.lote_id=AG.lote_id
+                WHERE (AG.loteid_doser is null or AG.loteslinha_id is null) and (LA.group_id is null or LA.qty_lote_available>0)
             ),
             OUT_DOSER_LINE AS (
-                SELECT LL.lote_id,LL.artigo_cod,LL.n_lote,LL.doser,LL.loteslinha_id,LL.id loteid_doser,LL.group_id,null qty_lote, CASE WHEN I.lote_id IS NULL THEN 'OUT' ELSE NULL END mov
+               SELECT LL.`order`,LL.lote_id,LL.artigo_cod,LL.n_lote,LL.doser,LL.loteslinha_id,LL.id loteid_doser,LL.group_id,null qty_lote, CASE WHEN I.lote_id IS NULL THEN 'OUT' ELSE NULL END mov
                 FROM LOTESDOSERS_LOTE LL
                 LEFT JOIN IN_LINE I ON LL.group_id = I.group_id AND LL.doser=I.doser
                 #WHERE I.lote_id IS NULL
             ),
             OUT_LINE AS (
                 SELECT 
-                LDL.lote_id,LDL.artigo_cod,LDL.n_lote,LDL.doser,LDL.loteslinha_id,LDL.id loteid_doser,LDL.group_id,null qty_lote,
+                LDL.`order`,LDL.lote_id,LDL.artigo_cod,LDL.n_lote,LDL.doser,LDL.loteslinha_id,LDL.id loteid_doser,LDL.group_id,null qty_lote,
                 CASE WHEN (LDL.cnt_dosers <= count(*) over (partition by LDL.lote_id)) THEN 'OUT_LINE' ELSE 'OUT' END mov
                 FROM IN_LINE IL
                 JOIN LOTESDOSERS_LOTE LDL ON LDL.doser=IL.doser
