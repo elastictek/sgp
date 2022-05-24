@@ -21,6 +21,7 @@ const LayoutPage = lazy(() => import('./LayoutPage'));
 const FormLotes = lazy(() => import('./currentline/FormLotes'));
 const LineLogList = lazy(() => import('./logslist/LineLogList'));
 const StockLogList = lazy(() => import('./logslist/StockLogList'));
+const ConsumptionNeedLogList = lazy(() => import('./logslist/ConsumptionNeedLogList'));
 const BobinesOriginaisList = lazy(() => import('./bobines/BobinesOriginaisList'));
 const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
@@ -51,6 +52,7 @@ const RenderRouter = () => {
                 { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
                 { path: "logslist/lineloglist", element: <Suspense fallback={<Spin />}><LineLogList /></Suspense> },
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
+                { path: "logslist/comsumptionneedloglist", element: <Suspense fallback={<Spin />}><ConsumptionNeedLogList /></Suspense> },
                 { path: "bobines/bobinesoriginaislist", element: <Suspense fallback={<Spin />}><BobinesOriginaisList /></Suspense> },
                 { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
                 

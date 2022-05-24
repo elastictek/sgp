@@ -131,6 +131,10 @@ urlpatterns = [
     re_path(r'^pickmanual/$', views.PickManual),
     re_path(r'^saidamp/$', views.SaidaMP),
     re_path(r'^saidadoser/$', views.SaidaDoser),
+    re_path(r'^consumptionneedloglist/$', views.ConsumptionNeedLogList),
+    re_path(r'^rectifybobinagem/$', views.RectifyBobinagem),
+    
+    
     #PICAGEM LOTES
 
     #MATERIAS-PRIMAS

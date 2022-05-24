@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, Suspense, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
+import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -12,7 +13,7 @@ import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Co
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT, SCREENSIZE_OPTIMIZED } from 'config';
 import { remove } from 'ramda';
 import Table, { setColumns } from "components/table";
 import { useDataAPI } from "utils/useDataAPI";
@@ -22,7 +23,7 @@ import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
-import { Outlet, useNavigate } from "react-router-dom";
+import Modalv4 from 'components/Modalv4';
 
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
@@ -151,19 +152,24 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
     const onAction = (idcard) => {
         switch (idcard) {
             case 'paletes_stock':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'schema':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'settings':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'attachments':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'position':
-                setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
                 break;
         }
     }
@@ -247,9 +253,13 @@ const CardPlanificacao = ({ menuItem, record }) => {
         totais.current = computeQty();
     }, [])
 
+    const onClick = () => {
+        Modalv4.show({ content: <div><b>TODO</b></div> });
+    }
+
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
-            <Card hoverable
+            <Card hoverable onClick={onClick}
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
             >
                 <div>
@@ -324,15 +334,24 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardFormulacao = ({ menuItem, record, setShowForm }) => {
+const CardFormulacao = ({ menuItem, record, parentReload }) => {
     const { formulacao } = record;
 
     useEffect(() => {
         console.log("ENTREI NA FORMULAÇÃO", record)
     }, []);
 
-    const onEdit = (feature = {}) => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { ...record, ...feature }, width: "1200px", height: "800px", minFullHeight: 800 }))
+    const onEdit = (data = {}) => {
+        switch (data.feature) {
+            case "formulation_change":
+            case "dosers_change":
+                Modalv4.show({
+                    width: "1200px", height: "800px", minFullHeight: 800, propsToChild: true,
+                    content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} parentReload={parentReload} />
+                });
+                break;
+            default: Modalv4.show({ content: <div><b>TODO</b></div> });
+        }
     }
 
     return (
@@ -401,15 +420,16 @@ const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardCortes = ({ menuItem, record, setShowForm }) => {
+const CardCortes = ({ menuItem, record, parentReload }) => {
     const { formulacao } = record;
 
     useEffect(() => {
-        console.log("ENTREI NOS CORTES", record)
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record, width: '1500px', height: '700px', minFullHeight: 800 }))
+        Modalv4.show({
+            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes record={record} parentReload={parentReload} />
+        });
     }
 
     return (
@@ -491,7 +511,7 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     );
 }
 
-const CardValidarBobinagens = ({ socket, menuItem, record, setShowForm }) => {
+const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
 
@@ -503,7 +523,9 @@ const CardValidarBobinagens = ({ socket, menuItem, record, setShowForm }) => {
     }, [socket]);
 
     const handleWndClick = (r) => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record: { bobinagem_id: r.id,bobinagem_nome: r.nome }, width: '1500px', height: '700px', minFullHeight: 800 }))
+        Modalv4.show({
+            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} />
+        });
     }
 
     const selectionRowKey = (record) => {
@@ -568,6 +590,49 @@ const CardValidarBobinagens = ({ socket, menuItem, record, setShowForm }) => {
     );
 }
 
+const CardActions = ({ menuItem, record, parentReload }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    /*     const { status } = record; */
+
+    /*     const onEdit = () => {
+            setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "fullscreen", type: "modal" }))
+        } */
+
+    useEffect(() => {
+        console.log("ENTREI NAS ACTIONS", record)
+    }, [])
+
+    /*     const changeStatus = async (status) => {
+            const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
+            if (response.data.status !== "error") {
+                Modal.success({ content: response.data.title });
+                parentReload({ aggId: record.agg_of_id });
+    
+            } else {
+                Modal.error({
+                    title: 'Erro ao alterar estado da Ordem de Fabrico',
+                    content: response.data.title,
+                });
+            }
+        } */
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+            >
+                <Button block size="large" onClick={() => navigate('/app/pick')}>Picar Granulado</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" onClick={() => navigate('/app/logslist/comsumptionneedloglist')}>Consumos de Lotes</Button>
+            </Card>
+        </div>
+    );
+}
+
+
+
 const EventColumn = ({ v }) => {
     return (<>
 
@@ -601,7 +666,7 @@ const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
     </>);
 }
 
-const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
+const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
 
@@ -612,15 +677,19 @@ const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
         return (() => cancelFetch.cancel());
     }, [socket]);
 
-    const reload=()=>{
+    const reload = () => {
         dataAPI.fetchPost();
     }
 
-    const handleWndClick = (icard, ig_id,fim_ts) => {
-        setShowForm(prev => ({ ...prev, idcard: icard, show: true, record: { data: { id: ig_id, fim_ts, parentReload:reload } }, width: "900px", height: "500px", fullWidthDevice: 2 }))
+    const handleWndClick = (icard, ig_id, fim_ts) => {
+        Modalv4.show({
+            propsToChild: true, width: "900px", height: "500px", fullWidthDevice: 2, title: "Ordens de Fabrico", content: <OFabricoTimeLineShortList params={{ data: { id: ig_id, fim_ts, parentReload: reload } }} />
+        });
     }
     const onView = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: true, record, width: '1500px', height: '800px', minFullHeight: 800 }))
+        Modalv4.show({
+            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, title: "-", content: <LineLogList />
+        });
     }
 
     const selectionRowKey = (record) => {
@@ -636,14 +705,15 @@ const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
                 ...((common) => (
                     {
                         type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
-                        , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , nome: { title: "Bobinagem", width: 100, align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={() => handleWndClick("ofabricotimelinelist", r.id,r.fim_ts)} />, ...common }
+                        , nome: { title: "Bobinagem", width: 60, fixed: 'left', align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={() => handleWndClick("ofabricotimelinelist", r.id, r.fim_ts)} />, ...common }
+                        , inicio_ts: { title: "Início", width: 80, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
+                        , fim_ts: { title: "Fim", width: 80, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
                         , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
                         , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
                         , nw_inf: { title: "NW Inf.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
                         , nw_sup: { title: "NW Sup.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
                         , peso: { title: "Peso", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div>kg</div>, ...common }
+                        , cast_speed: { title: "Cast Vel.", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m/s</div>, ...common }
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -656,7 +726,7 @@ const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{fontSize:"16px",marginTop:"4px"}} />} /></Space>}
+                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -673,6 +743,7 @@ const CardEventosLinha = ({ socket, menuItem, record, setShowForm }) => {
                             dataAPI={dataAPI}
                             columns={columns}
                             onFetch={dataAPI.fetchPost}
+                            scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '140px', scrollToFirstRowOnChange: true }}
                         />
                     </Spin>
                 </YScroll>
@@ -689,6 +760,9 @@ const menuItems = [
     {
         idcard: "planificacao",
         title: "Planificação",
+    }, {
+        idcard: "actions",
+        title: "Ações"
     },/* , {
         idcard: "lotes",
         title: "Lotes de Matérias Primas"
@@ -711,7 +785,7 @@ const menuItems = [
         idcard: "linelogs",
         title: "Eventos de Linha",
         span: 3
-    },
+    }/* ,
 
     {
         idcard: "especificacoes",
@@ -721,7 +795,7 @@ const menuItems = [
         idcard: "gamaoperatoria",
         title: "Gama Operatória",
         span: 3
-    }
+    } */
 ];
 
 export default ({ aggId }) => {
@@ -801,8 +875,9 @@ export default ({ aggId }) => {
 
     return (
         <>
+            <Modalv4 />
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
-                <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
+                {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
 
                 {/*                     <FormLayout id="LAY-MENU-ACTIONS-0" style={{ width: "500px", padding: "0px" }} field={{label:{enabled:false}}}>
                         <FieldSet margin={false} field={{ wide: [8,8] }}>
@@ -825,23 +900,25 @@ export default ({ aggId }) => {
                         const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem, ofs, paletesstock } = currentSettings;
                         switch (menuItem.idcard) {
                             case "planificacao":
-                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao, ofs, paletesstock }} setShowForm={setShowForm} />);
+                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao, ofs, paletesstock }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "lotes":
-                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} />);
+                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "formulacao":
-                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} />);
+                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "gamaoperatoria":
-                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} />);
+                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "especificacoes":
-                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} />);
+                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "cortes":
-                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} />);
+                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "operacoes":
                                 return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "validarbobinagens":
                                 return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                             case "linelogs":
                                 return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                            case "actions":
+                                return (<CardActions key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
                             default: <React.Fragment key={`ct-${idx}`} />
                         }
                     })}

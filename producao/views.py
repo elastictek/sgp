@@ -3282,7 +3282,7 @@ def retrabalho_v2(request, pk):
                 if not Bobine.objects.filter(nome=b_2):
                     messages.error(request, 'A bobine ' + b_2 + ' não existe.')
                 if not Bobine.objects.filter(nome=b_3):
-                    messages.error(request, 'A bobine ' + b_2 + ' não existe.')
+                    messages.error(request, 'A bobine ' + b_3 + ' não existe.')
 
         elif b_1 and b_2 and m_b_1 and m_b_2:
             if Bobine.objects.filter(nome=b_1) and Bobine.objects.filter(nome=b_2):

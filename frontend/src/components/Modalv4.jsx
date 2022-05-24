@@ -3,12 +3,19 @@ import { Space, Button } from "antd";
 import YScroll from "components/YScroll";
 import ResponsiveModal from "components/ResponsiveModal";
 
-const TitleWnd = ({ title }) => {
+const TitleWnd = ({ title, externalTitle }) => {
+    const getTitle = () => {
+        if (title) {
+            return title;
+        }
+        return (externalTitle === null || externalTitle.title === '') ? null : externalTitle.title;
+    }
+
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
-                    <div><b style={{ textTransform: "capitalize" }}></b>{title}</div>
+                    <div><b style={{ textTransform: "capitalize" }}></b>{getTitle()}</div>
                 </Space>
             </div>
         </div>
@@ -25,6 +32,7 @@ const Footer = ({ handleOk, handleCancel, iref }) => {
 const Modalv4 = memo(
     (props) => {
         const [visible, setVisible] = useState(false);
+        const [externalTitle, setExternalTitle] = useState(null);
         const payloadRef = useRef({});
         const iref = useRef();
         const propsToChild = payloadRef?.current?.propsToChild ? payloadRef?.current?.propsToChild : false;
@@ -41,12 +49,13 @@ const Modalv4 = memo(
 
         const wrapWithClose = (method) => () => {
             setVisible(false);
+            setExternalTitle(null);
             method && method();
         };
 
         return (
             <ResponsiveModal
-                title={<TitleWnd title={payloadRef?.current?.title} />}
+                title={<TitleWnd title={payloadRef?.current?.title} externalTitle={externalTitle} />}
                 visible={visible}
                 centered
                 responsive
@@ -57,10 +66,10 @@ const Modalv4 = memo(
                 width={payloadRef?.current?.width}
                 height={payloadRef?.current?.height}
                 bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-                footer={payloadRef?.current?.footer ? payloadRef?.current?.footer : <Footer handleOk={wrapWithClose(payloadRef?.current?.onOk)} handleCancel={wrapWithClose(payloadRef?.current?.onCancel)} iref={iref} />}
+                footer={(payloadRef?.current?.footer) ? payloadRef?.current?.footer : (payloadRef?.current?.defaultFooter) ? <Footer handleOk={wrapWithClose(payloadRef?.current?.onOk)} handleCancel={wrapWithClose(payloadRef?.current?.onCancel)} iref={iref} />  : <div ref={iref} style={{ textAlign: 'right' }}></div>}
             >
                 <YScroll>
-                    {payloadRef?.current?.content && React.cloneElement(payloadRef.current.content, { ...payloadRef.current.content.props, ...propsToChild && {wndRef: iref} })}
+                    {payloadRef?.current?.content && React.cloneElement(payloadRef.current.content, { ...payloadRef.current.content.props, ...propsToChild && { wndRef: iref, parentRef: iref, setFormTitle: setExternalTitle } })}
                 </YScroll>
             </ResponsiveModal>
         );

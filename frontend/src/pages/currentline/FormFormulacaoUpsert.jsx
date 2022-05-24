@@ -312,7 +312,7 @@ const PickedLotes = ({ data }) => {
     </>);
 }
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true, t }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [changedValues, setChangedValues] = useState({});
@@ -401,6 +401,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
+        console.log("################3",t)
         const cancelFetch = cancelToken();
         init(true, cancelFetch);
         return (() => cancelFetch.cancel("Form Formulação Cancelled"));

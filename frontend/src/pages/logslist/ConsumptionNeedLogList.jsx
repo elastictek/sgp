@@ -13,6 +13,7 @@ import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContai
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
+import ButtonIcon from "components/buttonIcon";
 import Portal from "components/portal";
 import ResponsiveModal from "components/ResponsiveModal";
 import MoreFilters from 'assets/morefilters.svg';
@@ -24,68 +25,32 @@ import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-i
 import { VscDebugStart } from 'react-icons/vsc';
 import { BsFillStopFill } from 'react-icons/bs';
 import { IoCodeWorkingOutline } from 'react-icons/io5';
-
+import { Wnd } from "./commons";
+import Modalv4 from 'components/Modalv4';
+const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobinagem'));
 
 
 
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined, UpCircleOutlined, DownCircleOutlined, StopOutlined, LockOutlined } from '@ant-design/icons';
 
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, PlusOutlined, PlusCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
+import { FaLessThanEqual } from 'react-icons/fa';
 
-const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
 
-
-const mainTitle ='Eventos da Linha de Produção';
-
+const mainTitle = 'Movimento de Lotes em Linha';
 
 const useStyles = createUseStyles({
     noRelationRow: {
         backgroundColor: '#ffa39e'
     }
 });
-
-const TitleWnd = ({ title }) => {
-    return (
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Space>
-                    <div><b style={{ textTransform: "capitalize" }}></b>{title}</div>
-                </Space>
-            </div>
-        </div>
-    );
-}
-
-const Wnd = ({ parameters, setVisible }) => {
-    return (
-        <ResponsiveModal
-            title={<TitleWnd title={parameters.title} />}
-            visible={parameters.visible}
-            centered
-            responsive
-            onCancel={setVisible}
-            maskClosable={true}
-            destroyOnClose={true}
-            fullWidthDevice={parameters.fullWidthDevice}
-            width={parameters?.width}
-            height={parameters?.height}
-            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-        >
-            <YScroll>
-                {parameters.type === "ofabricotimelinelist" && <Suspense fallback={<></>}><OFabricoTimeLineShortList params={parameters} parentClose={setVisible} /></Suspense>}
-            </YScroll>
-        </ResponsiveModal>
-    );
-
-}
-
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -98,39 +63,6 @@ const filterRules = (keys) => {
 }
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
-
-const ToolbarTable = ({ form, dataAPI }) => {
-    const navigate = useNavigate();
-
-    const onChange = (v) => {
-        form.submit();
-    }
-
-    const leftContent = (
-        <>
-            {/* <button onClick={() => navigate(-1)}>go back</button> */}
-            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prer.visible }))}>Flyout</Button> */}
-        </>
-    );
-
-    const rightContent = (
-        <Space>
-            <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
-
-            </div>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                {/* <Form form={form} initialValues={{ typelist: [] }}>
-                    <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
-                    </Form.Item>
-                </Form> */}
-            </div>
-        </Space>
-    );
-    return (
-        <>{/* <Toolbar left={leftContent} right={rightContent} /> */}</>
-    );
-}
 
 const HasBobinagemField = () => (
     <SelectField
@@ -298,138 +230,172 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
     );
 }
 
-const EventColumn = ({ v }) => {
-    return (<>
-
-        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
-        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
-        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
-        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
-        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
-        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
-
-    </>);
+const Quantity = ({ v, unit = "kg" }) => {
+    return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
-const ExclamationButton = styled(Button)`
-  &&& {
-    background-color: #ffa940;
-    border-color: #ffc069;
-    color:#fff;
-    &:hover{
-        background-color: #fa8c16;
-        border-color: #ffe7ba;
+const Action = ({ r, before, onClick }) => {
+
+    const showAdd = () => {
+        if ((!before || before["nome"] !== r["nome"]) && r["type_mov_doser"] === "C") {
+            return true;
+        }
+        return false;
     }
-  }
-`;
 
-const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
+    const showOut = () => {
+        if (r["type_mov_doser"] === "IN") {
+            return true;
+        }
+        return false
+    }
 
-    return (<>
-        {v && <b>{v}</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
-    </>);
+    return (
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+            {showOut() && <>
+                <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
+            </>}
+            {showAdd() && <>
+                <ButtonIcon size="small" onClick={
+                    () => Modalv4.show({
+                        width: "400px", height: "200px",
+                        title: `Retificar a bobinagem ${r.nome}?`,
+                        content: <div>Atenção! Ao retificar a bobinagem, todas as bobinagens posteriores têm de ser corrigidas!</div>,
+                        defaultFooter: true,
+                        onOk: () => onClick(r, "rectify")
+                    })}
+                    style={{ alignSelf: "center", color: "green", fontSize: "12px", marginRight: "2px" }} shape="default"><CheckOutlined title="Corrigir bobinagem" /></ButtonIcon>
+                <ButtonIcon size="small"
+
+                    onClick={
+                        () => Modalv4.show({
+                            width: "400px", height: "200px",
+                            title: `Adicionar Lotes na Bobinagem ${r.nome}?`,
+                            content: <div style={{ textAlign: "center" }}>
+                                <Modalv4/>
+                                <Button onClick={()=>onClick(r, "addlotes","down")} style={{ marginRight: "2px" }} type="primary">Adicionar Lotes Abaixo</Button>
+                                <Button onClick={()=>onClick(r, "addlotes","up")} type="primary">Adicionar Lotes Acima</Button>
+                            </div>,
+                        })}
+
+                    style={{ alignSelf: "center", color: "green", fontSize: "12px" }} shape="default"><PlusOutlined title="Adicionar Lotes" /></ButtonIcon>
+            </>}
+        </div>
+    );
+}
+
+const StatusColumn = ({ v, r, onClick }) => {
+    return (
+        <>
+            {(v === -1 && r["type_mov_doser"] === "IN") && <LockOutlined onClick={() => onClick(r, "unlock")} style={{ color: "orange", fontSize: "18px", cursor: "pointer" }} />}
+            {(v === 1 && r["type_mov_doser"] === "IN") && <LockOutlined onClick={() => onClick(r, "lock")} style={{ color: "orange", fontSize: "18px", cursor: "pointer" }} />}
+        </>
+    );
 }
 
 export default () => {
-    const classes = useStyles();
+    const classes = useStyles()
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
+    const dataAPI = useDataAPI({
+        payload: {
+            url: `${API_URL}/consumptionneedloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
+                /* { column: 'idlinha', direction: 'ASC' }, { column: 'iddoser', direction: 'ASC' }, */
+            ]
+        }
+    });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
-    const [modalParameters, setModalParameters] = useState({ visible: false });
-
-    const onModalVisible = (e, type, params) => {
-        if (!type) {
-            setModalParameters(prev => ({ visible: false }));
-        } else {
-            switch (type) {
-                case "ofabricotimelinelist":
-                    let title = "Ordens de Fabrico";
-                    setModalParameters(prev => ({ visible: !prev.visible, type, width: "900px", height: "500px", fullWidthDevice: 2, data: { ...params }, title })); break;
-            }
-        }
-    }
+    const [typeList, setTypeList] = useState('A');
 
     useEffect(() => {
         const cancelFetch = cancelToken();
+        dataAPI.addParameters({ typelist: 'A' });
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket?.igbobinagens]);
+    }, []);
 
     const selectionRowKey = (record) => {
-        return `${record.id}`;
+        return `${record.rowid}`;
     }
 
-    const doserConsume = (d, dlag, dreset, event) => {
-        if (event !== 1) {
-            return null;
+
+    const handleWndClick = async (bm, type, direction) => {
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa")
+        let title = '';
+
+        if (type === "lock") {
+            Modal.confirm({
+                title: 'Bloquear Entrada?', content: <div>Tem a certeza que deseja bloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
         }
-        let _d = noValue(d, 0);
-        let _dlag = noValue(dlag, 0);
-        let _dreset = noValue(dreset, 0);
-        console.log(_d,"-",_dlag,"-",_dreset);
-        return <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{((((_d < _dlag) ? _dreset : 0) + _d) - _dlag).toFixed(2)}</div>kg</div>
+        if (type === "unlock") {
+            Modal.confirm({
+                title: 'Desbloquear Entrada?', content: <div>Tem a certeza que deseja desbloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
+        }
+        if (type === "rectify") {
+            console.log(bm);
+            const response = await fetchPost({ url: `${API_URL}/rectifybobinagem/`, parameters: { ig_id: bm.ig_bobinagem_id } });
+            if (response.data.status == "error") {
+                Modal.error({ title: 'Erro ao corrigir a bobinagem', content: response.data.title });
+            } else {
+                dataAPI.fetchPost();
+            }
+            return;
+        }
+        if (type === "removelote") {
+            Modal.confirm({
+                title: 'Dar Saída do Lote no doseador?', content: <div>Tem a certeza que deseja dar saída do lote no doseador<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
+        }
 
-    }
-
-    const reload = () => {
-        dataAPI.fetchPost();
-    }
-
-    const onAssignOF = (id, fim_ts) => {
-        onModalVisible(null, 'ofabricotimelinelist', { id, fim_ts, parentReload: reload });
-    }
+        if (type === "addlotes" && direction === "up") {
+            title = `Adicionar Lotes antes da bobinagem ${bm.nome}`;
+        }
+        if (type === "addlotes" && direction === "down") {
+            title = `Adicionar Lotes após bobinagem ${bm.nome}`;
+        }
+        Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
+        //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
+    };
 
     const columns = setColumns(
         {
             dataAPI,
             data: dataAPI.getData().rows,
-            uuid: "logigbobinagem",
+            uuid: "loglotesdosers",
             include: {
                 ...((common) => (
                     {
-                        type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
-                        , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , nome: { title: "Bobinagem", width: 100, align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={onAssignOF} />, ...common }
-                        , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
-                        , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, metros_evento_estado: { title: "metros_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        //, n_trocas: { title: "n_trocas", width: 90, render: (v, r) => v, ...common }
-                        , nw_inf: { title: "NW Inf.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_inf_evento_estado: { title: "nw_inf_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , nw_sup: { title: "NW Sup.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_sup_evento_estado: { title: "nw_sup_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , peso: { title: "Peso", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div>kg</div>, ...common }
-                        , cast_speed: { title: "Cast Vel.", width:90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m/s</div>, ...common }
-                        , A1: { title: "A1", width: 90, render: (v, r) => doserConsume(r.A1, r.A1_LAG, r.A1_RESET, r.type), ...common }
-                        , A2: { title: "A2", width: 90, render: (v, r) => doserConsume(r.A2, r.A2_LAG, r.A2_RESET, r.type), ...common }
-                        , A3: { title: "A3", width: 90, render: (v, r) => doserConsume(r.A3, r.A3_LAG, r.A3_RESET, r.type), ...common }
-                        , A4: { title: "A4", width: 90, render: (v, r) => doserConsume(r.A4, r.A4_LAG, r.A4_RESET, r.type), ...common }
-                        , A5: { title: "A5", width: 90, render: (v, r) => doserConsume(r.A5, r.A5_LAG, r.A5_RESET, r.type), ...common }
-                        , A6: { title: "A6", width: 90, render: (v, r) => doserConsume(r.A6, r.A6_LAG, r.A6_RESET, r.type), ...common }
-
-                        , B1: { title: "B1", width: 90, render: (v, r) => doserConsume(r.B1, r.B1_LBG, r.B1_RESET, r.type), ...common }
-                        , B2: { title: "B2", width: 90, render: (v, r) => doserConsume(r.B2, r.B2_LBG, r.B2_RESET, r.type), ...common }
-                        , B3: { title: "B3", width: 90, render: (v, r) => doserConsume(r.B3, r.B3_LBG, r.B3_RESET, r.type), ...common }
-                        , B4: { title: "B4", width: 90, render: (v, r) => doserConsume(r.B4, r.B4_LBG, r.B4_RESET, r.type), ...common }
-                        , B5: { title: "B5", width: 90, render: (v, r) => doserConsume(r.B5, r.B5_LBG, r.B5_RESET, r.type), ...common }
-                        , B6: { title: "B6", width: 90, render: (v, r) => doserConsume(r.B6, r.B6_LBG, r.B6_RESET, r.type), ...common }
-
-                        , C1: { title: "C1", width: 90, render: (v, r) => doserConsume(r.C1, r.C1_LAG, r.C1_RESET, r.type), ...common }
-                        , C2: { title: "C2", width: 90, render: (v, r) => doserConsume(r.C2, r.C2_LAG, r.C2_RESET, r.type), ...common }
-                        , C3: { title: "C3", width: 90, render: (v, r) => doserConsume(r.C3, r.C3_LAG, r.C3_RESET, r.type), ...common }
-                        , C4: { title: "C4", width: 90, render: (v, r) => doserConsume(r.C4, r.C4_LAG, r.C4_RESET, r.type), ...common }
-                        , C5: { title: "C5", width: 90, render: (v, r) => doserConsume(r.C5, r.C5_LAG, r.C5_RESET, r.type), ...common }
-                        , C6: { title: "C6", width: 90, render: (v, r) => doserConsume(r.C6, r.C6_LAG, r.C6_RESET, r.type), ...common }
-                        , id: { title: "ID", width: 60, render: (v, r) => v, ...common }
+                        ...({
+                            action: { title: "", width: 80, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
+                            nome: { title: "Bobinagem", width: 120, render: (v, r, i) => <b>{v}</b>, ...common },
+                            doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
+                            t_stamp: { title: "Data", width: 90, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
+                            status: { title: "Estado", width: 40, align: "center", render: (v, r) => <StatusColumn onClick={handleWndClick} v={v} r={r} />, ...common },
+                            artigo_cod: { title: "Artigo", width: 220, render: (v, r) => v, ...common },
+                            n_lote: { title: "Lote", width: 220, render: (v, r) => v, ...common },
+                            type_mov_linha: { title: "Mov. Linha", width: 60, render: (v, r) => v, ...common },
+                            type_mov_doser: { title: "Mov. Dos.", width: 60, render: (v, r) => v, ...common },
+                            qty_lote: { title: "Qtd. Lote", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
+                            group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
+                            ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
+                        })
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -437,11 +403,17 @@ export default () => {
         }
     );
 
+    const handleWndCancel = () => {
+        setShowValidar({ show: false, data: {} });
+    };
+
     return (
         <>
-            <Wnd parameters={modalParameters} setVisible={onModalVisible} />
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
+            <Modalv4 />
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
+                <Wnd show={showValidar} setShow={setShowValidar}>
+                    {showValidar.type === "addlotes" && <Suspense fallback={<Spin />}><StockListByIgBobinagem type={showValidar.type} data={showValidar.data} closeSelf={handleWndCancel} /></Suspense>}
+                </Wnd>
                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
@@ -461,7 +433,6 @@ export default () => {
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
                     scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>
         </>

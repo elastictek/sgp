@@ -596,14 +596,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 }
                 //setInputFocus();
             }
-        }
-        else if (e.keyCode === "Escape") {
+        } else if (e.keyCode === 27) {
             inputRef.current = '';
-            form.setFieldsValue({ viewer: inputRef.current });
+            form.setFieldsValue({ viewer: '' });
+        } else if (e.keyCode <= 46) {
+
         } else {
             inputRef.current = `${inputRef.current}${e.key}`;
             form.setFieldsValue({ viewer: inputRef.current });
-            console.log(inputRef.current);
         }
     }
 

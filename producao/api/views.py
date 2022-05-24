@@ -833,9 +833,19 @@ def BobinesOriginaisList(request, format=None):
     #dql = db.dql(data, False)
     cols = f'''
             row_number() over() rowid,
-            plt.nome,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4, original_lvl5,
-            root,emenda,emenda_lvl1,emenda_lvl2,emenda_lvl3,emenda_lvl4
-            ,comp0,comp1,comp2,comp3,comp4,comp5,
+            plt.nome,
+            root,emenda,emenda_lvl1,emenda_lvl2,emenda_lvl3,emenda_lvl4,
+            
+            
+            bobine,comp0,largura0,
+            original_lvl1, comp1 comp1_original, (comp1 - metros) comp1_atual, metros metros_cons,largura1,
+            original_lvl2, comp2 comp2_original, (comp2 - metros_lvl1) comp2_atual, metros_lvl1 metros_cons_lvl1,largura2,
+            original_lvl3, comp3 comp3_original, (comp3 - metros_lvl2) comp3_atual, metros_lvl2 metros_cons_lvl2,largura3,
+            original_lvl4, comp4 comp4_original, (comp4 - metros_lvl3) comp4_atual, metros_lvl3 metros_cons_lvl3,largura4,
+            original_lvl5, comp5 comp5_original, (comp5 - metros_lvl4) comp5_atual, metros_lvl4 metros_cons_lvl4,largura5,
+            
+            
+            
             b1,b2,b3,b4,b5,
             #nextl1,nextl2,nextl3,nextl4,nextl5,
             #N1,N2,N3,N4,N5,
@@ -843,7 +853,7 @@ def BobinesOriginaisList(request, format=None):
             #,(
             #SUM(N1) OVER (PARTITION BY bobine) +
             #SUM(N2) OVER (PARTITION BY bobine,original_lvl1) +
-            #SUM(N3) OVER (PARTITION BY bobine,original_lvl1,original_lvl2) +        
+            #SUM(N3) OVER (PARTITION BY bobine,original_lvl1,original_lvl2) +
             #SUM(N4) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3) +
             #SUM(N5) OVER (PARTITION BY bobine,original_lvl1,original_lvl2,original_lvl3,original_lvl4)
             #) ST
@@ -851,7 +861,9 @@ def BobinesOriginaisList(request, format=None):
     sql = lambda: (
         f"""
 
-            select {cols} FROM (
+            select
+            {cols}
+            FROM (
             select
             palete_id,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4,
             original_lvl5,
@@ -863,63 +875,77 @@ def BobinesOriginaisList(request, format=None):
             ELSE (case when (original_lvl2 is not null) THEN 2
             ELSE (case when (original_lvl1 is not null) THEN 1
             ELSE 0 END) END) END) END) END nretrabalhos,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros)) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros)) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros)) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros)) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros)) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
+            
+            (select SUM(metros) from sistema.producao_emenda where bobine_id=b5 and bobinagem_id=bm4) metros_lvl4,
+            (select SUM(metros) from sistema.producao_emenda where bobine_id=b4 and bobinagem_id=bm3) metros_lvl3,
+            (select SUM(metros) from sistema.producao_emenda where bobine_id=b3 and bobinagem_id=bm2) metros_lvl2,
+            (select SUM(metros) from sistema.producao_emenda where bobine_id=b2 and bobinagem_id=bm1) metros_lvl1,
+            (select SUM(metros) from sistema.producao_emenda where bobine_id=b1 and bobinagem_id=bm0) metros,
+            
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
             ,comp0,comp1,comp2,comp3,comp4,comp5
             ,b1,b2,b3,b4,b5
-
+			,largura0,largura1,largura2,largura3,largura4,largura5
             from (
-
-
-            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1, 
+            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1,      
             pb2.nome original_lvl2,
-            pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,
-            pb0.bobinagem_id bm0,pb0.id b0, pb0.comp comp0,
+            pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,   
+            pb0.bobinagem_id bm0,pb0.id b0, case when pb0.comp=0 then pbm0.comp else pb0.comp end comp0,
             pb.bobinagem_id bm1,pb.id b1, case when pb.comp=0 then pbm.comp else pb.comp end comp1,
             pb2.bobinagem_id bm2,pb2.id b2, case when pb2.comp=0 then pbm2.comp else pb2.comp end comp2,
             pb3.bobinagem_id bm3,pb3.id b3, case when pb3.comp=0 then pbm3.comp else pb3.comp end comp3,
             pb4.bobinagem_id bm4,pb4.id b4, case when pb4.comp=0 then pbm4.comp else pb4.comp end comp4,
             pb5.bobinagem_id bm5,pb5.id b5, case when pb5.comp=0 then pbm5.comp else pb5.comp end comp5
+			
+            ,l0.largura largura0,l.largura largura1,l2.largura largura2,
+            l3.largura largura3,l4.largura largura4,l5.largura largura5
 
-            FROM producao_bobine pb0
-            JOIN producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id    
+            FROM sistema.producao_bobine pb0
+            JOIN sistema.producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id
+            JOIN sistema.producao_largura l0 on l0.id = pb0.largura_id
 
             /*NÍVEL 1*/
-            join producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id 
-            left join producao_bobine pb on pem.bobine_id = pb.id
-            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id
+            join sistema.producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id
+            left join sistema.producao_bobine pb on pem.bobine_id = pb.id
+            left join sistema.producao_bobinagem pbm on pb.bobinagem_id = pbm.id
+            left join sistema.producao_largura l on l.id = pb.largura_id
             /**/
 
             /*NÍVEL 2*/
-            left join producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id
-            left join producao_bobine pb2 on pem2.bobine_id = pb2.id        
-            left join producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id 
+            left join sistema.producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id      
+            left join sistema.producao_bobine pb2 on pem2.bobine_id = pb2.id
+            left join sistema.producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id
+            left join sistema.producao_largura l2 on l2.id = pb2.largura_id
             /**/
 
             /*NÍVEL 3*/
-            left join producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id
-            left join producao_bobine pb3 on pem3.bobine_id = pb3.id        
-            left join producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id 
+            left join sistema.producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id     
+            left join sistema.producao_bobine pb3 on pem3.bobine_id = pb3.id
+            left join sistema.producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id
+            left join sistema.producao_largura l3 on l3.id = pb3.largura_id
             /**/
 
             /*NÍVEL 4*/
-            left join producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id
-            left join producao_bobine pb4 on pem4.bobine_id = pb4.id        
-            left join producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id 
+            left join sistema.producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id     
+            left join sistema.producao_bobine pb4 on pem4.bobine_id = pb4.id
+            left join sistema.producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id
+            left join sistema.producao_largura l4 on l4.id = pb4.largura_id
             /**/
 
             /*NÍVEL 5*/
-            left join producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id
-            left join producao_bobine pb5 on pem5.bobine_id = pb5.id        
-            left join producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id 
+            left join sistema.producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id     
+            left join sistema.producao_bobine pb5 on pem5.bobine_id = pb5.id
+            left join sistema.producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id
+            left join sistema.producao_largura l5 on l5.id = pb5.largura_id
             /**/
              {fs}
 
             ) tb0 LIMIT 5000) tb1
-            JOIN producao_palete plt on tb1.palete_id=plt.id
+            LEFT JOIN producao_palete plt on tb1.palete_id=plt.id
         """
     )
     print(sql())
@@ -1036,6 +1062,54 @@ def LineLogList(request, format=None):
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ConsumptionNeedLogList(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
+        #**rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
+        #**rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
+        #"bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
+        #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    parameters = {**f.parameters}
+    dql = dbgw.dql(request.data, False)
+
+    cols = f'''*'''
+    sql = lambda p, c, s: (f"""
+            SELECT {c(f'{cols}')} FROM (
+                SELECT row_number() over() rowid,ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,ll.lote_id,ld.status,
+                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+                ld.type_mov type_mov_doser,
+                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp,
+                sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id,ld.doser) qty_consumed_doser
+                FROM {sgpAlias}.loteslinha ll
+                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id    
+                LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+                ORDER BY ld."order"
+            ) t
+            WHERE lote_id is null OR type_mov_doser IN('IN','OUT') OR (qty_to_consume + qty_consumed_doser)<>0
+            {s(dql.sort)} {p(dql.paging)}
+    """)
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [])
     return Response(response)
 
 @api_view(['POST'])
@@ -4399,9 +4473,6 @@ def PickManual(request, format=None):
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
 
-
-
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 def Pick(request, format=None):
@@ -4607,8 +4678,6 @@ def Pick(request, format=None):
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
 
-
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -4641,7 +4710,6 @@ def SaidaMP(request, format=None):
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
-
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -4693,6 +4761,41 @@ def SaidaDoser(request, format=None):
         return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
     except Error:
         return Response({"status": "error", "title": f"Erro ao Registar!"})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def RectifyBobinagem(request, format=None):
+    data = request.data.get("parameters")
+    
+    def allowRectify(data,cursor):
+        f = Filters({"idigd": data["ig_id"]})
+        f.where()
+        f.add(f'ig_bobinagem_id = :idigd', True)
+        f.value("and")
+        parameters={**f.parameters}
+        rows = db.executeSimpleList(lambda: (f'SELECT count(*) n FROM lotesdosers {f.text} and closed=0 and status=1'), cursor, parameters)['rows']
+        if len(rows)>0:
+            return True
+        return False
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                allow = allowRectify(data,cursor)
+                if allow:
+                    dml = db.dml(TypeDml.UPDATE,{"artigo_cod":None,"n_lote":None,"loteslinha_id":None,"lote_id":None,"qty_consumed":"xx"},"lotesdosers",{"ig_bobinagem_id":f'=={data["ig_id"]}'},None,False)
+                    statement = dml.statement.replace("%(qty_consumed)s","qty_to_consume*-1")
+                    db.execute(statement, cursor, dml.parameters)
+                    args = [data["ig_id"]]
+                    cursor.callproc('fix_consumos',args)
+                else:
+                    return Response({"status": "error", "title": "Não é possível retificar a bobinagem!"})
+                pass
+                return Response({"status": "success", "id":0, "title": "Bobinagem Retificada com sucesso!", "subTitle":''})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao Retificar Bobinagem!"})
 
 #endregion
 

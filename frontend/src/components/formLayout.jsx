@@ -948,33 +948,33 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
         <>
             {"value" in rest ? <>
                 {(() => {
-                    const {value, ...rprops} = rest;
+                    const { value, onDoubleClick } = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
                             return (
-                                <CheckboxField {...children.props} value={value} disabled={true} />
+                                <CheckboxField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }}/>
                             )
                         case 'SwitchField':
                             return (
-                                <SwitchField {...children.props} value={value} disabled={true} />
+                                <SwitchField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }}/>
                             )
                         case 'SelectDebounceField':
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
                             if (r !== undefined) {
-                                text = (typeof optionsRender === 'function') ? optionsRender(r, keyField, textField).label : r[textField];
+                text = (typeof optionsRender === 'function') ? optionsRender(r, keyField, textField).label : r[textField];
                             }
+            return (
+            <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
+            ) */
                             return (
-                                <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
-                            ) */
-                            return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {
@@ -986,24 +986,25 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }} {...rprops}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
                             )
                         default:
 
                             if ("addonAfter" in children.props || "addonAfter" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }} {...rprops}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }} {...onDoubleClick && { onDoubleClick }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...rprops}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                     }
 
                 })()}
 
-            </> : children}
+            </> : children
+            }
         </>
     );
 }
