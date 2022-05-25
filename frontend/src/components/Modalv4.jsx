@@ -12,7 +12,7 @@ const TitleWnd = ({ title, externalTitle }) => {
     }
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center",minHeight: "12px" }}>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
                     <div><b style={{ textTransform: "capitalize" }}></b>{getTitle()}</div>

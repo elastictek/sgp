@@ -42,6 +42,8 @@ const FormCortes = React.lazy(() => import('./FormCortes'));
 const BobinesValidarList = React.lazy(() => import('../bobines/BobinesValidarList'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
+const BobinagensValidarList = React.lazy(() => import('../bobinagens/BobinagensValidarList'));
+
 
 
 
@@ -527,6 +529,11 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
             propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} />
         });
     }
+    const onView = () => {
+        Modalv4.show({
+            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList />
+        });
+    }
 
     const selectionRowKey = (record) => {
         return `bob-${record.id}`;
@@ -565,7 +572,7 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
             <Card hoverable/*  onClick={onEdit} */
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                /* extra={<Space><Button onClick={(e) => { e.stopPropagation(); onEdit(); }} icon={<EditOutlined />} /><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>} */
+                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -688,7 +695,7 @@ const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     }
     const onView = () => {
         Modalv4.show({
-            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, title: "-", content: <LineLogList />
+            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <LineLogList />
         });
     }
 
