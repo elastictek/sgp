@@ -336,6 +336,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [lotesDosers, setLotesDosers] = useState(null);
     const [dosersSets, setDosersSets] = useState(null);
     const [focusStyle, setFocusStyle] = useState({});
+    const [manual, setManual] = useState(false);
 
 
     const [artigos, setArtigos] = useState();
@@ -505,9 +506,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     const keydownHandler = (event) => {
-        event.preventDefault();
-        console.log("aaaaaaaaaa", event.keyCode)
-        onPick(event);
+
+        if (!manual) {
+            event.preventDefault();
+            onPick(event);
+        }
     };
 
     const onPick = (e) => {
@@ -516,10 +519,18 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             if (inputRef.current !== '') {
                 if (!touched) { setTouched(true); }
                 e.preventDefault();
-                const v = inputRef.current.toUpperCase();
+                let v = inputRef.current.toUpperCase();
+                v = v.startsWith("000026") ? v.replace("000026", "") : v;
                 if (DOSERS.includes(v)) {
                     //Source / Type
-                    form.setFieldsValue({ source: v });
+                    let s = form.getFieldValue("source") ? form.getFieldValue("source").split(";") : [];
+                    if (s.includes(v)) {
+                        s = s.filter(e => e !== v);
+                    }
+                    else {
+                        s.push(v);
+                    }
+                    form.setFieldsValue({ source: s.join(";") });
                     inputRef.current = '';
                 } else {
                     let fData = form.getFieldsValue(true);
@@ -534,98 +545,118 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         if (pickData.length > 1) {
                             //Check se o artigo está na formulação
                             if (!(pickData[0] in _artigos)) return;
-                            //Check se o doseador corresponde ao artigo e formulação
-                            let allowPick = false;
-                            let _group = null;
-                            let _groupLote = null;
-                            for (let v of Object.keys(_artigos[pickData[0]])) {
-                                if (_artigos[pickData[0]][v].dosers.includes(fData.source)) {
-                                    _group = v;
-                                    allowPick = true;
-                                }
-                                //Check if Lote is already picked by other doser/same and store group
-                                if (_artigos[pickData[0]][v].lotes.some(d => d.n_lote === pickData[1])) {
-                                    _groupLote = v;
-                                }
-                            }
-                            if (allowPick) {
-                                console.log("-----ALLOW PICK-----")
-                                //Check if is in Buffer
-                                let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
-                                if (bufArtigo) {
-                                    console.log("-----BUFFER ARTIGO-----", bufArtigo, _group)
-                                    if (_group === "undefined") {
-                                        console.log("-----UNDEFINED GROUP-----")
-                                        //Remove doser from undefined group
-                                        _artigos[pickData[0]][_group].dosers = _artigos[pickData[0]][_group].dosers.filter(v => v !== fData.source);
-                                        if (_groupLote === null) {
-                                            //Lote not picked
-                                            const _uid = uuIdInt(0).uuid();
-                                            _artigos[pickData[0]][_uid] = { newgroup: true, dosers: [fData.source], lotes: [{ lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }] };
-                                        } else {
-                                            //Lote already picked
-                                            _artigos[pickData[0]][_groupLote].dosers.push(fData.source);
-                                        }
-                                        console.log("PODE PICAR.......criar grupo e remover doser do grupo anterior e  adicionar lote!", _group, _groupLote)
-                                    } else {
-                                        console.log("-----HAS GROUP-----", _artigos[pickData[0]][_group])
-                                        let _newDosers = [];
-                                        let _newLotes = [];
-                                        if (!_artigos[pickData[0]][_group]?.newgroup) {
-                                            //Verificar se já existe algum lote picado onde tenha sido criado um novo grupo...
-                                            let newgroups = Object.keys(_artigos[pickData[0]]).filter(key => _artigos[pickData[0]][key]?.newgroup === true && _artigos[pickData[0]][key].lotes.some(v => v.lote_id === bufArtigo.ROWID));
-                                            for (let v of newgroups) {
-                                                _newDosers.push(..._artigos[pickData[0]][v]?.dosers);
-                                                _newLotes.push(..._artigos[pickData[0]][v]?.lotes);
-                                                delete _artigos[pickData[0]][v];
-                                            }
-                                            console.log("NEW GROUPS-->", newgroups, _newDosers);
-                                        }
-                                        const _dosers = [...new Set([..._newDosers, ..._artigos[pickData[0]][_group].dosers, fData.source])];
-                                        const _lotes = [..._newLotes, ..._artigos[pickData[0]][_group].lotes, { lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }];
-                                        _artigos[pickData[0]][_group] = { dosers: _dosers, lotes: _lotes.filter((a, i) => _lotes.findIndex((s) => a.lote_id === s.lote_id) === i) };
-                                        console.log("PODE PICAR.......e adicionar lote!", _group);
+
+                            let arrSource = fData.source.split(";");
+
+                            for (let src of arrSource) {
+                                //Check se o doseador corresponde ao artigo e formulação
+                                let allowPick = false;
+                                let _group = null;
+                                let _groupLote = null;
+                                for (let v of Object.keys(_artigos[pickData[0]])) {
+
+                                    if (_artigos[pickData[0]][v].dosers.includes(src)) {
+                                        _group = v;
+                                        allowPick = true;
                                     }
-                                    setArtigos(_artigos);
-                                    form.setFieldsValue({ source: '' });
+                                    //Check if Lote is already picked by other doser/same and store group
+                                    if (_artigos[pickData[0]][v].lotes.some(d => d.n_lote === pickData[1])) {
+                                        _groupLote = v;
+                                    }
                                 }
+                                console.log("ALLOW PICK", allowPick)
+                                if (allowPick) {
+                                    console.log("-----ALLOW PICK-----")
+                                    //Check if is in Buffer
+                                    let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                                    if (bufArtigo) {
+                                        console.log("-----BUFFER ARTIGO-----", bufArtigo, _group)
+                                        if (_group === "undefined") {
+                                            console.log("-----UNDEFINED GROUP-----")
+                                            //Remove doser from undefined group
+                                            _artigos[pickData[0]][_group].dosers = _artigos[pickData[0]][_group].dosers.filter(v => v !== src);
+                                            if (_groupLote === null) {
+                                                //Lote not picked
+                                                const _uid = uuIdInt(0).uuid();
+                                                _artigos[pickData[0]][_uid] = { newgroup: true, dosers: [src], lotes: [{ lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }] };
+                                            } else {
+                                                //Lote already picked
+                                                _artigos[pickData[0]][_groupLote].dosers.push(src);
+                                            }
+                                            console.log("PODE PICAR.......criar grupo e remover doser do grupo anterior e  adicionar lote!", _group, _groupLote)
+                                        } else {
+                                            console.log("-----HAS GROUP-----", _artigos[pickData[0]][_group])
+                                            let _newDosers = [];
+                                            let _newLotes = [];
+                                            if (!_artigos[pickData[0]][_group]?.newgroup) {
+                                                //Verificar se já existe algum lote picado onde tenha sido criado um novo grupo...
+                                                let newgroups = Object.keys(_artigos[pickData[0]]).filter(key => _artigos[pickData[0]][key]?.newgroup === true && _artigos[pickData[0]][key].lotes.some(v => v.lote_id === bufArtigo.ROWID));
+                                                for (let v of newgroups) {
+                                                    _newDosers.push(..._artigos[pickData[0]][v]?.dosers);
+                                                    _newLotes.push(..._artigos[pickData[0]][v]?.lotes);
+                                                    delete _artigos[pickData[0]][v];
+                                                }
+                                                console.log("NEW GROUPS-->", newgroups, _newDosers);
+                                            }
+                                            const _dosers = [...new Set([..._newDosers, ..._artigos[pickData[0]][_group].dosers, src])];
+                                            const _lotes = [..._newLotes, ..._artigos[pickData[0]][_group].lotes, { lote_id: bufArtigo.ROWID, n_lote: bufArtigo.LOT_0, qty_lote: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_available: parseFloat(bufArtigo.QTYPCU_0).toFixed(2), qty_lote_consumed: 0 }];
+                                            _artigos[pickData[0]][_group] = { dosers: _dosers, lotes: _lotes.filter((a, i) => _lotes.findIndex((s) => a.lote_id === s.lote_id) === i) };
+                                            console.log("PODE PICAR.......e adicionar lote!", _group);
+                                        }
+                                        setArtigos(_artigos);
+                                        form.setFieldsValue({ source: '' });
+                                    }
+                                }
+
+
                             }
+
+
+
+
                         }
-                        inputRef.current = '';
                     }
+                    inputRef.current = '';
                 }
                 //setInputFocus();
             }
-        } else if (e.keyCode === 27) {
-            inputRef.current = '';
-            form.setFieldsValue({ viewer: '' });
-        } else if (e.keyCode <= 46) {
-
-        } else {
+        } else if ((e.keyCode >= 48 && e.keyCode <= 90) || e.keyCode == 186 || e.keyCode == 188 || e.keyCode == 110 || e.keyCode == 190) {
             inputRef.current = `${inputRef.current}${e.key}`;
             form.setFieldsValue({ viewer: inputRef.current });
+        } else if (e.keyCode == 16) {
+
+        } else {
+            inputRef.current = '';
+            form.setFieldsValue({ viewer: '' });
         }
     }
 
     const onFocus = (f) => {
-        setFocusStyle(f ? { boxShadow: "inset 0px 0px 40px 40px #DBA632" } : {});
+        setFocusStyle(f ? { boxShadow: "inset 0px 20px 20px 0px #DBA632" } : {});
     }
 
-/*     const InputManual = ({ inputRef }) => {
-        const [valor,setValor] = useState('');
+    const InputManual = ({ inputRef }) => {
+        const [valor, setValor] = useState('');
+
+        const onChange = (e, v) => {
+            inputRef.current = e.target.value
+            form.setFieldsValue({ viewer: e.target.value });
+        }
+
         return (
-            <Input tabIndex={-1} onChange={(v) => inputRef.current = `${inputRef.current}${v}`} value={inputRef.current.value} />
+            <Input tabIndex={-1} onChange={onChange} value={inputRef.current.value} />
         );
     }
 
     const onManualInput = (e) => {
+        setManual(true);
         Modalv4.show({
-            title: "Insira o valor", width: "200px", height: "180px",
+            title: "Insira o valor", width: "350px", height: "180px",
             content: <InputManual inputRef={inputRef} />,
             onOk: () => { },
-            onCancel: () => inputRef.current = ''
+            onCancel: () => setManual(false)
         });
-    } */
+    }
 
     return (
         <div onKeyDown={keydownHandler} tabIndex={-1} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
@@ -666,7 +697,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 <Input size="small" />
                                 {/* <MenuExtrusoras setExtrusora={setExtrusora} extrusora={extrusora} setFocus={() => setInputFocus(inputRef)} /> */}
                             </Field>
-                            <Field name="viewer" forInput={false} label={{ enabled: false }}><Input size='small'/*  onDoubleClick={onManualInput} */ /></Field>
+                            <Field name="viewer" forInput={false} label={{ enabled: false }}><Input size='small' onDoubleClick={onManualInput} /></Field>
                             <FieldItem label={{ enabled: false }}>
                                 <div style={{ display: "flex", flexDirection: "row", justifyContent: "right" }}>
                                     <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton>

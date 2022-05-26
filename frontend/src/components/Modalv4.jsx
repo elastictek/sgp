@@ -43,16 +43,19 @@ const Modalv4 = memo(
                 setVisible(true);
                 payloadRef.current = payload;
             };
+            Modalv4.close = () => {
+                console.log("sssss")
+                setVisible(false);
+            };
 
-            return () => (Modalv4.show = lastShow);
-        }, []);
+
+        });
 
         const wrapWithClose = (method) => () => {
             setVisible(false);
             setExternalTitle(null);
             method && method();
         };
-
         return (
             <ResponsiveModal
                 title={<TitleWnd title={payloadRef?.current?.title} externalTitle={externalTitle} />}
@@ -77,5 +80,6 @@ const Modalv4 = memo(
     () => true
 );
 Modalv4.show = (payload) => console.log("Modalv4 is not mounted.");
+Modalv4.close = () => console.log("Modalv4 is not mounted.");
 
 export default Modalv4;

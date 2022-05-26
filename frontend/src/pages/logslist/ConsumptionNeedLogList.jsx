@@ -235,7 +235,7 @@ const Quantity = ({ v, unit = "kg" }) => {
 }
 
 const Action = ({ r, before, onClick }) => {
-
+    const m = Modalv4;
     const showAdd = () => {
         if ((!before || before["nome"] !== r["nome"]) && r["type_mov_doser"] === "C") {
             return true;
@@ -266,7 +266,6 @@ const Action = ({ r, before, onClick }) => {
                     })}
                     style={{ alignSelf: "center", color: "green", fontSize: "12px", marginRight: "2px" }} shape="default"><CheckOutlined title="Corrigir bobinagem" /></ButtonIcon>
                 <ButtonIcon size="small"
-
                     onClick={
                         () => Modalv4.show({
                             width: "400px", height: "200px",
@@ -367,7 +366,7 @@ export default () => {
         if (type === "addlotes" && direction === "down") {
             title = `Adicionar Lotes após bobinagem ${bm.nome}`;
         }
-        Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
+        Modalv41.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
     };
 

@@ -252,10 +252,10 @@ class LotesPickConsumer(WebsocketConsumer):
         connection = connections["default"].cursor()
         rows = db.executeSimpleList(lambda:(f"""		
            WITH
-            VIEW_LINHA AS(SELECT * FROM sistema.loteslinha where `status` = 1 AND closed=0),
+            VIEW_LINHA AS(SELECT * FROM loteslinha where `status` = 1 AND closed=0),
             VIEW_DOSERS AS(
                 SELECT id,doser,n_lote,artigo_cod,t_stamp,qty_consumed,type_mov,loteslinha_id,group_id,ig_bobinagem_id,qty_to_consume,lote_id,t_stamp_fix,`order`,closed 
-                FROM sistema.lotesdosers where `status` = 1 AND closed=0 #AND `order` < (select MIN(`order`) `limit_order` from lotesdosers ld where `status` <> 0 AND closed=0 AND ld.ig_bobinagem_id = 2460)
+                FROM lotesdosers where `status` = 1 AND closed=0 #AND `order` < (select MIN(`order`) `limit_order` from lotesdosers ld where `status` <> 0 AND closed=0 AND ld.ig_bobinagem_id = 2460)
             ),
             DOSERS_GROUPS AS(
                 select * from(

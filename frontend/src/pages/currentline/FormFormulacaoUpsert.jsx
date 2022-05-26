@@ -21,6 +21,7 @@ import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { SocketContext } from '../App';
 import uuIdInt from "utils/uuIdInt";
+import Modalv4 from "components/Modalv4";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_EXTRUSORAS_COD, FORMULACAO_EXTRUSORAS_VAL, FORMULACAO_TOLERANCIA, FORMULACAO_PONDERACAO_EXTR, FORMULACAO_MANGUEIRAS } from 'config';
 
 const schema = (keys, excludeKeys) => {
@@ -209,12 +210,12 @@ const SubFormMateriasPrimas = ({ form, feature, forInput, name, matPrimasLookup,
                                     }}
                                 >
                                     {feature === 'dosers_change' && <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "B" : id}`]}>
-                                        <SelectField showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "B" : id]} keyField="key" textField="key"
+                                        <SelectField allowClear showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "B" : id]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
                                         />
                                     </Field>}
                                     {(feature === 'dosers_change' && id === "BC") && <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "C" : id}`]}>
-                                        <SelectField showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "C" : id]} keyField="key" textField="key"
+                                        <SelectField allowClear showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "C" : id]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
                                         />
                                     </Field>}
@@ -324,11 +325,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [resultMessage, setResultMessage] = useState({ status: "none" });
     const [matPrimasLookup, setMatPrimasLookup] = useState([]);
     const [formulacoes, setFormulacoes] = useState([]);
-    const [inputRef, setInputFocus] = useFocus();
+    //const [inputRef, setInputFocus] = useFocus();
     const [buffer, setBuffer] = useState(null);
     const [linePick, setLinePick] = useState([]);
     const [hasLinePick, setHasLinePick] = useState(false);
     const [LinePickLoading, setLinePickLoading] = React.useState(false);
+
+    const [focusStyle, setFocusStyle] = useState({});
+    const [manual, setManual] = useState(false);
+    const inputRef = useRef("");
 
 
     const handleOkLinePick = async () => {
@@ -401,7 +406,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
-        console.log("################3",t)
+        console.log("################3", t)
         const cancelFetch = cancelToken();
         init(true, cancelFetch);
         return (() => cancelFetch.cancel("Form Formulação Cancelled"));
@@ -504,13 +509,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     const onPick = (e, a, b) => {
         if (e.keyCode == 9 || e.keyCode == 13) {
-            if (inputRef.current.value !== '') {
+            form.setFieldsValue({ viewer: '' });
+            if (inputRef.current !== '') {
                 e.preventDefault();
-                const v = inputRef.current.value.toUpperCase().replace(/"$/, "").replace(/^"/, "");
+                let v = inputRef.current.toUpperCase().replace(/"$/, "").replace(/^"/, "");
+                v = v.startsWith("000026") ? v.replace("000026", "") : v;
                 if (DOSERS.includes(v)) {
                     //Source / Type
-                    form.setFieldsValue({ source: v });
-                    console.log("picked source")
+                    let s = form.getFieldValue("source") ? form.getFieldValue("source").split(";") : [];
+                    if (s.includes(v)) {
+                        s = s.filter(e => e !== v);
+                    }
+                    else {
+                        s.push(v);
+                    }
+                    form.setFieldsValue({ source: s.join(";") });
+                    inputRef.current = '';
                 } else {
                     let fData = form.getFieldsValue(true);
                     if (fData.source) {
@@ -518,36 +532,53 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         if (pickData.length < 2) {
                             pickData = v.split('#');
                         }
+                        console.log("PICCCCCCCCCCCKKKKKKKKKKKK-",pickData)
                         if (pickData.length >= 1) {
-                            let ext = fData.source.startsWith('A') ? 'A' : 'BC'; //Get extrusora picked
-                            let sgext = fData.source.startsWith('A') ? 'A' : fData.source.startsWith('B') ? 'B' : 'C';
-                            let items = form.getFieldValue(`formu_materiasprimas_${ext}`);
-                            let fItemIdx = items.findIndex(it => it[`matprima_cod_${ext}`] === pickData[0]);
-                            if (fItemIdx >= 0) {
-                                let fItemOldIdx = items.findIndex(it => it[`doseador_${sgext}`] === fData.source);
-                                if (fItemOldIdx >= 0) {
-                                    items[fItemOldIdx][`doseador_${sgext}`] = null;
-                                }
-                                items[fItemIdx][`doseador_${sgext}`] = fData.source;
-                                form.setFieldsValue({ [`formu_materiasprimas_${ext}`]: items });
-                                setIsTouched(true);
-                                if (pickData.length >= 2) {
-                                    let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
-                                    const _p = linePick.filter(v => v.doser !== fData.source);
-                                    if (bufArtigo) {
-                                        const _g = linePick.find(v => v.artigo_cod === bufArtigo.ITMREF_0 && v.n_lote === bufArtigo.LOT_0);
-                                        const grID = (_g) ? _g.group_id : uuIdInt(0).uuid();
-                                        _p.push({ "group_id": grID, "lote_id": bufArtigo.ROWID, "artigo_cod": bufArtigo.ITMREF_0, "n_lote": bufArtigo.LOT_0, "qty_lote": bufArtigo.QTYPCU_0, "doser": fData.source });
+
+                            let arrSource = fData.source.split(";");
+
+                            for (let src of arrSource) {
+                                let ext = src.startsWith('A') ? 'A' : 'BC'; //Get extrusora picked
+                                let sgext = src.startsWith('A') ? 'A' : src.startsWith('B') ? 'B' : 'C';
+                                let items = form.getFieldValue(`formu_materiasprimas_${ext}`);
+                                let fItemIdx = items.findIndex(it => it[`matprima_cod_${ext}`] === pickData[0]);
+                                
+                                if (fItemIdx >= 0) {
+                                    let fItemOldIdx = items.findIndex(it => it[`doseador_${sgext}`] === src);
+                                    if (fItemOldIdx >= 0) {
+                                        items[fItemOldIdx][`doseador_${sgext}`] = null;
                                     }
-                                    setLinePick(_p);
+                                    items[fItemIdx][`doseador_${sgext}`] = src;
+                                    form.setFieldsValue({ [`formu_materiasprimas_${ext}`]: items });
+                                    setIsTouched(true);
+                                    if (pickData.length >= 2) {
+                                        let bufArtigo = buffer.find(v => v.ITMREF_0 === pickData[0] && v.LOT_0 === pickData[1]);
+                                        const _p = linePick.filter(v => v.doser !== src);
+                                        if (bufArtigo) {
+                                            const _g = linePick.find(v => v.artigo_cod === bufArtigo.ITMREF_0 && v.n_lote === bufArtigo.LOT_0);
+                                            const grID = (_g) ? _g.group_id : uuIdInt(0).uuid();
+                                            _p.push({ "group_id": grID, "lote_id": bufArtigo.ROWID, "artigo_cod": bufArtigo.ITMREF_0, "n_lote": bufArtigo.LOT_0, "qty_lote": bufArtigo.QTYPCU_0, "doser": src });
+                                        }
+                                        setLinePick(_p);
+                                    }
                                 }
+
                             }
+                            form.setFieldsValue({ source: '' });
                         }
                     }
                 }
-                inputRef.current.value = '';
+                inputRef.current = '';
                 //setInputFocus();
             }
+        } else if ((e.keyCode >= 48 && e.keyCode <= 90) || e.keyCode == 186 || e.keyCode == 188 || e.keyCode == 110 || e.keyCode == 190) {
+            inputRef.current = `${inputRef.current}${e.key}`;
+            form.setFieldsValue({ viewer: inputRef.current });
+        } else if (e.keyCode == 16) {
+
+        } else {
+            inputRef.current = '';
+            form.setFieldsValue({ viewer: '' });
         }
     }
 
@@ -559,8 +590,50 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         onFinish();
     }, [isTouched]);
 
+    const onFocus = (f) => {
+        if (record.feature === "dosers_change") {
+            setFocusStyle(f ? { boxShadow: "inset 0px 0px 5px 5px #DBA632" } : {});
+        }
+    }
+
+    const keydownHandler = (event) => {
+        if (record.feature === "dosers_change") {
+            if (!manual) {
+                event.preventDefault();
+                onPick(event);
+            }
+        }
+    };
+
+    const InputManual = ({ inputRef }) => {
+        const [valor, setValor] = useState('');
+
+        const onChange = (e, v) => {
+            inputRef.current = e.target.value
+            form.setFieldsValue({ viewer: e.target.value });
+        }
+
+        return (
+            <Input tabIndex={-1} onChange={onChange} value={inputRef.current.value} />
+        );
+    }
+
+    const onManualInput = (e) => {
+        if (record.feature === "dosers_change") {
+            setManual(true);
+            Modalv4.show({
+                title: "Insira o valor", width: "350px", height: "180px",
+                content: <InputManual inputRef={inputRef} />,
+                onOk: () => { },
+                onCancel: () => setManual(false)
+            });
+        }
+    }
+
+
     return (
-        <>
+        <div onKeyDown={keydownHandler} tabIndex={-1} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
+            <Modalv4 />
             {record.feature === 'dosers_change' && <Modal title="Lotes Picados" center visible={hasLinePick} onOk={handleOkLinePick} confirmLoading={LinePickLoading} onCancel={handleCancelLinePick}><PickedLotes data={linePick} /></Modal>}
             <ResultMessage
                 result={resultMessage}
@@ -670,7 +743,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </>}
                         {record.feature === 'dosers_change' && <FieldSet field={{ wide: [3, 13] }}>
                             <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}><Input size="small" /></Field>
-                            <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem>
+                            <Field name="viewer" forInput={false} label={{ enabled: false }}><Input size='small' onDoubleClick={onManualInput} /></Field>
+                            {/* <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem> */}
                         </FieldSet>}
                         <HeaderA feature={record.feature} />
                         <SubFormMateriasPrimas feature={record.feature} form={form} name="formu_materiasprimas_A" forInput={forInput} matPrimasLookup={matPrimasLookup} id="A" />
@@ -686,6 +760,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 </Portal>
                 }
             </ResultMessage>
-        </>
+        </div>
     );
 }

@@ -162,7 +162,7 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'settings':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2});
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'attachments':
@@ -349,7 +349,7 @@ const CardFormulacao = ({ menuItem, record, parentReload }) => {
             case "dosers_change":
                 Modalv4.show({
                     width: "1200px", height: "800px", minFullHeight: 800, propsToChild: true,
-                    content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} parentReload={parentReload} />
+                    content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} parentReload={parentReload} closeParent={Modalv4.close} />
                 });
                 break;
             default: Modalv4.show({ content: <div><b>TODO</b></div> });
@@ -430,7 +430,7 @@ const CardCortes = ({ menuItem, record, parentReload }) => {
 
     const onEdit = () => {
         Modalv4.show({
-            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes record={record} parentReload={parentReload} />
+            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes record={record} parentReload={parentReload} closeParent={Modalv4.close} />
         });
     }
 

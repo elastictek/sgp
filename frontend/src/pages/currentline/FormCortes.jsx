@@ -15,6 +15,7 @@ import { LoadingOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import FormCortesUpsert from './FormCortesUpsert';
 import { useImmer } from "use-immer";
+import Modalv4 from "components/Modalv4";
 /* import { OFabricoContext } from './FormOFabricoValidar'; */
 
 const schema = (keys, excludeKeys) => {
