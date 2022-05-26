@@ -24,6 +24,7 @@ import { Object } from 'sugar';
 import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
 import Modalv4 from 'components/Modalv4';
+import useModalv4 from 'components/useModalv4';
 
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
@@ -149,28 +150,29 @@ const loadCurrentSettings = async (aggId, token) => {
 const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
     const { of_cod, cliente_nome, produto_cod, item_des, color } = ofItem;
     const totais = useRef({});
+    const modal = useModalv4();
 
     // const paletes = JSON.parse(aggItem?.n_paletes);
     const onAction = (idcard) => {
         switch (idcard) {
             case 'paletes_stock':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2, responsive: true });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'schema':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'settings':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2});
+                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'attachments':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'position':
-                Modalv4.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
                 break;
         }
@@ -234,6 +236,7 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
 const CardPlanificacao = ({ menuItem, record }) => {
     const { planificacao, ofs, paletesstock } = record;
     const totais = useRef({});
+    const modal = useModalv4();
 
     const computeQty = () => {
         const paletes_stock = paletesstock.reduce((ac, v) => {
@@ -256,7 +259,7 @@ const CardPlanificacao = ({ menuItem, record }) => {
     }, [])
 
     const onClick = () => {
-        Modalv4.show({ content: <div><b>TODO</b></div> });
+        modal.show({ content: <div><b>TODO</b></div> });
     }
 
     return (
@@ -336,8 +339,9 @@ const CardLotes = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardFormulacao = ({ menuItem, record, parentReload }) => {
+const CardFormulacao = ({ menuItem, record }) => {
     const { formulacao } = record;
+    const modal = useModalv4();
 
     useEffect(() => {
         console.log("ENTREI NA FORMULAÇÃO", record)
@@ -347,12 +351,9 @@ const CardFormulacao = ({ menuItem, record, parentReload }) => {
         switch (data.feature) {
             case "formulation_change":
             case "dosers_change":
-                Modalv4.show({
-                    width: "1200px", height: "800px", minFullHeight: 800, propsToChild: true,
-                    content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} parentReload={parentReload} closeParent={Modalv4.close} />
-                });
+                modal.show({ propsToChild: true, footer: "ref", width: '1200px', height: '700px', fullWidthDevice: 3, minFullHeight: 900, content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} /> });
                 break;
-            default: Modalv4.show({ content: <div><b>TODO</b></div> });
+            default: modal.show({ content: <div><b>TODO</b></div> });
         }
     }
 
@@ -372,15 +373,17 @@ const CardFormulacao = ({ menuItem, record, parentReload }) => {
     );
 }
 
-const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
+const CardGamaOperatoria = ({ menuItem, record }) => {
     const { gamaoperatoria } = record;
+    const modal = useModalv4();
 
     useEffect(() => {
         console.log("ENTREI NA GAMA OPERATORIA", record)
     }, []);
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: "1000px", height: '800px', minFullHeight: 900 }))
+        modal.show({ propsToChild: true, footer: "ref", width: '1000px', height: '600px', minFullHeight: 900, fullWidthDevice: 2, content: <FormGamaOperatoria forInput={record?.forInput} record={record} /> });
+        /*         setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "normal", type: 'modal', width: "1000px", height: '800px', minFullHeight: 900 })) */
     }
 
     return (
@@ -399,11 +402,14 @@ const CardGamaOperatoria = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
+const CardArtigoSpecs = ({ menuItem, record }) => {
     const { artigospecs } = record;
+    const modal = useModalv4();
 
     const onEdit = () => {
-        setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: '900px', height: '800px', minFullHeight: 900 }))
+
+        modal.show({ propsToChild: true, footer: "ref", width: '900px', height: '600px', minFullHeight: 900, fullWidthDevice: 2, content: <FormSpecs forInput={record?.forInput} record={record} /> });
+        /* setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, width: '900px', height: '800px', minFullHeight: 900 })) */
     };
 
     return (
@@ -422,16 +428,18 @@ const CardArtigoSpecs = ({ menuItem, record, setShowForm }) => {
     );
 }
 
-const CardCortes = ({ menuItem, record, parentReload }) => {
+const CardCortes = ({ menuItem, record }) => {
     const { formulacao } = record;
+    const modal = useModalv4();
 
     useEffect(() => {
     }, []);
 
     const onEdit = () => {
-        Modalv4.show({
-            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes record={record} parentReload={parentReload} closeParent={Modalv4.close} />
-        });
+        modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
+        /* Modalv4.show({
+            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes record={record} parentReload={parentReload} />
+        }); */
     }
 
     return (
@@ -516,6 +524,7 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
 const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
+    const modal = useModalv4();
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -525,14 +534,16 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     }, [socket]);
 
     const handleWndClick = (r) => {
-        Modalv4.show({
-            propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} />
-        });
+        modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} /> })
+        /*         Modalv4.show({
+                    propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} />
+                }); */
     }
     const onView = () => {
-        Modalv4.show({
-            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList />
-        });
+        modal.show({ propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList /> });
+        /*         Modalv4.show({
+                    propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList />
+                }); */
     }
 
     const selectionRowKey = (record) => {
@@ -600,6 +611,7 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
 const CardActions = ({ menuItem, record, parentReload }) => {
     const navigate = useNavigate();
     const location = useLocation();
+
     /*     const { status } = record; */
 
     /*     const onEdit = () => {
@@ -638,44 +650,10 @@ const CardActions = ({ menuItem, record, parentReload }) => {
     );
 }
 
-
-
-const EventColumn = ({ v }) => {
-    return (<>
-
-        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
-        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
-        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
-        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
-        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
-        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
-
-    </>);
-}
-
-const ExclamationButton = styled(Button)`
-  &&& {
-    background-color: #ffa940;
-    border-color: #ffc069;
-    color:#fff;
-    &:hover{
-        background-color: #fa8c16;
-        border-color: #ffe7ba;
-    }
-  }
-`;
-
-const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
-
-    return (<>
-        {v && <b>{v}</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
-    </>);
-}
-
 const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
+    const modal = useModalv4();
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -689,14 +667,18 @@ const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     }
 
     const handleWndClick = (icard, ig_id, fim_ts) => {
-        Modalv4.show({
-            propsToChild: true, width: "900px", height: "500px", fullWidthDevice: 2, title: "Ordens de Fabrico", content: <OFabricoTimeLineShortList params={{ data: { id: ig_id, fim_ts, parentReload: reload } }} />
+        modal.show({
+            propsToChild: true, width: "900px", height: "500px", buttons: ["cancel"], fullWidthDevice: 2, title: "Ordens de Fabrico", content: <OFabricoTimeLineShortList params={{ data: { id: ig_id, fim_ts, parentReload: reload } }} />
         });
+        //Modalv4.show({
+        //    propsToChild: true, width: "900px", height: "500px", fullWidthDevice: 2, title: "Ordens de Fabrico", content: <OFabricoTimeLineShortList params={{ data: { id: ig_id, fim_ts, parentReload: reload } }} />
+        //});
     }
     const onView = () => {
-        Modalv4.show({
-            propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <LineLogList />
-        });
+        modal.show({ propsToChild: true, width: '1500px', height: '600px', minFullHeight: 800, content: <LineLogList /> })
+        /*         Modalv4.show({
+                    propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <LineLogList />
+                }); */
     }
 
     const selectionRowKey = (record) => {
@@ -759,6 +741,41 @@ const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     );
 }
 
+const EventColumn = ({ v }) => {
+    return (<>
+
+        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
+        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
+        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
+        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
+        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
+        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
+
+    </>);
+}
+
+const ExclamationButton = styled(Button)`
+  &&& {
+    background-color: #ffa940;
+    border-color: #ffc069;
+    color:#fff;
+    &:hover{
+        background-color: #fa8c16;
+        border-color: #ffe7ba;
+    }
+  }
+`;
+
+const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
+
+    return (<>
+        {v && <b>{v}</b>}
+        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
+    </>);
+}
+
+
+
 const menuItems = [
     {
         idcard: "operacoes",
@@ -792,7 +809,7 @@ const menuItems = [
         idcard: "linelogs",
         title: "Eventos de Linha",
         span: 3
-    }/* ,
+    },
 
     {
         idcard: "especificacoes",
@@ -802,7 +819,7 @@ const menuItems = [
         idcard: "gamaoperatoria",
         title: "Gama Operatória",
         span: 3
-    } */
+    }
 ];
 
 export default ({ aggId }) => {
@@ -813,19 +830,20 @@ export default ({ aggId }) => {
     const { data: dataSocket } = useContext(SocketContext) || {};
 
     useEffect(() => {
-        console.log("--------------------------------", dataSocket);
-        const cancelFetch = cancelToken();
-        loadData({ aggId, token: cancelFetch });
-        return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+        if (dataSocket) {
+            const cancelFetch = cancelToken();
+            loadData({ aggId, token: cancelFetch });
+            return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+        }
     }, [dataSocket?.inproduction]);
 
 
-    useEffect(() => {
-        /*         console.log("FORM-AGG->", ctx) */
-        const cancelFetch = cancelToken();
-        loadData({ aggId, token: cancelFetch });
-        return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
-    }, []);
+    // useEffect(() => {
+    //     /*         console.log("FORM-AGG->", ctx) */
+    //     const cancelFetch = cancelToken();
+    //     loadData({ aggId, token: cancelFetch });
+    //     return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+    // }, []);
 
     const loadData = (data = {}, type = "init") => {
         const { aggId, token } = data;
@@ -882,64 +900,64 @@ export default ({ aggId }) => {
 
     return (
         <>
-            <Modalv4 />
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
-                {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
+           {/*  <Modalv4 /> */}
+            {/* <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar..."> */}
+            {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
 
-                {/*                     <FormLayout id="LAY-MENU-ACTIONS-0" style={{ width: "500px", padding: "0px" }} field={{label:{enabled:false}}}>
+            {/*                     <FormLayout id="LAY-MENU-ACTIONS-0" style={{ width: "500px", padding: "0px" }} field={{label:{enabled:false}}}>
                         <FieldSet margin={false} field={{ wide: [8,8] }}>
                             <FieldItem><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></FieldItem>
                             <FieldItem><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></FieldItem>
                         </FieldSet>
                     </FormLayout> */}
-                {currentSettings.observacoes &&
-                    <div style={{ padding: "10px" }}>
-                        <Alert
-                            style={{ width: "100%" }}
-                            message="Observações"
-                            description={currentSettings.observacoes}
-                            type="info"
-                        />
-                    </div>
-                }
-                {Object.keys(currentSettings).length > 0 && <StyledGrid>
-                    {menuItems.map((menuItem, idx) => {
-                        const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem, ofs, paletesstock } = currentSettings;
-                        switch (menuItem.idcard) {
-                            case "planificacao":
-                                return (<CardPlanificacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao, ofs, paletesstock }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "lotes":
-                                return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "formulacao":
-                                return (<CardFormulacao key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "gamaoperatoria":
-                                return (<CardGamaOperatoria key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "especificacoes":
-                                return (<CardArtigoSpecs key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "cortes":
-                                return (<CardCortes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "operacoes":
-                                return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "validarbobinagens":
-                                return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "linelogs":
-                                return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
-                            case "actions":
-                                return (<CardActions key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
-                            default: <React.Fragment key={`ct-${idx}`} />
-                        }
-                    })}
-                </StyledGrid>}
+            {currentSettings.observacoes &&
+                <div style={{ padding: "10px" }}>
+                    <Alert
+                        style={{ width: "100%" }}
+                        message="Observações"
+                        description={currentSettings.observacoes}
+                        type="info"
+                    />
+                </div>
+            }
+            {Object.keys(currentSettings).length > 0 && <StyledGrid>
+                {menuItems.map((menuItem, idx) => {
+                    const { planificacao, formulacao, cores, nonwovens, artigospecs, produto, quantity, gamaoperatoria, lotes, cortes, cortesordem, ofs, paletesstock } = currentSettings;
+                    switch (menuItem.idcard) {
+                        case "planificacao":
+                            return (<CardPlanificacao socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, planificacao, ofs, paletesstock }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "lotes":
+                            return (<CardLotes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao, nonwovens, produto, quantity, lotes }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "formulacao":
+                            return (<CardFormulacao socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, formulacao }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "gamaoperatoria":
+                            return (<CardGamaOperatoria socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, gamaoperatoria }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "especificacoes":
+                            return (<CardArtigoSpecs socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, artigospecs }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "cortes":
+                            return (<CardCortes socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, cortes, cortesordem, agg_of_id: currentSettings.agg_of_id, ofs }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "operacoes":
+                            return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "validarbobinagens":
+                            return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "linelogs":
+                            return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                        case "actions":
+                            return (<CardActions socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
+                        default: <React.Fragment key={`ct-${idx}`} />
+                    }
+                })}
+            </StyledGrid>}
 
-                {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
-                    {currentSettings.ofs.map((ofItem, idx) => {
-                        return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
-                    })}
-                </StyledGrid>}
+            {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
+                {currentSettings.ofs.map((ofItem, idx) => {
+                    return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
+                })}
+            </StyledGrid>}
 
 
 
-            </Spin>
+            {/*             </Spin> */}
         </>
     );
 }

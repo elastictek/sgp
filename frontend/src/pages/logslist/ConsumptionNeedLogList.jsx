@@ -250,6 +250,19 @@ const Action = ({ r, before, onClick }) => {
         return false
     }
 
+    const Confirm = () => {
+        let confirm = Modal.confirm();
+        confirm.update({
+            centered:true,
+            title: `Adicionar Lotes na Bobinagem ${r.nome}?`,
+            content: <div style={{ textAlign: "center" }}>
+                <Button onClick={() => { confirm.destroy(); onClick(r, "addlotes", "down"); }} style={{ marginRight: "2px" }} type="primary">Adicionar Lotes Abaixo</Button>
+                <Button onClick={() => { confirm.destroy(); onClick(r, "addlotes", "up") }} type="primary">Adicionar Lotes Acima</Button>
+            </div>
+        });
+
+    }
+
     return (
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
             {showOut() && <>
@@ -265,19 +278,9 @@ const Action = ({ r, before, onClick }) => {
                         onOk: () => onClick(r, "rectify")
                     })}
                     style={{ alignSelf: "center", color: "green", fontSize: "12px", marginRight: "2px" }} shape="default"><CheckOutlined title="Corrigir bobinagem" /></ButtonIcon>
-                <ButtonIcon size="small"
-                    onClick={
-                        () => Modalv4.show({
-                            width: "400px", height: "200px",
-                            title: `Adicionar Lotes na Bobinagem ${r.nome}?`,
-                            content: <div style={{ textAlign: "center" }}>
-                                <Modalv4/>
-                                <Button onClick={()=>onClick(r, "addlotes","down")} style={{ marginRight: "2px" }} type="primary">Adicionar Lotes Abaixo</Button>
-                                <Button onClick={()=>onClick(r, "addlotes","up")} type="primary">Adicionar Lotes Acima</Button>
-                            </div>,
-                        })}
-
-                    style={{ alignSelf: "center", color: "green", fontSize: "12px" }} shape="default"><PlusOutlined title="Adicionar Lotes" /></ButtonIcon>
+                <Button size="small"
+                    onClick={Confirm}
+                    style={{ alignSelf: "center" }} shape="default">Ad. Lotes</Button>
             </>}
         </div>
     );
@@ -325,7 +328,6 @@ export default () => {
 
 
     const handleWndClick = async (bm, type, direction) => {
-        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaa")
         let title = '';
 
         if (type === "lock") {
@@ -366,7 +368,7 @@ export default () => {
         if (type === "addlotes" && direction === "down") {
             title = `Adicionar Lotes após bobinagem ${bm.nome}`;
         }
-        Modalv41.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
+        Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
     };
 

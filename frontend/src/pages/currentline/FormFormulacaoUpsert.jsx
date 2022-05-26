@@ -406,11 +406,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
-        console.log("################3", t)
         const cancelFetch = cancelToken();
         init(true, cancelFetch);
         return (() => cancelFetch.cancel("Form Formulação Cancelled"));
-    }, []);
+    }, [record]);
 
     const onValuesChange = async (changedValues, { formu_materiasprimas_A: allA = [], formu_materiasprimas_BC: allBC = [], ...allValues }) => {
         if ('id' in changedValues) {

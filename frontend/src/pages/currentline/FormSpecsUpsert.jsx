@@ -84,11 +84,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     useEffect(() => {
+        console.log("PARENTREF......",parentRef)
         const cancelFetch = cancelToken();
         init(true, cancelFetch);
         return (() => cancelFetch.cancel("Form Specs Cancelled"));
 
-    }, []);
+    }, [record]);
 
     const onValuesChange = async (changedValues) => {
         setIsTouched(true);
@@ -122,7 +123,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: 'specs', specs: { ...form.getFieldsValue(true), produto_id: record.artigospecs.produto_id, cliente_cod, cliente_nome } } });
                 setResultMessage(response.data);
                 if (response.data.status !== "error") {
-                    throw 'TODO RELOAD PARENT'
+                    //throw 'TODO RELOAD PARENT'
                     //parentReload({ formulacao_id: record.formulacao.id }, "init");
                 }
                 /* const { cliente_cod: { value: cliente_cod, label: cliente_nome } = {} } = values;

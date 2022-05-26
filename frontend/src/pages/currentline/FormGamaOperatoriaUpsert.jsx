@@ -89,7 +89,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const cancelFetch = cancelToken();
         init(true, cancelFetch);
         return (() => cancelFetch.cancel("Form Gama Operatória Cancelled"));
-    }, []);
+    }, [record]);
 
     const onValuesChange = async (changedValues) => {
         setIsTouched(true);

@@ -100,7 +100,7 @@ const filterRules = (keys) => {
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 
 const ToolbarTable = ({ form, dataAPI }) => {
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
 
     const onChange = (v) => {
         form.submit();
