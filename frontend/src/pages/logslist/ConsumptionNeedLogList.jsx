@@ -24,6 +24,8 @@ import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
 import { VscDebugStart } from 'react-icons/vsc';
 import { BsFillStopFill } from 'react-icons/bs';
+import { FiMoreVertical } from 'react-icons/fi';
+
 import { IoCodeWorkingOutline } from 'react-icons/io5';
 import { Wnd } from "./commons";
 import Modalv4 from 'components/Modalv4';
@@ -34,7 +36,7 @@ const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobina
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined, UpCircleOutlined, DownCircleOutlined, StopOutlined, LockOutlined } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined, UpCircleOutlined, DownCircleOutlined, StopOutlined, LockOutlined, MoreOutlined } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, PlusOutlined, PlusCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
@@ -234,6 +236,37 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
+const menu = (
+    <Menu
+      items={[
+        {
+          key: '1',
+          label: (
+            <a target="_blank" rel="noopener noreferrer" href="https://www.antgroup.com">
+              1st menu item
+            </a>
+          ),
+        },
+        {
+          key: '2',
+          label: (
+            <a target="_blank" rel="noopener noreferrer" href="https://www.aliyun.com">
+              2nd menu item
+            </a>
+          ),
+        },
+        {
+          key: '3',
+          label: (
+            <a target="_blank" rel="noopener noreferrer" href="https://www.luohanacademy.com">
+              3rd menu item
+            </a>
+          ),
+        },
+      ]}
+    />
+  );
+
 const Action = ({ r, before, onClick }) => {
     const m = Modalv4;
     const showAdd = () => {
@@ -253,7 +286,7 @@ const Action = ({ r, before, onClick }) => {
     const Confirm = () => {
         let confirm = Modal.confirm();
         confirm.update({
-            centered:true,
+            centered: true,
             title: `Adicionar Lotes na Bobinagem ${r.nome}?`,
             content: <div style={{ textAlign: "center" }}>
                 <Button onClick={() => { confirm.destroy(); onClick(r, "addlotes", "down"); }} style={{ marginRight: "2px" }} type="primary">Adicionar Lotes Abaixo</Button>
@@ -269,7 +302,10 @@ const Action = ({ r, before, onClick }) => {
                 <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
             </>}
             {showAdd() && <>
-                <ButtonIcon size="small" onClick={
+                <Dropdown overlay={menu}>
+                       <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  *//>}/>
+                </Dropdown>
+                {/* <ButtonIcon size="small" onClick={
                     () => Modalv4.show({
                         width: "400px", height: "200px",
                         title: `Retificar a bobinagem ${r.nome}?`,
@@ -277,10 +313,13 @@ const Action = ({ r, before, onClick }) => {
                         defaultFooter: true,
                         onOk: () => onClick(r, "rectify")
                     })}
+
+
+
                     style={{ alignSelf: "center", color: "green", fontSize: "12px", marginRight: "2px" }} shape="default"><CheckOutlined title="Corrigir bobinagem" /></ButtonIcon>
                 <Button size="small"
                     onClick={Confirm}
-                    style={{ alignSelf: "center" }} shape="default">Ad. Lotes</Button>
+                    style={{ alignSelf: "center" }} shape="default">Ad. Lotes</Button> */}
             </>}
         </div>
     );
@@ -381,7 +420,7 @@ export default () => {
                 ...((common) => (
                     {
                         ...({
-                            action: { title: "", width: 80, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
+                            action: { sort:false, title: "", width: 45, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
                             nome: { title: "Bobinagem", width: 120, render: (v, r, i) => <b>{v}</b>, ...common },
                             doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
                             t_stamp: { title: "Data", width: 90, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },

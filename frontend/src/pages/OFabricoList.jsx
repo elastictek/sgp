@@ -39,6 +39,8 @@ import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, 
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 const { Option } = Select;
 const { confirm } = Modal;
+import useModalv4 from 'components/useModalv4';
+
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
@@ -108,7 +110,41 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
     );
 }
 
+const downloadFile = (data, filename, mime, bom) => {
+    var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
+    var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
+    if (typeof window.navigator.msSaveBlob !== 'undefined') {
+        // IE workaround for "HTML7007: One or more blob URLs were
+        // revoked by closing the blob for which they were created.
+        // These URLs will no longer resolve as the data backing
+        // the URL has been freed."
+        window.navigator.msSaveBlob(blob, filename);
+    }
+    else {
+        var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
+        var tempLink = document.createElement('a');
+        tempLink.style.display = 'none';
+        tempLink.href = blobURL;
+        tempLink.setAttribute('download', filename);
 
+        // Safari thinks _blank anchor are pop ups. We only want to set _blank
+        // target if the browser does not support the HTML5 download attribute.
+        // This allows you to download files in desktop safari if pop up blocking
+        // is enabled.
+        if (typeof tempLink.download === 'undefined') {
+            tempLink.setAttribute('target', '_blank');
+        }
+
+        document.body.appendChild(tempLink);
+        tempLink.click();
+
+        // Fixes "webkit blob resource error 1"
+        setTimeout(function () {
+            document.body.removeChild(tempLink);
+            window.URL.revokeObjectURL(blobURL);
+        }, 200);
+    }
+};
 
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
     const [formData, setFormData] = useState({});
@@ -194,42 +230,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
             fetchOptions={fetchItems}
         />
     );
-
-    const downloadFile = (data, filename, mime, bom) => {
-        var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
-        var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
-        if (typeof window.navigator.msSaveBlob !== 'undefined') {
-            // IE workaround for "HTML7007: One or more blob URLs were
-            // revoked by closing the blob for which they were created.
-            // These URLs will no longer resolve as the data backing
-            // the URL has been freed."
-            window.navigator.msSaveBlob(blob, filename);
-        }
-        else {
-            var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
-            var tempLink = document.createElement('a');
-            tempLink.style.display = 'none';
-            tempLink.href = blobURL;
-            tempLink.setAttribute('download', filename);
-
-            // Safari thinks _blank anchor are pop ups. We only want to set _blank
-            // target if the browser does not support the HTML5 download attribute.
-            // This allows you to download files in desktop safari if pop up blocking
-            // is enabled.
-            if (typeof tempLink.download === 'undefined') {
-                tempLink.setAttribute('target', '_blank');
-            }
-
-            document.body.appendChild(tempLink);
-            tempLink.click();
-
-            // Fixes "webkit blob resource error 1"
-            setTimeout(function () {
-                document.body.removeChild(tempLink);
-                window.URL.revokeObjectURL(blobURL);
-            }, 200);
-        }
-    }
 
     const menu = (
         <Menu onClick={(v) => exportFile(v)}>
@@ -697,6 +697,62 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
 };
 
 
+const actionItems = [
+    { label: 'Packing List', key: 'pl' },
+    { label: 'Packing List Detalhado', key: 'pld' }
+];
+
+
+
+const Action = ({ v, r, dataAPI }) => {
+    const modal = useModalv4();
+    const onClick = async (item) => {
+        const requestData = dataAPI.getPostRequest();
+        requestData.parameters = {
+            ...requestData.parameters,
+            "config": "default",
+            "conn-name": "PG-SGP-GW",
+            "export": "pdf",
+            "data": {
+                "TITLE": "PACKING LIST",
+                "PRODUCT_ID": "NONWOVEN ELASTIC BANDS ELA-ACE 95 HE",
+                "CONTAINER": "CON001 - TGBU6872407",
+                "PRF_COD": r.prf
+            }
+        };
+        requestData.url = "http://192.168.0.16:8080/ReportsGW/run";
+        const response = await fetchPostBlob(requestData,false);
+        switch (r.key) {
+            case "pdf":
+                requestData.parameters = {
+                    ...requestData.parameters,
+                    ...{
+                        "name": "PACKING-LIST",
+                        "path": "PACKING-LIST/PACKING-LIST-MASTER"
+                    }
+                };
+                //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
+                break;
+            case "pld":
+                requestData.parameters = {
+                    ...requestData.parameters,
+                    ...{
+                        "name": "PACKING-LIST",
+                        "path": "PACKING-LIST/PACKING-LIST-DETAILED-MASTER"
+                    }
+                };
+                //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
+                break;
+        }
+        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.pdf`);
+    }
+
+    return (<Dropdown overlay={<Menu onClick={onClick} items={actionItems} />}>
+        <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
+    </Dropdown>)
+}
+
+
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -789,6 +845,7 @@ export default () => {
             include: {
                 ...((common) => (
                     {
+                        action: { title: "", fixed: "left", width: 40, render: (v, r) => <Action v={v} r={r} dataAPI={dataAPI} />, ...common },
                         ofabrico: { title: "Ordem Fabrico", fixed: 'left', width: 130, render: v => <b>{v}</b>, ...common },
                         prf: { title: "PRF", width: 130, render: v => <b>{v}</b>, ...common },
                         iorder: { title: "Encomenda(s)", width: 130, ...common },

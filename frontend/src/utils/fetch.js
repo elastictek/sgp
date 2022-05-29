@@ -76,8 +76,8 @@ export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination =
   return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
+export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {},fetch=true) => {
+  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken },fetch);
 }
 
 export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {

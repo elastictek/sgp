@@ -4797,6 +4797,69 @@ def RectifyBobinagem(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao Retificar Bobinagem!"})
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def LotesAvailable(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    print("dddddddddddddddddddddddddddddddddddd")
+    print(request.data["parameters"])
+    f = Filters(request.data['filter'])
+    f.setParameters({
+       # **rangeP(f.filterData.get('forderdate'), 'ORDDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #**rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #"LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
+       #"status": {"value": lambda v: statusFilter(v.get('ofstatus')), "field": lambda k, v: f'"of"."{k}"'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+    parameters = {**f.parameters}
+
+    dql = dbgw.dql(request.data, False)
+    cols = f'''QLA.*,ITM."ITMDES1_0"'''
+    dql.columns=encloseColumn(cols,False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    response = dbgw.executeList(lambda p, c, s: (
+        f"""
+        WITH
+            VIEW_LINHA AS(SELECT * FROM {sgpAlias}.loteslinha where status <> 0 AND closed=0),
+            VIEW_DOSERS AS(
+                SELECT id,doser,n_lote,artigo_cod,t_stamp,qty_consumed,type_mov,loteslinha_id,group_id,ig_bobinagem_id,qty_to_consume,lote_id,t_stamp_fix,"order",closed 
+                FROM {sgpAlias}.lotesdosers where status <> 0 AND closed=0 --AND `order` < (select MIN(`order`) `limit_order` from lotesdosers ld where `status` <> 0 AND closed=0 AND ld.ig_bobinagem_id = 2460)
+            ),
+            QTY_LOTES_AVAILABLE AS(
+                select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+                FROM (
+                    SELECT DISTINCT * FROM (
+                    SELECT 
+                    DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,DOSERS."order",
+                    SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_consumed,
+                    qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_available,
+                    MIN(DOSERS."order") over (PARTITION BY LOTES.lote_id) min_order, --FIFO DATE TO ORDER ASC
+                    MAX(DOSERS."order") over (PARTITION BY LOTES.lote_id) max_order
+                    FROM VIEW_LINHA LOTES
+                    LEFT JOIN VIEW_DOSERS DOSERS ON LOTES.id=DOSERS.loteslinha_id
+                    WHERE DOSERS.group_id is not null
+                    ) t WHERE  max_order="order"
+                ) t --WHERE qty_lote_available>0
+            )
+            SELECT {c(f'{dql.columns}')} 
+            FROM QTY_LOTES_AVAILABLE QLA
+            JOIN {sageAlias}."ITMMASTER" ITM on ITM."ITMREF_0" = QLA.artigo_cod
+            {f.text}
+            {s(dql.sort)} {p(dql.paging)}
+        """
+    ), connection, parameters)
+
+    return Response(response)
+
+
+
 #endregion
 
 

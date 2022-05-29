@@ -9,7 +9,8 @@ import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
-import { Button, Spin, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
+import { Button, Spin, Select, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
+const { Option } = Select;
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingOutlined, PaperClipOutlined, HistoryOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -17,6 +18,7 @@ import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT, SCREENSIZE_OPTIMI
 import { remove } from 'ramda';
 import Table, { setColumns } from "components/table";
 import { useDataAPI } from "utils/useDataAPI";
+
 
 import { MdProductionQuantityLimits } from 'react-icons/md';
 import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
@@ -741,6 +743,132 @@ const CardEventosLinha = ({ socket, menuItem, record, parentReload }) => {
     );
 }
 
+const SelectLotesAvailable = ({ onView, onChangeContent }) => {
+    return (
+
+        <Space>
+            <Select defaultValue="default" style={{ width: 200 }} onChange={onChangeContent} dropdownMatchSelectWidth={false}>
+                <Option value="default">Lotes disponíveis em Linha</Option>
+                <Option value="groupartigo">Disponibilidade por Artigo</Option>
+                <Option value="buffer">Lotes em Buffer e Reciclado</Option>
+                <Option value="allconsumed">Lotes Totalmente Consumidos</Option>
+            </Select>
+            <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} />
+        </Space>
+
+
+
+    );
+}
+
+const CardLotesAvailable = ({ socket, menuItem, record, parentReload }) => {
+    const [loading, setLoading] = useState(false);
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lotesavailable/`, parameters: {type:"default"}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [{ column: 'order', direction: 'ASC' }] } });
+    const modal = useModalv4();
+
+    useEffect(() => {
+        const cancelFetch = cancelToken();
+        //dataAPI.first();
+        dataAPI.fetchPost({ token: cancelFetch });
+        return (() => cancelFetch.cancel());
+    }, [socket]);
+
+    const handleWndClick = (r) => {
+        //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} /> })
+        /*         Modalv4.show({
+                    propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} />
+                }); */
+    }
+    const onView = () => {
+        //modal.show({ propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList /> });
+        /*         Modalv4.show({
+                    propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList />
+                }); */
+    }
+
+    const selectionRowKey = (record) => {
+        return `lot-${record.lote_id}`;
+    }
+
+    const onChangeContent = (v) => {
+        switch(v){
+            case "buffer":break;
+            case "groupartigo":
+                dataAPI.addParameters({type:v});
+                dataAPI.fetchPost({});
+            break;
+            case "allconsumed":break;
+            default:break;
+
+        }
+        console.log(v);
+    }
+
+    const columns = setColumns(
+        {
+            dataAPI,
+            data: dataAPI.getData().rows,
+            uuid: "lotes_available",
+            include: {
+                ...((common) => (
+                    {
+                        ITMDES1_0: { title: "Artigo", width: 160, fixed: "left", render: (v, r) => v, ...common },
+                        artigo_cod: { title: "cod", width: 100, fixed: "left", render: (v, r) => v, ...common },
+                        n_lote: { title: "Lote", width: 100, fixed: "left", render: (v, r) => v, ...common },
+                        qty_lote: { title: "Qtd. Lote", width: 100, fixed: "left", render: (v, r) => v, ...common },
+                        qty_lote_consumed: { title: "Qtd. Consumida", width: 100, fixed: "left", render: (v, r) => v, ...common },
+                        qty_lote_available: { title: "Qtd. Disponível", width: 100, fixed: "left", render: (v, r) => v, ...common },
+
+                        // nome: { title: "Bobinagem", sort: false, width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
+                        //inico: { title: "Início", sort: false, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        //fim: { title: "Fim", sort: false, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        //duracao: { title: "Duração", sort: false, width: 80, render: (v, r) => v, ...common },
+                        //core: { title: "Core", sort: false, width: 35, render: (v, r) => v, ...common },
+                        //comp: { title: "Comp.", sort: false, render: (v, r) => v, input: <InputNumber />, ...common },
+                        //comp_par: { title: "Comp. Emenda", sort: false, render: (v, r) => v, ...common },
+                        //comp_cli: { title: "Comp. Cliente", sort: false, render: (v, r) => v, ...common },
+                        //area: { title: <span>Área m&#178;</span>, sort: false, render: (v, r) => v, ...common },
+                        //diam: { title: "Diâmetro mm", sort: false, render: (v, r) => v, ...common },
+                        //nwinf: { title: "Nw Inf. m", sort: false, render: (v, r) => v, ...common },
+                        //nwsup: { title: "Nw Sup. m", sort: false, render: (v, r) => v, ...common }
+                    }
+                ))({ idx: 1, optional: false })
+            },
+            exclude: []
+        }
+    );
+
+    return (
+        <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
+            <Card hoverable/*  onClick={onEdit} */
+                style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
+                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
+                extra={<SelectLotesAvailable onChangeContent={onChangeContent} onView={onView} />}
+                bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
+            >
+                <YScroll>
+                    <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+                        <Table
+                            columnChooser={false}
+                            reload
+                            header={false}
+                            stripRows
+                            darkHeader
+                            size="small"
+                            selection={{ enabled: false, rowKey: record => selectionRowKey(record) }}
+                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                            dataAPI={dataAPI}
+                            columns={columns}
+                            onFetch={dataAPI.fetchPost}
+                        />
+                    </Spin>
+                </YScroll>
+            </Card>
+        </div>
+    );
+}
+
 const EventColumn = ({ v }) => {
     return (<>
 
@@ -808,6 +936,11 @@ const menuItems = [
     {
         idcard: "linelogs",
         title: "Eventos de Linha",
+        span: 3
+    }, ,
+    {
+        idcard: "lotesavailable",
+        title: "Lotes em Linha",
         span: 3
     },
 
@@ -900,7 +1033,7 @@ export default ({ aggId }) => {
 
     return (
         <>
-           {/*  <Modalv4 /> */}
+            {/*  <Modalv4 /> */}
             {/* <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar..."> */}
             {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
 
@@ -944,6 +1077,8 @@ export default ({ aggId }) => {
                             return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                         case "actions":
                             return (<CardActions socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
+                        case "lotesavailable":
+                            return (<CardLotesAvailable socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
                         default: <React.Fragment key={`ct-${idx}`} />
                     }
                 })}

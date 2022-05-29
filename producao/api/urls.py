@@ -133,6 +133,7 @@ urlpatterns = [
     re_path(r'^saidadoser/$', views.SaidaDoser),
     re_path(r'^consumptionneedloglist/$', views.ConsumptionNeedLogList),
     re_path(r'^rectifybobinagem/$', views.RectifyBobinagem),
+    re_path(r'^lotesavailable/$', views.LotesAvailable),
     
     
     #PICAGEM LOTES
