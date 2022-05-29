@@ -720,7 +720,7 @@ const Action = ({ v, r, dataAPI }) => {
                 "PRF_COD": r.prf
             }
         };
-        requestData.url = "http://192.168.0.16:8080/ReportsGW/run";
+        requestData.url = "http://localhost:8080/ReportsGW/run";
         const response = await fetchPostBlob(requestData,false);
         switch (r.key) {
             case "pdf":

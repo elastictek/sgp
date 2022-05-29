@@ -4,6 +4,7 @@ import { mergeDeepRight } from "ramda";
 
 axios.defaults.xsrfCookieName = 'csrftoken';
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
+axios.defaults.headers.post['Access-Control-Allow-Origin'] = '*';
 
 const paramType = (method) => (method == "get") ? "params" : "data";
 
@@ -16,16 +17,29 @@ const serverRequest = async (request, fetch = true) => {
   if (cancelToken) {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
   }
+
+  console.log("blb", fetch)
+  console.log({
+    url: url,
+    ...params
+  })
+
   return axios({
     url: url,
+    mode: 'no-cors',
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    },
+    withCredentials: true,
+    credentials: 'same-origin',
     ...params,
     ...(cancelToken && { cancelToken: cancelToken.token })
   });
 };
 
 
-const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken });
+const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}, f = true) => {
+  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken }, f);
 
   /*     const req ={
           options:{},
@@ -76,8 +90,8 @@ export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination =
   return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {},fetch=true) => {
-  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken },fetch);
+export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}, f = true) => {
+  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken }, f);
 }
 
 export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
@@ -88,7 +102,7 @@ export const fetchPostBuffer = async ({ url = "", filter = {}, sort = [], pagina
   return await fetch({ url, responseType: "arraybuffer", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers={}, cancelToken } = {}) => {
+export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers = {}, cancelToken } = {}) => {
   const params = { method, responseType, [paramType(method)]: parameters, headers };
   if (cancelToken) {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
