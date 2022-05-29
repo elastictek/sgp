@@ -150,7 +150,7 @@ urlpatterns = [
     re_path(r'^createbobinagem/$',views.CreateBobinagem),
     re_path(r'^bobinesoriginaislist/$',views.BobinesOriginaisList),
     #REPORTS
-
+    re_path(r'^exportfile/$',views.ExportFile),
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 

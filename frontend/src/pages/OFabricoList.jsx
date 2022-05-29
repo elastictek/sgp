@@ -708,6 +708,7 @@ const Action = ({ v, r, dataAPI }) => {
     const modal = useModalv4();
     const onClick = async (item) => {
         const requestData = dataAPI.getPostRequest();
+        requestData.url = `${API_URL}/exportfile/`;
         requestData.parameters = {
             ...requestData.parameters,
             "config": "default",
@@ -720,30 +721,21 @@ const Action = ({ v, r, dataAPI }) => {
                 "PRF_COD": r.prf
             }
         };
-        requestData.url = "http://localhost:8080/ReportsGW/run";
-        const response = await fetchPostBlob(requestData,false);
-        switch (r.key) {
-            case "pdf":
-                requestData.parameters = {
-                    ...requestData.parameters,
-                    ...{
-                        "name": "PACKING-LIST",
-                        "path": "PACKING-LIST/PACKING-LIST-MASTER"
-                    }
-                };
+        
+        switch (item.key) {
+            case "pl":
+               requestData.parameters.name = "PACKING-LIST";
+               requestData.parameters.path = "PACKING-LIST/PACKING-LIST-MASTER";
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;
             case "pld":
-                requestData.parameters = {
-                    ...requestData.parameters,
-                    ...{
-                        "name": "PACKING-LIST",
-                        "path": "PACKING-LIST/PACKING-LIST-DETAILED-MASTER"
-                    }
-                };
+                requestData.parameters.name = "PACKING-LIST";
+                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-DETAILED-MASTER";    
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;
         }
+        console.log(requestData)
+        const response = await fetchPostBlob(requestData);
         downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.pdf`);
     }
 

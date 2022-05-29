@@ -215,6 +215,37 @@ def export(sql, db_parameters, parameters,conn_name):
                 resp['Content-Disposition'] = "inline; filename=list.docx"
             return resp
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ExportFile(request, format=None):
+    print("uiuiuiuiuiuiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+    print(request.data)
+    print("----------------------------------------------------------")
+    
+    p = request.data["parameters"]
+    req = {**p}
+    fstream = requests.post('http://localhost:8080/ReportsGW/run', json=req)
+    if (fstream.status_code==200):
+        resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+        if (p["export"] == "pdf"):
+            resp['Content-Disposition'] = "inline; filename=list.pdf"
+        elif (p["export"] == "excel"):
+            resp['Content-Disposition'] = "inline; filename=list.xlsx"
+        elif (p["export"] == "word"):
+            resp['Content-Disposition'] = "inline; filename=list.docx"
+        return resp
+
+
+
+
+
+    return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
