@@ -729,7 +729,7 @@ const Action = ({ v, r, dataAPI }) => {
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;
             case "pld":
-                requestData.parameters.name = "PACKING-LIST";
+                requestData.parameters.name = "PACKING-LIST-DETAILED";
                 requestData.parameters.path = "PACKING-LIST/PACKING-LIST-DETAILED-MASTER";    
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;

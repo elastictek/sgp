@@ -240,12 +240,6 @@ def ExportFile(request, format=None):
 
 
 
-
-
-    return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
-
-
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
