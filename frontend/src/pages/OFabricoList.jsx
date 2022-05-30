@@ -45,6 +45,7 @@ import useModalv4 from 'components/useModalv4';
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { VerticalSpace } from 'components/formLayout';
+import { useForm } from 'antd/lib/form/Form';
 const { Title } = Typography;
 
 const schema = (keys, excludeKeys) => {
@@ -702,11 +703,60 @@ const actionItems = [
     { label: 'Packing List Detalhado', key: 'pld' }
 ];
 
+const PackingListForm = ({ r, downloading, form }) => {
+    
+
+    useEffect(() => {
+        let f = null;
+        if (r.matricula) {
+            f = { container: r.matricula };
+        }
+        if (r.matricula_reboque) {
+            f = { container_trailer: r.matricula_reboque };
+        }
+        form.setFieldsValue(f);
+    }, []);
+
+    useEffect(()=>{
+
+    },[downloading]);
+
+    return (
+        <Spin spinning={downloading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}>
+            <Form form={form} initialValues={{ produto_cod: r.produto_cod, container: r?.container }}>
+                <FormLayout form={form} id="plist">
+                    <Field forInput={false} name="produto_cod" label={{ enabled: true, width: "60px", text: "Produto", pos: "top" }}><Input size="small" /></Field>
+                    <Field name="container" label={{ enabled: true, width: "60px", text: "Container", pos: "top" }}><Input size="small" /></Field>
+                    <Field name="container_trailer" label={{ enabled: true, width: "60px", text: "Trailer Container", pos: "top" }}><Input size="small" /></Field>
+                </FormLayout>
+            </Form>
+        </Spin>
+    );
+}
 
 
 const Action = ({ v, r, dataAPI }) => {
     const modal = useModalv4();
-    const onClick = async (item) => {
+    const [form] = useForm();
+    const [downloading, setDownloading] = useState(false);
+
+    const onModal = (item) => {
+        let title = "";
+        switch (item.key) {
+            case "pl":
+                title = `Imprimir Packing List ${r.prf}`
+                break;
+            case "pld":
+                title = `Imprimir Packing List Detalhado ${r.prf}`
+                break;
+        }
+        modal.show({ propsToChild: true, width: '500px', height: '200px', title, onOk:()=>onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')), }} /> });
+    }
+
+
+    const onDownload = async (item) => {
+        const values = form.getFieldsValue(true);
+        setDownloading(true);
         const requestData = dataAPI.getPostRequest();
         requestData.url = `${API_URL}/exportfile/`;
         requestData.parameters = {
@@ -716,32 +766,39 @@ const Action = ({ v, r, dataAPI }) => {
             "export": "pdf",
             "data": {
                 "TITLE": "PACKING LIST",
-                "PRODUCT_ID": "NONWOVEN ELASTIC BANDS ELA-ACE 95 HE",
-                "CONTAINER": "CON001 - TGBU6872407",
+                "PRODUCT_ID": values.produto_cod,
+                "CONTAINER": values.container,
                 "PRF_COD": r.prf
             }
         };
-        
+
         switch (item.key) {
             case "pl":
-               requestData.parameters.name = "PACKING-LIST";
-               requestData.parameters.path = "PACKING-LIST/PACKING-LIST-MASTER";
+                requestData.parameters.name = "PACKING-LIST";
+                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-MASTER";
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;
             case "pld":
                 requestData.parameters.name = "PACKING-LIST-DETAILED";
-                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-DETAILED-MASTER";    
+                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-DETAILED-MASTER";
                 //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
                 break;
         }
-        console.log(requestData)
+        console.log(requestData.parameters)
         const response = await fetchPostBlob(requestData);
+        setDownloading(false);
         downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.pdf`);
     }
 
-    return (<Dropdown overlay={<Menu onClick={onClick} items={actionItems} />}>
-        <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
-    </Dropdown>)
+    return (
+        <>
+            {r.prf &&
+                <Dropdown overlay={<Menu onClick={onModal} items={actionItems} />}>
+                    <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
+                </Dropdown>
+            }
+        </>
+    )
 }
 
 
