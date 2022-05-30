@@ -699,8 +699,8 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
 
 
 const actionItems = [
-    { label: 'Packing List', key: 'pl' },
-    { label: 'Packing List Detalhado', key: 'pld' }
+    { label: 'Packing List', key: 'pl', icon:<ProfileOutlined style={{fontSize:"18px"}} /> },
+    { label: 'Packing List Detalhado', key: 'pld', icon:<ProfileOutlined style={{fontSize:"18px"}}/> }
 ];
 
 const PackingListForm = ({ r, downloading, form }) => {
