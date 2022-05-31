@@ -491,7 +491,7 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
             >
-                {record.status == 1 &&
+                {record.status == 1 || record.status == 2 &&
                     <>
                         <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(3)}>Iniciar Produção</Button>
                         <VerticalSpace height="5px" />
