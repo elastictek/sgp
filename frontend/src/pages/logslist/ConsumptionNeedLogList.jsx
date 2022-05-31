@@ -29,6 +29,7 @@ import { FiMoreVertical } from 'react-icons/fi';
 import { IoCodeWorkingOutline } from 'react-icons/io5';
 import { Wnd } from "./commons";
 import Modalv4 from 'components/Modalv4';
+import useModalv4 from 'components/useModalv4';
 const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobinagem'));
 
 
@@ -236,39 +237,14 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
-const menu = (
-    <Menu
-      items={[
-        {
-          key: '1',
-          label: (
-            <a target="_blank" rel="noopener noreferrer" href="https://www.antgroup.com">
-              1st menu item
-            </a>
-          ),
-        },
-        {
-          key: '2',
-          label: (
-            <a target="_blank" rel="noopener noreferrer" href="https://www.aliyun.com">
-              2nd menu item
-            </a>
-          ),
-        },
-        {
-          key: '3',
-          label: (
-            <a target="_blank" rel="noopener noreferrer" href="https://www.luohanacademy.com">
-              3rd menu item
-            </a>
-          ),
-        },
-      ]}
-    />
-  );
+const actionItems = [
+    { label: 'Adicionar Lote Acima', key: 'up' },
+    { label: 'Adicionar Lote Abaixo', key: 'down' },
+    { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
+];
 
 const Action = ({ r, before, onClick }) => {
-    const m = Modalv4;
+    /* const m = Modalv4; */
     const showAdd = () => {
         if ((!before || before["nome"] !== r["nome"]) && r["type_mov_doser"] === "C") {
             return true;
@@ -282,7 +258,7 @@ const Action = ({ r, before, onClick }) => {
         }
         return false
     }
-
+/* 
     const Confirm = () => {
         let confirm = Modal.confirm();
         confirm.update({
@@ -294,7 +270,7 @@ const Action = ({ r, before, onClick }) => {
             </div>
         });
 
-    }
+    } */
 
     return (
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
@@ -302,7 +278,7 @@ const Action = ({ r, before, onClick }) => {
                 <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
             </>}
             {showAdd() && <>
-                <Dropdown overlay={menu}>
+                <Dropdown overlay={<Menu onClick={(e,v)=>onClick(r, e.key)} items={actionItems}/>}>
                        <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  *//>}/>
                 </Dropdown>
                 {/* <ButtonIcon size="small" onClick={
@@ -341,6 +317,7 @@ export default () => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
+    const modal = useModalv4();
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/consumptionneedloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
@@ -366,7 +343,7 @@ export default () => {
     }
 
 
-    const handleWndClick = async (bm, type, direction) => {
+    const handleWndClick = async (bm, type) => {
         let title = '';
 
         if (type === "lock") {
@@ -401,13 +378,17 @@ export default () => {
             return;
         }
 
-        if (type === "addlotes" && direction === "up") {
+        if (type === "up") {
             title = `Adicionar Lotes antes da bobinagem ${bm.nome}`;
         }
-        if (type === "addlotes" && direction === "down") {
+        if (type === "down") {
             title = `Adicionar Lotes após bobinagem ${bm.nome}`;
         }
-        Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
+        modal.show({
+            propsToChild: true, footer: null, height:"500px", title, width: "1300px", fullWidthDevice: 3,
+            content:<StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} />
+        });
+        //Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
     };
 
