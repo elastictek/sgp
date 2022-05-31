@@ -4,6 +4,7 @@ import { Space, Popconfirm, Popover, Button, Modal } from 'antd';
 import YScroll from './YScroll';
 import { MediaContext } from '../pages/App';
 import useMedia from 'utils/useMedia';
+
 import { BrowserRouter } from 'react-router-dom';
 
 const computeHeight = (height, footer) => {
@@ -72,7 +73,8 @@ export default ({ children, footer = false, noContext, propsToChild, ...props })
         setV(false);
     };
 
-    useEffect(() => { }, [v]);
+    useEffect(() => {}, [v]);
+    useEffect(() => {setV(visible);}, [visible]);
 
     const footerButtons = () => {
         if (footer === false) {
@@ -96,6 +98,7 @@ export default ({ children, footer = false, noContext, propsToChild, ...props })
                 onCancel={wrapWithClose(onCancel)}
                 onOk={wrapWithClose(onOk)}
                 maskClosable={maskClosable}
+                confirmLoading={true}
                 footer={footerButtons()}
                 destroyOnClose={destroyOnClose}
                 bodyStyle={bodyStyle ? ({ height: respHeight, ...bodyStyle }) : ({ height: respHeight })}

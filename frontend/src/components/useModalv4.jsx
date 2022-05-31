@@ -18,7 +18,9 @@ export default () => {
     }
 
     const update = (config) => {
-        modal.update(config);
+        if (modal) {
+            modal.update(config);
+        }
     }
 
     return { show, close, update };

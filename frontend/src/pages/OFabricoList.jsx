@@ -395,14 +395,7 @@ const TitleConfirm = ({ status, action, ofabrico }) => {
     );
 }
 
-const ContentConfirm = ({ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action }) => {
-
-    /*     
-        useEffect(() => {
-            console.log("ENTREIIII NO CONTENT CONFIRM")
-    
-        },[ofabrico]); */
-
+const ContentConfirm = ({cliente_nome, iorder, item, item_nome, produto_id, produto_cod, action }) => {
     if (produto_id) {
         return (<div>Confirmar a Ordem de Fabrico:
             <ul>
@@ -465,16 +458,15 @@ const ContentConfirm = ({ status, temp_ofabrico, cliente_cod, cliente_nome, iord
     );
 }
 
-const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
+const PromiseFormConfirm = ({ data, parentRef, closeSelf }) => {
     const [form] = Form.useForm();
-    const [confirmLoading, setConfirmLoading] = React.useState(false);
-    const [modalText, setModalText] = React.useState('Content of the modal');
-    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, onAction } = showConfirm.data;
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, produto_cod, action, onAction, item_nome, ofabrico, produto_id } = data;
     const [formStatus, setFormStatus] = useState({});
 
     useEffect(() => {
         if (!produto_id && ofabrico) {
-            let artigo = { artigo_thickness: THICKNESS, produto_cod: undefined, artigo_gtin: undefined, artigo_core: undefined, artigo_formu: undefined, artigo_nw1: undefined, artigo_nw2: undefined, artigo_width: undefined, artigo_diam: undefined, artigo_gram: undefined };
+            let artigo = { artigo_thickness: THICKNESS, produto_cod: item_nome.substring(0, item_nome.lastIndexOf(' L')), artigo_gtin: undefined, artigo_core: undefined, artigo_formu: undefined, artigo_nw1: undefined, artigo_nw2: undefined, artigo_width: undefined, artigo_diam: undefined, artigo_gram: undefined };
             const designacao = item_nome.split(' ').reverse();
             for (let v of designacao) {
                 if (v.includes("''") || v.includes("'")) {
@@ -507,56 +499,28 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
         }
     }, [ofabrico]);
 
-
-
-    // const confirm = async () => {
-    //     setConfirmLoading(true);
-    //     const response = await onAction(rowKey, record, action, () => { });
-    //     //const { ofabrico, ofabrico_sgp, ativa, completa } = record;
-    //     //const response = await fetchPost({ url: `${API_URL}/setofabricostatus/`, parameters: { ofabrico, ofabrico_sgp, ativa, completa } });
-    //     setConfirmLoading(false);
-    //     setEstadoRecord(false);
-    //     /*         if (response.data.status !== "error") {
-    //                 reloadParent();
-    //             } */
-    //     //openNotificationWithIcon(response.data);
-    // }
-
-    // const handleOk = (values) => {
-    //     console.log(values);
-    //     /* setModalText('The modal will be closed after two seconds');
-    //     setConfirmLoading(true);
-    //     setTimeout(() => {
-    //         setShowConfirm({ show: false, data: {} });
-    //         setConfirmLoading(false);
-    //     }, 2000); */
-    // };
-
-    const handleCancel = () => {
-        setShowConfirm({ show: false, data: {} });
-    };
-
     const onFinish = async (values) => {
         let response;
+        setConfirmLoading(true);
         let v;
-
         if (form.getFieldValue('type') === 'ignorar' && ofabrico) {
-            response = await onAction(showConfirm.data, 'ignorar');
+            response = await onAction(data, 'ignorar');
         } else if (!produto_id && ofabrico) {
             v = schemaConfirm().validate(values, { abortEarly: false });
             if (!v.error) {
-                response = await onAction(showConfirm.data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
+                response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
             }
         } else {
-            response = await onAction(showConfirm.data, action);
+            response = await onAction(data, action);
         }
         if (response?.data?.status === "error") {
             setFormStatus({ error: [{ message: response.data.title }] });
         } else {
             if (!v?.error) {
-                setShowConfirm({ show: false, data: {} });
+                closeSelf();
             }
         }
+        setConfirmLoading(false);
     }
 
     const onSubmit = (type = 'validar') => {
@@ -566,36 +530,37 @@ const PromiseConfirm = ({ showConfirm, setShowConfirm }) => {
 
     return (
         <>
-            <Modal
-                title={<TitleConfirm status={status} action={action} ofabrico={ofabrico} />}
-                visible={showConfirm.show}
-                //onOk={() => form.submit()}
-                centered
-                confirmLoading={confirmLoading}
-                //onCancel={handleCancel}
-                maskClosable={false}
-                footer={[
-                    <Button key="1" danger type="primary" onClick={() => onSubmit('ignorar')}>Ignorar</Button>,
-                    <Button key="2" onClick={handleCancel}>Cancelar</Button>,
-                    <Button key="3" type="primary" onClick={onSubmit}>Validar</Button>
-                ]}
-            >
-                <Form form={form} name={`fpi`} onFinish={onFinish} component="form">
-                    <AlertMessages formStatus={formStatus} />
-                    <ContentConfirm {...showConfirm.data} />
-                </Form>
-            </Modal>
+            <Form form={form} name={`fpi`} onFinish={onFinish} component="form">
+                <AlertMessages formStatus={formStatus} />
+                <ContentConfirm {...data} />
+            </Form>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button size="small" disabled={confirmLoading} danger type="primary" onClick={() => onSubmit('ignorar')}>Ignorar</Button>
+                    <Button size="small" disabled={confirmLoading} onClick={closeSelf}>Cancelar</Button>
+                    <Button size="small" disabled={confirmLoading} type="primary" onClick={onSubmit}>Validar</Button>
+                </Space>
+            </Portal>
+            }
         </>
     );
 };
 
 const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
     const { status, temp_ofabrico } = record;
+    const modal = useModalv4();
     const [action, setAction] = useState();
 
     const onShowConfirm = (action) => {
         const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
-        setShowConfirm({ show: true, data: { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction } });
+        modal.show({
+            propsToChild: true, footer: "ref",
+            maskClosable: false,
+            closable: false,
+            height:"300px",
+            title: <TitleConfirm status={status} action={action} ofabrico={ofabrico} />,
+            content: <PromiseFormConfirm data={{ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction }} />
+        });
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
@@ -606,9 +571,6 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico) && <>
                 <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
-                {/*                 <Dropdown overlay={() => menu(['ignorar'], onShowConfirm)} trigger={['click']}>
-                    <TagButton>...</TagButton>
-                </Dropdown> */}
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
                 <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
@@ -672,7 +634,8 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     const [formStatus, setFormStatus] = useState({});
 
     useEffect(() => {
-    }, []);
+        console.log(showMenuActions)
+    }, [showMenuActions]);
 
     const handleCancel = () => {
         setShowMenuActions({ show: false, data: {} });
@@ -688,6 +651,8 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
             maskClosable={true}
             destroyOnClose={true}
             fullWidthDevice={100}
+            height="100vh"
+            footer={null}
             bodyStyle={{ backgroundColor: "#f0f0f0" }}
         >
             <YScroll>
@@ -699,12 +664,12 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
 
 
 const actionItems = [
-    { label: 'Packing List', key: 'pl', icon:<ProfileOutlined style={{fontSize:"18px"}} /> },
-    { label: 'Packing List Detalhado', key: 'pld', icon:<ProfileOutlined style={{fontSize:"18px"}}/> }
+    { label: 'Packing List', key: 'pl', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
+    { label: 'Packing List Detalhado', key: 'pld', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> }
 ];
 
 const PackingListForm = ({ r, downloading, form }) => {
-    
+
 
     useEffect(() => {
         let f = null;
@@ -717,9 +682,9 @@ const PackingListForm = ({ r, downloading, form }) => {
         form.setFieldsValue(f);
     }, []);
 
-    useEffect(()=>{
+    useEffect(() => {
 
-    },[downloading]);
+    }, [downloading]);
 
     return (
         <Spin spinning={downloading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}>
@@ -750,7 +715,7 @@ const Action = ({ v, r, dataAPI }) => {
                 title = `Imprimir Packing List Detalhado ${r.prf}`
                 break;
         }
-        modal.show({ propsToChild: true, width: '500px', height: '200px', title, onOk:()=>onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')), }} /> });
+        modal.show({ propsToChild: true, width: '500px', height: '200px', title, onOk: () => onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
     }
 
 
@@ -879,11 +844,6 @@ export default () => {
                 console.log('suspender', record);
                 break;
         }
-
-
-
-        /* setPopupEstadoRecord(rowKey);
-        console.log("--->>", rowKey,action, record); */
     }
 
     const columns = setColumns(
@@ -900,7 +860,7 @@ export default () => {
                         iorder: { title: "Encomenda(s)", width: 130, ...common },
                         cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} showConfirm={showConfirm} setShowConfirm={setShowConfirm} onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
@@ -950,7 +910,7 @@ export default () => {
         <>
             <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
-                <PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} />
+                {/*<PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} /> */}
                 <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
                 {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
                 {/*                 <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
