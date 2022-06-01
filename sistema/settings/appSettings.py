@@ -8,15 +8,15 @@ class AppSettings:
     }
     dbAlias = {
         "postgres":{
-            "sgp":f'"SGP-TEST"',
+            "sgp":f'"SGP-PROD"',
             "sage":f'"SAGE-PROD"'
         }
     }
     reportConn = {
-        "sgp":"MYSQL-SGP-TEST",
+        "sgp":"MYSQL-SGP-PROD",
         "gw":"PG-SGP-GW"
     }
     materializedViews = {
-        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST_TEST'
+        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST'
     }
 

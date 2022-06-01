@@ -1122,7 +1122,7 @@ def ConsumptionNeedLogList(request, format=None):
                 CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
                 ld.type_mov type_mov_doser,
                 ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp,
-                sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id,ld.doser) qty_consumed_doser
+                sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id,ld.doser,ld.group_id) qty_consumed_doser
                 FROM {sgpAlias}.loteslinha ll
                 FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id    
                 LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
@@ -4793,7 +4793,6 @@ def SaidaDoser(request, format=None):
 @permission_classes([IsAuthenticated])
 def RectifyBobinagem(request, format=None):
     data = request.data.get("parameters")
-    
     def allowRectify(data,cursor):
         f = Filters({"idigd": data["ig_id"]})
         f.where()
