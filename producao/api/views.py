@@ -314,7 +314,7 @@ def OFabricoList(request, format=None):
         oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.status,
         sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
         sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
-		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,oflist.matricula,oflist.matricula_reboque
+		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,oflist.matricula,oflist.matricula_reboque,oflist.modo_exp
     """
 
 

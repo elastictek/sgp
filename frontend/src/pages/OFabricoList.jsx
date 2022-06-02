@@ -394,7 +394,7 @@ const TitleConfirm = ({ status, action, ofabrico }) => {
     );
 }
 
-const ContentConfirm = ({cliente_nome, iorder, item, item_nome, produto_id, produto_cod, action }) => {
+const ContentConfirm = ({ cliente_nome, iorder, item, item_nome, produto_id, produto_cod, action }) => {
     if (produto_id) {
         return (<div>Confirmar a Ordem de Fabrico:
             <ul>
@@ -556,7 +556,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
             propsToChild: true, footer: "ref",
             maskClosable: false,
             closable: false,
-            height:"300px",
+            height: "300px",
             title: <TitleConfirm status={status} action={action} ofabrico={ofabrico} />,
             content: <PromiseFormConfirm data={{ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction }} />
         });
@@ -677,6 +677,15 @@ const PackingListForm = ({ r, downloading, form }) => {
         if (r.matricula) {
             f = { container: r.matricula };
         }
+        if (r.modo_exp) {
+            let modo = "CONTAINER";
+            switch (r.modo_exp) {
+                case "1": modo = "CONTAINER"; break;
+                case "3": modo = "TRUCK"; break;
+                case "4": modo = "AIR"; break;
+            }
+            f = { ...f, modo_exp: modo };
+        }
         if (r.matricula_reboque) {
             f = { ...f, container_trailer: r.matricula_reboque };
         }
@@ -694,6 +703,7 @@ const PackingListForm = ({ r, downloading, form }) => {
                     <Field forInput={false} name="produto_cod" label={{ enabled: true, width: "60px", text: "Produto", pos: "top" }}><Input size="small" /></Field>
                     <Field name="container" label={{ enabled: true, width: "60px", text: "Container", pos: "top" }}><Input size="small" /></Field>
                     <Field name="container_trailer" label={{ enabled: true, width: "60px", text: "Trailer Container", pos: "top" }}><Input size="small" /></Field>
+                    <Field name="modo_exp" label={{ enabled: true, width: "60px", text: "Modo Expedição", pos: "top" }}><Input size="small" /></Field>
                 </FormLayout>
             </Form>
         </Spin>
@@ -722,7 +732,7 @@ const Action = ({ v, r, dataAPI }) => {
                 title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`
                 break;
         }
-        modal.show({ propsToChild: true, width: '500px', height: '200px', title, onOk: () => onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
+        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
     }
 
 
@@ -741,6 +751,7 @@ const Action = ({ v, r, dataAPI }) => {
                 "PRODUCT_ID": values.produto_cod,
                 "CONTAINER": values.container,
                 "CONTAINER-TRAILER": values.container_trailer,
+                "MODO-EXP": values.modo_exp,
                 "PRF_COD": r.prf
             }
         };
