@@ -718,25 +718,30 @@ const Action = ({ v, r, dataAPI }) => {
 
     const onModal = (item) => {
         let title = "";
+        let ext = "";
         switch (item.key) {
             case "pl-pdf":
-                title = `Imprimir Packing List <Pdf> ${r.prf}`
+                title = `Imprimir Packing List <Pdf> ${r.prf}`;
+                ext = "pdf";
                 break;
             case "pld-pdf":
-                title = `Imprimir Packing List Detalhado <Pdf> ${r.prf}`
+                title = `Imprimir Packing List Detalhado <Pdf> ${r.prf}`;
+                ext = "pdf";
                 break;
             case "pl-excel":
-                title = `Imprimir Packing List <Excel> ${r.prf}`
+                title = `Imprimir Packing List <Excel> ${r.prf}`;
+                ext = "xls";
                 break;
             case "pld-excel":
-                title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`
+                title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`;
+                ext = "xls";
                 break;
         }
-        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
+        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item,ext), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
     }
 
 
-    const onDownload = async (item) => {
+    const onDownload = async (item,ext) => {
         const values = form.getFieldsValue(true);
         setDownloading(true);
         const requestData = dataAPI.getPostRequest();
@@ -771,7 +776,7 @@ const Action = ({ v, r, dataAPI }) => {
         console.log(requestData.parameters)
         const response = await fetchPostBlob(requestData);
         setDownloading(false);
-        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.${item.key.split('-')[1]}`);
+        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.${ext}`);
     }
 
     return (
