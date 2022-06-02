@@ -672,12 +672,12 @@ const PackingListForm = ({ r, downloading, form }) => {
 
 
     useEffect(() => {
-        let f = null;
+        let f = {};
         if (r.matricula) {
             f = { container: r.matricula };
         }
         if (r.matricula_reboque) {
-            f = { container_trailer: r.matricula_reboque };
+            f = { ...f, container_trailer: r.matricula_reboque };
         }
         form.setFieldsValue(f);
     }, []);
@@ -733,6 +733,7 @@ const Action = ({ v, r, dataAPI }) => {
                 "TITLE": "PACKING LIST",
                 "PRODUCT_ID": values.produto_cod,
                 "CONTAINER": values.container,
+                "CONTAINER-TRAILER": values.container_trailer,
                 "PRF_COD": r.prf
             }
         };
