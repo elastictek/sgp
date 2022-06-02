@@ -41,7 +41,6 @@ const { Option } = Select;
 const { confirm } = Modal;
 import useModalv4 from 'components/useModalv4';
 
-
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { VerticalSpace } from 'components/formLayout';
@@ -664,8 +663,10 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
 
 
 const actionItems = [
-    { label: 'Packing List', key: 'pl', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
-    { label: 'Packing List Detalhado', key: 'pld', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> }
+    { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} /> },
+    { label: 'Packing List', key: 'pl-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} /> },
+    { label: 'Packing List Detalhado', key: 'pld-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} /> },
+    { label: 'Packing List Detalhado', key: 'pld-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} /> }
 ];
 
 const PackingListForm = ({ r, downloading, form }) => {
@@ -708,11 +709,17 @@ const Action = ({ v, r, dataAPI }) => {
     const onModal = (item) => {
         let title = "";
         switch (item.key) {
-            case "pl":
-                title = `Imprimir Packing List ${r.prf}`
+            case "pl-pdf":
+                title = `Imprimir Packing List <Pdf> ${r.prf}`
                 break;
-            case "pld":
-                title = `Imprimir Packing List Detalhado ${r.prf}`
+            case "pld-pdf":
+                title = `Imprimir Packing List Detalhado <Pdf> ${r.prf}`
+                break;
+            case "pl-excel":
+                title = `Imprimir Packing List <Excel> ${r.prf}`
+                break;
+            case "pld-excel":
+                title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`
                 break;
         }
         modal.show({ propsToChild: true, width: '500px', height: '200px', title, onOk: () => onDownload(item), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
@@ -728,7 +735,7 @@ const Action = ({ v, r, dataAPI }) => {
             ...requestData.parameters,
             "config": "default",
             "conn-name": "PG-SGP-GW",
-            "export": "pdf",
+            "export": item.key.split('-')[1],
             "data": {
                 "TITLE": "PACKING LIST",
                 "PRODUCT_ID": values.produto_cod,
@@ -738,7 +745,7 @@ const Action = ({ v, r, dataAPI }) => {
             }
         };
 
-        switch (item.key) {
+        switch (item.key.split('-')[0]) {
             case "pl":
                 requestData.parameters.name = "PACKING-LIST";
                 requestData.parameters.path = "PACKING-LIST/PACKING-LIST-MASTER";
@@ -753,7 +760,7 @@ const Action = ({ v, r, dataAPI }) => {
         console.log(requestData.parameters)
         const response = await fetchPostBlob(requestData);
         setDownloading(false);
-        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.pdf`);
+        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.${item.key.split('-')[1]}`);
     }
 
     return (
