@@ -6,7 +6,7 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
+import { getFilterRangeValues, getFilterForceRangeValues, getFilterValue, isValue } from 'utils';
 import uuIdInt from "utils/uuIdInt";
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
 import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField, SelectMultiField } from "components/formLayout";
@@ -21,7 +21,7 @@ import YScroll from "components/YScroll";
 import { MdAdjust } from 'react-icons/md';
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
@@ -30,53 +30,36 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
 const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
+import useModalv4 from 'components/useModalv4';
+import moment from 'moment';
 
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
+const schemaAdd = (keys, excludeKeys) => {
+    return getSchema({}, keys, excludeKeys).unknown(true);
+}
 
-const filterRules = (keys) => {return getSchema({}, keys).unknown(true);}
-const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
+const filterRules = (keys) => { return getSchema({}, keys).unknown(true); }
 const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
-    { fmulti_dosers: { label: 'Doseador Formulação', field: { type: 'selectmulti', size: 'small', options: DOSERS } } },
-    { fqty_lote: { label: "Qtd. Lote", field: { type: 'input', size: 'small' } } },
-    { fqty_lote_available: { label: "Qtd. Lote Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
-    { fqty_artigo_available: { label: "Qtd. Artigo Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
-    { fmulti_location: { label: 'Localização', field: { type: 'selectmulti', size: 'small', options: [{ value: "ARM", label: "ARM" }, { value: "BUFFER", label: "BUF" }] } } },
-    { fpicked: { label: 'Na Linha', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] } } }
+    { fdoser: { label: "Doseador", field: { type: 'input', size: 'small' } } }
 ];
 
-const ToolbarTable = ({ form, dataAPI, data, type }) => {
-    const navigate = useNavigate();
-
-    const onChange = (v) => {
-        form.submit();
-    }
-
+const ToolbarTable = ({ dataAPI, data, onSwitchChange }) => {
     const leftContent = (
-        <div style={{display:"flex",flexDirection:"row"}}>
-            <div style={{marginRight:"2px"}}>{type==="addlotes" ? "Entrada na Linha" : "Saída da Linha "}</div>
-            <div style={{marginRight:"2px"}}><b>{data.direction==="up" && "Antes de "}</b></div>
-            <div style={{marginRight:"2px"}}>{data.bobinagem_nome} </div>
-            {/* <button onClick={() => navigate(-1)}>go back</button> */}
-            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+            <Switch size="small" defaultChecked={false} onChange={onSwitchChange} /><div style={{marginLeft:"4px"}}>Lotes da Ùltima Ordem de Fabrico</div>
         </div>
     );
 
     const rightContent = (
         <Space>
             <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
-
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                {/* <Form form={form} initialValues={{ typelist: [] }}>
-                    <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
-                    </Form.Item>
-                </Form> */}
             </div>
         </Space>
     );
@@ -96,11 +79,10 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     ...vals,
                     fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
-                    fqty_lote: getFilterValue(vals?.fqty_lote, '=='),
-                    fqty_artigo_available: getFilterValue(vals?.fqty_artigo_available, '=='),
-                    fqty_lote_available: getFilterValue(vals?.fqty_lote_available, '==')
+                    fdoser: getFilterValue(vals?.fdoser, 'any'),
+                    ft_stamp: getFilterForceRangeValues(values["ft_stamp"]?.formatted),
                 };
-                dataAPI.addFilters(_values);
+                dataAPI.addFilters(_values, false);
                 dataAPI.addParameters({ typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
@@ -116,30 +98,14 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         }
     }
 
-    const pickedField = () => (
-        <SelectField
-            placeholder="Na Linha"
-            size="small"
-            dropdownMatchSelectWidth={250}
-            allowClear
-            options={[{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }]}
-        />
-    );
-
-    const locationField = () => (
-        <SelectMultiField
-            placeholder="Localização"
-            size="small"
-            dropdownMatchSelectWidth={250}
-            allowClear
-            options={[{ value: "ARM", label: "ARM" }, { value: "BUFFER", label: "BUF" }]}
-        />
-    );
     const artigosField = () => (
-        <Input size="small" />
+        <Input size="small" allowClear />
     );
     const lotesField = () => (
-        <Input size="small" />
+        <Input size="small" allowClear />
+    );
+    const doserField = () => (
+        <Input size="small" allowClear />
     );
 
     const downloadFile = (data, filename, mime, bom) => {
@@ -222,27 +188,27 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 <FormLayout
                     id="LAY-BOBINAGENS"
                     layout="horizontal"
-                    style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
+                    style={{ width: "800px", padding: "0px"/* , minWidth: "700px" */ }}
                     schema={schema}
-                    field={{ guides: false, wide: [3, 4, 3, 2, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
+                    field={{ guides: false, wide: [3, 3, 3, 4, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
                     fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                 >
-                    <Field name="fmulti_location" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Localização", pos: "top" }}>
-                        {locationField()}
-                    </Field>
                     <Field name="fartigo" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Artigo", pos: "top" }}>
                         {artigosField()}
                     </Field>
                     <Field name="flote" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote", pos: "top" }}>
                         {lotesField()}
                     </Field>
-                    <Field name="fpicked" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Na Linha", pos: "top" }}>
-                        {pickedField()}
+                    <Field name="fdoser" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Doseador", pos: "top" }}>
+                        {doserField()}
+                    </Field>
+                    <Field name="ft_stamp" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Início/Fim", pos: "top" }}>
+                        <RangeDateField size='small' />
                     </Field>
                     <FieldItem label={{ enabled: false }}>
                         <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
                             <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
+                            {/*                             <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button> */}
                         </ButtonGroup>
                     </FieldItem>
                     <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
@@ -264,6 +230,112 @@ const Formulacao = ({ data, rowIndex }) => {
     );
 }
 
+const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) => {
+    const [submitting, setSubmitting] = useState(false);
+    const [form] = Form.useForm();
+
+    useEffect(() => {
+        let _dosers = "";
+        let _group;
+        for (let itm of JSON.parse(record.frm)){
+            _dosers = `${_dosers},${itm["doseador"]}`;
+        }
+        _dosers = _dosers.split(',').filter(el => el).sort().join("");
+        if (_dosers=="A1"){
+
+        }
+
+
+        form.setFieldsValue({ qty_lote: record.QTYPCU_0, saida_mp: 1, date: moment(record.CREDATTIM_0, 'YYYY-MM-DD HH:mm'),lote_id:record.ROWID });
+    }, []);
+
+    const onValuesChange = () => {
+
+    }
+
+    const onSubmit = () => {
+        setSubmitting(true);
+        form.submit();
+    }
+
+    const onFinish = async (values) => {
+        console.log(values);
+        setSubmitting(false);
+        closeParent();
+        values.date = moment(values.date).format(DATETIME_FORMAT);
+        const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, ...values } });
+        parentDataAPI.fetchPost();
+    }
+
+    return (
+        <Form form={form} name={`fra`} onFinish={onFinish} onValuesChange={onValuesChange}>
+            <FormLayout
+                id="LAY-FRMADD"
+                layout="vertical"
+                style={{ width: "800px", padding: "0px"/* , minWidth: "700px" */ }}
+                schema={schemaAdd}
+                field={{ guides: false, wide: [8, 8], style: { marginLeft: "2px", alignSelf: "end" } }}
+                fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+            >
+
+                <FieldSet margin={false}>
+                    <Field required={true} wide={2} name="qty_lote" label={{ text: "Quantidade" }}><InputNumber size="small" min={1} max={2000} addonAfter="kg" /></Field>
+                </FieldSet>
+                <FieldSet margin={false}>
+                    <Field required={true} wide={3} label={{ text: "Data" }} name="date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></Field>
+                </FieldSet>
+                <FieldSet margin={false}>
+                    <Field required={true} wide={3} label={{ text: "Movimento Lote ID" }} name="lote_id"><InputNumber size="small" /></Field>
+                </FieldSet>
+                <FieldSet margin={false}>
+                    <Field required={true} wide={3} label={{ text: "Grupo (Cuba)" }} name="group_id"><InputNumber size="small" /></Field>
+                </FieldSet>
+                <FieldSet margin={false}>
+                    <Field name="saida_mp" label={{ enabled: true, text: "Saída de Matérias Primas existentes" }}>
+                        <SelectField size="small" data={[
+                            { label: "Apenas quando a Matéria Prima for diferente", value: 1 },
+                            { label: "Não dar saída", value: 2 },
+                            { label: "Dar saída", value: 3 }
+                        ]} keyField="value" textField="label"
+                            optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
+                        />
+                    </Field>
+                </FieldSet>
+
+                {parentRef && <Portal elId={parentRef.current}>
+                    <Space>
+                        <Button disabled={submitting} type="primary" onClick={onSubmit}>Registar</Button>
+                        <Button onClick={closeParent}>Fechar</Button>
+                    </Space>
+                </Portal>
+                }
+
+                {/*                 <Field name="fartigo" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Artigo", pos: "top" }}>
+                    {artigosField()}
+                </Field>
+                <Field name="flote" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote", pos: "top" }}>
+                    {lotesField()}
+                </Field>
+                <Field name="fdoser" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Doseador", pos: "top" }}>
+                    {doserField()}
+                </Field>
+                <Field name="ft_stamp" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Início/Fim", pos: "top" }}>
+                    <RangeDateField size='small' />
+                </Field>
+                <FieldItem label={{ enabled: false }}>
+                    <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
+                        <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
+                    </ButtonGroup>
+                </FieldItem>
+                <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
+                    <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
+                </Dropdown>
+                </FieldItem> */}
+            </FormLayout>
+        </Form>
+    );
+}
+
 /* const Ofs = ({ data, rowIndex }) => {
     const ofs = JSON.parse(data);
     console.log(ofs)
@@ -275,23 +347,33 @@ const Formulacao = ({ data, rowIndex }) => {
 } */
 
 const ColumnToLine = ({ record, dataAPI, data }) => {
+    const modal = useModalv4();
     const onClick = async () => {
-        console.log("recordddd",record,data);
         //{"group_id": "3462729180381184", "lote_id": "9589", "artigo_cod": "RVMAX0863000012","n_lote": "VM6202V21092801AB50296", "qty_lote": "650.00", "doser": "A1"}, 
         const _uid = uuIdInt(0).uuid();
         const pickItems = [];
+        console.log("/////////////////////////",record,data)
         for (let itm of JSON.parse(record.frm)) {
             for (let m of itm.doseador.split(',')) {
                 if (m) {
-                    const pick = { "group_id": _uid, "lote_id": record.ROWID, "artigo_cod": record.ITMREF_0, "n_lote": record.LOT_0, "qty_lote": record.QTYPCU_0, "doser": m, "order":data.order, id:data.id };
+                    const pick = { "group_id": _uid, "lote_id": record.ROWID, "artigo_cod": record.ITMREF_0, "n_lote": record.LOT_0, "qty_lote_buffer": record.QTYPCU_0, "doser": m, "order": data.order,"end_id":record?.end_id,"loteslinha_id":record?.id };
                     pickItems.push(pick);
                 }
             }
         }
+        console.log("-----",pickItems)
         if (pickItems.length > 0) {
-            console.log(data)
-            const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems,direction:data.direction,ig_id:data.ig_id,id:data.id } });
-            dataAPI.fetchPost();
+            modal.show({
+                propsToChild: true, footer: "ref",
+                //maskClosable: true,
+                //closable: true,
+                height: "300px",
+                title: `Entrada em Linha ${record.ITMDES1_0} - ${record.LOT_0}`,
+                content: <FormAdd record={record} parameters={{ pickItems, direction: data.direction, ig_id: data.ig_id }} parentDataAPI={dataAPI} />
+            });
+            //console.log(data)
+            //const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems,direction:data.direction,ig_id:data.ig_id,id:data.id } });
+            //dataAPI.fetchPost();
         }
     }
 
@@ -304,13 +386,15 @@ export default ({ type, data }) => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/stocklistbyigbobinagem/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: { ig_id:data?.ig_id }, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/stocklistbyigbobinagem/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: { ig_id: data?.ig_id, t_stamp: data?.t_stamp }, sort: [] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
     const [typeList, setTypeList] = useState();
+    const [lastOf, setLastOf] = useState(false);
 
     useEffect(() => {
+        console.log("-----", data)
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
@@ -321,22 +405,12 @@ export default ({ type, data }) => {
         return `${record.ROWID}`;
     }
 
-
-//     const typeListField = ({ onChange, setTypeList, typeList } = {}) => {
-//         return (
-//             <>
-// /*             <SelectMultiField
-//                     style={{ minWidth: "200px" }}
-//                     name="typelist"
-//                     size="small"
-//                     dropdownMatchSelectWidth={250}
-//                     allowClear
-//                     options={[{ value: "A", label: "Lotes na Linha" }, { value: "!A", label: "Lotes fora da Linha" }, { value: "B", label: "Artigos/Lotes na formulação" }, { value: "C", label: "Agrupar Por Artigo" }]}
-//                     onChange={onChange}
-//                 /> */
-//             </>
-//         );
-//     }
+    const onSwitchChange = (v) => {
+        setLastOf(v);
+        dataAPI.first();
+        dataAPI.addParameters({lastof:v,ig_id:data.ig_id},true);
+        dataAPI.fetchPost();
+    }
 
     const columns = setColumns(
         {
@@ -346,11 +420,12 @@ export default ({ type, data }) => {
             include: {
                 ...((common) => (
                     {
-                        action_line: { title: "", align: "center", width: 60, fixed:"left", render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} data={data} />, ...common },
+                        action_line: { title: "", align: "center", width: 60, fixed: "left", render: (v, r) => <ColumnToLine record={r} dataAPI={dataAPI} data={data} />, ...common },
                         ITMDES1_0: { title: "Matéria Prima", width: 190, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         LOT_0: { title: "Lote", width: 180, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         ITMREF_0: { title: "Cod. MP", width: 120, render: (v, r) => v, ...common },
                         QTYPCU_0: { title: "Qtd. Lote", width: 120, render: (v, r) => v && `${parseFloat(v).toFixed(2)} ${r.PCU_0}`, ...common },
+                        CREDATTIM_0: { title: "Data Buffer", width: 120, render: (v, r) => dayjs(v).format(DATETIME_FORMAT), ...common },
                         frm: { title: "Formulação", render: (v, r, i) => <Formulacao rowIndex={i} data={v} />, ...common }
                     }
                 ))({ idx: 1, optional: false })
@@ -361,9 +436,9 @@ export default ({ type, data }) => {
 
     return (
         <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-               {/*  <ToolbarTable form={formFilter} dataAPI={dataAPI} data={data} type={type}/> */}
-{/*                 {elFilterTags && <Portal elId={elFilterTags}>
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }} */ >
+                <ToolbarTable dataAPI={dataAPI} data={data} onSwitchChange={onSwitchChange} />
+                {/*                 {elFilterTags && <Portal elId={elFilterTags}>
                     <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                 </Portal>} */}
                 <Table
@@ -373,7 +448,7 @@ export default ({ type, data }) => {
                     stripRows
                     darkHeader
                     size="small"
-                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
+                    toolbar={!lastOf && <GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
                     selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
                     paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
                     dataAPI={dataAPI}

@@ -124,6 +124,7 @@ class TempOrdemFabrico(models.Model):
     prf_cod = models.CharField(max_length=25,verbose_name="Código PRF", null=True) #ADDED - CÓDIGO PRF SAGE ID
     cliente_cod = models.CharField(max_length=15,verbose_name="Código Cliente", null=True) #ADDED - CÓDIGO CLIENTE SAGE ID
     cliente_nome = models.CharField(max_length=80,verbose_name="Nome Cliente", null=True) #ADDED - NOME CLIENTE SAGE NOME
+    produto_alt = models.CharField(max_length=200,verbose_name="Designação de Produto Alternativo", null=True) #ADDED - Designação do Produto Alternativo
     item_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=True) #ADDED - CÓDIGO ARTIGO SAGE ID
     item_id = models.IntegerField(verbose_name="Id Artigo", null=True) #ADDED - Id ARTIGO
     produto = models.ForeignKey('producao.Produtos',on_delete=models.PROTECT,verbose_name="Id Produto") #ADDED - ID PRODUTO

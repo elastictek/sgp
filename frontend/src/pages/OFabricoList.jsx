@@ -593,7 +593,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
                 </Dropdown>
             </>} */}
             {status == 9 && <>
-                <Tag /* onClick={showPopConfirm}  */ style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</Tag>
+                <TagButton /* onClick={() => onShowMenuActions()} *//* onClick={showPopConfirm}  */ style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
                 {/*                 <Dropdown overlay={() => menu(['reabrir'], showPopconfirm)} trigger={['click']}>
                     <TagButton>...</TagButton>
                 </Dropdown> */}

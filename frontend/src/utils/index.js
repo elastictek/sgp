@@ -49,6 +49,24 @@ export const getFilterRangeValues = (data) => {
     return ret;
 }
 
+export const getFilterForceRangeValues = (data) => {
+    var ret = [];
+    if (!data?.startValue && !data?.endValue) {
+        return undefined;
+    }
+    if (data?.startValue) {
+        ret.push(`>=${data.startValue}`);
+    }else{
+        ret.push(`>=${data.endValue}`);
+    }
+    if (data?.endValue) {
+        ret.push(`<=${data.endValue}`);
+    }else{
+        ret.push(`<=${data.startValue}`);
+    }
+    return ret;
+}
+
 //type = any | start | end | exact
 export const getFilterValue = (v, type = 'exact') => {
     const val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;

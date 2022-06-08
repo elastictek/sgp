@@ -971,12 +971,12 @@ export default ({ aggId }) => {
     }, [dataSocket?.inproduction]);
 
 
-    // useEffect(() => {
-    //     /*         console.log("FORM-AGG->", ctx) */
-    //     const cancelFetch = cancelToken();
-    //     loadData({ aggId, token: cancelFetch });
-    //     return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
-    // }, []);
+    useEffect(() => {
+     /*         console.log("FORM-AGG->", ctx) */
+         const cancelFetch = cancelToken();
+         loadData({ aggId, token: cancelFetch });
+         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+     }, []);
 
     const loadData = (data = {}, type = "init") => {
         const { aggId, token } = data;

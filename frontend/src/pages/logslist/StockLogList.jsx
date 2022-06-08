@@ -27,14 +27,14 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 import { Wnd } from "./commons";
 const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobinagem'));
 
+import ButtonIcon from "components/buttonIcon";
 
-
-
+import useModalv4 from 'components/useModalv4';
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined,StopOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
@@ -300,12 +300,47 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
-const Action = ({ v, r, onClick }) => {
+/* const Action = ({ v, r, onClick }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             <Button onClick={() => onClick(r, "addlotes","up")} style={{ marginRight: "2px" }} size="small" icon={<UploadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Acima" />} />
             <Button onClick={() => onClick(r, "addlotes","down")} style={{ marginRight: "4px" }} size="small" icon={<DownloadOutlined style={{ fontSize: "16px" }} title="Adicionar Lotes Abaixo" />} />
             <div>{v}</div>
+        </div>
+    );
+} */
+
+const actionItems = [
+    { label: 'Adicionar Lote Acima', key: 'up' },
+    { label: 'Adicionar Lote Abaixo', key: 'down' },
+    { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
+];
+
+const Action = ({ r, before, onClick }) => {
+    const showAdd = () => {
+        if ((!before || before["nome"] !== r["nome"])  && r["type_mov"] === "C") {
+            return true;
+        }
+        return false;
+    }
+
+    const showOut = () => {
+        if (r["type_mov"] === "IN") {
+            return true;
+        }
+        return false
+    }
+
+    return (
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+            {showOut() && <>
+                <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
+            </>}
+            {showAdd() && <>
+                <Dropdown overlay={<Menu onClick={(e,v)=>onClick(r, e.key)} items={actionItems}/>}>
+                       <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  *//>}/>
+                </Dropdown>
+            </>}
         </div>
     );
 }
@@ -317,6 +352,7 @@ export default () => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
+    const modal = useModalv4();
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/stockloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [
@@ -348,12 +384,62 @@ export default () => {
     }
 
 
-    const handleWndClick = (bm, type, direction) => {
+/*     const handleWndClick = (bm, type, direction) => {
         let title = '';
         if (type==="addlotes"){
             title=`Stock Matérias Primas ${bm.ofs}`;
         } 
         setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order:bm.order, direction } });
+    }; */
+
+    const handleWndClick = async (bm, type) => {
+        let title = '';
+        console.log(bm,type);
+        //return;
+        if (type === "lock") {
+            Modal.confirm({
+                title: 'Bloquear Entrada?', content: <div>Tem a certeza que deseja bloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
+        }
+        if (type === "unlock") {
+            Modal.confirm({
+                title: 'Desbloquear Entrada?', content: <div>Tem a certeza que deseja desbloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
+        }
+        if (type === "rectify") {
+            console.log(bm);
+            const response = await fetchPost({ url: `${API_URL}/rectifybobinagem/`, parameters: { ig_id: bm.ig_bobinagem_id } });
+            if (response.data.status == "error") {
+                Modal.error({ title: 'Erro ao corrigir a bobinagem', content: response.data.title });
+            } else {
+                dataAPI.fetchPost();
+            }
+            return;
+        }
+        if (type === "removelote") {
+            Modal.confirm({
+                title: 'Dar Saída do Lote no doseador?', content: <div>Tem a certeza que deseja dar saída do lote no doseador<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
+                onOk: () => { }
+            });
+            return;
+        }
+
+        if (type === "up") {
+            title = `Adicionar Lotes antes da bobinagem ${bm.nome}`;
+        }
+        if (type === "down") {
+            title = `Adicionar Lotes após bobinagem ${bm.nome}`;
+        }
+        modal.show({
+            propsToChild: true, footer: null, height:"500px", title, width: "1300px", fullWidthDevice: 3,
+            content:<StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction:type,t_stamp:bm.t_stamp }} />
+        });
+        //Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
+        //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
     };
 
     const columns = setColumns(
@@ -381,8 +467,9 @@ export default () => {
                             ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
                         }),
                         ...(common.typeList == 'A' && {
+                            action: { title: "", width: 45, render: (v, r,i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
                             type_mov: { title: "Mov.", align: "center", width: 60, render: (v, r) => v, ...common },
-                            nome: { title: "Bobinagem", width: 180, render: (v, r) => <Action onClick={handleWndClick} v={v} r={r} />, ...common },
+                            nome: { title: "Bobinagem", width: 180, render: (v, r,i) => <b>{v}</b>, ...common },
                             ofs: { title: "Ordens Fabrico", width: "200", render: (v, r) => <div>{v && v.replaceAll('"', "")}</div>, ...common },
                             artigo_cod: { title: "Artigo", width: 250, render: (v, r) => v, ...common },
                             n_lote: { title: "Lote", width: 250, render: (v, r) => v, ...common },

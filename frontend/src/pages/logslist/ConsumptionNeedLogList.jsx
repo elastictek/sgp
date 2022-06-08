@@ -386,7 +386,7 @@ export default () => {
         }
         modal.show({
             propsToChild: true, footer: null, height:"500px", title, width: "1300px", fullWidthDevice: 3,
-            content:<StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction:type }} />
+            content:<StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction:type,t_stamp:bm.t_stamp }} />
         });
         //Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
@@ -414,7 +414,8 @@ export default () => {
                             qty_consumed: { title: "Qtd. Consumida", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                             qty_to_consume: { title: "Qtd. a Consumir", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
                             qty_reminder: { title: "Qtd. de Saída", width: 90, render: (v, r) => <Quantity v={v} unit="kg" />, ...common },
-                            group_id: { title: "Grupo", width: 60, render: (v, r) => v, ...common },
+                            group: { title: "Grupo", width: 100, render: (v, r) => v, ...common },
+                            closed: { title: "Fechado", width: 100, render: (v, r) => v, ...common },
                             ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
                         })
                     }
@@ -430,7 +431,7 @@ export default () => {
 
     return (
         <>
-            <Modalv4 />
+{/*             <Modalv4 /> */}
             <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
                 <Wnd show={showValidar} setShow={setShowValidar}>
                     {showValidar.type === "addlotes" && <Suspense fallback={<Spin />}><StockListByIgBobinagem type={showValidar.type} data={showValidar.data} closeSelf={handleWndCancel} /></Suspense>}
