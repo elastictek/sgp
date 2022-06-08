@@ -459,7 +459,7 @@ def SetOrdemFabricoStatus(request, format=None):
 @permission_classes([IsAuthenticated])
 def SellItemsDetailsGet(request, format=None):
     conn = connections["default"].cursor()
-    cols = ['pa.*,prod.produto_cod']
+    cols = ['pa.*, prod.produto_cod']
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
@@ -3915,6 +3915,32 @@ def SaveTempAgg(request, format=None):
         return Response({"status": "error", "title": "Erro ao Agrupar as Ordens de Fabrico!","value":e.args[len(e.args)-1]})
 
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+# @transaction.atomic()
+def SaveProdutoAlt(request, format=None):
+    data = request.data.get("parameters")
+    print(request.data)
+    id = data["artigo_id"] if "artigo_id" in data else None
+    des = data["produto_alt"] if "produto_alt" in data else None
+    
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                print("##################################")
+                print(des)
+                if id is not None and des is not None:
+                    dml = db.dml(TypeDml.UPDATE, {"produto":des}, "producao_artigo", {'id': f'=={id}'}, None, False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível alterar a designação do Produto no artigo!"})
+        return Response({"status": "success", "id": None, "title": f"A designação do Produto foi alterada com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Alterar a Designação do Produto no Artigo!"})
+
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -4542,18 +4568,6 @@ def PickManual(request, format=None):
 
                 for idx, item in enumerate(io):
 
-                    print("---------------------------------------------")
-                    print(idx)
-                    print("#############################################")
-                    print(item)
-                    print("#############################################")
-                    print(data)
-                    print("---------------------------------------------")
-
-
-                    #return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
-
-
                     order = order + 1
                     if data["saida_mp"]==1:
                         pass
@@ -4574,12 +4588,19 @@ def PickManual(request, format=None):
                         pass
 
                     if (item['mov']=='IN'):
+                        group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
+                        n_lote = data["n_lote"] if "n_lote" in data and data["n_lote"]!=item["n_lote"] else item["n_lote"]           
+                        lote_id_sage = data["id"] if "id" in data and data["id"] else item["lote_id"] 
+                        qty_lote_buffer = data["qty_lote_buffer"] if "qty_lote_buffer" in data and data["qty_lote_buffer"] else item["qty_lote"] 
+                        #print("----------------------------------------")
+                        #print({"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer})
+                        #print({"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":2222222222222,"qty_consumed":0})
+                        #return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
                         if item['end_id'] is None:
                             if item['loteslinha_id'] is None and item['loteid_doser'] is None:
                                 if  f'{item["lote_id"]}' not in _inline:
                                     print("INSERT IN LINE")
-                                    group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
-                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"`group`":group_id},"loteslinha",None,None,False)
+                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
                                     db.execute(dml.statement, cursor, dml.parameters)
                                     lastid = cursor.lastrowid
                                     _inline[f'{item["lote_id"]}'] = lastid                              
@@ -4589,10 +4610,9 @@ def PickManual(request, format=None):
                             if item['loteslinha_id'] is None or item['loteid_doser'] is None:
                                 if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
                                     print("INSERT IN LOTE DOSER")
-                                    group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
                                     order = order + 1
                                     linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
-                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
                                     db.execute(dml.statement, cursor, dml.parameters)
                                     _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
                         else:
@@ -4600,8 +4620,7 @@ def PickManual(request, format=None):
                             if item['loteslinha_id'] is None and item['loteid_doser'] is None:
                                 if  f'{item["lote_id"]}' not in _inline:
                                     print("INSERT IN LINE")
-                                    group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
-                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"`group`":group_id},"loteslinha",None,None,False)
+                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
                                     db.execute(dml.statement, cursor, dml.parameters)
                                     lastid = cursor.lastrowid
                                     _inline[f'{item["lote_id"]}'] = lastid                              
@@ -4611,10 +4630,9 @@ def PickManual(request, format=None):
                             if item['loteslinha_id'] is None or item['loteid_doser'] is None:
                                 if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
                                     print("INSERT IN LOTE DOSER")
-                                    group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
                                     order = order + 1
                                     linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
-                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":item["n_lote"],"lote_id":item["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
                                     db.execute(dml.statement, cursor, dml.parameters)
                                     _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
                             

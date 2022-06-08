@@ -8,7 +8,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule } from "components/formLayout";
 import Toolbar from "components/toolbar";
-import { Button, Spin, Input, Skeleton, Tooltip, InputNumber, DatePicker, TimePicker } from "antd";
+import { Button, Spin, Input, Skeleton, Tooltip, InputNumber, DatePicker, TimePicker, Form, Space,Modal } from "antd";
 const { TextArea } = Input;
 import { LoadingOutlined, EditOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, ENROLAMENTO_OPTIONS, TIPOEMENDA_OPTIONS } from 'config';
@@ -17,7 +17,9 @@ import { dateTimeDiffValidator } from "utils/schemaValidator";
 import { OFabricoContext } from './FormOFabricoValidar';
 import { MediaContext } from '../../App';
 import moment from 'moment';
-
+import { getSchema } from "utils/schemaValidator";
+import useModalv4 from 'components/useModalv4';
+import Portal from "components/portal";
 
 const loadArtigoDetail = async ({ item_cod, item_nome, produto_cod }, token) => {
     let artigo = {};
@@ -37,7 +39,8 @@ const loadArtigoDetail = async ({ item_cod, item_nome, produto_cod }, token) => 
             "artigo_gram": rows[0].gsm,
             "artigo_gtin": rows[0].gtin,
             "artigo_thickness": rows[0].thickness,
-            "produto_cod": rows[0].produto_cod,
+            "produto_cod": (rows[0].produto!==rows[0].produto_cod) ? rows[0].produto : rows[0].produto_cod,
+            "produto_alt": rows[0].produto,
         };
     } else {
         const designacao = item_nome.split(' ').reverse();
@@ -69,8 +72,65 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const schemaProdAlt = (keys, excludeKeys) => {
+    return getSchema({}, keys, excludeKeys).unknown(true);
+}
+const FormProdutoAlt = ({ artigo_id, produto_alt, artigo_des, parentRef, closeParent, updateParent }) => {
+    const [submitting, setSubmitting] = useState(false);
+    const [form] = Form.useForm();
+
+    useEffect(() => {
+        form.setFieldsValue({ produto_alt });
+    }, []);
+
+    const onSubmit = () => {
+        setSubmitting(true);
+        form.submit();
+    }
+
+    const onFinish = async (values) => {
+        const response = await fetchPost({ url: `${API_URL}/saveprodutoalt/`, parameters: { artigo_id, ...values } });
+        if (response.data.status == "error") {
+            Modal.error( {title: 'Erro ao Atualizar a Designação', content: response.data.title});
+        } else {
+            updateParent(values.produto_alt);
+            Modal.success( {title: 'Designação Alterada com Sucesso', content: response.data.title});
+        }
+        setSubmitting(false);
+        closeParent();    
+    }
+
+    return (
+        <Form form={form} name={`palt`} onFinish={onFinish}>
+            <FormLayout
+                id="LAY-FRMPALT"
+                layout="vertical"
+                style={{ width: "100%", padding: "0px" }}
+                schema={schemaProdAlt}
+                field={{ guides: false, wide: [16], style: {} }}
+                fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+            >
+                <FieldItem></FieldItem>
+                <FieldSet margin={false}>
+                    <Field required={true} name="produto_alt" label={{ text: "Designação do Produto" }}><Input size="small" /></Field>
+                </FieldSet>
+
+                {parentRef && <Portal elId={parentRef.current}>
+                    <Space>
+                        <Button disabled={submitting} type="primary" onClick={onSubmit}>Registar</Button>
+                        <Button onClick={closeParent}>Fechar</Button>
+                    </Space>
+                </Portal>
+                }
+            </FormLayout>
+        </Form>
+    );
+}
+
 export default ({ /* record, form, guides, schema, */ changedValues, /* nonwovensChangedValues, fieldStatus */ }) => {
     const { form, guides, schema, fieldStatus, ...ctx } = useContext(OFabricoContext);
+    const modal = useModalv4();
+
     /* const mediaCtx = useContext(MediaContext); */
 
     const [loading, setLoading] = useState(true);
@@ -126,6 +186,15 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
         }
     }
 
+    const updateProdutoCod = (des) => {
+        form.setFieldsValue({ produto_cod: des });
+    }
+
+    const changeProdutoAlt = () => {
+        const data = { artigo_des: ctx.item_nome, ...form.getFieldsValue(["artigo_id", "produto_alt"]) };
+        modal.show({ propsToChild: true, footer: "ref", width: "450px", fullWidthDevice: 2, responsive: true, height: "250px", title: "Alterar Designação do Produto no artigo", content: <FormProdutoAlt {...data} updateParent={updateProdutoCod} /> })
+    }
+
     return (
         <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
             {!loading &&
@@ -152,7 +221,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                         }}
                     >
                         <FieldSet margin={false} layout="vertical">
-                            <HorizontalRule title="1. Artigo" description={form.getFieldValue("produto_cod")} />
+                            <HorizontalRule title="1. Artigo" description={<a onClick={changeProdutoAlt}>{form.getFieldValue("produto_cod")}</a>} />
                             {/* <FieldSet margin={false}>
                                 <Field wide={16} forInput={false} required={false} label={{ text: "Produto" }} name="produto_cod"><Input size="small" /></Field>
                             </FieldSet> */}

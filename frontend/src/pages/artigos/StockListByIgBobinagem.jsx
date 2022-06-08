@@ -51,7 +51,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
 const ToolbarTable = ({ dataAPI, data, onSwitchChange }) => {
     const leftContent = (
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-            <Switch size="small" defaultChecked={false} onChange={onSwitchChange} /><div style={{marginLeft:"4px"}}>Lotes da Ùltima Ordem de Fabrico</div>
+            <Switch size="small" defaultChecked={false} onChange={onSwitchChange} /><div style={{ marginLeft: "4px" }}>Lotes da Ùltima Ordem de Fabrico</div>
         </div>
     );
 
@@ -237,16 +237,29 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
     useEffect(() => {
         let _dosers = "";
         let _group;
-        for (let itm of JSON.parse(record.frm)){
+        for (let itm of JSON.parse(record.frm)) {
             _dosers = `${_dosers},${itm["doseador"]}`;
         }
         _dosers = _dosers.split(',').filter(el => el).sort().join("");
-        if (_dosers=="A1"){
-
+        console.log("ddddd", _dosers)
+        if (_dosers == "A1") {
+            _group = 1;
+        } else if (_dosers == "A2") {
+            _group = 2;
+        } else if (_dosers == "A3B5C5") {
+            _group = 3;
+        } else if (_dosers == "A6B6C6") {
+            _group = 4;
+        } else if (_dosers == "B2C2") {
+            _group = 5;
+        } else if (_dosers == "B1C1") {
+            _group = 6;
+        } else if (_dosers == "B3C3") {
+            _group = 7;
         }
 
 
-        form.setFieldsValue({ qty_lote: record.QTYPCU_0, saida_mp: 1, date: moment(record.CREDATTIM_0, 'YYYY-MM-DD HH:mm'),lote_id:record.ROWID });
+        form.setFieldsValue({ qty_lote: record.QTYPCU_0, saida_mp: 1, date: moment(record.CREDATTIM_0, 'YYYY-MM-DD HH:mm'), lote_id: record.ROWID, n_lote: record.LOT_0,group_id:_group });
     }, []);
 
     const onValuesChange = () => {
@@ -259,12 +272,13 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
     }
 
     const onFinish = async (values) => {
-        console.log(values);
+        console.log("111111", { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, qty_lote_buffer: record.QTYPCU_0, ...values });
+        values.date = moment(values.date).format(DATETIME_FORMAT);
+        const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, qty_lote_buffer: record.QTYPCU_0, ...values } });
         setSubmitting(false);
         closeParent();
-        values.date = moment(values.date).format(DATETIME_FORMAT);
-        const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, ...values } });
         parentDataAPI.fetchPost();
+
     }
 
     return (
@@ -286,6 +300,7 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
                 </FieldSet>
                 <FieldSet margin={false}>
                     <Field required={true} wide={3} label={{ text: "Movimento Lote ID" }} name="lote_id"><InputNumber size="small" /></Field>
+                    <Field forInput={record.ITMREF_0.startsWith("R000")} required={true} wide={6} label={{ text: "Nº Lote" }} name="n_lote"><Input size="small" /></Field>
                 </FieldSet>
                 <FieldSet margin={false}>
                     <Field required={true} wide={3} label={{ text: "Grupo (Cuba)" }} name="group_id"><InputNumber size="small" /></Field>
@@ -352,16 +367,16 @@ const ColumnToLine = ({ record, dataAPI, data }) => {
         //{"group_id": "3462729180381184", "lote_id": "9589", "artigo_cod": "RVMAX0863000012","n_lote": "VM6202V21092801AB50296", "qty_lote": "650.00", "doser": "A1"}, 
         const _uid = uuIdInt(0).uuid();
         const pickItems = [];
-        console.log("/////////////////////////",record,data)
+        console.log("/////////////////////////", record, data)
         for (let itm of JSON.parse(record.frm)) {
             for (let m of itm.doseador.split(',')) {
                 if (m) {
-                    const pick = { "group_id": _uid, "lote_id": record.ROWID, "artigo_cod": record.ITMREF_0, "n_lote": record.LOT_0, "qty_lote_buffer": record.QTYPCU_0, "doser": m, "order": data.order,"end_id":record?.end_id,"loteslinha_id":record?.id };
+                    const pick = { "group_id": _uid, "lote_id": record.ROWID, "artigo_cod": record.ITMREF_0, "n_lote": record.LOT_0, "qty_lote_buffer": record.QTYPCU_0, "doser": m, "order": data.order, "end_id": record?.end_id, "loteslinha_id": record?.id };
                     pickItems.push(pick);
                 }
             }
         }
-        console.log("-----",pickItems)
+        console.log("-----", pickItems)
         if (pickItems.length > 0) {
             modal.show({
                 propsToChild: true, footer: "ref",
@@ -408,7 +423,7 @@ export default ({ type, data }) => {
     const onSwitchChange = (v) => {
         setLastOf(v);
         dataAPI.first();
-        dataAPI.addParameters({lastof:v,ig_id:data.ig_id},true);
+        dataAPI.addParameters({ lastof: v, ig_id: data.ig_id }, true);
         dataAPI.fetchPost();
     }
 

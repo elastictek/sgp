@@ -308,47 +308,8 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
     );
 }
 
-// const TitlePopup = ({ status, action, ofabrico }) => {
-//     /*     if (ativa == 1 && completa == 0){
-//             return <div><b>Finalizar</b> a Ordem de Fabrico?</div>
-//         }
-//         if (ativa == 0 && completa == 0){
-//             return <div><b>Iniciar</b> a Ordem de Fabrico?</div>
-//         } */
-//     return (
-//         <div style={{ display: "flex", flexDirection: "row" }}>
-//             <div><ExclamationCircleOutlined /></div>
-//             <div style={{ display: "flex", flexDirection: "column" }}>
-//                 <div><h3><b style={{ textTransform: "capitalize" }}>{action}</b> a Ordem de Fabrico?</h3></div>
-//                 <div style={{ color: "#1890ff" }}>{ofabrico}</div>
-//             </div>
-//         </div>
-//     );
 
-// }
-
-
-/* const menu = (action, showPopconfirm) => {
-    return (
-        <Menu onClick={(k) => showPopconfirm(k.key)}>
-            {action.includes('ignorar') &&
-                <Menu.Item key="ignorar" icon={<FcCancel size="18px" />}>Ignorar</Menu.Item>
-            }
-            {action.includes('reabrir') &&
-                <Menu.Item key="reabrir" icon={<FcUnlock size="18px" />}>Reabrir</Menu.Item>
-            }
-            {action.includes('suspender') &&
-                <Menu.Item key="suspender" icon={<FcClock size="18px" />}>A Aguardar...</Menu.Item>
-            }
-            {action.includes('iniciar') &&
-                <Menu.Item key="iniciar" icon={<FcAdvance size="18px" />}>Em Curso...</Menu.Item>
-            }
-        </Menu>
-    );
-} */
-
-
-const ColumnProgress = ({ record, type }) => {
+/* const ColumnProgress = ({ record, type }) => {
     let current, total;
     let showProgress = (record.ativa == 1 && record.completa == 0) ? true : false;
     if (type === 1) {
@@ -367,7 +328,7 @@ const ColumnProgress = ({ record, type }) => {
             <ProgressBar value={current} max={total} />
             : <div style={{ textAlign: "center" }}>{current}/{total}</div>}
     </>);
-}
+} */
 
 const schemaConfirm = (keys, excludeKeys) => {
     return getSchema({

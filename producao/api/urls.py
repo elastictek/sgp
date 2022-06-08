@@ -107,6 +107,8 @@ urlpatterns = [
     re_path(r'^tempofabricoget/$', views.TempOFabricoGet),
     re_path(r'^tempaggofabricolookup/$', views.TempAggOFabricoLookup),
     re_path(r'^ignorarordemfabrico/$', views.IgnorarOrdemFabrico),
+    re_path(r'^saveprodutoalt/$', views.SaveProdutoAlt),
+    
 
     re_path(r'^downloadfile/$', views.download_file),
     
