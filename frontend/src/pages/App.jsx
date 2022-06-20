@@ -17,8 +17,9 @@ const OFabricoList = lazy(() => import('./OFabricoList'));
 const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
 const StockList = lazy(() => import('./artigos/StockList'));
+const StockListBuffer = lazy(() => import('./artigos/StockListBuffer'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
-const FormLotes = lazy(() => import('./currentline/FormLotes'));
+const FormPickMP = lazy(() => import('./currentline/FormPickMP'));
 const LineLogList = lazy(() => import('./logslist/LineLogList'));
 const StockLogList = lazy(() => import('./logslist/StockLogList'));
 const ConsumptionNeedLogList = lazy(() => import('./logslist/ConsumptionNeedLogList'));
@@ -47,9 +48,10 @@ const RenderRouter = () => {
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
-                { path: "pick", element: <Suspense fallback={<Spin />}><FormLotes /></Suspense> },
+                { path: "pick", element: <Suspense fallback={<Spin />}><FormPickMP /></Suspense> },
                 { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
                 { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
+                { path: "stocklistbuffer", element: <Suspense fallback={<Spin />}><StockListBuffer /></Suspense> },
                 { path: "logslist/lineloglist", element: <Suspense fallback={<Spin />}><LineLogList /></Suspense> },
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
                 { path: "logslist/comsumptionneedloglist", element: <Suspense fallback={<Spin />}><ConsumptionNeedLogList /></Suspense> },

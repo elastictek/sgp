@@ -136,13 +136,21 @@ urlpatterns = [
     re_path(r'^consumptionneedloglist/$', views.ConsumptionNeedLogList),
     re_path(r'^rectifybobinagem/$', views.RectifyBobinagem),
     re_path(r'^lotesavailable/$', views.LotesAvailable),
+    re_path(r'^getconsumosbobinagenslookup/$', views.GetConsumosBobinagensLookup),
+    
     
     
     #PICAGEM LOTES
 
     #MATERIAS-PRIMAS
     re_path(r'^stocklist/$', views.StockList),
+    re_path(r'^stocklistbuffer/$', views.StockListBuffer),
     re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
+    re_path(r'^mpginout/$', views.MPGranuladoIO),
+    re_path(r'^pickmp/$', views.PickMP),
+    re_path(r'^printmpbuffer/$', views.PrintMPBuffer),
+    
+    
     #MATERIAS-PRIMAS
 
     #REPORTS

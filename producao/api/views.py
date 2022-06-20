@@ -16,6 +16,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
+#import cups
+import tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -108,6 +110,7 @@ def download_file(request):
     dt = datetime.now().strftime("%Y%m%d-%H%M%S")
     fs = FileSystemStorage()
     path = fs.open(f,'rb')
+
     # # Define text file name
     filename = f'{t.replace(" ",".")}_{str(i)}_{dt}'
     mime_type, _ = mimetypes.guess_type(f)
@@ -239,6 +242,23 @@ def ExportFile(request, format=None):
         return resp
 
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def PrintMPBuffer(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    
+    print(request.data)
+    tmp = tempfile.NamedTemporaryFile()
+    print(tmp)
+    print(tmp.name)
+    #fstream = requests.post('http://localhost:8080/ReportsGW/run', json=req)
+    #p = request.data["parameters"]
+    #req = {**p}
+    #conn = cups.Connection()
+    #conn.printFile(printer_name,'/home/pi/Desktop/a.pdf',"",{}) 
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -616,6 +636,84 @@ def IgnorarOrdemFabrico(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
+def StockListBuffer(request, format=None):
+    connection = connections[connGatewayName].cursor()    
+    
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    print(request.data['filter'])
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        # "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        # "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        # "qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        # "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        # "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['matprima_cod', 'matprima_des']}
+    }, False, "and" if f.hasFilters else False)    
+
+    def filterLocationMultiSelect(data,name,field):
+        f = Filters(data)
+        fP = {}
+        v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+        dt = [o['value'] for o in v]
+        value = 'in:' + ','.join(f"{w}" for w in dt)
+        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ST.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value()
+        return f
+    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"')
+
+
+
+    #parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
+    parameters = {**f.parameters}
+    
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    cols = f'''*'''
+    sql = lambda p, c, s: (
+        f"""
+        SELECT {c(f'{cols}')} FROM(
+            WITH LOTESAVAILABLE AS(
+                SELECT
+                ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
+                SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+                ST."QTYPCU_0",ST."PCU_0"
+                FROM {sageAlias}."STOJOU" ST
+                WHERE ST."LOC_0" in ('BUFFER') OR ST."ITMREF_0" LIKE 'R000%%' --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
+            )
+            select LOTESAVAILABLE.*,mprima."ITMDES1_0"
+            from LOTESAVAILABLE
+            JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"
+            where (QTY_SUM > 0)
+        ) t
+         {f.text}
+        {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    print(sql)
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def StockList(request, format=None):
     connection = connections[connGatewayName].cursor()    
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
@@ -872,7 +970,7 @@ def StockListByIgBobinagem(request, format=None):
                 --ST."PCU_0",ST."QTYPCU_0",mprima."ITMDES1_0",ST."ITMREF_0",ST."LOT_0", ST."ROWID",MP.frm
                 FROM {sageAlias}."STOJOU" ST
                 JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
-                {f3.text.replace(" __date","::date")} AND 
+                AND --{f3.text.replace(" __date","::date")} AND 
                 ST."LOC_0" in ('BUFFER') AND NOT EXISTS(SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
                 union
                 SELECT
@@ -1110,9 +1208,7 @@ def OFabricoTimeLineList(request, format=None):
     )
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    print("ssssssssssssssssssssssssssssssssssssssssssssssssss")
-    print(sql)
-    print(parameters)
+
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
@@ -1123,8 +1219,22 @@ def OFabricoTimeLineList(request, format=None):
 def LineLogList(request, format=None):
     connection = connections["default"].cursor()    
     #typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+    
+    fduracao=None
+    fd=None
+    if "fduracao" in request.data['filter']:
+        pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
+        result = re.match(pattern, request.data['filter'].get('fduracao'), re.IGNORECASE)
+        fduracao=f"{result.group(1)}TIME_TO_SEC('{result.group(2)}')"
+        fd=f"TIME_TO_SEC('{result.group(2)}')"
+
     f = Filters(request.data['filter'])
     f.setParameters({
+        
+        # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        #"nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        "duracao": {"value": lambda v: fduracao, "field": lambda k, v: f'(TIMESTAMPDIFF(SECOND,ig.inicio_ts,ig.fim_ts))'},
+        
         #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
         **rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
         **rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
@@ -1137,7 +1247,8 @@ def LineLogList(request, format=None):
     f.where()
     f.auto()
     f.value("and")
-
+    if fduracao:
+        f.text = f.text.replace("%(auto_duracao)s",fd)
 
     def filterEventoMultiSelect(data,name,field,hasFilters):
         f = Filters(data)
@@ -1181,31 +1292,56 @@ def LineLogList(request, format=None):
 @permission_classes([IsAuthenticated])
 def ConsumptionNeedLogList(request, format=None):
     connection = connections[connGatewayName].cursor()
+
     f = Filters(request.data['filter'])
     f.setParameters({
-        #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
-        #**rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
-        #**rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
-        #"bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
-        #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-        #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
-        #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
-        #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+        **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'{k}::date'),
+        **rangeP( f.filterData.get('ftime'), ['t_stamp','t_stamp'], lambda k, v: f'{k}::time', lambda k, v: f"extract(epoch from ({k[1]}::time - {k[0]}::time))::integer/60",'ftime'),
+        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'{k}'},
+        "closed": {"value": lambda v: f"=={v.get('festado')}" if 'festado' in v else "==0", "field": lambda k, v: f'{k}'}
     }, True)
-    f.where()
+    f.where(False,"and")
     f.auto()
-    f.value("and")
+    f.value()
+
+    def filterTipoMovMultiSelect(data,name,relname):
+        f = Filters(data)
+        frel = "and"
+        op = "=="
+        if relname in data:
+            if data[relname]=="ou":
+                frel = "or"
+            if data[relname]=="!ou":
+                frel = "or"
+                op = "!=="
+            if data[relname]=="!e":
+                frel = "and"
+                op = "!=="
+        
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+            print(dt)
+            for idx,v in enumerate(dt):
+                fP[f"ftipomov_{idx}"] = {"key": f"ftipomov_{idx}", "value": f"{op}{v}", "field": lambda k, v: f'type_mov_doser'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value(frel)
+        return f
+
+    ftipomov = filterTipoMovMultiSelect(request.data['filter'],'ftipomov','freltipomov')
 
     sgpAlias = dbgw.dbAlias.get("sgp")
     sageAlias = dbgw.dbAlias.get("sage")
-    parameters = {**f.parameters}
+    parameters = {**f.parameters,**ftipomov.parameters}
     dql = dbgw.dql(request.data, False)
 
     cols = f'''*'''
     sql = lambda p, c, s: (f"""
             SELECT {c(f'{cols}')} FROM (
                 SELECT row_number() over() rowid,ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,ll.lote_id,ld.status,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+                --CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
                 ld.type_mov type_mov_doser,
                 ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp,
                 sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id,ld.doser,ld.group_id) qty_consumed_doser,ld.closed
@@ -1214,7 +1350,7 @@ def ConsumptionNeedLogList(request, format=None):
                 LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
                 ORDER BY ld."order"
             ) t
-            WHERE (lote_id is null OR type_mov_doser IN('IN','OUT') OR (qty_to_consume + qty_consumed_doser)<>0) and closed=0
+            WHERE (lote_id is null OR type_mov_doser IN('IN','OUT') OR (qty_to_consume + qty_consumed_doser)<>0) {f.text} {ftipomov.text}
             {s(dql.sort)} {p(dql.paging)}
     """)
 
@@ -3243,7 +3379,9 @@ def sgpForProduction(data,aggid,user,cursor):
             ) gamaoperatoria,
             (SELECT JSON_ARRAYAGG(JSON_OBJECT('agg_of_id', tof.agg_of_id,'agg_ofid_original', tof.agg_ofid_original,'cliente_cod', tof.cliente_cod,'cliente_nome', 
             tof.cliente_nome,'core_cod', tof.core_cod,'core_des', tof.core_des,'emendas_id', tof.emendas_id,'draft_of_id', tof.id,'item_cod', tof.item_cod,'item_id', tof.item_id,
-            'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,'n_voltas', tof.n_voltas,'of_cod', tof.of_id,'order_cod', 
+            'linear_meters', tof.linear_meters,'n_paletes', tof.n_paletes,'n_paletes_total', tof.n_paletes_total,
+            'n_bobines_palete',(SELECT SUM(v) FROM JSON_TABLE(tof.n_paletes, '$.items[*].num_bobines' COLUMNS (v INT PATH '$')) t),
+            'n_voltas', tof.n_voltas,'of_cod', tof.of_id,'order_cod', 
             tof.order_cod,'paletizacao_id', tof.paletizacao_id,'prf_cod', tof.prf_cod,'produto_id', tof.produto_id,'qty_encomenda', tof.qty_encomenda,
             'sqm_bobine', tof.sqm_bobine,'of_id',pop.id,'item_des',pa.des,'produto_id',pa.produto_id,'produto_cod',ppr.produto_cod,'artigo_id', pa.id, 
             'artigo_cod', pa.cod, 'artigo_des', pa.des, 'artigo_tipo', pa.tipo, 'artigo_gtin', pa.gtin, 'artigo_core', pa.core, 'artigo_diam_ref', pa.diam_ref, 'artigo_formu', pa.formu, 'artigo_gsm', pa.gsm, 
@@ -3929,8 +4067,6 @@ def SaveProdutoAlt(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                print("##################################")
-                print(des)
                 if id is not None and des is not None:
                     dml = db.dml(TypeDml.UPDATE, {"produto":des}, "producao_artigo", {'id': f'=={id}'}, None, False)
                     db.execute(dml.statement, cursor, dml.parameters)
@@ -4412,9 +4548,128 @@ def FixSimulatorList(request, format=None):
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def GetConsumosBobinagensLookup(request, format=None):
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where(True,"and")
+    f.add(f'pbm.nome like :fbobinagem',  lambda v:(v!=None))
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                SELECT distinct pbm.nome,ig.t_stamp,ig.id 
+                FROM lotesdosers ld
+                JOIN ig_bobinagens ig on ld.ig_bobinagem_id = ig.id
+                JOIN producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+                WHERE ld.`status`<>0 and ld.closed=0
+                {f.text}
+                order by ig.t_stamp
+                {dql.limit}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def MPGranuladoIO(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+       # **rangeP(f.filterData.get('forderdate'), 'ORDDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #**rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #"LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
+       #"status": {"value": lambda v: statusFilter(v.get('ofstatus')), "field": lambda k, v: f'"of"."{k}"'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+    parameters = {**f.parameters}
+
+    dql = dbgw.dql(request.data, False)
+    cols = f'''*'''
+    dql.columns=encloseColumn(cols,False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    response = dbgw.executeList(lambda p, c, s: (
+        f"""
+            select distinct {c(f'{dql.columns}')} from(
+            select ld.id,ld.type_mov,mprima."ITMDES1_0",ld.artigo_cod,ld.n_lote,ld.t_stamp,ll.qty_lote,
+            STRING_AGG (ld.doser,',') OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) dosers,
+            MAX(ld."order") OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
+            ld."order"
+            from {sgpAlias}.lotesdosers ld
+            JOIN {sgpAlias}.loteslinha ll on ll.id=ld.loteslinha_id
+            LEFT JOIN {sageAlias}."ITMMASTER" mprima ON mprima."ITMREF_0"=ld.artigo_cod
+            WHERE ld.type_mov in ('IN','OUT','END') AND ld.closed=0 AND ld."status"<>0
+            ) t
+            where "order" = max_order
+            {f.text}
+            {s(dql.sort)} {p(dql.limit)}            
+        """
+    ), connection, parameters)
+
+    return Response(response)
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def PickMP(request, format=None):
+    data = request.data['parameters']
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                group=9999
+                if data["source"] == "A1":
+                    group = 1
+                elif data["source"] == "A2":
+                    group = 2
+                elif data["source"] == "A3;B5;C5":
+                    group = 3
+                elif data["source"] == "A6;B6;C6":
+                    group = 4
+                elif data["source"] == "B2;C2":
+                    group = 5
+                elif data["source"] == "B1;C1":
+                    group = 6
+                elif data["source"] == "B3;C3":
+                    group = 7
+                reciclado = 0
+                if data["artigo_cod"].startswith("R000"):
+                    reciclado = 1
+                #{'source': 'A3;B3', 'artigo_cod': 'AAAA', 'n_lote': 'AAAAA', 'qty': '44'}
+                lote_id = data["lote_id"] if "lote_id" in data else None
+                tstamp = datetime.now()
+                dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty"],"t_stamp":tstamp,"type_mov":data["type_mov"],"status":-1,"artigo_cod":data["artigo_cod"],"n_lote":data["n_lote"],"`group`":group,"lote_id":lote_id},"loteslinha",None,None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                lastid = cursor.lastrowid
+                linha_order = lastid*100000000
+                lote_id =  linha_order if reciclado==1 else lote_id
+                dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order,"lote_id":lote_id},"loteslinha",{"id":f'=={lastid}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                for idx, d in enumerate(data["source"].split(';')):
+                    dml = db.dml(TypeDml.INSERT,{"t_stamp":tstamp,"doser":d,"type_mov":data["type_mov"],"status":-1,"artigo_cod":data["artigo_cod"],"n_lote":data["n_lote"],"lote_id":lote_id,"group_id":group,"loteslinha_id":lastid,"qty_consumed":0},"lotesdosers",None,None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    lid = cursor.lastrowid
+                    order = lid*100000000                                                         
+                    dml = db.dml(TypeDml.UPDATE,{"`order`":order},"lotesdosers",{"id":f'=={lid}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Registar!"})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
 def PickManual(request, format=None):
     data = request.data['parameters']
-    
+
     def getInOut(data, cursor):
         plg = []
         ig_id = None
@@ -4546,10 +4801,10 @@ def PickManual(request, format=None):
             return None
         if direction=="up":
             #ORDER ACIMA DE...IG_BOBINAGEM
-            sql =f"""select `order` n from lotesdosers where `order`< (select min(`order`) from lotesdosers where ig_bobinagem_id={ig_id}) order by `order` desc limit 1"""
+            sql =f"""select `order` n from lotesdosers where `order`< (select min(`order`) from lotesdosers where closed=0 and status<>0 and ig_bobinagem_id={ig_id}) order by `order` desc limit 1"""
         else:
             #ORDER ABAIXO DE...IG_BOBINAGEM
-            sql=f"""select max(`order`) n from lotesdosers where ig_bobinagem_id={ig_id}"""
+            sql=f"""select max(`order`) n from lotesdosers where closed=0 and status<>0 ig_bobinagem_id={ig_id}"""
             
         response = db.executeSimpleList(lambda: (sql), cursor, {})
         if len(response["rows"])>0:
@@ -4559,86 +4814,103 @@ def PickManual(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                io = getInOut(data,cursor)
-                order = getOrder(data,cursor)
-                _inline = {}
-                _indoser = {}
-                _out = {}
-                _outline = {}
 
-                for idx, item in enumerate(io):
+                if "move_position" in data and data["move_position"]==1:
+                    order = getOrder(data,cursor)                    
+                    dml = db.dml(TypeDml.UPDATE,{"t_stamp":data["date"]},"loteslinha",{"id":f'=={data["idlinha"]}',"closed":"==0"},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    dml = db.dml(TypeDml.UPDATE,{"t_stamp":data["date"],"`order`":order+1},"lotesdosers",{"loteslinha_id":f'=={data["idlinha"]}',"closed":"==0"},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+                else:
+                    io = getInOut(data,cursor)
+                    order = getOrder(data,cursor)
+                    _inline = {}
+                    _indoser = {}
+                    _out = {}
+                    _outline = {}
 
-                    order = order + 1
-                    if data["saida_mp"]==1:
-                        pass
-                        # if ((item['mov']=='OUT' or item['mov']=='OUT_LINE') and f'{item["lote_id"]}-{item["doser"]}' not in _out):
-                        #     dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"OUT","status":-1,"`order`":order,"t_stamp":data["date"]},"lotesdosers",None,None,False)
-                        #     db.execute(dml.statement, cursor, dml.parameters)
-                        #     _out[f'{item["lote_id"]}-{item["doser"]}'] = True
-                        # if (item['mov']=='OUT_LINE' and f'{item["lote_id"]}' not in _outline):
-                        #     dml = db.dml(TypeDml.INSERT,{"lote_id":item["lote_id"],"n_lote":item["n_lote"],"artigo_cod":item["artigo_cod"],"type_mov":"OUT","status":-1,"t_stamp":data["date"]},"loteslinha",None,None,False)
-                        #     db.execute(dml.statement, cursor, dml.parameters)
-                        #     lastid = cursor.lastrowid
-                        #     dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
-                        #     statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
-                        #     db.execute(statement, cursor, dml.parameters)
-                        #     _outline[f'{item["lote_id"]}'] = True
-                    
-                    if data["saida_mp"] == 3:
-                        pass
-
-                    if (item['mov']=='IN'):
-                        group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
-                        n_lote = data["n_lote"] if "n_lote" in data and data["n_lote"]!=item["n_lote"] else item["n_lote"]           
-                        lote_id_sage = data["id"] if "id" in data and data["id"] else item["lote_id"] 
-                        qty_lote_buffer = data["qty_lote_buffer"] if "qty_lote_buffer" in data and data["qty_lote_buffer"] else item["qty_lote"] 
-                        #print("----------------------------------------")
-                        #print({"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer})
-                        #print({"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":2222222222222,"qty_consumed":0})
-                        #return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
-                        if item['end_id'] is None:
-                            if item['loteslinha_id'] is None and item['loteid_doser'] is None:
-                                if  f'{item["lote_id"]}' not in _inline:
-                                    print("INSERT IN LINE")
-                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
-                                    db.execute(dml.statement, cursor, dml.parameters)
-                                    lastid = cursor.lastrowid
-                                    _inline[f'{item["lote_id"]}'] = lastid                              
-                                    dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
-                                    statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
-                                    db.execute(statement, cursor, dml.parameters)
-                            if item['loteslinha_id'] is None or item['loteid_doser'] is None:
-                                if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
-                                    print("INSERT IN LOTE DOSER")
-                                    order = order + 1
-                                    linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
-                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
-                                    db.execute(dml.statement, cursor, dml.parameters)
-                                    _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
-                        else:
+                    for idx, item in enumerate(io):
+                        reciclado = 0
+                        if item["artigo_cod"].startswith("R000"):
+                            reciclado = 1
+                        
+                        order = order + 1
+                        if data["saida_mp"]==1:
                             pass
-                            if item['loteslinha_id'] is None and item['loteid_doser'] is None:
-                                if  f'{item["lote_id"]}' not in _inline:
-                                    print("INSERT IN LINE")
-                                    dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
-                                    db.execute(dml.statement, cursor, dml.parameters)
-                                    lastid = cursor.lastrowid
-                                    _inline[f'{item["lote_id"]}'] = lastid                              
-                                    dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
-                                    statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
-                                    db.execute(statement, cursor, dml.parameters)
-                            if item['loteslinha_id'] is None or item['loteid_doser'] is None:
-                                if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
-                                    print("INSERT IN LOTE DOSER")
-                                    order = order + 1
-                                    linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
-                                    dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
-                                    db.execute(dml.statement, cursor, dml.parameters)
-                                    _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
-                            
-                    
-                    
-                    
+                            # if ((item['mov']=='OUT' or item['mov']=='OUT_LINE') and f'{item["lote_id"]}-{item["doser"]}' not in _out):
+                            #     dml = db.dml(TypeDml.INSERT,{"doser":item["doser"],"type_mov":"OUT","status":-1,"`order`":order,"t_stamp":data["date"]},"lotesdosers",None,None,False)
+                            #     db.execute(dml.statement, cursor, dml.parameters)
+                            #     _out[f'{item["lote_id"]}-{item["doser"]}'] = True
+                            # if (item['mov']=='OUT_LINE' and f'{item["lote_id"]}' not in _outline):
+                            #     dml = db.dml(TypeDml.INSERT,{"lote_id":item["lote_id"],"n_lote":item["n_lote"],"artigo_cod":item["artigo_cod"],"type_mov":"OUT","status":-1,"t_stamp":data["date"]},"loteslinha",None,None,False)
+                            #     db.execute(dml.statement, cursor, dml.parameters)
+                            #     lastid = cursor.lastrowid
+                            #     dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                            #     statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                            #     db.execute(statement, cursor, dml.parameters)
+                            #     _outline[f'{item["lote_id"]}'] = True
+                        
+                        if data["saida_mp"] == 3:
+                            pass
+
+                        if (item['mov']=='IN'):
+                            group_id = data["group_id"] if "group_id" in data and data["group_id"] is not None else item["group_id"]
+                            n_lote = data["n_lote"] if "n_lote" in data and data["n_lote"]!=item["n_lote"] else item["n_lote"]           
+                            lote_id_sage = data["id"] if "id" in data and data["id"] else item["lote_id"] 
+                            qty_lote_buffer = data["qty_lote_buffer"] if "qty_lote_buffer" in data and data["qty_lote_buffer"] else item["qty_lote"] 
+                            #print("----------------------------------------")
+                            #print({"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer})
+                            #print({"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"group_id":group_id,"loteslinha_id":2222222222222,"qty_consumed":0})
+                            #return Response({"status": "success", "id": None, "title": f"Registado com Sucesso!", "subTitle": ''})
+                            linha_order = None
+                            if item['end_id'] is None:
+                                if item['loteslinha_id'] is None and item['loteid_doser'] is None:
+                                    if  f'{item["lote_id"]}' not in _inline:
+                                        print("INSERT IN LINE")
+                                        dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
+                                        db.execute(dml.statement, cursor, dml.parameters)
+                                        lastid = cursor.lastrowid
+                                        linha_order = lastid*100000000
+                                        _inline[f'{item["lote_id"]}'] = lastid                              
+                                        dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                                        statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                                        db.execute(statement, cursor, dml.parameters)
+                                if item['loteslinha_id'] is None or item['loteid_doser'] is None:
+                                    if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
+                                        print("INSERT IN LOTE DOSER")
+                                        order = order + 1
+                                        linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
+                                        lote_id =  linha_order if reciclado==1 else data["lote_id"]
+                                        dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":lote_id,"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                                        db.execute(dml.statement, cursor, dml.parameters)
+                                        _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
+                            else:
+                                pass
+                                if item['loteslinha_id'] is None and item['loteid_doser'] is None:
+                                    if  f'{item["lote_id"]}' not in _inline:
+                                        print("INSERT IN LINE")
+                                        dml = db.dml(TypeDml.INSERT,{"qty_lote":data["qty_lote"],"t_stamp":data["date"],"end_id":item["end_id"],"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":data["lote_id"],"`group`":group_id,"lote_id_sage":lote_id_sage,"qty_lote_buffer":qty_lote_buffer},"loteslinha",None,None,False)
+                                        db.execute(dml.statement, cursor, dml.parameters)
+                                        lastid = cursor.lastrowid
+                                        linha_order = lastid*100000000
+                                        _inline[f'{item["lote_id"]}'] = lastid                              
+                                        dml = db.dml(TypeDml.UPDATE,{},"loteslinha",{"id":f'=={lastid}'},None,False)
+                                        statement = f"""{dml.statement.replace('SET',f"SET `order`={lastid}*100000000",1)} """
+                                        db.execute(statement, cursor, dml.parameters)
+                                if item['loteslinha_id'] is None or item['loteid_doser'] is None:
+                                    if  f'{item["lote_id"]}-{item["doser"]}' not in _indoser:
+                                        print("INSERT IN LOTE DOSER")
+                                        order = order + 1
+                                        linhaId = item['loteslinha_id'] if  f'{item["lote_id"]}' not in _inline else _inline[f'{item["lote_id"]}']
+                                        lote_id =  linha_order if reciclado==1 else data["lote_id"]
+                                        dml = db.dml(TypeDml.INSERT,{"t_stamp":data["date"],"doser":item["doser"],"`order`":order,"type_mov":"IN","status":-1,"artigo_cod":item["artigo_cod"],"n_lote":n_lote,"lote_id":lote_id,"group_id":group_id,"loteslinha_id":linhaId,"qty_consumed":0},"lotesdosers",None,None,False)
+                                        db.execute(dml.statement, cursor, dml.parameters)
+                                        _indoser[f'{item["lote_id"]}-{item["doser"]}'] = True
+                                
+                        
+                        
+                        
                     
                     
                     

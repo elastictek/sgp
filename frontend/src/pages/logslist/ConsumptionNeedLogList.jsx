@@ -31,6 +31,7 @@ import { Wnd } from "./commons";
 import Modalv4 from 'components/Modalv4';
 import useModalv4 from 'components/useModalv4';
 const StockListByIgBobinagem = lazy(() => import('../artigos/StockListByIgBobinagem'));
+const FormMoveInput = lazy(() => import('./FormMoveInput'));
 
 
 
@@ -67,37 +68,27 @@ const filterRules = (keys) => {
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 
-const HasBobinagemField = () => (
-    <SelectField
-        placeholder="Relação"
-        size="small"
-        dropdownMatchSelectWidth={250}
-        allowClear
-        options={[{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }]}
-    />
-);
-
-const EventField = () => (
-    <SelectMultiField
-        placeholder="Evento"
-        size="small"
-        dropdownMatchSelectWidth={250}
-        allowClear
-        options={[{ value: 1, label: "Troca Bobinagem" },
-        { value: 8, label: "Working" },
-        { value: 9, label: "Stop" },
-        { value: 7, label: "Start" },
-        { value: 6, label: "NW Superiror" },
-        { value: 5, label: "NW Inferior" },
-        ]}
-    />
-);
-
 const filterSchema = ({ }) => [
     { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
     { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
-    { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
-    { fevento: { label: "Evento", field: EventField } }
+    { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },
+    //Estado
+    {
+        festado: {
+            label: 'Estado', field: {
+                type: 'select', size: 'small', options: [{ value: "0", label: "Aberto" }, { value: "1", label: "Fechado" }]
+            }, span: 12
+        }
+    },
+    //Tipo Movimento
+    {
+        freltipomov: { label: " ", field: TipoRelation, span: 4 },
+        ftipomov: {
+            label: 'Tipo Movimento', field: {
+                type: 'selectmulti', size: 'small', options: [{ value: "IN", label: "Entrada" }, { value: "OUT", label: "Saída" }, { value: "END", label: "Fim O.F." }, { value: "C", label: "Consumo" }]
+            }, span: 20
+        }
+    }
 ];
 
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
@@ -111,6 +102,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     ...vals,
                     fdate: getFilterRangeValues(values["fdate"]?.formatted),
                     ftime: getFilterRangeValues(values["ftime"]?.formatted),
+                    fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })
@@ -237,66 +229,44 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
-const actionItems = [
-    { label: 'Adicionar Lote Acima', key: 'up' },
-    { label: 'Adicionar Lote Abaixo', key: 'down' },
-    { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
-];
+const actionItems = (t) => {
+    switch (t) {
+        case "C": return [
+            { label: 'Adicionar Lote Acima', key: 'up' },
+            { label: 'Adicionar Lote Abaixo', key: 'down' },
+            { type: 'divider' },
+            { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
+        ];
+        case "IN": return [
+            { label: 'Mover Entrada', key: 'moveIn' },
+            { type: 'divider' },
+            { label: 'Remover Entrada', key: 'removeIn' }
+        ];
+
+
+    }
+};
 
 const Action = ({ r, before, onClick }) => {
-    /* const m = Modalv4; */
     const showAdd = () => {
-        if ((!before || before["nome"] !== r["nome"]) && r["type_mov_doser"] === "C") {
+        if ((!before || before["nome"] !== r["nome"]) && r["type_mov"] === "C") {
             return true;
         }
         return false;
     }
 
     const showOut = () => {
-        if (r["type_mov_doser"] === "IN") {
+        if (r["type_mov"] === "IN") {
             return true;
         }
         return false
     }
-/* 
-    const Confirm = () => {
-        let confirm = Modal.confirm();
-        confirm.update({
-            centered: true,
-            title: `Adicionar Lotes na Bobinagem ${r.nome}?`,
-            content: <div style={{ textAlign: "center" }}>
-                <Button onClick={() => { confirm.destroy(); onClick(r, "addlotes", "down"); }} style={{ marginRight: "2px" }} type="primary">Adicionar Lotes Abaixo</Button>
-                <Button onClick={() => { confirm.destroy(); onClick(r, "addlotes", "up") }} type="primary">Adicionar Lotes Acima</Button>
-            </div>
-        });
-
-    } */
 
     return (
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-            {showOut() && <>
-                <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
-            </>}
-            {showAdd() && <>
-                <Dropdown overlay={<Menu onClick={(e,v)=>onClick(r, e.key)} items={actionItems}/>}>
-                       <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  *//>}/>
-                </Dropdown>
-                {/* <ButtonIcon size="small" onClick={
-                    () => Modalv4.show({
-                        width: "400px", height: "200px",
-                        title: `Retificar a bobinagem ${r.nome}?`,
-                        content: <div>Atenção! Ao retificar a bobinagem, todas as bobinagens posteriores têm de ser corrigidas!</div>,
-                        defaultFooter: true,
-                        onOk: () => onClick(r, "rectify")
-                    })}
-
-
-
-                    style={{ alignSelf: "center", color: "green", fontSize: "12px", marginRight: "2px" }} shape="default"><CheckOutlined title="Corrigir bobinagem" /></ButtonIcon>
-                <Button size="small"
-                    onClick={Confirm}
-                    style={{ alignSelf: "center" }} shape="default">Ad. Lotes</Button> */}
-            </>}
+            <Dropdown overlay={<Menu onClick={(e, v) => onClick(r, e.key)} items={actionItems(r["type_mov_doser"])} />}>
+                <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
+            </Dropdown>
         </div>
     );
 }
@@ -346,7 +316,16 @@ export default () => {
     const handleWndClick = async (bm, type) => {
         let title = '';
 
+        if (type === "moveIn") {
+            modal.show({
+                propsToChild: true, footer: "ref", height: "200px", title: `Mover Entrada do Lote ${bm.artigo_cod} - ${bm.n_lote}`, width: "450px", fullWidthDevice: 1,
+                content: <FormMoveInput type="moveIn" parentDataAPI={dataAPI} data={{ bobinagem_nome: bm.nome, direction: type, t_stamp: bm.t_stamp, idlinha: bm.idlinha }} />
+            });
+            return;
+        }
+
         if (type === "lock") {
+            throw new Error("TODO");
             Modal.confirm({
                 title: 'Bloquear Entrada?', content: <div>Tem a certeza que deseja bloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
                 onOk: () => { }
@@ -354,6 +333,7 @@ export default () => {
             return;
         }
         if (type === "unlock") {
+            throw new Error("TODO");
             Modal.confirm({
                 title: 'Desbloquear Entrada?', content: <div>Tem a certeza que deseja desbloquear a entrada<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
                 onOk: () => { }
@@ -361,7 +341,6 @@ export default () => {
             return;
         }
         if (type === "rectify") {
-            console.log(bm);
             const response = await fetchPost({ url: `${API_URL}/rectifybobinagem/`, parameters: { ig_id: bm.ig_bobinagem_id } });
             if (response.data.status == "error") {
                 Modal.error({ title: 'Erro ao corrigir a bobinagem', content: response.data.title });
@@ -371,6 +350,7 @@ export default () => {
             return;
         }
         if (type === "removelote") {
+            throw new Error("TODO");
             Modal.confirm({
                 title: 'Dar Saída do Lote no doseador?', content: <div>Tem a certeza que deseja dar saída do lote no doseador<br /><br /><b>{bm.doser}</b><br /><b>{bm.artigo_cod}</b><br /><b>{bm.n_lote}</b> ?</div>,
                 onOk: () => { }
@@ -385,8 +365,8 @@ export default () => {
             title = `Adicionar Lotes após bobinagem ${bm.nome}`;
         }
         modal.show({
-            propsToChild: true, footer: null, height:"500px", title, width: "1300px", fullWidthDevice: 3,
-            content:<StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction:type,t_stamp:bm.t_stamp }} />
+            propsToChild: true, footer: null, height: "500px", title, width: "1300px", fullWidthDevice: 3,
+            content: <StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction: type, t_stamp: bm.t_stamp }} />
         });
         //Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
@@ -401,7 +381,7 @@ export default () => {
                 ...((common) => (
                     {
                         ...({
-                            action: { sort:false, title: "", width: 45, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
+                            action: { sort: false, title: "", width: 45, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
                             nome: { title: "Bobinagem", width: 120, render: (v, r, i) => <b>{v}</b>, ...common },
                             doser: { title: "Doser", width: 60, render: (v, r) => v, ...common },
                             t_stamp: { title: "Data", width: 90, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
@@ -431,7 +411,7 @@ export default () => {
 
     return (
         <>
-{/*             <Modalv4 /> */}
+            {/*             <Modalv4 /> */}
             <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
                 <Wnd show={showValidar} setShow={setShowValidar}>
                     {showValidar.type === "addlotes" && <Suspense fallback={<Spin />}><StockListByIgBobinagem type={showValidar.type} data={showValidar.data} closeSelf={handleWndCancel} /></Suspense>}

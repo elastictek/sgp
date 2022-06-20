@@ -161,6 +161,7 @@ const EventField = () => (
 const filterSchema = ({ }) => [
     { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
     { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
+    { fduracao: { label: "Duração", field: { type: 'input', size: 'small' }, span: 12 } },
     { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
     { fevento: { label: "Evento", field: EventField } }
 ];
@@ -176,6 +177,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     ...vals,
                     fdate: getFilterRangeValues(values["fdate"]?.formatted),
                     ftime: getFilterRangeValues(values["ftime"]?.formatted),
+                    fduracao: getFilterValue(vals?.fduracao, '==')
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })

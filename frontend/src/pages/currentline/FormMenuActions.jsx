@@ -9,7 +9,7 @@ import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import YScroll from "components/YScroll";
-import { Button, Spin, Select, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal } from "antd";
+import { Button, Spin, Select, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal, Dropdown, Menu } from "antd";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -610,9 +610,28 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     );
 }
 
+
+const FormulacaoMenu = ({ onMenuClick }) => {
+    return (<Menu
+        onClick={onMenuClick}
+        items={[
+            {
+                key: 'formulation_change',
+                label: 'Alterar Formulação',
+            },
+            {
+                key: 'dosers_change',
+                label: 'Alterar Doseadores',
+            }
+        ]}
+    />);
+};
+
+
 const CardActions = ({ menuItem, record, parentReload }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const modal = useModalv4();
 
     /*     const { status } = record; */
 
@@ -638,15 +657,47 @@ const CardActions = ({ menuItem, record, parentReload }) => {
             }
         } */
 
+    const onClick = (type) => {
+        console.log(record)
+        if (type === "gamaoperatoria") {
+            modal.show({ propsToChild: true, footer: "ref", width: '1000px', height: '600px', minFullHeight: 900, fullWidthDevice: 2, content: <FormGamaOperatoria forInput={record?.forInput} record={record} /> });
+        } else if (type === "specs") {
+            modal.show({ propsToChild: true, footer: "ref", width: '900px', height: '600px', minFullHeight: 900, fullWidthDevice: 2, content: <FormSpecs forInput={record?.forInput} record={record} /> });
+        }
+    }
+
+    const onMenuClick = (option) => {
+        let data = {}
+        switch (option.key) {
+            case "formulation_change":
+                data = { feature: option.key, forInput: true }
+                break;
+            case "dosers_change":
+                data = { feature: option.key, forInput: false }
+                break;
+            default:
+                data = { forInput: false }
+        }
+        modal.show({ propsToChild: true, footer: "ref", width: '1200px', height: '700px', fullWidthDevice: 3, minFullHeight: 900, content: <FormFormulacao forInput={data.forInput} record={{ ...record, ...data }} /> });
+    }
+
     return (
         <div style={{ height: '100%', ...menuItem.span && { gridColumn: `span ${menuItem.span}` } }}>
             <Card hoverable
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
             >
-                <Button block size="large" onClick={() => navigate('/app/pick')}>Picar Granulado</Button>
+                <Button block size="large" onClick={() => navigate('/app/pick')}>Picar Matérias Primas</Button>
                 <VerticalSpace height="5px" />
-                <Button block size="large" onClick={() => navigate('/app/logslist/comsumptionneedloglist')}>Consumos de Lotes</Button>
+                <Button block size="large" onClick={() => navigate('/app/logslist/comsumptionneedloglist', { replace: true })}>Consumos de Lotes</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" onClick={() => onClick("gamaoperatoria")}>Gama Operatória</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" onClick={() => onClick("specs")}>Especificações</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" onClick={() =>navigate('/app/stocklistbuffer')}>Matérias Primas em Buffer</Button>
+                <VerticalSpace height="5px" />
+                <Dropdown.Button onClick={onMenuClick} overlay={<FormulacaoMenu onMenuClick={onMenuClick} />}>Formulação</Dropdown.Button>
             </Card>
         </div>
     );
@@ -763,7 +814,7 @@ const SelectLotesAvailable = ({ onView, onChangeContent }) => {
 
 const CardLotesAvailable = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lotesavailable/`, parameters: {type:"default"}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [{ column: 'order', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lotesavailable/`, parameters: { type: "default" }, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [{ column: 'order', direction: 'ASC' }] } });
     const modal = useModalv4();
 
     useEffect(() => {
@@ -791,14 +842,14 @@ const CardLotesAvailable = ({ socket, menuItem, record, parentReload }) => {
     }
 
     const onChangeContent = (v) => {
-        switch(v){
-            case "buffer":break;
+        switch (v) {
+            case "buffer": break;
             case "groupartigo":
-                dataAPI.addParameters({type:v});
+                dataAPI.addParameters({ type: v });
                 dataAPI.fetchPost({});
-            break;
-            case "allconsumed":break;
-            default:break;
+                break;
+            case "allconsumed": break;
+            default: break;
 
         }
         console.log(v);
@@ -918,20 +969,20 @@ const menuItems = [
     },/* , {
         idcard: "lotes",
         title: "Lotes de Matérias Primas"
-    }, */ {
+    }, *//*  {
         idcard: "formulacao",
         title: "Formulação",
         span: 4
-    },
+    }, */
     {
         idcard: "validarbobinagens",
         title: "Bobinagens para Validação",
-        span: 3
+        span: 4
     },
     {
         idcard: "cortes",
         title: "Cortes",
-        span: 3
+        span: 4
     },
     {
         idcard: "linelogs",
@@ -942,7 +993,7 @@ const menuItems = [
         idcard: "lotesavailable",
         title: "Lotes em Linha",
         span: 3
-    },
+    }/* ,
 
     {
         idcard: "especificacoes",
@@ -952,7 +1003,7 @@ const menuItems = [
         idcard: "gamaoperatoria",
         title: "Gama Operatória",
         span: 3
-    }
+    } */
 ];
 
 export default ({ aggId }) => {
@@ -972,11 +1023,11 @@ export default ({ aggId }) => {
 
 
     useEffect(() => {
-     /*         console.log("FORM-AGG->", ctx) */
-         const cancelFetch = cancelToken();
-         loadData({ aggId, token: cancelFetch });
-         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
-     }, []);
+        /*         console.log("FORM-AGG->", ctx) */
+        const cancelFetch = cancelToken();
+        loadData({ aggId, token: cancelFetch });
+        return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
+    }, []);
 
     const loadData = (data = {}, type = "init") => {
         const { aggId, token } = data;
@@ -1076,19 +1127,22 @@ export default ({ aggId }) => {
                         case "linelogs":
                             return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                         case "actions":
-                            return (<CardActions socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
+                            return (<CardActions socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status, formulacao, artigospecs, gamaoperatoria }} parentReload={loadData} />);
                         case "lotesavailable":
                             return (<CardLotesAvailable socket={dataSocket?.inproduction} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} parentReload={loadData} />);
                         default: <React.Fragment key={`ct-${idx}`} />
                     }
                 })}
-            </StyledGrid>}
-
-            {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
                 {currentSettings.ofs.map((ofItem, idx) => {
                     return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
                 })}
             </StyledGrid>}
+
+            {/* {Object.keys(currentSettings).length > 0 && <StyledGrid style={{ marginTop: "15px" }}>
+                {currentSettings.ofs.map((ofItem, idx) => {
+                    return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
+                })}
+            </StyledGrid>} */}
 
 
 

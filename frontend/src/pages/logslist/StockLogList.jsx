@@ -34,7 +34,7 @@ import useModalv4 from 'components/useModalv4';
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined,StopOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, StopOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
@@ -310,15 +310,27 @@ const Quantity = ({ v, unit = "kg" }) => {
     );
 } */
 
-const actionItems = [
-    { label: 'Adicionar Lote Acima', key: 'up' },
-    { label: 'Adicionar Lote Abaixo', key: 'down' },
-    { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
-];
+const actionItems = (t) => {
+    switch (t) {
+        case "C": return [
+            { label: 'Adicionar Lote Acima', key: 'up' },
+            { label: 'Adicionar Lote Abaixo', key: 'down' },
+            { type: 'divider' },
+            { label: 'Corrigir Consumos da Bobinagem', key: 'rectify' }
+        ];
+        case "IN": return [
+            { label: 'Mover Entrada', key: 'moveIn' },
+            { type: 'divider' },
+            { label: 'Remover Entrada', key: 'removeIn' }            
+        ];
+
+
+    }
+};
 
 const Action = ({ r, before, onClick }) => {
     const showAdd = () => {
-        if ((!before || before["nome"] !== r["nome"])  && r["type_mov"] === "C") {
+        if ((!before || before["nome"] !== r["nome"]) && r["type_mov"] === "C") {
             return true;
         }
         return false;
@@ -333,14 +345,9 @@ const Action = ({ r, before, onClick }) => {
 
     return (
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-            {showOut() && <>
-                <ButtonIcon size="small" onClick={() => onClick(r, "removelote")} style={{ alignSelf: "center", color: "red", fontSize: "12px" }} shape="default"><StopOutlined title="Dar Saída" /></ButtonIcon>
-            </>}
-            {showAdd() && <>
-                <Dropdown overlay={<Menu onClick={(e,v)=>onClick(r, e.key)} items={actionItems}/>}>
-                       <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  *//>}/>
-                </Dropdown>
-            </>}
+            <Dropdown overlay={<Menu onClick={(e, v) => onClick(r, e.key)} items={actionItems(r["type_mov"])} />}>
+                <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
+            </Dropdown>
         </div>
     );
 }
@@ -384,17 +391,17 @@ export default () => {
     }
 
 
-/*     const handleWndClick = (bm, type, direction) => {
-        let title = '';
-        if (type==="addlotes"){
-            title=`Stock Matérias Primas ${bm.ofs}`;
-        } 
-        setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order:bm.order, direction } });
-    }; */
+    /*     const handleWndClick = (bm, type, direction) => {
+            let title = '';
+            if (type==="addlotes"){
+                title=`Stock Matérias Primas ${bm.ofs}`;
+            } 
+            setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order:bm.order, direction } });
+        }; */
 
     const handleWndClick = async (bm, type) => {
         let title = '';
-        console.log(bm,type);
+        console.log(bm, type);
         //return;
         if (type === "lock") {
             Modal.confirm({
@@ -435,8 +442,8 @@ export default () => {
             title = `Adicionar Lotes após bobinagem ${bm.nome}`;
         }
         modal.show({
-            propsToChild: true, footer: null, height:"500px", title, width: "1300px", fullWidthDevice: 3,
-            content:<StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction:type,t_stamp:bm.t_stamp }} />
+            propsToChild: true, footer: null, height: "500px", title, width: "1300px", fullWidthDevice: 3,
+            content: <StockListByIgBobinagem type="addlotes" data={{ bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction: type, t_stamp: bm.t_stamp }} />
         });
         //Modalv4.show({ width: "1300px", fullWidthDevice: 3, title, content: <StockListByIgBobinagem type="addlotes" data={{ id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction }} /> });
         //setShowValidar({ show: true, width: "1300px", fullWidthDevice: 3, type, data: { title, id: bm.id, bobinagem_nome: bm.nome, ig_id: bm.ig_bobinagem_id, order: bm.order, direction } });
@@ -467,9 +474,9 @@ export default () => {
                             ig_bobinagem_id: { title: "Evt", width: 60, render: (v, r) => v, ...common }
                         }),
                         ...(common.typeList == 'A' && {
-                            action: { title: "", width: 45, render: (v, r,i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
+                            action: { title: "", width: 45, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]} />, ...common },
                             type_mov: { title: "Mov.", align: "center", width: 60, render: (v, r) => v, ...common },
-                            nome: { title: "Bobinagem", width: 180, render: (v, r,i) => <b>{v}</b>, ...common },
+                            nome: { title: "Bobinagem", width: 180, render: (v, r, i) => <b>{v}</b>, ...common },
                             ofs: { title: "Ordens Fabrico", width: "200", render: (v, r) => <div>{v && v.replaceAll('"', "")}</div>, ...common },
                             artigo_cod: { title: "Artigo", width: 250, render: (v, r) => v, ...common },
                             n_lote: { title: "Lote", width: 250, render: (v, r) => v, ...common },
