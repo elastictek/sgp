@@ -16,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
-#import cups
+import cups
 import os, tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
@@ -270,8 +270,8 @@ def PrintMPBuffer(request,format=None):
     try:
         print(tmp.name)
         tmp.write(fstream.content)
-        #conn = cups.Connection()
-        #conn.printFile("Canon_iR-ADV_C3720_UFR_II",tmp.name,"",{}) 
+        conn = cups.Connection()
+        conn.printFile("Canon_iR-ADV_C3720_UFR_II",tmp.name,"",{}) 
         print("###########################")
     finally:
         pass
