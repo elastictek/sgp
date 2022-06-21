@@ -16,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
-import cups
+#import cups
 import os, tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
@@ -134,7 +134,7 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
         if data.get(mainKey) is not None:
             sp = {}
             for key in mainValue.get('keys'):
-                table = f'"{mainValue.get("table")}".' if (mainValue.get("table") and encloseColumns) else mainValue.get("table", '')
+                table = f'{mainValue.get("table")}.' if (mainValue.get("table") and encloseColumns) else mainValue.get("table", '')
                 field = f'{table}"{key}"' if encloseColumns else f'{table}{key}'
                 sp[key] = {"value": data.get(mainKey).lower(), "field": f'lower({field})'}
             f = Filters(data)
@@ -270,8 +270,8 @@ def PrintMPBuffer(request,format=None):
     try:
         print(tmp.name)
         tmp.write(fstream.content)
-        conn = cups.Connection()
-        conn.printFile("Canon_iR-ADV_C3720_UFR_II",tmp.name,"",{}) 
+        #conn = cups.Connection()
+        #conn.printFile("Canon_iR-ADV_C3720_UFR_II",tmp.name,"",{}) 
         print("###########################")
     finally:
         pass
@@ -667,39 +667,42 @@ def StockListBuffer(request, format=None):
     print(request.data['filter'])
     
     f = Filters(request.data['filter'])
+    print(f.filterData)
     f.setParameters({
         # "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
-        # "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-        # "qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+        "LOT_0": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'ST."{k}"'},
+        "QTYPCU_0": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'"{k}"'},
+        **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'ST."CREDATTIM_0"::date')
         # "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
         # "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
     }, True)
-    f.where()
+    f.where(False,"and")
     f.auto()
     f.value("and")
 
     f2 = filterMulti(request.data['filter'], {
-        # 'fartigo': {"keys": ['matprima_cod', 'matprima_des']}
-    }, False, "and" if f.hasFilters else False)    
+        'fartigo': {"keys": ['ITMREF_0', 'ITMDES1_0'], "table":"mprima"}
+    }, False, "and" if f.hasFilters else "and")    
 
-    def filterLocationMultiSelect(data,name,field):
+    def filterLocationMultiSelect(data,name,field,hasFilters=False):
         f = Filters(data)
         fP = {}
-        v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+        #v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+        v = [] if name not in data else data[name]
         dt = [o['value'] for o in v]
         value = 'in:' + ','.join(f"{w}" for w in dt)
-        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ST.{k}'}
+        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
         f.setParameters({**fP}, True)
         f.auto()
-        f.where(False, "and")
+        f.where(False, hasFilters)
         f.value()
         return f
-    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"')
+    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
+    print(flocation.text)
 
 
-
-    #parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
-    parameters = {**f.parameters}
+    parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
+    #parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
@@ -708,21 +711,20 @@ def StockListBuffer(request, format=None):
     cols = f'''*'''
     sql = lambda p, c, s: (
         f"""
-        SELECT {c(f'{cols}')} FROM(
-            WITH LOTESAVAILABLE AS(
+
+            SELECT {c(f'{cols}')} FROM(
                 SELECT
                 ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
                 SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
-                ST."QTYPCU_0",ST."PCU_0"
+                ST."QTYPCU_0",ST."PCU_0",mprima."ITMDES1_0"
                 FROM {sageAlias}."STOJOU" ST
-                WHERE ST."LOC_0" in ('BUFFER') OR ST."ITMREF_0" LIKE 'R000%%' --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
-            )
-            select LOTESAVAILABLE.*,mprima."ITMDES1_0"
-            from LOTESAVAILABLE
-            JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"
+                JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+                where (ST."LOC_0" in ('BUFFER') OR ST."ITMREF_0" LIKE 'R000%%')
+                {f.text} {f2["text"]} --{flocation.text}
+                --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
+
+            ) t
             where (QTY_SUM > 0)
-        ) t
-         {f.text}
         {s(dql.sort)} {p(dql.paging)}
         """
     )

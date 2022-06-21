@@ -6,7 +6,7 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
+import { getFilterRangeValues, getFilterValue, isValue, getFilterForceRangeValues } from 'utils';
 import uuIdInt from "utils/uuIdInt";
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
 import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField, SelectMultiField } from "components/formLayout";
@@ -47,12 +47,12 @@ const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { valu
 const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
-    { fmulti_dosers: { label: 'Doseador Formulação', field: { type: 'selectmulti', size: 'small', options: DOSERS } } },
+    //{ fmulti_dosers: { label: 'Doseador Formulação', field: { type: 'selectmulti', size: 'small', options: DOSERS } } },
     { fqty_lote: { label: "Qtd. Lote", field: { type: 'input', size: 'small' } } },
-    { fqty_lote_available: { label: "Qtd. Lote Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
-    { fqty_artigo_available: { label: "Qtd. Artigo Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
+    //{ fqty_lote_available: { label: "Qtd. Lote Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
+    //{ fqty_artigo_available: { label: "Qtd. Artigo Disponível (Em Linha/Buffer)", field: { type: 'input', size: 'small' } } },
     { fmulti_location: { label: 'Localização', field: { type: 'selectmulti', size: 'small', options: [{ value: "ARM", label: "ARM" }, { value: "BUFFER", label: "BUF" }] } } },
-    { fpicked: { label: 'Na Linha', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] } } },
+    //{ fpicked: { label: 'Na Linha', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] } } },
     //{ f_ofabrico: { label: "Ordem de Fabrico" } },
     //{ f_agg: { label: "Agregação Ordem de Fabrico" } },
     //{ fofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, initialValue: 'all', ignoreFilterTag: (v) => v === 'all' } },
@@ -60,7 +60,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
     //{ fmulti_customer: { label: "Nº/Nome de Cliente", field: customersField } },
     //{ fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
     //{ forderdate: { label: "Data Encomenda", field: { type: "rangedate", size: 'small' } } },
-    //{ fstartprevdate: { label: "Data Prevista Início", field: { type: "rangedate", size: 'small' } } },
+    { fdate: { label: "Data", field: { type: "rangedate", size: 'small' } } },
     //{ fendprevdate: { label: "Data Prevista Fim", field: { type: "rangedate", size: 'small' } } },
 
     /* { SHIDAT_0: { label: "Data Expedição", field: { type: "rangedate" } } },
@@ -113,8 +113,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
                     fqty_lote: getFilterValue(vals?.fqty_lote, '=='),
-                    fqty_artigo_available: getFilterValue(vals?.fqty_artigo_available, '=='),
-                    fqty_lote_available: getFilterValue(vals?.fqty_lote_available, '==')
+                    fdate: getFilterForceRangeValues(values["fdate"]?.formatted),
                 };
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })
@@ -152,10 +151,10 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         />
     );
     const artigosField = () => (
-        <Input size="small" />
+        <Input size="small" allowClear />
     );
     const lotesField = () => (
-        <Input size="small" />
+        <Input size="small" allowClear />
     );
 
     /*     const fetchCustomers = async (value) => {
@@ -299,9 +298,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     </Field>
                     <Field name="flote" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote", pos: "top" }}>
                         {lotesField()}
-                    </Field>
-                    <Field name="fpicked" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Na Linha", pos: "top" }}>
-                        {pickedField()}
                     </Field>
                     <FieldItem label={{ enabled: false }}>
                         <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
