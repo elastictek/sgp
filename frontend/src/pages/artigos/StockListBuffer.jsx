@@ -344,14 +344,14 @@ const ColumnAction = ({ record, dataAPI, data }) => {
         const status = { error: [], warning: [], info: [], success: [] };
         const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...record } });
         if (response.data.status !== "error") {
-            //dataAPI.fetchPost();
+            Modal.confirm({ title: 'Etiqueta Impressa', content: <div><b>{record.ITMDES1_0}</b>  {record.LOT_0}</div> });
         } else {
             Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
         }
 
     }
 
-    return (<Button onClick={onClick} size="small" icon={<PrinterOutlined />}></Button>);
+    return (<Button onClick={onClick} size="large" icon={<PrinterOutlined />}></Button>);
 }
 
 export default ({ type, data }) => {
@@ -403,9 +403,9 @@ export default ({ type, data }) => {
                 ...((common) => (
                     {
                         action_line: { title: "", align: "center", width: 40, fixed: "left", render: (v, r) => <ColumnAction record={r} dataAPI={dataAPI} data={data} />, ...common },
-                        ITMDES1_0: { title: "Matéria Prima", width: 290, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
-                        LOT_0: { title: "Lote", width: 180, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
-                        ITMREF_0: { title: "Cod. MP", width: 190, render: (v, r) => v, ...common },
+                        ITMDES1_0: { title: "Matéria Prima", width: 150, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
+                        LOT_0: { title: "Lote", width: 100, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
+                        ITMREF_0: { title: "Cod. MP", width: 100, render: (v, r) => v, ...common },
                         QTYPCU_0: { title: "Qtd.", width: 120, render: (v, r) => <Quantity v={v} unit={r.PCU_0} />, ...common },
                         LOC_0: { title: "Loc.", width: 100, render: (v, r) => v, ...common },
                         CREDATTIM_0: { title: "Data", width: 100, ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.CREDATTIM_0) ? r.CREDATTIM_0 : v).format(DATETIME_FORMAT)}</span></div>, ...common },
@@ -444,7 +444,7 @@ export default ({ type, data }) => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
-                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '80vh', scrollToFirstRowOnChange: true }}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>
