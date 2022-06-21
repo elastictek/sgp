@@ -271,7 +271,7 @@ def PrintMPBuffer(request,format=None):
         print(tmp.name)
         tmp.write(fstream.content)
         conn = cups.Connection()
-        conn.printFile("Canon_iR-ADV_C3720_UFR_II",tmp.name,"",{}) 
+        conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
         print("###########################")
     finally:
         pass
