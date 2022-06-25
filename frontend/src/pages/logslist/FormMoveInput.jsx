@@ -40,7 +40,7 @@ const schema = (keys, excludeKeys) => {
 
 const fetchBobinagens = async (value) => {
     if (value) {
-        const { data: { rows } } = await fetchPost({ url: `${API_URL}/getconsumosbobinagenslookup/`, pagination: { limit: 20 }, filter: { ["fbobinagem"]: `%${value.replaceAll(' ', '%%')}%` } });
+        const { data: { rows } } = await fetchPost({ url: `${API_URL}/getconsumosbobinagenslookup/`, pagination: { limit: 20 }, filter: { ["fbobinagem"]: `%${value.replaceAll(' ', '%%')}%` }, sort:[{ column: 'ig.t_stamp', direction: 'ASC' }] });
         return rows;
     }
 }

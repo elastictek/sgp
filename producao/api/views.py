@@ -16,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
-import cups
+# import cups
 import os, tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
@@ -270,8 +270,8 @@ def PrintMPBuffer(request,format=None):
     try:
         print(tmp.name)
         tmp.write(fstream.content)
-        conn = cups.Connection()
-        conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
+        # conn = cups.Connection()
+        # conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
         print("###########################")
     finally:
         pass
@@ -690,7 +690,7 @@ def StockListBuffer(request, format=None):
         #v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
         v = [] if name not in data else data[name]
         dt = [o['value'] for o in v]
-        value = 'in:' + ','.join(f"{w}" for w in dt)
+        value = None if len(v)==0 else 'in:' + ','.join(f"{w}" for w in dt)
         fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
         f.setParameters({**fP}, True)
         f.auto()
@@ -719,8 +719,11 @@ def StockListBuffer(request, format=None):
                 ST."QTYPCU_0",ST."PCU_0",mprima."ITMDES1_0"
                 FROM {sageAlias}."STOJOU" ST
                 JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-                where (ST."LOC_0" in ('BUFFER') OR ST."ITMREF_0" LIKE 'R000%%')
-                {f.text} {f2["text"]} --{flocation.text}
+                where (
+                    ST."LOC_0" in ('BUFFER') 
+                    --OR ST."ITMREF_0" LIKE 'R000%%'
+                    )
+                {f.text} {f2["text"]} {flocation.text}
                 --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
 
             ) t
@@ -2418,12 +2421,82 @@ def LotesLookup(request, format=None):
        ), cursor, parameters)
        return Response(response)
 
+
+
+def getEmendas(data, cursor):
+    vals = {
+        "artigo_cod":data["artigo_cod"],
+        "emendas_rolo":data["nemendas_rolo"],
+        "tipo_emenda":data["tipo_emenda"],
+        "maximo":data["maximo"],
+        "paletes_contentor":data["nemendas_paletescontentor"]
+    }
+    if "cliente_cod" in data and data["cliente_cod"] is not None:
+        vals["cliente_cod"]=data["cliente_cod"]
+    f = Filters({"hashcode": hashlib.md5(json.dumps(vals).encode('utf-8')).hexdigest()[ 0 : 16 ]})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'hashcode = :hashcode', True)
+    f.value("and")   
+    rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_emendas {f.text}'), cursor, f.parameters)['rows']
+    return rows[0] if len(rows)>0 else None
+
+
+def createEmendas(data,cursor):
+    print("entri")
+    print(data)
+    emendas_id = None
+    emenda = getEmendas(data,cursor)
+    print("xxxxx")
+    print(emenda)
+    return
+    if emenda is None:
+        vals = {
+            "artigo_cod":data["artigo_cod"],
+            "emendas_rolo":data["nemendas_rolo"],
+            "tipo_emenda":data["tipo_emenda"],
+            "maximo":data["maximo"],
+            "paletes_contentor":data["nemendas_paletescontentor"]
+        }
+        if "cliente_cod" in data and data["cliente_cod"] is not None:
+            vals["cliente_cod"]=data["cliente_cod"]
+        vals["hashcode"] = hashlib.md5(json.dumps(vals).encode('utf-8')).hexdigest()[ 0 : 16 ]
+        if "cliente_nome" in data and data["cliente_nome"] is not None:
+            vals["cliente_nome"]=data["cliente_nome"]
+        vals["designacao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        dml = db.dml(TypeDml.INSERT,vals,"producao_emendas",None,None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+        emendas_id = cursor.lastrowid
+    else:
+        emendas_id = data["emendas_id"] if "emendas_id" in data and data["emendas_id"] is not None else emenda["id"]
+    vl = {"emendas_id":emendas_id,"n_paletes_total":data["n_paletes_total"],"cliente_cod":data["cliente_cod"],"cliente_nome":data["cliente_nome"]}
+    if "core_cod" in data:
+        vl["core_cod"] = data["core_cod"]
+        vl["core_des"] = data["core_des"]
+    dml = db.dml(TypeDml.UPDATE,vl,"producao_tempordemfabrico",{"id":f'=={data["ofabrico_id"]}'},None,False)
+    db.execute(dml.statement, cursor, dml.parameters)
+    return data["ofabrico_id"]
+
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def UpdateCurrentSettings(request, format=None):
     data = request.data.get("parameters")
+
+    def getCurrentSettings(data,cursor):
+        f = Filters({"id": data["csid"],"status":3})
+        f.where()
+        f.add(f'id = :id', True)
+        f.add(f'status = :status', True)
+        f.value("and")  
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_currentsettings {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
@@ -2440,7 +2513,28 @@ def UpdateCurrentSettings(request, format=None):
                 ok=0
                 break
         data["formulacao"]["valid"] = ok
+        dosers = []
+        for v in data["formulacao"]["items"]:
+            if "doseador_A" in v:
+                dosers.append({
+                    "nome":v["doseador_A"],
+                    "grupo":v["cuba_A"],
+                    "matprima_cod": v["matprima_cod"]
+                })
+            if "doseador_B" in v:
+                dosers.append({
+                    "nome":v["doseador_B"],
+                    "grupo":v["cuba_BC"],
+                    "matprima_cod": v["matprima_cod"]
+                })
+            if "doseador_C" in v:
+                dosers.append({
+                    "nome":v["doseador_C"],
+                    "grupo":v["cuba_BC"],
+                    "matprima_cod": v["matprima_cod"]
+                })
         dta = {
+            "dosers":json.dumps(dosers, ensure_ascii=False),
             "formulacao":json.dumps(data['formulacao'], ensure_ascii=False),
             "type_op":data['type']
         }
@@ -2550,6 +2644,62 @@ def UpdateCurrentSettings(request, format=None):
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'settings':
+        try:
+            with connections["default"].cursor() as cursor:
+                cs = getCurrentSettings(data,cursor)
+                if cs is None:
+                    return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Definições', "subTitle":"Não é possível alterar as Definições atuais."})
+                print("data........")
+                print(data)
+                print("----")
+                print(cs["ofs"])
+                print("----")
+                #print(cs["limites"])
+                #print("----")
+                #print(cs["cores"])
+                #print("----")
+                #print(cs["emendas"])
+                #print("----")
+                #print(cs["sentido_enrolamento"])
+                #print(cs["amostragem"])
+                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                print(cs["ofs"])
+                for x in json.loads(cs["ofs"]):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        print(x["of_id"])
+                emendas = json.loads(cs["emendas"])
+                for idx,x in enumerate(emendas):
+
+
+# vals = {
+#         "artigo_cod":data["artigo_cod"],
+#         "emendas_rolo":data["nemendas_rolo"],
+#         "tipo_emenda":data["tipo_emenda"],
+#         "maximo":data["maximo"],
+#         "paletes_contentor":data["nemendas_paletescontentor"]
+#     }
+#     if "cliente_cod" in data and data["cliente_cod"] is not None:
+
+
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        print("####################################")
+                        print(x)
+                        emendas[idx]={**x,"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
+                cores = json.loads(cs["cores"])
+                for idx,x in enumerate(cores):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        cores[idx] = {**x,"core_cod":data["core_cod"],"core_des":data["core_des"]}
+                limites = json.loads(cs["limites"])
+                for x in json.loads(cs["limites"]):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        limites[idx] = {**x}
+
+                return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -2587,6 +2737,16 @@ def ChangeCurrSettingsStatus(request, format=None):
         """
         db.execute(dml.statement, cursor, dml.parameters)
 
+    def getLastOrder(ig_id,cursor):
+        f = Filters({"id":ig_id})
+        f.where(False,"and")
+        f.add(f'ig_bobinagem_id = :id', True)
+        f.value("and")  
+        rows = db.executeSimpleList(lambda: (f'select IFNULL(max(`order`),0) n from lotesdosers where closed=0 and status<>0 {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
     try:
         with connections["default"].cursor() as cursor:
             if (data["status"]==3):
@@ -2613,12 +2773,18 @@ def ChangeCurrSettingsStatus(request, format=None):
                         updateOP(data["id"],data,cursor,"`status`=2,ativa=0,completa=0")
                         return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada!', "subTitle":f""})
             elif (data["status"]==9):
-                print("finish")
                 exists = db.exists("producao_currentsettings",{"status":"<9"},cursor).exists
+                print("finish")
+                print(exists)
                 if (exists==1):
+                        maxOrder = getLastOrder(data["ig_id"],cursor)
                         dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                         updateOP(data["id"],data,cursor,"`status`=9,ativa=0,completa=1")
+                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
+                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
+                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
                         return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Finalizada!', "subTitle":f""})
                 pass
     except Exception as error:
@@ -3816,24 +3982,6 @@ def SaveTempOrdemFabrico(request, format=None):
         rows = db.executeSimpleList(lambda: (f'SELECT agg_of_id,agg_ofid_original FROM producao_tempordemfabrico {f.text}'), cursor, f.parameters)['rows']
         return rows[0] if len(rows)>0 else None
 
-    def getEmendas(data, cursor):
-        vals = {
-            "artigo_cod":data["artigo_cod"],
-            "emendas_rolo":data["nemendas_rolo"],
-            "tipo_emenda":data["tipo_emenda"],
-            "maximo":data["maximo"],
-            "paletes_contentor":data["nemendas_paletescontentor"]
-        }
-        if "cliente_cod" in data and data["cliente_cod"] is not None:
-            vals["cliente_cod"]=data["cliente_cod"]
-        f = Filters({"hashcode": hashlib.md5(json.dumps(vals).encode('utf-8')).hexdigest()[ 0 : 16 ]})
-        f.setParameters({}, False)
-        f.where()
-        f.add(f'hashcode = :hashcode', True)
-        f.value("and")   
-        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_emendas {f.text}'), cursor, f.parameters)['rows']
-        return rows[0] if len(rows)>0 else None
-
     def upsertTempAggOrdemFabrico(data, ids, cursor):
         dta = {
             'status': data['status'] if 'status' in data else 0,
@@ -4579,7 +4727,7 @@ def FixSimulatorList(request, format=None):
 def GetConsumosBobinagensLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
-    f.where(True,"and")
+    f.where(False,"and")
     f.add(f'pbm.nome like :fbobinagem',  lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
@@ -4588,13 +4736,13 @@ def GetConsumosBobinagensLookup(request, format=None):
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
-                SELECT distinct pbm.nome,ig.t_stamp,ig.id 
+                SELECT distinct pbm.nome,ig.t_stamp,ig.id, ld.agg_of_id
                 FROM lotesdosers ld
                 JOIN ig_bobinagens ig on ld.ig_bobinagem_id = ig.id
                 JOIN producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
                 WHERE ld.`status`<>0 and ld.closed=0
                 {f.text}
-                order by ig.t_stamp
+                {dql.sort}
                 {dql.limit}
             """
         ), cursor, parameters)
@@ -4630,7 +4778,7 @@ def MPGranuladoIO(request, format=None):
             select ld.id,ld.type_mov,mprima."ITMDES1_0",ld.artigo_cod,ld.n_lote,ld.t_stamp,ll.qty_lote,
             STRING_AGG (ld.doser,',') OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) dosers,
             MAX(ld."order") OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
-            ld."order"
+            ld."order",ld.group_id,ld.loteslinha_id
             from {sgpAlias}.lotesdosers ld
             JOIN {sgpAlias}.loteslinha ll on ll.id=ld.loteslinha_id
             LEFT JOIN {sageAlias}."ITMMASTER" mprima ON mprima."ITMREF_0"=ld.artigo_cod
@@ -4638,7 +4786,7 @@ def MPGranuladoIO(request, format=None):
             ) t
             where "order" = max_order
             {f.text}
-            {s(dql.sort)} {p(dql.limit)}            
+            {s(dql.sort)} {p(dql.paging)}            
         """
     ), connection, parameters)
 
@@ -4830,7 +4978,7 @@ def PickManual(request, format=None):
             sql =f"""select `order` n from lotesdosers where `order`< (select min(`order`) from lotesdosers where closed=0 and status<>0 and ig_bobinagem_id={ig_id}) order by `order` desc limit 1"""
         else:
             #ORDER ABAIXO DE...IG_BOBINAGEM
-            sql=f"""select max(`order`) n from lotesdosers where closed=0 and status<>0 ig_bobinagem_id={ig_id}"""
+            sql=f"""select max(`order`) n from lotesdosers where closed=0 and status<>0 AND ig_bobinagem_id={ig_id}"""
             
         response = db.executeSimpleList(lambda: (sql), cursor, {})
         if len(response["rows"])>0:

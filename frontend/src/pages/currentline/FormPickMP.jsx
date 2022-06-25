@@ -16,7 +16,8 @@ import YScroll from "components/YScroll";
 import XScroll from "components/XScroll";
 import Modalv4 from "components/Modalv4";
 import Portal from "components/portal";
-import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag, Modal, Typography } from "antd";
+import { EllipsisOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag, Modal, Typography, Dropdown, Menu } from "antd";
 const { Title } = Typography;
 import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
@@ -302,6 +303,39 @@ const Quantity = ({ v, unit = "kg" }) => {
     return (<div style={{ display: "flex", flexDirection: "row" }}>{v !== null && <><div style={{ width: "80%", textAlign: "right" }}>{parseFloat(v).toFixed(2)}</div><div style={{ width: "20%", marginLeft: "2px" }}>{unit}</div></>}</div>);
 }
 
+const actionItems = (t) => {
+    switch (t) {
+        default: return [
+            { label: 'Saída de Matéria Prima', key: 'out_mp' },
+            { label: 'Saída do doseador', key: 'out_doser' }
+        ];
+    }
+};
+
+const Action = ({ r, before, onClick, children }) => {
+    const showAdd = () => {
+        if ((!before || before["nome"] !== r["nome"]) && r["type_mov"] === "C") {
+            return true;
+        }
+        return false;
+    }
+
+    const showOut = () => {
+        if (r["type_mov"] === "IN") {
+            return true;
+        }
+        return false
+    }
+
+    return (
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+            <Dropdown overlay={<Menu onClick={(e, v) => onClick(r, e.key)} items={actionItems()} />} trigger={["click"]}>
+                <Button size="small"><Space>{children}<EllipsisOutlined /* style={{fontSize:"26px"}}  */ /></Space></Button>
+            </Dropdown>
+        </div>
+    );
+}
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -319,7 +353,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [manual, setManual] = useState(false);
     const modal = useModalv4();
     const [selectedRows, setSelectedRows] = useState([]);
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/mpginout/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'order', direction: 'DESC' },] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/mpginout/`, parameters: {}, pagination: { enabled: true, pageSize:20 }, filter: {}, sort: [{ column: 'order', direction: 'DESC' },] } });
 
 
     const [artigos, setArtigos] = useState();
@@ -497,6 +531,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         }
     };
 
+    const handleWndClick = async (bm, type) => {
+        let title = '';
+
+
+    };
+
     const onPick = async (e, obj) => {
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         console.log(e, obj)
@@ -535,10 +575,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
                             console.log({ source: fData.source, artigo_cod: pickData[0], n_lote: pickData[1], qty: pickData[2] })
                             const status = { error: [], warning: [], info: [], success: [] };
-                            const response = await fetchPost({ url: `${API_URL}/pickmp/`, parameters: { source: fData.source, artigo_cod: pickData[0], n_lote: pickData[1], qty: pickData[2], type_mov:"IN" } });
+                            const response = await fetchPost({ url: `${API_URL}/pickmp/`, parameters: { source: fData.source, artigo_cod: pickData[0], n_lote: pickData[1], qty: pickData[2], type_mov: "IN" } });
                             if (response.data.status !== "error") {
                                 dataAPI.fetchPost();
-                            }else{
+                            } else {
                                 Modal.error({ title: 'Erro ao Picar Lote', content: response.data.title });
                             }
 
@@ -599,13 +639,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             include: {
                 ...((common) => (
                     {
-                        type_mov: { title: "Mov.", width: 60, align: "left", fixed: "left", render: (v, r) => v, ...common },
-                        ITMDES1_0: { title: "Designação", width: 180, fixed: "left", align: "left", render: (v, r) => <b>{v}</b>, ...common },
-                        dosers: { title: "Dos.", width: 60, fixed: "left", align: "left", render: (v, r) => v, ...common },
-                        artigo_cod: { title: "Cód.", width: 120, align: "left", render: (v, r) => v, ...common },
-                        n_lote: { title: "Lote", width: 120, align: "left", render: (v, r) => v, ...common },
-                        t_stamp: { title: "Data", width: 100, ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.t_stamp) ? r.t_stamp : v).format(DATETIME_FORMAT)}</span></div>, ...common },
-                        qty_lote: { title: "Qtd", width: 100, align: "center", render: (v, r) => <Quantity v={v} />, ...common }
+                        action: { sort: false, title: "Movimento", width: 100, render: (v, r, i) => <Action onClick={handleWndClick} r={r} before={i > 0 && dataAPI.getData().rows[i - 1]}>{r.type_mov == "IN" ? "Entrada" : "Saída"}</Action>, ...common },
+                        dosers: { title: "Doseadores", width: 150, align: "center", render: (v, r) => v, ...common },
+                        ITMDES1_0: { title: "Designação", align: "left", render: (v, r) => <b>{v}</b>, ...common },
+                        qty_lote: { title: "Qtd", width: 130, align: "right", render: (v, r) => <Quantity v={v} />, ...common },
+                        group_id: { title: "Cuba", width: 70, align: "center", render: (v, r) => v, ...common },
+                        artigo_cod: { title: "Código", width: 180, align: "left", render: (v, r) => v, ...common },
+                        n_lote: { title: "Lote", width: 180, align: "left", render: (v, r) => v, ...common },
+                        t_stamp: { title: "Data", width: 130, ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.t_stamp) ? r.t_stamp : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -663,40 +705,33 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                     {/* <ConfirmButton style={{ marginRight: "3px" }} disabled={!touched} onClick={onFinish}>Confirmar</ConfirmButton> */}
                                     <Button style={{ marginRight: "3px" }} disabled={!touched} onClick={onCancel}>Cancelar</Button>
                                     {/* <Button style={{ marginRight: "3px" }} disabled={touched} type='primary' onClick={() => onModal({ type: "saida_doseador" })}>Saída de Doseador</Button> */}
-                                    <Button disabled={touched} type='primary' onClick={() => onModal({ type: "saida_mp" })}>Saída de MP</Button>
                                 </div>
                             </FieldItem>
                         </FieldSet>
 
                         <YScroll>
-
-                            <div style={{ display: "flex", flexDirection: "row" }}>
-
-                                <div style={{ width: "50%" }}>
-                                    <Table
-                                        title={<Title level={4}>Lotes na Linha de Produção</Title>}
-                                        columnChooser={false}
-                                        toolbar={false}
-                                        reload={false}
-                                        clearSort={false}
-                                        rowHover={false}
-                                        stripRows={false}
-                                        darkHeader
-                                        //rowClassName={(record) => (record.nome || record.type !== 1) ? 'data-row' : `data-row ${classes.noRelationRow}`}
-                                        size="small"
-                                        //toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
-                                        selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                                        paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                                        dataAPI={dataAPI}
-                                        columns={columns}
-                                        onFetch={dataAPI.fetchPost}
-                                        scroll={{ x: ((SCREENSIZE_OPTIMIZED.width / 2) - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                                    //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                                    />
-
-                                </div>
-                            </div>
-
+                            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }}  */>
+                                <Table
+                                    title={<Title level={4}>Lotes de Granulado na Linha de Produção</Title>}
+                                    columnChooser={false}
+                                    toolbar={false}
+                                    reload={false}
+                                    clearSort={false}
+                                    rowHover={true}
+                                    stripRows={true}
+                                    darkHeader
+                                    //rowClassName={(record) => (record.nome || record.type !== 1) ? 'data-row' : `data-row ${classes.noRelationRow}`}
+                                    size="small"
+                                    //toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
+                                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
+                                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                                    dataAPI={dataAPI}
+                                    columns={columns}
+                                    onFetch={dataAPI.fetchPost}
+                                //scroll={{ x: ((SCREENSIZE_OPTIMIZED.width / 2) - 20), y: '70vh', scrollToFirstRowOnChange: true }}
+                                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+                                />
+                            </Spin>
                         </YScroll>
 
                     </FormLayout>

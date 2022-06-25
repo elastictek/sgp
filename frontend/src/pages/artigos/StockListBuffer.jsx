@@ -403,7 +403,7 @@ export default ({ type, data }) => {
                 ...((common) => (
                     {
                         action_line: { title: "", align: "center", width: 40, fixed: "left", render: (v, r) => <ColumnAction record={r} dataAPI={dataAPI} data={data} />, ...common },
-                        ITMDES1_0: { title: "Matéria Prima", width: 150, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
+                        ITMDES1_0: { title: "Matéria Prima", width: 100, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         LOT_0: { title: "Lote", width: 100, fixed: 'left', render: (v, r) => <b>{v}</b>, ...common },
                         ITMREF_0: { title: "Cod. MP", width: 100, render: (v, r) => v, ...common },
                         QTYPCU_0: { title: "Qtd.", width: 120, render: (v, r) => <Quantity v={v} unit={r.PCU_0} />, ...common },
@@ -444,7 +444,7 @@ export default ({ type, data }) => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
-                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '80vh', scrollToFirstRowOnChange: true }}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20)/2, y: '80vh', scrollToFirstRowOnChange: true }}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>

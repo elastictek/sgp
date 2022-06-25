@@ -59,18 +59,19 @@ const HeaderA = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid 
         >
 
 
-            <FieldSet wide={(feature === 'dosers_change') ? 11 : 9} margin={false}
+            <FieldSet wide={11} margin={false}
                 field={{
-                    wide: (feature === 'dosers_change') ? [3, 11, 2] : [13, 3],
+                    wide: [2, 1, 11, 2],
                     style: { border, borderLeft: "none", alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }
                 }}
             >
-                {feature === 'dosers_change' && <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} >Doseador</Field>}
+                <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} >Doseador</Field>
+                <Field>Cuba</Field>
                 <Field>Matérias Primas</Field>
                 <Field >Densidade</Field>
             </FieldSet>
 
-            <FieldSet margin={false} wide={(feature === 'dosers_change') ? 5 : 7} layout="vertical" field={{ style: { border, borderLeft: "none" } }}>
+            <FieldSet margin={false} wide={5} layout="vertical" field={{ style: { border, borderLeft: "none" } }}>
                 <FieldSet field={{ wide: [16] }} margin={false}>
                     <Field>Distribuição por Extrusora</Field>
                 </FieldSet>
@@ -100,17 +101,18 @@ const HeaderBC = ({ backgroundColor = "#f5f5f5", color = "#000", border = "solid
             field={{ noItemWrap: true, label: { enabled: false } }}
             style={{ fontSize: "10px", backgroundColor: `${backgroundColor}`, color: `${color}`, textAlign: "center" }}
         >
-            <FieldSet wide={(feature === 'dosers_change') ? 11 : 9} margin={false}
+            <FieldSet wide={11} margin={false}
                 field={{
-                    wide: (feature === 'dosers_change') ? [3, 11, 2] : [13, 3],
+                    wide: [2, 1, 11, 2],
                     style: { border, borderLeft: "none" }
                 }}
             >
-                {feature === 'dosers_change' && <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} ></Field>}
+                <Field style={{ border, alignSelf: "stretch", display: "flex", flexDirection: "column", justifyContent: "center" }} ></Field>
+                <Field></Field>
                 <Field></Field>
                 <Field></Field>
             </FieldSet>
-            <FieldSet margin={false} wide={(feature === 'dosers_change') ? 5 : 7}>
+            <FieldSet margin={false} wide={5}>
                 <FieldSet margin={false}
                     field={{
                         wide: [/* 3,  4,*/ 5, 5, 5, 1/*  2, 3 */],
@@ -203,21 +205,24 @@ const SubFormMateriasPrimas = ({ form, feature, forInput, name, matPrimasLookup,
                         {fields.map((field, index) => (
 
                             <FieldSet key={field.key} wide={16} layout="horizontal" margin={false} field={{ label: { enabled: false } }}>
-                                <FieldSet wide={(feature === 'dosers_change') ? 11 : 9} margin={false}
+                                <FieldSet wide={11} margin={false}
                                     field={{
-                                        wide: (feature === 'dosers_change') ? ((id === "BC") ? [1.5, 1.5, 11, 2] : [3, 11, 2]) : [13, 3],
+                                        wide: ((id === "BC") ? [1, 1, 1, 11, 2] : [2, 1, 11, 2]),
                                         style: { border: "solid 1px #fff", borderLeft: "none" }
                                     }}
                                 >
-                                    {feature === 'dosers_change' && <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "B" : id}`]}>
+                                    {<Field forInput={feature === 'dosers_change'} name={[field.name, `doseador_${(id === "BC") ? "B" : id}`]}>
                                         <SelectField allowClear showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "B" : id]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
                                         />
                                     </Field>}
-                                    {(feature === 'dosers_change' && id === "BC") && <Field forInput={true} name={[field.name, `doseador_${(id === "BC") ? "C" : id}`]}>
+                                    {(id === "BC") && <Field forInput={feature === 'dosers_change'} name={[field.name, `doseador_${(id === "BC") ? "C" : id}`]}>
                                         <SelectField allowClear showArrow={false} style={{ fontWeight: 700, color: "#096dd9" }} size="small" data={FORMULACAO_MANGUEIRAS[(id == "BC") ? "C" : id]} keyField="key" textField="key"
                                             optionsRender={(d, keyField, textField) => ({ label: <b>{`${d[textField]}`}</b>, value: d[keyField] })}
                                         />
+                                    </Field>}
+                                    {<Field forInput={false} name={[field.name, `cuba_${(id === "BC") ? "BC" : id}`]}>
+                                        <Input size="small" />
                                     </Field>}
 
                                     <Field name={[field.name, `matprima_cod_${id}`]} style={{ fontWeight: 700, border: "solid 1px #fff", borderLeft: "none" }}>
@@ -229,7 +234,7 @@ const SubFormMateriasPrimas = ({ form, feature, forInput, name, matPrimasLookup,
                                     </Field>
                                     <Field name={[field.name, `densidade_${id}`]}><InputNumber controls={false} size="small" min={0} max={50} precision={3} step={.025} /></Field>
                                 </FieldSet>
-                                <FieldSet margin={false} wide={(feature === 'dosers_change') ? 5 : 7}>
+                                <FieldSet margin={false} wide={5}>
                                     <FieldSet margin={false}
                                         field={{
                                             wide: [/* 3,  4,*/ 5, 5, 5, 1/* , 2, 3 */],
@@ -313,6 +318,25 @@ const PickedLotes = ({ data }) => {
     </>);
 }
 
+const getCubas = (doser) => {
+    if (doser == "A1") {
+        return 1;
+    } else if (doser == "A2") {
+        return 2;
+    } else if (doser == "A3" || doser == "B5" || doser == "C5") {
+        return 3;
+    } else if (doser == "A6" || doser == "B6" || doser == "C6") {
+        return 4;
+    } else if (doser == "B2" || doser == "C2") {
+        return 5;
+    } else if (doser == "B1" || doser == "C1") {
+        return 6;
+    } else if (doser == "B3" || doser == "C3") {
+        return 7;
+    }
+    return null;
+}
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true, t }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -351,8 +375,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
 
     const transformData = ({ items, formulacao }) => {
-        let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, orig_matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, doseador_A: v.doseador_A, removeCtrl: true }));
-        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, doseador_B: v.doseador_B, doseador_C: v.doseador_C, removeCtrl: true }));
+        let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, orig_matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, doseador_A: v.doseador_A, cuba_A: v.cuba_A, removeCtrl: true }));
+        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, doseador_B: v.doseador_B, doseador_C: v.doseador_C,cuba_BC: v.cuba_BC, removeCtrl: true }));
         const cliente_cod = { key: record.formulacao?.cliente_cod, value: formulacao?.cliente_cod, label: formulacao?.cliente_nome };
         return { ...formulacao, cliente_cod, formu_materiasprimas_A, formu_materiasprimas_BC, totalGlobal: 100 };
     }
@@ -398,6 +422,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     }
                 }
                 setFormulacoes(await loadFormulacaoesLookup({ produto_id, token }));
+                console.log("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")
+                console.log(transformData({ items, formulacao: record?.formulacao }))
                 form.setFieldsValue(transformData({ items, formulacao: record?.formulacao }));
                 console.log(transformData({ items, formulacao: record?.formulacao }))
             }
@@ -419,6 +445,39 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         } else {
             const formu_materiasprimas_A = allA.filter(v => v.removeCtrl === true);
             const formu_materiasprimas_BC = allBC.filter(v => v.removeCtrl === true);
+            for (let [idx, v] of formu_materiasprimas_A.entries()) {
+                if (formu_materiasprimas_A[idx].doseador_A && !formu_materiasprimas_A[idx].cuba_A) {
+                    let mult = 1;
+                    if (formu_materiasprimas_A[idx].matprima_cod_A === "RAAOX0000000080") {
+                        mult = 10;
+                    }
+                    if (formu_materiasprimas_A[idx].matprima_cod_A === "R00000000000092") {
+                        mult = 11;
+                    }
+                    
+                    formu_materiasprimas_A[idx].cuba_A = getCubas(formu_materiasprimas_A[idx].doseador_A) * mult;
+                } else if (!formu_materiasprimas_A[idx].doseador_A) {
+                    formu_materiasprimas_A[idx].cuba_A = undefined;
+                }
+            }
+            for (let [idx, v] of formu_materiasprimas_BC.entries()) {
+                if ((formu_materiasprimas_BC[idx].doseador_B || formu_materiasprimas_BC[idx].doseador_C) && !formu_materiasprimas_A[idx].cuba_BC) {
+                    let mult = 1;
+                    if (formu_materiasprimas_BC[idx].matprima_cod_BC === "RAAOX0000000080") {
+                        mult = 10;
+                    }
+                    if (formu_materiasprimas_BC[idx].matprima_cod_BC === "R00000000000092") {
+                        mult = 11;
+                    }
+                    if (formu_materiasprimas_BC[idx].doseador_B) {
+                        formu_materiasprimas_BC[idx].cuba_BC = getCubas(formu_materiasprimas_BC[idx].doseador_B) * mult;
+                    } else {
+                        formu_materiasprimas_BC[idx].cuba_BC = getCubas(formu_materiasprimas_BC[idx].doseador_C) * mult;
+                    }
+                } else if (!formu_materiasprimas_BC[idx].doseador_B && !formu_materiasprimas_BC[idx].doseador_C) {
+                    formu_materiasprimas_BC[idx].cuba_BC = undefined;
+                }
+            }
             const fieldValues = updateGlobals({ values: { ...allValues, formu_materiasprimas_A, formu_materiasprimas_BC }, action: "valueschange" });
             form.setFieldsValue(fieldValues);
         }
@@ -461,6 +520,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     tolerancia: v.tolerancia_A, arranque: v.arranque_A, vglobal: v.global,
                     densidade: v.densidade_A, extrusora: 'A', matprima_cod: v.matprima_cod_A,
                     ...(v.matprima_cod_A === v.orig_matprima_cod_A) && { doseador_A: v.doseador_A },
+                    ...(v.matprima_cod_A === v.orig_matprima_cod_A) && { cuba_A: v.cuba_A },
                     matprima_des
                 });
             }
@@ -470,6 +530,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     tolerancia: v.tolerancia_BC, arranque: v.arranque_BC, vglobal: v.global,
                     densidade: v.densidade_BC, extrusora: 'BC', matprima_cod: v.matprima_cod_BC,
                     ...(v.matprima_cod_BC === v.orig_matprima_cod_BC) && { doseador_B: v.doseador_B, doseador_C: v.doseador_C },
+                    ...(v.matprima_cod_BC === v.orig_matprima_cod_BC) && { cuba_BC: v.cuba_BC },
                     matprima_des
                 });
             }
@@ -531,7 +592,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         if (pickData.length < 2) {
                             pickData = v.split('#');
                         }
-                        console.log("PICCCCCCCCCCCKKKKKKKKKKKK-",pickData)
+                        console.log("PICCCCCCCCCCCKKKKKKKKKKKK-", pickData)
                         if (pickData.length >= 1) {
 
                             let arrSource = fData.source.split(";");
@@ -541,7 +602,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 let sgext = src.startsWith('A') ? 'A' : src.startsWith('B') ? 'B' : 'C';
                                 let items = form.getFieldValue(`formu_materiasprimas_${ext}`);
                                 let fItemIdx = items.findIndex(it => it[`matprima_cod_${ext}`] === pickData[0]);
-                                
+
                                 if (fItemIdx >= 0) {
                                     let fItemOldIdx = items.findIndex(it => it[`doseador_${sgext}`] === src);
                                     if (fItemOldIdx >= 0) {
@@ -631,7 +692,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
 
     return (
-        <div onKeyDown={keydownHandler} tabIndex={-1} style={{ ...focusStyle }} onFocus={() => onFocus(true)} onBlur={() => onFocus(false)}>
+        <div /* onKeyDown={keydownHandler} */ tabIndex={-1} style={{ ...focusStyle }} /* onFocus={() => onFocus(true)} onBlur={() => onFocus(false)} */>
             <Modalv4 />
             {record.feature === 'dosers_change' && <Modal title="Lotes Picados" center visible={hasLinePick} onOk={handleOkLinePick} confirmLoading={LinePickLoading} onCancel={handleCancelLinePick}><PickedLotes data={linePick} /></Modal>}
             <ResultMessage
@@ -740,11 +801,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </FieldSet>
                             <VerticalSpace height="12px" />
                         </>}
-                        {record.feature === 'dosers_change' && <FieldSet field={{ wide: [3, 13] }}>
-                            <Field forInput={false} name="source" label={{ enabled: false }} style={{ textAlign: "center" }}><Input size="small" /></Field>
-                            <Field name="viewer" forInput={false} label={{ enabled: false }}><Input size='small' onDoubleClick={onManualInput} /></Field>
-                            {/* <FieldItem label={{ enabled: false }}><input className="ant-input" style={{ padding: "2px 7px" }} ref={inputRef} onKeyDown={onPick} autoFocus /></FieldItem> */}
-                        </FieldSet>}
                         <HeaderA feature={record.feature} />
                         <SubFormMateriasPrimas feature={record.feature} form={form} name="formu_materiasprimas_A" forInput={forInput} matPrimasLookup={matPrimasLookup} id="A" />
                         <HeaderBC feature={record.feature} />

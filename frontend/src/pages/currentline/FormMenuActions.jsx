@@ -18,6 +18,7 @@ import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS, TIME_FORMAT, SCREENSIZE_OPTIMI
 import { remove } from 'ramda';
 import Table, { setColumns } from "components/table";
 import { useDataAPI } from "utils/useDataAPI";
+import Portal from "components/portal";
 
 
 import { MdProductionQuantityLimits } from 'react-icons/md';
@@ -27,7 +28,7 @@ import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
 import Modalv4 from 'components/Modalv4';
 import useModalv4 from 'components/useModalv4';
-
+import moment from 'moment';
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
 import { VscDebugStart } from 'react-icons/vsc';
@@ -46,9 +47,7 @@ const BobinesValidarList = React.lazy(() => import('../bobines/BobinesValidarLis
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
 const BobinagensValidarList = React.lazy(() => import('../bobinagens/BobinagensValidarList'));
-
-
-
+const FormSettings = React.lazy(() => import('./ordemfabrico/FormSettings'));
 
 
 const StyledCard = styled(Card)`
@@ -149,7 +148,7 @@ const loadCurrentSettings = async (aggId, token) => {
     return rows;
 }
 
-const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
+const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores }) => {
     const { of_cod, cliente_nome, produto_cod, item_des, color } = ofItem;
     const totais = useRef({});
     const modal = useModalv4();
@@ -158,23 +157,26 @@ const CardAgg = ({ ofItem, paletesStock, setShowForm }) => {
     const onAction = (idcard) => {
         switch (idcard) {
             case 'paletes_stock':
-                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2, responsive: true });
+                modal.show({ propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2, responsive: true });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'schema':
-                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'settings':
-                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({
+                    propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2, footer: "ref", content:
+                        <FormSettings record={{ aggItem: { ...ofItem, emendas, cores }, csid }} /* setFormTitle={setFormTitle} record={record} parentRef={iref} closeParent={onVisible} parentReload={parentReload} */ />
+                });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'attachments':
-                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, mode: "none", type: "modal", width: "300px", height: "300px" }));
                 break;
             case 'position':
-                modal.show({ width: "800px", height: "450px", fullWidthDevice: 2 });
+                modal.show({ propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
                 break;
         }
@@ -460,8 +462,101 @@ const CardCortes = ({ menuItem, record }) => {
     );
 }
 
+
+const fetchBobinagens = async (value) => {
+    if (value) {
+        const { data: { rows } } = await fetchPost({ url: `${API_URL}/getconsumosbobinagenslookup/`, pagination: { limit: 20 }, filter: { ["fbobinagem"]: `%${value.replaceAll(' ', '%%')}%` }, sort: [{ column: 'ig.t_stamp', direction: 'ASC' }] });
+        return rows;
+    }
+}
+
+const lastBobinagem = async () => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/getconsumosbobinagenslookup/`, pagination: { limit: 1 }, filter: {}, sort: [{ column: 'ig.t_stamp', direction: 'DESC' }] });
+    return rows;
+}
+
+const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReload, data }) => {
+    const [submitting, setSubmitting] = useState(false);
+    const [form] = Form.useForm();
+    const [lastId, setLastId] = useState();
+
+
+
+    useEffect(() => {
+        setSubmitting(true);
+        (async () => {
+            let bobinagem = await lastBobinagem();
+            if (bobinagem.length > 0) {
+                form.setFieldsValue({ date: bobinagem[0]["t_stamp"], fbobinagem: { key: bobinagem[0]["id"], value: bobinagem[0]["id"], label: <div key={`ls-${bobinagem[0]["id"]}`}><b>{bobinagem[0]["nome"]}</b> {moment(bobinagem[0]["t_stamp"]).format(DATETIME_FORMAT)}</div> } });
+                setLastId(bobinagem[0]["id"]);
+                setSubmitting(false);
+            }
+        })();
+    }, []);
+
+    const onValuesChange = (v) => {
+        if ("fbobinagem" in v) {
+            form.setFieldsValue({ date: moment(v.fbobinagem.value) });
+        }
+    }
+
+    const onSubmit = async () => {
+        setSubmitting(true);
+        const { fbobinagem, date } = form.getFieldsValue(true);
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date:date.format(DATETIME_FORMAT) } });
+        parentReload();
+        setSubmitting(false);
+        closeParent();
+    }
+
+
+    return (
+
+        <Form form={form} name={`frm-tt`} onFinish={onSubmit} onValuesChange={onValuesChange}>
+            <FormLayout
+                id="LAY-FRMMOV"
+                layout="vertical"
+                style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
+                schema={schema}
+                field={{ guides: false, wide: [16], alert: { pos: "alert", tooltip: true, container: false, /* container: "el-external"*/ }, }}
+                fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+            >
+
+                <FieldSet>
+                    <Field required={false} name="fbobinagem" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Bobinagem", pos: "top" }}>
+                        <SelectDebounceField
+                            placeholder="Bobinagem"
+                            size="small"
+                            keyField="id"
+                            textField="nome"
+                            showSearch
+                            showArrow
+                            allowClear
+                            fetchOptions={fetchBobinagens}
+                            optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {moment(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
+                        />
+                    </Field>
+                </FieldSet>
+                {parentRef && <Portal elId={parentRef.current}>
+                    <Space>
+                        <Button onClick={closeParent}>Cancelar</Button>
+                        <Button disabled={submitting} type="primary" onClick={onSubmit}>Confirmar</Button>
+                    </Space>
+                </Portal>
+                }
+            </FormLayout>
+        </Form>
+
+    );
+}
+
+const PararOrdemFabrico = () => {
+    return (<></>);
+}
+
 const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     const { status } = record;
+    const modal = useModalv4();
 
     const onEdit = () => {
         setShowForm(prev => ({ ...prev, idcard: menuItem.idcard, show: !prev.show, record, mode: "fullscreen", type: "modal" }))
@@ -472,16 +567,33 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     }, [])
 
     const changeStatus = async (status) => {
-        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
-        if (response.data.status !== "error") {
-            Modal.success({ content: response.data.title });
-            parentReload({ aggId: record.agg_of_id });
-
-        } else {
-            Modal.error({
-                title: 'Erro ao alterar estado da Ordem de Fabrico',
-                content: response.data.title,
+        console.log(record);
+        if (status === 9) {
+            modal.show({
+                propsToChild: true, width: '400px', height: '150px', fullWidthDevice: 2, footer: "ref",
+                title: `Finalizar Produção`,
+                content: <FecharOrdemFabrico data={{ id: record.id, status, agg_of_id: record.agg_of_id }} parentReload={() => parentReload({ aggId: record.agg_of_id })} />
             });
+        }
+        if (status === 1) {
+            modal.show({
+                propsToChild: true, width: '400px', height: '150px', fullWidthDevice: 2, footer: "ref",
+                title: `Parar/Suspender Produção`,
+                content: <PararOrdemFabrico data={{ id: record.id, status, agg_of_id: record.agg_of_id }} parentReload={() => parentReload({ aggId: record.agg_of_id })} />
+            });
+        }
+        if (status === 3 || status === 0) {
+            const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
+            if (response.data.status !== "error") {
+                Modal.success({ content: response.data.title });
+                parentReload({ aggId: record.agg_of_id });
+
+            } else {
+                Modal.error({
+                    title: 'Erro ao alterar estado da Ordem de Fabrico',
+                    content: response.data.title,
+                });
+            }
         }
     }
 
@@ -695,9 +807,9 @@ const CardActions = ({ menuItem, record, parentReload }) => {
                 <VerticalSpace height="5px" />
                 <Button block size="large" onClick={() => onClick("specs")}>Especificações</Button>
                 <VerticalSpace height="5px" />
-                <Button block size="large" onClick={() =>navigate('/app/stocklistbuffer')}>Matérias Primas em Buffer</Button>
+                <Button block size="large" onClick={() => navigate('/app/stocklistbuffer')}>Matérias Primas em Buffer</Button>
                 <VerticalSpace height="5px" />
-                <Dropdown.Button onClick={onMenuClick} overlay={<FormulacaoMenu onMenuClick={onMenuClick} />}>Formulação</Dropdown.Button>
+                <Dropdown.Button trigger={["click"]} onClick={onMenuClick} overlay={<FormulacaoMenu onMenuClick={onMenuClick} />}>Formulação</Dropdown.Button>
             </Card>
         </div>
     );
@@ -1056,6 +1168,8 @@ export default ({ aggId }) => {
                         v['color'] = colorsOfs[idx]
                     }
 
+                    console.log("###############", paletizacao)
+
                     const quantity = ofs.reduce((basket, ofitem) => {
                         basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
                         basket["linear_meters"] = (!basket?.linear_meters) ? ofitem.linear_meters : basket.linear_meters + ofitem.linear_meters;
@@ -1134,7 +1248,7 @@ export default ({ aggId }) => {
                     }
                 })}
                 {currentSettings.ofs.map((ofItem, idx) => {
-                    return (<CardAgg key={`ct-agg-${idx}`} ofItem={ofItem} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
+                    return (<CardAgg key={`ct-agg-${idx}`} csid={currentSettings.id} cores={currentSettings.cores} ofItem={ofItem} emendas={currentSettings.emendas} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
                 })}
             </StyledGrid>}
 

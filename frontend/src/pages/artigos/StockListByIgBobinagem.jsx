@@ -241,7 +241,6 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
             _dosers = `${_dosers},${itm["doseador"]}`;
         }
         _dosers = _dosers.split(',').filter(el => el).sort().join("");
-        console.log("ddddd", _dosers)
         if (_dosers == "A1") {
             _group = 1;
         } else if (_dosers == "A2") {
