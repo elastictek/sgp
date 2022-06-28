@@ -209,8 +209,6 @@ def export(sql, db_parameters, parameters,conn_name):
         }
         fstream = requests.post('http://192.168.0.16:8080/ReportsGW/runlist', json=req)
 
-        print(req)
-
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
             if (parameters["export"] == "pdf"):
@@ -229,10 +227,6 @@ def export(sql, db_parameters, parameters,conn_name):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def ExportFile(request, format=None):
-    print("uiuiuiuiuiuiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-    print(request.data)
-    print("----------------------------------------------------------")
-    
     p = request.data["parameters"]
     req = {**p}
     fstream = requests.post('http://localhost:8080/ReportsGW/run', json=req)
@@ -1105,7 +1099,7 @@ def ExpedicoesTempoList(request, format=None):
         prm["cols"]["avg_mesano"] = {"width": 50, "title": "Avg. Mês."}
         prm["cols"]["min_mesano"] = {"width": 50, "title": "Min. Mês."}
         prm["cols"]["max_mesano"] = {"width": 50, "title": "Max. Mês."}
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=prm,conn_name=AppSettings.reportConn["gw"])
+        return export(sql(lambda v:'limit 5000',lambda v:v,lambda v:v), db_parameters=parameters, parameters=prm,conn_name=AppSettings.reportConn["gw"])
     response = dbgw.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 

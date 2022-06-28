@@ -30,7 +30,7 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker,message } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
@@ -198,6 +198,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             "export": type.key,
             cols: columns
         }
+        const hide = message.loading('A exportar, aguarde um momento, Por favor...', 0);
         const response = await fetchPostBlob(requestData);
         switch (type.key) {
             case "pdf":
@@ -213,6 +214,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.csv`);
                 break;
         }
+        hide();
     }
 
     return (
@@ -284,22 +286,22 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        "expedicao": { title: "Expedição", width: 100, render: (v, r) => <b>{v}</b>, ...common },
+                        "expedicao": { title: "Expedição", fixed:"left",width: 100, render: (v, r) => <b>{v}</b>, ...common },
                         "ITMDES1_0": { title: "Artigo", render: (v, r) => <b>{v}</b>, ...common },
-                        "ITMREF_0": { title: "Artigo Cód.", width: 100, render: (v, r) => v, ...common },
+                        "ITMREF_0": { title: "Artigo Cód.", width: 150, render: (v, r) => v, ...common },
                         "ano": { title: "Ano", width: 100, render: (v, r) => v, ...common },
                         "mes": { title: "Mês", width: 100, render: (v, r) => v, ...common },
-                        "encomenda": { title: "Encomenda", width: 100, render: (v, r) => v, ...common },
+                        "encomenda": { title: "Encomenda", width: 150, render: (v, r) => v, ...common },
                         "BPCNAM_0": { title: "Cliente", render: (v, r) => v, ...common },
                         "LOT_0": { title: "Palete", width: 100, render: (v, r) => v, ...common },
                         "nome_bobine": { title: "Bobine", width: 100, render: (v, r) => v, ...common },
                         "IPTDAT_0": { title: "Data Expedição", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
                         "data_bobine": { title: "Data Bobine", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
-                        "diff": { title: "N.Dias", width: 50, render: (v, r) => v, ...common },
-                        "exp": { title: "Expedição",align:"center", width: 50, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_expedicao}/{r.avg_expedicao}/{r.max_expedicao}</div>, ...common },
-                        "enc": { title: "Encomenda",align:"center", width: 50, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_encomenda}/{r.avg_encomenda}/{r.max_encomenda}</div>, ...common },
-                        "pal": { title: "Palete",align:"center", width: 50, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_palete}/{r.avg_palete}/{r.max_palete}</div>, ...common },
-                        "mesano": { title: "Mês/Ano",align:"center", width: 50, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_mesano}/{r.avg_mesano}/{r.max_mesano}</div>, ...common },
+                        "diff": { title: "N.Dias", width: 70, render: (v, r) => v, ...common },
+                        "exp": { title: "Expedição",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_expedicao}/{r.avg_expedicao}/{r.max_expedicao}</div>, ...common },
+                        "enc": { title: "Encomenda",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_encomenda}/{r.avg_encomenda}/{r.max_encomenda}</div>, ...common },
+                        "pal": { title: "Palete",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_palete}/{r.avg_palete}/{r.max_palete}</div>, ...common },
+                        "mesano": { title: "Mês/Ano",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_mesano}/{r.avg_mesano}/{r.max_mesano}</div>, ...common },
                     }
                 ))({ idx: 1, optional: false })
             },
@@ -325,7 +327,7 @@ export default () => {
                     dataAPI={dataAPI}
                     columns={columns}
                     onFetch={dataAPI.fetchPost}
-                    //scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
                 //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
                 />
             </Spin>
