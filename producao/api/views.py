@@ -207,7 +207,7 @@ def export(sql, db_parameters, parameters,conn_name):
             "data":dbparams,
             **parameters
         }
-        fstream = requests.post('http://192.168.0.16:8080/ReportsGW/runlist', json=req)
+        fstream = requests.post('http://localhost:8080/ReportsGW/runlist', json=req)
 
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])

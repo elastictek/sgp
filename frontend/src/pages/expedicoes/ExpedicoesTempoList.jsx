@@ -286,8 +286,8 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        "expedicao": { title: "Expedição", fixed:"left",width: 100, render: (v, r) => <b>{v}</b>, ...common },
-                        "ITMDES1_0": { title: "Artigo", render: (v, r) => <b>{v}</b>, ...common },
+                        "expedicao": { title: "Expedição", fixed:"left",width: 150, render: (v, r) => <b>{v}</b>, ...common },
+                        "ITMDES1_0": { title: "Artigo",width: 250, render: (v, r) => <b>{v}</b>, ...common },
                         "ITMREF_0": { title: "Artigo Cód.", width: 150, render: (v, r) => v, ...common },
                         "ano": { title: "Ano", width: 100, render: (v, r) => v, ...common },
                         "mes": { title: "Mês", width: 100, render: (v, r) => v, ...common },
