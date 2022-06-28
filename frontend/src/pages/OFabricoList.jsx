@@ -25,7 +25,7 @@ import TagButton from "components/TagButton";
 import ResponsiveModal from 'components/ResponsiveModal';
 import { GrStorage } from "react-icons/gr";
 import { RiRefreshLine } from "react-icons/ri";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 import YScroll from "components/YScroll";
@@ -506,10 +506,11 @@ const PromiseFormConfirm = ({ data, parentRef, closeSelf }) => {
     );
 };
 
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
+const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions}) => {
     const { status, temp_ofabrico } = record;
     const modal = useModalv4();
     const [action, setAction] = useState();
+    const navigate = useNavigate();
 
     const onShowConfirm = (action) => {
         const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
@@ -524,7 +525,8 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
-        setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
+        navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg} });
+        //setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
     }
 
     return (
@@ -698,11 +700,11 @@ const Action = ({ v, r, dataAPI }) => {
                 ext = "xls";
                 break;
         }
-        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item,ext), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
+        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item, ext), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
     }
 
 
-    const onDownload = async (item,ext) => {
+    const onDownload = async (item, ext) => {
         const values = form.getFieldsValue(true);
         setDownloading(true);
         const requestData = dataAPI.getPostRequest();
@@ -752,21 +754,15 @@ const Action = ({ v, r, dataAPI }) => {
 }
 
 
+
 export default () => {
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({
-        payload: {
-            url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [
-                /* { column: 'status', direction: 'ASC', options: "NULLS FIRST" },  */
-                { column: 'ofabrico', direction: 'DESC' },
-                /* { column: 'completa' }, { column: 'end_date', direction: 'DESC' } */
-            ]
-        }
-    });
+    const location = useLocation();
+    const dataAPI = useDataAPI( { payload: { url: `${API_URL}/ofabricolist/`,parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const [flyoutStatus, setFlyoutStatus] = useState({ visible: false, fullscreen: false });
     const flyoutFooterRef = useRef();
@@ -774,6 +770,8 @@ export default () => {
 
     const [showConfirm, setShowConfirm] = useState({ show: false, data: {} });
     const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
+
+
 
     useEffect(() => {
         const cancelFetch = cancelToken();

@@ -207,7 +207,10 @@ def export(sql, db_parameters, parameters,conn_name):
             "data":dbparams,
             **parameters
         }
-        fstream = requests.post('http://localhost:8080/ReportsGW/runlist', json=req)
+        fstream = requests.post('http://192.168.0.16:8080/ReportsGW/runlist', json=req)
+
+        print(req)
+
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
             if (parameters["export"] == "pdf"):
@@ -216,6 +219,8 @@ def export(sql, db_parameters, parameters,conn_name):
                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
             elif (parameters["export"] == "word"):
                 resp['Content-Disposition'] = "inline; filename=list.docx"
+            if (parameters["export"] == "csv"):
+                resp['Content-Disposition'] = "inline; filename=list.csv"
             return resp
 
 
@@ -1023,6 +1028,86 @@ def StockListByIgBobinagem(request, format=None):
         response = dbgw.executeList(sql, connection, parameters, [])
         return Response(response)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ExpedicoesTempoList(request, format=None):
+    dataFilters = request.data["filter"]
+    connection = connections[connGatewayName].cursor()    
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    print("#########")
+    print(request.data['filter'])
+    f1 = Filters(request.data['filter'])
+    f1.setParameters({
+        "mes": {"value": lambda v: v.get('fmes'), "field": lambda k, v: k},
+        "ano": {"value": lambda v: v.get('fyear'), "field": lambda k, v: k}
+    }, True)
+    f1.where()
+    f1.add(f'mes = :mes::int', lambda v: v is not None)
+    f1.add(f'ano = :ano::int', lambda v: v is not None)
+    f1.value("and")
+
+    parameters = {**f1.parameters}
+    dql = dbgw.dql(request.data, False)
+
+    cols = f'''*'''
+    sql = lambda p, c, s: (
+        f"""
+           SELECT * FROM (
+           with DELIVERY AS(
+                SELECT 
+                ST.*,
+                DATE_PART('day', ST."IPTDAT_0"::timestamp - ST.data_bobine::timestamp) diff
+                FROM mv_expedicoes ST
+                --WHERE mes=5 and ano = 2022
+                {f1.text}
+                {s(dql.sort)} {p(dql.paging)}
+            )
+            select 
+            *,
+            ROUND((AVG(diff) OVER (PARTITION BY expedicao))::numeric,1) avg_expedicao,
+            ROUND((MIN(diff) OVER (PARTITION BY expedicao))::numeric,1) min_expedicao,
+            ROUND((MAX(diff) OVER (PARTITION BY expedicao))::numeric,1) max_expedicao,
+            ROUND((AVG(diff) OVER (PARTITION BY encomenda))::numeric,1) avg_encomenda,
+            ROUND((MIN(diff) OVER (PARTITION BY encomenda))::numeric,1) min_encomenda,
+            ROUND((MAX(diff) OVER (PARTITION BY encomenda))::numeric,1) max_encomenda,
+            ROUND((AVG(diff) OVER (PARTITION BY "LOT_0"))::numeric,1) avg_palete,
+            ROUND((MIN(diff) OVER (PARTITION BY "LOT_0"))::numeric,1) min_palete,
+            ROUND((MAX(diff) OVER (PARTITION BY "LOT_0"))::numeric,1) max_palete,
+            ROUND((AVG(diff) OVER (PARTITION BY ano,mes))::numeric,1) avg_mesano,
+            ROUND((MIN(diff) OVER (PARTITION BY ano,mes))::numeric,1) min_mesano,
+            ROUND((MAX(diff) OVER (PARTITION BY ano,mes))::numeric,1) max_mesano
+            from DELIVERY
+            ) t
+        """
+    )
+    sqlCount = f""" 
+        SELECT count(*) FROM mv_expedicoes ST {f1.text}
+    """
+    if ("export" in request.data["parameters"]):
+        prm = {**request.data["parameters"]}
+        del prm["cols"]["exp"]
+        del prm["cols"]["enc"]
+        del prm["cols"]["mesano"]
+        del prm["cols"]["pal"]
+        prm["cols"]["avg_expedicao"] = {"width": 50, "title": "Avg. Exp."}
+        prm["cols"]["min_expedicao"] = {"width": 50, "title": "Min. Exp."}
+        prm["cols"]["max_expedicao"] = {"width": 50, "title": "Max. Exp."}
+        prm["cols"]["avg_encomenda"] = {"width": 50, "title": "Avg. Enc."}
+        prm["cols"]["min_encomenda"] = {"width": 50, "title": "Min. Enc."}
+        prm["cols"]["max_encomenda"] = {"width": 50, "title": "Max. Enc."}
+        prm["cols"]["avg_palete"] = {"width": 50, "title": "Avg. Pal."}
+        prm["cols"]["min_palete"] = {"width": 50, "title": "Min. Pal."}
+        prm["cols"]["max_palete"] = {"width": 50, "title": "Max. Pal."}
+        prm["cols"]["avg_mesano"] = {"width": 50, "title": "Avg. Mês."}
+        prm["cols"]["min_mesano"] = {"width": 50, "title": "Min. Mês."}
+        prm["cols"]["max_mesano"] = {"width": 50, "title": "Max. Mês."}
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=prm,conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [],None,sqlCount)
+    return Response(response)
 
 #endregion
 
@@ -4407,6 +4492,9 @@ def TempAggOFabricoLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    print(request.data)
+    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     feature = request.data['parameters']['feature'] if 'feature' in request.data['parameters'] else None
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
 
@@ -4420,13 +4508,15 @@ def ValidarBobinagensList(request, format=None):
         "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
         "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
         "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
-        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'}
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None else None, "field": lambda k, v: f'pbm.{k}'},
+        "type": {"value": lambda v: f"=={request.data['filter']['agg_of_id']}" if v.get("type") is None or v.get("type")=="default" else None, "field": lambda k, v: f'acs.agg_of_id'},
     }, True)
-    f.where(False, "and")
+    f.where()
     f.auto()
     f.value()
     
-    f2 = filterMulti(request.data['filter'], {}, False, "and",False)
+    f2 = filterMulti(request.data['filter'], {}, False if f.hasFilters else True, "and",False)
     
     def filterDefeitosMultiSelect(data,name,relname):
         f = Filters(data)
@@ -4499,9 +4589,9 @@ def ValidarBobinagensList(request, format=None):
                 ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-                join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
-                where pbm.valid=0 {f.text} {f2["text"]}
+                {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
                 {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) pbm
@@ -4519,11 +4609,13 @@ def ValidarBobinagensList(request, format=None):
                 {f''',(select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes''' if feature=='fixconsumos' else ''}
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-                where pbm.valid=0  {f.text} {f2["text"]}
+                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                {f.text} {f2["text"]}
                 {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if (festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters) else '' }
             ) t
             {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
         """
+
     if ("export" in request.data["parameters"]):
         for x in range(0, 30):
             request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
@@ -4551,6 +4643,11 @@ def ValidarBobinagensList(request, format=None):
                 {tmpsql} 
                 ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    print(f.text)
+    print(f2["text"])
+    print(parameters)
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 

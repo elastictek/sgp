@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchPost } from "./fetch";
 
-export const useDataAPI = ({ payload } = {}) => {
+export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
     const [isLoading,setIsLoading] = useState(false);
     const [dataState, setDataState] = useState({
         pagination: payload?.pagination,
@@ -9,7 +9,7 @@ export const useDataAPI = ({ payload } = {}) => {
         sort: payload?.sort,
         parameters: payload?.parameters,
         data: (payload?.data) ? payload.data : {},
-        url: payload.url,
+        url: payload.url
     });
 
     var action = [];

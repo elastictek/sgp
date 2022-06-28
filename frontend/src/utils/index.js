@@ -72,7 +72,7 @@ export const getFilterValue = (v, type = 'exact') => {
     const val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
     if (val !== '' && val !== undefined) {
         const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
-        const matches = val.match(re);
+        const matches = val.toString().match(re);
         if (matches!==null && matches.length > 0) {
             return `${val}`;
         } else {

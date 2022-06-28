@@ -184,6 +184,7 @@ export default () => {
                 { key: 'i-stockloglist', label: 'Movimento de Lotes' },
                 { key: 'i-bobinesoriginaislist', label: 'Bobines Originais' },
                 { key: 'i-fixlotes', label: 'Erros de Consumos (Bobinagens)' },
+                {key: 'i-expedicoes-time', label: 'Expedições Tempo em Armazém' },
             ]
         }
     ];
@@ -217,6 +218,9 @@ export default () => {
             case 'i-stockloglist': navigate('/app/logslist/stockloglist'); break;
             case 'i-bobinesoriginaislist': navigate('/app/bobines/bobinesoriginaislist'); break;
             case 'i-fixlotes': navigate('/app/bobinagens/fixlotes'); break;
+            case 'i-expedicoes-time': navigate('/app/expedicoes/timearmazem'); break;
+
+            
 
         }
 

@@ -159,6 +159,8 @@ urlpatterns = [
     re_path(r'^stockloglist/$',views.StockLogList),
     re_path(r'^createbobinagem/$',views.CreateBobinagem),
     re_path(r'^bobinesoriginaislist/$',views.BobinesOriginaisList),
+    re_path(r'^expedicoestempolist/$',views.ExpedicoesTempoList),
+    
     #REPORTS
     re_path(r'^exportfile/$',views.ExportFile),
 

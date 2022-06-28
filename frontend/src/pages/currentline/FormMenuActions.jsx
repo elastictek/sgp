@@ -503,7 +503,7 @@ const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReloa
     const onSubmit = async () => {
         setSubmitting(true);
         const { fbobinagem, date } = form.getFieldsValue(true);
-        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date:date.format(DATETIME_FORMAT) } });
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: date.format(DATETIME_FORMAT) } });
         parentReload();
         setSubmitting(false);
         closeParent();
@@ -635,9 +635,27 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
     );
 }
 
+const SelectBobinagens = ({ onView, onChangeContent, loading }) => {
+    return (
+
+        <Space>
+            <Select defaultValue="vdefault" style={{ width: 200 }} onChange={onChangeContent} dropdownMatchSelectWidth={false} disabled={loading}>
+                <Option value="vdefault">Por validar</Option>
+                <Option value="valid">Validadas</Option>
+                <Option value="vall"> </Option>
+            </Select>
+            <Select defaultValue="default" style={{ width: 200 }} onChange={onChangeContent} dropdownMatchSelectWidth={false} disabled={loading}>
+                <Option value="default">Bobinagens da Ordem de Fabrico</Option>
+                <Option value="all">Todas as Bobinagens</Option>
+            </Select>
+            <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={loading}/>
+        </Space>
+    );
+}
+
 const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: 0, type: "default" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const modal = useModalv4();
 
     useEffect(() => {
@@ -646,6 +664,11 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
     }, [socket]);
+
+    useEffect(() => {
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    }, [dataAPI.isLoading()]);
+
 
     const handleWndClick = (r) => {
         modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, title: `Validar e Classificar Bobinagem ${r.nome}`, content: <BobinesValidarList data={{ bobinagem_id: r.id, bobinagem_nome: r.nome }} /> })
@@ -662,6 +685,30 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
 
     const selectionRowKey = (record) => {
         return `bob-${record.id}`;
+    }
+
+
+
+    const onChangeContent = async (v) => {
+        console.log("CHANGEINNGGGGGGx ",dataAPI.getFilter(true))
+        switch (v) {
+            case 'vdefault':
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: 0 },true);
+                dataAPI.fetchPost();
+                break;
+            case 'vall':
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: null },true);
+                dataAPI.fetchPost();
+                break;
+            case 'valid':
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: 1 },true);
+                dataAPI.fetchPost();
+                break;
+            default:
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), type: v },true);
+                dataAPI.fetchPost();
+                break;
+        }
     }
 
     const columns = setColumns(
@@ -697,7 +744,10 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
             <Card hoverable/*  onClick={onEdit} */
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
-                extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} /></Space>}
+
+                extra={<SelectBobinagens onChangeContent={onChangeContent} onView={onView} loading={dataAPI.isLoading()} />}
+
+                //extra={<Space><Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} /></Space>}
                 bodyStyle={{ height: "200px", maxHeight: "400px", overflow: "hidden" }}
             >
                 <YScroll>
@@ -1118,8 +1168,10 @@ const menuItems = [
     } */
 ];
 
-export default ({ aggId }) => {
+export default (props) => {
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
+    const navigate = useNavigate();
     const [showForm, setShowForm] = useState({ show: false, type: 'modal', mode: "fullscreen" });
     const [guides, setGuides] = useState(false);
     const [currentSettings, setCurrentSettings] = useState({});
@@ -1128,7 +1180,7 @@ export default ({ aggId }) => {
     useEffect(() => {
         if (dataSocket) {
             const cancelFetch = cancelToken();
-            loadData({ aggId, token: cancelFetch });
+            loadData({ aggId:props?.aggId, token: cancelFetch });
             return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
         }
     }, [dataSocket?.inproduction]);
@@ -1137,12 +1189,13 @@ export default ({ aggId }) => {
     useEffect(() => {
         /*         console.log("FORM-AGG->", ctx) */
         const cancelFetch = cancelToken();
-        loadData({ aggId, token: cancelFetch });
+        loadData({ aggId:props?.aggId, token: cancelFetch });
         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
     }, []);
 
     const loadData = (data = {}, type = "init") => {
-        const { aggId, token } = data;
+        const { token } = data;
+        let aggId = (data?.aggId) ? aggId : location?.state?.aggId;
         switch (type) {
             default:
                 if (!loading) {
@@ -1198,6 +1251,7 @@ export default ({ aggId }) => {
 
     return (
         <>
+            <Button onClick={() => navigate(-1,{state:{f:1}})}>Voltar</Button>
             {/*  <Modalv4 /> */}
             {/* <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar..."> */}
             {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
