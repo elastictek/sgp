@@ -184,7 +184,7 @@ export default () => {
                 { key: 'i-stockloglist', label: 'Movimento de Lotes' },
                 { key: 'i-bobinesoriginaislist', label: 'Bobines Originais' },
                 { key: 'i-fixlotes', label: 'Erros de Consumos (Bobinagens)' },
-                {key: 'i-expedicoes-time', label: 'Expedições Tempo em Armazém' },
+                {key: 'i-expedicoes-time', label: 'Relatório de Expedições Mensal' },
             ]
         }
     ];

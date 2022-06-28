@@ -39,7 +39,7 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 
 
-const mainTitle ='Expedições Tempo em Armazém das Bobines';
+const mainTitle ='Relatório de Expedições Mensal';
 
 const useStyles = createUseStyles({});
 
