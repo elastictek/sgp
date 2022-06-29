@@ -112,9 +112,13 @@ const MesField = ({ onChange } = {}) => {
 
 const filterSchema = ({ }) => [];
 
-const PopupProgress = ({ cancelToken, content }) => {
+const PopupProgress = ({ controller, content }) => {
+    const oc = ()=>{
+        controller.abort("Aborting Download");
+        console.log(controller);
+    }
     return (<div>
-        {/* <Button onClick={() => cancelToken.cancel('ggggggggggggggggggggggggggg')}>Cancelar</Button> */}
+        <Button onClick={oc}>Cancelar</Button>
         {content}
     </div>);
 }
@@ -210,11 +214,6 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
 
             const requestData = dataAPI.getPostRequest();
 
-            const cancelFetch = cancelToken();
-            //dataAPI.first();
-            //dataAPI.fetchPost({ token: cancelFetch });
-            //return (() => cancelFetch.cancel());
-
             requestData.parameters = {
                 ...requestData.parameters,
                 "config": "default",
@@ -224,13 +223,14 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 "export": type.key,
                 cols: columns
             };
-            requestData.token = cancelFetch.token;
+            const controller = new AbortController();
+            requestData.signal=controller.signal;
             let mkey = uuIdInt(4);
             message.loading({
                 key: mkey,
-                content: <PopupProgress cancelToken={cancelFetch} content={<div>A exportar, aguarde um momento, Por favor...[Limite 5000 linhas]</div>} />,
-                duration: 0,
-                onClick: (() => message.destroy(mkey))
+                content: <PopupProgress controller={controller} content={<div>A exportar, aguarde um momento, Por favor...[Limite 5000 linhas]</div>} />,
+                duration: 0
+                //onClick: (() => message.destroy(mkey))
             });
             //const hide = message.loading(<PopupProgress cancelToken={cancelFetch} content={<div>A exportar, aguarde um momento, Por favor...[Limite 5000 linhas]</div>}/>, 0,()=>{console.log("0000")});
             const response = await fetchPostBlob(requestData);
@@ -333,6 +333,8 @@ export default () => {
                         "nome_bobine": { title: "Bobine", width: 100, render: (v, r) => v, ...common },
                         "IPTDAT_0": { title: "Data Expedição", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
                         "data_bobine": { title: "Data Bobine", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
+                        "DEMDLVDAT_0": { title: "Data Solicitada", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
+                        "EECICT_0": { title: "Incoterm", width: 80, render: (v, r) => v, ...common },
                         "diff": { title: "N. Dias", width: 80, render: (v, r) => v, ...common },
                         "exp": { title: "Expedição (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_expedicao}/{r.avg_expedicao}/{r.max_expedicao}</div>, ...common },
                         "enc": { title: "Encomenda (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_encomenda}/{r.avg_encomenda}/{r.max_encomenda}</div>, ...common },

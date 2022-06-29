@@ -1054,9 +1054,10 @@ def ExpedicoesTempoList(request, format=None):
            SELECT * FROM (
            with DELIVERY AS(
                 SELECT 
-                ST.*,
+                ST.*,SQ."DEMDLVDAT_0",
                 DATE_PART('day', ST."IPTDAT_0"::timestamp - ST.data_bobine::timestamp) diff
                 FROM mv_expedicoes ST
+                JOIN "SAGE-PROD"."SORDERQ" SQ ON SQ."SOHNUM_0" = ST.encomenda AND SQ."SOPLIN_0" = ST."VCRLINORI_0" AND SQ."SOQSEQ_0" = ST."VCRSEQORI_0" AND SQ."ITMREF_0" = ST."ITMREF_0"
                 --WHERE mes=5 and ano = 2022
                 {f1.text}
                 {s(dql.sort)} {p(dql.paging)}
@@ -2730,50 +2731,56 @@ def UpdateCurrentSettings(request, format=None):
                 cs = getCurrentSettings(data,cursor)
                 if cs is None:
                     return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Definições', "subTitle":"Não é possível alterar as Definições atuais."})
-                print("data........")
-                print(data)
-                print("----")
-                print(cs["ofs"])
-                print("----")
-                #print(cs["limites"])
-                #print("----")
-                #print(cs["cores"])
-                #print("----")
-                #print(cs["emendas"])
-                #print("----")
-                #print(cs["sentido_enrolamento"])
-                #print(cs["amostragem"])
-                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                print(cs["ofs"])
+               
+                # print("----")
+                # print(cs["ofs"])
+                # print("----")
+                # print(cs["emendas"])
+                # print("----")
+                # print(cs["sentido_enrolamento"])
+                # print(cs["amostragem"])
+                # print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 for x in json.loads(cs["ofs"]):
                     if x["of_id"]==data["ofabrico_cod"]:
                         print(x["of_id"])
+                
+                
+                print("******************************************")
+                print("DATA")
+                print(data)
+                
                 emendas = json.loads(cs["emendas"])
+                print("EMENDAS")
+                print(emendas)
+                print("******************************************")
                 for idx,x in enumerate(emendas):
-
-
-# vals = {
-#         "artigo_cod":data["artigo_cod"],
-#         "emendas_rolo":data["nemendas_rolo"],
-#         "tipo_emenda":data["tipo_emenda"],
-#         "maximo":data["maximo"],
-#         "paletes_contentor":data["nemendas_paletescontentor"]
-#     }
-#     if "cliente_cod" in data and data["cliente_cod"] is not None:
-
-
+                    # vals = {
+                    #         "artigo_cod":data["artigo_cod"],
+                    #         "emendas_rolo":data["nemendas_rolo"],
+                    #         "tipo_emenda":data["tipo_emenda"],
+                    #         "maximo":data["maximo"],
+                    #         "paletes_contentor":data["nemendas_paletescontentor"]
+                    #     }
+                    #     if "cliente_cod" in data and data["cliente_cod"] is not None:
                     if x["of_id"]==data["ofabrico_cod"]:
-                        print("####################################")
-                        print(x)
-                        emendas[idx]={**x,"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
+                        emendas[idx]['emendas']={**x["emendas"],"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
+
+
+
+
+
+
                 cores = json.loads(cs["cores"])
                 for idx,x in enumerate(cores):
                     if x["of_id"]==data["ofabrico_cod"]:
-                        cores[idx] = {**x,"core_cod":data["core_cod"],"core_des":data["core_des"]}
+                        cores[idx]['cores'][0] = {**x['cores'][0],"core_cod":data["core_cod"],"core_des":data["core_des"]}
                 limites = json.loads(cs["limites"])
                 for x in json.loads(cs["limites"]):
                     if x["of_id"]==data["ofabrico_cod"]:
                         limites[idx] = {**x}
+                sentido_enrolamento= cs["sentido_enrolamento"]
+                amostragem = cs["amostragem"]
+
 
                 return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})

@@ -11,23 +11,28 @@ const paramType = (method) => (method == "get") ? "params" : "data";
 export const cancelToken = () => CancelToken.source();
 
 const serverRequest = async (request, fetch = true) => {
-  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken } = request;
+  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken, signal } = request;
   //let source = CancelToken.source();
   const params = (fetch) ? { method, responseType, [paramType(method)]: { sort, filter, pagination, parameters } } : { method, responseType, [paramType(method)]: { ...parameters } };
   if (cancelToken) {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
   }
 
+  if (signal && !cancelToken){
+    alert("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+  }
+
   return axios({
     url: url,
     ...params,
-    ...(cancelToken && { cancelToken: cancelToken.token })
+    ...(cancelToken && { cancelToken: cancelToken.token }),
+    ...(signal && { signal: signal })
   });
 };
 
 
-const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {},f=true) => {
-  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken },f);
+const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken,signal } = {},f=true) => {
+  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken,signal },f);
 
   /*     const req ={
           options:{},
@@ -78,8 +83,8 @@ export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination =
   return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {},f=true) => {
-  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken },f);
+export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {},f=true) => {
+  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal },f);
 }
 
 export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
