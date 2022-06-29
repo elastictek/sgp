@@ -30,7 +30,7 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker,message } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker, message } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
@@ -39,7 +39,7 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 
 
-const mainTitle ='Relatório de Expedições Mensal';
+const mainTitle = 'Relatório de Expedições Mensal';
 
 const useStyles = createUseStyles({});
 
@@ -49,7 +49,8 @@ const schema = (keys, excludeKeys) => {
 
 const filterRules = (keys) => {
     return getSchema({
-        //field1: Joi.string().label("Designação")
+        fmes: Joi.any().label("Mês").required(),
+        fyear: Joi.any().label("Ano").required()
     }, keys).unknown(true);
 }
 
@@ -104,12 +105,19 @@ const MesField = ({ onChange } = {}) => {
             { value: "10", label: "Outubro" },
             { value: "11", label: "Novembro" },
             { value: "12", label: "Dezembro" }
-        ]
+            ]
         } />
     );
 }
 
 const filterSchema = ({ }) => [];
+
+const PopupProgress = ({ cancelToken, content }) => {
+    return (<div>
+        {/* <Button onClick={() => cancelToken.cancel('ggggggggggggggggggggggggggg')}>Cancelar</Button> */}
+        {content}
+    </div>);
+}
 
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
     const [changed, setChanged] = useState(false);
@@ -118,8 +126,12 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             case "filter":
                 (!changed) && setChanged(true);
                 const { typelist, ...vals } = values;
-                console.log(vals["fyear"])
-                console.log("ssssssssssssssssssss",vals["fyear"]?.year())
+
+
+                //if (!v.error) {
+                //    response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
+                // }
+
                 const _values = {
                     ...vals,
                     fmes: vals["fmes"], //getFilterValue(vals["fmes"],"=="),
@@ -131,6 +143,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
+
         }
     };
 
@@ -183,44 +196,67 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
             <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
             <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
             <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
+            <Menu.Item key="clean-excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel Sem Formatação</Menu.Item>
         </Menu>
     );
 
     const exportFile = async (type) => {
-        const requestData = dataAPI.getPostRequest();
 
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
-            "orientation": "landscape",
-            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": mainTitle,
-            "export": type.key,
-            cols: columns
+        let v = filterRules().validate(form.getFieldsValue(true), { abortEarly: false });
+        if (v.error) {
+            Modal.error({ title: "Erro!", content: "Os Filtros Mês e Ano têm de estar preenchidos!" });
+        } else {
+
+
+            const requestData = dataAPI.getPostRequest();
+
+            const cancelFetch = cancelToken();
+            //dataAPI.first();
+            //dataAPI.fetchPost({ token: cancelFetch });
+            //return (() => cancelFetch.cancel());
+
+            requestData.parameters = {
+                ...requestData.parameters,
+                "config": "default",
+                "orientation": "landscape",
+                "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
+                "title": mainTitle,
+                "export": type.key,
+                cols: columns
+            };
+            requestData.token = cancelFetch.token;
+            let mkey = uuIdInt(4);
+            message.loading({
+                key: mkey,
+                content: <PopupProgress cancelToken={cancelFetch} content={<div>A exportar, aguarde um momento, Por favor...[Limite 5000 linhas]</div>} />,
+                duration: 0,
+                onClick: (() => message.destroy(mkey))
+            });
+            //const hide = message.loading(<PopupProgress cancelToken={cancelFetch} content={<div>A exportar, aguarde um momento, Por favor...[Limite 5000 linhas]</div>}/>, 0,()=>{console.log("0000")});
+            const response = await fetchPostBlob(requestData);
+            switch (type.key) {
+                case "pdf":
+                    downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
+                    break;
+                case "excel":
+                    downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
+                    break;
+                case "word":
+                    downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
+                    break;
+                case "clean-excel":
+                    downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
+                    break;
+            }
+            message.destroy(mkey);
+            //hide();
         }
-        const hide = message.loading('A exportar, aguarde um momento, Por favor...', 0);
-        const response = await fetchPostBlob(requestData);
-        switch (type.key) {
-            case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
-                break;
-            case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
-                break;
-            case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
-                break;
-            case "csv":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.csv`);
-                break;
-        }
-        hide();
     }
 
     return (
         <>
 
-            <FilterDrawer schema={filterSchema({ form })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
+            {/*  <FilterDrawer schema={filterSchema({ form })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} /> */}
             <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
                 <FormLayout
                     id="LAY"
@@ -231,18 +267,18 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                 >
                     <Field name="fmes" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Mês", pos: "top" }}>
-                        <MesField/>
+                        <MesField />
                     </Field>
                     <Field name="fyear" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Ano", pos: "top" }}>
-                        <DatePicker  size="small" picker="year" />
+                        <DatePicker size="small" picker="year" />
                     </Field>
                     <FieldItem label={{ enabled: false }}>
                         <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
                             <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
+                            {/* <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button> */}
                         </ButtonGroup>
                     </FieldItem>
-                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
+                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu} trigger={['click']}>
                         <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
                     </Dropdown>
                     </FieldItem>
@@ -286,22 +322,22 @@ export default () => {
             include: {
                 ...((common) => (
                     {
-                        "expedicao": { title: "Expedição", fixed:"left",width: 150, render: (v, r) => <b>{v}</b>, ...common },
-                        "ITMDES1_0": { title: "Artigo",width: 250, render: (v, r) => <b>{v}</b>, ...common },
+                        "expedicao": { title: "Expedição", fixed: "left", width: 150, render: (v, r) => <b>{v}</b>, ...common },
+                        "ITMDES1_0": { title: "Artigo", width: 250, render: (v, r) => <b>{v}</b>, ...common },
                         "ITMREF_0": { title: "Artigo Cód.", width: 150, render: (v, r) => v, ...common },
                         "ano": { title: "Ano", width: 100, render: (v, r) => v, ...common },
                         "mes": { title: "Mês", width: 100, render: (v, r) => v, ...common },
                         "encomenda": { title: "Encomenda", width: 150, render: (v, r) => v, ...common },
-                        "BPCNAM_0": { title: "Cliente", render: (v, r) => v, ...common },
+                        "BPCNAM_0": { title: "Cliente", width: 250, render: (v, r) => v, ...common },
                         "LOT_0": { title: "Palete", width: 100, render: (v, r) => v, ...common },
                         "nome_bobine": { title: "Bobine", width: 100, render: (v, r) => v, ...common },
                         "IPTDAT_0": { title: "Data Expedição", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
                         "data_bobine": { title: "Data Bobine", width: 130, render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common },
-                        "diff": { title: "N.Dias", width: 70, render: (v, r) => v, ...common },
-                        "exp": { title: "Expedição",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_expedicao}/{r.avg_expedicao}/{r.max_expedicao}</div>, ...common },
-                        "enc": { title: "Encomenda",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_encomenda}/{r.avg_encomenda}/{r.max_encomenda}</div>, ...common },
-                        "pal": { title: "Palete",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_palete}/{r.avg_palete}/{r.max_palete}</div>, ...common },
-                        "mesano": { title: "Mês/Ano",align:"center", width: 80, render: (v, r) => <div style={{display:"flex",flexDirection:"row"}}>{r.min_mesano}/{r.avg_mesano}/{r.max_mesano}</div>, ...common },
+                        "diff": { title: "N. Dias", width: 80, render: (v, r) => v, ...common },
+                        "exp": { title: "Expedição (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_expedicao}/{r.avg_expedicao}/{r.max_expedicao}</div>, ...common },
+                        "enc": { title: "Encomenda (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_encomenda}/{r.avg_encomenda}/{r.max_encomenda}</div>, ...common },
+                        "pal": { title: "Palete (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_palete}/{r.avg_palete}/{r.max_palete}</div>, ...common },
+                        "mesano": { title: "Mês/Ano (Dias)", align: "center", width: 120, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}>{r.min_mesano}/{r.avg_mesano}/{r.max_mesano}</div>, ...common },
                     }
                 ))({ idx: 1, optional: false })
             },
