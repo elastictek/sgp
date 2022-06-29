@@ -268,7 +268,7 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
         <>
 
             <FilterDrawer schema={filterSchema({ form, ordersField, customersField, itemsField, ordemFabricoStatusField })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
+            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => {if (e.key === "Enter") {form.submit();}}}>
                 <FormLayout
                     id="LAY-OFFLIST"
                     layout="horizontal"
@@ -891,7 +891,7 @@ export default () => {
 
     return (
         <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
                 <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
                 {/*<PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} /> */}
                 <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>

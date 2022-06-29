@@ -110,7 +110,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         if (!v.error) {
             let error = false;
             for (let k in values) {
-                if (values[k] === undefined && k !== "cliente_cod" && k !== "designacao") {
+                if ((values[k] === undefined || values[k] === null) && k !== "cliente_cod" && k !== "designacao") {
                     error = true;
                     break;
                 }
