@@ -8,8 +8,8 @@ import { API_URL } from "config";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber } from "antd";
-import { LoadingOutlined, EditOutlined, CompassOutlined } from '@ant-design/icons';
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip } from "antd";
+import { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
 
@@ -70,12 +70,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     const n_paletes_stock = !(paletesstock) ? 0 : paletesstock.length;
                     const n_paletes_total = (!aggItem.n_paletes_total) ? (!n_paletes?.total?.n_paletes ? n_paletes_stock : Math.round(n_paletes.total.n_paletes)) : aggItem.n_paletes_total;
                     const n_paletes_prod = n_paletes_total - n_paletes_stock;
-                    let core = aggItem.cores.find(v=>v.of_id==aggItem.of_id);
+                    let core = aggItem.cores.find(v => v.of_id == aggItem.of_id);
                     const core_cod = { key: core.cores[0].core_cod, value: core.cores[0].core_cod, label: core.cores[0].core_des }
                     form.setFieldsValue({
                         ..._emendas, n_paletes_total, n_paletes_stock, n_paletes_prod, cliente_cod, core_cod,
                         artigo_width: aggItem.artigo_lar, artigo_core: aggItem.artigo_core, artigo_diam: aggItem.artigo_diam_ref, artigo_gram: aggItem.artigo_gsm,
-                        artigo_des: aggItem.artigo_des
+                        artigo_des: aggItem.artigo_des, artigo_thickness: aggItem.artigo_thickness, qty_encomenda: aggItem.qty_encomenda
                     });
                 })();
         }
@@ -102,14 +102,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     }
 
     const onFinish = async (values) => {
-        
-        const { emendas, paletesstock, tempof_id, of_id, ...aggItem } = record.aggItem;
+        const { emendas, paletesstock, draft_of_id, of_id, ...aggItem } = record.aggItem;
         const v = schema().validate(values, { abortEarly: false });
         if (!v.error) {
             const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
             const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-            console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaa",values,core_cod);
-            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, parameters: { type: "settings", ...values, csid: record.csid, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id: tempof_id, ofabrico_cod: of_id } });
+            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, parameters: { type: "settings", ...values, csid: record.csid, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id:draft_of_id,paletizacao_id:aggItem.paletizacao_id, qty_item: aggItem.qty_encomenda, ofabrico_cod: of_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();
@@ -162,11 +160,20 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         <FieldSet margin={false} field={{ wide: [12], forInput: false }}>
                             <Field required={false} label={{ text: "Designação" }} name="artigo_des"><Input size="small" /></Field>
                         </FieldSet>
-                        <FieldSet margin={false} field={{ wide: [2, 2, 2, 2, '*'], forInput: false }}>
+                        <FieldSet margin={false} field={{ wide: [2, 2, 2, 2, 2, '*'], forInput: false }}>
                             <Field required={false} label={{ text: "Largura" }} name="artigo_width"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
                             <Field required={false} label={{ text: "Diâmetro" }} name="artigo_diam"><InputAddon size="small" addonAfter={<b>mm</b>} maxLength={4} /></Field>
                             <Field required={false} label={{ text: "Core" }} name="artigo_core"><InputAddon size="small" addonAfter={<b>''</b>} maxLength={1} /></Field>
                             <Field required={false} label={{ text: "Gramagem" }} name="artigo_gram"><InputAddon size="small" addonAfter={<b>gsm</b>} maxLength={4} /></Field>
+                            <Field forInput={false} required={false}
+                                label={{
+                                    text: <Tooltip title="A espessura é usada como valor de referência, na conversão de metros&#xB2; -> metros lineares." color="blue">
+                                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "3px" }}>Espessura<InfoCircleOutlined style={{ color: "#096dd9" }} /></div>
+                                    </Tooltip>
+                                }}
+                                name="artigo_thickness">
+                                <InputAddon size="small" addonAfter={<b>&#x00B5;</b>} maxLength={4} />
+                            </Field>
                         </FieldSet>
                         <VerticalSpace height="24px" />
 

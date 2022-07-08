@@ -88,6 +88,9 @@ urlpatterns = [
     re_path(r'^updatecortesordem/$', views.UpdateCortesOrdem),
     re_path(r'^cortesordemlookup/$', views.CortesOrdemLookup),
     #End Cortes
+    #Cargas
+    re_path(r'^cargaslookup/$', views.CargasLookup),
+    #End Cargas
     #Paletes Stock
     re_path(r'^paletesstocklookup/$', views.PaletesStockLookup),
     re_path(r'^paletesstockget/$', views.PaletesStockGet),

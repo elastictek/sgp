@@ -1,15 +1,24 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchPost } from "./fetch";
 
-export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
-    const [isLoading,setIsLoading] = useState(false);
+const getLocalStorage = (id, useStorage) => {
+    if (useStorage && id) {
+        return JSON.parse(localStorage.getItem(`dapi-${id}`));
+    }
+    return {};
+}
+
+
+export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [dataState, setDataState] = useState({
         pagination: payload?.pagination,
         filter: payload?.filter,
         sort: payload?.sort,
         parameters: payload?.parameters,
         data: (payload?.data) ? payload.data : {},
-        url: payload.url
+        url: payload.url,
+        ...getLocalStorage(id, useStorage)
     });
 
     var action = [];
@@ -113,7 +122,7 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
 
     const clearSort = (applyState = false) => {
         addAction('sort');
-        console.log("CLEARING SORT....",payload);
+        console.log("CLEARING SORT....", payload);
         _sort = [];
         if (applyState) {
             setDataState(prev => ({ ...prev, sort: _sort }));
@@ -168,7 +177,7 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
     }
 
     const getPagination = (fromState = false) => {
-        
+
         if (fromState) {
             //console.log("return true pagination--------->",dataState.pagination)
             return { ...dataState.pagination };
@@ -218,7 +227,7 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
     }
 
     const setData = (data, payload) => {
-        console.log("SETTING DATA",payload.pagination,(isAction('nav') || isAction('pageSize')))
+        console.log("SETTING DATA", payload.pagination, (isAction('nav') || isAction('pageSize')))
         setDataState(prev => ({
             ...prev,
             ...((isAction('nav') || isAction('pageSize')) && { pagination: { ...prev.pagination, ...payload.pagination } }),
@@ -243,14 +252,17 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
         const payload = getPayload();
         setIsLoading(true);
         (async () => {
+            if (id && useStorage) {
+                localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
+            }
             const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
             setData(dt, payload);
             setIsLoading(false);
         })();
     }
 
-    const getPostRequest = () =>{
-        return { url: dataState.url, ...getPayload() };
+    const getPostRequest = ({ url }) => {
+        return { url: (url) ? url : dataState.url, ...getPayload() };
     }
 
     const nav = ({ action = "", page = 1, onFetch } = {}) => {
@@ -260,7 +272,7 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
             case "previous": previous(); break;
             case "next": next(); break;
             case "last": last(); break;
-            default: currentPage(page,true);
+            default: currentPage(page, true);
         }
 
         if (onFetch) {
@@ -281,7 +293,7 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
         }
     }
 
-    const _isLoading = ()=>{
+    const _isLoading = () => {
         return isLoading;
     }
 
@@ -314,6 +326,6 @@ export const useDataAPI = ({ payload, id, useStorage=false } = {}) => {
         url,
         isActionPageSize: () => isAction('pageSize'),
         fetchPost: _fetchPost,
-        isLoading:()=>_isLoading()
+        isLoading: () => _isLoading()
     }
 }

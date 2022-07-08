@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Table, Pagination, Row, Col, Space } from "antd";
 import styled from 'styled-components';
 import { createUseStyles } from 'react-jss';
@@ -9,6 +9,8 @@ import ButtonIcon from './buttonIcon';
 import Toolbar from './toolbar';
 import Icon, { ReloadOutlined, SwapOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
+import Container from 'components/columnSettingContainer';
+import { useDeepCompareEffectDebounce } from 'utils/useDeepCompareEffect';
 
 
 const useStyles = createUseStyles({
@@ -181,14 +183,86 @@ const TableOptions = ({ columnChooser, reload, clearSort, checkedColumns, setChe
 }
 
 
-export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, rowHover=true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
+const columnSort = (columnsMap) => (a, b) => {
+    const { fixed: aFixed, index: aIndex } = a;
+    const { fixed: bFixed, index: bIndex } = b;
+    if ((aFixed === 'left' && bFixed !== 'left') || (bFixed === 'right' && aFixed !== 'right')) {
+        return -2;
+    }
+    if ((bFixed === 'left' && aFixed !== 'left') || (aFixed === 'right' && bFixed !== 'right')) {
+        return 2;
+    }
+    const aKey = a.key || `${aIndex}`;
+    const bKey = b.key || `${bIndex}`;
+    if (columnsMap[aKey]?.order || columnsMap[bKey]?.order) {
+        return (columnsMap[aKey]?.order || 0) - (columnsMap[bKey]?.order || 0);
+    }
+    return (a.index || 0) - (b.index || 0);
+};
+
+const genColumnKey = (key, index) => {
+    if (key) {
+        return Array.isArray(key) ? key.join('-') : key.toString();
+    }
+    return `${index}`;
+};
+
+
+export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, rowHover = true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
     const classes = useStyles();
+/*     const counter = Container.useContainer(); */
     const { rowKey, onSelection, enabled: selectionEnabled = false, multiple = false, selectedRows, setSelectedRows } = selection;
     /*     const [selectedRows, setSelectedRows] = useState([]); */
     const [checkedColumns, setCheckedColumns] = useState([]);
 
-    const css = classNames(className, { [classes.stripRows]: stripRows, [classes.darkHeader]: darkHeader });
+    //const columnKeys = tableColumn.map((item) => genColumnKey(item.key, item.index));
 
+   /*  const tableColumn = useMemo(() => {
+        return () => {
+            const _columns = [];
+            for (let v of counter.columns) {
+                if (counter.columnsMap[v.key].show) {
+                    _columns.push(v);
+                }
+            }
+            return _columns;
+        }
+    }, [
+        counter?.sortKeyColumns,
+        counter?.columnsMap,
+        counter?.columns
+    ]);
+ */
+
+    // const getColumns = () => {
+    //     const _columns = [];
+    //     /* console.log("GETCOLUMNS......",counter.columns) */
+    //     for (let v of counter.columns) {
+    //         if (counter.columnsMap[v.key].show) {
+    //             _columns.push(v);
+    //         }
+    //     }
+    //     return _columns;
+    // }
+
+    // useDeepCompareEffectDebounce(
+    //     () => {
+    //         if (getColumns() && getColumns().length > 0) {
+    //             // 重新生成key的字符串用于排序
+    //             const columnKeys = getColumns().map((item) => genColumnKey(item.key, item.index));
+    //             console.log("DEBOUNCE......",columnKeys)
+    //             counter.setSortKeyColumns(columnKeys);
+
+    //             console.log("aaaGETCOLUMNSaaaaaa", columnKeys);
+    //         }
+    //     },
+    //     [getColumns()],
+    //     ['render', 'renderFormItem'],
+    //     100,
+    // );
+
+
+    const css = classNames(className, { [classes.stripRows]: stripRows, [classes.darkHeader]: darkHeader });
     const onTableChange = (pagination, filters, sorter, { action }) => {
         switch (action) {
             case "sort":
@@ -247,6 +321,30 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
         }
     }
 
+
+
+    /*   const tableColumn = useMemo(() => {
+        return genProColumnToColumn({
+          columns,
+          counter,
+          columnEmptyText,
+          type,
+          editableUtils,
+          rowKey,
+          childrenColumnName,
+        }).sort(columnSort(counter.columnsMap));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [
+        propsColumns,
+        counter?.sortKeyColumns,
+        counter?.columnsMap,
+        columnEmptyText,
+        type,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        editableUtils.editableKeys && editableUtils.editableKeys.join(','),
+      ]); */
+
+
     return (
         <>
             {header && <Toolbar clean left={title} right={<TableOptions dataAPI={dataAPI} onFetch={onFetch} toolbar={toolbar} columns={columns} columnChooser={columnChooser} reload={reload} clearSort={clearSort} checkedColumns={checkedColumns} setCheckedColumns={setCheckedColumns} />} />}
@@ -262,6 +360,7 @@ export default ({ className, dataAPI, onFetch, columns, selection = {}, columnCh
                         onRow: (record, rowIndex) => { return { onClick: () => onRowClick(record, rowIndex, rowKey) } },
                         rowSelection: { selectedRowKeys: selectedRows, onChange/* , columnWidth: 0, renderCell: () => "" */ }
                     }}
+                    //columns={counter.columns}
                     columns={(columnChooser) ? [...columns.notOptional, ...checkedColumns] : columns.all}
                     dataSource={dataAPI.getData().rows}
                     onChange={onTableChange}

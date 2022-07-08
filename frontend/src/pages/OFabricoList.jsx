@@ -16,18 +16,12 @@ import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import MoreFilters from 'assets/morefilters.svg'
-import SubLayout from "components/SubLayout";
-import Container from "components/container";
 import AlertMessages from "components/alertMessages";
-import ProgressBar from "components/ProgressBar";
-//import ActionButton from "components/ActionButton";
+import ColumnSettings from "components/columnSettings";
+import Reports, { downloadReport } from "components/DownloadReports";
 import TagButton from "components/TagButton";
 import ResponsiveModal from 'components/ResponsiveModal';
-import { GrStorage } from "react-icons/gr";
-import { RiRefreshLine } from "react-icons/ri";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-
-import { FcCancel, FcClock, FcAdvance, FcUnlock, FcTodoList } from "react-icons/fc";
 import YScroll from "components/YScroll";
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
@@ -37,8 +31,6 @@ import { SocketContext } from './App';
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
-const { Option } = Select;
-const { confirm } = Modal;
 import useModalv4 from 'components/useModalv4';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
@@ -46,6 +38,7 @@ const ButtonGroup = Button.Group;
 import { VerticalSpace } from 'components/formLayout';
 import { useForm } from 'antd/lib/form/Form';
 const { Title } = Typography;
+import Container from 'components/columnSettingContainer'
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -66,18 +59,8 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
     { fmulti_item: { label: "Cód/Designação Artigo", field: itemsField } },
     { forderdate: { label: "Data Encomenda", field: { type: "rangedate", size: 'small' } } },
     { fstartprevdate: { label: "Data Prevista Início", field: { type: "rangedate", size: 'small' } } },
-    { fendprevdate: { label: "Data Prevista Fim", field: { type: "rangedate", size: 'small' } } },
-
-    /* { SHIDAT_0: { label: "Data Expedição", field: { type: "rangedate" } } },
-    { LASDLVNUM_0: { label: "Nº Última Expedição" } },
-    { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
+    { fendprevdate: { label: "Data Prevista Fim", field: { type: "rangedate", size: 'small' } } }
 ];
-
-//const filterSchema = ({ /*field_multi, field_daterange, field*/ }) => [
-/*{ field1: { label: "field", field: field } },
-{ field2: { label: "Date Range", field: { type: "rangedate" } } },
-{ field3: { label: "Multi", field: field_multi } }*/
-//];
 
 const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabricoStatusField }) => {
 
@@ -109,45 +92,7 @@ const ToolbarTable = ({ form, dataAPI, setFlyoutStatus, flyoutStatus, ordemFabri
         <Toolbar left={leftContent} right={rightContent} />
     );
 }
-
-const downloadFile = (data, filename, mime, bom) => {
-    var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
-    var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
-    if (typeof window.navigator.msSaveBlob !== 'undefined') {
-        // IE workaround for "HTML7007: One or more blob URLs were
-        // revoked by closing the blob for which they were created.
-        // These URLs will no longer resolve as the data backing
-        // the URL has been freed."
-        window.navigator.msSaveBlob(blob, filename);
-    }
-    else {
-        var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
-        var tempLink = document.createElement('a');
-        tempLink.style.display = 'none';
-        tempLink.href = blobURL;
-        tempLink.setAttribute('download', filename);
-
-        // Safari thinks _blank anchor are pop ups. We only want to set _blank
-        // target if the browser does not support the HTML5 download attribute.
-        // This allows you to download files in desktop safari if pop up blocking
-        // is enabled.
-        if (typeof tempLink.download === 'undefined') {
-            tempLink.setAttribute('target', '_blank');
-        }
-
-        document.body.appendChild(tempLink);
-        tempLink.click();
-
-        // Fixes "webkit blob resource error 1"
-        setTimeout(function () {
-            document.body.removeChild(tempLink);
-            window.URL.revokeObjectURL(blobURL);
-        }, 200);
-    }
-};
-
 const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordemFabricoStatusField } = {}) => {
-    const [formData, setFormData] = useState({});
     const [changed, setChanged] = useState(false);
     const onFinish = (type = "filter", values = null) => {
         if (values === null || values === undefined) {
@@ -231,44 +176,11 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
         />
     );
 
-    const menu = (
-        <Menu onClick={(v) => exportFile(v)}>
-            <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
-            <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
-            <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
-        </Menu>
-    );
-
-    const exportFile = async (type) => {
-        const requestData = dataAPI.getPostRequest();
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
-            "orientation": "landscape",
-            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": "Ordens de Fabrico",
-            "export": type.key,
-            cols: columns
-        }
-        const response = await fetchPostBlob(requestData);
-        switch (type.key) {
-            case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
-                break;
-            case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
-                break;
-            case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
-                break;
-        }
-    }
-
     return (
         <>
 
             <FilterDrawer schema={filterSchema({ form, ordersField, customersField, itemsField, ordemFabricoStatusField })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => {if (e.key === "Enter") {form.submit();}}}>
+            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }}>
                 <FormLayout
                     id="LAY-OFFLIST"
                     layout="horizontal"
@@ -293,42 +205,16 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, ordem
                         <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
                             <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
                             <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
-                            {/* <Dropdown overlay={menu}>
-                            <Button style={{ padding: "3px" }}><DownOutlined /></Button>
-                        </Dropdown> */}
                         </ButtonGroup>
                     </FieldItem>
-                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
-                        <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
-                    </Dropdown>
+                    <FieldItem label={{ enabled: false }}>
+                        <Reports columns={columns} dataAPI={dataAPI} title="Ordens de Fabrico" />
                     </FieldItem>
                 </FormLayout>
             </Form>
         </>
     );
 }
-
-
-/* const ColumnProgress = ({ record, type }) => {
-    let current, total;
-    let showProgress = (record.ativa == 1 && record.completa == 0) ? true : false;
-    if (type === 1) {
-        current = record.n_paletes_produzidas;
-        total = record.num_paletes_produzir;
-    } else if (type === 2) {
-        current = record.n_paletes_stock_in;
-        total = record.num_paletes_stock;
-    } else if (type === 3) {
-        current = record.n_paletes_produzidas + record.n_paletes_stock_in;
-        total = record.num_paletes_produzir + record.num_paletes_stock;
-    }
-
-    return (<>
-        {showProgress ?
-            <ProgressBar value={current} max={total} />
-            : <div style={{ textAlign: "center" }}>{current}/{total}</div>}
-    </>);
-} */
 
 const schemaConfirm = (keys, excludeKeys) => {
     return getSchema({
@@ -506,7 +392,7 @@ const PromiseFormConfirm = ({ data, parentRef, closeSelf }) => {
     );
 };
 
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions}) => {
+const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
     const { status, temp_ofabrico } = record;
     const modal = useModalv4();
     const [action, setAction] = useState();
@@ -525,7 +411,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
-        navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg} });
+        navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg } });
         //setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
     }
 
@@ -624,18 +510,24 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     );
 };
 
-
-const actionItems = [
-    { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} /> },
-    { label: 'Packing List', key: 'pl-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} /> },
-    { label: 'Packing List Detalhado', key: 'pld-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} /> },
-    { label: 'Packing List Detalhado', key: 'pld-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} /> }
+const rowReportItems = [
+    { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
+    { label: 'Packing List', key: 'pl-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
+    { label: 'Packing List Detalhado', key: 'pld-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } },
+    { label: 'Packing List Detalhado', key: 'pld-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } }
 ];
 
-const PackingListForm = ({ r, downloading, form }) => {
 
+const fetchCargas = async (enc) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/cargaslookup/`, pagination: { limit: 20 }, filter: { enc } });
+    return rows;
+}
 
+const PackingListForm = ({ r, form, ...rest }) => {
+    const dataCargas = useDataAPI({ id: "cargaslookup", payload: { url: `${API_URL}/cargaslookup/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
     useEffect(() => {
+        dataCargas.addFilters({ enc: r.iorder });
+        dataCargas.fetchPost();
         let f = {};
         if (r.matricula) {
             f = { container: r.matricula };
@@ -655,105 +547,96 @@ const PackingListForm = ({ r, downloading, form }) => {
         form.setFieldsValue(f);
     }, []);
 
-    useEffect(() => {
-
-    }, [downloading]);
-
     return (
-        <Spin spinning={downloading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}>
+        <Spin spinning={dataCargas.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}>
             <Form form={form} initialValues={{ produto_cod: r.produto_cod, container: r?.container }}>
                 <FormLayout form={form} id="plist">
                     <Field forInput={false} name="produto_cod" label={{ enabled: true, width: "60px", text: "Produto", pos: "top" }}><Input size="small" /></Field>
                     <Field name="container" label={{ enabled: true, width: "60px", text: "Container", pos: "top" }}><Input size="small" /></Field>
                     <Field name="container_trailer" label={{ enabled: true, width: "60px", text: "Trailer Container", pos: "top" }}><Input size="small" /></Field>
-                    <Field name="modo_exp" label={{ enabled: true, width: "60px", text: "Modo Expedição", pos: "top" }}><Input size="small" /></Field>
+                    <FieldSet field={{ wide: [8, 8], margin: "2px", }}>
+                        <Field name="modo_exp" label={{ enabled: true, width: "60px", text: "Modo Expedição", pos: "top" }}><Input size="small" /></Field>
+                        <Field name="po" label={{ enabled: true, width: "60px", text: "PO (Cliente)", pos: "top" }}><Input size="small" /></Field>
+                    </FieldSet>
+                    <Field name="carga" label={{ enabled: true, width: "60px", text: "Carga", pos: "top" }}>
+
+                        <SelectField
+                            placeholder="Cargas"
+                            size="small"
+                            keyField="id"
+                            textField="carga"
+                            dropdownMatchSelectWidth={250}
+                            allowClear
+                            data={dataCargas.getData().rows}
+                        />
+
+                    </Field>
                 </FormLayout>
             </Form>
         </Spin>
     );
 }
 
-
 const Action = ({ v, r, dataAPI }) => {
     const modal = useModalv4();
     const [form] = useForm();
     const [downloading, setDownloading] = useState(false);
 
-    const onModal = (item) => {
-        let title = "";
-        let ext = "";
-        switch (item.key) {
-            case "pl-pdf":
-                title = `Imprimir Packing List <Pdf> ${r.prf}`;
-                ext = "pdf";
-                break;
-            case "pld-pdf":
-                title = `Imprimir Packing List Detalhado <Pdf> ${r.prf}`;
-                ext = "pdf";
-                break;
-            case "pl-excel":
-                title = `Imprimir Packing List <Excel> ${r.prf}`;
-                ext = "xls";
-                break;
-            case "pld-excel":
-                title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`;
-                ext = "xls";
-                break;
-        }
-        modal.show({ propsToChild: true, width: '500px', height: '250px', title, onOk: () => onDownload(item, ext), content: <PackingListForm form={form} downloading={downloading} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
-    }
-
-
-    const onDownload = async (item, ext) => {
+    const onDownload = async ({ type, r, limit, orientation, isDirty }) => {
         const values = form.getFieldsValue(true);
-        setDownloading(true);
-        const requestData = dataAPI.getPostRequest();
-        requestData.url = `${API_URL}/exportfile/`;
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
+        let itm = rowReportItems.filter(v => v.key === type.key);
+        if (itm.length <= 0) { return false; }
+        let { parameters, ...data } = itm[0].data;
+        let dataexport = {
+            ...data,
             "conn-name": "PG-SGP-GW",
-            "export": item.key.split('-')[1],
             "data": {
                 "TITLE": "PACKING LIST",
                 "PRODUCT_ID": values.produto_cod,
                 "CONTAINER": values.container,
                 "CONTAINER-TRAILER": values.container_trailer,
                 "MODO-EXP": values.modo_exp,
-                "PRF_COD": r.prf
+                ...(values.carga && { "CARGA_ID": values.carga }),
+                "PRF_COD": r.prf,
+                "PO_COD":values.po
             }
         };
+        downloadReport({ dataAPI, url: `${API_URL}/exportfile/`, type, dataexport, limit, orientation, isDirty });
+    }
 
-        switch (item.key.split('-')[0]) {
-            case "pl":
-                requestData.parameters.name = "PACKING-LIST";
-                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-MASTER";
-                //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
+    const showForm = ({ type, r, ...rest }) => {
+        let title;
+        switch (type.key) {
+            case "pl-pdf":
+                title = `Imprimir Packing List <Pdf> ${r.prf}`;
                 break;
-            case "pld":
-                requestData.parameters.name = "PACKING-LIST-DETAILED";
-                requestData.parameters.path = "PACKING-LIST/PACKING-LIST-DETAILED-MASTER";
-                //modal.show({ propsToChild: true, width: '1500px', height: '700px', minFullHeight: 800, content: <FormCortes forInput={record?.forInput} record={record} /> });
+            case "pld-pdf":
+                title = `Imprimir Packing List Detalhado <Pdf> ${r.prf}`;
+                break;
+            case "pl-excel":
+                title = `Imprimir Packing List <Excel> ${r.prf}`;
+                break;
+            case "pld-excel":
+                title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`;
                 break;
         }
-        console.log(requestData.parameters)
-        const response = await fetchPostBlob(requestData);
-        setDownloading(false);
-        downloadFile(response.data, `PACKING-LIST-${new Date().toJSON().slice(0, 10)}.${ext}`);
+        modal.show({ propsToChild: true, width: '500px', height: '320px', title, onOk: () => onDownload({ type, r, ...rest }), content: <PackingListForm form={form} downloading={false} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
+        return false;
     }
 
     return (
         <>
-            {r.prf &&
+
+            {r.prf && <Reports onExport={(type, limit, orientation, isDirty) => showForm({ type, limit, orientation, isDirty, r })} items={rowReportItems} dataAPI={dataAPI} button={<Button size="small" icon={<EllipsisOutlined />} />} />}
+
+            {/*  {r.prf &&
                 <Dropdown overlay={<Menu onClick={onModal} items={actionItems} />}>
-                    <Button size="small" icon={<EllipsisOutlined /* style={{fontSize:"26px"}}  */ />} />
+                    <Button size="small" icon={<EllipsisOutlined />} />
                 </Dropdown>
-            }
+            } */}
         </>
     )
 }
-
-
 
 export default () => {
     const [loading, setLoading] = useState(false);
@@ -762,20 +645,14 @@ export default () => {
     const [showValidar, setShowValidar] = useState({ show: false });
     const [formFilter] = Form.useForm();
     const location = useLocation();
-    const dataAPI = useDataAPI( { payload: { url: `${API_URL}/ofabricolist/`,parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const [flyoutStatus, setFlyoutStatus] = useState({ visible: false, fullscreen: false });
-    const flyoutFooterRef = useRef();
-    const [estadoRecord, setEstadoRecord] = useState(false);
-
-    const [showConfirm, setShowConfirm] = useState({ show: false, data: {} });
     const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
-
-
 
     useEffect(() => {
         const cancelFetch = cancelToken();
-        dataAPI.first();
+        //dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
     }, []);
@@ -848,8 +725,8 @@ export default () => {
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
                         cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-                        start_date: { title: "Início Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
-                        end_date: { title: "Fim Previsto", ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{(r.end_prev_date) && dayjs(r.end_prev_date).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        start_date: { title: "Início Previsto", width: 130, ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{dayjs((r.start_prev_date) ? r.start_prev_date : v).format(DATETIME_FORMAT)}</span></div>, ...common },
+                        end_date: { title: "Fim Previsto", width: 130, ellipsis: true, render: (v, r) => <div style={{ whiteSpace: 'nowrap' }}><span>{(r.end_prev_date) && dayjs(r.end_prev_date).format(DATETIME_FORMAT)}</span></div>, ...common },
                         //produzidas: { title: "Produzidas", width: 100, render: (v, r) => <ColumnProgress type={1} record={r} />, ...common },
                         //pstock: { title: "Para Stock", width: 100, render: (v, r) => <ColumnProgress type={2} record={r} />, ...common },
                         //total: { title: "Total", width: 100, render: (v, r) => <ColumnProgress type={3} record={r} />, ...common },
@@ -872,10 +749,6 @@ export default () => {
         }
     );
 
-    const closeFlyout = () => {
-        setFlyoutStatus(prev => ({ ...prev, visible: false }));
-    }
-
     const ordemFabricoStatusField = ({ onChange } = {}) => {
         return (
             <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
@@ -891,46 +764,45 @@ export default () => {
 
     return (
         <>
-            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
-                {/*<PromiseConfirm showConfirm={showConfirm} setShowConfirm={setShowConfirm} /> */}
-                <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
-                {/* <ModalValidar showValidar={showValidar} setShowValidar={setShowValidar} /> */}
-                {/*                 <SubLayout flyoutWidth="700px" flyoutStatus={flyoutStatus} style={{ height: "100vh" }}>
-                    <SubLayout.content> */}
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
-                {elFilterTags && <Portal elId={elFilterTags}>
-                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                </Portal>}
-                <Table
-                    title={<Title level={4}>Ordens de Fabrico</Title>}
-                    columnChooser={false}
-                    reload
-                    stripRows
-                    darkHeader
-                    size="small"
-                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
-                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                    dataAPI={dataAPI}
-                    columns={columns}
-                    onFetch={dataAPI.fetchPost}
-                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                />
-                {/*                     </SubLayout.content>
-                    <SubLayout.flyout>
-                        <Container.Header fullScreen={false} setStatus={setFlyoutStatus} left={<Title level={4} style={{ marginBottom: "0px" }}>Title</Title>} />
-                        <Container.Body>
-
-                        </Container.Body> */}
-                {/* <Container.Footer right={<div ref={flyoutFooterRef}/>} /> */}
-                {/*                     </SubLayout.flyout>
-                </SubLayout>
- */}
-            </Spin>
-
-
+            {columns &&
+                <>
+                    {/*                     <Container.Provider initialState={{
+                        columnsState: {
+                            persistenceKey: 'pro-table-singe-demos',
+                            persistenceType: 'localStorage',
+                            onChange(value) {
+                                console.log('value: ', value);
+                            }
+                        }, columns: columns.all
+                    }}> */}
+                    {/* <ColumnSettings columns={columns.all} /> */}
+                    <Button onClick={() => dataAPI.fetchPost()}>reload</Button>
+                    <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ /* top: "50%", left: "50%", position: "absolute" */ }} >
+                        <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
+                        <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
+                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
+                        {elFilterTags && <Portal elId={elFilterTags}>
+                            <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
+                        </Portal>}
+                        <Table
+                            title={<Title level={4}>Ordens de Fabrico</Title>}
+                            columnChooser={false}
+                            reload
+                            stripRows
+                            darkHeader
+                            size="small"
+                            toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} ordemFabricoStatusField={ordemFabricoStatusField} />}
+                            selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
+                            paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                            dataAPI={dataAPI}
+                            columns={columns}
+                            onFetch={dataAPI.fetchPost}
+                            scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
+                        />
+                    </Spin>
+                    {/*                     </Container.Provider> */}
+                </>
+            }
         </>
     )
 }

@@ -18,10 +18,6 @@ const serverRequest = async (request, fetch = true) => {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
   }
 
-  if (signal && !cancelToken){
-    alert("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-  }
-
   return axios({
     url: url,
     ...params,

@@ -53,10 +53,13 @@ import psycopg2
 #                                                          database="postgres")
 
 #NEW API METHODS
+connSgp066 = "sgp_066"
 connGatewayName = "postgres"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
-
+#db066 = DBSql(connections[connSgp066].alias)
+tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
+enrolamento = {"1": "Anti-horário", "2":"Horário"}
 # def disable(v):
 #     return ''
 
@@ -208,7 +211,7 @@ def export(sql, db_parameters, parameters,conn_name):
             **parameters
         }
         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://localhost:8080/ReportsGW/{wService}', json=req)
+        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
@@ -230,7 +233,7 @@ def export(sql, db_parameters, parameters,conn_name):
 def ExportFile(request, format=None):
     p = request.data["parameters"]
     req = {**p}
-    fstream = requests.post('http://localhost:8080/ReportsGW/run', json=req)
+    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json=req)
     if (fstream.status_code==200):
         resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
         if (p["export"] == "pdf"):
@@ -1676,6 +1679,43 @@ def SellCustomersLookup(request, format=None):
        return Response(response)
 #endregion
 
+#region CARGAS
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CargasLookup(request, format=None):
+    cols = ['*']
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'enc.eef = :enc', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections[connSgp066].cursor() as cursor:
+        print(f"""
+                select carga.id,carga.carga
+                from  producao_carga carga
+                join producao_encomenda enc on carga.enc_id=enc.id
+                {f.text}
+                {dql.sort}
+            """)
+        print(parameters)
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select carga.id,carga.carga
+                from  producao_carga carga
+                join producao_encomenda enc on carga.enc_id=enc.id
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+#endregion
+
 #region PALETIZAÇÃO SCHEMA
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -2732,44 +2772,10 @@ def UpdateCurrentSettings(request, format=None):
                 if cs is None:
                     return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Definições', "subTitle":"Não é possível alterar as Definições atuais."})
                
-                # print("----")
-                # print(cs["ofs"])
-                # print("----")
-                # print(cs["emendas"])
-                # print("----")
-                # print(cs["sentido_enrolamento"])
-                # print(cs["amostragem"])
-                # print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                for x in json.loads(cs["ofs"]):
-                    if x["of_id"]==data["ofabrico_cod"]:
-                        print(x["of_id"])
-                
-                
-                print("******************************************")
-                print("DATA")
-                print(data)
-                
                 emendas = json.loads(cs["emendas"])
-                print("EMENDAS")
-                print(emendas)
-                print("******************************************")
                 for idx,x in enumerate(emendas):
-                    # vals = {
-                    #         "artigo_cod":data["artigo_cod"],
-                    #         "emendas_rolo":data["nemendas_rolo"],
-                    #         "tipo_emenda":data["tipo_emenda"],
-                    #         "maximo":data["maximo"],
-                    #         "paletes_contentor":data["nemendas_paletescontentor"]
-                    #     }
-                    #     if "cliente_cod" in data and data["cliente_cod"] is not None:
                     if x["of_id"]==data["ofabrico_cod"]:
-                        emendas[idx]['emendas']={**x["emendas"],"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
-
-
-
-
-
-
+                        emendas[idx]['emendas']={**json.loads(x["emendas"]),"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
                 cores = json.loads(cs["cores"])
                 for idx,x in enumerate(cores):
                     if x["of_id"]==data["ofabrico_cod"]:
@@ -2780,6 +2786,40 @@ def UpdateCurrentSettings(request, format=None):
                         limites[idx] = {**x}
                 sentido_enrolamento= cs["sentido_enrolamento"]
                 amostragem = cs["amostragem"]
+
+                for x in json.loads(cs["ofs"]):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        cp = computeLinearMeters(data) #talvez não seja necessário
+                        cpp = computePaletizacao(cp,data,cursor) #talvez não seja necessário
+                        dataop = {
+                            "largura": data['artigo_width'],
+                            "core": data['artigo_core'] + '"',
+                            "num_paletes_produzir":data['n_paletes_total'] - data['n_paletes_stock'],
+                            "num_paletes_stock":data['n_paletes_stock'],
+                            "num_paletes_total":data['n_paletes_total'],
+                            "emendas":f"{data['nemendas_rolo']}/rolo (máximo {data['maximo']}% - {data['nemendas_paletescontentor']} paletes/contentor)",
+                            "enrolamento":sentido_enrolamento,
+                            "freq_amos":amostragem,
+                            "user_id":request.user.id,
+                            "tipo_emenda":tipoemendas[str(data["tipo_emenda"])],
+                        }
+                        ofabrico_cod = data["ofabrico_cod"]
+ 
+                        dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
+                        #db.execute(dml.statement, cursor, dml.parameters)
+                        dml = db.dml(TypeDml.UPDATE,{
+                            "emendas":json.dumps(emendas,ensure_ascii=False),
+                            "cores":json.dumps(cores,ensure_ascii=False),
+                            "limites":json.dumps(limites,ensure_ascii=False),
+                            "sentido_enrolamento":sentido_enrolamento,
+                            "amostragem":amostragem,
+                            "type_op":"settings_of_change"
+                            },"producao_currentsettings",{"id":f'=={data["csid"]}'},None,False)
+                        #db.execute(dml.statement, cursor, dml.parameters)
+                        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                        print(dml.statement)
+                        print(dml.parameters)
+
 
 
                 return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
@@ -3734,9 +3774,6 @@ def sgpForProduction(data,aggid,user,cursor):
                     elif tipo_doc.lower() == "ordem de fabrico":
                         atts["`of`"] = att_path
 
-
-            tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
-            enrolamento = {"1": "Anti-horário", "2":"Horário"}
             #delta = datetime.strptime(data["end_prev_date"], "%Y-%m-%d %H:%M:%S") - datetime.strptime(data["start_prev_date"], "%Y-%m-%d %H:%M:%S")
             dta = {
                 **atts,
