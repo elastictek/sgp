@@ -776,7 +776,6 @@ export default () => {
                         }, columns: columns.all
                     }}> */}
                     {/* <ColumnSettings columns={columns.all} /> */}
-                    <Button onClick={() => dataAPI.fetchPost()}>reload</Button>
                     <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ /* top: "50%", left: "50%", position: "absolute" */ }} >
                         <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
                         <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>

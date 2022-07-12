@@ -4531,12 +4531,8 @@ def TempAggOFabricoLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagensList(request, format=None):
     connection = connections["default"].cursor()
-    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-    print(request.data)
-    print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
     feature = request.data['parameters']['feature'] if 'feature' in request.data['parameters'] else None
     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
-
 
     f = Filters(request.data['filter'])
     f.setParameters({
@@ -4548,8 +4544,8 @@ def ValidarBobinagensList(request, format=None):
         "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
         "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
         "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
-        "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None else None, "field": lambda k, v: f'pbm.{k}'},
-        "type": {"value": lambda v: f"=={request.data['filter']['agg_of_id']}" if v.get("type") is None or v.get("type")=="default" else None, "field": lambda k, v: f'acs.agg_of_id'},
+        "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+        "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
     }, True)
     f.where()
     f.auto()
@@ -4608,11 +4604,30 @@ def ValidarBobinagensList(request, format=None):
     f4.auto()
     f4.value("and")
 
-    parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters}
+    f5 = Filters(request.data['filter'])
+    f5.setParameters({
+        "of_id": {"value": lambda v: v.get('fofabrico'), "field": lambda k, v: f'tof.{k}'}
+    }, True)
+    f5.where(False, "and")
+    f5.auto()
+    f5.value("and")
+
+    parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
     cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines"""
     dql.columns=encloseColumn(cols,False)
+
+    w = "where" if f.text=='' and f2["text"] == '' else 'and'
+    fText01 = f'{w} EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else ''
+    w = "where" if w=="where" and fText01=='' else "and"
+    fText02 = f'''{w} EXISTS (
+                    SELECT 1 FROM 
+                    sistema.producao_tempaggordemfabrico aof 
+                    join sistema.producao_tempordemfabrico tof on tof.agg_of_id=acs.agg_of_id
+                    WHERE aof.id=acs.agg_of_id {f5.text}
+                )''' if f5.hasFilters else ''
+
     sql = lambda p, c, s: (
         f""" 
             SELECT
@@ -4631,7 +4646,8 @@ def ValidarBobinagensList(request, format=None):
                 left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 {f.text} {f2["text"]}
-                {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters else '' }
+                {fText01}
+                {fText02}
                 {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
@@ -4650,7 +4666,8 @@ def ValidarBobinagensList(request, format=None):
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
                 left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
                 {f.text} {f2["text"]}
-                {f'and EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id {festados.text} {fdefeitos.text} {f4.text} )' if (festados.hasFilters or fdefeitos.hasFilters or f4.hasFilters) else '' }
+                {fText01}
+                {fText02}
             ) t
             {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
         """

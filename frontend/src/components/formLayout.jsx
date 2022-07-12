@@ -317,7 +317,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                     </div>
                 }
             >
-                <Form form={form} name="search-form" layout="vertical" hideRequiredMark>
+                <Form form={form} name="search-form" layout="vertical" hideRequiredMark  onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }}>
                     {schema.map((line, ridx) => (
                         <Row key={`rf-${ridx}`} gutter={16}>
                             {Object.keys(line).map((col, cidx) => {

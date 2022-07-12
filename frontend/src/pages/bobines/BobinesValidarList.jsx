@@ -16,15 +16,16 @@ import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import MoreFilters from 'assets/morefilters.svg';
-import { Outlet, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
 import { MdAdjust } from 'react-icons/md';
 import ResultMessage from 'components/resultMessage';
+import loadInit from "utils/loadInit";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 const { TextArea } = Input;
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, CompassOutlined } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, CompassOutlined,LeftOutlined } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
@@ -49,6 +50,7 @@ const ToolbarTable = ({ dataAPI, onSubmit }) => {
 
     const leftContent = (
         <Space>
+            <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={()=>navigate(-1)}></Button>
             <Button type="primary" size="small" onClick={() => onSubmit("validar")}>Validar</Button>
             <ApproveButton size="small" onClick={() => onSubmit("aprovar")}>Aprovar</ApproveButton>
             <Button danger size="small" onClick={() => onSubmit("hold")}>Hold</Button>
@@ -112,9 +114,15 @@ const FFalhaFilme = ({ index, data, width = "50px", onChange, min, max }) => {
     </Space>);
 }
 
-const FProbs = ({ index, data, width = "50px", onChange }) => {
+const FProbs = ({ index, data, width = "50px", onChange, r }) => {
     const name = `probs-${index}`;
     const tabIndex = 600 + index;
+    
+    useEffect(()=>{
+        console.log("PROP-OBSxxxxxxx---",data,r);
+    },[]);
+
+    
     return (<TextArea autoSize={{ minRows: 1, maxRows: 2 }} onChange={(v) => onChange("probs", v, index)} value={data.probs[index]} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={tabIndex} name={name} size="small" />);
 }
 
@@ -128,6 +136,8 @@ const FObs = ({ index, data, width = "50px", onChange }) => {
 
 
 export default ({ data, closeSelf }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
@@ -138,7 +148,9 @@ export default ({ data, closeSelf }) => {
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobineslist/`, parameters: {}, pagination: { enabled: false, page: 1, pageSize: 30 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
 
     useEffect(() => {
-        const { bobinagem_id } = data;
+        const { bobinagem_id } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, data, location?.state, ["bobinagem_id", ...Object.keys(dataAPI.getAllFilter())]);
+        console.log("loading init ",bobinagem_id)
+        //const { bobinagem_id } = data;
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.addFilters({ bobinagem_id });
@@ -240,25 +252,25 @@ export default ({ data, closeSelf }) => {
         const vData = [];
         const _all_defeitos = BOBINE_DEFEITOS.reduce((obj, item) => (obj[item.value] = 0, obj), {});
         const errors = [];
-        let fData={...formData, st:[...formData.st]};
+        let fData = { ...formData, st: [...formData.st] };
         let warns = false;
-         switch (type) {
+        switch (type) {
             case "validar": break;
-            case "hold": 
-            for (let [i, v] of fData.st.entries()) {
-                if (v=="LAB" || v=="DM"){
-                    fData.st[i]="HOLD";
-                }else{
-                    warns=true;           
+            case "hold":
+                for (let [i, v] of fData.st.entries()) {
+                    if (v == "LAB" || v == "DM") {
+                        fData.st[i] = "HOLD";
+                    } else {
+                        warns = true;
+                    }
                 }
-            }
-            break;
+                break;
             case "aprovar":
                 for (let [i, v] of fData.st.entries()) {
-                    if (v=="LAB" || v=="HOLD"){
-                        fData.st[i]="G";
-                    }else{
-                        warns=true;             
+                    if (v == "LAB" || v == "HOLD") {
+                        fData.st[i] = "G";
+                    } else {
+                        warns = true;
                     }
                 }
                 break;
@@ -386,7 +398,7 @@ export default ({ data, closeSelf }) => {
                         "C": { title: <HeaderCol title="Falha Corte" name="fc" data={formData} onChange={onChange} />, width: 120, render: (v, r, i) => <FFalhaCorte width="50px" index={i} data={formData} onChange={onChange} min={1} max={r.comp} />, ...common },
                         "D": { title: <HeaderCol title="Falha Filme" name="ff" data={formData} onChange={onChange} />, width: 120, render: (v, r, i) => <FFalhaFilme width="50px" index={i} data={formData} onChange={onChange} min={1} max={r.comp} />, ...common },
                         comp: { title: "Comp. m", width: 60, ...common },
-                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <FProbs width="50px" index={i} data={formData} onChange={onChange} />, ...common },
+                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <FProbs width="50px" index={i} data={formData} onChange={onChange} r={r} />, ...common },
                         "G": { title: <HeaderCol title="Obs." name="obs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <FObs width="50px" index={i} data={formData} onChange={onChange} />, ...common }
                     }
                 ))({ idx: 1, optional: false, sorter: false })
@@ -401,31 +413,26 @@ export default ({ data, closeSelf }) => {
 
     return (
         <>
-            <ResultMessage
-                result={resultMessage}
-                successButtonOK={<Button type="primary" key="goto-list" onClick={onSuccessOK}>OK</Button>}
-            >
-                <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                    <ToolbarTable dataAPI={dataAPI} onSubmit={onSubmit} />
-                    <Table
-                        columnChooser={false}
-                        reload={false}
-                        header={false}
-                        stripRows
-                        darkHeader
-                        size="small"
-                        toolbar={<></>}
-                        selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                        paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                        dataAPI={dataAPI}
-                        columns={columns}
-                        onFetch={dataAPI.fetchPost}
-                        scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 100), /* y: '80vh', scrollToFirstRowOnChange: true */ }}
-                    /* components={components} */
-                    //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                    />
-                </Spin>
-            </ResultMessage>
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} >
+                <ToolbarTable dataAPI={dataAPI} onSubmit={onSubmit} />
+                <Table
+                    columnChooser={false}
+                    reload={false}
+                    header={false}
+                    stripRows
+                    darkHeader
+                    size="small"
+                    toolbar={<></>}
+                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
+                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
+                    dataAPI={dataAPI}
+                    columns={columns}
+                    onFetch={dataAPI.fetchPost}
+                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 100), /* y: '80vh', scrollToFirstRowOnChange: true */ }}
+                /* components={components} */
+                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
+                />
+            </Spin>
         </>
     )
 }

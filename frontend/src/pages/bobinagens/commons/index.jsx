@@ -46,7 +46,7 @@ export const Wnd = ({ show, setShow, children }) => {
     const [confirmLoading, setConfirmLoading] = React.useState(false);
 
     const handleCancel = () => {
-        setShow({...show, show: false, data: {} });
+        setShow({ ...show, show: false, data: {} });
     };
 
     return (
@@ -63,7 +63,7 @@ export const Wnd = ({ show, setShow, children }) => {
                 minFullHeight={show?.minFullHeight}
                 width={show?.width}
                 height={show?.height}
-                /* bodyStyle={{ backgroundColor: "#f0f0f0" }} */
+            /* bodyStyle={{ backgroundColor: "#f0f0f0" }} */
             >
                 <YScroll>
                     {children}
@@ -144,14 +144,29 @@ export const Bobines = ({ b, bm, setShow }) => {
     );
 };
 
-export const typeListField = ({ onChange, setTypeList, typeList } = {}) => {
+export const typeListField = ({ onChange } = {}) => {
     return (
-        <SelectField name="typelist" style={{ width: 150 }} keyField="value" valueField="label" onChange={onChange} options={
+        <SelectField name="typelist" size="small" style={{ width: 150, marginRight:"3px" }} keyField="value" valueField="label" onChange={(v)=>onChange(v,"typelist")} options={
             [{ value: "A", label: "Estado Bobines" },
-            { value: "B", label: "Consumo Bobinagem" }]} />
-        /*             <SelectField onChange={onChange} keyField="value" valueField="label" style={{ width: 150 }} options={
-                        [{ value: "A", label: "Estado Bobines" },
-                        { value: "B", label: "Consumo Bobinagem" }]
-                    } /> */
+            { value: "B", label: "Consumo Bobinagem" },
+            { value: "C", label: "Ordens de Fabrico" }]} />
+    );
+}
+
+export const validField = ({ onChange } = {}) => {
+    return (
+        <SelectField name="valid" size="small" style={{ width: 150, marginRight:"3px" }} keyField="value" valueField="label" onChange={(v)=>onChange(v,"valid")} options={
+            [{ value: "0", label: "Por validar" },
+            { value: "1", label: "Validadas" },
+            { value: "-1", label: " " }
+            ]} />
+    );
+}
+
+export const typeField = ({ onChange } = {}) => {
+    return (
+        <SelectField name="type" size="small" style={{ width: 220, marginRight:"3px" }} keyField="value" valueField="label" onChange={(v)=>onChange(v,"type")} options={
+            [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
+            { value: "-1", label: "Todas as Bobinagens" }]} />
     );
 }

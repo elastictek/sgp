@@ -249,7 +249,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
 
     const _fetchPost = ({ url, token } = {}) => {
         let _url = (url) ? url : dataState.url;
-        const payload = getPayload();
+        const payload = {...getPayload(), tstamp:Date.now()};
         setIsLoading(true);
         (async () => {
             if (id && useStorage) {
@@ -297,6 +297,10 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return isLoading;
     }
 
+    const getTimeStamp = ()=>{
+        return dataState.tstamp;
+    }
+
     return {
         first,
         previous,
@@ -315,6 +319,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         getPayload,
         getFilter,
         getAllFilter,
+        getTimeStamp,
         getPagination,
         getPageSize,
         getPostRequest,

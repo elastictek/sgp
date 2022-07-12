@@ -7,35 +7,31 @@ import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
-
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
 import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField } from "components/formLayout";
-import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import ResponsiveModal from "components/ResponsiveModal";
+import loadInit from "utils/loadInit";
+import { filterObjectKeys } from "utils/object";
 import MoreFilters from 'assets/morefilters.svg';
-import { Outlet, useNavigate } from "react-router-dom";
-import YScroll from "components/YScroll";
-import { MdAdjust } from 'react-icons/md';
-
-
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
-
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import Icon, { SearchOutlined, LoadingOutlined, LeftOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
-const { Title } = Typography;
+import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
+const { Title, Text } = Typography;
 import { SocketContext, MediaContext } from '../App';
-const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
-import { Wnd, ColumnBobines, Bobines, typeListField } from "./commons";
+//const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
+import { Wnd, ColumnBobines, Bobines, typeListField, typeField, validField } from "./commons";
+import { useNavigate, useLocation } from "react-router-dom";
+import Reports, { downloadReport } from "components/DownloadReports";
 
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
+
+
 
 const filterRules = (keys) => {
     return getSchema({
@@ -45,7 +41,7 @@ const filterRules = (keys) => {
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 
-const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoStatusField }) => [
+const filterSchema = ({ }) => [
     { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },
     { fdata: { label: "Data Bobinagem", field: { type: "rangedate", size: 'small' } } },
     { ftime: { label: "Início/Fim", field: { type: "rangetime", size: 'small' } } },
@@ -69,6 +65,7 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
             }
         }
     },
+    { fofabrico: { label: "Ordem de Fabrico", field: { type: 'input', size: 'small' } } },
     { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' } } },
     { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
     //{ f_ofabrico: { label: "Ordem de Fabrico" } },
@@ -86,19 +83,21 @@ const filterSchema = ({ ordersField, customersField, itemsField, ordemFabricoSta
     { ofstatus: { label: "Ordem de Fabrico: Estado", field: ordemFabricoStatusField, ignoreFilterTag: (v) => v === 'all' } } */
 ];
 
-const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) => {
+const ToolbarTable = ({ form, dataAPI, typeListField, validField, typeField }) => {
     const navigate = useNavigate();
 
-    const onChange = (v) => {
-        form.submit();
+    const onChange = (v, field) => {
+        if (field === "typelist") {
+            navigate("/app/validateReellings", { state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
+        } else {
+            form.submit();
+        }
+
     }
 
-    const leftContent = (
-        <>
-            {/* <button onClick={() => navigate(-1)}>go back</button> */}
-            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prev.visible }))}>Flyout</Button> */}
-        </>
-    );
+    const leftContent = (<>
+        <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={()=>navigate(-1)}></Button>
+    </>);
 
     const rightContent = (
         <Space>
@@ -106,10 +105,18 @@ const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) =
 
             </div>
             <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                <Form form={form} initialValues={{ typelist: "A" }}>
+                <Form form={form}>
                     <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
+                        {typeListField({ onChange })}
                     </Form.Item>
+                    <Form.Item name="type" noStyle>
+                        {typeField({ onChange })}
+                    </Form.Item>
+                    <Form.Item name="valid" noStyle>
+                        {validField({ onChange })}
+                    </Form.Item>
+
+
                 </Form>
             </div>
         </Space>
@@ -119,7 +126,7 @@ const ToolbarTable = ({ form, dataAPI, typeListField, setTypeList, typeList }) =
     );
 }
 
-const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
+const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter, setTitle, title } = {}) => {
     const [changed, setChanged] = useState(false);
     const onFinish = (type, values) => {
         switch (type) {
@@ -132,10 +139,13 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     ftime: getFilterRangeValues(vals["ftime"]?.formatted),
                     fduracao: getFilterValue(vals?.fduracao, '=='),
+                    fofabrico: getFilterValue(vals?.fofabrico, 'any'),
                     fcliente: getFilterValue(vals?.fcliente, 'any'),
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
-                dataAPI.addFilters(_values);
+                const { typelist: tp, ...dt } = { ...dataAPI.getAllFilter(), ..._values };
+                setTitle(dt);
+                dataAPI.addFilters(dt);
                 dataAPI.addParameters({ typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
@@ -199,153 +209,100 @@ const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}
         />
     ); */
 
-    const downloadFile = (data, filename, mime, bom) => {
-        var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
-        var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
-        if (typeof window.navigator.msSaveBlob !== 'undefined') {
-            // IE workaround for "HTML7007: One or more blob URLs were
-            // revoked by closing the blob for which they were created.
-            // These URLs will no longer resolve as the data backing
-            // the URL has been freed."
-            window.navigator.msSaveBlob(blob, filename);
-        }
-        else {
-            var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
-            var tempLink = document.createElement('a');
-            tempLink.style.display = 'none';
-            tempLink.href = blobURL;
-            tempLink.setAttribute('download', filename);
-
-            // Safari thinks _blank anchor are pop ups. We only want to set _blank
-            // target if the browser does not support the HTML5 download attribute.
-            // This allows you to download files in desktop safari if pop up blocking
-            // is enabled.
-            if (typeof tempLink.download === 'undefined') {
-                tempLink.setAttribute('target', '_blank');
-            }
-
-            document.body.appendChild(tempLink);
-            tempLink.click();
-
-            // Fixes "webkit blob resource error 1"
-            setTimeout(function () {
-                document.body.removeChild(tempLink);
-                window.URL.revokeObjectURL(blobURL);
-            }, 200);
-        }
-    }
-
-    const menu = (
-        <Menu onClick={(v) => exportFile(v)}>
-            <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
-            <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
-            <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
-        </Menu>
-    );
-
-    const exportFile = async (type) => {
-        const requestData = dataAPI.getPostRequest();
-
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
-            "orientation": "landscape",
-            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": "Ordens de Fabrico",
-            "export": type.key,
-            cols: columns
-        }
-        delete requestData.parameters.cols.bobines;
-        requestData.parameters.cols.area.title = "Área m2";
-        const response = await fetchPostBlob(requestData);
-        switch (type.key) {
-            case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
-                break;
-            case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
-                break;
-            case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
-                break;
-        }
-    }
-
     return (
         <>
-
-            <FilterDrawer schema={filterSchema({ form /* ordersField, customersField, itemsField */ })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
-                <FormLayout
-                    id="LAY-BOBINAGENS"
-                    layout="horizontal"
-                    style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
-                    schema={schema}
-                    field={{ guides: false, wide: [3, 4, 3, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
-                    fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
-                >
-                    <Field name="fbobinagem" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Nº Bobinagem", pos: "top" }}>
-                        <Input size='small' />
-                    </Field>
-                    <Field name="fdata" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Bobinagem", pos: "top" }}>
-                        <RangeDateField size='small' />
-                    </Field>
-                    <Field name="ftime" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Início/Fim", pos: "top" }}>
-                        <RangeTimeField size='small' format={TIME_FORMAT} />
-                    </Field>
-                    {/*                     <Field name="fmulti_customer" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Cliente", pos: "top" }}>
-                        {customersField()}
-                    </Field>
-                    <Field name="fmulti_order" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Encomenda/Prf", pos: "top" }}>
-                        {ordersField()}
-                    </Field>
-                    <Field name="fmulti_item" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Artigo", pos: "top" }}>
-                        {itemsField()}
-                    </Field>
-                    <Field name="forderdate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Encomenda", pos: "top" }}>
-                        <RangeDateField size='small' />
-    </Field>*/}
-                    <FieldItem label={{ enabled: false }}>
-                        <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
-                            <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
-                        </ButtonGroup>
-                    </FieldItem>
-                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
-                        <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
-                    </Dropdown>
-                    </FieldItem>
-                </FormLayout>
-            </Form>
+            {columns &&
+                <>
+                    <FilterDrawer schema={filterSchema({ form /* ordersField, customersField, itemsField */ })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
+                    <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }}>
+                        <FormLayout
+                            id="LAY-BOBINAGENS"
+                            layout="horizontal"
+                            style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
+                            schema={schema}
+                            field={{ guides: false, wide: [3, 4, 3, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
+                            fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+                        >
+                            <Field name="fbobinagem" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Nº Bobinagem", pos: "top" }}>
+                                <Input size='small' allowClear />
+                            </Field>
+                            <Field name="fdata" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Bobinagem", pos: "top" }}>
+                                <RangeDateField size='small' allowClear />
+                            </Field>
+                            <Field name="ftime" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Início/Fim", pos: "top" }}>
+                                <RangeTimeField size='small' format={TIME_FORMAT} allowClear />
+                            </Field>
+                            <FieldItem label={{ enabled: false }}>
+                                <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
+                                    <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
+                                    <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
+                                </ButtonGroup>
+                            </FieldItem>
+                            <FieldItem label={{ enabled: false }}>
+                                <Reports columns={columns} dataAPI={dataAPI} title={title} />
+                            </FieldItem>
+                        </FormLayout>
+                    </Form>
+                </>
+            }
         </>
     );
 }
 
-export default () => {
+const ListTitle = ({ title }) => {
+    return (
+        <div>
+            <Title style={{ margin: "0px" }} level={4}>{title?.title}</Title>
+            {title.subtitle && <Text mark>{title.subtitle}</Text>}
+        </div>
+    );
+}
+
+export default (props) => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
-    const [typeList, setTypeList] = useState('A');
+    const [title, setTitle] = useState({ title: "", subtitle: "" });
 
     useEffect(() => {
         const cancelFetch = cancelToken();
-        dataAPI.first();
+        const { typelist, ...dt } = loadInit({ typelist: "A", type: "-1", valid: "-1" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, ["agg_of_id", "ofs", "typelist", ...Object.keys(dataAPI.getAllFilter())]);
+        setListTitle(dt);
+        formFilter.setFieldsValue({ typelist, ...dt });
+        dataAPI.addFilters(dt);
+        dataAPI.addParameters({ typelist });
+        //dataAPI.first();
         dataAPI.fetchPost({ token: cancelFetch });
         return (() => cancelFetch.cancel());
-    }, [dataSocket?.bobinagens]);
+    }, [dataSocket?.bobinagens, location]);
+
+    useEffect(() => {
+        console.log(".......................", dataAPI.getData().rows)
+    }, [dataAPI.isLoading()])
 
     const selectionRowKey = (record) => {
         return `${record.id}`;
     }
 
+    const setListTitle = (v) => {
+        const st = (parseInt(v.type) === -1 || !v?.ofs) ? null : JSON.stringify(v.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
+        if (parseInt(v.valid) === 0) {
+            setTitle({ title: "Bobinagens da Linha 1 por Validar", subtitle: st });
+        } else
+            setTitle({ title: "Bobinagens da Linha 1", subtitle: st });
+    }
+
     const handleWndClick = (bm) => {
-        setShowValidar({ show: true, data: { title:`Validar e Classificar Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+        navigate("/app/bobines/validarlist",{ state:{ title: `Validar e Classificar Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome, tstamp:Date.now()}});
+        //setShowValidar({ show: true, data: { title: `Validar e Classificar Bobinagem ${bm.nome}`, bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     const columns = setColumns(
@@ -365,7 +322,7 @@ export default () => {
                         comp: { title: "Comp.", render: (v, r) => v, input: <InputNumber />, ...common },
                         comp_par: { title: "Comp. Emenda", render: (v, r) => v, ...common },
                         comp_cli: { title: "Comp. Cliente", render: (v, r) => v, ...common },
-                        area: { title: <span>Área m&#178;</span>, render: (v, r) => v, ...common },
+                        area: { title: <span>Área m&#178;</span>, reportTitle: "Área m2", render: (v, r) => v, ...common },
                         diam: { title: "Diâmetro mm", render: (v, r) => v, ...common },
                         nwinf: { title: "Nw Inf. m", render: (v, r) => v, ...common },
                         nwsup: { title: "Nw Sup. m", render: (v, r) => v, ...common }
@@ -373,7 +330,7 @@ export default () => {
                 ))({ idx: 1, optional: false }),
                 ...((common) => (
                     {
-                        ...(common.typeList == 'A' && { bobines: { title: <ColumnBobines n={28} />, width: 750, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common } }),
+                        ...(common.typeList == 'A' && { bobines: { title: <ColumnBobines n={28} />, reportVisible: false, width: 750, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common } }),
                         ...(common.typeList == 'B' && {
                             A1: { title: 'A1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
                             A2: { title: 'A2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
@@ -393,6 +350,13 @@ export default () => {
                             C4: { title: 'C4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
                             C5: { title: 'C5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
                             C6: { title: 'C6 kg', width: 55, sorter: false, render: (v, r) => v, ...common }
+                        }),
+                        ...(common.typeList == 'C' && {
+                            ofs: { title: 'Ordens de Fabrico', width: 350, sorter: false, render: (v, r) => v && v.replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | "), ...common },
+                            tiponwinf: { title: 'Tipo NW Inferior', width: 300, sorter: true, render: (v, r) => v, ...common },
+                            tiponwsup: { title: 'Tipo NW Superior', width: 300, sorter: true, render: (v, r) => v, ...common },
+                            lotenwinf: { title: 'Lote NW Inferior', width: 150, sorter: true, render: (v, r) => v, ...common },
+                            lotenwsup: { title: 'Lote NW Superior', width: 150, sorter: true, render: (v, r) => v, ...common }
                         })
                     }
                 ))({ idx: 2, optional: false, typeList: formFilter.getFieldValue('typelist') }),
@@ -401,28 +365,28 @@ export default () => {
         }
     );
 
-    const handleWndCancel = () => {
+/*     const handleWndCancel = () => {
         setShowValidar({ show: false, data: {} });
-    };
+    }; */
 
     return (
         <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <Wnd show={showValidar} setShow={setShowValidar}>
+            <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} /* style={{ top: "50%", left: "50%", position: "absolute" }} */ >
+                {/* <Wnd show={showValidar} setShow={setShowValidar}>
                     <Suspense fallback={<></>}>{<BobinesValidarList data={showValidar.data} closeSelf={handleWndCancel} />}</Suspense>
-                </Wnd>
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} setTypeList={setTypeList} />
+                </Wnd> */}
+                <ToolbarTable form={formFilter} dataAPI={dataAPI} typeListField={typeListField} typeField={typeField} validField={validField} />
                 {elFilterTags && <Portal elId={elFilterTags}>
-                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
+                    <FilterTags form={formFilter} filters={filterObjectKeys(dataAPI.getAllFilter(), ["type", "typelist", "valid", "ofs", "agg_of_id"])} schema={filterSchema} rules={filterRules()} />
                 </Portal>}
                 <Table
-                    title={<Title level={4}>Validar Bobinagens da Linha 1</Title>}
+                    title={<ListTitle title={title} />}
                     columnChooser={false}
                     reload
                     stripRows
                     darkHeader
                     size="small"
-                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
+                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} title={title} setTitle={setListTitle} />}
                     selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
                     paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
                     dataAPI={dataAPI}

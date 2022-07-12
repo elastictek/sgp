@@ -639,24 +639,26 @@ const SelectBobinagens = ({ onView, onChangeContent, loading }) => {
     return (
 
         <Space>
-            <Select defaultValue="vdefault" style={{ width: 200 }} onChange={onChangeContent} dropdownMatchSelectWidth={false} disabled={loading}>
-                <Option value="vdefault">Por validar</Option>
-                <Option value="valid">Validadas</Option>
-                <Option value="vall"> </Option>
+            <Select defaultValue="0" style={{ width: 200 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={loading}>
+                <Option value="0">Por validar</Option>
+                <Option value="1">Validadas</Option>
+                <Option value="-1"> </Option>
             </Select>
-            <Select defaultValue="default" style={{ width: 200 }} onChange={onChangeContent} dropdownMatchSelectWidth={false} disabled={loading}>
-                <Option value="default">Bobinagens da Ordem de Fabrico</Option>
-                <Option value="all">Todas as Bobinagens</Option>
+            <Select defaultValue="1" style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={loading}>
+                <Option value="1">Bobinagens da Ordem de Fabrico</Option>
+                <Option value="-1">Todas as Bobinagens</Option>
             </Select>
-            <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={loading}/>
+            <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={loading} />
+            {/* <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={loading}/> */}
         </Space>
     );
 }
 
 const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
     const [loading, setLoading] = useState(false);
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: 0, type: "default" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: "0", type: "1" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const modal = useModalv4();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -677,10 +679,7 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
                 }); */
     }
     const onView = () => {
-        modal.show({ propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList /> });
-        /*         Modalv4.show({
-                    propsToChild: true, width: '1500px', height: '800px', minFullHeight: 800, content: <BobinagensValidarList />
-                }); */
+        navigate("/app/validateReellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp:Date.now() } });
     }
 
     const selectionRowKey = (record) => {
@@ -689,26 +688,9 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
 
 
 
-    const onChangeContent = async (v) => {
-        console.log("CHANGEINNGGGGGGx ",dataAPI.getFilter(true))
-        switch (v) {
-            case 'vdefault':
-                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: 0 },true);
-                dataAPI.fetchPost();
-                break;
-            case 'vall':
-                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: null },true);
-                dataAPI.fetchPost();
-                break;
-            case 'valid':
-                dataAPI.addFilters({ ...dataAPI.getFilter(true), valid: 1 },true);
-                dataAPI.fetchPost();
-                break;
-            default:
-                dataAPI.addFilters({ ...dataAPI.getFilter(true), type: v },true);
-                dataAPI.fetchPost();
-                break;
-        }
+    const onChangeContent = async (v, field) => {
+        dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v }, true);
+        dataAPI.fetchPost();
     }
 
     const columns = setColumns(
@@ -1180,7 +1162,7 @@ export default (props) => {
     useEffect(() => {
         if (dataSocket) {
             const cancelFetch = cancelToken();
-            loadData({ aggId:props?.aggId, token: cancelFetch });
+            loadData({ aggId: props?.aggId, token: cancelFetch });
             return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
         }
     }, [dataSocket?.inproduction]);
@@ -1189,7 +1171,7 @@ export default (props) => {
     useEffect(() => {
         /*         console.log("FORM-AGG->", ctx) */
         const cancelFetch = cancelToken();
-        loadData({ aggId:props?.aggId, token: cancelFetch });
+        loadData({ aggId: props?.aggId, token: cancelFetch });
         return (() => cancelFetch.cancel("Form Actions Menu Cancelled"));
     }, []);
 
@@ -1251,7 +1233,7 @@ export default (props) => {
 
     return (
         <>
-            <Button onClick={() => navigate(-1,{state:{f:1}})}>Voltar</Button>
+            <Button onClick={() => navigate(-1, { state: { f: 1 } })}>Voltar</Button>
             {/*  <Modalv4 /> */}
             {/* <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar..."> */}
             {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
@@ -1291,7 +1273,7 @@ export default (props) => {
                         case "operacoes":
                             return (<CardOperacoes key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                         case "validarbobinagens":
-                            return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
+                            return (<CardValidarBobinagens socket={dataSocket?.bobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, ofs: currentSettings.ofs, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                         case "linelogs":
                             return (<CardEventosLinha socket={dataSocket?.igbobinagens} key={`ct-${menuItem.idcard}-${idx}`} menuItem={menuItem} record={{ id: currentSettings.id, agg_of_id: currentSettings.agg_of_id, status: currentSettings.status }} setShowForm={setShowForm} parentReload={loadData} />);
                         case "actions":

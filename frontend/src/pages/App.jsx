@@ -25,6 +25,7 @@ const StockLogList = lazy(() => import('./logslist/StockLogList'));
 const ExpedicoesTempoList = lazy(() => import('./expedicoes/ExpedicoesTempoList'));
 const ConsumptionNeedLogList = lazy(() => import('./logslist/ConsumptionNeedLogList'));
 const BobinesOriginaisList = lazy(() => import('./bobines/BobinesOriginaisList'));
+const BobinesValidarList = lazy(() => import('./bobines/BobinesValidarList'));
 const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
@@ -48,6 +49,7 @@ const RenderRouter = () => {
             element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
             children: [
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
+                { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
                 { path: "pick", element: <Suspense fallback={<Spin />}><FormPickMP /></Suspense> },

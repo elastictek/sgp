@@ -163,7 +163,9 @@ export const setColumns = ({ uuid, dataAPI, data, include = [], exclude = [] } =
             ret.notOptional.push(c);
         }
         ret.width += (c?.width) ? c.width : 0;
-        ret.report[c.dataIndex] = { ...(c.width && { width: c.width }), title: c.title };
+        if (c?.reportVisible !== false) {
+            ret.report[c.dataIndex] = { ...(c.width && { width: c.width }), title: (c?.reportTitle) ? c.reportTitle : c.title };
+        }
         ret.all.push(c);
     }
     return ret;
@@ -210,29 +212,29 @@ const genColumnKey = (key, index) => {
 
 export default ({ className, dataAPI, onFetch, columns, selection = {}, columnChooser = true, reload = true, rowHover = true, clearSort = true, title, toolbar, header = true, paginationProps = {}, darkHeader = false, stripRows = false, ...rest }) => {
     const classes = useStyles();
-/*     const counter = Container.useContainer(); */
+    /*     const counter = Container.useContainer(); */
     const { rowKey, onSelection, enabled: selectionEnabled = false, multiple = false, selectedRows, setSelectedRows } = selection;
     /*     const [selectedRows, setSelectedRows] = useState([]); */
     const [checkedColumns, setCheckedColumns] = useState([]);
 
     //const columnKeys = tableColumn.map((item) => genColumnKey(item.key, item.index));
 
-   /*  const tableColumn = useMemo(() => {
-        return () => {
-            const _columns = [];
-            for (let v of counter.columns) {
-                if (counter.columnsMap[v.key].show) {
-                    _columns.push(v);
-                }
-            }
-            return _columns;
-        }
-    }, [
-        counter?.sortKeyColumns,
-        counter?.columnsMap,
-        counter?.columns
-    ]);
- */
+    /*  const tableColumn = useMemo(() => {
+         return () => {
+             const _columns = [];
+             for (let v of counter.columns) {
+                 if (counter.columnsMap[v.key].show) {
+                     _columns.push(v);
+                 }
+             }
+             return _columns;
+         }
+     }, [
+         counter?.sortKeyColumns,
+         counter?.columnsMap,
+         counter?.columns
+     ]);
+  */
 
     // const getColumns = () => {
     //     const _columns = [];
