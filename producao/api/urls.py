@@ -128,6 +128,7 @@ urlpatterns = [
     re_path(r'^validarbobineslist/$', views.ValidarBobinesList),
     re_path(r'^validarbobinagem/$', views.ValidarBobinagem),
     re_path(r'^fixsimulatorlist/$', views.FixSimulatorList),
+    re_path(r'^bobineslist/$', views.BobinesList),
     
     #BOBINAGENS
 
@@ -169,7 +170,7 @@ urlpatterns = [
 
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 
-
+    re_path(r'^createpalete/$', views.CreatePalete),
 
 
 

@@ -25,9 +25,11 @@ const StockLogList = lazy(() => import('./logslist/StockLogList'));
 const ExpedicoesTempoList = lazy(() => import('./expedicoes/ExpedicoesTempoList'));
 const ConsumptionNeedLogList = lazy(() => import('./logslist/ConsumptionNeedLogList'));
 const BobinesOriginaisList = lazy(() => import('./bobines/BobinesOriginaisList'));
+const BobinesList = lazy(() => import('./bobines/BobinesList'));
 const BobinesValidarList = lazy(() => import('./bobines/BobinesValidarList'));
 const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
+const FormPalete = lazy(() => import('./paletes/FormPalete'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const MediaContext = React.createContext({});
@@ -53,6 +55,7 @@ const RenderRouter = () => {
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },
                 { path: "pick", element: <Suspense fallback={<Spin />}><FormPickMP /></Suspense> },
+                { path: "paletes/palete", element: <Suspense fallback={<Spin />}><FormPalete /></Suspense> },
                 { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
                 { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
                 { path: "stocklistbuffer", element: <Suspense fallback={<Spin />}><StockListBuffer /></Suspense> },
@@ -60,6 +63,7 @@ const RenderRouter = () => {
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
                 { path: "logslist/comsumptionneedloglist", element: <Suspense fallback={<Spin />}><ConsumptionNeedLogList /></Suspense> },
                 { path: "bobines/bobinesoriginaislist", element: <Suspense fallback={<Spin />}><BobinesOriginaisList /></Suspense> },
+                { path: "bobines/bobineslist", element: <Suspense fallback={<Spin />}><BobinesList /></Suspense> },
                 { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
                 { path: "currentline/menuactions", element: <Suspense fallback={<Spin />}><FormMenuActions /></Suspense> },
                 { path: "expedicoes/timearmazem", element: <Suspense fallback={<Spin />}><ExpedicoesTempoList /></Suspense> },

@@ -8,6 +8,7 @@ import { API_URL, GTIN } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
+import AlertMessages from "components/alertMessages";
 
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
 import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, SelectMultiField, FilterDrawer, CheckboxField, SwitchField } from "components/formLayout";
@@ -25,13 +26,20 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
 const { TextArea } = Input;
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, CompassOutlined,LeftOutlined } from '@ant-design/icons';
+import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled, CompassOutlined, LeftOutlined } from '@ant-design/icons';
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, SCREENSIZE_OPTIMIZED } from 'config';
 import { useImmer } from 'use-immer';
 const { Title } = Typography;
+
+const schema = (keys, excludeKeys) => {
+    return getSchema({
+        nwinf: Joi.any().label("Emenda Inferior"),
+        nwsup: Joi.any().label("Emenda Superior")
+    }, keys, excludeKeys).unknown(true);
+}
 
 const ApproveButton = styled(Button)`
   &&& {
@@ -50,7 +58,7 @@ const ToolbarTable = ({ dataAPI, onSubmit }) => {
 
     const leftContent = (
         <Space>
-            <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={()=>navigate(-1)}></Button>
+            <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={() => navigate(-1)}></Button>
             <Button type="primary" size="small" onClick={() => onSubmit("validar")}>Validar</Button>
             <ApproveButton size="small" onClick={() => onSubmit("aprovar")}>Aprovar</ApproveButton>
             <Button danger size="small" onClick={() => onSubmit("hold")}>Hold</Button>
@@ -74,6 +82,24 @@ const ToolbarTable = ({ dataAPI, onSubmit }) => {
     );
 }
 
+
+const statusColor = (estado) => {
+    if (estado === "G") {
+        return { color: "#237804", fontColor: "#fff" };//"green";
+    } else if (estado === "DM" || estado === "DM12") {
+        return { color: "#fadb14", fontColor: "#000" };//"gold";
+    } else if (estado === "R") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "LAB") {
+        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
+    } else if (estado === "BA") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "IND") {
+        return { color: "#0050b3", fontColor: "#fff" };//"blue";
+    } else if (estado === "HOLD") {
+        return { color: "#391085", fontColor: "#fff" };//"purple";
+    }
+}
 
 const FEstado = ({ index, data, width = "70px", onChange }) => {
     const name = `st-${index}`;
@@ -114,22 +140,16 @@ const FFalhaFilme = ({ index, data, width = "50px", onChange, min, max }) => {
     </Space>);
 }
 
-const FProbs = ({ index, data, width = "50px", onChange, r }) => {
+const FProbs = ({ index, data, width = "50px", onChange }) => {
     const name = `probs-${index}`;
     const tabIndex = 600 + index;
-    
-    useEffect(()=>{
-        console.log("PROP-OBSxxxxxxx---",data,r);
-    },[]);
-
-    
-    return (<TextArea autoSize={{ minRows: 1, maxRows: 2 }} onChange={(v) => onChange("probs", v, index)} value={data.probs[index]} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={tabIndex} name={name} size="small" />);
+    return (<TextArea autoSize={{ minRows: 1, maxRows: 10 }} onChange={(v) => onChange("probs", v, index)} value={data.probs[index]} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={tabIndex} name={name} size="small" />);
 }
 
 const FObs = ({ index, data, width = "50px", onChange }) => {
     const name = `obs-${index}`;
     const tabIndex = 700 + index;
-    return (<TextArea autoSize={{ minRows: 1, maxRows: 2 }} onChange={(v) => onChange("obs", v, index)} value={data.obs[index]} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={tabIndex} name={name} size="small" />);
+    return (<TextArea autoSize={{ minRows: 1, maxRows: 10 }} onChange={(v) => onChange("obs", v, index)} value={data.obs[index]} style={{ height: "22px", minHeight: "22px", maxHeight: "122px", overflowY: "hidden", resize: "none" }} tabIndex={tabIndex} name={name} size="small" />);
 }
 
 //
@@ -138,19 +158,22 @@ const FObs = ({ index, data, width = "50px", onChange }) => {
 export default ({ data, closeSelf }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const [fieldStatus, setFieldStatus] = useState({});
     const [loading, setLoading] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
+    const [troca_nw,setTroca_nw] = useState(false);
+    const [valid,setValid] = useState(false);
+    const [form] = Form.useForm();
     const [formData, setFormData] = useImmer({ 'defeitos-all': 0, 'ff-all': 0, 'fc-all': 0, 'st-all': 0, 'probs-all': 0, 'obs-all': 0, st: [], l_real: [], defeitos: [], fc: [], ff: [], probs: [], obs: [] });
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobineslist/`, parameters: {}, pagination: { enabled: false, page: 1, pageSize: 30 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
 
     useEffect(() => {
         const { bobinagem_id } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, data, location?.state, ["bobinagem_id", ...Object.keys(dataAPI.getAllFilter())]);
-        console.log("loading init ",bobinagem_id)
-        //const { bobinagem_id } = data;
         const cancelFetch = cancelToken();
         dataAPI.first();
         dataAPI.addFilters({ bobinagem_id });
@@ -160,15 +183,28 @@ export default ({ data, closeSelf }) => {
 
     useEffect(() => {
         if (dataAPI.hasData()) {
+            console.log(dataAPI.getData())
+            setTroca_nw(dataAPI.getData().rows[0].troca_nw==1 ? true : false);
+            setValid(dataAPI.getData().valid==1 ? true : false);
             for (let [i, v] of dataAPI.getData().rows.entries()) {
+                let defeitos = [];
+                for (let p of BOBINE_DEFEITOS) {
+                    (v[p.value] === 1) && defeitos.push(p);
+                }
+                form.setFieldsValue({
+                    lotenwsup: dataAPI.getData()["lotenwsup"],
+                    lotenwinf: dataAPI.getData()["lotenwinf"],
+                    nwsup: dataAPI.getData()["nwsup"],
+                    nwinf: dataAPI.getData()["nwinf"]
+                });
                 setFormData(draft => {
                     draft.l_real[i] = v.l_real;
-                    draft.defeitos[i] = [];
-                    draft.st[i] = v.estado;
-                    draft.fc[i] = { init: null, end: null };
-                    draft.ff[i] = { init: null, end: null };
-                    draft.probs[i] = null;
-                    draft.obs[i] = null;
+                    draft.defeitos[i] = defeitos;
+                    draft.st[i] = (dataAPI.getData()?.isba && dataAPI.getData().isba == 1) ? "BA" : v.estado;
+                    draft.fc[i] = { init: v.fc_diam_ini, end: v.fc_diam_fim };
+                    draft.ff[i] = { init: v.ff_m_ini, end: v.ff_m_fim };
+                    draft.probs[i] = v.prop_obs;
+                    draft.obs[i] = v.obs;
                 });
             }
         }
@@ -190,10 +226,22 @@ export default ({ data, closeSelf }) => {
                 setFormData(draft => { draft[type] = value.target.checked; });
                 break;
             case "defeitos":
-                if (formData['defeitos-all']) {
-                    setFormData(draft => { draft.defeitos = formData.defeitos.map(() => (value === undefined) ? [] : value); });
+                let removed = formData.defeitos[index].filter(a => !value?.map(b => b.value).includes(a.value));
+                if (removed.length > 0) {
+                    if (removed[0].value === "troca_nw" || formData['defeitos-all']) {
+                        setTroca_nw(false);
+                        setFormData(draft => { draft.defeitos = formData.defeitos.map((v) => v.filter(x => x.value !== removed[0].value)); });
+                    } else {
+                        setFormData(draft => { draft.defeitos[index] = draft.defeitos[index].filter(x => x.value !== removed[0].value); });
+                    }
                 } else {
-                    setFormData(draft => { draft.defeitos[index] = (value === undefined) ? [] : value; });
+                    let added = value.filter(a => !formData.defeitos[index].map(b => b.value).includes(a.value));
+                    if (added[0].value === "troca_nw" || formData['defeitos-all']) {
+                        setTroca_nw(true);
+                        setFormData(draft => { draft.defeitos = formData.defeitos.map((v) => (v.some(x => x.value === added[0].value)) ? v : [...v, ...added]); });
+                    } else {
+                        setFormData(draft => { draft.defeitos[index] = draft.defeitos[index].some(x => x.value === added[0].value) ? draft.defeitos[index] : [...draft.defeitos[index], ...added]; });
+                    }
                 }
                 break;
             case "probs":
@@ -250,125 +298,127 @@ export default ({ data, closeSelf }) => {
 
     const onSubmit = async (type) => {
         const vData = [];
+        const msgKeys = ["nwinf", "nwsup", "lotenwinf", "lotenwsup"];
+        const status = { error: [], warning: [], info: [], success: [] };
+        const _fieldStatus = {};
         const _all_defeitos = BOBINE_DEFEITOS.reduce((obj, item) => (obj[item.value] = 0, obj), {});
         const errors = [];
         let fData = { ...formData, st: [...formData.st] };
         let warns = false;
-        switch (type) {
-            case "validar": break;
-            case "hold":
-                for (let [i, v] of fData.st.entries()) {
-                    if (v == "LAB" || v == "DM") {
-                        fData.st[i] = "HOLD";
-                    } else {
-                        warns = true;
-                    }
-                }
-                break;
-            case "aprovar":
-                for (let [i, v] of fData.st.entries()) {
-                    if (v == "LAB" || v == "HOLD") {
-                        fData.st[i] = "G";
-                    } else {
-                        warns = true;
-                    }
-                }
-                break;
-        }
 
-        for (let [i, v] of fData.defeitos.entries()) {
-            const _defeitos = fData.defeitos[i].reduce((obj, item) => (obj[item.value] = 1, obj), {});
+        console.log("SUBMITTTTTTTTT", form.getFieldsValue(true), fData.defeitos, dataAPI.getData(), troca_nw);
+        const v = schema().custom((v, h) => {
+            const { nwinf, nwsup, lotenwinf, lotenwsup } = v;
+            if (!lotenwinf) {
+                _fieldStatus["lotenwinf"] = { status: "error", messages: [{ message: `O lote do Nonwoven inferior tem de estar preenchido!` }] };
+                return h.message(`O lote do Nonwoven inferior tem de estar preenchido!`, { key: "lotenwinf", label: "Lote Nonwoven Inferior" });
+            }
+            if (!lotenwsup) {
+                _fieldStatus["lotenwsup"] = { status: "error", messages: [{ message: `O lote do Nonwoven superior tem de estar preenchido!` }] };
+                return h.message(`O lote do Nonwoven superior tem de estar preenchido!`, { key: "lotenwsup", label: "Lote Nonwoven Inferior" });
+            }
+            if (troca_nw) {
+                let comp = dataAPI.getData().rows[0].comp;
+                if (!nwinf || nwinf <= 0 || nwinf > comp) {
+                    _fieldStatus["nwinf"] = { status: "error", messages: [{ message: `Os metros do Nonwoven Inferior tem estar entre [0 e ${comp}]` }] };
+                    return h.message(`Os metros do Nonwoven Inferior tem estar entre [0 e ${comp}]`, { key: "nwinf", label: "Emenda do Nonwoven Inferior" });
+                }
+                if (!nwsup || nwsup <= 0 || nwsup > comp) {
 
-            if (fData.st[i] === 'DM12' || fData.st[i] === 'R') {
-                if (fData.defeitos[i].length === 0) {
-                    errors.push(<li key={`err-${i}`}>A Bobine {i} Classificadas como DM ou R tem de ter pelo menos um defeito!</li>);
+                    _fieldStatus["nwsup"] = { status: "error", messages: [{ message: `Os metros do Nonwoven Superior tem estar entre [0 e ${comp}]` }] };
+                    return h.message(`Os metros do Nonwoven Superior tem estar entre [0 e ${comp}]`, { key: "nwsup", label: "Emenda do Nonwoven Superior" });
                 }
-                if (fData.defeitos[i].some(a => a.value === 'fc')) {
-                    //Tem falha de corte
-                    if (fData.fc[i]?.init === null || fData.fc[i]?.end === null) {
-                        errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de corte!</li>);
-                    } else if (fData.fc[i]?.init > fData.fc[i]?.end) {
-                        errors.push(<li key={`err-${i}`}>A falha de Corte na Bobine {i} tem de ser um intervalo válido!</li>);
+                
+            }
+        }).validate(form.getFieldsValue(true), { abortEarly: false });
+        status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
+        status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
+        setFieldStatus(_fieldStatus);
+        setFormStatus(status);
+        if (status.error.length === 0) {
+
+            switch (type) {
+                case "validar": break;
+                case "hold":
+                    for (let [i, v] of fData.st.entries()) {
+                        if (v == "LAB" || v == "DM") {
+                            fData.st[i] = "HOLD";
+                        } else {
+                            warns = true;
+                        }
+                    }
+                    break;
+                case "aprovar":
+                    for (let [i, v] of fData.st.entries()) {
+                        if (v == "LAB" || v == "HOLD") {
+                            fData.st[i] = "G";
+                        } else {
+                            warns = true;
+                        }
+                    }
+                    break;
+            }
+
+            for (let [i, v] of fData.defeitos.entries()) {
+                const _defeitos = fData.defeitos[i].reduce((obj, item) => (obj[item.value] = 1, obj), {});
+
+                if (fData.st[i] === 'DM12' || fData.st[i] === 'R') {
+                    if (fData.defeitos[i].length === 0) {
+                        errors.push(<li key={`err-${i}`}>A Bobine {i} Classificadas como DM ou R tem de ter pelo menos um defeito!</li>);
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'fc')) {
+                        //Tem falha de corte
+                        if (fData.fc[i]?.init === null || fData.fc[i]?.end === null) {
+                            errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de corte!</li>);
+                        } else if (fData.fc[i]?.init > fData.fc[i]?.end) {
+                            errors.push(<li key={`err-${i}`}>A falha de Corte na Bobine {i} tem de ser um intervalo válido!</li>);
+                        }
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'ff')) {
+                        //Tem falha de filme
+                        if (fData.ff[i]?.init === null || fData.ff[i]?.end === null) {
+                            errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de filme!</li>);
+                        } else if (fData.ff[i]?.init > fData.ff[i]?.end) {
+                            errors.push(<li key={`err-${i}`}>A falha de Filme na Bobine {i} tem de ser um intervalo válido!</li>);
+                        }
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
+                        errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
+                        errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'buraco') && !fData.obs[i]) {
+                        errors.push(<li key={`err-${i}`}>Buracos na Bobine {i}, tem de preencher os Metros de Desbobinagem nas Observações!</li>);
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'esp') && !fData.probs[i]) {
+                        errors.push(<li key={`err-${i}`}>Gramagem na Bobine {i}, tem de preencher as Propriedades Observações!</li>);
+                    }
+                    if (fData.defeitos[i].some(a => a.value === 'prop') && !fData.probs[i]) {
+                        errors.push(<li key={`err-${i}`}>Propriedades Bobine {i}, tem de preencher as Propriedades Observações!</li>);
                     }
                 }
-                if (fData.defeitos[i].some(a => a.value === 'ff')) {
-                    //Tem falha de filme
-                    if (fData.ff[i]?.init === null || fData.ff[i]?.end === null) {
-                        errors.push(<li key={`err-${i}`}>A Bobine {i} tem de ter preenchido início e fim de falha de filme!</li>);
-                    } else if (fData.ff[i]?.init > fData.ff[i]?.end) {
-                        errors.push(<li key={`err-${i}`}>A falha de Filme na Bobine {i} tem de ser um intervalo válido!</li>);
-                    }
-                }
-                if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
-                    errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
-                }
-                if (fData.defeitos[i].some(a => a.value === 'fmp') && !fData.obs[i]) {
-                    errors.push(<li key={`err-${i}`}>Falha de Matéria Prima na Bobine {i}, tem de preencher o motivo nas Observações!</li>);
-                }
-                if (fData.defeitos[i].some(a => a.value === 'buraco') && !fData.obs[i]) {
-                    errors.push(<li key={`err-${i}`}>Buracos na Bobine {i}, tem de preencher os Metros de Desbobinagem nas Observações!</li>);
-                }
-                if (fData.defeitos[i].some(a => a.value === 'esp') && !fData.probs[i]) {
-                    errors.push(<li key={`err-${i}`}>Gramagem na Bobine {i}, tem de preencher as Propriedades Observações!</li>);
-                }
-                if (fData.defeitos[i].some(a => a.value === 'prop') && !fData.probs[i]) {
-                    errors.push(<li key={`err-${i}`}>Propriedades Bobine {i}, tem de preencher as Propriedades Observações!</li>);
-                }
+                vData.push({ id: dataAPI.getData().rows[i].id, l_real: fData.l_real[i], estado: fData.st[i], prop_obs: fData.probs[i], obs: fData.obs[i], ..._all_defeitos, ..._defeitos });
             }
 
 
+            if (errors.length > 0) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div></div> });
+            } else {
+                setLoading(true);
+                try {
+                    console.log("-----------------------------------", { bobines: vData, ...data });
+                    //let response = await fetchPost({ url: `${API_URL}/validarbobinagem/`, parameters: { bobines: vData, ...data } });
+                    //if (response.data.status !== "error") {
+                    //    setResultMessage(response.data);
+                    // }
+                } catch (e) {
+                    Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+                };
+                setLoading(false);
+            }
 
-
-            vData.push({ id: dataAPI.getData().rows[i].id, l_real: fData.l_real[i], estado: fData.st[i], prop_obs: fData.probs[i], obs: fData.obs[i], ..._all_defeitos, ..._defeitos });
-
-            //console.log(key, dataAPI.getData().rows[key], fData.defeitos[`${dataAPI.getData().rows[key].id}`])
-            //const _t = fData.defeitos[key].map(v => ({ [v.key]: 1 }));
-            //console.log(dataAPI.getData().rows[key].id);
-            //_defeitos.push({ id: dataAPI.getData().rows[key].id })
-            //console.log(_t);
         }
-
-
-        if (errors.length > 0) {
-            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll><ul style={{ whiteSpace: 'nowrap', margin: '15px', padding: '15px' }}>{errors}</ul></YScroll></div></div> });
-        } else {
-            setLoading(true);
-            try {
-                let response = await fetchPost({ url: `${API_URL}/validarbobinagem/`, parameters: { bobines: vData, ...data } });
-                if (response.data.status !== "error") {
-                    setResultMessage(response.data);
-                }
-            } catch (e) {
-                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-            };
-            setLoading(false);
-        }
-
-        /*
-        
-        defeitos = [cd.get('nok'), cd.get('con'), cd.get('descen'), cd.get('presa'), cd.get('diam_insuf'), cd.get('suj'), cd.get('car'), cd.get('lac'), cd.get('ncore'), 
-        cd.get('sbrt'), cd.get('fc'), cd.get('ff'), cd.get('fmp'), cd.get('furos'), cd.get('buraco'), cd.get('esp'), cd.get('prop'), cd.get('outros'), cd.get('troca_nw')]
-        
-                               
-                                
-                                
-
-                                elif (estado == 'DM' or estado == 'R') and defeitos[15] == True and prop_obs == '':
-                                    messages.error(
-                                        request, 'Bobine nº' + str(index) + ' - Gramagem: Preencher nas Prop. Obs.')
-                                    messages_count += 1
-                                elif (estado == 'DM' or estado == 'R') and defeitos[16] == True and prop_obs == '':
-                                    messages.error(
-                                        request, 'Bobine nº' + str(index) + ' - Propriedades: Preencher nas Prop. Obs.')
-                                    messages_count += 1
-                                else:
-        */
-
-
-
-
-
-
     }
 
     const selectionRowKey = (record) => {
@@ -390,7 +440,8 @@ export default ({ data, closeSelf }) => {
             include: {
                 ...((common) => (
                     {
-                        nome: { title: "Bobine", width: 125, fixed: 'left', render: v => <span style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        nome: { title: "Bobine", width: 125, fixed: 'left', render: (v,r) => <span onClick={()=>window.location.href=`/producao/bobine/details/${r.id}/`} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
+                        "S": { title: "", width: 20, fixed: 'left', onCell: (r, i) => ({ style: { backgroundColor: statusColor(formData.st[i])?.color } }), ...common },
                         "A": { title: <HeaderCol title="Estado" name="st" data={formData} onChange={onChange} />, width: 80, render: (v, r, i) => <FEstado width="70px" index={i} data={formData} onChange={onChange} />, ...common },
                         largura: { title: "Lar. mm", width: 60, align: 'right', ...common },
                         "B": { title: "Largura Real", width: 90, render: (v, r, i) => <FLarguraReal width="60px" index={i} data={formData} onChange={onChange} />, ...common },
@@ -398,8 +449,8 @@ export default ({ data, closeSelf }) => {
                         "C": { title: <HeaderCol title="Falha Corte" name="fc" data={formData} onChange={onChange} />, width: 120, render: (v, r, i) => <FFalhaCorte width="50px" index={i} data={formData} onChange={onChange} min={1} max={r.comp} />, ...common },
                         "D": { title: <HeaderCol title="Falha Filme" name="ff" data={formData} onChange={onChange} />, width: 120, render: (v, r, i) => <FFalhaFilme width="50px" index={i} data={formData} onChange={onChange} min={1} max={r.comp} />, ...common },
                         comp: { title: "Comp. m", width: 60, ...common },
-                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <FProbs width="50px" index={i} data={formData} onChange={onChange} r={r} />, ...common },
-                        "G": { title: <HeaderCol title="Obs." name="obs" data={formData} onChange={onChange} />, width: 270, render: (v, r, i) => <FObs width="50px" index={i} data={formData} onChange={onChange} />, ...common }
+                        "F": { title: <HeaderCol title="Prop. Obs." name="probs" data={formData} onChange={onChange} />, width: 450, render: (v, r, i) => <FProbs width="350px" index={i} data={formData} onChange={onChange} />, ...common },
+                        "G": { title: <HeaderCol title="Obs." name="obs" data={formData} onChange={onChange} />, width: 450, render: (v, r, i) => <FObs width="350px" index={i} data={formData} onChange={onChange} />, ...common }
                     }
                 ))({ idx: 1, optional: false, sorter: false })
             },
@@ -415,6 +466,47 @@ export default ({ data, closeSelf }) => {
         <>
             <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} >
                 <ToolbarTable dataAPI={dataAPI} onSubmit={onSubmit} />
+                <AlertMessages formStatus={formStatus} />
+                <Form form={form} name={`fvbq`} onFinish={() => { }}>
+                    <FormLayout
+                        id="LAY-FVBQ"
+                        layout="vertical"
+                        style={{ width: "400px", padding: "0px", marginBottom: "5px"/* , minWidth: "700px" */ }}
+                        schema={schema}
+                        fieldStatus={fieldStatus}
+                        field={{
+                            margin: "2px", guides: false, wide: [8, 8], style: { alignSelf: "end" },
+                            alert: { pos: "right", tooltip: true, container: false /* container: "el-external" */ }
+                        }}
+                        fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
+                    >
+                        <FieldSet>
+                            <Field forInput={!valid && troca_nw} name="lotenwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
+                                <Input size='small' allowClear />
+                            </Field>
+                            <Field forInput={!valid && troca_nw} name="lotenwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
+                                <Input size='small' allowClear />
+                            </Field>
+                        </FieldSet>
+                        <FieldSet>
+                            <FieldSet wide={8}>
+                                <Field forInput={!valid && troca_nw} split={2} name="nwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
+                                    <InputNumber size='small' addonAfter="m" />
+                                </Field>
+                            </FieldSet>
+                            <FieldSet wide={8}>
+                                <Field forInput={!valid && troca_nw} split={2} name="nwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
+                                    <InputNumber size='small' addonAfter="m" />
+                                </Field>
+                            </FieldSet>
+                        </FieldSet>
+                    </FormLayout>
+                </Form>
+
+
+
+
+
                 <Table
                     columnChooser={false}
                     reload={false}

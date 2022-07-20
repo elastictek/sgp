@@ -21,7 +21,6 @@ const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title, Text } = Typography;
 import { SocketContext, MediaContext } from '../App';
-//const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
 import { Wnd, ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
 import { useNavigate, useLocation } from "react-router-dom";
 import Reports, { downloadReport } from "components/DownloadReports";
@@ -35,9 +34,7 @@ const schema = (keys, excludeKeys) => {
 
 
 const filterRules = (keys) => {
-    return getSchema({
-        //field1: Joi.string().label("Designação")
-    }, keys).unknown(true);
+    return getSchema({}, keys).unknown(true);
 }
 
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
@@ -318,7 +315,7 @@ export default (props) => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "bobineslist", payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
     const { windowDimension } = useContext(MediaContext);
@@ -326,7 +323,7 @@ export default (props) => {
 
     useEffect(() => {
         const cancelFetch = cancelToken();
-        const { typelist, ...dt } = loadInit({ typelist: "A", type: "-1", valid: "-1" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, ["agg_of_id", "ofs", "typelist", ...Object.keys(dataAPI.getAllFilter())]);
+        const { typelist, ...dt } = loadInit({ typelist: "A", type: "-1", valid: "-1" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [/* "agg_of_id", "ofs", "typelist", */ ...Object.keys(dataAPI.getAllFilter())]);
         setListTitle(dt);
         formFilter.setFieldsValue({ typelist, ...dt });
         dataAPI.addFilters(dt);
@@ -345,11 +342,11 @@ export default (props) => {
     }
 
     const setListTitle = (v) => {
-        const st = (parseInt(v.type) === -1 || !v?.ofs) ? null : JSON.stringify(v.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
-        if (parseInt(v.valid) === 0) {
-            setTitle({ title: "Bobinagens da Linha 1 por Validar", subtitle: st });
-        } else
-            setTitle({ title: "Bobinagens da Linha 1", subtitle: st });
+        //const st = (parseInt(v.type) === -1 || !v?.ofs) ? null : JSON.stringify(v.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
+        //if (parseInt(v.valid) === 0) {
+            setTitle({ title: "Bobines"/* , subtitle: st */ });
+        //} else
+        //    setTitle({ title: "Bobinagens da Linha 1", subtitle: st });
     }
 
     const handleWndClick = (bm) => {
@@ -361,14 +358,14 @@ export default (props) => {
         {
             dataAPI,
             data: dataAPI.getData().rows,
-            uuid: "bobinagenslist_validar",
+            uuid: "bobineslist",
             include: {
                 ...((common) => (
                     {
-                        action: { title: "", fixed: "left", width: 40, render: (v, r) => <Action v={v} r={r} dataAPI={dataAPI} />, ...common },
+                       /* action: { title: "", fixed: "left", width: 40, render: (v, r) => <Action v={v} r={r} dataAPI={dataAPI} />, ...common },*/
                         nome: { title: "Bobinagem", width: 90, fixed: 'left', render: (v, r) => <span onClick={() => handleWndClick(r)} style={{ color: "#096dd9", cursor: "pointer" }}>{v}</span>, ...common },
                         /* data: { title: "Data", render: (v, r) => dayjs(v).format(DATE_FORMAT), ...common }, */
-                        inico: { title: "Início", width: 70, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
+                        /*inico: { title: "Início", width: 70, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         fim: { title: "Fim", width: 70, render: (v, r) => dayjs('01-01-1970 ' + v).format(TIME_FORMAT), ...common },
                         duracao: { title: "Duração", width: 80, render: (v, r) => v, ...common },
                         core: { title: "Core", width: 40, render: (v, r) => v, ...common },
@@ -378,41 +375,9 @@ export default (props) => {
                         area: { title: <span>Área m&#178;</span>, reportTitle: "Área m2", width: 80, render: (v, r) => v, ...common },
                         diam: { title: "Diâmetro mm", width: 80, render: (v, r) => v, ...common },
                         nwinf: { title: "Nw Inf. m", width: 80, render: (v, r) => v, ...common },
-                        nwsup: { title: "Nw Sup. m", width: 80, render: (v, r) => v, ...common }
+                        nwsup: { title: "Nw Sup. m", width: 80, render: (v, r) => v, ...common }*/
                     }
-                ))({ idx: 1, optional: false }),
-                ...((common) => (
-                    {
-                        ...(common.typeList == 'A' && { bobines: { title: <ColumnBobines n={28} />, reportVisible: false, width: 750, sorter: false, render: (v, r) => <Bobines b={JSON.parse(v)} bm={r} setShow={setShowValidar} />, ...common } }),
-                        ...(common.typeList == 'B' && {
-                            A1: { title: 'A1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            A2: { title: 'A2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            A3: { title: 'A3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            A4: { title: 'A4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            A5: { title: 'A5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            A6: { title: 'A6 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B1: { title: 'B1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B2: { title: 'B2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B3: { title: 'B3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B4: { title: 'B4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B5: { title: 'B5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            B6: { title: 'B6 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C1: { title: 'C1 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C2: { title: 'C2 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C3: { title: 'C3 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C4: { title: 'C4 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C5: { title: 'C5 kg', width: 55, sorter: false, render: (v, r) => v, ...common },
-                            C6: { title: 'C6 kg', width: 55, sorter: false, render: (v, r) => v, ...common }
-                        }),
-                        ...(common.typeList == 'C' && {
-                            ofs: { title: 'Ordens de Fabrico', width: 480, sorter: false, render: (v, r,i) => <Ofs rowIdx={i} r={r} setShow={setShowValidar}/>, ...common },
-                            tiponwinf: { title: 'Tipo NW Inferior', width: 300, sorter: true, render: (v, r) => v, ...common },
-                            tiponwsup: { title: 'Tipo NW Superior', width: 300, sorter: true, render: (v, r) => v, ...common },
-                            lotenwinf: { title: 'Lote NW Inferior', width: 150, sorter: true, render: (v, r) => v, ...common },
-                            lotenwsup: { title: 'Lote NW Superior', width: 150, sorter: true, render: (v, r) => v, ...common }
-                        })
-                    }
-                ))({ idx: 2, optional: false, typeList: formFilter.getFieldValue('typelist') }),
+                ))({ idx: 1, optional: false })
             },
             exclude: []
         }

@@ -6,8 +6,9 @@ import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
-import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField } from "components/formLayout";
+import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, SelectDebounceField, SwitchField } from "components/formLayout";
 import Toolbar from "components/toolbar";
+import AlertMessages from "components/alertMessages";
 import YScroll from "components/YScroll";
 import { Button, Spin, Select, Tag, List, Typography, Form, InputNumber, Input, Card, Collapse, DatePicker, Space, Alert, Modal, Dropdown, Menu } from "antd";
 const { Option } = Select;
@@ -19,6 +20,7 @@ import { remove } from 'ramda';
 import Table, { setColumns } from "components/table";
 import { useDataAPI } from "utils/useDataAPI";
 import Portal from "components/portal";
+
 
 
 import { MdProductionQuantityLimits } from 'react-icons/md';
@@ -48,6 +50,7 @@ const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
 const BobinagensValidarList = React.lazy(() => import('../bobinagens/BobinagensValidarList'));
 const FormSettings = React.lazy(() => import('./ordemfabrico/FormSettings'));
+const SvgSchema = React.lazy(() => import('../planeamento/paletizacaoSchema/SvgSchema'));
 
 
 const StyledCard = styled(Card)`
@@ -148,10 +151,174 @@ const loadCurrentSettings = async (aggId, token) => {
     return rows;
 }
 
-const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores }) => {
+const schemaCreatePalete = (keys, excludeKeys) => {
+    return getSchema({
+        /* produto_cod: Joi.string().label("Designação do Produto").required(),
+        artigo_formu: Joi.string().label("Fórmula").required(),
+        artigo_nw1: Joi.string().label("Nonwoven 1").required(),
+        artigo_width: Joi.number().integer().min(1).max(5000).label("Largura").required(),
+        artigo_diam: Joi.number().integer().min(1).max(5000).label("Diâmetro").required(),
+        artigo_core: Joi.number().integer().valid(3, 6).label("Core").required(),
+        artigo_gram: Joi.number().integer().min(1).max(1000).label("Gramagem").required(),
+        artigo_thickness: Joi.number().integer().min(0).max(5000).label("Espessura").required() */
+    }, keys, excludeKeys).unknown(true);
+}
+
+const loadCustomersLookup = async (value) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/sellcustomerslookup/`, pagination: { limit: 10 }, filter: { ["fmulti_customer"]: `%${value.replaceAll(' ', '%%')}%` } });
+    return rows;
+}
+
+const FormConfirmCreatePalete = ({ form, ofItem, paletizacao, forInput = true, closeSelf, parentRef, navigate }) => {
+    const [formStatus, setFormStatus] = useState({});
+    const [confirmLoading, setConfirmLoading] = useState(false);
+
+
+    useEffect(() => {
+        let t = paletizacao.paletizacao.findLast(v => v.item_id === 2);
+        let o = ofItem.order_cod ? 1 : 0;
+        form.setFieldsValue({ cliente_cod: { value: ofItem.cliente_cod, label: ofItem.cliente_nome }, data: moment(), pos: { value: "bottom", label: "Palete Inferior" }, num_bobines: t.item_numbobines, enc: o, peso_palete: 13 });
+        console.log("ENTREIII-0", ofItem);
+        console.log("ENTREIII-1", paletizacao);
+    }, []);
+
+    const onFinish = async () => {
+        const { data, ...values } = form.getFieldsValue(true);
+        setConfirmLoading(true);
+        console.log("SUBMITTING-----", values, ofItem);
+        let mdf = 2;
+        if (values.pos === "top"){
+            let idx = paletizacao.paletizacao.findIndex(v => v.item_id === 2);
+            if (paletizacao.paletizacao[idx+1].item_id===4){
+                mdf = 1 
+            }
+        }else{
+            let idx = paletizacao.paletizacao.findLastIndex(v => v.item_id === 2);
+            if (paletizacao.paletizacao[idx+1].item_id===4){
+                mdf = 1
+            }
+        }
+        
+        const postdata = {
+            ...values, data: moment(data).format(DATE_FORMAT),
+            order_cod: ofItem.order_cod, of_id: ofItem.of_id, of_cod: ofItem.of_cod, core: ofItem.artigo_core, lar: ofItem.artigo_lar, mdf,
+            draft_of_id:ofItem.draft_of_id, produto_cod:ofItem.produto_cod,produto_id:ofItem.produto_id,artigo_des:ofItem.artigo_des
+        };
+
+        const response = await fetchPost({
+            url: `${API_URL}/createpalete/`, parameters: postdata
+        });
+        if (response.data.status !== "error") {
+            navigate({...response.data.id,...postdata});
+            closeSelf();
+        } else {
+            Modal.error({title: response.data.title});
+        }
+        console.log("Submitaaaaaaaa",response.data);
+        setConfirmLoading(false);
+    }
+
+    const onChange = (value) => {
+        let t = null;
+        if (value === "top") {
+            t = paletizacao.paletizacao.find(v => v.item_id === 2);
+        } else {
+            t = paletizacao.paletizacao.findLast(v => v.item_id === 2);
+        }
+        form.setFieldsValue({ num_bobines: t.item_numbobines });
+    }
+
+    return (
+        <Spin spinning={confirmLoading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}>
+            <div style={{ width: "600px", height: "300px" }}>
+                <div style={{ display: "flex", flexAlign: "row" }}>
+                    <div style={{ width: "300px", height: "300px" }}><SvgSchema viewBox="110 100 350 100" items={paletizacao} width="100%" height="100%" /></div>
+                    <Form form={form} name={`fppalete`} onFinish={onFinish} component="form">
+                        <AlertMessages formStatus={formStatus} />
+                        <FormLayout
+                            id="LAY-SPALETE"
+                            layout="vertical"
+                            style={{ width: "250px", padding: "0px" }}
+                            schema={schemaCreatePalete}
+                            fieldStatus={{}}
+                            field={{ forInput, wide: [16], alert: { pos: "right", tooltip: true, container: false } }}
+                            fieldSet={{ wide: 16 }}
+                        >
+                            {ofItem.order_cod && <FieldSet field={{ wide: [16] }}>
+                                <Field required={false} layout={{ center: "align-self:center;max-width:25px;", left: "width:180px;align-self:center;" }} label={{ text: "Associar Palete à Encomenda?", pos: "left" }} name="enc"><SwitchField size="small" /></Field>
+                            </FieldSet>
+                            }
+                            <FieldSet>
+                                <Field forInput={false} name="cliente_cod" label={{ text: "Cliente" }}>
+                                    <SelectDebounceField
+                                        placeholder="Cliente"
+                                        size="small"
+                                        keyField="BPCNUM_0"
+                                        textField="BPCNAM_0"
+                                        showSearch
+                                        showArrow
+                                        allowClear
+                                        fetchOptions={loadCustomersLookup}
+                                    />
+
+                                </Field>
+                            </FieldSet>
+                            <FieldSet field={{ wide: [8] }}>
+                                <Field required={true} label={{ text: "Data da Palete" }} name="data"><DatePicker allowClear={false} size="small" format={DATE_FORMAT} /></Field>
+                            </FieldSet>
+                            <FieldSet field={{ wide: [8,8], margin:"2px" }}>
+                                <Field required={false} label={{ text: "Nº da Palete" }} name="num"><InputNumber min={1} size="small" /></Field>
+                                <Field required={false} label={{ text: "Peso da Palete" }} name="peso_palete"><InputNumber min={1} max={25} size="small" addonBefore="kg" /></Field>
+                            </FieldSet>
+                            <FieldSet field={{ wide: [12] }}>
+                                <Field required={true} label={{ text: "Posição no Esquema" }} name="pos">
+                                    <SelectField disabled={paletizacao.paletizacao.filter(v => v.item_id === 2).length <= 1} size="small" keyField="value" valueField="label" style={{ width: 150 }} onChange={onChange} options={
+                                        [{ value: "top", label: "Palete Superior" },
+                                        { value: "bottom", label: "Palete Inferior" }]
+                                    } />
+                                </Field>
+                            </FieldSet>
+                            <FieldSet field={{ wide: [8] }}>
+                                <Field required={false} forInput={false} label={{ text: "Nº de Bobines" }} name="num_bobines"><InputNumber min={1} max={20} size="small" /></Field>
+                            </FieldSet>
+                        </FormLayout>
+                    </Form>
+                    {parentRef && <Portal elId={parentRef.current}>
+                        <Space>
+                            <Button size="small" disabled={confirmLoading} onClick={closeSelf}>Cancelar</Button>
+                            <Button size="small" disabled={confirmLoading} type="primary" onClick={onFinish}>Criar Palete</Button>
+                        </Space>
+                    </Portal>
+                    }
+                </div>
+            </div >
+        </Spin>
+    );
+}
+
+const TitleConfirm = ({ action, ofabrico, order_cod }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
+            <div><ExclamationCircleOutlined style={{ color: "#faad14" }} /></div>
+            <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
+                <div><b>Criar Palete na Ordem de Fabrico</b> {ofabrico}?</div>
+                {order_cod && <div style={{ color: "#1890ff" }}>{order_cod}</div>}
+            </div>
+        </div>
+    );
+}
+
+const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores, paletizacao, status }) => {
+    const navigate = useNavigate();
+    const [formPalete] = Form.useForm();
     const { of_cod, cliente_nome, produto_cod, item_des, color } = ofItem;
     const totais = useRef({});
     const modal = useModalv4();
+
+    const paleteNavigate = (postdata) => {
+        navigate('/app/paletes/palete',{state:postdata});
+        console.log("aaaaa-",postdata);
+    }
 
     // const paletes = JSON.parse(aggItem?.n_paletes);
     const onAction = (idcard) => {
@@ -178,6 +345,32 @@ const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores }) =>
             case 'position':
                 modal.show({ propsToChild: true, width: "800px", height: "450px", fullWidthDevice: 2 });
                 //setShowForm(prev => ({ ...prev, idcard, show: !prev.show, record: { /* aggItem, */ ofItem, draft_of_id: ofItem.draft_of_id }, width: "300px", height: "300px" }));
+                break;
+            case 'palete':
+                const { details, ...rest } = JSON.parse(paletizacao[0].paletizacao);
+                modal.show({
+                    propsToChild: true, footer: "ref",
+                    maskClosable: false,
+                    closable: false,
+                    width: "650px", fullWidthDevice: 2, height: "380px",
+                    title: <TitleConfirm ofabrico={ofItem.of_cod} order_cod={ofItem.order_cod} />,
+                    content: <FormConfirmCreatePalete navigate={paleteNavigate} form={formPalete} ofItem={ofItem} paletizacao={{ ...rest, paletizacao: details }} />
+                });
+
+                /* Modal.confirm({
+                    width: 650,
+                    centered: true, title: "Criar Palete?", content: <FormConfirmCreatePalete form={formPalete} ofItem={ofItem} paletizacao={{ ...rest, paletizacao: details }} />,
+                    footer:[],
+                    onOk: async () => {
+                        return new Promise((resolve, reject) => {
+                            formPalete.submit();
+                            
+                            //setTimeout(Math.random() > 0.5 ? resolve : reject, 10000);
+                          }).catch(() => console.log('Oops errors!'));
+
+                    }
+                }); */
+                //navigate("/app/paletes/palete", { state: { ...ofItem, tstamp: Date.now() } });    
                 break;
         }
     }
@@ -210,6 +403,7 @@ const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores }) =>
                     <div key="paletes" onClick={() => onAction('paletes_stock')}>Stock</div>,
                     <div key="attachments" onClick={() => onAction('attachments')}><span><PaperClipOutlined />Anexos</span></div>
                 ]}
+                extra={<div>{status > 0 && <Button size="small" onClick={() => onAction('palete')}>Criar Palete</Button>}</div>}
             >
                 <YScroll>
                     <Text strong>{item_des}</Text>
@@ -679,7 +873,7 @@ const CardValidarBobinagens = ({ socket, menuItem, record, parentReload }) => {
                 }); */
     }
     const onView = () => {
-        navigate("/app/validateReellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp:Date.now() } });
+        navigate("/app/validateReellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
     }
 
     const selectionRowKey = (record) => {
@@ -840,6 +1034,8 @@ const CardActions = ({ menuItem, record, parentReload }) => {
                 <Button block size="large" onClick={() => onClick("specs")}>Especificações</Button>
                 <VerticalSpace height="5px" />
                 <Button block size="large" onClick={() => navigate('/app/stocklistbuffer')}>Matérias Primas em Buffer</Button>
+                <VerticalSpace height="5px" />
+                <Button block size="large" onClick={() => navigate('/app/bobines/bobineslist')}>Bobines</Button>
                 <VerticalSpace height="5px" />
                 <Dropdown.Button trigger={["click"]} onClick={onMenuClick} overlay={<FormulacaoMenu onMenuClick={onMenuClick} />}>Formulação</Dropdown.Button>
             </Card>
@@ -1284,7 +1480,7 @@ export default (props) => {
                     }
                 })}
                 {currentSettings.ofs.map((ofItem, idx) => {
-                    return (<CardAgg key={`ct-agg-${idx}`} csid={currentSettings.id} cores={currentSettings.cores} ofItem={ofItem} emendas={currentSettings.emendas} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
+                    return (<CardAgg key={`ct-agg-${idx}`} status={currentSettings.status} csid={currentSettings.id} cores={currentSettings.cores} paletizacao={currentSettings.paletizacao} ofItem={ofItem} emendas={currentSettings.emendas} setShowForm={setShowForm} paletesStock={currentSettings.paletesstock} />)
                 })}
             </StyledGrid>}
 

@@ -138,12 +138,17 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         const { core_cod: { value: core_cod, label: core_des } = {} } = values;
         const { cortes_id/* , cortesordem_id */ } = form.getFieldsValue(true);
         let diff = {};
+        const fieldStatus = {};
         const v = schema().custom((v, h) => {
             const { start_prev_date, end_prev_date } = v;
-            diff = dateTimeDiffValidator(start_prev_date, end_prev_date);
-            if (diff.errors == true) {
-                return h.message("A Data de Fim tem de ser Maior que a Data de Início", { key: "start_date", label: "start_date" })
+            if (!start_prev_date){
+                return h.message("A Data de Início tem de estar preenchida", { key: "start_prev_date", label: "Data Início" });
             }
+            //diff = dateTimeDiffValidator(start_prev_date, end_prev_date);
+            //console.log("-------",v,diff)
+            //if (diff.errors == true) {
+            //    return h.message("A Data de Fim tem de ser Maior que a Data de Início", { key: "start_date", label: "start_date" })
+            //}
         }).validate(values, { abortEarly: false });
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];

@@ -211,6 +211,12 @@ def export(sql, db_parameters, parameters,conn_name):
             **parameters
         }
         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+
+        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        print(f'http://192.168.0.16:8080/ReportsGW/{wService}')
+        print(req)
+        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
         if (fstream.status_code==200):
@@ -655,6 +661,138 @@ def IgnorarOrdemFabrico(request, format=None):
         return Response({"status": "success","id":data["ofabrico"], "title": "A Ordem de Fabrico Foi Ignorada com Sucesso!", "subTitle":f'{data["ofabrico"]}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao Ignorar Ordem de Fabrico!"})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CreatePalete(request, format=None):
+    data = request.data.get("parameters")
+    print("CREATING PAELETEEEEEE")
+    print(data)
+
+    def getCliente(data,cursor):
+        f = Filters({"cod": data["cliente_cod"]["value"]})
+        f.where()
+        f.add(f'cod = :cod', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT id,limsup,liminf FROM producao_cliente {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
+    def getCargaId(data,cursor):
+        f = Filters({"eef": data["order_cod"]})
+        f.where()
+        f.add(f'eef = :eef', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT id FROM producao_carga where enc_id = (select id from producao_encomenda {f.text})'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]['id']
+        return None
+    
+    def numExists(data,cursor):
+        f = Filters({"num":data["num"],"retrabalhada":0,"data_pal":datetime.strptime(data['data'],'%Y-%m-%d').year})
+        f.where()
+        f.add(f'num = :num', True)
+        f.add(f'retrabalhada = :retrabalhada', True)
+        f.add(f'year(data_pal) = :data_pal', True)
+        f.value("and")
+        print(f.text)
+        print(f.parameters)
+        exists = db.exists("producao_palete",f,cursor).exists
+        print("exists")
+        print(exists)
+        return exists
+    
+    def countPaletes(data,cursor):
+        f = Filters({"id": data["of_id"]})
+        f.where()
+        f.add(f'ordem_id = :id', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT count(*)+1 cnt FROM producao_palete {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]['cnt']
+        return 1
+    
+    def getNomeOrdemFabrico(data,cursor):
+        f = Filters({"id": data["of_id"]})
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT op FROM planeamento_ordemproducao {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]['op']
+        return None
+
+    def getNomePalete(data,cursor):
+        f = Filters({"id": data["id"]})
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT nome FROM producao_palete {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]['nome']
+        return None
+
+    def upsert(data,cursor):
+        pass
+        #dml = db.dml(TypeDml.INSERT, {"cod":data['ofabrico'],"ignorar":1}, "producao_ordemfabricodetails",None,None,False)
+        #dml.statement = f"""
+        #    {dml.statement}
+        #    ON DUPLICATE KEY UPDATE 
+        #        id = LAST_INSERT_ID(id),
+        #        cod=VALUES(cod),
+        #        ignorar=VALUES(ignorar)
+        #"""
+        #db.execute(dml.statement, cursor, dml.parameters)
+        #return cursor.lastrowid
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                cliente = getCliente(data,cursor)
+                cargaId = getCargaId(data,cursor) if data["enc"] == 1 else None
+                nomeOrdemFabrico = getNomeOrdemFabrico(data,cursor)
+                stock = 0
+                if cargaId is None and data["enc"] == 1:
+                    return Response({"status": "error", "title": "Para associar a palete a uma encomenda, a carga tem de estar criada!"})    
+                else:
+                    stock = 1
+                num = None
+                if 'num' in data:
+                    num = data["num"] if numExists(data,cursor)==0 else None
+                    if num is None:
+                        return Response({"status": "error", "title": "O nº da Palete já existe!"})    
+                num_palete_ordem = countPaletes(data,cursor)
+                destino = f'{data["cliente_cod"]["label"]} L{data["lar"]} {num_palete_ordem}'
+                idata = {
+                    "`timestamp`":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"data_pal":data["data"],
+                    "draft_ordem_id":data["draft_of_id"],
+                    "estado":'G',
+                    "area":0,"comp_total":0,"num_bobines":data["num_bobines"],"num_bobines_act":0,
+                    "largura_bobines":data["lar"],"core_bobines":data["core"],"peso_bruto":0,"peso_palete":data["peso_palete"],"peso_liquido":0,"cliente_id":cliente["id"] if cliente is not None else None,"user_id":request.user.id,"retrabalhada":0,
+                    "stock":stock,"ordem_original_stock":stock, "carga_id":cargaId,"num_palete_carga":0,"destino":destino,"perfil_embalamento_id":data["mdf"],"ordem_id":data["of_id"],"`add`":0,"ordem_original":nomeOrdemFabrico,
+                    "num_palete_ordem":num_palete_ordem,"num":f"(SELECT ifnull(max(num),0)+1 FROM producao_palete pp where retrabalhada=0 and year(data_pal)={datetime.strptime(data['data'],'%Y-%m-%d').year})" if num is None else f"{num}",
+                    "nome":f"(SELECT CONCAT('P',LPAD(ifnull(max(num),0)+1,4,'0'),'-',{datetime.strptime(data['data'],'%Y-%m-%d').year}) FROM producao_palete pp where retrabalhada=0 and year(data_pal)={datetime.strptime(data['data'],'%Y-%m-%d').year})" if num is None else f"(SELECT CONCAT('P',LPAD({num},4,'0'),'-',{datetime.strptime(data['data'],'%Y-%m-%d').year}))"
+                }
+                dml = db.dml(TypeDml.INSERT, idata, "producao_palete",None,None,False,["num","nome"])
+                db.execute(dml.statement, cursor, dml.parameters)
+                lastid = cursor.lastrowid
+                nomePalete = getNomePalete({"id":lastid},cursor)
+                #Etiqueta Palete
+                produto_cod = data["produto_cod"]
+                produto_id = data["produto_id"]
+                iedata = {
+                    "produto":produto_cod,"palete_nome":nomePalete,"largura_bobine":data["lar"],
+                    "diam_min":cliente["liminf"] if cliente is not None else None,"diam_max":cliente["limsup"] if cliente is not None else None,
+                    "cliente":data["cliente_cod"]["label"],"palete_id":lastid,"artigo":data["artigo_des"],"estado_impressao":0
+                }
+                dml = db.dml(TypeDml.INSERT, iedata, "producao_etiquetapalete",None,None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success","id":{"id":lastid,"nome":nomePalete}, "title": "A Palete foi criada com Sucesso!", "subTitle":f'{nomePalete}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao Criar a Palete!"})
 
 
 #region MATERIAS-PRIMAS
@@ -4641,6 +4779,8 @@ def ValidarBobinagensList(request, format=None):
                       ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
                       ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
                 ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
+                ,JSON_EXTRACT(acs.ofs, '$[*].cliente_nome') clientes
+                ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders
                 FROM producao_bobinagem pbm
                 join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
                 left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
@@ -4699,13 +4839,119 @@ def ValidarBobinagensList(request, format=None):
                 {tmpsql} 
                 ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-    print(f.text)
-    print(f2["text"])
-    print(parameters)
-    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def BobinesList(request, format=None):
+    connection = connections["default"].cursor()
+    feature = request.data['parameters']['feature'] if 'feature' in request.data['parameters'] else None
+    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
+
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
+        **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+        "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+    
+    f2 = filterMulti(request.data['filter'], {}, False if f.hasFilters else True, "and",False)
+    
+    def filterDefeitosMultiSelect(data,name,relname):
+        f = Filters(data)
+        frel = "and"
+        value = "==1"
+        if relname in data:
+            if data[relname]=="ou":
+                frel = "or"
+            if data[relname]=="!ou":
+                frel = "or"
+                value = "!==1"
+            if data[relname]=="!e":
+                frel = "and"
+                value = "!==1"
+        
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+            for v in dt:
+                fP[v] = {"key": v, "value": value, "field": lambda k, v: f'tpb.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value(frel)
+        return f
+
+    def filterMultiSelect(data,name,field):
+        f = Filters(data)
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+        
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+            fP['estado'] = {"key": field, "value": value, "field": lambda k, v: f'tpb.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value()
+        return f
+
+    fdefeitos = filterDefeitosMultiSelect(request.data['filter'],'fdefeitos','freldefeitos')
+    festados = filterMultiSelect(request.data['filter'],'festados','estado')
+    
+    f4 = Filters(request.data['filter'])
+    f4.setParameters({
+        "cliente": {"value": lambda v: v.get('fcliente'), "field": lambda k, v: f'tpb.{k}'},
+        "destino": {"value": lambda v: v.get('fdestino'), "field": lambda k, v: f'tpb.{k}'}
+    }, True)
+    f4.where(False, "and")
+    f4.auto()
+    f4.value("and")
+
+    f5 = Filters(request.data['filter'])
+    f5.setParameters({
+        "of_id": {"value": lambda v: v.get('fofabrico'), "field": lambda k, v: f'tof.{k}'}
+    }, True)
+    f5.where(False, "and")
+    f5.auto()
+    f5.value("and")
+
+    parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""pb.id,pb.nome"""
+    dql.columns=encloseColumn(cols,False)
+
+    sql = lambda p, c, s: (
+        f""" 
+           select {c(f'{dql.columns}')} 
+            from producao_bobine pb
+            left join producao_bobinagem pbm on pbm.id=pb.bobinagem_id
+            left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+            left join producao_palete pp on pp.id=pb.palete_id
+            left join producao_carga pc on pp.carga_id=pc.id
+                {f.text}
+                {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters)
+    return Response(response)
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -4738,6 +4984,46 @@ def ValidarBobinesList(request, format=None):
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [],None)
+    if len(response['rows'])>0:
+        response["isba"]=0
+        response["lotenwsup"]=None
+        response["lotenwinf"]=None
+        response["troca_nw"]=0
+        r = db.executeSimpleList(lambda:(f"""SELECT agg_of_id,lotenwinf,lotenwsup,nwinf,nwsup,valid FROM producao_bobinagem bm LEFT JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id where bm.id = {response['rows'][0]["bobinagem_id"]}"""),connection,{})
+        if len(r['rows'])>0:
+            agg_of_id = r['rows'][0]["agg_of_id"]
+            response["valid"]=r['rows'][0]["valid"]
+            response["lotenwsup"]=r['rows'][0]["lotenwsup"]
+            response["lotenwinf"]=r['rows'][0]["lotenwinf"]
+            response["nwinf"]=r['rows'][0]["nwinf"]
+            response["nwsup"]=r['rows'][0]["nwsup"]
+            if agg_of_id is not None:
+                r = db.executeSimpleList(lambda:(f"""
+                    select bm.id,bm.lotenwsup,bm.lotenwinf,
+                    (SELECT troca_nw FROM producao_bobine b where b.bobinagem_id=bm.id limit 1) troca_nw
+                    FROM producao_bobinagem bm
+                    JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
+                    where acs.agg_of_id = {agg_of_id} order by bm.timestamp desc limit 2            
+                """),connection,{})
+                if len(r['rows'])>0:
+                    if r['rows'][0]["troca_nw"] == 1:
+                        response["lotenwsup"]=r['rows'][0]["lotenwsup"]
+                        response["lotenwinf"]=r['rows'][0]["lotenwinf"]
+                        response["troca_nw"]=1
+                    else:
+                        response["lotenwsup"]=r['rows'][1]["lotenwsup"]
+                        response["lotenwinf"]=r['rows'][1]["lotenwinf"]
+                r = db.executeSimpleList(lambda: (f"""
+                    select bm.id
+                    FROM producao_bobinagem bm 
+                    JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
+                    where bm.valid=0 and acs.agg_of_id = {agg_of_id}
+                    order by bm.timestamp
+                    limit 1
+                """),connection,{})
+                if len(r['rows'])>0:
+                    if response['rows'][0]["bobinagem_id"] == r['rows'][0]["id"]:
+                        response["isba"]=1
     return Response(response)
 
 
@@ -4751,7 +5037,7 @@ def ValidarBobinagem(request, format=None):
     def checkIfIsValid(data, cursor):
         exists = 0
         if ("bobinagem_id" in data):
-            f = Filters({"id": data["bobinagem_id", "valid":0]})
+            f = Filters({"id": data["bobinagem_id"], "valid":0})
             f.where()
             f.add(f'id = :id', True)
             f.add(f'valid = :valid', True)

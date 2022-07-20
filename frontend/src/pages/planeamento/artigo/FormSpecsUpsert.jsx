@@ -93,8 +93,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 const response = await fetchPost({ url: `${API_URL}/newartigospecs/`, parameters: { ...form.getFieldsValue(true), produto_id: ctx.produto_id, cliente_cod, cliente_nome } });
                 if (response.data.status !== "error") {
                     parentReload({ artigospecs_id: record.artigospecs_id }, "init");
-                }
-                setResultMessage(response.data);
+               }
+               setResultMessage(response.data);
             }
         }
         setFormStatus(status);
