@@ -3022,7 +3022,7 @@ def ChangeCurrSettingsStatus(request, format=None):
                     if checkOfIsValid(data["id"],data,cursor)==1:
                         dml = db.dml(TypeDml.UPDATE, {"status":3,"type_op":"status_inproduction"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,"`status`=3,ativa=1,completa=0")
+                        updateOP(data["id"],data,cursor,f"`status`=3,ativa=1,completa=0,inicio='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
                         return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Iniciada!', "subTitle":f""})
                     else:
                         return Response({"status": "error", "id":0, "title": f'A formulação ou Posição dos Cortes não estão corretamente definidos !', "subTitle":""})
@@ -3030,14 +3030,19 @@ def ChangeCurrSettingsStatus(request, format=None):
                 print("redo plan....")
                 pass
             elif (data["status"]==1):
-                print("stop")
                 exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
                 if (exists==1):
+                        maxOrder = getLastOrder(data["ig_id"],cursor)
                         dml = db.dml(TypeDml.UPDATE, {"status":1,"type_op":"status_stopped"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,"`status`=2,ativa=0,completa=0")
-                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada!', "subTitle":f""})
+                        updateOP(data["id"],data,cursor,f"`status`=2,ativa=0,completa=0,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
+                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
+                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada/Suspensa!', "subTitle":f""})
             elif (data["status"]==9):
+                #FINALIZAR ORDEM DE FABRICO
                 exists = db.exists("producao_currentsettings",{"status":"<9"},cursor).exists
                 print("finish")
                 print(exists)
@@ -3045,7 +3050,7 @@ def ChangeCurrSettingsStatus(request, format=None):
                         maxOrder = getLastOrder(data["ig_id"],cursor)
                         dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,"`status`=9,ativa=0,completa=1")
+                        updateOP(data["id"],data,cursor,f"`status`=9,ativa=0,completa=1,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
                         t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
                         ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
                         dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
@@ -3870,6 +3875,7 @@ def sgpForProduction(data,aggid,user,cursor):
     if 'forproduction' in data and data['forproduction']==True:
         ofs = GetOrdensFabrico(aggid,cursor)
         hours = computeProductionHours(aggid,cursor)
+        print("hourssss",hours)
         if len(ofs)>0:
             #Update Agg status
             dml = db.dml(TypeDml.UPDATE,{"status":1,"end_prev_date":hours["end_prev_date"],"horas_previstas_producao":hours["hours"]},"producao_tempaggordemfabrico",{"id":f'=={aggid}'},None,False)
@@ -4300,6 +4306,7 @@ def SaveTempOrdemFabrico(request, format=None):
             'agg_ofid_original': aggid,
             'of_id': data['ofabrico_cod'],
             'order_cod': data['iorder'],
+            'prf_cod':data['prf'],
             'item_cod': data['item'],
             'item_id': data['item_id'],
             'produto_id': data['produto_id'] if produto_id is None else produto_id
@@ -4348,6 +4355,7 @@ def SaveTempOrdemFabrico(request, format=None):
                 of_id=VALUES(of_id),
                 agg_of_id=VALUES(agg_of_id),
                 order_cod=VALUES(order_cod),
+                prf_cod=VALUES(prf_cod),
                 produto_id=VALUES(produto_id),
                 item_cod=VALUES(item_cod),
                 item_id=VALUES(item_id)
@@ -4989,6 +4997,7 @@ def ValidarBobinesList(request, format=None):
         response["lotenwsup"]=None
         response["lotenwinf"]=None
         response["troca_nw"]=0
+        response["new_nw_lotes"]=0
         r = db.executeSimpleList(lambda:(f"""SELECT agg_of_id,lotenwinf,lotenwsup,nwinf,nwsup,valid FROM producao_bobinagem bm LEFT JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id where bm.id = {response['rows'][0]["bobinagem_id"]}"""),connection,{})
         if len(r['rows'])>0:
             agg_of_id = r['rows'][0]["agg_of_id"]
@@ -4999,20 +5008,45 @@ def ValidarBobinesList(request, format=None):
             response["nwsup"]=r['rows'][0]["nwsup"]
             if agg_of_id is not None:
                 r = db.executeSimpleList(lambda:(f"""
-                    select bm.id,bm.lotenwsup,bm.lotenwinf,
-                    (SELECT troca_nw FROM producao_bobine b where b.bobinagem_id=bm.id limit 1) troca_nw
-                    FROM producao_bobinagem bm
-                    JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
-                    where acs.agg_of_id = {agg_of_id} order by bm.timestamp desc limit 2            
+                    select * from (
+                        select 
+                        bm.id,bm.timestamp,bm.nome,bm.lotenwsup,bm.lotenwinf,
+                        (SELECT troca_nw FROM producao_bobine b where b.bobinagem_id=bm.id limit 1) troca_nw
+                        FROM producao_bobinagem bm
+                        JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
+                        where acs.agg_of_id =  {agg_of_id} and bm.timestamp<=(SELECT _b.timestamp tb FROM producao_bobinagem _b where _b.id={request.data['filter']["bobinagem_id"]})
+                        order by bm.timestamp desc
+                    ) t
+                    limit 2
                 """),connection,{})
+                print(f"""
+                    select * from (
+                        select 
+                        bm.id,bm.timestamp,bm.nome,bm.lotenwsup,bm.lotenwinf,
+                        (SELECT troca_nw FROM producao_bobine b where b.bobinagem_id=bm.id limit 1) troca_nw
+                        FROM producao_bobinagem bm
+                        JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
+                        where acs.agg_of_id =  {agg_of_id} and bm.timestamp<=(SELECT _b.timestamp tb FROM producao_bobinagem _b where _b.id={request.data['filter']["bobinagem_id"]})
+                        order by bm.timestamp desc
+                    ) t
+                    limit 2
+                """)
                 if len(r['rows'])>0:
                     if r['rows'][0]["troca_nw"] == 1:
-                        response["lotenwsup"]=r['rows'][0]["lotenwsup"]
-                        response["lotenwinf"]=r['rows'][0]["lotenwinf"]
+                        if len(r['rows'])>1: 
+                            response["lotenwsup"]=r['rows'][1]["lotenwsup"]
+                            response["lotenwinf"]=r['rows'][1]["lotenwinf"]
+                        else:
+                            response["new_nw_lotes"]=1
                         response["troca_nw"]=1
                     else:
-                        response["lotenwsup"]=r['rows'][1]["lotenwsup"]
-                        response["lotenwinf"]=r['rows'][1]["lotenwinf"]
+                        if r['rows'][1]["troca_nw"]==1:
+                            response["lotenwsup"]=None
+                            response["lotenwinf"]=None
+                            response["new_nw_lotes"]=1
+                        else:
+                            response["lotenwsup"]=r['rows'][1]["lotenwsup"]
+                            response["lotenwinf"]=r['rows'][1]["lotenwinf"]
                 r = db.executeSimpleList(lambda: (f"""
                     select bm.id
                     FROM producao_bobinagem bm 

@@ -376,7 +376,62 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     const transformData = ({ items, formulacao }) => {
         let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, orig_matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, doseador_A: v.doseador_A, cuba_A: v.cuba_A, removeCtrl: true }));
-        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, doseador_B: v.doseador_B, doseador_C: v.doseador_C,cuba_BC: v.cuba_BC, removeCtrl: true }));
+        let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, doseador_B: v.doseador_B, doseador_C: v.doseador_C, cuba_BC: v.cuba_BC, removeCtrl: true }));
+        console.log("##############################");
+        if (!formu_materiasprimas_A[0].doseador_A) {
+            formu_materiasprimas_A[0].doseador_A = 'A1';
+            formu_materiasprimas_A[0].cuba_A = 1;
+        }
+        if (!formu_materiasprimas_A[1].doseador_A) {
+            formu_materiasprimas_A[1].doseador_A = 'A2';
+            formu_materiasprimas_A[1].cuba_A = 2;
+        }
+        if (!formu_materiasprimas_A[2].doseador_A) {
+            formu_materiasprimas_A[2].doseador_A = 'A3';
+            formu_materiasprimas_A[2].cuba_A = 3;
+        }
+        if (!formu_materiasprimas_A[3].doseador_A) {
+            formu_materiasprimas_A[3].doseador_A = 'A6';
+            formu_materiasprimas_A[3].cuba_A = 44;
+        }
+        if (!formu_materiasprimas_A[4].doseador_A) {
+            formu_materiasprimas_A[4].doseador_A = 'A6';
+            formu_materiasprimas_A[4].cuba_A = 4;
+        }
+        if (!formu_materiasprimas_A[5].doseador_A) {
+            formu_materiasprimas_A[5].doseador_A = 'A6';
+            formu_materiasprimas_A[5].cuba_A = 4;
+        }
+        if (!formu_materiasprimas_BC[0].doseador_B) {
+            formu_materiasprimas_BC[0].doseador_B = 'B2';
+            formu_materiasprimas_BC[0].doseador_C = 'C2';
+            formu_materiasprimas_BC[0].cuba_BC = 5;
+        }
+        if (!formu_materiasprimas_BC[1].doseador_B) {
+            formu_materiasprimas_BC[1].doseador_B = 'B1';
+            formu_materiasprimas_BC[1].doseador_C = 'C1';
+            formu_materiasprimas_BC[1].cuba_BC = 6;
+        }
+        if (!formu_materiasprimas_BC[2].doseador_B) {
+            formu_materiasprimas_BC[2].doseador_B = 'B3';
+            formu_materiasprimas_BC[2].doseador_C = 'C3';
+            formu_materiasprimas_BC[2].cuba_BC = 7;
+        }
+        if (!formu_materiasprimas_BC[3].doseador_B) {
+            formu_materiasprimas_BC[3].doseador_B = 'B5';
+            formu_materiasprimas_BC[3].doseador_C = 'C5';
+            formu_materiasprimas_BC[3].cuba_BC = 3;
+        }
+        if (!formu_materiasprimas_BC[4].doseador_B) {
+            formu_materiasprimas_BC[4].doseador_B = 'B6';
+            formu_materiasprimas_BC[4].doseador_C = 'C6';
+            formu_materiasprimas_BC[4].cuba_BC = 4;
+        }
+        if (!formu_materiasprimas_BC[5].doseador_B) {
+            formu_materiasprimas_BC[5].doseador_B = 'B6';
+            formu_materiasprimas_BC[5].doseador_C = 'C6';
+            formu_materiasprimas_BC[5].cuba_BC = 4;
+        }
         const cliente_cod = { key: record.formulacao?.cliente_cod, value: formulacao?.cliente_cod, label: formulacao?.cliente_nome };
         return { ...formulacao, cliente_cod, formu_materiasprimas_A, formu_materiasprimas_BC, totalGlobal: 100 };
     }
@@ -422,10 +477,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     }
                 }
                 setFormulacoes(await loadFormulacaoesLookup({ produto_id, token }));
-                console.log("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")
+                console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",)
                 console.log(transformData({ items, formulacao: record?.formulacao }))
                 form.setFieldsValue(transformData({ items, formulacao: record?.formulacao }));
-                console.log(transformData({ items, formulacao: record?.formulacao }))
             }
             setLoading(false);
         })();
@@ -454,7 +508,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     if (formu_materiasprimas_A[idx].matprima_cod_A === "R00000000000092") {
                         mult = 11;
                     }
-                    
+
                     formu_materiasprimas_A[idx].cuba_A = getCubas(formu_materiasprimas_A[idx].doseador_A) * mult;
                 } else if (!formu_materiasprimas_A[idx].doseador_A) {
                     formu_materiasprimas_A[idx].cuba_A = undefined;

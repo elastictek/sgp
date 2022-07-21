@@ -134,7 +134,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         submitForProduction.current = false;
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["start_prev_date", "end_prev_date"];
-        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id, temp_ofabrico } = record;
+        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id, temp_ofabrico,prf } = record;
         const { core_cod: { value: core_cod, label: core_des } = {} } = values;
         const { cortes_id/* , cortesordem_id */ } = form.getFieldsValue(true);
         let diff = {};
@@ -171,7 +171,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
             if ("cortesordem_id" in values && values["cortesordem_id"] === undefined) {
                 values["cortesordem_id"] = -1;
             }
-            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod: ofabrico, ofabrico_id: temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), /* end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), */ cliente_cod, cliente_nome, iorder, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
+            const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod: ofabrico, ofabrico_id: temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), /* end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), */ cliente_cod, cliente_nome, iorder, prf, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
             setResultMessage(response.data);
             if (forproduction) {
                 parentReload();

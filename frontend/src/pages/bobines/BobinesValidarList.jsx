@@ -166,7 +166,7 @@ export default ({ data, closeSelf }) => {
     const [showFilter, setShowFilter] = useState(false);
     const [showValidar, setShowValidar] = useState({ show: false, data: {} });
     const [formFilter] = Form.useForm();
-    const [troca_nw,setTroca_nw] = useState(false);
+    const [new_nw_lotes,setNew_nw_lotes] = useState(false);
     const [valid,setValid] = useState(false);
     const [form] = Form.useForm();
     const [formData, setFormData] = useImmer({ 'defeitos-all': 0, 'ff-all': 0, 'fc-all': 0, 'st-all': 0, 'probs-all': 0, 'obs-all': 0, st: [], l_real: [], defeitos: [], fc: [], ff: [], probs: [], obs: [] });
@@ -183,8 +183,8 @@ export default ({ data, closeSelf }) => {
 
     useEffect(() => {
         if (dataAPI.hasData()) {
-            console.log(dataAPI.getData())
-            setTroca_nw(dataAPI.getData().rows[0].troca_nw==1 ? true : false);
+            console.log(dataAPI.getData(),dataAPI.getData().new_nw_lotes==1 ? true : false)
+            setNew_nw_lotes(dataAPI.getData().new_nw_lotes==1 ? true : false);
             setValid(dataAPI.getData().valid==1 ? true : false);
             for (let [i, v] of dataAPI.getData().rows.entries()) {
                 let defeitos = [];
@@ -229,7 +229,7 @@ export default ({ data, closeSelf }) => {
                 let removed = formData.defeitos[index].filter(a => !value?.map(b => b.value).includes(a.value));
                 if (removed.length > 0) {
                     if (removed[0].value === "troca_nw" || formData['defeitos-all']) {
-                        setTroca_nw(false);
+                        //setTroca_nw(false);
                         setFormData(draft => { draft.defeitos = formData.defeitos.map((v) => v.filter(x => x.value !== removed[0].value)); });
                     } else {
                         setFormData(draft => { draft.defeitos[index] = draft.defeitos[index].filter(x => x.value !== removed[0].value); });
@@ -237,7 +237,7 @@ export default ({ data, closeSelf }) => {
                 } else {
                     let added = value.filter(a => !formData.defeitos[index].map(b => b.value).includes(a.value));
                     if (added[0].value === "troca_nw" || formData['defeitos-all']) {
-                        setTroca_nw(true);
+                        //setTroca_nw(true);
                         setFormData(draft => { draft.defeitos = formData.defeitos.map((v) => (v.some(x => x.value === added[0].value)) ? v : [...v, ...added]); });
                     } else {
                         setFormData(draft => { draft.defeitos[index] = draft.defeitos[index].some(x => x.value === added[0].value) ? draft.defeitos[index] : [...draft.defeitos[index], ...added]; });
@@ -306,7 +306,7 @@ export default ({ data, closeSelf }) => {
         let fData = { ...formData, st: [...formData.st] };
         let warns = false;
 
-        console.log("SUBMITTTTTTTTT", form.getFieldsValue(true), fData.defeitos, dataAPI.getData(), troca_nw);
+        console.log("SUBMITTTTTTTTT", form.getFieldsValue(true), fData.defeitos, dataAPI.getData(), new_nw_lotes);
         const v = schema().custom((v, h) => {
             const { nwinf, nwsup, lotenwinf, lotenwsup } = v;
             if (!lotenwinf) {
@@ -317,7 +317,7 @@ export default ({ data, closeSelf }) => {
                 _fieldStatus["lotenwsup"] = { status: "error", messages: [{ message: `O lote do Nonwoven superior tem de estar preenchido!` }] };
                 return h.message(`O lote do Nonwoven superior tem de estar preenchido!`, { key: "lotenwsup", label: "Lote Nonwoven Inferior" });
             }
-            if (troca_nw) {
+            if (new_nw_lotes) {
                 let comp = dataAPI.getData().rows[0].comp;
                 if (!nwinf || nwinf <= 0 || nwinf > comp) {
                     _fieldStatus["nwinf"] = { status: "error", messages: [{ message: `Os metros do Nonwoven Inferior tem estar entre [0 e ${comp}]` }] };
@@ -407,11 +407,10 @@ export default ({ data, closeSelf }) => {
             } else {
                 setLoading(true);
                 try {
-                    console.log("-----------------------------------", { bobines: vData, ...data });
-                    //let response = await fetchPost({ url: `${API_URL}/validarbobinagem/`, parameters: { bobines: vData, ...data } });
-                    //if (response.data.status !== "error") {
-                    //    setResultMessage(response.data);
-                    // }
+                    let response = await fetchPost({ url: `${API_URL}/validarbobinagem/`, parameters: { bobines: vData, ...data } });
+                    if (response.data.status !== "error") {
+                        setResultMessage(response.data);
+                    }
                 } catch (e) {
                     Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de validação/classificação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
                 };
@@ -481,21 +480,21 @@ export default ({ data, closeSelf }) => {
                         fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
                     >
                         <FieldSet>
-                            <Field forInput={!valid && troca_nw} name="lotenwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
+                            <Field forInput={!valid && new_nw_lotes} name="lotenwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
                                 <Input size='small' allowClear />
                             </Field>
-                            <Field forInput={!valid && troca_nw} name="lotenwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
+                            <Field forInput={!valid && new_nw_lotes} name="lotenwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Lote Nonwoven Inferior", pos: "top" }}>
                                 <Input size='small' allowClear />
                             </Field>
                         </FieldSet>
                         <FieldSet>
                             <FieldSet wide={8}>
-                                <Field forInput={!valid && troca_nw} split={2} name="nwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
+                                <Field forInput={!valid && new_nw_lotes} split={2} name="nwinf" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
                                     <InputNumber size='small' addonAfter="m" />
                                 </Field>
                             </FieldSet>
                             <FieldSet wide={8}>
-                                <Field forInput={!valid && troca_nw} split={2} name="nwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
+                                <Field forInput={!valid && new_nw_lotes} split={2} name="nwsup" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Emenda Superior", pos: "top" }}>
                                     <InputNumber size='small' addonAfter="m" />
                                 </Field>
                             </FieldSet>

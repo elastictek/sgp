@@ -187,34 +187,34 @@ const FormConfirmCreatePalete = ({ form, ofItem, paletizacao, forInput = true, c
         setConfirmLoading(true);
         console.log("SUBMITTING-----", values, ofItem);
         let mdf = 2;
-        if (values.pos === "top"){
+        if (values.pos === "top") {
             let idx = paletizacao.paletizacao.findIndex(v => v.item_id === 2);
-            if (paletizacao.paletizacao[idx+1].item_id===4){
-                mdf = 1 
+            if (paletizacao.paletizacao[idx + 1].item_id === 4) {
+                mdf = 1
             }
-        }else{
+        } else {
             let idx = paletizacao.paletizacao.findLastIndex(v => v.item_id === 2);
-            if (paletizacao.paletizacao[idx+1].item_id===4){
+            if (paletizacao.paletizacao[idx + 1].item_id === 4) {
                 mdf = 1
             }
         }
-        
+
         const postdata = {
             ...values, data: moment(data).format(DATE_FORMAT),
             order_cod: ofItem.order_cod, of_id: ofItem.of_id, of_cod: ofItem.of_cod, core: ofItem.artigo_core, lar: ofItem.artigo_lar, mdf,
-            draft_of_id:ofItem.draft_of_id, produto_cod:ofItem.produto_cod,produto_id:ofItem.produto_id,artigo_des:ofItem.artigo_des
+            draft_of_id: ofItem.draft_of_id, produto_cod: ofItem.produto_cod, produto_id: ofItem.produto_id, artigo_des: ofItem.artigo_des
         };
 
         const response = await fetchPost({
             url: `${API_URL}/createpalete/`, parameters: postdata
         });
         if (response.data.status !== "error") {
-            navigate({...response.data.id,...postdata});
+            navigate({ ...response.data.id, ...postdata });
             closeSelf();
         } else {
-            Modal.error({title: response.data.title});
+            Modal.error({ title: response.data.title });
         }
-        console.log("Submitaaaaaaaa",response.data);
+        console.log("Submitaaaaaaaa", response.data);
         setConfirmLoading(false);
     }
 
@@ -266,7 +266,7 @@ const FormConfirmCreatePalete = ({ form, ofItem, paletizacao, forInput = true, c
                             <FieldSet field={{ wide: [8] }}>
                                 <Field required={true} label={{ text: "Data da Palete" }} name="data"><DatePicker allowClear={false} size="small" format={DATE_FORMAT} /></Field>
                             </FieldSet>
-                            <FieldSet field={{ wide: [8,8], margin:"2px" }}>
+                            <FieldSet field={{ wide: [8, 8], margin: "2px" }}>
                                 <Field required={false} label={{ text: "Nº da Palete" }} name="num"><InputNumber min={1} size="small" /></Field>
                                 <Field required={false} label={{ text: "Peso da Palete" }} name="peso_palete"><InputNumber min={1} max={25} size="small" addonBefore="kg" /></Field>
                             </FieldSet>
@@ -316,8 +316,8 @@ const CardAgg = ({ ofItem, paletesStock, emendas, setShowForm, csid, cores, pale
     const modal = useModalv4();
 
     const paleteNavigate = (postdata) => {
-        navigate('/app/paletes/palete',{state:postdata});
-        console.log("aaaaa-",postdata);
+        navigate('/app/paletes/palete', { state: postdata });
+        console.log("aaaaa-", postdata);
     }
 
     // const paletes = JSON.parse(aggItem?.n_paletes);
@@ -697,7 +697,8 @@ const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReloa
     const onSubmit = async () => {
         setSubmitting(true);
         const { fbobinagem, date } = form.getFieldsValue(true);
-        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: date.format(DATETIME_FORMAT) } });
+        const dt = moment.isMoment(date) ? date.format(DATETIME_FORMAT) : moment(date).format(DATETIME_FORMAT);
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: dt } });
         parentReload();
         setSubmitting(false);
         closeParent();
@@ -760,8 +761,22 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
         console.log("ENTREI NAS OPERAÇÕES", record)
     }, [])
 
+    const suspenderProducao = async () => {
+        //return new Promise((resolve, reject) => {
+        //setTimeout(Math.random() > 0.5 ? resolve : reject, 1000);
+        const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status: 1, agg_of_id: record.agg_of_id } });
+        //}).catch(() => console.log('Oops errors!'));
+
+        //console.log("vou suspender!!!!!!!")
+        //setSubmitting(true);
+        //const { fbobinagem, date } = form.getFieldsValue(true);
+        //const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: date.format(DATETIME_FORMAT) } });
+        //parentReload();
+        //setSubmitting(false);
+        //closeParent();
+    }
+
     const changeStatus = async (status) => {
-        console.log(record);
         if (status === 9) {
             modal.show({
                 propsToChild: true, width: '400px', height: '150px', fullWidthDevice: 2, footer: "ref",
@@ -770,11 +785,12 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
             });
         }
         if (status === 1) {
+            //Modal.confirm({ title: "Parar/Suspender Produção!", content: "Tem a certeza que deseja Parar/Suspender a Produção?", onOk: suspenderProducao })
             modal.show({
-                propsToChild: true, width: '400px', height: '150px', fullWidthDevice: 2, footer: "ref",
-                title: `Parar/Suspender Produção`,
-                content: <PararOrdemFabrico data={{ id: record.id, status, agg_of_id: record.agg_of_id }} parentReload={() => parentReload({ aggId: record.agg_of_id })} />
-            });
+                 propsToChild: true, width: '400px', height: '150px', fullWidthDevice: 2, footer: "ref",
+                 title: `Parar/Suspender Produção`,
+                 content: <FecharOrdemFabrico data={{ id: record.id, status, agg_of_id: record.agg_of_id }} parentReload={() => parentReload({ aggId: record.agg_of_id })} />
+             });
         }
         if (status === 3 || status === 0) {
             const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: record.id, status, agg_of_id: record.agg_of_id } });
@@ -797,11 +813,11 @@ const CardOperacoes = ({ menuItem, record, setShowForm, parentReload }) => {
                 style={{ width: '100%', height: '100%', textAlign: 'center'/* , height:"300px", maxHeight:"400px", overflowY:"auto" */ }}
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{menuItem.title}</div>}
             >
-                {record.status == 1 || record.status == 2 &&
+                {(record.status == 1 || record.status == 2) &&
                     <>
                         <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(3)}>Iniciar Produção</Button>
                         <VerticalSpace height="5px" />
-                        <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(0)}>Refazer Planeamento</Button>
+                        {/* <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(0)}>Refazer Planeamento</Button> */}
                     </>
                 }
                 {record.status == 3 &&
@@ -1373,7 +1389,7 @@ export default (props) => {
 
     const loadData = (data = {}, type = "init") => {
         const { token } = data;
-        let aggId = (data?.aggId) ? aggId : location?.state?.aggId;
+        let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
         switch (type) {
             default:
                 if (!loading) {
@@ -1381,7 +1397,7 @@ export default (props) => {
                 }
                 (async () => {
                     let raw = await loadCurrentSettings(aggId, token);
-                    console.log("CURRENT--SETTINGS", raw[0]);
+                    if (!raw[0]){return;}
                     const formulacao = JSON.parse(raw[0].formulacao);
                     const gamaoperatoria = JSON.parse(raw[0].gamaoperatoria);
                     const nonwovens = JSON.parse(raw[0].nonwovens);
