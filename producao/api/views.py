@@ -1336,17 +1336,17 @@ def BobinesOriginaisList(request, format=None):
             ELSE (case when (original_lvl1 is not null) THEN 1
             ELSE 0 END) END) END) END) END nretrabalhos,
             
-            (select SUM(metros) from sistema.producao_emenda where bobine_id=b5 and bobinagem_id=bm4) metros_lvl4,
-            (select SUM(metros) from sistema.producao_emenda where bobine_id=b4 and bobinagem_id=bm3) metros_lvl3,
-            (select SUM(metros) from sistema.producao_emenda where bobine_id=b3 and bobinagem_id=bm2) metros_lvl2,
-            (select SUM(metros) from sistema.producao_emenda where bobine_id=b2 and bobinagem_id=bm1) metros_lvl1,
-            (select SUM(metros) from sistema.producao_emenda where bobine_id=b1 and bobinagem_id=bm0) metros,
+            (select SUM(metros) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) metros_lvl4,
+            (select SUM(metros) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) metros_lvl3,
+            (select SUM(metros) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) metros_lvl2,
+            (select SUM(metros) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) metros_lvl1,
+            (select SUM(metros) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) metros,
             
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
-            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros,'e',emenda)) from sistema.producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros,'e',emenda)) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros,'e',emenda)) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros,'e',emenda)) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros,'e',emenda)) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros,'e',emenda)) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
             ,comp0,comp1,comp2,comp3,comp4,comp5
             ,b1,b2,b3,b4,b5
 			,largura0,largura1,largura2,largura3,largura4,largura5
@@ -1364,43 +1364,43 @@ def BobinesOriginaisList(request, format=None):
             ,l0.largura largura0,l.largura largura1,l2.largura largura2,
             l3.largura largura3,l4.largura largura4,l5.largura largura5
 
-            FROM sistema.producao_bobine pb0
-            JOIN sistema.producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id
-            JOIN sistema.producao_largura l0 on l0.id = pb0.largura_id
+            FROM producao_bobine pb0
+            JOIN producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id
+            JOIN producao_largura l0 on l0.id = pb0.largura_id
 
             /*NÍVEL 1*/
-            join sistema.producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id
-            left join sistema.producao_bobine pb on pem.bobine_id = pb.id
-            left join sistema.producao_bobinagem pbm on pb.bobinagem_id = pbm.id
-            left join sistema.producao_largura l on l.id = pb.largura_id
+            join producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id
+            left join producao_bobine pb on pem.bobine_id = pb.id
+            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id
+            left join producao_largura l on l.id = pb.largura_id
             /**/
 
             /*NÍVEL 2*/
-            left join sistema.producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id      
-            left join sistema.producao_bobine pb2 on pem2.bobine_id = pb2.id
-            left join sistema.producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id
-            left join sistema.producao_largura l2 on l2.id = pb2.largura_id
+            left join producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id      
+            left join producao_bobine pb2 on pem2.bobine_id = pb2.id
+            left join producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id
+            left join producao_largura l2 on l2.id = pb2.largura_id
             /**/
 
             /*NÍVEL 3*/
-            left join sistema.producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id     
-            left join sistema.producao_bobine pb3 on pem3.bobine_id = pb3.id
-            left join sistema.producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id
-            left join sistema.producao_largura l3 on l3.id = pb3.largura_id
+            left join producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id     
+            left join producao_bobine pb3 on pem3.bobine_id = pb3.id
+            left join producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id
+            left join producao_largura l3 on l3.id = pb3.largura_id
             /**/
 
             /*NÍVEL 4*/
-            left join sistema.producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id     
-            left join sistema.producao_bobine pb4 on pem4.bobine_id = pb4.id
-            left join sistema.producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id
-            left join sistema.producao_largura l4 on l4.id = pb4.largura_id
+            left join producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id     
+            left join producao_bobine pb4 on pem4.bobine_id = pb4.id
+            left join producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id
+            left join producao_largura l4 on l4.id = pb4.largura_id
             /**/
 
             /*NÍVEL 5*/
-            left join sistema.producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id     
-            left join sistema.producao_bobine pb5 on pem5.bobine_id = pb5.id
-            left join sistema.producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id
-            left join sistema.producao_largura l5 on l5.id = pb5.largura_id
+            left join producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id     
+            left join producao_bobine pb5 on pem5.bobine_id = pb5.id
+            left join producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id
+            left join producao_largura l5 on l5.id = pb5.largura_id
             /**/
              {fs}
 
@@ -4769,8 +4769,8 @@ def ValidarBobinagensList(request, format=None):
     w = "where" if w=="where" and fText01=='' else "and"
     fText02 = f'''{w} EXISTS (
                     SELECT 1 FROM 
-                    sistema.producao_tempaggordemfabrico aof 
-                    join sistema.producao_tempordemfabrico tof on tof.agg_of_id=acs.agg_of_id
+                    producao_tempaggordemfabrico aof 
+                    join producao_tempordemfabrico tof on tof.agg_of_id=acs.agg_of_id
                     WHERE aof.id=acs.agg_of_id {f5.text}
                 )''' if f5.hasFilters else ''
 
@@ -5339,8 +5339,8 @@ def PickManual(request, format=None):
                     
                     SELECT id,doser,n_lote,artigo_cod,t_stamp,qty_consumed,type_mov,loteslinha_id,group_id,ig_bobinagem_id,qty_to_consume,lote_id,t_stamp_fix,`order`,closed 
                     FROM lotesdosers where `status` <> 0 AND closed=0 AND 
-                    `order` > (SELECT IFNULL(MAX(`order`),0) from sistema.lotesdosers tt where tt.`order` <= (
-                    select MAX(tld.`order`) limit_order from sistema.lotesdosers tld where tld.`status` <> 0 AND tld.closed=0 AND tld.ig_bobinagem_id = {ig_id}
+                    `order` > (SELECT IFNULL(MAX(`order`),0) from lotesdosers tt where tt.`order` <= (
+                    select MAX(tld.`order`) limit_order from lotesdosers tld where tld.`status` <> 0 AND tld.closed=0 AND tld.ig_bobinagem_id = {ig_id}
                     ) and type_mov='END') AND 
                     `order` < (select MIN(`order`) `limit_order` from lotesdosers ld where `status` <> 0 AND closed=0 AND ld.ig_bobinagem_id = {ig_id})
                     
