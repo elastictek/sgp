@@ -298,8 +298,8 @@ class Artigo(models.Model):
     gsm = models.CharField(max_length=10, choices=GSM, null=True, blank=True, verbose_name="Gramagem")
     gtin = models.CharField(verbose_name="GTIN", max_length=14, unique=True, default="")
     produto = models.CharField(verbose_name="Produto", max_length=100, default="", choices=PRODUTO)
-    produto_id = models.ForeignKey('producao.Produtos',db_column="produto_id",on_delete=models.PROTECT,verbose_name="Id Produto", null=True) #ADDED - ID PRODUTO
-    thickness = models.IntegerField(verbose_name="Espessura (Estimada/Referência) microns", default=325, null=True) #ADDED
+    produto_id = models.ForeignKey('producao.Produtos',db_column="produto_id",on_delete=models.PROTECT,verbose_name="Id Produto", blank=True, null=True) #ADDED - ID PRODUTO
+    thickness = models.IntegerField(verbose_name="Espessura (Estimada/Referência) microns", default=325, blank=True, null=True) #ADDED
     class Meta:
         verbose_name_plural = "Artigos"
         ordering = ['cod']

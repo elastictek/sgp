@@ -8,7 +8,7 @@ class AppSettings:
     }
     dbAlias = {
         "postgres":{
-            "sgp":f'"SGP-PROD"',
+            "sgp":f'"SGP-DEV"',
             "sage":f'"SAGE-PROD"'
         }
     }
@@ -17,6 +17,6 @@ class AppSettings:
         "gw":"PG-SGP-GW"
     }
     materializedViews = {
-        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST'
+        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST_DEV'
     }
 

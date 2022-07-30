@@ -41,6 +41,7 @@ const loadCustomersLookup = async (value) => {
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
     const [form] = Form.useForm();
+    const [forInput, setForInput] = useState(false);
     const [guides, setGuides] = useState(false);
     const [loading, setLoading] = useState(false);
     const [coresLookup, setCoresLookup] = useState([]);
@@ -107,7 +108,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         if (!v.error) {
             const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
             const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, parameters: { type: "settings", ...values, csid: record.csid, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id:draft_of_id,paletizacao_id:aggItem.paletizacao_id, qty_item: aggItem.qty_encomenda, ofabrico_cod: of_id } });
+            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, parameters: { type: "settings", ...values, csid: record.csid, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id: draft_of_id, paletizacao_id: aggItem.paletizacao_id, qty_item: aggItem.qty_encomenda, ofabrico_cod: of_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();
@@ -126,6 +127,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
                         schema={schema}
                         field={{
+                            forInput,
                             //wide: [3, 2, 1, '*'],
                             margin: "2px", overflow: false, guides: guides,
                             label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: true, colon: true, ellipsis: true },
@@ -140,11 +142,16 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                             wide: 16, margin: "2px", layout: "horizontal", overflow: false
                         }}
                     >
-
+                        <FieldSet>
+                            <Toolbar
+                                style={{ width: "100%" }}
+                                right={<Button size="small" onClick={() => setForInput(!forInput)}>{forInput ? "Apenas Leitura" : "Alterar"}</Button>}
+                            />
+                        </FieldSet>
                         <HorizontalRule title="1. Cliente e Artigo" />
                         <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: [12] }}>
-                            <Field forInput={record.aggItem.order_cod ? false : true} name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
+                            <Field forInput={record.aggItem.order_cod ? false : forInput} name="cliente_cod" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Cliente", pos: "left" }}>
                                 <SelectDebounceField
                                     placeholder="Cliente"
                                     size="small"
@@ -175,9 +182,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                                 <InputAddon size="small" addonAfter={<b>&#x00B5;</b>} maxLength={4} />
                             </Field>
                         </FieldSet>
-                        <VerticalSpace height="24px" />
-
-
+                        <VerticalSpace />
                         <HorizontalRule title="2. Core" />
                         <VerticalSpace />
                         <FieldSet margin={false}>
@@ -192,7 +197,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         </FieldSet>
                         <VerticalSpace />
                         <HorizontalRule title="3. Nº de Paletes" />
-                        <VerticalSpace />
                         <FieldSet margin={false}>
                             <Field wide={2} name="n_paletes_total" label={{ text: "Total" }}><InputNumber size="small" min={0} max={500} /></Field>
                         </FieldSet>
@@ -202,7 +206,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                         </FieldSet>
                         <VerticalSpace />
                         <HorizontalRule title="4. Emendas" />
-                        <VerticalSpace />
                         <FieldSet margin={false} field={{ wide: 4, style: { alignSelf: "left" }, label: { pos: "top", wrap: false, ellipsis: false, width: "130px" } }} layout="vertical">
                             <Field name="tipo_emenda" label={{ text: "Tipo Emenda" }}>
                                 <SelectField size="small" data={TIPOEMENDA_OPTIONS} keyField="key" textField="value" />
@@ -221,7 +224,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     <Space>
                         <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
                         <Button onClick={closeParent}>Cancelar</Button>
-                        {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
                 </Portal>
                 }

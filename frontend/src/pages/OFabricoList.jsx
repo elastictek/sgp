@@ -666,14 +666,14 @@ export default () => {
     }
 
     const onEstadoChange = async (record, action, data) => {
-        const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, qty_item, item_diam, item_core, item_thickness, item_width, item_id } = record;
+        const { cliente_cod, cliente_nome, iorder, prf, item, ofabrico, produto_id, qty_item, item_diam, item_core, item_thickness, item_width, item_id } = record;
         let response;
         switch (action) {
             case 'validar':
                 setLoading(true);
                 response = await fetchPost({
                     url: `${API_URL}/savetempordemfabrico/`,
-                    parameters: { cliente_cod, cliente_nome, iorder, item, ofabrico_cod: ofabrico, produto_id, artigo: data, qty_item, artigo_diam: item_diam, artigo_core: item_core, artigo_width: item_width, item_id, artigo_thickness: item_thickness }
+                    parameters: { cliente_cod, cliente_nome, iorder, prf, item, ofabrico_cod: ofabrico, produto_id, artigo: data, qty_item, artigo_diam: item_diam, artigo_core: item_core, artigo_width: item_width, item_id, artigo_thickness: item_thickness }
                 });
                 if (response.data.status !== "error") {
                     dataAPI.fetchPost();

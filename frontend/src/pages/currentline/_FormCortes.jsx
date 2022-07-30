@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
-import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace } from "components/formLayout";
+import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
@@ -14,17 +14,13 @@ import { Button, Spin, Input, Form, InputNumber, Skeleton, Space } from "antd";
 import { LoadingOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import FormCortesUpsert from './FormCortesUpsert';
-import { useImmer } from "use-immer";
-import Modalv4 from "components/Modalv4";
-/* import { OFabricoContext } from './FormOFabricoValidar'; */
-import { useModal } from "react-modal-hook";
-import ResponsiveModal from 'components/Modal';
+import { Container, Row, Col } from 'react-grid-system';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
 
-const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
+/* const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
     const iref = useRef();
     const { record = {} } = showWrapper;
@@ -48,12 +44,7 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
         </WrapperForm>
     );
 }
-
-
-/* const loadArtigosAggLookup = async ({ agg_id, token }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigostempagglookup/`, filter: { agg_id }, sort: [], cancelToken: token });
-    return rows;
-} */
+ */
 
 const loadCortesOrdemLookup = async ({ cortes_id, token }) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/cortesordemlookup/`, filter: { cortes_id }, sort: [{ column: 'versao', direction: 'DESC' }], cancelToken: token });
@@ -67,6 +58,15 @@ const colors = [
     { bcolor: '#ffffff', color: '#000000' }
 ];
 
+const Field = ({ children, name, ...props }) => {
+
+    return (
+        <Form.Item /* rules={[{ validator: validator }]} validateTrigger={["onBlur"]} shouldUpdate={shouldUpdate} */ noStyle {...(name && { name })} {...props}>{children}</Form.Item>
+    );
+
+}
+
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -78,34 +78,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [changedValues, setChangedValues] = useState();
     const [isTouched, setIsTouched] = useState(false);
 
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
-            <FormCortesUpsert record={modalParameters} parentReload={loadData} />
-            {/* <FormCortes forInput={modalParameters.forInput} record={modalParameters} /> */}
-        </ResponsiveModal>
-    ), [modalParameters]);
-
-    const onShowForm = (newForm = false) => {
-        if (newForm) {
-            setModalParameters(prev => ({ ...prev, ...form.getFieldsValue(["cortes", "cortes_id"]) }));
-            //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]) } }));
-        } else {
-            setModalParameters(prev => ({ ...prev, ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() }));
-            //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() } }));
-        }
-        showModal();
-    }
-
-
-
-
-
     useEffect(() => {
-        const cancelFetch = cancelToken();
-        // loadData({ /* agg_id: ctx.agg_id, */ token: cancelFetch });
-        init({ /* agg_id: ctx.agg_id, */ token: cancelFetch });
-        return (() => cancelFetch.cancel("Form Cortes Cancelled"));
+        const controller = new AbortController();
+        init({ signal: controller.signal });
+        return (() => controller.abort());
     }, []);
 
     useEffect(() => {
@@ -118,13 +94,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         }
     }, [changedValues]);
 
-    const init = ({ token }) => {
+    const init = ({ signal }) => {
         if (!loading) {
             setLoading(true);
         }
         (async () => {
             const { cortes, cortesordem, ofs } = record;
-            const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, token }) : [{ ...cortesordem }];
+            const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, signal }) : [{ ...cortesordem }];
             const _larguras = JSON.parse(cortes.largura_json);
             let _cortes = Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos: ofs.filter(v => v.artigo_lar == key).map((item) => ({ color: item.color, artigo_id: item.artigo_id, artigo_cod: item.artigo_cod, artigo_des: item.artigo_des, cliente_cod: item.cliente_cod, cliente_nome: item.cliente_nome, of_id: item.of_id, of_cod: item.of_cod })) }));
             //Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos:[...new Map(ofs.filter(v=>v.artigo_lar==key).map((item) => [item["artigo_id"], {artigo_id:item.artigo_id,artigo_cod:item.artigo_cod,artigo_des:item.artigo_des,cliente_cod:item.cliente_cod,cliente_nome:item.cliente_nome,of_id:item.of_id,of_cod:item.of_cod}])).values()] }));
@@ -194,15 +170,19 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     });
 
     const onFinish = async (values) => {
+        console.log(record);
+        return;
         const { cortes_id, cortesordem_id } = form.getFieldsValue(true);
         const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: 'cortes', cortes: { cortes_id, cortesordem_id } } });
         setResultMessage(response.data);
         if (response.data.status !== "error") {
-            parentReload({ aggId: record.id });
+            throw 'TODO RELOAD PARENT'
+            //parentReload({ formulacao_id: record.formulacao.id }, "init");
         }
     }
 
     const onSubmit = async () => {
+        return;
         const status = { error: [], warning: [], info: [], success: [] };
         const response = await fetchPost({ url: `${API_URL}/newcortes/`, parameters: { ...form.getFieldsValue(["cortes"]) } });
         if (response.data.status == "error") {
@@ -229,7 +209,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
          setFormStatus(status); */
     }
 
-
+    const onShowForm = (newForm = false) => {
+        if (newForm) {
+            setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]) } }));
+        } else {
+            setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() } }));
+        }
+    }
 
     const onClose = (reload = false) => {
         closeParent();
@@ -257,99 +243,38 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             >
                 <AlertMessages formStatus={formStatus} />
                 <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
-                    <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
+                    {/* <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} /> */}
                     <Form form={form} name={`fps-c`} onFinish={onFinish} onValuesChange={onValuesChange}>
-                        <FormLayout
-                            id="LAY-CORTES"
-                            layout="vertical"
-                            style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
-                            schema={schema}
-                            field={{
-                                //wide: [3, 2, 1, '*'],
-                                margin: "2px", overflow: false,
-                                label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: true, ellipsis: true },
-                                alert: { pos: "right", tooltip: true, container: true /* container: "el-external" */ },
-                                layout: { top: "", right: "", center: "", bottom: "", left: "" },
-                                addons: {}, //top|right|center|bottom|left
-                                required: true,
-                                style: { alignSelf: "center" }
-                            }}
-                            fieldSet={{
-                                wide: 16, margin: false, layout: "horizontal", overflow: false
-                            }}
-                        >
 
-                            <FieldSet>
-                                {form.getFieldValue("cortes_id") && <Toolbar
-                                    style={{ width: "100%" }}
-                                    left={<div>{larguraUtil && <>Largura Útil [ <b>{larguraUtil}mm</b> ]</>}</div>}
-                                    right={forInput && <Button onClick={clearCortes}>Refazer Cortes</Button>}
-                                />
-                                }
-                            </FieldSet>
-                            {forInput && <><FieldSet>
+                        <Container style={{ minWidth: 220, maxWidth:220, marginLeft:"0px" }}>
+                            <Row nogutter>
+                                <Col xs={6}>Largura</Col>
+                                <Col xs={6}>Nº Cortes</Col>
+                            </Row>
+                            <Form.List name="cortes">
+
+                                {(fields, { add, remove, move }) => {
+                                    return (
+                                        <>
+                                            {fields.map((field, index) => (
+                                                <Row key={field.key} nogutter>
+                                                    <Col xs={6}><Field forInput={false} name={[field.name, `item_lar`]}><Input disabled={true} size="small" /></Field></Col>
+                                                    <Col xs={6}><Field forInput={!isCortesTouched()} name={[field.name, `item_ncortes`]}><InputNumber size="small" min={1} max={24} /></Field></Col>
+                                                </Row>
+                                            ))}
+                                        </>
+
+                                    )
+                                }}
+                            </Form.List>
+                            <Row style={{marginTop:"10px"}} nogutter>
+                                <Col width={220}><Button disabled={isCortesTouched()} type="dashed" onClick={onSubmit} block>Aplicar</Button></Col>
+                            </Row>
+                        </Container>
 
 
-                                <FieldSet layout="vertical" style={{ minWidth: "200px", maxWidth: "200px" }}>
-                                    <FieldSet style={{ fontWeight: 500 }} field={{ wide: [8, 8], noItemWrap: true, label: { enabled: false } }}>
-                                        <Field>Largura</Field>
-                                        <Field>Nº Cortes</Field>
-                                    </FieldSet>
 
 
-                                    <Form.List name="cortes">
-
-                                        {(fields, { add, remove, move }) => {
-                                            return (
-                                                <>
-                                                    {fields.map((field, index) => (
-                                                        <FieldSet key={field.key} field={{ wide: [8, 8] }}>
-                                                            <Field forInput={false} name={[field.name, `item_lar`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                            <Field forInput={!isCortesTouched()} name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={1} max={24} /></Field>
-                                                        </FieldSet>
-                                                    ))}
-                                                </>
-
-                                            )
-                                        }}
-
-                                    </Form.List>
-                                    <VerticalSpace height="12px" />
-                                    <FieldSet><Button disabled={isCortesTouched()} type="dashed" onClick={onSubmit} style={{ width: "100%" }}>Aplicar</Button></FieldSet>
-
-                                </FieldSet>
-                            </FieldSet>
-                                <VerticalSpace height="12px" />
-                                <FieldSet>
-                                    {form.getFieldValue("cortes_id") && <Toolbar
-                                        style={{ width: "100%" }}
-                                        left={
-                                            <FieldSet>
-                                                <Field name="cortesordem_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: false, text: "Posição Cortes", pos: "left" }} addons={{
-                                                    ...(form.getFieldValue("cortesordem_id") && { right: <Button onClick={() => onShowForm()} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
-                                                }}>
-                                                    <SelectField size="small" data={cortesOrdemLookup} keyField="id" textField="designacao"
-                                                        optionsRender={(d, keyField, textField) => ({ label: <div><div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div><div style={{ color: "#1890ff" }}>{d["largura_ordem"].replaceAll('"', ' ')}</div></div>, value: d[keyField] })}
-                                                    />
-                                                </Field>
-                                            </FieldSet>
-                                        }
-                                        right={<Button onClick={() => onShowForm(true)}>Novo Posicionamento de Cortes</Button>}
-                                    />
-                                    }
-                                </FieldSet>
-                            </>
-                            }
-                            <FieldSet field={{ wide: [16] }}>
-                                <FieldItem label={{ enabled: false }}>
-                                    {((loading, cortesOrdem) => {
-                                        if (!loading && cortesOrdem) {
-                                            return (<FormCortesUpsert record={{ ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem }} wrapForm={false} forInput={false} parentReload={loadData} />);
-                                        }
-                                    })(loading, cortesOrdem())}
-                                </FieldItem>
-                            </FieldSet>
-                        </FormLayout>
                     </Form>
                     {parentRef && <Portal elId={parentRef.current}>
                         <Space>

@@ -138,6 +138,38 @@ class RealTimeAlerts(WebsocketConsumer):
         dt = json.loads(text_data)
         self.commands[dt['cmd']](self, dt)
 
+class RealTimeOfs(WebsocketConsumer):
+
+    def loadPaletes(self, data):
+        ofid = 958#data['value']['of_id']
+        print("GETTING PALETES")
+        if ofid:
+            connection = connections["default"].cursor()
+            rows = dbgw.executeSimpleList(lambda:(f"""		
+                SELECT ROW_NUMBER() OVER (order by pl.timestamp) num,pl.nome, pl.num_bobines,pl.num_bobines_act
+                FROM sistema.producao_palete pl
+                join sistema.planeamento_ordemproducao op on ordem_original=op.op and op.id=%(ofid)s
+                order by pl.timestamp asc
+            """),connection,{"ofid":ofid})['rows']
+        else:
+            rows=[]
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"paletes","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+    
+    commands = {
+        'loadpaletes':loadPaletes
+    }
+
+    def connect(self):
+        self.accept()
+
+    def disconnect(self, close_code):
+        pass
+
+    def receive(self, text_data):
+        dt = json.loads(text_data)
+        self.commands[dt['cmd']](self, dt)
+
 class LotesPickConsumer(WebsocketConsumer):
 
     def getLote(self, data):

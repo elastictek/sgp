@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
-import { Route, Routes, useRoutes, BrowserRouter,Navigate } from 'react-router-dom';
+import { Route, Routes, useRoutes, BrowserRouter, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
@@ -10,6 +10,11 @@ import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { useImmer } from "use-immer";
 import useMedia from 'utils/useMedia';
+import { ModalProvider } from "react-modal-hook";
+import GridLayout from './currentline/dashboard/GridLayout';
+
+
+
 
 const NotFound = lazy(() => import('./404'));
 const SOrders = lazy(() => import('./SOrders'));
@@ -32,9 +37,25 @@ const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
 const FormPalete = lazy(() => import('./paletes/FormPalete'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
+
+
+
+
+
+
+
 export const MediaContext = React.createContext({});
 export const SocketContext = React.createContext({});
 export const AppContext = React.createContext({});
+
+
+
+
+
+
+
+
+
 
 const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
     //const { formatMessage } = useIntl();
@@ -67,7 +88,7 @@ const RenderRouter = () => {
                 { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
                 { path: "currentline/menuactions", element: <Suspense fallback={<Spin />}><FormMenuActions /></Suspense> },
                 { path: "expedicoes/timearmazem", element: <Suspense fallback={<Spin />}><ExpedicoesTempoList /></Suspense> },
-                
+
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
         },
@@ -140,9 +161,71 @@ const App = () => {
 }
 
 
-export default App;
+const App2 = () => {
+    const [width] = useMedia();
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
 
+    useEffect(() => { }, [
+        lastJsonMessage?.hash.hash_igbobinagens,
+        lastJsonMessage?.hash.hash_bobinagens,
+        lastJsonMessage?.hash.hash_buffer,
+        lastJsonMessage?.hash.hash_dosers,
+        lastJsonMessage?.hash.hash_doserssets,
+        lastJsonMessage?.hash.hash_inproduction,
+        lastJsonMessage?.hash.hash_lotes_availability
+    ]);
+
+
+    useEffect(() => {
+        //sendJsonMessage({ cmd: 'initAlerts' });
+    }, []);
+
+    //    useEffect(()=>{
+    //
+    //   },[lastJsonMessage])
+
+    return (
+        <BrowserRouter>
+            {/*             <Routes> */}
+            {/* <Route path="/app" element={<Suspense fallback={<Spin />}><LayoutPage /></Suspense>} />
+                <Route path="/app/sorders" element={<Suspense fallback={<Spin />}><SOrders /></Suspense>} />
+                <Route path="/app/ordemfabrico/formdetails" element={<Suspense fallback={<Spin />}><OFDetails /></Suspense>} />
+                <Route path="*" element={<Suspense fallback={<Spin />}><NotFound /></Suspense>} /> */}
+
+
+
+            {/*  <Default><RenderRouter /></Default> */}
+
+
+            {/*             <MediaContext.Provider value={contextValue}>
+                
+            </MediaContext.Provider> */}
+            {/*             </Routes> */}
+            <MediaContext.Provider value={width}>
+                <AppContext.Provider value={{}}>
+                    <SocketContext.Provider value={lastJsonMessage}>
+                        <ModalProvider>
+                            <GridLayout />
+                        </ModalProvider>
+                    </SocketContext.Provider>
+                </AppContext.Provider>
+            </MediaContext.Provider>
+
+        </BrowserRouter>
+    );
+}
+
+
+export default App;
 const container = document.getElementById("app");
 const root = ReactDOM.createRoot(container);
-root.render(<App />);
+root.render(<App2 />);
+//root.render(<App />);
 //ReactDOM.render(<App />, container);

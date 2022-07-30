@@ -2388,33 +2388,33 @@ def PaletesStockLookup(request, format=None):
         ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
         return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def PaletesStockGet(request, format=None):
-    cols = ['pp.id ,pp.nome, pp.largura_bobines, pp.core_bobines, pp.area, pp.comp_total']
-    f = Filters(request.data['filter'])
-    f.setParameters({
-        "nome": {"value": lambda v: f"%{v.get('fpr-filter').lower()}%" if v.get('fpr-filter') is not None else None}
-    }, False)
-    f.where()
-    f.add(f'lower(pp.nome) like :nome', lambda v:(v!=None))
-    f.add(f'pp.draft_ordem_id = :of_id', True)
-    f.value("and")
-    parameters = {**f.parameters}    
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
-    with connections["default"].cursor() as cursor:
-        response = db.executeList(lambda p, c, s: (
-            f"""
-            SELECT {c(f'{dql.columns}')} 
-            FROM producao_palete pp
-            {f.text}
-            {s(dql.sort)} {p(dql.paging)}
-            """
-        ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
-        return Response(response)
+# @api_view(['POST'])
+# @renderer_classes([JSONRenderer])
+# @authentication_classes([SessionAuthentication])
+# @permission_classes([IsAuthenticated])
+# def PaletesStockGet(request, format=None):
+#     cols = ['pp.id ,pp.nome, pp.largura_bobines, pp.core_bobines, pp.area, pp.comp_total']
+#     f = Filters(request.data['filter'])
+#     f.setParameters({
+#         "nome": {"value": lambda v: f"%{v.get('fpr-filter').lower()}%" if v.get('fpr-filter') is not None else None}
+#     }, False)
+#     f.where()
+#     f.add(f'lower(pp.nome) like :nome', lambda v:(v!=None))
+#     f.add(f'pp.draft_ordem_id = :of_id', True)
+#     f.value("and")
+#     parameters = {**f.parameters}    
+#     dql = db.dql(request.data, False)
+#     dql.columns = encloseColumn(cols,False)
+#     with connections["default"].cursor() as cursor:
+#         response = db.executeList(lambda p, c, s: (
+#             f"""
+#             SELECT {c(f'{dql.columns}')} 
+#             FROM producao_palete pp
+#             {f.text}
+#             {s(dql.sort)} {p(dql.paging)}
+#             """
+#         ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
+#         return Response(response)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -2439,6 +2439,40 @@ def SavePaletesStock(request, format=None):
         return Response({"status": "success","id":None, "title": "As Paletes foram Relacionadas com Sucesso!", "subTitle":''})
     except BaseException as e:
         return Response({"status": "error", "title": "Erro ao Relacionar as Paletes!","value":e.args[len(e.args)-1]})
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def PaletesStockGet(request, format=None):
+    cols = ['pp.id ,pp.nome, pp.largura_bobines, pp.core_bobines, pp.area, pp.comp_total']
+    f = Filters(request.data['filter'])
+    type = request.data['type'] if 'type' in request.data else None
+    f.setParameters({
+        "nome": {"value": lambda v: f"%{v.get('fpr-filter').lower()}%" if v.get('fpr-filter') is not None else None}
+    }, False)
+    f.where()
+    f.add(f'lower(pp.nome) like :nome', lambda v:(v!=None))
+    if type == 'op':
+        f.add(f'pp.ordem_id = :of_id', True)
+    else:
+         f.add(f'pp.draft_ordem_id = :of_id', True)
+    f.value("and")
+    parameters = {**f.parameters}    
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeList(lambda p, c, s: (
+            f"""
+            SELECT {c(f'{dql.columns}')} 
+            FROM producao_palete pp
+            {f.text}
+            {s(dql.sort)} {p(dql.paging)}
+            """
+        ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
+        return Response(response)
+
 
 
 
@@ -2744,17 +2778,27 @@ def createEmendas(data,cursor):
 @permission_classes([IsAuthenticated])
 def UpdateCurrentSettings(request, format=None):
     data = request.data.get("parameters")
-
+    
     def getCurrentSettings(data,cursor):
-        f = Filters({"id": data["csid"],"status":3})
+        f = Filters({"id": data["csid"],"status":9})
         f.where()
         f.add(f'id = :id', True)
-        f.add(f'status = :status', True)
+        f.add(f'status <> :status', True)
         f.value("and")  
         rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_currentsettings {f.text}'), cursor, f.parameters)['rows']
         if len(rows)>0:
             return rows[0]
         return None
+
+    try:
+        with connections["default"].cursor() as cursor:
+            cs = getCurrentSettings(request.data['filter'],cursor)
+            if cs is None:
+                return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Ordem de Fabrico', "subTitle":"Não é possível alterar as Definições da Ordem (O estado atual não o permite!!)."})
+    except Exception as error:
+        return Response({"status": "error", "id":None, "title": f'Erro de Execução', "subTitle":str(error)})
+    
+               
 
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
@@ -2906,10 +2950,6 @@ def UpdateCurrentSettings(request, format=None):
     if data['type'] == 'settings':
         try:
             with connections["default"].cursor() as cursor:
-                cs = getCurrentSettings(data,cursor)
-                if cs is None:
-                    return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Definições', "subTitle":"Não é possível alterar as Definições atuais."})
-               
                 emendas = json.loads(cs["emendas"])
                 for idx,x in enumerate(emendas):
                     if x["of_id"]==data["ofabrico_cod"]:
@@ -2964,7 +3004,19 @@ def UpdateCurrentSettings(request, format=None):
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
-
+    if data['type'] == 'paletizacao':
+        paletizacoes = json.loads(cs["paletizacao"])
+        for idx,x in enumerate(paletizacoes):
+            if x["of_id"]==data["paletizacao"]["of_id"]:
+                paletizacoes[idx]= data["paletizacao"]
+        dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Paletização Atual Atualizada com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Paletização Atual', "subTitle":str(error)})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

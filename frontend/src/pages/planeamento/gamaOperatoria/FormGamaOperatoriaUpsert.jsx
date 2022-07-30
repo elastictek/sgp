@@ -59,7 +59,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     initValues[`key-${idx}`] = v.key;
                     initValues[`des-${idx}`] = v.designacao;
                     initValues[`tolerancia-${idx}`] = v.tolerancia;
-                    initValues[`v${v.key}-${idx}`] = null;
+                    for (let i=0;i<v.nvalues;i++){
+						initValues[`v${v.key}-${i}`] = null;
+					}
+                    //initValues[`v${v.key}-${idx}`] = null;
                 }
                 form.setFieldsValue(initValues);
             }

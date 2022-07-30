@@ -27,8 +27,8 @@ const serverRequest = async (request, fetch = true) => {
 };
 
 
-const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken,signal } = {},f=true) => {
-  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken,signal },f);
+const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}, f = true) => {
+  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken, signal }, f);
 
   /*     const req ={
           options:{},
@@ -75,12 +75,12 @@ export const fetchPostTest = async ({ url = "", filter = {}, sort = [], paginati
 }
 
 
-export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
+export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}) => {
+  return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal });
 }
 
-export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {},f=true) => {
-  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal },f);
+export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}, f = true) => {
+  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal }, f);
 }
 
 export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
@@ -91,7 +91,7 @@ export const fetchPostBuffer = async ({ url = "", filter = {}, sort = [], pagina
   return await fetch({ url, responseType: "arraybuffer", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
 }
 
-export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers={}, cancelToken } = {}) => {
+export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers = {}, cancelToken } = {}) => {
   const params = { method, responseType, [paramType(method)]: parameters, headers };
   if (cancelToken) {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);

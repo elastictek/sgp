@@ -18,13 +18,14 @@ import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useImmer } from "use-immer";
 
+
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
 }
 
 const useStyles = createUseStyles({
     bobine: {
-        cursor: "move",
+        ...(props) => props.forInput && {cursor:"move"},
         border: "solid 1px #bfbfbf",
         height: "150px",
         boxShadow: "2px 1px 2px #f0f0f0",
@@ -38,7 +39,7 @@ const useStyles = createUseStyles({
 })
 
 const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cortes, setArtigo }) => {
-    const classes = useStyles({ width });
+    const classes = useStyles({ width, forInput });
     const ref = useRef(null);
     const color = cortes.find(v => v.item_lar == value);
     const style = {
@@ -229,7 +230,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             {parentRef && <Portal elId={parentRef.current}>
                 <Space>
                     <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
-                    <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button>
                 </Space>
             </Portal>
             }
