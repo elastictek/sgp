@@ -1595,7 +1595,7 @@ export const FormLayout = ({ className, style, field, fieldSet, schema, children
     }, [fieldStatus]);
 
     const dataContext = { field, fieldSet, schema: (schema ? schema : {}), layoutId: id, fieldStatus: localFieldStatus, updateFieldStatus: updateLocalFieldStatus, clearFieldStatus: clearLocalFieldStatus };
-
+    
     return (
         <StyledFormLayout {...props} className={classNames("formlayout", className)} style={style}>
             <ParentContext.Provider value={dataContext}>
@@ -1603,6 +1603,7 @@ export const FormLayout = ({ className, style, field, fieldSet, schema, children
                     React.Children.map(children, (child, i) => (
                         <>
                             {(React.isValidElement(child)) ? React.cloneElement(child, { ...child.props, index: i, parentPath: id }) : child}
+                            {console.log("children",child)}
                         </>
                     ))
                 }

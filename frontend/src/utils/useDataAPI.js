@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchPost } from "./fetch";
+import { Modal } from 'antd';
+import { deepEqual, pickAll } from 'utils';
 
 const getLocalStorage = (id, useStorage) => {
     if (useStorage && id) {
@@ -21,19 +23,19 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         ...getLocalStorage(id, useStorage)
     });
 
-    var action = [];
-    var _sort = [];
+    const action = useRef([]);
+    const _sort = useRef([]);
     var _filter = payload?.filter;
     var _pagination = payload?.pagination;
     var _parameters = payload?.parameters;
 
     const addAction = (type) => {
-        if (!action.includes(type))
-            action.push(type);
+        if (!action.current.includes(type))
+            action.current.push(type);
     }
 
     const isAction = (type) => {
-        return action.includes(type);
+        return action.current.includes(type);
     }
 
     const first = (applyState = false) => {
@@ -82,19 +84,19 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const _addSort = ({ columnKey, field, order, ...rest }) => {
         const column = (columnKey) ? columnKey : field;
         const direction = (order == "ascend") ? "ASC" : "DESC";
-        let idx = _sort.findIndex(v => (v.column === column));
+        let idx = _sort.current.findIndex(v => (v.column === column));
         if (idx >= 0) {
-            const array = [..._sort];
+            const array = [..._sort.current];
             array[idx] = { column, direction, order, table: rest.column.table };
-            _sort = array;
+            _sort.current = array;
         } else {
-            _sort = [..._sort, { column, direction, order, table: rest.column.table }];
+            _sort.current = [..._sort.current, { column, direction, order, table: rest.column.table }];
         }
     }
 
     const addSort = (obj, applyState = false) => {
         addAction('sort');
-        _sort = [];
+        _sort.current = [];
         if (Array.isArray(obj)) {
             for (let s of obj) {
                 if (!s.order) {
@@ -108,24 +110,33 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             }
         }
         if (applyState) {
-            setDataState(prev => ({ ...prev, sort: _sort }));
+            setDataState(prev => ({ ...prev, sort: _sort.current }));
         }
     };
 
+    const setSort = (obj, applyState = false) => {
+        addAction('sort');
+        _sort.current = obj;
+        if (applyState) {
+            setDataState(prev => ({ ...prev, sort: _sort.current }));
+        }
+    };
+
+
     const resetSort = (applyState = false) => {
         addAction('sort');
-        _sort = [...payload.sort];
+        _sort.current = [...payload.sort];
         if (applyState) {
-            setDataState(prev => ({ ...prev, sort: _sort }));
+            setDataState(prev => ({ ...prev, sort: _sort.current }));
         }
     }
 
     const clearSort = (applyState = false) => {
         addAction('sort');
         console.log("CLEARING SORT....", payload);
-        _sort = [];
+        _sort.current = [];
         if (applyState) {
-            setDataState(prev => ({ ...prev, sort: _sort }));
+            setDataState(prev => ({ ...prev, sort: _sort.current }));
         }
     }
 
@@ -170,7 +181,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             return {
                 pagination: { ...((isAction('nav') || isAction('pageSize'))) ? _pagination : dataState.pagination },
                 filter: { ...(isAction('filter')) ? _filter : dataState.filter },
-                sort: [...(isAction('sort')) ? _sort : dataState.sort],
+                sort: [...(isAction('sort')) ? _sort.current : dataState.sort],
                 parameters: { ...(isAction('parameters')) ? _parameters : dataState.parameters }
             }
         }
@@ -222,7 +233,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         if (fromState) {
             return [...dataState.sort];
         } else {
-            return [..._sort];
+            return [..._sort.current];
         }
     }
 
@@ -234,9 +245,49 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             ...(isAction('filter') && { filter: { ...prev.filter, ...payload.filter } }),
             ...(isAction('sort') && { sort: [...payload.sort] }),
             ...(isAction('parameters') && { parameters: { ...prev.parameters, ...payload.parameters } }),
+            ...(payload?.tstamp && { tstamp: payload.tstamp }),
             data: { ...data }
         }));
-        action = [];
+        console.log("======", data)
+        action.current = [];
+    }
+
+    const addRow = (row, keys = null, at = null) => {
+        const r = pickAll(keys, row);
+        const _rows = dataState.data.rows;
+        if (_rows) {
+            const exists = (keys === null) ? false : _rows.some(v => deepEqual(pickAll(keys, v), r));
+            if (!exists) {
+                if (at !== null) {
+                    _rows.splice(at, 0, row);
+                } else {
+                    _rows.push(row);
+                }
+                setDataState(prev => ({
+                    ...prev,
+                    data: { rows: _rows, total: dataState.data.total + 1 }
+                }));
+            }
+        } else {
+            setDataState(prev => ({
+                ...prev,
+                data: { rows: [row], total: 1 }
+            }));
+        }
+    }
+
+    const deleteRow = (data, keys) => {
+        const _rows = dataState.data.rows;
+        if (_rows) {
+            const idx = _rows.findIndex(v => deepEqual(pickAll(keys, v), data));
+            if (idx >= 0) {
+                _rows.splice(idx, 1);
+                setDataState(prev => ({
+                    ...prev,
+                    data: { rows: _rows, total: dataState.data.total - 1 }
+                }));
+            }
+        }
     }
 
     const clearData = () => {
@@ -249,14 +300,18 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
 
     const _fetchPost = ({ url, token } = {}) => {
         let _url = (url) ? url : dataState.url;
-        const payload = {...getPayload(), tstamp:Date.now()};
+        const payload = { ...getPayload(), tstamp: Date.now() };
         setIsLoading(true);
         (async () => {
             if (id && useStorage) {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
-            const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
-            setData(dt, payload);
+            try {
+                const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
+                setData(dt, payload);
+            } catch (e) {
+                Modal.error({ content: e.message });
+            }
             setIsLoading(false);
         })();
     }
@@ -297,7 +352,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return isLoading;
     }
 
-    const getTimeStamp = ()=>{
+    const getTimeStamp = () => {
         return dataState.tstamp;
     }
 
@@ -308,8 +363,11 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         last,
         currentPage,
         pageSize,
+        addRow,
+        deleteRow,
         setData,
         hasData: () => (dataState.data.rows !== undefined),
+        setSort,
         addSort,
         clearSort,
         resetSort,

@@ -95,7 +95,7 @@ const Content = ({ menuItems, limit, setLimit, orientation, setOrientation, setI
 
 
 export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, title, orientation, isDirty, columns }) => {
-    const requestData = dataAPI.getPostRequest({url});
+    const requestData = dataAPI.getPostRequest({ url });
     const _orientation = (!isDirty && dataexport?.orientation) ? dataexport?.orientation : orientation.value;
     const _title = (dataexport?.title) ? dataexport?.title : title;
     requestData.parameters = {
@@ -128,6 +128,29 @@ export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, ti
     });
     message.destroy(mkey);
     downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.${dataexport.extension}`);
+}
+
+
+export const Report = ({ button, items = [], onExport, dataAPI, title, columns, hide }) => {
+    const [isDirty, setIsDirty] = useState(false);
+    const [limit, setLimit] = useState(10000);
+    const [orientation, setOrientation] = useState({ value: "landscape", label: "Horizontal" });
+    const menuItems = getMenuItems(items, limit, setLimit);
+
+    const onClick = async (type) => {
+        hide();
+        if (onExport) {
+            if (!onExport(type, limit, orientation, isDirty)) {
+                return false;
+            }
+        }
+        let dataexport = menuItems.filter(v => v.key === type.key)[0]?.data;
+        await downloadReport({ dataAPI, type, dataexport, columns, limit, orientation, title, isDirty });
+    }
+
+    return (
+        <Content setIsDirty={setIsDirty} orientation={orientation} setOrientation={setOrientation} limit={limit} setLimit={setLimit} onClick={onClick} menuItems={menuItems} />
+    );
 }
 
 export default ({ button, items = [], onExport, dataAPI, title, columns }) => {

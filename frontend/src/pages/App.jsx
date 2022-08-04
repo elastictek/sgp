@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter, Navigate } from 'react-router-dom';
-import { Spin } from 'antd';
+import { Spin, Input } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
 import 'antd/dist/antd.compact.less';
@@ -49,7 +49,9 @@ export const SocketContext = React.createContext({});
 export const AppContext = React.createContext({});
 
 
-
+import { Field, Container } from 'components/FormFields';
+import { Row, Col } from 'react-grid-system';
+import FormPaletesStock from './currentline/ordemfabrico/FormPaletesStock';
 
 
 
@@ -226,6 +228,14 @@ const App2 = () => {
 export default App;
 const container = document.getElementById("app");
 const root = ReactDOM.createRoot(container);
-root.render(<App2 />);
+root.render(<FormPaletesStock/>);
+/*root.render(
+    <Container id="teste" wrapForm={true}>
+        <Row style={{ justifyContent: "end" }}>
+            <Col xs='content'><Field label={{ enabled: true, text: "test" }}><Input /></Field></Col>
+        </Row>
+    </Container>
+);*/
+//root.render(<App2 />);
 //root.render(<App />);
 //ReactDOM.render(<App />, container);

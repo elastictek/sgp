@@ -38,12 +38,12 @@ export const getFilterRangeValues = (data) => {
     }
     if (data?.startValue) {
         ret.push(`>=${data.startValue}`);
-    }else{
+    } else {
         ret.push(null);
     }
     if (data?.endValue) {
         ret.push(`<=${data.endValue}`);
-    }else{
+    } else {
         ret.push(null);
     }
     return ret;
@@ -56,12 +56,12 @@ export const getFilterForceRangeValues = (data) => {
     }
     if (data?.startValue) {
         ret.push(`>=${data.startValue}`);
-    }else{
+    } else {
         ret.push(`>=${data.endValue}`);
     }
     if (data?.endValue) {
         ret.push(`<=${data.endValue}`);
-    }else{
+    } else {
         ret.push(`<=${data.startValue}`);
     }
     return ret;
@@ -73,7 +73,7 @@ export const getFilterValue = (v, type = 'exact') => {
     if (val !== '' && val !== undefined) {
         const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
         const matches = val.toString().match(re);
-        if (matches!==null && matches.length > 0) {
+        if (matches !== null && matches.length > 0) {
             return `${val}`;
         } else {
             switch (type) {
@@ -154,3 +154,38 @@ export const groupBy = (xs, key) => {
         return rv;
     }, {});
 };
+
+
+
+export const pickAll = (names, obj) => {
+    var result = {};
+    var idx = 0;
+    var len = names.length;
+    while (idx < len) {
+        var name = names[idx];
+        result[name] = obj[name];
+        idx += 1;
+    }
+    return result;
+};
+
+export const deepEqual = (object1, object2) => {
+    const keys1 = Object.keys(object1);
+    const keys2 = Object.keys(object2);
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+    for (const key of keys1) {
+        const val1 = object1[key];
+        const val2 = object2[key];
+        const areObjects = isObject(val1) && isObject(val2);
+        if (areObjects && !deepEqual(val1, val2) || !areObjects && val1 !== val2) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export const isObject = (object) => {
+    return object != null && typeof object === 'object';
+}
