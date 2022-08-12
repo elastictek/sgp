@@ -257,7 +257,7 @@ const Pagination = props => {
     let _dots = 0;
     let lastPage = paginationRange[paginationRange.length - 1];
     return (
-        <div style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end" }}>
             <BoldInputNumber prefix={<BsBoxArrowInUpRight/>} size="small" title='Ir Para' value={currentPage} onChange={debounceEvent} min={1} max={lastPage} controls={false} />
             <Button style={{ margin: "2px" }} icon={<LeftOutlined />} onClick={onPrevious} size="small" disabled={currentPage === 1} />
             {paginationRange.map(pageNumber => {

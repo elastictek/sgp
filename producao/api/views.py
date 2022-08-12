@@ -2383,7 +2383,7 @@ def PaletesStockLookup(request, format=None):
             JOIN producao_bobine pb on pb.palete_id=pp.id 
             join producao_artigo pa on pb.artigo_id=pa.id
             where pp.stock=1 or pp.estado = 'DM'
-            {s(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             """
         ), cursor, parameters, [], lambda v: 'count(distinct(pp.id))')
         return Response(response)

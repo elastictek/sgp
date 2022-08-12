@@ -51,7 +51,7 @@ export const AppContext = React.createContext({});
 
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
-import FormPaletesStock from './currentline/ordemfabrico/FormPaletesStock';
+import PickGranulado from './picking/PickGranulado';
 
 
 
@@ -225,10 +225,30 @@ const App2 = () => {
 }
 
 
+
+const App3 = () => {
+    const [width] = useMedia();
+    useEffect(() => {}, []);
+
+    return (
+        <BrowserRouter>
+            <MediaContext.Provider value={width}>
+                <AppContext.Provider value={{}}>
+                        <ModalProvider>
+                            <PickGranulado />
+                        </ModalProvider>
+                </AppContext.Provider>
+            </MediaContext.Provider>
+
+        </BrowserRouter>
+    );
+}
+
+
 export default App;
 const container = document.getElementById("app");
 const root = ReactDOM.createRoot(container);
-root.render(<FormPaletesStock/>);
+root.render(<App3/>);
 /*root.render(
     <Container id="teste" wrapForm={true}>
         <Row style={{ justifyContent: "end" }}>

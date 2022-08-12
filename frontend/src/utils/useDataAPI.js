@@ -255,6 +255,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const addRow = (row, keys = null, at = null) => {
         const r = pickAll(keys, row);
         const _rows = dataState.data.rows;
+        console.log("ROWSSS", _rows)
         if (_rows) {
             const exists = (keys === null) ? false : _rows.some(v => deepEqual(pickAll(keys, v), r));
             if (!exists) {
@@ -265,15 +266,25 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
                 }
                 setDataState(prev => ({
                     ...prev,
-                    data: { rows: _rows, total: dataState.data.total + 1 }
+                    ...{ tstamp: Date.now() },
+                    data: { rows: [..._rows], total: dataState.data.total + 1 }
                 }));
             }
         } else {
             setDataState(prev => ({
                 ...prev,
-                data: { rows: [row], total: 1 }
+                ... { tstamp: Date.now() },
+                data: { rows: [{ ...row }], total: 1 }
             }));
         }
+    }
+
+    const setRows = (rows, total = null) => {
+        setDataState(prev => ({
+            ...prev,
+            ... { tstamp: Date.now() },
+            data: { rows: [...rows], total: (total === null) ? prev?.data?.total : total }
+        }));
     }
 
     const deleteRow = (data, keys) => {
@@ -284,7 +295,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
                 _rows.splice(idx, 1);
                 setDataState(prev => ({
                     ...prev,
-                    data: { rows: _rows, total: dataState.data.total - 1 }
+                    data: { rows: [..._rows], total: dataState.data.total - 1 }
                 }));
             }
         }
@@ -363,6 +374,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         last,
         currentPage,
         pageSize,
+        setRows,
         addRow,
         deleteRow,
         setData,
@@ -389,6 +401,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         url,
         isActionPageSize: () => isAction('pageSize'),
         fetchPost: _fetchPost,
-        isLoading: () => _isLoading()
+        isLoading: () => _isLoading(),
+        setIsLoading
     }
 }

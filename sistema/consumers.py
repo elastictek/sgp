@@ -172,6 +172,24 @@ class RealTimeOfs(WebsocketConsumer):
 
 class LotesPickConsumer(WebsocketConsumer):
 
+    def getLoteQuantity(self, data):
+        lote = data['lote']
+        type= data["type"]
+        unit= data["unit"]
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            select comp_actual qtd from producao_bobine where nome = '{lote}'
+         """),connection,{})['rows']
+        if len(rows)>0:
+            if rows[0]["qtd"] == 0:
+                self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+            else:
+                self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
+        else:
+            self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+            #self.send(text_data=json.dumps({"qtd":2506,"source":type, "unit":unit, "lote":"20220607-01-01jhgjhyutuygjhgjhgYYHKJ JGFH"},default=str))
+            #self.send(text_data="")
+
     def getLote(self, data):
         lotePicked = data['value']
         cs = data['cs']
@@ -361,7 +379,8 @@ class LotesPickConsumer(WebsocketConsumer):
         'loadmatprimas':loadMatPrimas,
         #'loadlotesavailability':loadLotesAvailability,
         'loaddoserssets':loadDosersSets,
-        'pick':getLote
+        'pick':getLote,
+        'getlotequantity':getLoteQuantity
     }
 
     def connect(self):

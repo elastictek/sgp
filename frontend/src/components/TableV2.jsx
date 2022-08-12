@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
@@ -6,10 +6,11 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
+import { pickAll } from "utils";
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select } from "antd";
+import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox } from "antd";
 import Icon, { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined, ReloadOutlined, EllipsisOutlined, FilterOutlined, SettingOutlined, SearchOutlined, FileFilled } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
@@ -18,30 +19,9 @@ import { Report } from "components/DownloadReports";
 import Pagination from 'components/Paginator';
 import Spin from "./Spin";
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
-import DataGrid, { Row as TableRow } from 'react-data-grid';
+import DataGrid, { Row as TableRow, SelectColumn } from 'react-data-grid';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer } from 'components/FormFields';
-
-const columns = [
-    { key: 'action', name: '' },
-    { key: 'id', name: 'id' },
-    { key: 'nome', name: 'Palete' },
-    { key: 'largura_bobines', name: 'Largura' },
-    { key: 'area', name: 'Área' },
-    { key: 'comp_total', name: 'Comprimento' }
-
-];
-
-//cols = ['distinct(pp.id),pp.nome,pp.largura_bobines,pp.core_bobines,pp.area,pp.comp_total']
-
-/* const rows = [
-    { id: 0, title: 'Example' },
-    { id: 1, title: 'Demo' }
-]; */
-
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
-}
 
 const Table = styled(DataGrid).withConfig({
     shouldForwardProp: (prop) =>
@@ -109,7 +89,7 @@ const Action = ({ dataAPI, content, ...props }) => {
                 onVisibleChange={handleClickPopover}
                 placement="bottomRight"
                 title=""
-                content={React.cloneElement(content, { ...content.props, hide })}
+                content={React.cloneElement(content, { ...content.props, hide, row: props.row })}
                 trigger="click"
             >
                 <Button size="small" icon={<EllipsisOutlined />} />
@@ -134,10 +114,10 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
                 (moreFilters) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} }
             ]}></Menu>
             <Divider style={{ margin: "8px 0" }} />
-            <div style={{ display: "flex", flexDirection: "row" }}>
+            {dataAPI.getPagination(true).enabled && <div style={{ display: "flex", flexDirection: "row" }}>
                 <Select value={pageSize} onChange={(v) => { setIsDirty(true); setPageSize(v); }} size="small" options={[{ value: 10, label: "10" }, { value: 15, label: "15" }, { value: 20, label: "20" }, { value: 30, label: "30" }, { value: 50, label: "50" }, { value: 100, label: "100" }]} />
                 <div style={{ marginLeft: "5px" }}>Registos/Página</div>
-            </div>
+            </div>}
             {reports && <>
                 <Divider orientation="left" orientationMargin="0" style={{ margin: "8px 0" }}>Relatórios</Divider>
                 <Input value={reportTitle} onChange={updateReportTitle} size="small" maxLength={200} />
@@ -148,9 +128,6 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
 }
 
 const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters }) => {
-    useEffect(() => {
-        console.log("entreiiinnnni", filters);
-    });
     return (
         <Form form={form} name={`f-ltf`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }} initialValues={initialValues}>
 
@@ -163,14 +140,25 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     )
 }
 
+const CheckboxFormatter = forwardRef(
+    function CheckboxFormatter({ disabled, onChange, ...props }, ref) {
+        function handleChange(e) {
+            onChange(e.target.checked, (e.nativeEvent).shiftKey);
+        }
+        return <Checkbox ref={ref} {...props} onChange={handleChange} />;
+    }
+);
 
-
-export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, paginationPos = 'bottom', title, reportTitle, settings = true, moreFilters = true, reports = true, toolbar = true, toolbarFilters, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
-    const [rows, setRows] = useState([]);
+    /* const [rows, setRows] = useState([]); */
 
     const [isSettingsDirty, setSettingsIsDirty] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
+
+    const rowKeyGetter = (row) => {
+        return Object.values(pickAll(primaryKeys, row)).join("#");
+    }
 
     const updatePageSize = (size) => {
         dataAPI.pageSize(size);
@@ -199,21 +187,33 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
     useEffect(() => {
         if (!dataAPI.isLoading()) {
             if (dataAPI.hasData()) {
-                setRows(dataAPI.getData().rows);
+                /* setRows(dataAPI.getData().rows); */
             } else {
-                if (React.isValidElement(actionColumn)) {
-                    setColumns([{
-                        key: 'action', name: '', minWidth: 40, width: 40, sortable: false, resizable: false,
-                        formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
-                    }, ...cols]);
-                } else {
-                    setColumns([...cols]);
-                }
+                /*  if (React.isValidElement(actionColumn)) {
+                     setColumns([
+                         rowSelection && SelectColumn,
+                         {
+                             key: 'action', name: '', minWidth: 40, width: 40, sortable: false, resizable: false,
+                             formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
+                         }, ...cols]);
+                 } else {
+                     setColumns([rowSelection && SelectColumn, ...cols]);
+                 } */
                 if (loadOnInit) {
                     console.log("#################################");
                     dataAPI.fetchPost({});
                 }
             }
+        }
+        if (React.isValidElement(actionColumn)) {
+            setColumns([
+                ...rowSelection ? [SelectColumn] : [],
+                {
+                    key: 'action', name: '', minWidth: 40, width: 40, sortable: false, resizable: false,
+                    formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
+                }, ...cols]);
+        } else {
+            setColumns([...rowSelection ? [SelectColumn] : [], ...cols]);
         }
     }, [dataAPI.getTimeStamp()]);
 
@@ -242,14 +242,23 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
         dataAPI.fetchPost();
     }
 
-    const GridRow = ({ ...props }) => {
-        const selectCell = () => {
-            if (columns.length > 0 && props.selectedCellIdx !== undefined) {
-                return columns[props.selectedCellIdx].key === "action" ? undefined : props.selectedCellIdx;
-            }
-            return props.selectedCellIdx;
+/*     const selectCell = useMemo(() => {
+        console.log("row-->",columns.length,props.selectedCellIdx)
+        if (columns.length > 0 && props.selectedCellIdx !== undefined) {
+            return columns[props.selectedCellIdx].key === "action" ? undefined : props.selectedCellIdx;
         }
-        return <TableRow {...props} selectedCellIdx={selectCell()} />;
+        return props.selectedCellIdx;
+    }, [columns, props.selectedCellIdx]); */
+
+    const selectCell = (cols,selIdx) => {
+        if (cols.length > 0 && selIdx !== undefined) {
+            return cols[selIdx].key === "action" ? undefined : selIdx;
+        }
+        return selIdx;
+    }
+
+    const GridRow = ({ ...props }) => {
+        return <TableRow {...props} selectedCellIdx={selectCell(columns,props.selectedCellIdx)} />;
     }
 
     const handleCopy = ({ sourceRow, sourceColumnKey }) => {
@@ -260,39 +269,52 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
 
     return (
         <Spin loading={dataAPI.isLoading()}>
+            {(!toolbar && title) &&
+                <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
+                    <Row align='start' wrap="nowrap" gutterWidth={2}>
+                        <Col>{title}</Col>
+                        <Col xs="content"><Button onClick={() => dataAPI.fetchPost()} size="small"><ReloadOutlined /></Button></Col>
+                    </Row>
+                </Container>
+            }
             {toolbar && <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
                 <Row align='start' wrap="nowrap" gutterWidth={2}>
-                    <Col xs="content">{title}</Col>
+                    {title && <Col xs="content">
+                        <Row><Col>{title}</Col></Row>
+                        <Row><Col>{leftToolbar && leftToolbar}</Col></Row>
+                    </Col>
+                    }
+                    {!title && <Col xs="content" style={{ alignSelf: "end" }}>{leftToolbar && leftToolbar}</Col>}
                     <Col>
                         <div /*  style={{display:"flex",flexDirection:"row", justifyContent:"right"}} */>
                             <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} />
                         </div>
                     </Col>
-                    <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={()=>(toolbarFilters?.form) && toolbarFilters.form.submit()} size="small"><SearchOutlined /></Button></Col>
-                {settings && <Col xs="content" style={{ alignSelf: "end"}}>
+                    {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.form.submit()} size="small"><SearchOutlined /></Button></Col>}
+                    {settings && <Col xs="content" style={{ alignSelf: "end" }}>
 
-                    <Popover
-                        visible={clickSettings}
-                        onVisibleChange={handleSettingsClick}
-                        placement="bottomRight" title="Opções"
-                        content={
-                            <ContentSettings setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
-                                dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} setPageSize={updatePageSize} reportTitle={reportTitle}
-                                moreFilters={moreFilters} reports={reports}
-                            />
-                        } trigger="click">
-                        <Button size="small" icon={<SettingOutlined />}/>
-                    </Popover>
+                        <Popover
+                            visible={clickSettings}
+                            onVisibleChange={handleSettingsClick}
+                            placement="bottomRight" title="Opções"
+                            content={
+                                <ContentSettings setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
+                                    dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} setPageSize={updatePageSize} reportTitle={reportTitle}
+                                    moreFilters={moreFilters} reports={reports}
+                                />
+                            } trigger="click">
+                            <Button size="small" icon={<SettingOutlined />} />
+                        </Popover>
 
-                </Col>}
-            </Row>
+                    </Col>}
+                </Row>
             </Container>}
             <Container fluid style={{ padding: "0px", ...(toolbar && { marginTop: "5px" }) }}>
-                <Row align='center' wrap="nowrap">
-                    <Col>
+                <Row align='center' wrap="nowrap" nogutter>
+                    <Col></Col>
+                    <Col xs='content'>
                         <div style={{ display: "flex", flexDirection: "row" }}>
                             {(dataAPI.getPagination(true).enabled && paginationPos !== 'bottom') && <Pagination
-                                className="pagination-bar"
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}
@@ -303,9 +325,10 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                     </Col>
                 </Row>
             </Container>
+            {content && <>{content}</>}
             <Table
                 sortColumns={sortColumns()}
-                rows={rows}
+                rows={dataAPI.hasData() ? dataAPI.getData().rows : []}
                 rowHeight={React.isValidElement(actionColumn) ? 26 : 24}
                 headerRowHeight={24}
                 defaultColumnOptions={{ sortable: true, resizable: true }}
@@ -316,8 +339,10 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                 height="100%"
                 columns={columns}
                 onCopy={handleCopy}
+                rowKeyGetter={(primaryKeys && primaryKeys.length > 0) && rowKeyGetter}
+                onRowsChange={dataAPI.setRows}
                 //onPaste={handlePaste}
-                components={{ rowRenderer: GridRow }}
+                components={{rowRenderer: GridRow, heckboxFormatter: CheckboxFormatter }}
                 {...props}
             />
             <Container fluid style={{ background: "#f8f9fa", padding: "0px" }}>
@@ -330,7 +355,6 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                     <Col xs='content'>
                         <div style={{ display: "flex", flexDirection: "row" }}>
                             {(dataAPI.getPagination(true).enabled && paginationPos !== 'top') && <Pagination
-                                className="pagination-bar"
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}

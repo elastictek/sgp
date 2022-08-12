@@ -105,7 +105,7 @@ module.exports = (env, argv) => {
                     test: /\.(js|jsx)$/,
                     include: path.resolve(rootPath, "src"),
                     exclude: /node_modules/,
-                    use: {
+                    use: [{
                         loader: "babel-loader", options: {
                             babelrc: false,
                             presets: [["@babel/preset-env", { modules: false, useBuiltIns: 'usage', corejs: 3 }], "@babel/preset-react"],
@@ -114,6 +114,7 @@ module.exports = (env, argv) => {
                             ]
                         }
                     }
+                    ]
                 },
                 {
                     test: /\.html$/,

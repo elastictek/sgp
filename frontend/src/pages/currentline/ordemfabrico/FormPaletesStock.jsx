@@ -78,7 +78,7 @@ const ToolbarFilters = ({ dataAPI, addRow, deleteRow, ...props }) => {
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput = true }) => {
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/paletesstocklookup/`, parameters: {}, pagination: { enabled: false, page: 1, pageSize: 15, limit:15 }, filter: { item_id: 5 }, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/paletesstocklookup/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: { item_id: 5 }, sort: [] } });
     const [newRows, setNewRows] = useState([]);
 
     useEffect(() => {
@@ -91,10 +91,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         }, [dataAPI.isLoading()]); */
 
     const addRow = () => {
-        dataAPI.addRow({ area: 2242.9, comp_total: 32042, core_bobines: "3", id: 555, largura_bobines: 0, nome: "DM0370-2019" }, ['id'], 0);
+        dataAPI.addRow({ area: 2242.9, comp_total: 32042, core_bobines: "3", id: Math.floor(Math.random() * 101), largura_bobines: 0, nome: "DM0370-2019" }, ['id'], 0);
     };
     const deleteRow = () => {
-        dataAPI.deleteRow({ id: 555 }, ['id']);
+        dataAPI.deleteRow({ id: Math.floor(Math.random() * 101) }, ['id']);
     };
 
     const onFinish = (type, values) => { console.log("vvvv", values) };
