@@ -1060,7 +1060,7 @@ const AlertField = ({ fieldStatus, nameId, refs, alert }) => {
 //</Portal> */}
 
 
-export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, portal = true, ...props }) => {
+export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, portal = true, style, ...props }) => {
     const [alerts, setAlerts] = useState({ errors: [], warnings: [], infos: [], successes: [], showError: true, showWarning: true, showInfo: true, showSuccess: true });
     const ref = useRef();
     const getId = () => {
@@ -1087,16 +1087,16 @@ export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, por
             }
             if (formStatus) {
                 for (const [i, v] of formStatus.error.entries()) {
-                    _alerts.errors.push(<div key={`es-${i}`}>{v}</div>);
+                    _alerts.errors.push(<div key={`es-${i}`}>{v.message}</div>);
                 }
                 for (const [i, v] of formStatus.warning.entries()) {
-                    _alerts.warnings.push(<div key={`ws-${i}`}>{v}</div>);
+                    _alerts.warnings.push(<div key={`ws-${i}`}>{v.message}</div>);
                 }
                 for (const [i, v] of formStatus.success.entries()) {
-                    _alerts.successes.push(<div key={`es-${i}`}>{v}</div>);
+                    _alerts.successes.push(<div key={`es-${i}`}>{v.message}</div>);
                 }
                 for (const [i, v] of formStatus.info.entries()) {
-                    _alerts.infos.push(<div key={`is-${i}`}>{v}</div>);
+                    _alerts.infos.push(<div key={`is-${i}`}>{v.message}</div>);
                 }
             }
 
@@ -1112,8 +1112,8 @@ export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, por
     const [domReady, setDomReady] = useState(false);
     React.useEffect(() => { setDomReady(true); }, []);
     return (
-        <>
-            {!mask && <div id={getId()} ref={ref} {...props} style={{}}></div>}
+        <div style={style}>
+            {!mask && <div id={getId()} ref={ref} {...props}></div>}
 
             {(!portal && mask && alerts.errors.length > 0) && <Alert type="error" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.errors}</div></YScroll>} />}
             {(!portal && mask && alerts.warnings.length > 0) && <Alert type="warning" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.warnings}</div></YScroll>} />}
@@ -1122,7 +1122,7 @@ export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, por
 
 
             {/*            {(mask) && <Alert type={status} message={<div id={getId()} ref={ref} {...props}></div>} />} */}
-        </>
+        </div>
     );
 }
 

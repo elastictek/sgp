@@ -5249,7 +5249,7 @@ def FixSimulatorList(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def GetProdutoGranuladoLookup(request, format=None):
+def ProdutoGranuladoLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.value("and")
@@ -5265,6 +5265,32 @@ def GetProdutoGranuladoLookup(request, format=None):
             """
         ), cursor, parameters)
         return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def GranuladoLookup(request, format=None):
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'pr.id = :id', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                SELECT pr.*, ppg.produto_granulado
+                from producao_reciclado pr
+                join producao_produtogranulado ppg on ppg.id=pr.produto_granulado_id
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -5308,6 +5334,71 @@ def GranuladoList(request, format=None):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters)
     return Response(response)
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def NewLoteGranulado(request, format=None):
+    data = request.data.get("parameters")
+    def newLote(data,cursor):
+        dml = db.dml(TypeDml.INSERT, {**data, "status":0, "timestamp": datetime.now(), "timestamp_edit": datetime.now(), "user_id":request.user.id, "lote":"$$$-1", "num":"$$$-2"}, "producao_reciclado",None,None,False,["lote","num"])
+        dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+        dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+        db.execute(dml.statement, cursor, dml.parameters)
+        return cursor.lastrowid
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                id = newLote(data,cursor)
+        return Response({"status": "success","id":{id}, "title": "Lote de Granulado criado com Sucesso!", "subTitle":f'{None}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao criar Lote de Granulado!"})
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaveGranuladoItems(request, format=None):
+    data = request.data.get("parameters")
+
+    def upsert(data,cursor):
+        pass
+        # dml = db.dml(TypeDml.INSERT, {}, "producao_recicladolotes",None,None,False)
+        # dml.statement = f"""
+        #     {dml.statement}
+        #     ON DUPLICATE KEY UPDATE 
+        #         id = LAST_INSERT_ID(id),
+        #         cod=VALUES(cod),
+        #         ignorar=VALUES(ignorar)
+        # """
+        # db.execute(dml.statement, cursor, dml.parameters)
+        # return cursor.lastrowid
+
+    def saveItems(data,cursor):
+        eb = [p["lote"] for p in data["rows"] if p["source"] == "elasticband"]
+        nw = [p["lote"] for p in data["rows"] if p["source"] == "nw"]
+        leb = db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
+        if len(leb)==0:
+            upsert(data,cursor)
+        #dml = db.dml(TypeDml.INSERT, {**data, "status":0, "timestamp": datetime.now(), "timestamp_edit": datetime.now(), "user_id":request.user.id, "lote":"$$$-1", "num":"$$$-2"}, "producao_reciclado",None,None,False,["lote","num"])
+        #dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+        #dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+        #db.execute(dml.statement, cursor, dml.parameters)
+        #return cursor.lastrowid
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                id = saveItems(data,cursor)
+        return Response({"status": "success","id":{id}, "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao guardar registos!"})
+
 
 
 

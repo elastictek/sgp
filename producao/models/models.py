@@ -1155,6 +1155,17 @@ class Reciclado(models.Model):
         verbose_name_plural = "Reciclado"
         ordering = ['-timestamp']
 
+class RecicladoLotes(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username")
+    timestamp = models.DateTimeField(verbose_name="Created")
+    lote = models.CharField(max_length=50, unique=True)
+    source = models.CharField(max_length=15)
+    qtd = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantidade")
+    unit = models.CharField(max_length=4, verbose_name="Unidade Medida")
+    reciclado = models.ForeignKey(Reciclado, on_delete=models.PROTECT, verbose_name="Reciclado")
+    def __str__(self):
+        return self.lote
+
 
 class MovimentoMP(models.Model):
     TIPO = (('Entrada', 'Entrada'), ('NOK', 'NOK'))

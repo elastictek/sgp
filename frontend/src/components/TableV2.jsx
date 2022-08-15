@@ -100,7 +100,7 @@ const Action = ({ dataAPI, content, ...props }) => {
 
 
 
-const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setPageSize, reportTitle: _reportTitle, moreFilters, reports }) => {
+const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setPageSize, reportTitle: _reportTitle, moreFilters, clearSort, reports }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
         console.log(e.target)
@@ -110,7 +110,7 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
         <div style={{ display: "flex", flexDirection: "column" }}>
             <Menu onClick={(v) => onClick(v)} items={[
                 { label: 'Atualizar', key: 'refresh', icon: <ReloadOutlined />, data: {} },
-                { label: 'Limpar Ordenação', key: 'cleansort', icon: <Icon component={ClearSort} />, data: {} },
+                (clearSort) && { label: 'Limpar Ordenação', key: 'cleansort', icon: <Icon component={ClearSort} />, data: {} },
                 (moreFilters) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} }
             ]}></Menu>
             <Divider style={{ margin: "8px 0" }} />
@@ -149,7 +149,7 @@ const CheckboxFormatter = forwardRef(
     }
 );
 
-export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort=true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 

@@ -134,7 +134,10 @@ urlpatterns = [
 
     #PICAGEM LOTES
     re_path(r'^granuladolist/$', views.GranuladoList),
-    re_path(r'^getprodutogranuladolookup/$', views.GetProdutoGranuladoLookup),
+    re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),    
+    re_path(r'^granuladolookup/$', views.GranuladoLookup),
+    re_path(r'^newlotegranulado/$', views.NewLoteGranulado),
+    re_path(r'^produtogranuladolookup/$', views.ProdutoGranuladoLookup),
     re_path(r'^pick/$', views.Pick),
     re_path(r'^pickmanual/$', views.PickManual),
     re_path(r'^saidamp/$', views.SaidaMP),

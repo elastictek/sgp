@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
-import { Route, Routes, useRoutes, BrowserRouter, Navigate } from 'react-router-dom';
+import { Route, Routes, useRoutes, BrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spin, Input } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
@@ -35,6 +35,8 @@ const BobinesValidarList = lazy(() => import('./bobines/BobinesValidarList'));
 const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
 const FormPalete = lazy(() => import('./paletes/FormPalete'));
+const GranuladoList = lazy(() => import('./picking/GranuladoList'));
+const PickGranulado = lazy(() => import('./picking/PickGranulado'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 
@@ -51,7 +53,6 @@ export const AppContext = React.createContext({});
 
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
-import GranuladoList from './picking/GranuladoList';
 
 
 
@@ -67,11 +68,18 @@ const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
     return <WitchRoute {...props} />;
 };
 
+
+const LayoutMain = () => {
+    const location = useLocation();
+    return (<>{(location.pathname === "/app" || location.pathname === "/app/") && <GranuladoList />}<Outlet /></>);
+}
+
 const RenderRouter = () => {
     let element = useRoutes([
         {
             path: '/app',
-            element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
+            element: <Suspense fallback={<Spin />}><LayoutMain /></Suspense>,
+            //element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
             children: [
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
@@ -90,6 +98,9 @@ const RenderRouter = () => {
                 { path: "bobinagens/fixlotes", element: <Suspense fallback={<Spin />}><BobinagensFixLotes /></Suspense> },
                 { path: "currentline/menuactions", element: <Suspense fallback={<Spin />}><FormMenuActions /></Suspense> },
                 { path: "expedicoes/timearmazem", element: <Suspense fallback={<Spin />}><ExpedicoesTempoList /></Suspense> },
+
+                { path: "picking/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
+                { path: "picking/pickgranulado", element: <Suspense fallback={<Spin />}><PickGranulado /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
@@ -153,7 +164,9 @@ const App = () => {
             <MediaContext.Provider value={width}>
                 <AppContext.Provider value={{}}>
                     <SocketContext.Provider value={lastJsonMessage}>
-                        <RenderRouter />
+                        <ModalProvider>
+                            <RenderRouter />
+                        </ModalProvider>
                     </SocketContext.Provider>
                 </AppContext.Provider>
             </MediaContext.Provider>
@@ -228,15 +241,15 @@ const App2 = () => {
 
 const App3 = () => {
     const [width] = useMedia();
-    useEffect(() => {}, []);
+    useEffect(() => { }, []);
 
     return (
         <BrowserRouter>
             <MediaContext.Provider value={width}>
                 <AppContext.Provider value={{}}>
-                        <ModalProvider>
-                            <GranuladoList />
-                        </ModalProvider>
+                    <ModalProvider>
+                        <RenderRouter />
+                    </ModalProvider>
                 </AppContext.Provider>
             </MediaContext.Provider>
 
@@ -248,7 +261,7 @@ const App3 = () => {
 export default App;
 const container = document.getElementById("app");
 const root = ReactDOM.createRoot(container);
-root.render(<App3/>);
+root.render(<App />);
 /*root.render(
     <Container id="teste" wrapForm={true}>
         <Row style={{ justifyContent: "end" }}>
