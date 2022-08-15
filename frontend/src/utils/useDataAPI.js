@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
 import { deepEqual, pickAll } from 'utils';
@@ -248,14 +248,12 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             ...(payload?.tstamp && { tstamp: payload.tstamp }),
             data: { ...data }
         }));
-        console.log("======", data)
         action.current = [];
     }
 
     const addRow = (row, keys = null, at = null) => {
         const r = pickAll(keys, row);
         const _rows = dataState.data.rows;
-        console.log("ROWSSS", _rows)
         if (_rows) {
             const exists = (keys === null) ? false : _rows.some(v => deepEqual(pickAll(keys, v), r));
             if (!exists) {

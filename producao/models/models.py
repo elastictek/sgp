@@ -1147,7 +1147,7 @@ class Reciclado(models.Model):
     estado = models.CharField(max_length=4, choices=STATUS, default='G', verbose_name="Estado")
     peso = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Peso")
     obs = models.TextField(max_length=500, null=True, blank=True, verbose_name="Observações")
-
+    status = models.PositiveIntegerField(verbose_name="Estado", default=0) #ADDED
     def __str__(self):
         return self.lote
 

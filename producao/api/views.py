@@ -5249,6 +5249,72 @@ def FixSimulatorList(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
+def GetProdutoGranuladoLookup(request, format=None):
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                SELECT * from producao_produtogranulado
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def GranuladoList(request, format=None):
+    connection = connections["default"].cursor()
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        # **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
+        # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        # "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        # "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        # "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        # "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
+        # "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        # "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+        # "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+        
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+
+    sql = lambda p, c, s: (
+        f""" 
+           select {c(f'{dql.columns}')} 
+           from producao_reciclado
+           {f.text}
+           {s(dql.sort)} {p(dql.paging)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters)
+    return Response(response)
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def GetConsumosBobinagensLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)

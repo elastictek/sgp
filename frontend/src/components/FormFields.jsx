@@ -5,7 +5,8 @@ import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
 import { ConditionalWrapper } from './conditionalWrapper';
 import Portal from "./portal";
-import PointingLabel from "./poitingLabel";
+import YScroll from "./YScroll";
+import PointingAlert from "./pointingAlert";
 import { debounce } from "utils";
 import { validate } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
@@ -18,6 +19,14 @@ import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 import { Container as MainContainer } from 'react-grid-system';
 
 export const Context = createContext({});
+
+const useStyles = createUseStyles({
+    noStyle: {
+        marginBottom: "0px !important",
+        verticalAlign: "unset !important"
+    }
+});
+
 
 const Title = styled.div`
     h4{
@@ -568,12 +577,13 @@ const FieldRowBottom = styled('div').withConfig({
  * 
  * @returns 
  */
-export const Field = ({ children, forInput = null, forViewBorder = true, wrapFormItem=null, ...props }) => {
+export const Field = ({ children, forInput = null, forViewBorder = true, wrapFormItem = null, alert, ...props }) => {
     const ctx = useContext(Context);
     const _forInput = forInput === null ? ctx?.forInput : forInput;
-    const _wrapFormItem = wrapFormItem===null ? ctx?.wrapFormItem : wrapFormItem;
+    const _wrapFormItem = wrapFormItem === null ? ctx?.wrapFormItem : wrapFormItem;
+    const getAlert = () => alert ? alert : ctx.alert;
     return (
-        <InnerField wrapFormItem={_wrapFormItem} {...props}>
+        <InnerField wrapFormItem={_wrapFormItem} alert={getAlert()} {...props}>
             {(() => {
                 if (!children) {
                     return <>{children}</>
@@ -587,64 +597,207 @@ export const Field = ({ children, forInput = null, forViewBorder = true, wrapFor
     );
 }
 
-const InnerField = ({ children, ...props }) => {
+
+const InnerField = ({ children, alert, ...props }) => {
     /* const classes = useFieldStyles(props); */
     const { fieldStatus } = useContext(Context);
-    const { name, alias, label, alert, required, guides, forInput = true, wrapFormItem = false, rule, allValues, refMainAlertContainer, shouldUpdate, layout, addons } = props;
+    const { name, alias, label, required, guides, forInput = true, wrapFormItem = false, rule, allValues, shouldUpdate, layout, addons } = props;
     const refs = {
         top: useRef(),
         left: useRef(),
         right: useRef(),
         bottom: useRef(),
-        center: useRef(),
-        container: refMainAlertContainer
+        center: useRef()
     };
     const nameId = (!alias) ? name : alias;
-    const localStatus = fieldStatus[nameId];
-    const cssCenter = classNames({ "error": localStatus?.status === "error" }, { "warning": localStatus?.status === "warning" });
-    const tooltipColor = (localStatus?.status === "warning" ? "orange" : "red");
+    //const cssCenter = classNames({ "error": fieldStatus[nameId]?.status === "error" }, { "warning": fieldStatus[nameId]?.status === "warning" });
+    const tooltipColor = (fieldStatus[nameId]?.status === "warning" ? "orange" : "red");
 
     return (
         <>
-            <FieldRowTop ref={refs.top} guides={guides} layout={layout} className="row-top"  />
+            <FieldRowTop ref={refs.top} guides={guides} layout={layout} className="row-top" />
             <FieldRowMiddle guides={guides} layout={layout} className="row-middle">
-                <FieldLeft ref={refs.left} guides={guides} layout={layout} className="left"/>
-                <FieldCenter className={classNames(cssCenter,"center")} ref={refs.center} guides={guides} layout={layout}>
-
-
-
+                <FieldLeft ref={refs.left} guides={guides} layout={layout} className="left" />
+                <FieldCenter /* className={classNames(cssCenter, "center")} */ className='center' ref={refs.center} guides={guides} layout={layout}>
                     <Tooltip
-                        title={(alert?.tooltip && (localStatus?.status === "error" || localStatus?.status === "warning")) && <InnerAlertFieldMessages nameId={nameId} messages={localStatus?.messages} />}
+                        title={(alert?.tooltip && (fieldStatus[nameId]?.status === "error" || fieldStatus[nameId]?.status === "warning")) && <InnerAlertFieldMessages nameId={nameId} messages={fieldStatus[nameId]?.messages} />}
                         color={tooltipColor}
                     >
                         <div>
                             <FormItemWrapper nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem}>{children}</FormItemWrapper>
                         </div>
                     </Tooltip>
-
-
-
                 </FieldCenter>
-                <FieldRight ref={refs.right} guides={guides} layout={layout} className="right"/>
+                <FieldRight ref={refs.right} guides={guides} layout={layout} className="right" />
             </FieldRowMiddle>
-            <FieldRowBottom ref={refs.bottom} guides={guides} layout={layout} className="row-bottom"/>
+            <FieldRowBottom ref={refs.bottom} guides={guides} layout={layout} className="row-bottom" />
             <LabelRef refs={refs} {...label} nameId={nameId} required={required} guides={guides} />
-            <AddOns refs={refs} addons={addons} />
-            {alert?.container &&
-                <AlertField refs={refs} fieldStatus={localStatus} /* fieldStatus={localStatus} */ nameId={nameId} {...alert} />
-            }
+            <AlertField refs={refs} fieldStatus={fieldStatus[nameId]} /* fieldStatus={localStatus} */ nameId={nameId} alert={alert} />
         </>
     );
 }
 
+//            <AddOns refs={refs} addons={addons} />
+//{alert?.container &&
+//    <AlertField refs={refs} fieldStatus={localStatus} /* fieldStatus={localStatus} */ nameId={nameId} {...alert} />
+//}
+
+
+
+// const InnerField = ({ children, ...props }) => {
+//     /* const classes = useFieldStyles(props); */
+//     const { fieldStatus } = useContext(Context);
+//     const { name, alias, label, alert, required, guides, forInput = true, wrapFormItem = false, rule, allValues, refMainAlertContainer, shouldUpdate, layout, addons } = props;
+//     const refs = {
+//         top: useRef(),
+//         left: useRef(),
+//         right: useRef(),
+//         bottom: useRef(),
+//         center: useRef(),
+//         container: refMainAlertContainer
+//     };
+//     const nameId = (!alias) ? name : alias;
+//     const localStatus = fieldStatus[nameId];
+//     const cssCenter = classNames({ "error": localStatus?.status === "error" }, { "warning": localStatus?.status === "warning" });
+//     const tooltipColor = (localStatus?.status === "warning" ? "orange" : "red");
+
+//     return (
+//         <>
+//             <FieldRowTop ref={refs.top} guides={guides} layout={layout} className="row-top" />
+//             <FieldRowMiddle guides={guides} layout={layout} className="row-middle">
+//                 <FieldLeft ref={refs.left} guides={guides} layout={layout} className="left" />
+//                 <FieldCenter className={classNames(cssCenter, "center")} ref={refs.center} guides={guides} layout={layout}>
+
+
+
+//                     <Tooltip
+//                         title={(alert?.tooltip && (localStatus?.status === "error" || localStatus?.status === "warning")) && <InnerAlertFieldMessages nameId={nameId} messages={localStatus?.messages} />}
+//                         color={tooltipColor}
+//                     >
+//                         <div>
+//                             <FormItemWrapper nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem}>{children}</FormItemWrapper>
+//                         </div>
+//                     </Tooltip>
+
+
+
+//                 </FieldCenter>
+//                 <FieldRight ref={refs.right} guides={guides} layout={layout} className="right" />
+//             </FieldRowMiddle>
+//             <FieldRowBottom ref={refs.bottom} guides={guides} layout={layout} className="row-bottom" />
+//             <LabelRef refs={refs} {...label} nameId={nameId} required={required} guides={guides} />
+//             <AddOns refs={refs} addons={addons} />
+//             {alert?.container &&
+//                 <AlertField refs={refs} fieldStatus={localStatus} /* fieldStatus={localStatus} */ nameId={nameId} {...alert} />
+//             }
+//         </>
+//     );
+// }
+
+
+
+const validateMessages = {
+    'any.required': 'Campo {{#label}} é obrigatório.'
+};
+
+export const validateForm = (rules, messages) => {
+    var schema = rules;
+    var fieldStatus = { error: {}, info: {}, warning: {} };
+    var formStatus = { error: [], info: [], warning: [], success: [] };
+    var values = {};
+
+    const addMessage = (type, txt, key) => {
+        if (key !== undefined) {
+            if (key in fieldStatus[type]) {
+                fieldStatus[type][key]["message"].push(txt);
+            } else {
+                fieldStatus[type][key] = { message: [txt] };
+            }
+        } else {
+            formStatus[type].push({ message: txt });
+        }
+    }
+
+    const validate = async (data, options = {}) => {
+        try {
+            const v = await schema.validateAsync(data, { abortEarly: false, messages: messages || validateMessages, warnings: true, ...options });
+            fieldStatus = { error: {}, info: {}, warning: {} };
+            values = v.value;
+
+        } catch (error) {
+            fieldStatus = { error: {}, info: {}, warning: {} };
+            for (let { context, message } of error.details) {
+                addMessage("error", message, context.key);
+            }
+            values = {};
+        }
+
+    }
+
+    const type = (key, status = {}) => {
+        const { error = {}, info = {}, warning = {} } = status;
+        if (key in error) {
+            return "error";
+        } else if (key in warning) {
+            return "warning";
+        } else if (key in info) {
+            return "info";
+        }
+        return undefined;
+    }
+    const fieldMessages = (key, status = {}) => {
+        const { error = {}, info = {}, warning = {} } = status;
+        if (key in error) {
+            return error[key];
+        } else if (key in warning) {
+            return warning[key];
+        } else if (key in info) {
+            return info[key];
+        }
+        return undefined;
+    }
+
+    const status = () => ({ fieldStatus, formStatus });
+
+    const errors = () => {
+        return Object.keys(status().fieldStatus.error).length + Object.keys(status().formStatus.error).length;
+    }
+    const warnings = () => {
+        return Object.keys(status().fieldStatus.warning).length + Object.keys(status().formStatus.warning).length;
+    }
+
+    return {
+        validate,
+        rulesSchema: () => schema,
+        fieldStatus: () => fieldStatus,
+        addWarning: (txt, key) => addMessage("warning", txt, key),
+        addError: (txt, key) => addMessage("error", txt, key),
+        addInfo: (txt, key) => addMessage("info", txt, key),
+        addMsg: (type, txt, key) => addMessage(type, txt, key),
+        values: () => values,
+        /* errors: () => byType("error", messages),
+        warnings: () => byType("warning", messages),
+        info: () => byType("info", messages), */
+        /* messages: (formStatus) => { return { error: byType("error", formStatus), warning: byType("warning", formStatus), info: byType("info", formStatus) } },
+        errors: (formStatus) => byType("error", formStatus),
+        warnings: (formStatus) => byType("warning", formStatus),
+        info: (formStatus) => byType("info", formStatus), */
+        type: (key, status) => type(key, status),
+        fieldMessages: (key, status) => fieldMessages(key, status),
+        status,
+        errors,
+        warnings
+    };
+}
 
 const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {} }) => {
+    const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
     const validator = async (r, v) => {
         const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1]]) : schema([name]));
         (async () => {
             try {
-                const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true });
+                const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true, messages: validateMessages });
                 updateFieldStatus(nameId, (warning === undefined) ? { status: "none", messages: [] } : { status: "warning", messages: [...warning.details] });
             } catch (e) {
                 updateFieldStatus(nameId, { status: "error", messages: [...e.details] });
@@ -655,7 +808,7 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
         <>
             <ConditionalWrapper
                 condition={wrapFormItem}
-                wrapper={children => <Form.Item rules={[{ validator: validator }]} validateTrigger={["onBlur"]} shouldUpdate={shouldUpdate} noStyle {...(nameId && { name: nameId })}>
+                wrapper={children => <Form.Item className={classes.noStyle} rules={[{ validator: validator }]} validateTrigger={["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
                     {children}
                 </Form.Item>}
             >
@@ -799,10 +952,11 @@ const AddOns = ({ refs, addons = {} }) => {
 
 
 const StyledAlertField = styled.div`
-            display: flex;
-            width: 100%;
-            align-items: center;
-            `;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    ${({ noWrap }) => (noWrap) && `white-space: nowrap;`}
+`;
 
 const InnerAlertFieldMessages = ({ nameId, messages }) => {
     return (
@@ -816,44 +970,162 @@ const InnerAlertFieldMessages = ({ nameId, messages }) => {
     );
 }
 
-const AlertField = ({ fieldStatus, nameId, pos = "bottom", refs, container, ...props }) => {
+const AlertField = ({ fieldStatus, nameId, refs, alert }) => {
     /*     const classes = useAlertFieldStyles(props); */
     const [domReady, setDomReady] = useState(false);
     React.useEffect(() => { setDomReady(true); }, []);
-    const ref = (container === true) ? refs["container"].current : (container in refs) ? refs[pos].current : container;
+
+    const getRef = () => {
+        console.log("alert-field-->", nameId, alert)
+        if (alert.pos in refs) {
+            return refs[alert.pos].current;
+        } else if (alert.pos !== "none") {
+            return alert.pos;
+        }
+        return null;
+    }
     return (
-        <Portal elId={ref}>
-            {(fieldStatus?.status === "error" || fieldStatus?.status === "warning") &&
-                <>
-                    {pos !== "none" &&
-                        <StyledAlertField>
-                            <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={nameId} messages={fieldStatus?.messages} />} position={pos} />
+        <>
+            {
+                getRef() !== null && <Portal elId={getRef()}>
+                    {(fieldStatus?.status === "error" || fieldStatus?.status === "warning") &&
+                        <StyledAlertField noWrap={alert?.noWrap}>
+                            <PointingAlert alert={alert?.pointing} status={fieldStatus?.status} text={<InnerAlertFieldMessages name={nameId} messages={fieldStatus?.messages} />} position={alert.pos} />
                         </StyledAlertField>
                     }
-                    {/* <StyledAlertField>
-                    <div className={classes.alert}>
-                    {pos === "list" ?
-                        <InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} status={fieldStatus?.status} />
-                        :
-                        <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} />} position={pos} />
-                    }
-
-                </StyledAlertField> */}
-                </>
+                </Portal>
             }
-        </Portal>
+        </>
     );
 }
 
-export const AlertsContainer = ({ main = false, parentPath, ...props }) => {
-    const parentProps = useContext(ParentContext);
-    const { refMainAlertContainer } = parentProps;
+
+
+
+
+// const AlertField = ({ fieldStatus, nameId, pos = "bottom", refs, container, ...props }) => {
+//     /*     const classes = useAlertFieldStyles(props); */
+//     const [domReady, setDomReady] = useState(false);
+//     React.useEffect(() => { setDomReady(true); }, []);
+//     const ref = (container === true) ? refs["container"].current : (container in refs) ? refs[pos].current : container;
+//     return (
+//         <Portal elId={ref}>
+//             {(fieldStatus?.status === "error" || fieldStatus?.status === "warning") &&
+//                 <>
+//                     {pos !== "none" &&
+//                         <StyledAlertField>
+//                             <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={nameId} messages={fieldStatus?.messages} />} position={pos} />
+//                         </StyledAlertField>
+//                     }
+//                     {/* <StyledAlertField>
+//                     <div className={classes.alert}>
+//                     {pos === "list" ?
+//                         <InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} status={fieldStatus?.status} />
+//                         :
+//                         <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} />} position={pos} />
+//                     }
+
+//                 </StyledAlertField> */}
+//                 </>
+//             }
+//         </Portal>
+//     );
+// }
+
+
+
+
+
+
+
+{/* <Portal elId={getRef()}>
+{(fieldStatus?.status === "error" || fieldStatus?.status === "warning") &&
+    <>
+        {pos !== "none" &&
+            <StyledAlertField>
+                <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={nameId} messages={fieldStatus?.messages} />} position={pos} />
+            </StyledAlertField>
+        }
+        {/* <StyledAlertField>
+        <div className={classes.alert}>
+        {pos === "list" ?
+            <InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} status={fieldStatus?.status} />
+            :
+            <PointingLabel status={fieldStatus?.status} text={<InnerAlertFieldMessages name={name} messages={fieldStatus?.messages} />} position={pos} />
+        }
+
+    </StyledAlertField> */}
+//   </>
+//}
+//</Portal> */}
+
+
+export const AlertsContainer = ({ id, fieldStatus, formStatus, mask = false, portal = true, ...props }) => {
+    const [alerts, setAlerts] = useState({ errors: [], warnings: [], infos: [], successes: [], showError: true, showWarning: true, showInfo: true, showSuccess: true });
+    const ref = useRef();
+    const getId = () => {
+        return (id) ? id : "container";
+    }
+
+
+    const getAlerts = () => {
+        const _alerts = { errors: [], warnings: [], infos: [], successes: [] };
+        if (fieldStatus || formStatus) {
+
+            if (fieldStatus) {
+                for (let k in fieldStatus) {
+                    if (fieldStatus[k].status === 'error') {
+                        for (const [i, v] of fieldStatus[k].messages.entries()) {
+                            _alerts.errors.push(<div key={`ef-${k}-${i}`}>{v.message}</div>);
+                        }
+                    } else if (fieldStatus[k].status === 'warning') {
+                        for (const [i, v] of fieldStatus[k].messages.entries()) {
+                            _alerts.warnings.push(<div key={`wf-${k}-${i}`}>{v.message}</div>);
+                        }
+                    }
+                }
+            }
+            if (formStatus) {
+                for (const [i, v] of formStatus.error.entries()) {
+                    _alerts.errors.push(<div key={`es-${i}`}>{v}</div>);
+                }
+                for (const [i, v] of formStatus.warning.entries()) {
+                    _alerts.warnings.push(<div key={`ws-${i}`}>{v}</div>);
+                }
+                for (const [i, v] of formStatus.success.entries()) {
+                    _alerts.successes.push(<div key={`es-${i}`}>{v}</div>);
+                }
+                for (const [i, v] of formStatus.info.entries()) {
+                    _alerts.infos.push(<div key={`is-${i}`}>{v}</div>);
+                }
+            }
+
+        }
+        return _alerts;
+    };
+
+    useEffect(() => {
+        setAlerts(getAlerts());
+    }, [fieldStatus, formStatus]);
+
+
     const [domReady, setDomReady] = useState(false);
     React.useEffect(() => { setDomReady(true); }, []);
     return (
-        <div {...(main && { ref: refMainAlertContainer })} {...props}></div>
+        <>
+            {!mask && <div id={getId()} ref={ref} {...props} style={{}}></div>}
+
+            {(!portal && mask && alerts.errors.length > 0) && <Alert type="error" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.errors}</div></YScroll>} />}
+            {(!portal && mask && alerts.warnings.length > 0) && <Alert type="warning" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.warnings}</div></YScroll>} />}
+            {(!portal && mask && alerts.successes.length > 0) && <Alert type="success" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.successes}</div></YScroll>} />}
+            {(!portal && mask && alerts.infos.length > 0) && <Alert type="info" message={<YScroll><div style={{ maxHeight: "100px" }}>{alerts.infos}</div></YScroll>} />}
+
+
+            {/*            {(mask) && <Alert type={status} message={<div id={getId()} ref={ref} {...props}></div>} />} */}
+        </>
     );
 }
+
 
 
 const StyledLabel = styled('div').withConfig({
@@ -923,9 +1195,7 @@ const StyledLabel = styled('div').withConfig({
     }
 
 
-            `;
-
-
+`;
 const LabelRef = ({ refs, ...props }) => {
     const { pos = "top", enabled = true } = props;
     const [domReady, setDomReady] = useState(false);
@@ -940,44 +1210,44 @@ const LabelRef = ({ refs, ...props }) => {
         </>
     );
 }
-
 export const Label = ({ ...props }) => {
     const { pos = "top", text = "", enabled = true, colon = true, required = false, className, style, container = {}, nameId } = props;
     const { width = ((pos === "left" || pos === "right") && "100px") } = props;
-    //const classes = useLabelStyles({...props, width});
-
     return (
         <StyledLabel {...props} width={width} ellipsis={false} overflow={true}>
-            {/* <div className={classNames(classes.wrapper, className)} style={{ ...style }}> */}
             <label htmlFor={nameId} title={text}>
                 {text}
             </label>
-            {/* </div> */}
         </StyledLabel>
     );
 }
 
 
 
-export const Container = ({ schema, children, id, wrapForm = false, form, initialValues, onFinish, onValuesChange, fieldStatus: _fieldStatus, forInput=true, wrapFormItem=false, ...props }) => {
+
+
+export const Container = ({ loading=false, schema, children, id, wrapForm = false, form, initialValues, onFinish, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
     if (!id) { throw new Error(`Container key is Required!`) }
-    const [fieldStatus, setFieldStatus] = useState({});
-    const updateFieldStatus = (field, status) => {setFieldStatus(prev => ({ ...prev, [field]: status }));}
-    const clearFieldStatus = () => {setFieldStatus({});}
-    const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus };
-    useEffect(() => {if (_fieldStatus) {setFieldStatus(_fieldStatus);}}, [_fieldStatus]);
-
-
-
+    const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
+    const updateFieldStatus = (field, status) => { setFieldStatus(prev => ({ ...prev, [field]: status })) };
+    const clearFieldStatus = () => { setFieldStatus({}); }
+    const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert };
+    useEffect(() => {
+        if (_fieldStatus && !_setFieldStatus) {
+            setFieldStatus(_fieldStatus);
+        }
+    }, [_fieldStatus]);
     return (
-        <Context.Provider value={dataContext}>
-            <ConditionalWrapper
-                condition={wrapForm}
-                wrapper={children => <Form name={`frm-${id}`} form={form} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={initialValues}><MainContainer {...props}>{children}</MainContainer></Form>}
-            >
-                <MainContainer {...props}>{children}</MainContainer>
-            </ConditionalWrapper>
-        </Context.Provider>
+        <Spin spinning={loading} indicator={<></>}>
+            <Context.Provider value={dataContext}>
+                <ConditionalWrapper
+                    condition={wrapForm}
+                    wrapper={children => <Form name={`frm-${id}`} form={form} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={initialValues}><MainContainer {...props}>{children}</MainContainer></Form>}
+                >
+                    <MainContainer {...props}>{children}</MainContainer>
+                </ConditionalWrapper>
+            </Context.Provider>
+        </Spin>
     );
 }
 
@@ -985,11 +1255,11 @@ export const Container = ({ schema, children, id, wrapForm = false, form, initia
 
 
 
-export const InputAddon = styled(Input)`
+/* export const InputAddon = styled(Input)`
     .ant-input{
         text-align: right;
     }
     .ant-input-group-addon{
         background: #f5f5f5;
     }
- `;
+ `; */

@@ -278,40 +278,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         { key: 'timestamp', name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined style={{ color: "#cf1322" }} /></Button> }
     ];
-    const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
-        const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null });
-        const [dirty, setDirty] = useState(false);
-        useEffect(() => {
-            if (lastValue.picked && lastValue.error === null) {
-                const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.lote === lastValue.row.lote) : -1;
-                if (idx === -1) {
-                    dataAPI.addRow({ ...lastValue.row }, primaryKeys, 0);
-                    setLastValue(prev => ({ ...prev, picked: false }));
-                } else {
-                    setLastValue(prev => ({ ...prev, error: "O Lote já foi registado!", picked: false }));
-                }
-            } else {
-                setLastValue(prev => ({ ...prev, picked: false }));
-            }
-        }, [lastValue.picked]);
-        const onChange = (v, f) => {
-            const rows = dataAPI.getData().rows;
-            const idx = rows.findIndex(x => x.lote === lastValue.row.lote);
-            if (idx > -1) {
-                rows[idx][f] = v;
-                dataAPI.setRows([...rows], rows.length);
-                setLastValue(prev => ({ ...prev, row: { ...prev?.row, [f]: v } }));
-            }
-
-        }
-        return <ResponsiveModal title={<div style={{ display: "flex", flexDirection: "row" }}><div><SyncOutlined spin /></div><div style={{ marginLeft: "5px" }}>Registo de Lotes em Curso...</div></div>}
-            onCancel={hidePickingModal}
-            /*onOk={() => onPickFinish(lastValue)} */
-            width={600} height={200} footer="ref">
-
-            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} />
-        </ResponsiveModal>;
-    }, [dataAPI.getTimeStamp()]);
     const [showWeighModal, hideWeighModal] = useModal(({ in: open, onExited }) => {
         return <ResponsiveModal title="Pesar Granulado G-202220811-01"
             onCancel={hideWeighModal}

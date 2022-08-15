@@ -133,6 +133,8 @@ urlpatterns = [
     #BOBINAGENS
 
     #PICAGEM LOTES
+    re_path(r'^granuladolist/$', views.GranuladoList),
+    re_path(r'^getprodutogranuladolookup/$', views.GetProdutoGranuladoLookup),
     re_path(r'^pick/$', views.Pick),
     re_path(r'^pickmanual/$', views.PickManual),
     re_path(r'^saidamp/$', views.SaidaMP),

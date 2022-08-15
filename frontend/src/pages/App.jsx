@@ -51,7 +51,7 @@ export const AppContext = React.createContext({});
 
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
-import PickGranulado from './picking/PickGranulado';
+import GranuladoList from './picking/GranuladoList';
 
 
 
@@ -235,7 +235,7 @@ const App3 = () => {
             <MediaContext.Provider value={width}>
                 <AppContext.Provider value={{}}>
                         <ModalProvider>
-                            <PickGranulado />
+                            <GranuladoList />
                         </ModalProvider>
                 </AppContext.Provider>
             </MediaContext.Provider>
