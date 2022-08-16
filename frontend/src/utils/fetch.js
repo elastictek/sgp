@@ -1,6 +1,8 @@
 import axios, { CancelToken } from 'axios';
 import { features } from './fetchModel';
 import { mergeDeepRight } from "ramda";
+import moment from 'moment';
+import { DATETIME_FORMAT } from 'config';
 
 axios.defaults.xsrfCookieName = 'csrftoken';
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
@@ -10,8 +12,24 @@ const paramType = (method) => (method == "get") ? "params" : "data";
 
 export const cancelToken = () => CancelToken.source();
 
+const dateTransformer = (data, dates, key) => {
+  if (key && dates && dates.length > 0) {
+    const f = dates.find(v => v.key === key);
+    if (f) {
+      return moment(data).format(f.format);
+    }
+  }
+  if (Array.isArray(data)) {
+    return data.map((v)=>dateTransformer(v,dates));
+  }
+  if (typeof data === 'object' && data !== null) {
+    return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, dateTransformer(value, dates, key)]));
+  }
+  return data
+}
+
 const serverRequest = async (request, fetch = true) => {
-  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken, signal } = request;
+  const { url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken, signal, dates = [] } = request;
   //let source = CancelToken.source();
   const params = (fetch) ? { method, responseType, [paramType(method)]: { sort, filter, pagination, parameters } } : { method, responseType, [paramType(method)]: { ...parameters } };
   if (cancelToken) {
@@ -20,6 +38,7 @@ const serverRequest = async (request, fetch = true) => {
 
   return axios({
     url: url,
+    ...(dates.length > 0 && { transformRequest: [(data) => dateTransformer(data, dates), ...(axios.defaults.transformRequest)] }),
     ...params,
     ...(cancelToken && { cancelToken: cancelToken.token }),
     ...(signal && { signal: signal })
@@ -27,8 +46,8 @@ const serverRequest = async (request, fetch = true) => {
 };
 
 
-const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}, f = true) => {
-  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken, signal }, f);
+const fetch = async ({ url = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [] } = {}, f = true) => {
+  return await serverRequest({ url, responseType, method, filter, sort, pagination, timeout, parameters, cancelToken, signal, dates }, f);
 
   /*     const req ={
           options:{},
@@ -75,20 +94,20 @@ export const fetchPostTest = async ({ url = "", filter = {}, sort = [], paginati
 }
 
 
-export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}) => {
-  return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal });
+export const fetchPost = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [] } = {}) => {
+  return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal, dates });
 }
 
-export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal } = {}, f = true) => {
-  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal }, f);
+export const fetchPostBlob = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [] } = {}, f = true) => {
+  return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal, dates }, f);
 }
 
-export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await fetch({ url, responseType: "stream", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
+export const fetchPostStream = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, dates = [] } = {}) => {
+  return await fetch({ url, responseType: "stream", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, dates });
 }
 
-export const fetchPostBuffer = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken } = {}) => {
-  return await fetch({ url, responseType: "arraybuffer", method: "post", filter, sort, pagination, timeout, parameters, cancelToken });
+export const fetchPostBuffer = async ({ url = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, dates } = {}) => {
+  return await fetch({ url, responseType: "arraybuffer", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, dates });
 }
 
 export const serverPost = async ({ url = "", responseType = "json", method = "post", timeout = 10000, parameters = {}, headers = {}, cancelToken } = {}) => {

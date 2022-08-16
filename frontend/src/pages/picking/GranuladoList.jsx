@@ -148,7 +148,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const primaryKeys = ['id'];
     const columns = [
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
-        { key: 'lote', name: 'Lote', formatter: p => <b>{p.row.lote}</b> },
+        { key: 'lote', name: 'Lote', formatter: p => <Button type="link" size="small" onClick={()=>navigate('/app/picking/pickgranulado', { state: { id: p.row.id } })}>{p.row.lote}</Button> },
         { key: 'estado', name: 'Estado' },
         { key: 'peso', name: 'Peso', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso} kg</div> },
         { key: 'tara', name: 'Tara', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tara}</div> },

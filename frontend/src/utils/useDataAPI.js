@@ -238,7 +238,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     }
 
     const setData = (data, payload) => {
-        console.log("SETTING DATA", payload.pagination, (isAction('nav') || isAction('pageSize')))
+        console.log("SETTING DATA", payload);
         setDataState(prev => ({
             ...prev,
             ...((isAction('nav') || isAction('pageSize')) && { pagination: { ...prev.pagination, ...payload.pagination } }),

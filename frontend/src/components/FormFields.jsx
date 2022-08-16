@@ -601,7 +601,7 @@ export const Field = ({ children, forInput = null, forViewBorder = true, wrapFor
 const InnerField = ({ children, alert, ...props }) => {
     /* const classes = useFieldStyles(props); */
     const { fieldStatus } = useContext(Context);
-    const { name, alias, label, required, guides, forInput = true, wrapFormItem = false, rule, allValues, shouldUpdate, layout, addons } = props;
+    const { name, alias, label, required, guides, forInput = true, wrapFormItem = false, rule, allValues, shouldUpdate, layout, includeKeyRules, addons } = props;
     const refs = {
         top: useRef(),
         left: useRef(),
@@ -624,7 +624,7 @@ const InnerField = ({ children, alert, ...props }) => {
                         color={tooltipColor}
                     >
                         <div>
-                            <FormItemWrapper nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem}>{children}</FormItemWrapper>
+                            <FormItemWrapper nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem} includeKeyRules={includeKeyRules}>{children}</FormItemWrapper>
                         </div>
                     </Tooltip>
                 </FieldCenter>
@@ -790,11 +790,11 @@ export const validateForm = (rules, messages) => {
     };
 }
 
-const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {} }) => {
+const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules=[] }) => {
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
     const validator = async (r, v) => {
-        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1]]) : schema([name]));
+        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1],...includeKeyRules]) : schema([name,...includeKeyRules]));
         (async () => {
             try {
                 const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true, messages: validateMessages });
@@ -976,7 +976,6 @@ const AlertField = ({ fieldStatus, nameId, refs, alert }) => {
     React.useEffect(() => { setDomReady(true); }, []);
 
     const getRef = () => {
-        console.log("alert-field-->", nameId, alert)
         if (alert.pos in refs) {
             return refs[alert.pos].current;
         } else if (alert.pos !== "none") {

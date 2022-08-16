@@ -200,7 +200,6 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                      setColumns([rowSelection && SelectColumn, ...cols]);
                  } */
                 if (loadOnInit) {
-                    console.log("#################################");
                     dataAPI.fetchPost({});
                 }
             }

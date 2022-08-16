@@ -176,19 +176,39 @@ class LotesPickConsumer(WebsocketConsumer):
         lote = data['lote']
         type= data["type"]
         unit= data["unit"]
-        connection = connections["default"].cursor()
-        rows = dbgw.executeSimpleList(lambda:(f"""		
-            select comp_actual qtd from producao_bobine where nome = '{lote}'
-         """),connection,{})['rows']
-        if len(rows)>0:
-            if rows[0]["qtd"] == 0:
-                self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+        if type=='elasticband':
+            connection = connections["default"].cursor()
+            rows = dbgw.executeSimpleList(lambda:(f"""select comp_actual qtd from producao_bobine where nome = '{lote}'"""),connection,{})['rows']
+            if len(rows)>0:
+                if rows[0]["qtd"] == 0:
+                    self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                else:
+                    self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
             else:
-                self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
+                self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                #self.send(text_data=json.dumps({"qtd":2506,"source":type, "unit":unit, "lote":"20220607-01-01jhgjhyutuygjhgjhgYYHKJ JGFH"},default=str))
+                #self.send(text_data="")
         else:
-            self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
-            #self.send(text_data=json.dumps({"qtd":2506,"source":type, "unit":unit, "lote":"20220607-01-01jhgjhyutuygjhgjhgYYHKJ JGFH"},default=str))
-            #self.send(text_data="")
+            connection = connections["default"].cursor()
+            rows = dbgw.executeSimpleList(lambda:(f"""SELECT SUM(CASE WHEN lotenwsup='{lote}' THEN nwsup ELSE nwinf END) comp FROM sistema.producao_bobinagem where lotenwsup='{lote}' or lotenwinf='{lote}'"""),connection,{})['rows']
+            if len(rows)>0:
+                comp = rows[0]["comp"]
+                conngw = connections[connGatewayName].cursor()
+                rows = dbgw.executeSimpleList(lambda:(f""" 
+                    select round((ABS(sto."QTYPCU_0")/itm."TSICOD_3"::decimal)*1000,2) comp,itm."ITMREF_0" itm,itm."ITMDES1_0" itm_des
+			        from "SAGE-PROD"."STOJOU" sto
+			        join "SAGE-PROD"."ITMMASTER" itm on itm."ITMREF_0"=sto."ITMREF_0"
+			        where sto."LOT_0"='{lote}' order by "IPTDAT_0" DESC LIMIT 1
+                """),conngw,{})['rows']
+                if len(rows)>0:
+                    qtd = rows[0]["comp"] - comp
+                    self.send(text_data=json.dumps({"error":None,"row":{"qtd":qtd,"source":type, "unit":unit, "lote":lote, "itm":rows[0]["itm"],"itm_des":rows[0]["itm_des"] }},default=str))
+                else:
+                    self.send(text_data=json.dumps({"error":"O lote de Nonwoven não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+            else:
+                self.send(text_data=json.dumps({"error":"O lote de Nonwoven não existe ou nunca foi utilizado!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+
+
 
     def getLote(self, data):
         lotePicked = data['value']

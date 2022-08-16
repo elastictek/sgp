@@ -14,7 +14,9 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 const ItemCortes = React.lazy(() => import('./ItemCortes'));
+const ItemActions = React.lazy(() => import('./ItemActions'));
 const ItemAgg = React.lazy(() => import('./ItemAgg'));
+const ItemBobinagens = React.lazy(() => import('./ItemBobinagens'));
 
 const getFromLS = (key) => {
     let ls = {};
@@ -42,6 +44,8 @@ const originalLayouts = {
         { i: "d", x: 8, y: 0, w: 2, h: 2 },
         { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12 },
         { i: "cortes", x: 0, y: 0, w: 6, h: 8, minH: 4 },
+        { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4 },
+        { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4 },
     ]
 };
 
@@ -144,7 +148,9 @@ export default (props) => {
                 {currentSettings.ofs.map((ofItem, idx) => {
                     return (<div key={`agg-${ofItem.id}-${idx}`} data-grid={{ x: 0, y: 0, w: 2, h: 8, minW:2, maxW:3, minH:5 }}><ItemAgg record={{ ...currentSettings }} ofItem={ofItem} parentReload={loadData} /></div>)
                 })}
+                <div key="bobinagens"><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></div>
                 <div key="cortes"><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></div>
+                <div key="actions"><ItemActions card={{ title: "Ações" }} record={{ ...currentSettings }} parentReload={loadData} /></div>
             </ResponsiveReactGridLayout>
             }
         </div>

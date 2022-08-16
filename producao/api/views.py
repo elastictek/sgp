@@ -4899,6 +4899,9 @@ def ValidarBobinagensList(request, format=None):
                 {tmpsql} 
                 ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    print("#################")    
+    print(sql)
+    print("#################")
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -5335,6 +5338,52 @@ def GranuladoList(request, format=None):
     response = db.executeList(sql, connection, parameters)
     return Response(response)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def GranuladoLotesList(request, format=None):
+    connection = connections["default"].cursor()
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "reciclado_id": {"value": lambda v: v.get('reciclado_id'), "field": lambda k, v: f'{k}'}
+        # **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
+        # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        # "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        # "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        # "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        # "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
+        # "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        # "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+        # "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
+    }, True)
+    f.where()
+    f.add(f'reciclado_id = :reciclado_id', True)
+    f.auto(["reciclado_id"])
+    f.value()
+        
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+
+    sql = lambda p, c, s: (
+        f""" 
+           select {c(f'{dql.columns}')} 
+           from producao_recicladolotes
+           {f.text}
+           {s(dql.sort)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters)
+    return Response(response)
+
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -5366,39 +5415,39 @@ def NewLoteGranulado(request, format=None):
 def SaveGranuladoItems(request, format=None):
     data = request.data.get("parameters")
 
-    def upsert(data,cursor):
-        pass
-        # dml = db.dml(TypeDml.INSERT, {}, "producao_recicladolotes",None,None,False)
-        # dml.statement = f"""
-        #     {dml.statement}
-        #     ON DUPLICATE KEY UPDATE 
-        #         id = LAST_INSERT_ID(id),
-        #         cod=VALUES(cod),
-        #         ignorar=VALUES(ignorar)
-        # """
-        # db.execute(dml.statement, cursor, dml.parameters)
-        # return cursor.lastrowid
-
     def saveItems(data,cursor):
         eb = [p["lote"] for p in data["rows"] if p["source"] == "elasticband"]
         nw = [p["lote"] for p in data["rows"] if p["source"] == "nw"]
         leb = db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
-        if len(leb)==0:
-            upsert(data,cursor)
-        #dml = db.dml(TypeDml.INSERT, {**data, "status":0, "timestamp": datetime.now(), "timestamp_edit": datetime.now(), "user_id":request.user.id, "lote":"$$$-1", "num":"$$$-2"}, "producao_reciclado",None,None,False,["lote","num"])
-        #dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
-        #dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
-        #db.execute(dml.statement, cursor, dml.parameters)
-        #return cursor.lastrowid
+        if len(leb["rows"])==0:
+            for idx, item in enumerate(data["rows"]):
+                dml = db.dml(TypeDml.INSERT, {"reciclado_id":data["id"],"qtd":item["qtd"],"source":item["source"],"timestamp":item["timestamp"],"lote":item["lote"],"unit":item["unit"],"user_id":request.user.id}, "producao_recicladolotes",None,None,False)
+                dml.statement = f"""
+                    {dml.statement}
+                    ON DUPLICATE KEY UPDATE 
+                        id = LAST_INSERT_ID(id),
+                        qtd=VALUES(qtd),
+                        source=VALUES(source),
+                        timestamp=VALUES(timestamp),
+                        lote=VALUES(lote),
+                        unit=VALUES(unit),
+                        reciclado_id=VALUES(reciclado_id)
+                """
+                print(dml.statement)
+                print(dml.parameters)
+                db.execute(dml.statement, cursor, dml.parameters)
 
     try:
+        if not data.get("id"):            
+            raise Exception("O id de granulado é obrigatório")
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                id = saveItems(data,cursor)
-        return Response({"status": "success","id":{id}, "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+                saveItems(data,cursor)
+        return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
     except Error:
         return Response({"status": "error", "title": "Erro ao guardar registos!"})
-
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 
 

@@ -34,7 +34,8 @@ const schema = (keys, excludeKeys) => {
 const schemaWeigh = (keys, excludeKeys) => {
     return getSchema({
         peso: Joi.number().positive().label("Peso").required(),
-        estado: Joi.string().label("Estado").required()
+        estado: Joi.string().label("Estado").required(),
+        obs:Joi.when('estado', { is: "R", then: Joi.number().required() })
     }, keys, excludeKeys).unknown(true);
 }
 
@@ -223,13 +224,14 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
 
     const onFinish = async (values) => {
         submitting.trigger();
-        console.log("entreiiiiiiii")
+        console.log("entreiiiiiiii",values)
         //const v = validateForm(schemaWeigh());
         //await v.validate(values);
         //console.log("XXXXXXXXXXXXXXXXXXXXXXXXX",v.fieldStatus(),v.fieldMessages());
         //setFieldStatus(v.fieldStatus());
         //const v = schemaWeigh().validate(values, { abortEarly: false });
         //console.log("FINISH", v.error.details);
+        submitting.end();
     }
 
     const onValuesChange = (values, changedValues) => {
@@ -237,7 +239,7 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
     }
 
     return (
-        <Form form={form} name={`f-wlote`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ produto: 1, tara: 15 }}>
+        <Form form={form} name={`f-wlote`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ produto: 1, tara: 15, estado:"G" }}>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-WLOTE" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaWeigh} wrapFormItem={true} forInput={true}>
                 <Row style={{}} gutterWidth={10}>
@@ -249,7 +251,7 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
                     <Col xs={3}><Field wrapFormItem={true} name="tara" label={{ enabled: true, text: "Tara" }}><SelectField style={{ width: "100%" }} size="small" keyField="id" textField="txt" data={tara} /></Field></Col>
                 </Row>
                 <Row style={{}} gutterWidth={10}>
-                    <Col><Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }}><TextArea size="small" rows={4} maxLength={500} /></Field></Col>
+                    <Col><Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }} allValues={{"estado":form.getFieldValue("estado")}} alert={{ tooltip: true, pos: "none" }}><TextArea size="small" rows={4} maxLength={500} /></Field></Col>
                 </Row>
             </FormContainer>
             {parentRef && <Portal elId={parentRef.current}>
@@ -268,29 +270,29 @@ const Details = ({ details, maxWidth }) => {
         <>
             {details && <div style={{ maxWidth, margin: "15px 0px" }}>
                 <Container style={{ border: "1px solid rgba(0,0,0,.06)" }} fluid>
-                <Row style={{ background: "#f0f0f0", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
-                    <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Lote</Col>
-                    <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Produto</Col>
-                    {
-                        details.status === 1 && <>
-                            <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Estado</Col>
-                            <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Peso</Col>
-                            <Col xs={2}>Tara</Col>
-                        </>
-                    }
-                </Row>
-                <Row>
-                    <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.lote}</b></Col>
-                    <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.produto_granulado}</b></Col>
-                    {
-                        details.status === 1 && <>
-                            <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>{details.estado}</Col>
-                            <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>{details.peso}</Col>
-                            <Col xs={2}>{details.tara}</Col>
-                        </>
-                    }
-                </Row>
-            </Container>
+                    <Row style={{ background: "#f0f0f0", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Lote</Col>
+                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Produto</Col>
+                        {
+                            details.status === 1 && <>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Estado</Col>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Peso</Col>
+                                <Col xs={2}>Tara</Col>
+                            </>
+                        }
+                    </Row>
+                    <Row>
+                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.lote}</b></Col>
+                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.produto_granulado}</b></Col>
+                        {
+                            details.status === 1 && <>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>{details.estado}</Col>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>{details.peso}</Col>
+                                <Col xs={2}>{details.tara}</Col>
+                            </>
+                        }
+                    </Row>
+                </Container>
             </div>}
         </>
     );
@@ -306,7 +308,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/paletesstocklookup/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { item_id: 5 }, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/granuladoloteslist/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { reciclado_id: location?.state?.id }, sort: [] } });
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const [details, setDetails] = useState();
@@ -314,11 +316,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const primaryKeys = ['id'];
     const columns = [
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
-        { key: 'lote', sortable:false, name: 'Lote', formatter: p => <b>{p.row.lote}</b> },
-        { key: 'source', sortable:false, name: 'Origem', formatter: p => p.row.source === 'elasticband' ? "ELASTIC BAND" : "NONWOVEN" },
-        { key: 'qtd', sortable:false, name: 'Quantidade', minWidth: 95, width: 95, editor: p => <InputNumber size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e }, false)} /> },
-        { key: 'unit', sortable:false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <Select optionLabelProp="label" defaultValue="kg" style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v }, false)} name='unit' size="small" options={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
-        { key: 'timestamp', sortable:false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
+        { key: 'lote', sortable: false, name: 'Lote', formatter: p => <b>{p.row.lote}</b> },
+        { key: 'source', sortable: false, name: 'Origem', formatter: p => p.row.source === 'elasticband' ? "ELASTIC BAND" : "NONWOVEN" },
+        { key: 'itm', sortable: false, name: 'Artigo', formatter: p => p.row.itm },
+        { key: 'itm_des', sortable: false, name: 'Artigo Des.', formatter: p => p.row.itm_des },
+        { key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e, notValid: 1 }, false)} /> },
+        { key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <Select optionLabelProp="label" defaultValue="kg" style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, false)} name='unit' size="small" options={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
+        { key: 'timestamp', sortable: false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined style={{ color: "#cf1322" }} /></Button> }
     ];
     const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
@@ -359,14 +363,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         return <ResponsiveModal title="Pesar Granulado G-202220811-01"
             onCancel={hideWeighModal}
             //onOk={() => onPickFinish(lastValue)}
-            width={600} height={320} footer="ref" >
+            width={600} height={340} footer="ref" >
             <WeighContent />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp()]);
 
     const loadData = async ({ signal }) => {
-        const _id = 1797; //location?.state?.id;
-        const _details = await loadGranuladoLookup(_id, signal);
+        const _details = await loadGranuladoLookup(location?.state?.id, signal);
         if (_details.length > 0) {
             setDetails(_details[0]);
             submitting.end();
@@ -395,9 +398,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-            const response = await fetchPost({ url: `${API_URL}/savegranuladoitems/`, parameters: { id:details.id, rows:dataAPI.getData().rows } });
+            const response = await fetchPost({ url: `${API_URL}/savegranuladoitems/`, parameters: { id: details.id, rows: dataAPI.getData().rows }, dates: [{ key: "timestamp", format: DATETIME_FORMAT }] });
             if (response.data.status !== "error") {
                 //navigate('/app/picking/pickgranulado', { state: { id: response.data.id[0] } });
+                setFormStatus({ ...status });
+                dataAPI.fetchPost();
             } else {
                 status.error.push({ message: response.data.title });
                 setFormStatus({ ...status });
@@ -420,11 +425,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>
                 <Details details={details} maxWidth="600px" />
             </div>}
-            <AlertsContainer mask formStatus={formStatus} portal={false} style={{margin:"5px"}}/>
+            <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
             <Table
                 //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
                 reportTitle={title}
-                loadOnInit={false}
+                loadOnInit={true}
                 columns={columns}
                 dataAPI={dataAPI}
                 //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}

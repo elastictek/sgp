@@ -134,6 +134,7 @@ urlpatterns = [
 
     #PICAGEM LOTES
     re_path(r'^granuladolist/$', views.GranuladoList),
+    re_path(r'^granuladoloteslist/$', views.GranuladoLotesList),
     re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),    
     re_path(r'^granuladolookup/$', views.GranuladoLookup),
     re_path(r'^newlotegranulado/$', views.NewLoteGranulado),

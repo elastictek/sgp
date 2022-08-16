@@ -1159,6 +1159,8 @@ class RecicladoLotes(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username")
     timestamp = models.DateTimeField(verbose_name="Created")
     lote = models.CharField(max_length=50, unique=True)
+    itm = models.CharField(max_length=100, null=True, blank=True)
+    itm_des = models.CharField(max_length=250, null=True, blank=True)
     source = models.CharField(max_length=15)
     qtd = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantidade")
     unit = models.CharField(max_length=4, verbose_name="Unidade Medida")

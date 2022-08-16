@@ -69,17 +69,18 @@ const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
 };
 
 
-const LayoutMain = () => {
+const MainLayout = () => {
     const location = useLocation();
-    return (<>{(location.pathname === "/app" || location.pathname === "/app/") && <GranuladoList />}<Outlet /></>);
+    return (<>{(location.pathname === "/app" || location.pathname === "/app/") && <GridLayout />}<Outlet /></>);
 }
 
 const RenderRouter = () => {
     let element = useRoutes([
         {
             path: '/app',
-            element: <Suspense fallback={<Spin />}><LayoutMain /></Suspense>,
+            //element: <Suspense fallback={<Spin />}><LayoutMain /></Suspense>,
             //element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
+            element: <MainLayout />,
             children: [
                 { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
                 { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
@@ -202,32 +203,13 @@ const App2 = () => {
         //sendJsonMessage({ cmd: 'initAlerts' });
     }, []);
 
-    //    useEffect(()=>{
-    //
-    //   },[lastJsonMessage])
-
     return (
         <BrowserRouter>
-            {/*             <Routes> */}
-            {/* <Route path="/app" element={<Suspense fallback={<Spin />}><LayoutPage /></Suspense>} />
-                <Route path="/app/sorders" element={<Suspense fallback={<Spin />}><SOrders /></Suspense>} />
-                <Route path="/app/ordemfabrico/formdetails" element={<Suspense fallback={<Spin />}><OFDetails /></Suspense>} />
-                <Route path="*" element={<Suspense fallback={<Spin />}><NotFound /></Suspense>} /> */}
-
-
-
-            {/*  <Default><RenderRouter /></Default> */}
-
-
-            {/*             <MediaContext.Provider value={contextValue}>
-                
-            </MediaContext.Provider> */}
-            {/*             </Routes> */}
             <MediaContext.Provider value={width}>
                 <AppContext.Provider value={{}}>
                     <SocketContext.Provider value={lastJsonMessage}>
                         <ModalProvider>
-                            <GridLayout />
+                            <RenderRouter />
                         </ModalProvider>
                     </SocketContext.Provider>
                 </AppContext.Provider>
@@ -261,7 +243,7 @@ const App3 = () => {
 export default App;
 const container = document.getElementById("app");
 const root = ReactDOM.createRoot(container);
-root.render(<App />);
+//root.render(<App />);
 /*root.render(
     <Container id="teste" wrapForm={true}>
         <Row style={{ justifyContent: "end" }}>
@@ -269,6 +251,6 @@ root.render(<App />);
         </Row>
     </Container>
 );*/
-//root.render(<App2 />);
+root.render(<App2 />);
 //root.render(<App />);
 //ReactDOM.render(<App />, container);

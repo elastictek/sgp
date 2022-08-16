@@ -1603,7 +1603,6 @@ export const FormLayout = ({ className, style, field, fieldSet, schema, children
                     React.Children.map(children, (child, i) => (
                         <>
                             {(React.isValidElement(child)) ? React.cloneElement(child, { ...child.props, index: i, parentPath: id }) : child}
-                            {console.log("children",child)}
                         </>
                     ))
                 }

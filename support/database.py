@@ -648,8 +648,9 @@ class Filters:
             nData = {k: v for k, v in baseData.items() if k in include}
         elif len(exclude) > 0:
             nData = {k: v for k, v in baseData.items() if k not in exclude}
-        a = FiltersParser(baseData if len(nData) == 0 else nData,
-                          self.paramsSetFields, encloseColumns)
+        else:
+            nData=baseData
+        a = FiltersParser(nData, self.paramsSetFields, encloseColumns)
         self.__autoFilters.extend(a['filters'])
         self.autoParamsSet.update(a['parameters'])
 
