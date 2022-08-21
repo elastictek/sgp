@@ -9,18 +9,12 @@ import { useSubmitting } from "utils";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { useNavigate, useLocation } from "react-router-dom";
-//import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
-import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select } from "antd";
-const { TextArea } = Input;
 const { Title } = Typography;
 import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined } from '@ant-design/icons';
-import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from 'config';
-import useWebSocket from 'react-use-websocket';
-import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -115,7 +109,7 @@ const NewLoteContent = ({ loteId, parentRef, closeParent }) => {
         //console.log("FINISH", v.error.details);
     }
 
-    const onValuesChange = (values, changedValues) => {
+    const onValuesChange = (changedValues, values) => {
 
     }
 

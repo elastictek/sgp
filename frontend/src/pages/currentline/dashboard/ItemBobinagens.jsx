@@ -40,7 +40,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
 const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
     return (
         <Space>
-            <Select defaultValue={noValue(dataAPI.getFilter(true)?.valid,"0")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
+            <Select defaultValue={noValue(dataAPI.getFilter(true)?.valid,"0")} style={{ width: 90 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="0">Por validar</Option>
                 <Option value="1">Validadas</Option>
                 <Option value="-1"> </Option>
@@ -59,7 +59,7 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id:"dashb-bobinagens", payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: "0", type: "1" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ id:"dashb-bobinagens", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: "0", type: "1" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const primaryKeys = ['id'];
     const columns = [
         { key: 'nome', name: 'Bobinagem', width:115,frozen: true, formatter:p=><Button size="small" type="link" onClick={()=>onBobinagemClick(p.row)}>{p.row.nome}</Button> },
@@ -86,14 +86,14 @@ export default ({ record, card, parentReload }) => {
         if (row?.valid===1){
             window.location.href=`/producao/bobinagem/${row.id}/`;
         }else{
-            navigate("/app/bobines/validarlist", { state: { title: `Validar e Classificar Bobinagem ${row.nome}`, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+            navigate("/app/bobines/validarlist", { state: {bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now()} });
         }
     }
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     const onView = () => {
-        navigate("/app/validateReellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
+        navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
     }
 
     const onChangeContent = async (v, field) => {

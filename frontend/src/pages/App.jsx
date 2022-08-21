@@ -21,6 +21,7 @@ const SOrders = lazy(() => import('./SOrders'));
 const OFabricoList = lazy(() => import('./OFabricoList'));
 const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
+const BobinagensList = lazy(() => import('./bobinagens/BobinagensList'));
 const StockList = lazy(() => import('./artigos/StockList'));
 const StockListBuffer = lazy(() => import('./artigos/StockListBuffer'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
@@ -82,7 +83,8 @@ const RenderRouter = () => {
             //element: <Suspense fallback={<Spin />}><LayoutPage /></Suspense>,
             element: <MainLayout />,
             children: [
-                { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> },
+                { path: "bobinagens/reellings", element: <Suspense fallback={<Spin />}><BobinagensList /></Suspense> },
+                { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> }, //TO REMOVE
                 { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
                 { path: "sorders", element: <Suspense fallback={<Spin />}><SOrders /></Suspense> },

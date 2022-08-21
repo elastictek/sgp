@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef } from 'react';
 import { createUseStyles } from 'react-jss';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
@@ -10,7 +10,7 @@ import { pickAll } from "utils";
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox } from "antd";
+import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox, Empty } from "antd";
 import Icon, { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined, ReloadOutlined, EllipsisOutlined, FilterOutlined, SettingOutlined, SearchOutlined, FileFilled } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
@@ -21,17 +21,18 @@ import Spin from "./Spin";
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
 import DataGrid, { Row as TableRow, SelectColumn } from 'react-data-grid';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer } from 'components/FormFields';
+import { Field, Container as FormContainer, FilterDrawer } from 'components/FormFields';
 
 const Table = styled(DataGrid).withConfig({
     shouldForwardProp: (prop) =>
-        !['height', 'pagination'].includes(prop)
+        !['height', 'pagination','minHeight'].includes(prop)
 })`
     block-size:${props => {
         const h = props?.height ? props.height : "100%";
         const p = props.paginationPos === 'both' ? "90px" : "45px";
         return props?.pagination ? `calc(${h} - ${p})` : h;
     }};
+    min-height:${({minHeight})=>(minHeight) ? minHeight : "180px"};
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
     -webkit-mask-image:linear-gradient(180deg,rgba(255,0,0,.1) 0 7.5px calc(100%-7.5px),rgba(255,0,0,.1));
@@ -62,12 +63,17 @@ const Table = styled(DataGrid).withConfig({
     }
 
     .rdg-header-row{
-        color: #fff!important;
-        background-color: #262626!important;
-        font-size:12px;
+        ${({ headerStyle }) => (headerStyle) ? css`${headerStyle}` : css`
+            color: #fff!important;
+            background-color: #262626!important;
+            font-size:12px;`
     }
+    }
+
     .rdg-row{
-        font-size:12px;
+        ${({ rowStyle }) => (rowStyle) ? css`${rowStyle}` : css`
+            font-size:12px;`
+    }
     }
 `;
 
@@ -149,12 +155,14 @@ const CheckboxFormatter = forwardRef(
     }
 );
 
-export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort=true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowStyle, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
     const [isSettingsDirty, setSettingsIsDirty] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
+    const [showMoreFilters, setShowMoreFilters] = useState(false);
+    
 
     const rowKeyGetter = (row) => {
         return Object.values(pickAll(primaryKeys, row)).join("#");
@@ -178,6 +186,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
             switch (type.key) {
                 case 'refresh': dataAPI.fetchPost(); break;
                 case 'cleansort': dataAPI.clearSort(); dataAPI.fetchPost(); break;
+                case 'morefilters': setShowMoreFilters(prev=>!prev); break;
                 default: break;
             }
         }
@@ -241,23 +250,23 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
         dataAPI.fetchPost();
     }
 
-/*     const selectCell = useMemo(() => {
-        console.log("row-->",columns.length,props.selectedCellIdx)
-        if (columns.length > 0 && props.selectedCellIdx !== undefined) {
-            return columns[props.selectedCellIdx].key === "action" ? undefined : props.selectedCellIdx;
-        }
-        return props.selectedCellIdx;
-    }, [columns, props.selectedCellIdx]); */
+    /*     const selectCell = useMemo(() => {
+            console.log("row-->",columns.length,props.selectedCellIdx)
+            if (columns.length > 0 && props.selectedCellIdx !== undefined) {
+                return columns[props.selectedCellIdx].key === "action" ? undefined : props.selectedCellIdx;
+            }
+            return props.selectedCellIdx;
+        }, [columns, props.selectedCellIdx]); */
 
-    const selectCell = (cols,selIdx) => {
+    const selectCell = (cols, selIdx) => {
         if (cols.length > 0 && selIdx !== undefined) {
             return cols[selIdx].key === "action" ? undefined : selIdx;
         }
         return selIdx;
     }
 
-    const GridRow = ({ ...props }) => {
-        return <TableRow {...props} selectedCellIdx={selectCell(columns,props.selectedCellIdx)} />;
+    const GridRow = (key, props) => {
+        return <TableRow key={key} {...props} selectedCellIdx={selectCell(columns, props.selectedCellIdx)}/>;
     }
 
     const handleCopy = ({ sourceRow, sourceColumnKey }) => {
@@ -268,6 +277,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
 
     return (
         <Spin loading={dataAPI.isLoading()}>
+            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({form:toolbarFilters?.form})} filterRules={toolbarFilters.moreFilters.rules()} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
             {(!toolbar && title) &&
                 <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
                     <Row align='start' wrap="nowrap" gutterWidth={2}>
@@ -299,7 +309,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                             content={
                                 <ContentSettings setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                     dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} setPageSize={updatePageSize} reportTitle={reportTitle}
-                                    moreFilters={moreFilters} reports={reports}
+                                    moreFilters={moreFilters} reports={reports} clearSort={clearSort}
                                 />
                             } trigger="click">
                             <Button size="small" icon={<SettingOutlined />} />
@@ -326,6 +336,8 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
             </Container>
             {content && <>{content}</>}
             <Table
+                headerStyle={headerStyle}
+                rowStyle={rowStyle}
                 sortColumns={sortColumns()}
                 rows={dataAPI.hasData() ? dataAPI.getData().rows : []}
                 rowHeight={React.isValidElement(actionColumn) ? 26 : 24}
@@ -341,7 +353,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, actionColumn, pagi
                 rowKeyGetter={(primaryKeys && primaryKeys.length > 0) && rowKeyGetter}
                 onRowsChange={dataAPI.setRows}
                 //onPaste={handlePaste}
-                components={{rowRenderer: GridRow, heckboxFormatter: CheckboxFormatter }}
+                renderers={{  rowRenderer: GridRow, checkboxFormatter: CheckboxFormatter, noRowsFallback: <Empty style={{gridColumn: '1/-1'}} image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span>Sem dados</span>} /> }}
                 {...props}
             />
             <Container fluid style={{ background: "#f8f9fa", padding: "0px" }}>

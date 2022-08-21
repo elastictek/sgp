@@ -8,6 +8,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sistema.settings")
 django.setup()
 
 from socket import timeout
+from django.contrib.auth.models import User, Group
 from threading import Timer
 from asgiref.sync import async_to_sync
 from django.core.cache import cache
@@ -127,7 +128,9 @@ class RealTimeAlerts(WebsocketConsumer):
     }
 
     def connect(self):
-        print(self.scope['user'])
+        print("USER")
+        user = User.objects.get(username=self.scope['user']) # get Some User.
+        
         async_to_sync(self.channel_layer.group_add)(self.room_group_name,self.channel_name)
         self.accept()
 

@@ -30,6 +30,84 @@ import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, B
 const { Title } = Typography;
 
 
+
+
+
+const StyledStatus = styled.div`
+    border:dashed 1px #000;
+    background-color:${props => props.color};
+    color:${props => props.fontColor};
+    border-radius:3px;
+    margin-right:1px;
+    text-align:center;
+    width:25px;
+    line-height:12px;
+    font-size:8px;
+    cursor:pointer;
+    &:hover {
+        border-color: #d9d9d9;
+    }
+    .lar{
+        font-size:9px;
+    }
+`;
+
+export const bColors = (estado) => {
+    if (estado === "G") {
+        return { color: "#237804", fontColor: "#fff" };//"green";
+    } else if (estado === "DM") {
+        return { color: "#fadb14", fontColor: "#000" };//"gold";
+    } else if (estado === "R") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "LAB") {
+        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
+    } else if (estado === "BA") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "IND") {
+        return { color: "#0050b3", fontColor: "#fff" };//"blue";
+    } else if (estado === "HOLD") {
+        return { color: "#391085", fontColor: "#fff" };//"purple";
+    }else{
+        return { color: "#000", fontColor: "#fff" };
+    }
+}
+
+export const Status = ({b}) =>{
+    const handleClick = () => {
+       
+    };
+    return(
+        <StyledStatus onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b><div className='lar'>{b.largura}</div></StyledStatus>
+    );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//MAYBE TO REMOVE ALL BELOW
+
+
 export const WndTitle = ({ data }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
@@ -150,23 +228,7 @@ export const Ofs = ({ r, setShow, rowIdx }) => {
     );
 };
 
-export const bColors = (estado) => {
-    if (estado === "G") {
-        return { color: "#237804", fontColor: "#fff" };//"green";
-    } else if (estado === "DM") {
-        return { color: "#fadb14", fontColor: "#000" };//"gold";
-    } else if (estado === "R") {
-        return { color: "#ff1100", fontColor: "#fff" };//"red";
-    } else if (estado === "LAB") {
-        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
-    } else if (estado === "BA") {
-        return { color: "#ff1100", fontColor: "#fff" };//"red";
-    } else if (estado === "IND") {
-        return { color: "#0050b3", fontColor: "#fff" };//"blue";
-    } else if (estado === "HOLD") {
-        return { color: "#391085", fontColor: "#fff" };//"purple";
-    }
-}
+
 
 export const Bobines = ({ b, bm, setShow }) => {
     let bobines = b;

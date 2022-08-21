@@ -45,6 +45,7 @@ export const FORMULACAO_MANGUEIRAS = {
     A: [{ key: 'A1' }, { key: 'A2' }, { key: 'A3' }, { key: 'A4' }, { key: 'A5' }, { key: 'A6' }], BC: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }, { key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }],
     B: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }], C: [{ key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }]
 };
+export const FORMULACAO_CUBAS = [{ key: 1, value: "A" }, { key: 2, value: "B" },{ key: 3, value: "C" },{ key: 4, value: "D" },{ key: 5, value: "E" },{ key: 6, value: "F" },{ key: 7, value: "G" },{ key: 8, value: "H" },{ key: 9, value: "I" },{ key: 10, value: "J" }];
 export const FORMULACAO_EXTRUSORAS_VAL = [5, 22.5, 45, 22.5, 5];
 export const FORMULACAO_TOLERANCIA = 0.5;
 const ponderacaoExtrusoras = () => {
@@ -96,7 +97,7 @@ export const ARTIGOS_SPECS = [
 ];
 
 //BOBINES
-export const BOBINE_ESTADOS = [{ value: 'G' }, { value: 'DM12' }, { value: 'R' }, { value: 'BA' }, { value: 'LAB' }, { value: 'IND' }, { value: 'HOLD' }, { value: 'SC' }];
+export const BOBINE_ESTADOS = [{ value: 'G' }, { value: 'DM' }, { value: 'R' }, { value: 'BA' }, { value: 'LAB' }, { value: 'IND' }, { value: 'HOLD' }, { value: 'SC' }];
 export const BOBINE_DEFEITOS = [
     { value: 'troca_nw', label: 'Troca NW' }, { value: 'con', label: 'Cónico' }, { value: 'descen', label: 'Descentrada' }, { value: 'presa', label: 'Presa' },
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },

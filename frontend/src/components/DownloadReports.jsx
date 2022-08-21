@@ -98,6 +98,14 @@ export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, ti
     const requestData = dataAPI.getPostRequest({ url });
     const _orientation = (!isDirty && dataexport?.orientation) ? dataexport?.orientation : orientation.value;
     const _title = (dataexport?.title) ? dataexport?.title : title;
+
+    const cols={};
+    if (Array.isArray(columns)){
+        for(const v of columns){
+            cols[v.key] = {title:(typeof (v.name) !== "object" ? v.name : v.key), width:v.width};
+        }
+    }
+
     requestData.parameters = {
         ...requestData.parameters,
         "config": "default",
@@ -105,12 +113,11 @@ export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, ti
         "template": `TEMPLATES-LIST/LIST-A4-${_orientation.toUpperCase()}`,
         "export": type.key,
         "orientation": _orientation.toUpperCase(),
-        ...(columns) && { cols: columns },
+        ...(columns) && { cols },
         ...dataexport
     };
     const { filter = {}, sort = [], pagination = {}, parameters = {} } = requestData;
     const fetch = { url: requestData.url, method: "post", responseType: "blob", data: { sort, filter, pagination, parameters } };
-
     const controller = new AbortController();
     let mkey = uuIdInt(4);
     message.loading({

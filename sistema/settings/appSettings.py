@@ -13,7 +13,7 @@ class AppSettings:
         }
     }
     reportConn = {
-        "sgp":"MYSQL-SGP-PROD",
+        "sgp":"MYSQL-SGP-DEV",
         "gw":"PG-SGP-GW"
     }
     materializedViews = {

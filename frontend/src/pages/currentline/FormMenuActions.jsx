@@ -41,7 +41,7 @@ import { BiWindowOpen } from 'react-icons/bi';
 
 import { SocketContext, MediaContext } from '../App';
 const FormLotes = React.lazy(() => import('./FormLotes'));
-const FormFormulacao = React.lazy(() => import('./FormFormulacaoUpsert'));
+const FormFormulacao = React.lazy(() => import('./dashboard/FormFormulacaoUpsert'));
 const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoriaUpsert'));
 const FormSpecs = React.lazy(() => import('./FormSpecsUpsert'));
 const FormCortes = React.lazy(() => import('./FormCortes'));

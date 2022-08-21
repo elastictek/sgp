@@ -102,7 +102,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
             <Drawer
                 title="Filtros"
                 width={width}
-                mask={false}
+                mask={mask}
                 /* style={{ top: "48px" }} */
                 onClose={() => setShowFilter(false)}
                 visible={showFilter}
@@ -376,7 +376,7 @@ export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onCha
     );
 }
 
-export const SelectField = ({ data, keyField, valueField, textField, showSearch = false, optionsRender, ...rest }) => {
+export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */ textField, showSearch = false, optionsRender, ...rest }, ref) => {
     //const options = data.map((d,i) => <Option disabled={(i<5) ? true :false} key={d[keyField]} value={valueField ? d[valueField] : d[keyField]}>111{d[textField]}</Option>);
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
@@ -390,11 +390,11 @@ export const SelectField = ({ data, keyField, valueField, textField, showSearch 
     }
 
     return (
-        <Select showSearch={showSearch} options={options} {...rest}>
+        <Select ref={ref} showSearch={showSearch} options={options} {...rest}>
             {/* {optionsRender({ data, keyField, valueField })} */}
         </Select>
     );
-}
+});
 
 const _filterOptions = (arr1, arr2) => {
     let res = [];
@@ -406,7 +406,7 @@ const _filterOptions = (arr1, arr2) => {
     return res;
 }
 
-export const SelectMultiField = ({ value, options, onChange, ...rest }) => {
+export const SelectMultiField = ({ value, data, onChange, ...rest }) => {
     const [selectedItems, setSelectedItems] = useState(value || []);
 
     const onItemsChange = (v) => {
@@ -417,7 +417,7 @@ export const SelectMultiField = ({ value, options, onChange, ...rest }) => {
     return (
         <Select labelInValue mode="multiple" value={value} {...rest} onChange={onItemsChange}>
 
-            {_filterOptions(options, selectedItems).map(item => (
+            {_filterOptions(data, selectedItems).map(item => (
                 <Select.Option key={item.value} value={item.value}>
                     {item.label}
                 </Select.Option>
@@ -790,15 +790,15 @@ export const validateForm = (rules, messages) => {
     };
 }
 
-const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules=[] }) => {
+const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
     const validator = async (r, v) => {
-        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1],...includeKeyRules]) : schema([name,...includeKeyRules]));
+        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1], ...includeKeyRules]) : schema([name, ...includeKeyRules]));
         (async () => {
             try {
                 const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true, messages: validateMessages });
-                updateFieldStatus(nameId, (warning === undefined) ? { status: "none", messages: [] } : { status: "warning", messages: [...warning.details] });
+                updateFieldStatus(nameId, (warning === undefined) ? null : { status: "warning", messages: [...warning.details] });
             } catch (e) {
                 updateFieldStatus(nameId, { status: "error", messages: [...e.details] });
             }
@@ -833,9 +833,6 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             type = 'Input';
         } else if (children.type === InputNumber) {
             //console.log("FIELD-> INPUTNUMBER");
-            type = 'any';
-        } else if (children.type === InputAddon) {
-            //console.log("FIELD-> INPUTADDON");
             type = 'any';
         } else if (children.type === CheckboxField) {
             //console.log("FIELD-> CHECKBOXFIELD");
@@ -1225,10 +1222,10 @@ export const Label = ({ ...props }) => {
 
 
 
-export const Container = ({ loading=false, schema, children, id, wrapForm = false, form, initialValues, onFinish, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
+export const Container = ({ loading = false, schema, children, id, wrapForm = false, form, initialValues, onFinish, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
     if (!id) { throw new Error(`Container key is Required!`) }
     const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
-    const updateFieldStatus = (field, status) => { setFieldStatus(prev => ({ ...prev, [field]: status })) };
+    const updateFieldStatus = (field, status) => { setFieldStatus(prev => ({ ...prev, ...(status !== null) && { [field]: status } })) };
     const clearFieldStatus = () => { setFieldStatus({}); }
     const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert };
     useEffect(() => {

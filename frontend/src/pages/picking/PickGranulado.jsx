@@ -35,7 +35,7 @@ const schemaWeigh = (keys, excludeKeys) => {
     return getSchema({
         peso: Joi.number().positive().label("Peso").required(),
         estado: Joi.string().label("Estado").required(),
-        obs:Joi.when('estado', { is: "R", then: Joi.number().required() })
+        obs: Joi.when('estado', { is: "R", then: Joi.number().required() })
     }, keys, excludeKeys).unknown(true);
 }
 
@@ -224,7 +224,7 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
 
     const onFinish = async (values) => {
         submitting.trigger();
-        console.log("entreiiiiiiii",values)
+        console.log("entreiiiiiiii", values)
         //const v = validateForm(schemaWeigh());
         //await v.validate(values);
         //console.log("XXXXXXXXXXXXXXXXXXXXXXXXX",v.fieldStatus(),v.fieldMessages());
@@ -234,12 +234,12 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
         submitting.end();
     }
 
-    const onValuesChange = (values, changedValues) => {
+    const onValuesChange = (changedValues, values) => {
 
     }
 
     return (
-        <Form form={form} name={`f-wlote`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ produto: 1, tara: 15, estado:"G" }}>
+        <Form form={form} name={`f-wlote`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ produto: 1, tara: 15, estado: "G" }}>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-WLOTE" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaWeigh} wrapFormItem={true} forInput={true}>
                 <Row style={{}} gutterWidth={10}>
@@ -251,7 +251,7 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
                     <Col xs={3}><Field wrapFormItem={true} name="tara" label={{ enabled: true, text: "Tara" }}><SelectField style={{ width: "100%" }} size="small" keyField="id" textField="txt" data={tara} /></Field></Col>
                 </Row>
                 <Row style={{}} gutterWidth={10}>
-                    <Col><Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }} allValues={{"estado":form.getFieldValue("estado")}} alert={{ tooltip: true, pos: "none" }}><TextArea size="small" rows={4} maxLength={500} /></Field></Col>
+                    <Col><Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }} allValues={{ "estado": form.getFieldValue("estado") }} alert={{ tooltip: true, pos: "none" }}><TextArea size="small" rows={4} maxLength={500} /></Field></Col>
                 </Row>
             </FormContainer>
             {parentRef && <Portal elId={parentRef.current}>
@@ -320,8 +320,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         { key: 'source', sortable: false, name: 'Origem', formatter: p => p.row.source === 'elasticband' ? "ELASTIC BAND" : "NONWOVEN" },
         { key: 'itm', sortable: false, name: 'Artigo', formatter: p => p.row.itm },
         { key: 'itm_des', sortable: false, name: 'Artigo Des.', formatter: p => p.row.itm_des },
-        { key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e, notValid: 1 }, false)} /> },
-        { key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <Select optionLabelProp="label" defaultValue="kg" style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, false)} name='unit' size="small" options={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
+        { key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber bordered={false} size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
+        { key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, true)} size="small" keyField="value" textField="label" data={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
         { key: 'timestamp', sortable: false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined style={{ color: "#cf1322" }} /></Button> }
     ];

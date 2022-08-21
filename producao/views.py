@@ -1589,7 +1589,7 @@ def etiqueta_retrabalho(request, pk):
         for b in bobine:
             artigo_cliente = ArtigoCliente.objects.get(
                 cliente=b.largura.cliente, artigo=b.artigo)
-            e_r = EtiquetaRetrabalho.objects.create(bobinagem=bobinagem, bobine=b.nome, data=bobinagem.data, produto=b.largura.designacao_prod, largura_bobinagem=bobinagem.perfil.largura_bobinagem,
+            e_r = EtiquetaRetrabalho.objects.create(bobinagem=bobinagem, bobine=b.nome, data=bobinagem.data, produto=b.largura.designacao_prod if artigo_cliente.produto=='' else artigo_cliente.produto, largura_bobinagem=bobinagem.perfil.largura_bobinagem,
                                                     largura_bobine=b.largura.largura, diam=bobinagem.diam, comp_total=bobinagem.comp_cli, area=b.area, cod_cliente=artigo_cliente.cod_client, artigo=b.artigo.des)
             if Emenda.objects.filter(bobinagem=bobinagem).exists():
                 emenda = Emenda.objects.filter(bobinagem=bobinagem)
@@ -5551,6 +5551,7 @@ def reciclado_create(request):
             reciclado_latest = Reciclado.objects.all().latest('timestamp')
             instance.lote = lote
             instance.estado = estado
+            instance.status = 0
             instance.user = request.user
             instance.timestamp_edit = datetime.datetime.now()
             instance.timestamp = datetime.datetime.now()

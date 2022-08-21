@@ -124,7 +124,8 @@ urlpatterns = [
     #END CURRENT SETTINGS
 
     #BOBINAGENS
-    re_path(r'^validarbobinagenslist/$', views.ValidarBobinagensList),
+    re_path(r'^bobinagenslist/$', views.BobinagensList),
+    re_path(r'^validarbobinagenslist/$', views.ValidarBobinagensList), #to remove
     re_path(r'^validarbobineslist/$', views.ValidarBobinesList),
     re_path(r'^validarbobinagem/$', views.ValidarBobinagem),
     re_path(r'^fixsimulatorlist/$', views.FixSimulatorList),

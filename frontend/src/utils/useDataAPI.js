@@ -307,7 +307,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return { ...dataState.data };
     }
 
-    const _fetchPost = ({ url, token } = {}) => {
+    const _fetchPost = ({ url, token, signal } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = { ...getPayload(), tstamp: Date.now() };
         setIsLoading(true);
@@ -316,7 +316,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
             try {
-                const dt = (await fetchPost({ url: _url, ...payload, cancelToken: token })).data;
+                const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? {signal} : {cancelToken: token}) })).data;
                 setData(dt, payload);
             } catch (e) {
                 Modal.error({ content: e.message });

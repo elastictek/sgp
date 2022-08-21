@@ -394,6 +394,7 @@ class ArtigoCliente(models.Model):
     embalamento = models.ForeignKey(Embalamento, on_delete=models.PROTECT, verbose_name="Embalamento", null=True, blank=True)
     cod_client = models.CharField(max_length=200, unique=False, verbose_name="Cód. Cliente", null=True, blank=True)
     num_emendas_bobine = models.PositiveIntegerField(verbose_name="Numero de emendas por bobine", null=True, blank=True)
+    produto = models.CharField(verbose_name="Produto", max_length=200, default="", null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Artigos Cliente"

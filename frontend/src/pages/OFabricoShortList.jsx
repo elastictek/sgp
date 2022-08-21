@@ -15,7 +15,7 @@ import { API_URL, SCREENSIZE_OPTIMIZED } from 'config';
 import YScroll from "components/YScroll";
 import ResponsiveModal from "components/ResponsiveModal";
 const { Title } = Typography;
-const FormFormulacao = React.lazy(() => import('./currentline/FormFormulacaoUpsert'));
+const FormFormulacao = React.lazy(() => import('./currentline/dashboard/FormFormulacaoUpsert'));
 import MoreFilters from 'assets/morefilters.svg'
 
 const schema = (keys, excludeKeys) => {

@@ -128,19 +128,19 @@ export const ColumnBobines = ({ n }) => {
     </div>);
 }
 
-export const Ofs = ({ r, setShow, rowIdx }) => {
+export const Ofs = ({ r }) => {
     const navigate = useNavigate();
     const ofs = JSON.parse(r.ofs);
     const clientes = JSON.parse(r.clientes);
     const orders = JSON.parse(r.orders);
     const handleClick = () => {
-        navigate('/app/currentline/menuactions', { state: { aggId: r.agg_of_id } });
+        navigate('/app/', { state: { aggId: r.agg_of_id } });
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "row" }}>
+        <div style={{ display: "flex", flexDirection: "row", lineHeight:"12px" }}>
             {ofs && ofs.map((v, i) => {
-                return (<StyledOf onClick={handleClick} /*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`off-${v}-${rowIdx}`}>
+                return (<StyledOf onClick={handleClick} /*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`off-${v}-${r.id}`}>
                     <b>{v}</b>
                     <div>{orders[i]}</div>
                     <div className='cl'>{clientes[i]}</div>
@@ -169,15 +169,13 @@ export const bColors = (estado) => {
 }
 
 export const Bobines = ({ b, bm, setShow }) => {
-    let bobines = b;
-
     const handleClick = () => {
-        setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+        //setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "row" }}>
-            {bobines.map((v, i) => {
+        <div style={{ display: "flex", flexDirection: "row", lineHeight:"12px" }}>
+            {b.map((v, i) => {
                 return (<StyledBobine onClick={handleClick} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${v.id}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>
