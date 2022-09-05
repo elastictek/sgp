@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Spin, Input } from 'antd';
+import { Spin, Input, Modal } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
 import 'antd/dist/antd.compact.less';
@@ -12,6 +12,10 @@ import { useImmer } from "use-immer";
 import useMedia from 'utils/useMedia';
 import { ModalProvider } from "react-modal-hook";
 import GridLayout from './currentline/dashboard/GridLayout';
+import { useSubmitting } from "utils";
+import YScroll from "components/YScroll";
+import { fetch, fetchPost } from "utils/fetch";
+import { API_URL, ROOT_URL } from "config";
 
 
 
@@ -58,6 +62,24 @@ import { Row, Col } from 'react-grid-system';
 
 
 
+
+const loadAuthUser = async ({ }, signal) => {
+    let response;
+    try {
+        response = await fetchPost({ url: `${API_URL}/getauthuser/`, parameters: {}, signal });
+    } catch (e) {
+        Modal.error({
+            centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Autenticação', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
+                <YScroll>
+                    {e.message}
+                    <div style={{ textAlign: "center", marginTop: "10px" }}><a href={`${ROOT_URL}/users/login/`}><b>Login</b></a></div>
+                </YScroll>
+            </div></div>,
+            onOk:()=>window.location.href=`${ROOT_URL}/users/login/`
+        });
+    };
+    return response;
+}
 
 
 
@@ -181,6 +203,7 @@ const App = () => {
 
 const App2 = () => {
     const [width] = useMedia();
+    const submitting = useSubmitting(true);
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
         onOpen: () => console.log(`Connected to Web Socket`),
         queryParams: { /* 'token': '123456' */ },
@@ -189,6 +212,7 @@ const App2 = () => {
         reconnectInterval: 5000,
         reconnectAttempts: 500
     });
+    const [auth, setAuth] = useState();
 
     useEffect(() => { }, [
         lastJsonMessage?.hash.hash_igbobinagens,
@@ -200,18 +224,27 @@ const App2 = () => {
         lastJsonMessage?.hash.hash_lotes_availability
     ]);
 
+    const loadData = async ({ signal }) => {
+        const response = await loadAuthUser({}, signal);
+        setAuth(response.data);
+        submitting.end();
+    }
+
 
     useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
         //sendJsonMessage({ cmd: 'initAlerts' });
     }, []);
 
     return (
         <BrowserRouter>
             <MediaContext.Provider value={width}>
-                <AppContext.Provider value={{}}>
+                <AppContext.Provider value={{ auth }}>
                     <SocketContext.Provider value={lastJsonMessage}>
                         <ModalProvider>
-                            <RenderRouter />
+                            {auth?.isAuthenticated && <RenderRouter />}
                         </ModalProvider>
                     </SocketContext.Provider>
                 </AppContext.Provider>

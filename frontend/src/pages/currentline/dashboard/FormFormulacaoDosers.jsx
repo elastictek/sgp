@@ -23,8 +23,8 @@ import {Cuba} from "./ItemFormulacao";
 
 const title = "Alterar Doseadores";
 const useStyles = createUseStyles({});
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const schema = (options={}) => {
+    return getSchema({}, options).unknown(true);
 }
 
 const primaryKeys = [];

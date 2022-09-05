@@ -315,6 +315,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         return (() => setMatPrimasLookup([]));
     }, []);
 
+
     const onValuesChange = (changedValues, { formu_materiasprimas_A: allA = [], formu_materiasprimas_BC: allBC = [], ...allValues }) => {
         const formu_materiasprimas_A = allA.filter(v => v.removeCtrl === true);
         const formu_materiasprimas_BC = allBC.filter(v => v.removeCtrl === true);
@@ -328,7 +329,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["formu_materiasprimas_A", "formu_materiasprimas_BC"];
         const v = schema(false, [/* 'mangueira_A', */ 'matprima_cod_A', 'densidade_A', 'arranque_A', /* 'mangueira_BC', */ 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(values, { abortEarly: false });
-        console.log("after", values)
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         let fieldValues;
@@ -347,7 +347,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             let sumA = fieldValues.formu_materiasprimas_A.reduce((a, b) => a + (b["arranque_A"] || 0), 0);
             let sumBC = fieldValues.formu_materiasprimas_BC.reduce((a, b) => a + (b["arranque_BC"] || 0), 0);
 
-            console.log("testeeeee",Math.round(fieldValues.totalGlobal))
             if (Math.round(fieldValues.totalGlobal) !== 100) {
                 status.error.push({ message: "O Total Global das Matérias Primas tem de ser 100%!" });
             } else if (sumA !== 100) {
@@ -403,10 +402,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         closeParent();
     }
 
-    const onSubmit = useCallback(() => {
+    const onSubmit = () => {
         setSubmitting(true);
         onFinish(form.getFieldsValue(true));
-    },[]);
+    };
 
     return (
         <>

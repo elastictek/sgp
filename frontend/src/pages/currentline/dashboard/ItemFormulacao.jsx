@@ -26,8 +26,8 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer } from 
 
 const title = "Formulação";
 const useStyles = createUseStyles({});
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const schema = (options={}) => {
+    return getSchema({}, options).unknown(true);
 }
 
 
@@ -97,8 +97,7 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-formulacao", payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { agg_of_id: record.agg_of_id, valid: "0", type: "1" }, sort: [{ column: 'nome', direction: 'ASC' }] } });
-
+   
     const dataAPI_A = useDataAPI({ id: "dashb-formulacao-a", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
     const dataAPI_BC = useDataAPI({ id: "dashb-formulacao-bc", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
 
@@ -143,7 +142,9 @@ export default ({ record, card, parentReload }) => {
         <>
             {Object.keys(record).length > 0 && <Card
                 hoverable
-                style={{ height: "100%" }} bodyStyle={{ height: "calc(100% - 45px)" }}
+                headStyle={{padding:"0px 32px 0px 12px"}}
+                style={{ height: "100%", border:"1px solid #8c8c8c" }} 
+                bodyStyle={{ height: "calc(100% - 45px)" }}
                 size="small"
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>}
                 extra={<Space><Button onClick={() => onEdit("doseadores")}>Doseadores</Button><Button onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}

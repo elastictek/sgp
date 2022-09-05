@@ -307,7 +307,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return { ...dataState.data };
     }
 
-    const _fetchPost = ({ url, token, signal } = {}) => {
+    const _fetchPost = ({ url, token, signal, rowFn } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = { ...getPayload(), tstamp: Date.now() };
         setIsLoading(true);
@@ -317,7 +317,11 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             }
             try {
                 const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? {signal} : {cancelToken: token}) })).data;
-                setData(dt, payload);
+                if (rowFn){
+                    setData(rowFn(dt), payload);
+                }else{
+                    setData(dt, payload);
+                }
             } catch (e) {
                 Modal.error({ content: e.message });
             }

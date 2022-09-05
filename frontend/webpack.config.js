@@ -5,6 +5,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 /*const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');*/
 const baseTheme = require('./src/baseTheme');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const VersionFile = require('webpack-version-file');
 
 const rootPath = __dirname;
 const baseFolder = "src";
@@ -39,6 +40,12 @@ module.exports = (env, argv) => {
     console.log(`Compile Mode--->${argv.mode}`);
 
     const commonPlugins = [
+        new VersionFile({
+            data: {
+                date: new Date(),
+                //environment: process.env.NODE_ENV || 'development'
+            }
+        }),
         new HtmlWebPackPlugin({
             template: path.join(rootPath, "src", "index.html"),
             chunks: ["vendors", "commons", `${appName}/index`],

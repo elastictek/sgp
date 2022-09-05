@@ -28,12 +28,18 @@ export default ({ record, card, parentReload }) => {
         showModal();
     }
 
+    useEffect(() => {
+        console.log("cccccccccccccccccccccc")
+    }, [record?.agg_of_id]);
+
     return (
         <>
             {Object.keys(record).length > 0 && <Card
                 hoverable
+                headStyle={{padding:"0px 32px 0px 12px"}}
                 /* onClick={onEdit} */
-                style={{ height: "100%" }} bodyStyle={{ height: "calc(100% - 45px)" }}
+                style={{ height: "100%", border:"1px solid #8c8c8c" }} 
+                bodyStyle={{ height: "calc(100% - 45px)" }}
                 size="small"
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>}
                 extra={<Space><Button onClick={onEdit} icon={<EditOutlined />} /></Space>}

@@ -31,7 +31,7 @@ const useStyles = createUseStyles({
 });
 
 
-const schema = (keys, excludeKeys) => {
+const schema = (options={}) => {
     return getSchema({
         formu_materiasprimas_A: Joi.array().label("Matérias Primas da Extrusora A").min(1).required(),
         formu_materiasprimas_BC: Joi.array().label("Matérias Primas das Extrusoras B & C").min(1).required(),
@@ -41,7 +41,7 @@ const schema = (keys, excludeKeys) => {
         matprima_cod_BC: Joi.string().label("Matéria Prima [BC]").required(),
         densidade_BC: Joi.number().label("Densidade [BC]").required(),
         arranque_BC: Joi.number().label("Arranque [BC]").required()
-    }, keys, excludeKeys).unknown(true);
+    }, options).unknown(true);
 }
 
 const LoadMateriasPrimasLookup = async (record, signal) => {
@@ -281,16 +281,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const items = [];
         const status = { error: [], warning: [], info: [], success: [] };
         const keys = ["formu_materiasprimas_A", "formu_materiasprimas_BC"];
-        const v = schema(keys).validate(values, { abortEarly: false });
-
+        const v = schema({keys}).validate(values, { abortEarly: false });
         //Verifica se existem items definidos em ambas as extrusoras
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => keys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKekeysys.includes(v.context.key)) : [])];
         const _fieldStatus = { ...fieldStatus };
-        console.log(Object.keys(_fieldStatus), _fieldStatus)
         if (!v.error) {
             for (const [i, x] of values.formu_materiasprimas_A.entries()) {
-                const vx = schema(false, [...keys, 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(x, { abortEarly: false });
+                const vx = schema({excludeKeys: [...keys, 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']}).validate(x, { abortEarly: false });
                 if (vx?.error) {
                     for (let k of vx?.error?.details) {
                         _fieldStatus[`${i},${k.context.key}`] = { status: "error", messages: [{ message: k.message }] };
@@ -298,7 +296,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 }
             }
             for (const [i, x] of values.formu_materiasprimas_BC.entries()) {
-                const vx = schema(false, [...keys, 'matprima_cod_A', 'densidade_A', 'arranque_A']).validate(x, { abortEarly: false });
+                const vx = schema({excludeKeys: [...keys, 'matprima_cod_A', 'densidade_A', 'arranque_A']}).validate(x, { abortEarly: false });
                 if (vx?.error) {
                     for (let k of vx?.error?.details) {
                         _fieldStatus[`${i},${k.context.key}`] = { status: "error", messages: [{ message: k.message }] };
@@ -306,7 +304,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 }
             }
         }
-
         if (Object.keys(_fieldStatus).length === 0) {
             const fieldValues = updateGlobals({ values, action: "finish" });;
             let sumA = fieldValues.formu_materiasprimas_A.reduce((a, b) => a + (b["arranque_A"] || 0), 0);
@@ -345,6 +342,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 }
                 const { cliente_cod: { value: cliente_cod, label: cliente_nome } = {}, source, ...vals } = values;
                  try {
+                    console.log("x--x-x-x-x-x-x",{ type: `formulacao_${record.feature}`, formulacao: { ...vals, items, produto_id: record.formulacao.produto_id, cliente_cod, cliente_nome, valid:0 } })
                     const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ...vals, items, produto_id: record.formulacao.produto_id, cliente_cod, cliente_nome, valid:0 } } });
                     if (response.data.status !== "error") {
                         Modal.success({title:"Formulação alterada com sucesso!",onOk:()=>{parentReload();closeParent();}})

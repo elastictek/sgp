@@ -106,7 +106,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         // loadData({ /* agg_id: ctx.agg_id, */ token: cancelFetch });
         init({ /* agg_id: ctx.agg_id, */ token: cancelFetch });
         return (() => cancelFetch.cancel("Form Cortes Cancelled"));
-    }, []);
+    }, [record]);
 
     useEffect(() => {
         if (changedValues) {

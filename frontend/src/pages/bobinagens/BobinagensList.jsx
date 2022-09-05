@@ -22,8 +22,8 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField } from 'components/FormFields';
 import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
 
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const schema = (options = {}) => {
+    return getSchema({}, options).unknown(true);
 }
 
 const ToolbarFilters = ({ dataAPI, ...props }) => {
@@ -42,7 +42,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
 }
 
 
-const moreFiltersRules = (keys) => { return getSchema({}, keys).unknown(true); }
+const moreFiltersRules = (keys) => { return getSchema({}, {keys}).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
     { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },

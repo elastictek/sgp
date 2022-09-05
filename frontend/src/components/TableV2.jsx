@@ -25,14 +25,14 @@ import { Field, Container as FormContainer, FilterDrawer } from 'components/Form
 
 const Table = styled(DataGrid).withConfig({
     shouldForwardProp: (prop) =>
-        !['height', 'pagination','minHeight'].includes(prop)
+        !['height', 'pagination', 'minHeight'].includes(prop)
 })`
     block-size:${props => {
         const h = props?.height ? props.height : "100%";
         const p = props.paginationPos === 'both' ? "90px" : "45px";
         return props?.pagination ? `calc(${h} - ${p})` : h;
     }};
-    min-height:${({minHeight})=>(minHeight) ? minHeight : "180px"};
+    min-height:${({ minHeight }) => (minHeight) ? minHeight : "180px"};
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
     -webkit-mask-image:linear-gradient(180deg,rgba(255,0,0,.1) 0 7.5px calc(100%-7.5px),rgba(255,0,0,.1));
@@ -155,14 +155,14 @@ const CheckboxFormatter = forwardRef(
     }
 );
 
-export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowStyle, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerStyle, rowStyle, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
     const [isSettingsDirty, setSettingsIsDirty] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
     const [showMoreFilters, setShowMoreFilters] = useState(false);
-    
+
 
     const rowKeyGetter = (row) => {
         return Object.values(pickAll(primaryKeys, row)).join("#");
@@ -186,7 +186,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
             switch (type.key) {
                 case 'refresh': dataAPI.fetchPost(); break;
                 case 'cleansort': dataAPI.clearSort(); dataAPI.fetchPost(); break;
-                case 'morefilters': setShowMoreFilters(prev=>!prev); break;
+                case 'morefilters': setShowMoreFilters(prev => !prev); break;
                 default: break;
             }
         }
@@ -223,7 +223,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
         } else {
             setColumns([...rowSelection ? [SelectColumn] : [], ...cols]);
         }
-    }, [dataAPI.getTimeStamp()]);
+    }, [dataAPI.getTimeStamp(),cols]);
 
     const onColumnResize = (idx, width) => {
         console.log("column resize->", idx, "-", width);
@@ -266,7 +266,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
     }
 
     const GridRow = (key, props) => {
-        return <TableRow key={key} {...props} selectedCellIdx={selectCell(columns, props.selectedCellIdx)}/>;
+        return <TableRow key={key} {...props} selectedCellIdx={selectCell(columns, props.selectedCellIdx)} />;
     }
 
     const handleCopy = ({ sourceRow, sourceColumnKey }) => {
@@ -276,8 +276,8 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
     }
 
     return (
-        <Spin loading={dataAPI.isLoading()}>
-            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({form:toolbarFilters?.form})} filterRules={toolbarFilters.moreFilters.rules()} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
+        <Spin loading={dataAPI.isLoading() || loading}>
+            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form })} filterRules={toolbarFilters.moreFilters.rules()} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
             {(!toolbar && title) &&
                 <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
                     <Row align='start' wrap="nowrap" gutterWidth={2}>
@@ -296,7 +296,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
                     {!title && <Col xs="content" style={{ alignSelf: "end" }}>{leftToolbar && leftToolbar}</Col>}
                     <Col>
                         <div /*  style={{display:"flex",flexDirection:"row", justifyContent:"right"}} */>
-                            <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} />
+                            {toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} />}
                         </div>
                     </Col>
                     {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.form.submit()} size="small"><SearchOutlined /></Button></Col>}
@@ -353,7 +353,7 @@ export default ({ dataAPI, loadOnInit = false, columns: cols, headerStyle, rowSt
                 rowKeyGetter={(primaryKeys && primaryKeys.length > 0) && rowKeyGetter}
                 onRowsChange={dataAPI.setRows}
                 //onPaste={handlePaste}
-                renderers={{  rowRenderer: GridRow, checkboxFormatter: CheckboxFormatter, noRowsFallback: <Empty style={{gridColumn: '1/-1'}} image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span>Sem dados</span>} /> }}
+                renderers={{ rowRenderer: GridRow, checkboxFormatter: CheckboxFormatter, noRowsFallback: <Empty style={{ gridColumn: '1/-1' }} image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span>Sem dados</span>} /> }}
                 {...props}
             />
             <Container fluid style={{ background: "#f8f9fa", padding: "0px" }}>

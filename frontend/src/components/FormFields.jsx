@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
-import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber } from "antd";
+import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber,TimePicker } from "antd";
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
@@ -189,19 +189,8 @@ const StyledVerticalSpace = styled('div').withConfig({
 `;
 
 export const VerticalSpace = ({ margin = "0px", height = "12px", props }) => {
-    const parentProps = useContext(ParentContext);
-    const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
-    /* const classes = useFieldStyles(myProps); */
-    const { refMainAlertContainer } = parentProps;
     return (
-        <StyledField className={classNames("field", { "padding": !myProps?.margin })} {...myProps}>
-            <ConditionalWrapper
-                condition={myProps?.margin}
-                wrapper={children => <div className={classNames("margin", "padding", myProps?.className)}>{children}</div>}
-            >
-                <StyledVerticalSpace height={height} />
-            </ConditionalWrapper>
-        </StyledField>
+        <StyledVerticalSpace height={height} {...props} />
     );
 }
 
@@ -794,11 +783,11 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
     const validator = async (r, v) => {
-        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema([name[name.length - 1], ...includeKeyRules]) : schema([name, ...includeKeyRules]));
+        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema({keys:[name[name.length - 1], ...includeKeyRules], wrapArray:false}) : schema({keys:[name, ...includeKeyRules], wrapArray:false}));
         (async () => {
             try {
                 const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true, messages: validateMessages });
-                updateFieldStatus(nameId, (warning === undefined) ? null : { status: "warning", messages: [...warning.details] });
+                updateFieldStatus(nameId, (warning === undefined) ? {} : { status: "warning", messages: [...warning.details] });
             } catch (e) {
                 updateFieldStatus(nameId, { status: "error", messages: [...e.details] });
             }
@@ -821,16 +810,16 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
 
 
 
-const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, ...rest }) => {
+const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, style, ...rest }) => {
     let type = null; //'any' //children.props.tpy;
     //console.log("zzzzzzz->",children.type === DatePicker, children.type === InputAddon, children.type === Input,children.props)
     if (!type || type === 'C') {
-        if (children.type === DatePicker) {
+        if (children.type === DatePicker || children.type === TimePicker) {
             //console.log("FIELD-> PICKER");
             type = 'Picker';
         } else if (children.type === Input) {
             //console.log("FIELD-> INPUT");
-            type = 'Input';
+            type = 'any';
         } else if (children.type === InputNumber) {
             //console.log("FIELD-> INPUTNUMBER");
             type = 'any';
@@ -851,6 +840,19 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             type = 'any';
         }
     }
+
+    const height = () =>{
+        if (!children?.props?.size){
+            return "28px";
+        }else if (children?.props?.size==="small"){
+            return "22px";
+        }else if(children?.props?.size==="default"){
+            return "28px";
+        }else if (children?.props?.size==="large"){
+            return"32px";
+        }
+    }
+
     //console.log("zzzzzzz->",type)
 
     return (
@@ -860,7 +862,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                     const { value, onDoubleClick } = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },display:"flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
                             return (
                                 <CheckboxField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
@@ -879,11 +881,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
             ) */
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {
@@ -895,19 +897,19 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px", whiteSpace: "nowrap" }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), whiteSpace: "nowrap", background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
                             )
                         default:
 
                             if ("addonAfter" in children.props || "addonAfter" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", flexDirection: "row" }} {...onDoubleClick && { onDoubleClick }}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },minHeight: height(), display: "flex", flexDirection: "row", alignItems:"center", background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: "25px" }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display:"flex", minHeight: height(), alignItems:"center", background:"#f0f0f0", ...(style && style)}} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                     }
 
                 })()}
@@ -1222,12 +1224,16 @@ export const Label = ({ ...props }) => {
 
 
 
-export const Container = ({ loading = false, schema, children, id, wrapForm = false, form, initialValues, onFinish, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
+export const Container = ({ loading = false, schema, children, id, wrapForm = false, form, initialValues, onFinish, label, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
     if (!id) { throw new Error(`Container key is Required!`) }
     const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
-    const updateFieldStatus = (field, status) => { setFieldStatus(prev => ({ ...prev, ...(status !== null) && { [field]: status } })) };
+    const updateFieldStatus = (field, status) => {
+        const {...fs} = fieldStatus;
+        delete fs[field];
+        setFieldStatus(prev => ({ ...fs, ...(status !== null && Object.keys(status).length>0) && { [field]: status } }))
+    };
     const clearFieldStatus = () => { setFieldStatus({}); }
-    const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert };
+    const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert, label };
     useEffect(() => {
         if (_fieldStatus && !_setFieldStatus) {
             setFieldStatus(_fieldStatus);

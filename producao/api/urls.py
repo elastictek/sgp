@@ -50,6 +50,7 @@ urlpatterns = [
     re_path(r'^materiasprimaslookup/$', views.MateriasPrimasLookup),
     re_path(r'^bomlookup/$', views.BomLookup),
     
+     re_path(r'^getauthuser/$', views.GetAuthUser),
     #Clientes
     re_path(r'^sellcustomerslookup/$', views.SellCustomersLookup),
     #End Clientes
@@ -136,7 +137,11 @@ urlpatterns = [
     #PICAGEM LOTES
     re_path(r'^granuladolist/$', views.GranuladoList),
     re_path(r'^granuladoloteslist/$', views.GranuladoLotesList),
-    re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),    
+    re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),
+    re_path(r'^pesargranulado/$', views.PesarGranulado),
+    re_path(r'^deletegranuladoitem/$', views.DeleteGranuladoItem),
+    re_path(r'^updategranulado/$', views.UpdateGranulado),
+    
     re_path(r'^granuladolookup/$', views.GranuladoLookup),
     re_path(r'^newlotegranulado/$', views.NewLoteGranulado),
     re_path(r'^produtogranuladolookup/$', views.ProdutoGranuladoLookup),

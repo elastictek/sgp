@@ -97,8 +97,6 @@ export default ({ record, ofItem, card, parentReload }) => {
     return (
         <>
             {Object.keys(record).length > 0 && <Card
-
-
                 headStyle={{ backgroundColor: "#002766", color: "#fff" }}
                 title={<div>
                     <div style={{ fontWeight: 700, fontSize: "12px", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
@@ -114,11 +112,10 @@ export default ({ record, ofItem, card, parentReload }) => {
                     <div key="attachments" onClick={() => onAction('attachments')}><span><PaperClipOutlined />Anexos</span></div>
                 ]}
                 extra={<div>{record.status > 0 && <Button size="small" onClick={() => onAction('palete')}>Criar Palete</Button>}</div>}
-
-
                 hoverable
                 //onClick={onEdit}
-                style={{ height: "100%" }} bodyStyle={{ height: "calc(100% - 90px)" }}
+                style={{ height: "100%", border:"1px solid #8c8c8c" }} 
+                bodyStyle={{ height: "calc(100% - 90px)" }}
             /* title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>} */
             //extra={<Space><Button onClick={onEdit} icon={<HistoryOutlined />} /></Space>}
             >

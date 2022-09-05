@@ -4,29 +4,41 @@ import styled from 'styled-components';
 import Joi from 'joi';
 import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { getSchema } from "utils/schemaValidator";
-import { useSubmitting } from "utils";
+import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
+import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select } from "antd";
 const { Title } = Typography;
+const { TextArea } = Input;
 import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined } from '@ant-design/icons';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField } from 'components/FormFields';
+import ToolbarTitle from 'components/ToolbarTitle';
+import { usePermission } from "utils/usePermission";
+import { Status } from './commons';
+import YScroll from 'components/YScroll';
 
-const title = "Granulado Lotes";
-
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const title = "Reciclado(Granulado) Lotes";
+const TitleForm = ({ data, onChange }) => {
+    return (<ToolbarTitle title={
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
+    } />);
 }
-const schemaNewLote = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+
+
+
+const schema = (options = {}) => {
+    return getSchema({}, options).unknown(true);
+}
+const schemaNewLote = (options = {}) => {
+    return getSchema({}, options).unknown(true);
 }
 
 const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
@@ -37,10 +49,24 @@ const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
 }
 
 const ToolbarFilters = ({ dataAPI, ...props }) => {
+    const [produtoGranulado, setProdutoGranulado] = useState([]);
+    const loadData = async ({ signal }) => {
+        const pg = await loadProdutoGranuladoLookup(signal);
+        setProdutoGranulado(pg);
+    };
+
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
     return (<>
-        <Col xs='content'><Field wrapFormItem={true} name="lote" label={{ enabled: true, text: "Lote" }}><Input width={250} size="small" /></Field></Col>
-        <Col xs='content'><Field wrapFormItem={true} name="source" label={{ enabled: true, text: "Origem" }}><Input width={100} size="small" /></Field></Col>
-        <Col xs='content'><Field wrapFormItem={true} name="timestamp" label={{ enabled: true, text: "Data" }}><Input width={150} size="small" /></Field></Col>
+        <Col xs='content'><Field wrapFormItem={true} name="flote" label={{ enabled: true, text: "Lote" }}><Input width={250} size="small" /></Field></Col>
+        <Col xs='content'><Field wrapFormItem={true} name="fproduto" label={{ enabled: true, text: "Produto" }}><SelectField allowClear size="small" style={{ width: "200px" }} keyField="id" textField="produto_granulado" data={produtoGranulado} /></Field></Col>
+        <Col xs='content' style={{ alignSelf: "end" }}><Field wrapFormItem={true} name="fdata" label={{ enabled: true, text: "Data Lote", pos: "top", padding: "0px" }}>
+            <RangeDateField size='small' allowClear />
+        </Field></Col>
     </>
     );
 }
@@ -83,13 +109,12 @@ const NewLoteContent = ({ loteId, parentRef, closeParent }) => {
     const onFinish = async (values) => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
-        console.log(values, { peso: 0, tara: 15, produto_granulado: values.produto });
         try {
             const response = await fetchPost({ url: `${API_URL}/newlotegranulado/`, parameters: { peso: 0, tara: '15 kg', estado: 'ND', produto_granulado_id: values.produto } });
             if (response.data.status !== "error") {
                 navigate('/app/picking/pickgranulado', { state: { id: response.data.id[0] } });
             } else {
-                status.error.push({ message: response.data.title });
+                status.error.push({ message: <div>{response.data.title} {response.data.subTitle && response.data.subTitle}</div> });
                 setFormStatus({ ...status });
             }
         } catch (e) {
@@ -98,15 +123,6 @@ const NewLoteContent = ({ loteId, parentRef, closeParent }) => {
         } finally {
             submitting.end();
         }
-
-        //navigate('/app/picking/pickgranulado', { state: {} });
-        //console.log("entreiiiiiiii")
-        //const v = validateForm(schemaWeigh());
-        //await v.validate(values);
-        //console.log("XXXXXXXXXXXXXXXXXXXXXXXXX",v.fieldStatus(),v.fieldMessages());
-        //setFieldStatus(v.fieldStatus());
-        //const v = schemaWeigh().validate(values, { abortEarly: false });
-        //console.log("FINISH", v.error.details);
     }
 
     const onValuesChange = (changedValues, values) => {
@@ -132,23 +148,121 @@ const NewLoteContent = ({ loteId, parentRef, closeParent }) => {
     );
 }
 
+const focus = (el, h,) => { el?.focus(); };
+const FieldEstadoEditor = ({ p, onEstadoChange }) => {
+    const onChange = (v) => {
+        /* p.onRowChange({ ...p.row, estado: v }, true) */
+    };
+    return (
+        <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.estado} ref={focus} onChange={(v) => onEstadoChange(p, v)} size="small" keyField="value" textField="label" data={[{ value: 'G', label: 'GOOD' }, { value: 'R', label: 'REJEITADO' }]} />
+    );
+}
+
+const ConfirmEstadoContent = ({ parameters, parentRef, closeParent }) => {
+    const { lote, id, obs, submitting } = parameters;
+    const onCancel = () => {
+        console.log("oooooooooooooooooooooooooo", submitting.state)
+        submitting.end();
+        closeParent();
+    }
+    return (<div>
+        <TextArea autoFocus value={obs} />
+        {parentRef && <Portal elId={parentRef.current}>
+            <Space>
+                <Button type="primary" disabled={submitting.state} onClick={() => { }}>Registar</Button>
+                <Button onClick={onCancel}>Cancelar</Button>
+            </Space>
+        </Portal>
+        }
+    </div>);
+}
+
+const schemaEstado = (options = {}) => {
+    return getSchema({
+        estado: Joi.string().label("Estado").required(),
+        obs: Joi.when('estado', { is: "R", then: Joi.string().required() }).label("Observações")
+    }, options).unknown(true);
+}
+
+const ModalEstadoChange = ({ p, submitting, dataAPI }) => {
+    const [visible, setVisible] = useState(true);
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [obs, setObs] = useState(p.row.obs);
+    const [estado, setEstado] = useState(p.row.estado);
+
+    const onConfirm = async (e) => {
+        submitting.trigger();
+        const v = schemaEstado().validate({ estado, obs }, { abortEarly: false, messages: validateMessages, context: {} });
+        const { errors, warnings, value, ...status } = getStatus(v);
+        if (errors > 0) {
+            setFormStatus({...status.formStatus});
+            setFieldStatus({...status.fieldStatus});
+            submitting.end();
+        } else {
+            if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
+
+                try {
+                    const response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { id: p.row.id }, parameters: { estado, obs } });
+                    if (response.data.status !== "error") {
+                        dataAPI.fetchPost();
+                    } else {
+                        Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro ao alterar', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{response.data.title}</YScroll></div></div> });
+                    }
+                } catch (e) {
+                    Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro ao alterar', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+                } finally {
+                    submitting.end();
+                    p.onClose();
+                }
+            }
+        }
+    }
+    const onCancel = () => {
+        p.onClose();
+        setVisible(false);
+    };
+
+    return (
+        <Modal title={<div>Alterar estado do lote <span style={{fontWeight:900}}>{p.row.lote}</span></div>} visible={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
+            <AlertsContainer mask formStatus={formStatus} fieldStatus={fieldStatus} portal={false} />
+            <Container>
+                <Row style={{ marginBottom: "15px", marginTop:"15px" }}>
+                    <Col>
+                        <Select size="small" value={estado} options={[{ value: "G", label: "GOOD" }, { value: "R", label: "REJEITADO" }]} onChange={v => setEstado(v)} />
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <TextArea rows={4} autoFocus value={obs} onChange={(e) => setObs(e.target.value)} onKeyDown={e => (e.key === 'Enter') && e.stopPropagation()} />
+                    </Col>
+                </Row>
+            </Container>
+        </Modal>
+    );
+}
+
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput = true }) => {
+    const submitting = useSubmitting(false);
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: "timestamp", direction: "DESC" }] } });
-    const [selectedRows, setSelectedRows] = useState(() => new Set());
-    const [newRows, setNewRows] = useState([]);
+    const dataAPI = useDataAPI({ id: "granuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: "timestamp", direction: "DESC" }] } });
+
+    const permission = usePermission({ allowed: { producao: 100, logistica: 100, qualidade: 100 } });
+    const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });
+    const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false });
+
     const primaryKeys = ['id'];
     const columns = [
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
-        { key: 'lote', name: 'Lote', formatter: p => <Button type="link" size="small" onClick={()=>navigate('/app/picking/pickgranulado', { state: { id: p.row.id } })}>{p.row.lote}</Button> },
-        { key: 'estado', name: 'Estado' },
+        { key: 'lote', name: 'Lote', formatter: p => <Button type="link" size="small" onClick={() => navigate('/app/picking/pickgranulado', { state: { id: p.row.id } })}>{p.row.lote}</Button> },
+        { key: 'estado', name: 'Estado', width: 80, formatter: p => <Status estado={p.row.estado} />, editor(p) { return p.row.status === 1 && <ModalEstadoChange p={p} submitting={submitting} dataAPI={dataAPI} /> }, editorOptions: { editOnClick: true } },
         { key: 'peso', name: 'Peso', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso} kg</div> },
         { key: 'tara', name: 'Tara', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tara}</div> },
-        { key: 'produto_granulado', name: 'Produto', minWidth: 95, width: 95 },
+        { key: 'produto_granulado', name: 'Produto', minWidth: 150, width: 150 },
         { key: 'timestamp', name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) }
-        //{ key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined style={{ color: "#cf1322" }} /></Button> }
     ];
     const [showNewLoteModal, hideNewLoteModal] = useModal(({ in: open, onExited }) => {
         return <ResponsiveModal title="Novo Lote de Granulado"
@@ -162,28 +276,31 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         (setFormTitle) && setFormTitle({ title });
     }, []);
 
-    /*  const onDelete = (row, props) => {
-         if (row?.notValid === 1) {
-             //remove locally
-             Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontSize: "18px" }}>{row.lote}</span> ?</div>, onOk: () => dataAPI.deleteRow({ id: row.id }, primaryKeys) });
-         }
-         else {
-             //remove from DB
-         }
-     }; */
-    /*     const onSave = () => {
-            console.log(dataAPI.getData().rows)
-        } */
-
-    const onFilterFinish = (type, values) => { console.log("vvvv", values) };
+    const onFilterFinish = (type, values) => {
+        switch (type) {
+            case "filter":
+                const _values = {
+                    ...values,
+                    flote: getFilterValue(values?.flote, 'any'),
+                    fdata: getFilterRangeValues(values?.fdata?.formatted),
+                    fproduto: getFilterValue(values?.fproduto, '==')
+                };
+                const filters = { ...dataAPI.getAllFilter(), ..._values };
+                dataAPI.addFilters(filters);
+                dataAPI.first();
+                dataAPI.fetchPost();
+                break;
+        }
+    };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
 
     return (
         <>
-            {!setFormTitle && <div style={{ paddingLeft: "10px" }}><Title style={{ marginBottom: "0px" }} level={4}>{title}</Title></div>}
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} />}
             <Table
                 //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
+                loading={submitting.state}
                 reportTitle={title}
                 loadOnInit={true}
                 columns={columns}

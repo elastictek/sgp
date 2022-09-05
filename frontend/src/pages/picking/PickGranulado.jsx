@@ -5,7 +5,7 @@ import Joi from 'joi';
 import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { getSchema } from "utils/schemaValidator";
+import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
@@ -25,18 +25,30 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
+import ToolbarTitle from 'components/ToolbarTitle';
+import YScroll from 'components/YScroll';
+import { usePermission } from "utils/usePermission";
+import { Status } from './commons';
 
 const title = "Registo de Granulado";
-
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const TitleForm = ({ data, onChange, details, level }) => {
+    return (<ToolbarTitle history={level === 0 ? [] : ['Reciclado(Granulado) Lote']} title={
+        <Col xs='content' style={{}}>
+            <Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row>
+            <Row nogutter><Col><Details details={details} minWidth="300px" maxWidth="600px" /></Col></Row>
+        </Col>
+    } />);
 }
-const schemaWeigh = (keys, excludeKeys) => {
+
+const schema = (options = {}) => {
+    return getSchema({}, options).unknown(true);
+}
+const schemaWeigh = (options = {}) => {
     return getSchema({
         peso: Joi.number().positive().label("Peso").required(),
         estado: Joi.string().label("Estado").required(),
         obs: Joi.when('estado', { is: "R", then: Joi.number().required() })
-    }, keys, excludeKeys).unknown(true);
+    }, options).unknown(true);
 }
 
 const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
@@ -47,12 +59,7 @@ const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
 }
 
 const ToolbarFilters = ({ dataAPI, ...props }) => {
-    return (<>
-        {/*  <Col xs='content'><Field wrapFormItem={true} name="lote" label={{ enabled: true, text: "Lote" }}><Input width={250} size="small" /></Field></Col>
-        <Col xs='content'><Field wrapFormItem={true} name="source" label={{ enabled: true, text: "Origem" }}><Input width={100} size="small" /></Field></Col>
-        <Col xs='content'><Field wrapFormItem={true} name="timestamp" label={{ enabled: true, text: "Data" }}><Input width={150} size="small" /></Field></Col> */}
-    </>
-    );
+    return (<></>);
 }
 
 
@@ -95,10 +102,10 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }, [lastJsonMessage]);
 
     const onPick = () => {
-        //v = v.startsWith("000026") ? v.replace("000026", "").split(";") : v.split(";");
         if (value.current !== '') {
-            const isElasticBand = value.current.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
-            sendJsonMessage({ cmd: 'getlotequantity', lote: value.current, type: isElasticBand ? "elasticband" : "nw", unit: isElasticBand ? "m" : "m" });
+            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
+            const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
+            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: isElasticBand ? "elasticband" : "nw", unit: isElasticBand ? "kg" : "kg" });
             value.current = '';
             setCurrent(value.current);
         }
@@ -199,7 +206,7 @@ const loadProdutoGranuladoLookup = async (signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/produtogranuladolookup/`, filter: {}, sort: [], signal });
     return rows;
 }
-const WeighContent = ({ loteId, parentRef, closeParent }) => {
+const WeighContent = ({ loteId, parentRef, closeParent, loadParentData }) => {
     const [form] = Form.useForm();
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -210,7 +217,7 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
     const estado = [{ id: "G", txt: "GOOD" }, { id: "R", txt: "REJEITADO" }];
     const tara = [{ id: 15, txt: "15 kg" }, { id: 30, txt: "30 kg" }]
 
-    const loadData = async ({ loteId, signal }) => {
+    const loadData = async ({ loteId, signal } = {}) => {
         const pg = await loadProdutoGranuladoLookup(signal);
         setProdutoGranulado(pg);
         submitting.end();
@@ -224,13 +231,21 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
 
     const onFinish = async (values) => {
         submitting.trigger();
-        console.log("entreiiiiiiii", values)
-        //const v = validateForm(schemaWeigh());
-        //await v.validate(values);
-        //console.log("XXXXXXXXXXXXXXXXXXXXXXXXX",v.fieldStatus(),v.fieldMessages());
-        //setFieldStatus(v.fieldStatus());
-        //const v = schemaWeigh().validate(values, { abortEarly: false });
-        //console.log("FINISH", v.error.details);
+        const v = schemaWeigh().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        const { errors, warnings, value, ...status } = getStatus(v);
+        if (errors === 0) {
+            try {
+                let response = await fetchPost({ url: `${API_URL}/pesargranulado/`, filter: { id: loteId }, parameters: values });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                } else {
+                    status.formStatus.error.push({ message: response.data.title });
+                    setFormStatus({ ...status.formStatus });
+                }
+            } catch (e) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+            };
+        }
         submitting.end();
     }
 
@@ -265,14 +280,14 @@ const WeighContent = ({ loteId, parentRef, closeParent }) => {
     );
 }
 
-const Details = ({ details, maxWidth }) => {
+const Details = ({ details, maxWidth, minWidth }) => {
     return (
         <>
-            {details && <div style={{ maxWidth, margin: "15px 0px" }}>
+            {details && <div style={{ minWidth, maxWidth, margin: "15px 0px" }}>
                 <Container style={{ border: "1px solid rgba(0,0,0,.06)" }} fluid>
                     <Row style={{ background: "#f0f0f0", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
-                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Lote</Col>
-                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Produto</Col>
+                        <Col style={{ width: "200px", borderRight: "1px solid rgba(0,0,0,.06)" }}>Lote</Col>
+                        <Col style={{ width: "200px", borderRight: "1px solid rgba(0,0,0,.06)" }}>Produto</Col>
                         {
                             details.status === 1 && <>
                                 <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>Estado</Col>
@@ -282,11 +297,11 @@ const Details = ({ details, maxWidth }) => {
                         }
                     </Row>
                     <Row>
-                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.lote}</b></Col>
-                        <Col style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.produto_granulado}</b></Col>
+                        <Col style={{ width: "200px", borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.lote}</b></Col>
+                        <Col style={{ width: "200px", borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.produto_granulado}</b></Col>
                         {
                             details.status === 1 && <>
-                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>{details.estado}</Col>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}><Status estado={details.estado}/></Col>
                                 <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>{details.peso}</Col>
                                 <Col xs={2}>{details.tara}</Col>
                             </>
@@ -303,6 +318,19 @@ const loadGranuladoLookup = async (id, signal) => {
     return rows;
 }
 
+const source = (v) => {
+    if (v === 'elasticband') {
+        return "ELASTIC BAND";
+    } else if (v === 'nw') {
+        return "NONWOVEN";
+    } else if (v === 'bobinagem') {
+        return "BOBINAGEM";
+    }
+    return "";
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput = true }) => {
     const location = useLocation();
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -317,14 +345,16 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const columns = [
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
         { key: 'lote', sortable: false, name: 'Lote', formatter: p => <b>{p.row.lote}</b> },
-        { key: 'source', sortable: false, name: 'Origem', formatter: p => p.row.source === 'elasticband' ? "ELASTIC BAND" : "NONWOVEN" },
+        { key: 'source', sortable: false, name: 'Origem', formatter: p => source(p.row.source) },
         { key: 'itm', sortable: false, name: 'Artigo', formatter: p => p.row.itm },
         { key: 'itm_des', sortable: false, name: 'Artigo Des.', formatter: p => p.row.itm_des },
         { key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber bordered={false} size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
         { key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, true)} size="small" keyField="value" textField="label" data={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
         { key: 'timestamp', sortable: false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
-        { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined style={{ color: "#cf1322" }} /></Button> }
+        { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button disabled={details?.status === 1} size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
     ];
+    const [modalParameters, setModalParameters] = useState({});
+
     const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
         const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null });
         const [dirty, setDirty] = useState(false);
@@ -360,15 +390,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp()]);
     const [showWeighModal, hideWeighModal] = useModal(({ in: open, onExited }) => {
-        return <ResponsiveModal title="Pesar Granulado G-202220811-01"
+        return <ResponsiveModal title={`Pesar Granulado ${modalParameters.lote}`}
             onCancel={hideWeighModal}
             //onOk={() => onPickFinish(lastValue)}
             width={600} height={340} footer="ref" >
-            <WeighContent />
+            <WeighContent loteId={location?.state?.id} loadParentData={loadData} />
         </ResponsiveModal>;
-    }, [dataAPI.getTimeStamp()]);
+    }, [dataAPI.getTimeStamp(), modalParameters]);
 
-    const loadData = async ({ signal }) => {
+    const loadData = async ({ signal } = {}) => {
         const _details = await loadGranuladoLookup(location?.state?.id, signal);
         if (_details.length > 0) {
             setDetails(_details[0]);
@@ -385,13 +415,30 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
 
     const onPickFinish = (values) => { console.log("picking", values) };
 
+    const deleteRow = async ({id,dataAPI}) => {
+        const status = { error: [], warning: [], info: [], success: [] };
+        submitting.trigger();
+        try {
+            const response = await fetchPost({ url: `${API_URL}/deletegranuladoitem/`, filter: { id } });
+            if (response.data.status !== "error") {
+                dataAPI.fetchPost();
+            } else {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro a eliminar', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{response.data.title}</YScroll></div></div> });
+            }
+        } catch (e) {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro a eliminar', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        } finally {
+            submitting.end();
+        }
+    }
+
     const onDelete = (row, props) => {
         if (row?.notValid === 1) {
             //remove locally
-            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontSize: "18px" }}>{row.lote}</span> ?</div>, onOk: () => dataAPI.deleteRow({ id: row.id }, primaryKeys) });
+            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight:900 }}>{row.lote}</span> ?</div>, onOk: () => dataAPI.deleteRow({ id: row.id }, primaryKeys) });
         }
         else {
-            //remove from DB
+            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight:900 }}>{row.lote}</span> ?</div>, onOk: () => deleteRow({ id: row.id, dataAPI }, primaryKeys) });
         }
     };
     const onSave = async () => {
@@ -418,13 +465,18 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
+    useEffect(() => {
+        if (dataAPI.hasData()) {
+            console.log("dddddd", details?.status, dataAPI.getData().rows, dataAPI.getData().rows.filter(v => {
+                console.log("######---------->", v?.notValid)
+                return v?.notValid === null
+            }).length);
+        }
+    }, [dataAPI.hasData(), details]);
 
     return (
         <>
-            {!setFormTitle && <div style={{ paddingLeft: "10px" }}>
-                <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>
-                <Details details={details} maxWidth="600px" />
-            </div>}
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} details={details} level={location?.state?.level} />}
             <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
             <Table
                 //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
@@ -444,9 +496,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<>
-                    <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>
-                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                    {(dataAPI.hasData() /* && dataAPI.getData().rows.length>0 */ && dataAPI.getData().rows.filter(v => v?.notValid === 0).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={showWeighModal}>Pesar Lote de Granulado</Button>}
+                    {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
+                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
+                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length === 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Granulado</Button>}
                 </>}
                 //content={<PickHolder/>}
                 //paginationPos='top'

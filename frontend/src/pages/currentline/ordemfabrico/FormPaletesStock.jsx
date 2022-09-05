@@ -30,8 +30,8 @@ const columns = [
 
 ];
 
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const schema = (options={}) => {
+    return getSchema({}, options).unknown(true);
 }
 
 

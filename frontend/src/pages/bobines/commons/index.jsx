@@ -40,7 +40,7 @@ const StyledStatus = styled.div`
     border-radius:3px;
     margin-right:1px;
     text-align:center;
-    width:25px;
+    width:35px;
     line-height:12px;
     font-size:8px;
     cursor:pointer;

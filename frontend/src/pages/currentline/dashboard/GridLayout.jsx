@@ -1,11 +1,11 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { API_URL } from "config";
+import { API_URL, ROOT_URL } from "config";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
-
+import loadInit from "utils/loadInit";
 import YScroll from "components/YScroll";
 import Toolbar from "components/toolbar";
 import GridLayout, { Responsive, WidthProvider } from "react-grid-layout";
@@ -13,13 +13,15 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { ScrollMenu, VisibilityContext } from 'react-horizontal-scrolling-menu';
 import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer } from "antd";
 const { Text, Title } = Typography;
-import { SyncOutlined, SettingOutlined, MenuOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { SyncOutlined, SettingOutlined, MenuOutlined, AppstoreOutlined, LogoutOutlined, ProjectOutlined } from '@ant-design/icons';
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 import { MdOutlineApps, MdOutlineMenu, MdOutlineReceipt } from 'react-icons/md';
-import { BsChevronCompactLeft, BsChevronCompactRight } from 'react-icons/bs';
+import { BsChevronCompactLeft, BsChevronCompactRight, BsDot } from 'react-icons/bs';
+import { GoPrimitiveDot } from 'react-icons/go';
+
 
 
 import Logo from 'assets/logo.svg';
@@ -29,14 +31,19 @@ import MainMenu from './MainMenu';
 const ItemCortes = React.lazy(() => import('./ItemCortes'));
 const ItemActions = React.lazy(() => import('./ItemActions'));
 const ItemAgg = React.lazy(() => import('./ItemAgg'));
+const ItemGranulado = React.lazy(() => import('./ItemGranulado'));
 const ItemBobinagens = React.lazy(() => import('./ItemBobinagens'));
 const ItemFormulacao = React.lazy(() => import('./ItemFormulacao'));
+const ItemOrdensFabrico = React.lazy(() => import('./ItemOrdensFabrico'));
+const ItemOperations = React.lazy(() => import('./ItemOperations'));
+import { AppContext } from "../../App";
+
 
 const useStyles = createUseStyles({
     toolboxItem: {
         lineHeight: 1,
         cursor: "pointer",
-        width: "80px",
+        width: "85px",
         minHeight: "25px",
         display: "flex",
         flexDirection: "column",
@@ -45,6 +52,7 @@ const useStyles = createUseStyles({
         marginRight: "5px",
         border: "solid 1px #d9d9d9",
         borderRadius: "6px",
+        whiteSpace: "nowrap",
         padding: "3px",
         background: "#fff",
         '&:hover': {
@@ -59,12 +67,13 @@ const useStyles = createUseStyles({
         border: "1px solid #dee2e6",
         borderRadius: "3px",
         padding: "2px",
-        height: "40px",
+        height: "45px",
         justifyContent: "center"
     },
     scrollContainer: {
         "-ms-overflow-style": "none",
         "scrollbar-width": "none",
+        "align-self": "center",
         '&::-webkit-scrollbar': {
             display: "none"
         }
@@ -91,34 +100,58 @@ const StyledDrawer = styled(Drawer)`
 
 `;
 
+const StyledTitle = styled(Title)`
+    margin: 0px 5px 0px 0px; 
+    white-space: nowrap;
+    cursor: pointer;
+    &:hover{
+        color:#096dd9;
+    }
+`;
+
+const StyledLink = styled(Button)`
+    color:#000;
+    &:hover{
+        color:#096dd9;
+    }
+`;
+
+
 const getFromLS = (key, dashboard) => {
     let ls = null;
     if (global.localStorage) {
-        if (global.localStorage.getItem("currentDashboard") !== null) {
-            console.log("get--", global.localStorage.getItem("currentDashboard"), key)
-            try {
-                if (key === "currentDashboard") {
-                    ls = JSON.parse(global.localStorage.getItem("currentDashboard"));
-                } else if (key === "dashboards") {
-                    ls = JSON.parse(global.localStorage.getItem("dashboards"));
-                } else {
-                    const cd = JSON.parse(global.localStorage.getItem("currentDashboard"));
-                    ls = JSON.parse(global.localStorage.getItem(`${cd}-${key}`));
+        try {
+            if (key === "currentDashboard") {
+                ls = JSON.parse(global.localStorage.getItem("currentDashboard"));
+            } else if (key === "dashboards") {
+                ls = JSON.parse(global.localStorage.getItem("dashboards"));
+            } else if (key === "preventCollisions") {
+                ls = JSON.parse(global.localStorage.getItem("preventCollisions"));
+            } else if (key === "overlap") {
+                ls = JSON.parse(global.localStorage.getItem("overlap"));
+            } else {
+                if (dashboard) {
+                    ls = JSON.parse(global.localStorage.getItem(`${dashboard}-${key}`));
                 }
-            } catch (e) {
-                /*Ignore*/
             }
+        } catch (e) {
+            /*Ignore*/
         }
     }
     return ls;
 }
 
 const saveToLS = (key, value) => {
+
     if (global.localStorage) {
         if (key === "currentDashboard") {
             global.localStorage.setItem("currentDashboard", JSON.stringify(value));
         } else if (key === "dashboards") {
             global.localStorage.setItem("dashboards", JSON.stringify(value));
+        } else if (key === "preventCollisions") {
+            global.localStorage.setItem("preventCollisions", JSON.stringify(value));
+        } else if (key === "overlap") {
+            global.localStorage.setItem("overlap", JSON.stringify(value));
         } else {
             const cd = (global.localStorage.getItem("currentDashboard") !== null) ? JSON.parse(global.localStorage.getItem("currentDashboard")) : originalDashboards[0].id;
             global.localStorage.setItem(`${cd}-${key}`, JSON.stringify(value));
@@ -145,28 +178,47 @@ const originalLayouts = {
         { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4 },
         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4 },
         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4 },
-        { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4 }
+        { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4 },
+        { i: "operations", x: 0, y: 0, w: 2, h: 2, minH: 2 }
     ]
 };
 const originalToolbox = {
-    lg: []
+    lg: [
+        { i: "granulado", x: 0, y: 0, w: 4, h: 8, minH: 4 },
+        { i: "ordemfabrico", x: 0, y: 0, w: 4, h: 8, minH: 4 }
+    ]
 };
+
+
+
 
 const toolboxItems = {
     cortes: { description: "Cortes", icon: <MdOutlineApps /> },
     formulacao: { description: "Formulação", icon: <MdOutlineReceipt /> },
     bobinagens: { description: "Bobinagens", icon: <MdOutlineApps /> },
-    actions: { description: "Menu", icon: <MdOutlineMenu /> }
+    actions: { description: "Menu", icon: <MdOutlineMenu /> },
+    granulado: { description: "Reciclado", icon: <MdOutlineApps /> },
+    ordemfabrico: { description: "Ordens Fabrico", icon: <MdOutlineApps /> },
+    operations: { description: "Ações", icon: <MdOutlineApps /> },
+   /*  "prod-reports":{description:"Relatórios Produção", icon:<ProjectOutlined />} */
 }
 
 const ToolboxItem = ({ item, onTakeItem }) => {
     const classes = useStyles();
     const toolItem = toolboxItems[item.i];
     return (
+        <>
+        {item?.children ?
+            <div style={{display:"flex",flexDirection:"row"}}>
+                <div>content</div>
+                <div>dropdown</div>
+            </div> 
+        :
         <div className={classes.toolboxItem} onClick={() => onTakeItem(item)}>
             <div>{toolItem?.icon && toolItem.icon}</div>
             <div>{toolItem?.description ? toolItem.description : item.i}</div>
-        </div>
+        </div>}
+        </>
     );
 }
 
@@ -179,8 +231,7 @@ const LeftArrow = ({ items, onShowDrawer }) => {
     const { isFirstItemVisible, scrollPrev } = useContext(VisibilityContext);
     return (
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-            <Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} />
-            {/* <MenuOutlined onClick={onShowDrawer} style={{ cursor: "pointer" }} /> */}
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{fontSize:"8px"}}>v.220903.11.45</div></div>
             <Button type="link" disabled={isFirstItemVisible} onClick={() => scrollPrev()} icon={<BsChevronCompactLeft style={{ fontSize: "24px" }} color={(isFirstItemVisible || items.length === 0) ? "#d9d9d9" : "#262626"} />} />
         </div>
     );
@@ -210,7 +261,8 @@ const onWheel = (apiObj, ev) => {
     }
 }
 
-const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, dashboards, setDashboards, currentDashboard, showOfs }) => {
+const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, dashboards, setDashboards, currentDashboard, showOfs, preventCollisions, overlap }) => {
+    const { auth } = useContext(AppContext);
     const startEdit = useRef(false);
     const onChange = (type, v, x) => {
         if (type === "description") {
@@ -238,7 +290,6 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
 
     return (
         <>
-            <Title level={5} style={{ margin: "0px 5px 0px 0px", whiteSpace: "nowrap" }} >{dashboards.find(v => v.id === currentDashboard)?.description}</Title>
             <Popover
                 visible={clickSettings}
                 onVisibleChange={handleSettingsClick}
@@ -256,19 +307,59 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
 
                         <Divider style={{ margin: "8px 0" }} />
                         <Menu onClick={() => onChange("ofs")} items={[
-                            { label: showOfs() === true ? 'Esconder Ordens de Fabrico' : 'Mostrar Ordens de Fabrico', key: 'viewofs', icon: <AppstoreOutlined /> }
+                            { label: showOfs() === true ? 'Esconder Ordens de Fabrico' : 'Mostrar Ordens de Fabrico', key: 'viewofs', icon: <GoPrimitiveDot /> }
+                        ]}></Menu>
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Menu onClick={(v) => onSettingsClick(v)} items={[
+                            { label: !preventCollisions ? 'Previnir Colisões' : 'Permitir Colisões', key: 'collisions', icon: <GoPrimitiveDot /> },
+                            { label: !overlap ? 'Permitir Sobreposição' : 'Não Permitir Sobreposição', key: 'overlap', icon: <GoPrimitiveDot /> }
                         ]}></Menu>
                         <Divider style={{ margin: "8px 0" }} />
                         <Menu onClick={(v) => onSettingsClick(v)} items={[
                             { label: 'Repor Layout Original', key: 'resetlayout', icon: <SyncOutlined /> }
                         ]}></Menu>
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Menu onClick={(v) => onSettingsClick(v)} items={[
+                            { label: 'Logout', key: 'logout', icon: <LogoutOutlined /> }
+                        ]}></Menu>
                     </div>
                 } trigger="click">
-                <Button size="small" icon={<SettingOutlined />} style={{ marginLef: "5px" }} />
+                <div style={{ cursor: "pointer", textAlign: "center" }}>
+                    <StyledLink type="link" size="small" icon={<SettingOutlined />} style={{ marginLef: "5px", marginBottom: "0px" }}><span style={{ fontSize: "12px", fontWeight: 700 }}>{dashboards.find(v => v.id === currentDashboard)?.description}</span></StyledLink>
+                    <div style={{ textAlign: "center", whiteSpace: "nowrap", padding: "0px 5px" }}>{auth.name} {auth.turno.enabled && <span><Text type="secondary">|</Text> Turno <b>{`${auth.turno.turno}`}</b></span>}</div>
+                </div>
             </Popover >
         </>
     );
 }
+
+const CustomGridItemComponent = React.forwardRef(({ style, className, children, ...props }, ref) => {
+    return (
+        <div style={{ ...style }} className={className} ref={ref} {...props}>
+            {children}
+        </div>
+    );
+});
+
+const CloseItem = styled.div`
+
+    position: absolute;
+    right: 10px; 
+    top: 4px; 
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 16px;
+    font-weight:700;
+    color:${({ color }) => color ? color : "#000"};
+    &::after {
+        content: "x";
+    }
+    &:hover {
+        color:#096dd9;
+    }
+
+`;
+
 
 export default (props) => {
     const classes = useStyles();
@@ -281,7 +372,8 @@ export default (props) => {
     const [toolbox, setToolbox] = useState();
     const [dashboards, setDashboards] = useState();
     const [clickSettings, setClickSettings] = useState(false);
-    const [mounted, setMounted] = useState(false);
+    const [preventCollisions, setPreventCollisions] = useState(false);
+    const [overlap, setOverlap] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
 
 
@@ -289,7 +381,7 @@ export default (props) => {
         const controller = new AbortController();
         loadData({ aggId: props?.aggId, signal: controller.signal });
         return (() => controller.abort());
-    }, []);
+    }, [location]);
 
     const hideSettings = () => {
         setClickSettings(false);
@@ -302,9 +394,35 @@ export default (props) => {
     const onSettingsClick = async (type) => {
         if (type?.key) {
             switch (type.key) {
-                case 'resetlayout': resetLayout(); break;
+                case 'collisions':
+                    saveToLS("preventCollisions", !preventCollisions);
+                    setPreventCollisions(prev => !prev);
+                    break;
+                case 'overlap':
+                    saveToLS("overlap", !overlap);
+                    setOverlap(prev => !prev);
+                    break;
+                case 'logout':
+
+
+                    try {
+                        let response = await fetchPost({ url: `${ROOT_URL}/users/logout-/`, parameters: {} });
+                        if (response.status === 200) {
+                            window.location.href = `${ROOT_URL}/users/login/`;
+                        }
+                    } catch (e) {
+                        Modal.error({
+                            centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Logout', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
+                                <YScroll>
+                                    {e.message}
+                                </YScroll>
+                            </div></div>
+                        });
+                    };
+                    break;
+                case 'resetlayout': resetLayout(currentDashboard); break;
                 case type?.key.match(/^dashboard-/)?.input:
-                    setCurrentDashboard(type.key.replace("dashboard-", ""));
+                    changeCurrentDashboard(type.key.replace("dashboard-", ""));
                     break;
                 default: break;
             }
@@ -344,24 +462,27 @@ export default (props) => {
         }));
     }
 
-    useEffect(() => {
-        if (toolbox) {
-            saveToLS("toolbox", toolbox);
+    const changeCurrentDashboard = (key) => {
+        let _breakpoint = (currentBreakpoint) ? currentBreakpoint : "lg"
+        let _current = key;
+        if (!_current) {
+            _current = (global.localStorage.getItem("currentDashboard") !== null) ? JSON.parse(global.localStorage.getItem("currentDashboard")) : originalDashboards[0].id;
         }
-    }, [toolbox]);
-
-    useEffect(() => {
-        if (currentDashboard && mounted) {
-            saveToLS("currentDashboard", currentDashboard);
-            setLayouts(getFromLS("layouts") || { lg: [] });
-            setToolbox(getFromLS("toolbox") || { [currentBreakpoint]: originalLayouts[currentBreakpoint].filter(v => !v.disabled) });
-        } else if (currentDashboard) {
-            saveToLS("currentDashboard", currentDashboard);
-            setLayouts(getFromLS("layouts") || originalLayouts);
-            setToolbox(getFromLS("toolbox") || originalToolbox);
-            setMounted(true);
+        saveToLS("currentDashboard", _current);
+        setCurrentDashboard(_current);
+        const _layouts = getFromLS("layouts", _current);
+        const _toolbox = getFromLS("toolbox", _current);
+        if (_layouts === null) {
+            setLayouts({ lg: [] });
+        } else {
+            setLayouts(_layouts);
         }
-    }, [currentDashboard]);
+        if (_toolbox === null) {
+            setToolbox({ [_breakpoint]: [...originalLayouts[_breakpoint].filter(v => !v.disabled), ...originalToolbox[_breakpoint].filter(v => !v.disabled)] });
+        } else {
+            setToolbox(_toolbox);
+        }
+    }
 
     useEffect(() => {
         if (dashboards) {
@@ -373,25 +494,46 @@ export default (props) => {
 
     const onLayoutChange = (layout, layouts) => {
         saveToLS("layouts", layouts);
+        saveToLS("toolbox", toolbox);
         setLayouts(layouts);
     }
 
     const resetLayout = () => {
-        setLayouts(originalLayouts);
-        setToolbox(originalToolbox);
+        const db = dashboards.find(v => v.id === currentDashboard);
+        if (db?.main === true) {
+            setLayouts(originalLayouts);
+            setToolbox(originalToolbox);
+        } else {
+            setDashboards(prev => {
+                const newState = prev.map(obj => {
+                    if (obj.id === currentDashboard) {
+                        return { ...obj, ofs: false };
+                    }
+                    return obj;
+                });
+                return newState;
+            });
+            setLayouts({ lg: [] });
+            setToolbox({ [currentBreakpoint]: [...originalLayouts[currentBreakpoint].filter(v => !v.disabled), ...originalToolbox[currentBreakpoint].filter(v => !v.disabled)] });
+        }
+
     }
 
     const loadData = (data = {}, type = "init") => {
+
         const { signal } = data;
-        let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
+        const { aggId } = loadInit({}, {}, data, location?.state, [...Object.keys(location?.state || {}), ...Object.keys(data || {})]);
+
+        //let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
         switch (type) {
             default:
-                /* if (!loading) {
-                    setLoading(true);
-                } */
                 (async () => {
                     let raw = await loadCurrentSettings(aggId, signal);
-
+                    setCurrentBreakpoint("lg");
+                    setDashboards(getFromLS("dashboards") || originalDashboards);
+                    setPreventCollisions(getFromLS("preventCollisions") || false);
+                    setOverlap(getFromLS("overlap") || false);
+                    changeCurrentDashboard();
                     if (!raw[0]) { return; }
                     const formulacao = JSON.parse(raw[0].formulacao);
                     const gamaoperatoria = JSON.parse(raw[0].gamaoperatoria);
@@ -405,8 +547,6 @@ export default (props) => {
                     const ofs = JSON.parse(raw[0].ofs);
                     const paletizacao = JSON.parse(raw[0].paletizacao);
                     const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
-
-                    //for (const [idx, v] of ofs.entries()) {v['color'] = colorsOfs[idx]}
 
                     const quantity = ofs.reduce((basket, ofitem) => {
                         basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
@@ -425,12 +565,6 @@ export default (props) => {
                         sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria, paletesstock,
                         nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status, lotes
                     });
-
-                    setCurrentBreakpoint("lg");
-                    setCurrentDashboard(getFromLS("currentDashboard") || originalDashboards[0].id);
-                    setLayouts(getFromLS("layouts") || originalLayouts);
-                    setToolbox(getFromLS("toolbox") || originalToolbox);
-                    setDashboards(getFromLS("dashboards") || originalDashboards);
                 })();
         }
     }
@@ -454,8 +588,7 @@ export default (props) => {
 
     return (
         <div/*  style={{transform: 'scale(0.8)',transformOrigin: "left top"}} */ /* style={{ transform: 'scale(0.8) translate(-12%, -12%)' }} */>
-            {/* <Toolbar left={leftContent} right={rightContent} /> */}
-            {dashboards && <>
+            {(currentDashboard) && <>
                 <StyledDrawer
                     title={
                         <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
@@ -469,7 +602,7 @@ export default (props) => {
                 >
                     <MainMenu dark />
                 </StyledDrawer>
-                <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[currentBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<SettingsLayout clickSettings={clickSettings} handleSettingsClick={handleSettingsClick} onSettingsClick={onSettingsClick} setDashboards={setDashboards} dashboards={dashboards} currentDashboard={currentDashboard} showOfs={showOfs} />} items={(toolbox[currentBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
+                <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[currentBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<SettingsLayout clickSettings={clickSettings} handleSettingsClick={handleSettingsClick} onSettingsClick={onSettingsClick} setDashboards={setDashboards} dashboards={dashboards} currentDashboard={currentDashboard} showOfs={showOfs} preventCollisions={preventCollisions} overlap={overlap} />} items={(toolbox[currentBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
                     {(toolbox[currentBreakpoint] || []).map(item => <ToolboxItem itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}
                 </ScrollMenu>
                 <Suspense fallback={<></>}>
@@ -479,8 +612,9 @@ export default (props) => {
                         compactType="horizontal"
                         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                        rowHeight={20}
-                        //preventCollision={true}
+                        rowHeight={35}
+                        preventCollision={preventCollisions}
+                        allowOverlap={overlap}
                         measureBeforeMount={true}
 
                         //transformScale={0.8}
@@ -491,12 +625,15 @@ export default (props) => {
                         })}
                         {layouts[currentBreakpoint].filter(v => !v?.disabled && !v.i.startsWith('agg-')).map(v => {
                             return (
-                                <div key={v.i}>
-                                    {v.i === "formulacao" && <><span style={{ position: "absolute", right: "2px", top: 0, cursor: "pointer", zIndex: 1000, fontSize: "14px" }} onClick={() => onPutItem(v)}>x</span><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "bobinagens" && <><span style={{ position: "absolute", right: "2px", top: 0, cursor: "pointer", zIndex: 1000 }} onClick={() => onPutItem(v)}>x</span><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "cortes" && <><span style={{ position: "absolute", right: "2px", top: 0, cursor: "pointer", zIndex: 1000 }} onClick={() => onPutItem(v)}>x</span><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "actions" && <><span style={{ position: "absolute", right: "2px", top: 0, cursor: "pointer", zIndex: 1000 }} onClick={() => onPutItem(v)}>x</span><ItemActions card={{ title: "Menu" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                </div>
+                                <CustomGridItemComponent key={v.i}>
+                                    {v.i === "formulacao" && <><CloseItem onClick={() => onPutItem(v)} /><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "bobinagens" && <><CloseItem onClick={() => onPutItem(v)} /><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "cortes" && <><CloseItem onClick={() => onPutItem(v)} /><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "actions" && <><CloseItem color="#fff" onClick={() => onPutItem(v)} /><ItemActions card={{ title: "Menu" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "granulado" && <><CloseItem onClick={() => onPutItem(v)} /><ItemGranulado card={{ title: "Reciclado(Granulado) Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "ordemfabrico" && <><CloseItem onClick={() => onPutItem(v)} /><ItemOrdensFabrico card={{ title: "Ordens de Fabrico" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "operations" && <><CloseItem onClick={() => onPutItem(v)} /><ItemOperations card={{ title: "Ações" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                </CustomGridItemComponent>
                             );
                         })
                         }

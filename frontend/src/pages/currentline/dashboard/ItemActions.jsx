@@ -60,10 +60,10 @@ export default ({ record, card, parentReload }) => {
         <>
             {Object.keys(record).length > 0 && <Card
                 hoverable
+                headStyle={{background: "#2a3142",padding:"0px 32px 0px 12px"}}
                 /* onClick={onEdit} */
-                style={{ height: "100%" }}
+                style={{ height: "100%", background:"#2a3142" }}
                 bodyStyle={{ height: "calc(100% - 45px)", background: "#2a3142" }}
-                headStyle={{ background: "#2a3142" }}
                 size="small"
                 title={<div style={{ fontWeight: 700, fontSize: "16px", color:"#fff" }}>{card.title}</div>}
             >

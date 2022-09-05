@@ -173,6 +173,33 @@ class RealTimeOfs(WebsocketConsumer):
         dt = json.loads(text_data)
         self.commands[dt['cmd']](self, dt)
 
+class RealTimeGeneric(WebsocketConsumer):
+
+    def checkReciclado(self, data):
+        print("GETTING RECICLADO")
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT id
+            FROM producao_reciclado
+            order by timestamp desc
+        """),connection,{})['rows']
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"reciclado","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+    
+    commands = {
+        'checkreciclado':checkReciclado
+    }
+
+    def connect(self):
+        self.accept()
+
+    def disconnect(self, close_code):
+        pass
+
+    def receive(self, text_data):
+        dt = json.loads(text_data)
+        self.commands[dt['cmd']](self, dt)
+
 class LotesPickConsumer(WebsocketConsumer):
 
     def getLoteQuantity(self, data):

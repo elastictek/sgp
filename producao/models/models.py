@@ -540,9 +540,10 @@ class Bobinagem(models.Model):
     area_r=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Área R", default = 0)
     area_ind=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Área Ind", default = 0)
     area_ba=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Área BA", default = 0)
-    valid = models.SmallIntegerField(default=1, verbose_name="Bobinagem Validada")
+    valid = models.SmallIntegerField(default=1, verbose_name="Bobinagem Validada") #ADDED
     audit_current_settings=models.ForeignKey('producao.AuditCurrentSettings', on_delete = models.PROTECT, verbose_name = "Audit Current Settings", null = True) #ADDED
     ig_bobinagem_id=models.IntegerField(verbose_name = "IG_BOBINAGEM", null = True, blank = True, default = 0) #ADDED
+    largura_bruta=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Largura Bruta", default = 0) #ADDED
     def __str__(self):
         return self.nome
 
@@ -866,6 +867,10 @@ class Bobine(models.Model):
     desp = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Desperdício", null=True, blank=True)
     tipo_desp = models.CharField(max_length=4, choices=TIPODESP, default=None, verbose_name="Tipo de desperdício", null=True, blank=True)
     para_retrabalho = models.BooleanField(default=False, verbose_name="Para retrabalho")
+    fc_pos = models.JSONField(blank=True, null=True) #ADDED
+    ff_pos = models.JSONField(blank=True, null=True) #ADDED
+    buracos_pos = models.JSONField(blank=True, null=True) #ADDED
+    furos_pos = models.JSONField(blank=True, null=True) #ADDED
 
     def __str__(self):
         return self.nome

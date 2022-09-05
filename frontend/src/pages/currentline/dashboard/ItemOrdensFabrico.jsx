@@ -14,16 +14,17 @@ import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
 import { Button, Select, Typography, Card, Collapse, Space, Form } from "antd";
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, UnorderedListOutlined , CheckOutlined  } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
+import TagButton from "components/TagButton";
 import loadInit from "utils/loadInit";
 /* const FormCortes = React.lazy(() => import('../FormCortes')); */
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 
-const title = "Bobinagens";
+const title = "Ordens de Fhhhabrico";
 const useStyles = createUseStyles({});
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -37,10 +38,12 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     );
 }
 
-const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
+const SelectOrdensFabrico = ({ onView, onChangeContent, dataAPI }) => {
+    const navigate = useNavigate();
     return (
         <Space>
-            <Select defaultValue={noValue(dataAPI.getFilter(true)?.valid, "0")} style={{ width: 90 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
+            <Button type="link" onClick={(e) => { e.stopPropagation(); navigate("/app", { state: { tstamp: Date.now() } , replace:true }); }} disabled={dataAPI.isLoading()}>A decorrer...</Button>
+            {/* <Select defaultValue={noValue(dataAPI.getFilter(true)?.valid, "0")} style={{ width: 90 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="0">Por validar</Option>
                 <Option value="1">Validadas</Option>
                 <Option value="-1"> </Option>
@@ -48,32 +51,55 @@ const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
             <Select defaultValue={noValue(dataAPI.getFilter(true)?.type, "1")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="1">Bobinagens da Ordem de Fabrico</Option>
                 <Option value="-1">Todas as Bobinagens</Option>
-            </Select>
+            </Select> */}
             <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={dataAPI.isLoading()} />
         </Space>
     );
 }
 
 
+
+const ColumnEstado = ({ p }) => {
+    const { status, temp_ofabrico } = p.row;
+
+    return (
+        <div style={{ display: "flex", flexDirection: "row" }}>
+            {((status == 0 || !status) && !temp_ofabrico) && <>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+            </>}
+            {((status == 1 || !status) && temp_ofabrico) && <>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+            </>}
+            {(status == 2 && temp_ofabrico) && <>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
+            </>}
+            {status == 3 && <>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+            </>}
+            {status == 9 && <>
+                <TagButton style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
+            </>}
+        </div>
+    );
+}
+
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-bobinagens", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { valid: "0", type: "1"/* agg_of_id: record.agg_of_id, valid: "0", type: "1" */ }, sort: [{ column: 'nome', direction: 'ASC' }] } });
-    const primaryKeys = ['id'];
+    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {fofstatus:'IN(2,3,9)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
+    const primaryKeys = ['ofabrico', 'item', 'iorder'];
     const columns = [
-        { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },
-        { key: 'inico', name: 'Início', width: 90 },
-        { key: 'fim', name: 'Fim', width: 90 },
-        { key: 'duracao', name: 'Duração', width: 90 },
-        { key: 'core', name: 'Core', width: 90 },
-        { key: 'comp', name: 'Comprimento', width: 100 },
-        { key: 'comp_par', name: 'Comp. Emenda', width: 100 },
-        { key: 'comp_cli', name: 'Comp. Cliente', width: 100 },
-        { key: 'area', name: 'Área', width: 90 },
-        { key: 'diam', name: 'Diâmetro', width: 100 },
-        { key: 'nwinf', name: 'Nw Inf. m', width: 100 },
-        { key: 'nwsup', name: 'Nw Sup. m', width: 100 }
+        
+        { key: 'ofabrico', name: 'Ordem Fabrico', formatter: p => <Button type="link" size="small" onClick={() => onOfClick(p.row)}>{p.row.ofabrico}</Button> },
+        { key: 'prf', name: 'Ordem Fabrico' },
+        { key: 'iorder', name: 'Ordem Fabrico' },
+        { key: 'cod', name: 'Agg' },
+        { key: 'estado', name: 'Estado', formatter: p => <ColumnEstado p={p} /> },
+        { key: 'item_nome', name: 'Artigo' },
+        { key: 'cliente_nome', name: 'Cliente' },
+        { key: 'start_date', name: 'Início Previsto' },
+        { key: 'end_date', name: 'Fim Previsto' }
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
@@ -82,34 +108,25 @@ export default ({ record, card, parentReload }) => {
         </ResponsiveModal>
     ), [modalParameters]);
 
-    const onBobinagemClick = (row) => {
-        if (row?.valid === 1) {
-            window.location.href = `/producao/bobinagem/${row.id}/`;
-        } else {
-            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
-        }
+    const onOfClick = (row) => {
+        //if (row?.valid === 1) {
+        //    window.location.href = `/producao/bobinagem/${row.id}/`;
+        //} else {
+            console.log(row)
+            navigate("/app", { state: { aggId:row.temp_ofabrico_agg, tstamp: Date.now() } , replace:true });
+        //}
     }
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     const onView = () => {
-        navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
+        navigate("/app/ofabricolist", { state: { tstamp: Date.now() } });
     }
 
     const onChangeContent = async (v, field) => {
-        dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v },true,true);
+        dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v });
         dataAPI.fetchPost();
     }
-
-    useEffect(() => {
-        if (record?.agg_of_id) {
-            dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
-        } else {
-            const { agg_of_id, ...f } = dataAPI.getFilter(true);
-            dataAPI.addFilters(f, true, true);
-        }
-        dataAPI.fetchPost();
-    }, [record?.agg_of_id]);
 
     return (
         <>
@@ -120,13 +137,13 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 45px)" }}
                 size="small"
                 title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>}
-                extra={<SelectBobinagens onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
+                extra={<SelectOrdensFabrico onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
             >
                 <YScroll>
                     <Table
                         //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
                         reportTitle={title}
-                        loadOnInit={false}
+                        loadOnInit={true}
                         columns={columns}
                         dataAPI={dataAPI}
                         //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}

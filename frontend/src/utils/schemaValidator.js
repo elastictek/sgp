@@ -1,6 +1,16 @@
 import Joi from 'joi';
 import dayjs from 'dayjs';
 
+export const validateMessages = {
+    'any.required': 'Campo {{#label}} é obrigatório.',
+    'number.base': 'Campo {{#label}} tem de ser um valor numérico.',
+    'number.greater':'Campo {{#label}} tem de ser maior ou igual que {{:#limit}}.',
+    'string.base': 'Campo {{#label}} tem de ser um valor de texto.',
+    'string.empty': 'Campo {{#label}} tem de indicar o motivo.',
+};
+
+
+/* DEPRECATED?? */
 export const validate = (schema, onlyExistingValues = [], mapper = {}, parameters = {}) => {
     return async (req, res, next) => {
         const itemKey = (req.method == "POST") ? "body" : "query";
@@ -37,7 +47,7 @@ export const validate = (schema, onlyExistingValues = [], mapper = {}, parameter
 export const pick = (keys, obj, exclude = []) => {
     var result = {};
     var idx = 0;
-    let ks = (!keys) ? Object.keys(obj) : keys;
+    let ks = (!keys || keys.length === 0) ? Object.keys(obj) : keys;
     while (idx < ks.length) {
         if (ks[idx] in obj) {
             if (!exclude.includes(ks[idx])) {
@@ -49,12 +59,55 @@ export const pick = (keys, obj, exclude = []) => {
     return result;
 };
 
-export const getSchema = (rules, keys = [], excludeKeys = []) => {
-    if (keys.length == 0 && excludeKeys.length == 0) {
-        return Joi.object(rules);
-    } else {
-        return Joi.object(pick(keys, rules, excludeKeys));
+export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false) => {
+    if (typeof keys === 'object' && keys !== null) {
+        return getSchemav2(rules, keys);
     }
+    if (keys.length == 0 && excludeKeys.length == 0) {
+        return (wrapArray) ? Joi.array().items(Joi.object(rules)) : Joi.object(rules);
+    } else {
+        return (wrapArray) ? Joi.array().items(Joi.object(pick(keys, rules, excludeKeys))) : Joi.object(pick(keys, rules, excludeKeys));
+    }
+}
+
+export const getSchemav2 = (rules, { keys = [], excludeKeys = [], wrapArray = false, unknown = false, wrapObject = true } = {}) => {
+    if (!wrapObject) {
+        return (wrapArray) ? Joi.array().items(rules) : rules;
+    } else {
+        if (keys.length == 0 && excludeKeys.length == 0) {
+            const obj = (unknown) ? Joi.object(rules).unknown(true) : Joi.object(rules);
+            return (wrapArray) ? Joi.array().items(obj) : obj;
+        } else {
+            const obj = (unknown) ? Joi.object(pick(keys, rules, excludeKeys)).unknown(true) : Joi.object(pick(keys, rules, excludeKeys));
+            return (wrapArray) ? Joi.array().items(obj) : obj;
+        }
+    }
+}
+
+export const getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}) => {
+    const ret = { errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
+    ret.value = vObject?.value;
+    if (vObject?.error) {
+        for (const itm of vObject.error?.details) {
+            ret.errors++;
+            if (itm.path.length > 0) {
+                ret.fieldStatus[[...itm.path]] = { status: "error", messages: [{ message: itm.message }] }
+            } else {
+                ret.formStatus.error.push({ message: itm.message });
+            }
+        }
+    }
+    if (vObject?.warning) {
+        for (const itm of vObject.warning?.details) {
+            ret.warnings++;
+            if (itm.path.length > 0) {
+                ret.fieldStatus[[...itm.path]] = { status: "warning", messages: [{ message: itm.message }] }
+            } else {
+                ret.formStatus.warning.push({ message: itm.message });
+            }
+        }
+    }
+    return ret;
 }
 
 export const getRules = (rules, keys = null) => {
