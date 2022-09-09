@@ -2,6 +2,7 @@ export default (init, store = {}, props = {}, state = {}, fields) => {
     let df = { ...init };
     console.log(state,store)
     for (let v of fields) {
+        console.log("====>>>>>",v,store,state);
         if (store?.tstamp && state?.tstamp) {
             if (store.tstamp > state.tstamp) {
                 if (props && props[v]) { df[v] = props[v]; }

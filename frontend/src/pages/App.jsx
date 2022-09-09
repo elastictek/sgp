@@ -42,6 +42,7 @@ const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
 const FormPalete = lazy(() => import('./paletes/FormPalete'));
 const GranuladoList = lazy(() => import('./picking/GranuladoList'));
 const PickGranulado = lazy(() => import('./picking/PickGranulado'));
+const PickNWList = lazy(() => import('./picking/PickNWList'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 
@@ -75,7 +76,7 @@ const loadAuthUser = async ({ }, signal) => {
                     <div style={{ textAlign: "center", marginTop: "10px" }}><a href={`${ROOT_URL}/users/login/`}><b>Login</b></a></div>
                 </YScroll>
             </div></div>,
-            onOk:()=>window.location.href=`${ROOT_URL}/users/login/`
+            onOk: () => window.location.href = `${ROOT_URL}/users/login/`
         });
     };
     return response;
@@ -126,6 +127,7 @@ const RenderRouter = () => {
 
                 { path: "picking/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
                 { path: "picking/pickgranulado", element: <Suspense fallback={<Spin />}><PickGranulado /></Suspense> },
+                { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
@@ -227,6 +229,7 @@ const App2 = () => {
     const loadData = async ({ signal }) => {
         const response = await loadAuthUser({}, signal);
         setAuth(response.data);
+        //setAuth({ ...response.data, isAdmin: false, permissions: { producao: 200 } });
         submitting.end();
     }
 

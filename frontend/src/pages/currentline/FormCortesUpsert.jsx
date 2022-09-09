@@ -25,7 +25,7 @@ const schema = (keys, excludeKeys) => {
 
 const useStyles = createUseStyles({
     bobine: {
-        ...(props) => props.forInput && {cursor:"move"},
+        ...(props) => props.forInput && { cursor: "move" },
         border: "solid 1px #bfbfbf",
         height: "150px",
         boxShadow: "2px 1px 2px #f0f0f0",
@@ -41,19 +41,11 @@ const useStyles = createUseStyles({
 const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cortes, setArtigo }) => {
     const classes = useStyles({ width, forInput });
     const ref = useRef(null);
-    const color = cortes.find(v => v.item_lar == value);
-    const style = {
-        color: color.color,
-        fontStyle: "italic",
-        height: "70%",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center"
-    };
+    const [color, setColor] = useState(cortes.find(v => v.item_lar == value));
 
-    const onClick = (item) =>{
-        console.log(index,item)
-        setArtigo(index,item);
+    const onClick = (item) => {
+        console.log(index, item)
+        setArtigo(index, item);
     }
 
     const menu = (
@@ -114,7 +106,14 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cor
     return (
         <div ref={ref} className={classes.bobine} style={{ opacity, background: color.bcolor, color: color.color }} data-handler-id={handlerId}>
             <div style={{ fontSize: "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
-            <div style={style}>{value}</div>
+            <div style={{
+                color: color.color,
+                fontStyle: "italic",
+                height: "70%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>{value}</div>
         </div>
     );
 }
@@ -221,7 +220,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             </Form>
 
             <DndProvider backend={HTML5Backend}>
-                <div style={{ display: "flex", flexDirection: "row",justifyContent:"space-around" }}>
+                <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-around" }}>
                     {bobines.map((v, i) => {
                         return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} cortes={record.cortes} forInput={forInput} />);
                     })}

@@ -22,7 +22,7 @@ const StyledDrawer = styled(Drawer)`
 
 `;
 
-export default ({ title, history = [] }) => {
+export default ({ title, right, history = [] }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const onShowDrawer = () => {
@@ -83,14 +83,10 @@ export default ({ title, history = [] }) => {
                         </Row>}
                     </Col>
                     <Col style={{ alignItems: "center" }}>
-                        <Row gutterWidth={2} justify='end'>
-                            <Col xs="content">
-                            </Col>
-                            <Col xs="content">
-                            </Col>
-                            <Col xs="content">
-                            </Col>
+                        {right && <Row gutterWidth={2} justify='end'>
+                            {right}
                         </Row>
+                        }
                     </Col>
                 </Row>
             </FormContainer>

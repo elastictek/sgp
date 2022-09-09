@@ -12,9 +12,9 @@ import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, noValue } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
-import { Button, Select, Typography, Card, Collapse, Space, Form } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Form, Tag } from "antd";
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
 import loadInit from "utils/loadInit";
@@ -22,6 +22,7 @@ import loadInit from "utils/loadInit";
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
+import TitleCard from './TitleCard';
 
 const title = "Bobinagens";
 const useStyles = createUseStyles({});
@@ -53,7 +54,6 @@ const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
         </Space>
     );
 }
-
 
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
@@ -93,11 +93,15 @@ export default ({ record, card, parentReload }) => {
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     const onView = () => {
-        navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
+        if (Object.keys(record).length > 0) {
+            navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, ofs: record.ofs.map(v => v.of_cod), tstamp: Date.now() } });
+        } else {
+            navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
+        }
     }
 
     const onChangeContent = async (v, field) => {
-        dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v },true,true);
+        dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v }, true, true);
         dataAPI.fetchPost();
     }
 
@@ -113,13 +117,13 @@ export default ({ record, card, parentReload }) => {
 
     return (
         <>
-            {Object.keys(record).length > 0 && <Card
+            <Card
                 hoverable
                 headStyle={{ padding: "0px 32px 0px 12px" }}
                 style={{ height: "100%", border: "1px solid #8c8c8c" }}
-                bodyStyle={{ height: "calc(100% - 45px)" }}
+                bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
-                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>}
+                title={<TitleCard data={record} title={card.title}  />}
                 extra={<SelectBobinagens onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
             >
                 <YScroll>
@@ -148,7 +152,6 @@ export default ({ record, card, parentReload }) => {
                     />
                 </YScroll>
             </Card>
-            }
         </>
     );
 }

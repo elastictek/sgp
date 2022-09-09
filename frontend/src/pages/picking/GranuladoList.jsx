@@ -224,7 +224,7 @@ const ModalEstadoChange = ({ p, submitting, dataAPI }) => {
     };
 
     return (
-        <Modal title={<div>Alterar estado do lote <span style={{fontWeight:900}}>{p.row.lote}</span></div>} visible={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
+        <Modal title={<div>Alterar estado do lote <span style={{fontWeight:900}}>{p.row.lote}</span></div>} open={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
             <AlertsContainer mask formStatus={formStatus} fieldStatus={fieldStatus} portal={false} />
             <Container>
                 <Row style={{ marginBottom: "15px", marginTop:"15px" }}>
@@ -279,14 +279,15 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
+                //remove empty values
+                const vals = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
                 const _values = {
-                    ...values,
+                    ...vals,
                     flote: getFilterValue(values?.flote, 'any'),
                     fdata: getFilterRangeValues(values?.fdata?.formatted),
                     fproduto: getFilterValue(values?.fproduto, '==')
                 };
-                const filters = { ...dataAPI.getAllFilter(), ..._values };
-                dataAPI.addFilters(filters);
+                dataAPI.addFilters(_values);
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;

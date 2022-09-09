@@ -135,6 +135,13 @@ urlpatterns = [
     #BOBINAGENS
 
     #PICAGEM LOTES
+    
+    re_path(r'^nwlistlookup/$', views.NWListLookup),
+    re_path(r'^nwlist/$', views.NWList),
+    re_path(r'^deletenwitem/$', views.DeleteNWItem),
+    re_path(r'^savenwitems/$', views.SaveNWItems),
+    re_path(r'^updatenw/$', views.UpdateNW),
+    
     re_path(r'^granuladolist/$', views.GranuladoList),
     re_path(r'^granuladoloteslist/$', views.GranuladoLotesList),
     re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),
@@ -186,9 +193,15 @@ urlpatterns = [
 
 
 
-    re_path(r'^nonwovenlookup/$', views.NonWovenLookup)
+    re_path(r'^nonwovenlookup/$', views.NonWovenLookup),
 
     
+
+    #LAYOUTS
+    re_path(r'^savelayout/$', views.SaveLayout),
+    re_path(r'^loadlayout/$', views.LoadLayout)
+    
+    #LAYOUTS
     
     
     

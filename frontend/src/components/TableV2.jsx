@@ -91,8 +91,8 @@ const Action = ({ dataAPI, content, ...props }) => {
     return (
         <>
             <Popover
-                visible={clickPopover}
-                onVisibleChange={handleClickPopover}
+                open={clickPopover}
+                onOpenChange={handleClickPopover}
                 placement="bottomRight"
                 title=""
                 content={React.cloneElement(content, { ...content.props, hide, row: props.row })}
@@ -135,7 +135,7 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
 
 const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters }) => {
     return (
-        <Form form={form} name={`f-ltf`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }} initialValues={initialValues}>
+        <Form form={form} name={`f-ltf`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
 
             <FormContainer id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true}>
                 <Row style={{ justifyContent: "end" }} gutterWidth={2}>
@@ -223,7 +223,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
         } else {
             setColumns([...rowSelection ? [SelectColumn] : [], ...cols]);
         }
-    }, [dataAPI.getTimeStamp(),cols]);
+    }, [dataAPI.getTimeStamp(), cols]);
 
     const onColumnResize = (idx, width) => {
         console.log("column resize->", idx, "-", width);
@@ -277,7 +277,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
 
     return (
         <Spin loading={dataAPI.isLoading() || loading}>
-            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form })} filterRules={toolbarFilters.moreFilters.rules()} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
+            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form })} filterRules={toolbarFilters.moreFilters.rules()} onFinish={toolbarFilters?.onFinish} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
             {(!toolbar && title) &&
                 <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
                     <Row align='start' wrap="nowrap" gutterWidth={2}>
@@ -299,12 +299,12 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
                             {toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} />}
                         </div>
                     </Col>
-                    {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.form.submit()} size="small"><SearchOutlined /></Button></Col>}
+                    {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small"><SearchOutlined /></Button></Col>}
                     {settings && <Col xs="content" style={{ alignSelf: "end" }}>
 
                         <Popover
-                            visible={clickSettings}
-                            onVisibleChange={handleSettingsClick}
+                            open={clickSettings}
+                            onOpenChange={handleSettingsClick}
                             placement="bottomRight" title="Opções"
                             content={
                                 <ContentSettings setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}

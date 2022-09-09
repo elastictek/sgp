@@ -144,6 +144,8 @@ class RealTimeAlerts(WebsocketConsumer):
 class RealTimeOfs(WebsocketConsumer):
 
     def loadPaletes(self, data):
+        print("PALETES ATENÇÃO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("O VALOR ENCONTRA-SE FIXO!!!!!!")
         ofid = 958#data['value']['of_id']
         print("GETTING PALETES")
         if ofid:
@@ -186,8 +188,30 @@ class RealTimeGeneric(WebsocketConsumer):
         hsh = json.dumps(rows,default=str)
         self.send(text_data=json.dumps({"rows":rows,"item":"reciclado","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
     
+    def checkNW(self, data):
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT id
+            FROM lotesnwlinha
+            order by t_stamp desc
+        """),connection,{})['rows']
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"nw","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+    
+    def checkCores(self, data):
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT id
+            FROM lotescorelinha
+            order by t_stamp desc
+        """),connection,{})['rows']
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"cores","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+    
     commands = {
-        'checkreciclado':checkReciclado
+        'checkreciclado':checkReciclado,
+        'checknw':checkNW,
+        'checkcores':checkCores
     }
 
     def connect(self):
@@ -208,7 +232,10 @@ class LotesPickConsumer(WebsocketConsumer):
         unit= data["unit"]
         if type=='elasticband':
             connection = connections["default"].cursor()
-            rows = dbgw.executeSimpleList(lambda:(f"""select comp_actual qtd from producao_bobine where nome = '{lote}'"""),connection,{})['rows']
+            rows = dbgw.executeSimpleList(lambda:(f"""
+            select round(pb.comp_actual*pl.largura/1000,2) qtd from producao_bobine pb 
+            join producao_largura pl on pl.id=pb.largura_id
+            where nome = '{lote}'"""),connection,{})['rows']
             if len(rows)>0:
                 if rows[0]["qtd"] == 0:
                     self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
@@ -238,7 +265,36 @@ class LotesPickConsumer(WebsocketConsumer):
             else:
                 self.send(text_data=json.dumps({"error":"O lote de Nonwoven não existe ou nunca foi utilizado!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
 
+    def getNWLoteQuantity(self,data):
+        lote = data['lote']
+        conngw = connections[connGatewayName].cursor()
+        sageAlias = dbgw.dbAlias.get("sage")
+        rows = dbgw.executeSimpleList(lambda:(f"""
+            SELECT * FROM(
+                SELECT
+                ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0" artigo_cod,ST."LOT_0" n_lote,ST."LOC_0",ST."VCRNUM_0" vcr_num,
+                SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+                ST."QTYPCU_0" qty_lote,
+                mprima."TSICOD_3"::decimal largura,
+                round((ABS(ST."QTYPCU_0")/mprima."TSICOD_3"::decimal)*1000,2) comp,
+                ST."PCU_0" unit,mprima."ITMDES1_0" artigo_des
+                FROM {sageAlias}."STOJOU" ST
+                JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+                where ST."LOT_0" = '{lote}' and mprima."ITMREF_0" like 'N%%' AND ST."LOC_0" in ('BUFFER') AND ST."CREDATTIM_0">= now() - INTERVAL '4 DAYS'
+            ) t
+            where (QTY_SUM > 0) 
+        """),conngw,{})["rows"]
+        if len(rows)>0:            
+            conn = connections["default"].cursor()
+            rowsx = db.executeSimpleList(lambda:(f"""select id from lotesnwlinha where n_lote = '{lote}' and artigo_cod='{rows[0]["artigo_cod"]}'"""),conn,{})['rows']
+            if len(rowsx)>0:
+                self.send(text_data=json.dumps({"error":"O lote de Nonwoven já foi registado!","row":{"qty_lote":rows[0]["qty_lote"],"unit":"m2", "n_lote":lote}},default=str))
+            self.send(text_data=json.dumps({"error":None,"row":{**rows[0], "unit":"m2", "n_lote":lote }},default=str))
+        else:
+            self.send(text_data=json.dumps({"error":"O lote de Nonwoven não existe ou não se enconta em buffer!","row":{"qty_lote":0, "unit":"m2", "n_lote":lote}},default=str))
 
+
+        
 
     def getLote(self, data):
         lotePicked = data['value']
@@ -430,7 +486,8 @@ class LotesPickConsumer(WebsocketConsumer):
         #'loadlotesavailability':loadLotesAvailability,
         'loaddoserssets':loadDosersSets,
         'pick':getLote,
-        'getlotequantity':getLoteQuantity
+        'getlotequantity':getLoteQuantity,
+        'getnwlotequantity':getNWLoteQuantity
     }
 
     def connect(self):

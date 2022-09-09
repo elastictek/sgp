@@ -23,6 +23,7 @@ const FormFormulacaoDosers = React.lazy(() => import('./FormFormulacaoDosers'));
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
+import TitleCard from './TitleCard';
 
 const title = "Formulação";
 const useStyles = createUseStyles({});
@@ -117,8 +118,10 @@ export default ({ record, card, parentReload }) => {
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     useEffect(() => {
-        dataAPI_A.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "A") }, { tstamp: Date.now() });
-        dataAPI_BC.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "BC") }, { tstamp: Date.now() });
+        if (record?.formulacao){
+            dataAPI_A.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "A") }, { tstamp: Date.now() });
+            dataAPI_BC.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "BC") }, { tstamp: Date.now() });
+        }
     }, [record.formulacao]);
 
     const rowKeyGetter = (row) => {
@@ -140,15 +143,16 @@ export default ({ record, card, parentReload }) => {
 
     return (
         <>
-            {Object.keys(record).length > 0 && <Card
+            <Card
                 hoverable
                 headStyle={{padding:"0px 32px 0px 12px"}}
                 style={{ height: "100%", border:"1px solid #8c8c8c" }} 
-                bodyStyle={{ height: "calc(100% - 45px)" }}
+                bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
-                title={<div style={{ fontWeight: 700, fontSize: "16px" }}>{card.title}</div>}
-                extra={<Space><Button onClick={() => onEdit("doseadores")}>Doseadores</Button><Button onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}
+                title={<TitleCard data={record} title={card.title} />}
+                extra={<>{Object.keys(record).length > 0 && <Space><Button onClick={() => onEdit("doseadores")}>Doseadores</Button><Button onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
             >
+                {Object.keys(record).length > 0 &&
                 <YScroll>
                     <Table
                         //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
@@ -203,8 +207,8 @@ export default ({ record, card, parentReload }) => {
                     // toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
                     />
                 </YScroll>
+}
             </Card>
-            }
         </>
     );
 }

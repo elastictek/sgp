@@ -105,7 +105,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
             const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
-            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: isElasticBand ? "elasticband" : "nw", unit: isElasticBand ? "kg" : "kg" });
+            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: isElasticBand ? "elasticband" : "nw", unit: isElasticBand ? "m2" : "kg" });
             value.current = '';
             setCurrent(value.current);
         }
@@ -178,7 +178,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                     <Row gutterWidth={5} align='center'>
                         <Col style={{ fontSize: "14px", fontWeight: 700 }}>{lastValue.row.lote}</Col>
                         <Col style={{ maxWidth: "95px", width: "95px" }}><InputNumber value={lastValue.row?.qtd} width={100} name='qtd' size="large" min={0} onFocus={(e) => focusIn(e, "input")} onBlur={(e) => focusOut(e, "input")} onChange={(v) => onChange(v, 'qtd')} /></Col>
-                        <Col style={{ maxWidth: "100px", width: "100px" }}><Select optionLabelProp="label" defaultValue="kg" style={{ width: "60px" }} value={lastValue.row?.unit} name='unit' size="large" options={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} onChange={(v) => onChange(v, 'unit')} onFocus={(e) => focusIn(e, "select")} onBlur={(e) => focusOut(e, "select")} /></Col>
+                        <Col style={{ maxWidth: "100px", width: "100px" }}><Select optionLabelProp="label" defaultValue="m2" style={{ width: "60px" }} value={lastValue.row?.unit} name='unit' size="large" options={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} onChange={(v) => onChange(v, 'unit')} onFocus={(e) => focusIn(e, "select")} onBlur={(e) => focusOut(e, "select")} /></Col>
                     </Row>
                 </Col>
             </Row>

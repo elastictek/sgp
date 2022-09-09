@@ -311,7 +311,8 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = { ...getPayload(), tstamp: Date.now() };
         setIsLoading(true);
-        (async () => {
+        return (async () => {
+            let ok=true;
             if (id && useStorage) {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
@@ -324,8 +325,10 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
                 }
             } catch (e) {
                 Modal.error({ content: e.message });
+                ok=false;
             }
             setIsLoading(false);
+            return ok;
         })();
     }
 

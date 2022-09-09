@@ -5524,6 +5524,240 @@ def FixSimulatorList(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
+def NWListLookup(request, format=None):
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'cs.status = :cs_status', lambda v:(v!=None))
+    f.add(f'lnw.status = :status', lambda v:(v!=None))
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                SELECT lnw.* 
+                FROM lotesnwlinha lnw
+                join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
+                {f.text}
+                {dql.sort} {dql.limit}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def NWList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(lnw.{k})'),
+        # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lnw.{k}'},
+        "fof": {"value": lambda v: v.get('fof')},
+        "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'lnw.{k}'},
+        "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'lnw.{k}'},
+        "qty_consumed": {"value": lambda v: v.get('fqty_consumed'), "field": lambda k, v: f'lnw.{k}'},
+        "type": {"value": lambda v: v.get('ftype'), "field": lambda k, v: f'lnw.{k}'},
+        "largura": {"value": lambda v: v.get('flargura'), "field": lambda k, v: f'lnw.{k}'},
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'lnw.{k}'},
+        "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
+        # "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        # "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        # "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
+        # "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        # "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+        # "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
+    }, True)
+    f.where()
+    f.auto(['fof'])
+    f.add(f"JSON_SEARCH(acs.ofs, 'all', :fof, '', '$[*].of_cod') is not null", lambda v:(v!=None))
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table":"lnw."}
+    }, False, "and" if f.hasFilters else "where",False) 
+
+        
+    parameters = {**f.parameters,**f2["parameters"]}
+
+    dql = db.dql(request.data, False)
+    cols = f"""lnw.*,acs.ofs ->> "$[*].of_cod" ofs """
+    dql.columns=encloseColumn(cols,False)
+
+    sql = lambda p, c, s: (
+        f""" 
+           SELECT {c(f'{dql.columns}')}
+            FROM lotesnwlinha lnw
+            join audit_currentsettings acs on acs.id=lnw.audit_cs_id
+           {f.text} {f2["text"]}
+           {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    print("-----------------------------------------------------------")
+    print(sql)
+    print(parameters)
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters)
+    return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def DeleteNWItem(request, format=None):
+    filter = request.data.get("filter")
+
+    def checkNW(id, cursor):
+        f = Filters({"id":id})
+        f.where()
+        f.add(f'lt.id = :id', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""
+            select id 
+            from lotesnwlinha lt
+            where exists (select 1 producao_bobinagem bm where data>=DATE_SUB(NOW(), INTERVAL 5 DAY) and lt.n_lote = bm.lotenwsup or lt.n_lote = bm.lotenwinf)
+            {f.text} limit 1
+        """), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]["id"]
+        return None
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                nwid = checkNW(filter["id"],cursor)
+                print("NW-ID-ID")
+                print(nwid)
+                #if (granulado_id is not None):
+                #    dml = db.dml(TypeDml.DELETE, None,'producao_recicladolotes',{"id":f'=={granulado_id}'},None,False)
+                #    db.execute(dml.statement, cursor, dml.parameters)
+                #else:
+                #    return Response({"status": "error", "title": f"Não é possível Remover o lote!", "subTitle":"O lote j á se encontra fechado ou não existe!"})     
+        return Response({"status": "success", "title": "Lote removido com Sucesso!", "subTitle":f'{None}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao remover lote!"})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaveNWItems(request, format=None):
+    data = request.data.get("parameters")
+
+    def inProduction(data,cursor):
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select * from
+                (
+                SELECT acs.*, max(acs.id) over () mx_id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                ) t
+                where id=mx_id
+            """
+        ), cursor, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+
+
+    def saveItems(data,cursor):
+        nws = json.loads(acs["nonwovens"])
+        for idx, item in enumerate(data["rows"]):
+            #if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
+            #    raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+            #if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
+            #    raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+            dml = db.dml(TypeDml.INSERT, {
+                "lote_id":item["lote_id"], 
+                "qty_lote":item["qty_lote"],
+                "artigo_des":item["artigo_des"],
+                "artigo_cod":item["artigo_cod"], 
+                "type":item["type"], 
+                "t_stamp":item["t_stamp"],
+                "n_lote":item["n_lote"],
+                "status":1,
+                "vcr_num":item["vcr_num"],
+                "largura":item["largura"],
+                "comp":item["comp"],
+                "qty_reminder":item["qty_reminder"],
+                "qty_consumed":item["qty_consumed"],
+                "audit_cs_id":acs["id"],
+                "inuse":0,
+                "agg_of_id":acs["agg_of_id"],
+                "user_id":request.user.id}, 
+                "lotesnwlinha",None,None,False)
+            dml.statement = f"""
+                {dml.statement}
+                ON DUPLICATE KEY UPDATE 
+                    status = VALUES(status),
+                    user_id = VALUES(user_id)
+            """
+            print(dml.statement)
+            print(dml.parameters)
+            db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                acs = inProduction(data,cursor)
+                if acs is None:
+                    return Response({"status": "error", "title": "Não existe nenhuma ordem de fabrico a decorrer!"})
+                else:
+                    saveItems(data,cursor)
+                    return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def UpdateNW(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    def checkNW(id, cursor):
+        f = Filters({"status": 1,"id":id})
+        f.where()
+        f.add(f'status = :status', True)
+        f.add(f'id = :id', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""
+            select id 
+            from lotesnwlinha
+            {f.text} limit 1
+        """), cursor, f.parameters)
+        print(f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]["id"]
+        return None
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                nwid = checkNW(filter["id"],cursor)
+                if (nwid is not None):
+                    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
+        return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao alterar lote!"})
+
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
 def ProdutoGranuladoLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
@@ -6646,7 +6880,57 @@ def LotesAvailable(request, format=None):
 
 
 
+#region LAYOUT
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaveLayout(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                dml = db.dml(TypeDml.INSERT, {
+                "username":data["user"], 
+                "layout":json.dumps(data["layout"]),
+                "t_stamp": datetime.now()
+                 },
+                "layout_dashboard",None,None,False)
+                dml.statement = f"""
+                {dml.statement} as ld
+                ON DUPLICATE KEY UPDATE 
+                    layout = ld.layout,
+                    t_stamp = ld.t_stamp
+                """
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Layout gravado com sucesso!"})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def LoadLayout(request, format=None):
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'username = :user', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select layout from layout_dashboard
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+#endregion
 
 
 

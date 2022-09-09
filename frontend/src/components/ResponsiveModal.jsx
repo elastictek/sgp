@@ -93,7 +93,7 @@ export default ({ children, footer = false, noContext, propsToChild, ...props })
         <Hoc noContext={noContext}>
             <Modal
                 title={<TitleWnd title={title} externalTitle={externalTitle} />}
-                visible={v}
+                open={v}
                 centered={centered}
                 onCancel={wrapWithClose(onCancel)}
                 onOk={wrapWithClose(onOk)}

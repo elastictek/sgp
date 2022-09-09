@@ -160,7 +160,7 @@ const MultiLine = ({ children, isCellSelected, value }) => {
         }
     }, [isCellSelected]);
     return (
-        <>{value && <Tooltip style={{ maxWidth: "350px" }} placement="left" visible={showTooltip} title={children} mouseEnterDelay={5}>{children}</Tooltip>}</>
+        <>{value && <Tooltip style={{ maxWidth: "350px" }} placement="left" open={showTooltip} title={children} mouseEnterDelay={5}>{children}</Tooltip>}</>
     );
 }
 
@@ -181,7 +181,7 @@ const ModalObsEditor = ({ p, column, title, ...props }) => {
     };
 
     return (
-        <Modal title={title} visible={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
+        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
             <TextArea autoFocus value={value} onChange={(e) => setvalue(e.target.value)} onKeyDown={e => (e.key === 'Enter') && e.stopPropagation()} {...props} />
         </Modal>
     );
@@ -247,7 +247,7 @@ const ModalRangeEditor = ({ p, column, title, forInput, ...props }) => {
     };
 
     return (
-        <Modal title={title} visible={visible} destroyOnClose onCancel={onCancel} onOk={onFinish} width="250px">
+        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={onFinish} width="250px">
 
             <Form form={form} name={`f-range`} onValuesChange={onValuesChange} initialValues={{}}>
                 <AlertsContainer /* id="el-external" */ mask /* fieldStatus={fieldStatus} */ formStatus={formStatus} portal={false} />
@@ -538,8 +538,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
 
     const changeMode = () => {
         if (allowEdit.form || allowEdit.datagrid) {
-            console.log({ form: (modeEdit.form) ? false : allowEdit.form, datagrid: (modeEdit.datagrid) ? false : allowEdit.datagrid })
-            setModeEdit({ form: (modeEdit.form) ? false : allowEdit.form, datagrid: (modeEdit.datagrid) ? false : allowEdit.datagrid });
+            setModeEdit({ elevated: (modeEdit.form) ? false : allowEdit.elevated, form: (modeEdit.form) ? false : allowEdit.form, datagrid: (modeEdit.datagrid) ? false : allowEdit.datagrid });
         }
     }
 
@@ -605,8 +604,8 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Tipo</b></Col>
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
-                                                <Col><Field forInput={modeEdit.form && dataAPI.getData().new_nw_lotes === 1} name="lotenwinf" label={{ enabled: false }}><Input style={{}} /></Field></Col>
-                                                <Col><Field forInput={modeEdit.form && dataAPI.getData().new_nw_lotes === 1} name="lotenwsup" label={{ enabled: false }}><Input style={{}} /></Field></Col>
+                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwinf" label={{ enabled: false }}><Input style={{}} /></Field></Col>
+                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1)  || modeEdit.elevated} name="lotenwsup" label={{ enabled: false }}><Input style={{}} /></Field></Col>
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Lote</b></Col>
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
@@ -684,12 +683,13 @@ export default (props) => {
                     dt.rows[i]["buracos_pos"] = JSON.parse(dt.rows[i]["buracos_pos"]);
                 }
                 const _allowEdit = {
+                    elevated:(dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
                     form: (dt.valid === 0) ? permission.allow({ producao: 100 }) : false,
                     datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ qualidade: 100 })
                 };
 
                 setAllowEdit({ ..._allowEdit });
-                setModeEdit(dt.valid === 0 ? { form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false });
+                setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated:false });
 
                 setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, valid: dt["valid"] });
                 submitting.end();

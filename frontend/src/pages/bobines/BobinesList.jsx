@@ -290,8 +290,8 @@ const Action = ({ v, r, dataAPI }) => {
     return (
         <>
             <Popover
-                visible={clickPopover}
-                onVisibleChange={handleClickPopover}
+                open={clickPopover}
+                onOpenChange={handleClickPopover}
                 placement="bottomRight" title="Ações" content={
 
                     <div style={{ display: "flex", flexDirection: "column" }}>

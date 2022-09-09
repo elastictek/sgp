@@ -11,9 +11,9 @@ import { useDataAPI } from "utils/useDataAPI";
 import loadInit from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag } from "antd";
 const { Title, Text } = Typography;
-import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined } from '@ant-design/icons';
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined } from '@ant-design/icons';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
 import { useModal } from "react-modal-hook";
@@ -21,6 +21,7 @@ import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField } from 'components/FormFields';
 import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
+import ToolbarTitle from 'components/ToolbarTitle';
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -42,7 +43,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
 }
 
 
-const moreFiltersRules = (keys) => { return getSchema({}, {keys}).unknown(true); }
+const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
     { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },
@@ -73,25 +74,66 @@ const useStyles = createUseStyles({
     }
 });
 
-const ToolbarTitle = ({ data, form }) => {
+// const ToolbarTitle = ({ data, form }) => {
+//     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
+//     return (
+//         <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} fluid>
+//             <Row>
+//                 <Col>
+//                     <Row>
+//                         <Col>{
+//                             (parseInt(data?.valid) === 0) ?
+//                                 <Title style={{ margin: "0px" }} level={4}>Bobinagens da Linha 1 por Validar</Title> :
+//                                 <Title style={{ margin: "0px" }} level={4}>Bobinagens da Linha 1</Title>
+//                         }</Col>
+//                     </Row>
+//                     <Row>
+//                         <Col>
+//                             {st && <Text code style={{ fontSize: "14px", color: "#1890ff" }}>{st}</Text>}
+//                         </Col>
+//                     </Row>
+//                 </Col>
+//                 <Col style={{ alignItems: "center" }}>
+//                     <Row gutterWidth={2} justify='end'>
+//                         <Col xs="content">
+//                             <Field name="typelist" label={{ enabled: false }}>
+//                                 <SelectField size="small" keyField="value" textField="label" data={
+//                                     [{ value: "A", label: "Estado Bobines" },
+//                                     { value: "B", label: "Consumo Bobinagem" },
+//                                     { value: "C", label: "Ordens de Fabrico" }]} />
+//                             </Field>
+//                         </Col>
+//                         <Col xs="content">
+//                             <Field name="type" label={{ enabled: false }}>
+//                                 <SelectField size="small" keyField="value" textField="label" data={
+//                                     [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
+//                                     { value: "-1", label: "Todas as Bobinagens" }]} />
+//                             </Field>
+//                         </Col>
+//                         <Col xs="content">
+//                             <Field name="valid" label={{ enabled: false }}>
+//                                 <SelectField size="small" keyField="value" textField="label" data={
+//                                     [{ value: "0", label: "Por validar" },
+//                                     { value: "1", label: "Validadas" },
+//                                     { value: "-1", label: " " }
+//                                     ]} /></Field>
+//                         </Col>
+//                     </Row>
+//                 </Col>
+//             </Row>
+//         </FormContainer>
+//     );
+// }
+
+
+const TitleForm = ({ data, onChange, form }) => {
     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
-    return (
-        <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} fluid>
-            <Row>
-                <Col>
-                    <Row>
-                        <Col>{
-                            (parseInt(data?.valid) === 0) ?
-                                <Title style={{ margin: "0px" }} level={4}>Bobinagens da Linha 1 por Validar</Title> :
-                                <Title style={{ margin: "0px" }} level={4}>Bobinagens da Linha 1</Title>
-                        }</Col>
-                    </Row>
-                    <Row>
-                        <Col>
-                            {st && <Text code style={{ fontSize: "14px", color: "#1890ff" }}>{st}</Text>}
-                        </Col>
-                    </Row>
-                </Col>
+    return (<ToolbarTitle title={<>
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>Bobinagens</span></Col>
+        <Col xs='content' style={{ paddingTop: "3px" }}>{st &&<Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
+    </>} right={
+        <Col xs="content">
+            <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
                 <Col style={{ alignItems: "center" }}>
                     <Row gutterWidth={2} justify='end'>
                         <Col xs="content">
@@ -119,10 +161,12 @@ const ToolbarTitle = ({ data, form }) => {
                         </Col>
                     </Row>
                 </Col>
-            </Row>
-        </FormContainer>
-    );
+            </FormContainer>
+        </Col>
+    } />);
 }
+
+
 
 export default (props) => {
     const navigate = useNavigate();
@@ -193,7 +237,8 @@ export default (props) => {
     const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
-                const { typelist, ...vals } = values;
+                //remove empty values
+                const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
                 const _values = {
                     ...vals,
                     fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
@@ -204,8 +249,7 @@ export default (props) => {
                     fcliente: getFilterValue(vals?.fcliente, 'any'),
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
-                const { typelist: tp, ...filters } = { ...dataAPI.getAllFilter(), ..._values };
-                dataAPI.addFilters(filters);
+                dataAPI.addFilters(_values);
                 dataAPI.addParameters({ typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
@@ -224,7 +268,8 @@ export default (props) => {
 
     return (
         <>
-            <ToolbarTitle data={dataAPI.getAllFilter()} onChange={onFilterChange} form={formFilter} />
+            {/*  <ToolbarTitle data={dataAPI.getAllFilter()} onChange={onFilterChange} form={formFilter} /> */}
+            <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />
             <Table
                 //title=""
                 reportTitle="Bobinagens"

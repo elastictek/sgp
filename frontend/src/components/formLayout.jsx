@@ -119,13 +119,13 @@ export const WrapperForm = props => {
                         width={widthMode.width}
                         title={titleForm}
                         centered
-                        visible={visible}
+                        open={visible}
                         onCancel={() => setVisible(false)}
                     >
                         {children}
                     </Modal>
                 ) : (
-                    <Drawer {...rest} width={widthMode.width} title={titleForm} visible={visible} onClose={() => setVisible(false)}>
+                    <Drawer {...rest} width={widthMode.width} title={titleForm} open={visible} onClose={() => setVisible(false)}>
                         {children}
                     </Drawer>
                 )}
@@ -308,7 +308,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                 mask={false}
                 /* style={{ top: "48px" }} */
                 onClose={() => setShowFilter(false)}
-                visible={showFilter}
+                open={showFilter}
                 bodyStyle={{ paddingBottom: 80 }}
                 footer={
                     <div style={{ textAlign: 'right' }}>

@@ -13,9 +13,10 @@ export const usePermission = ({ allowed = {} } = {}) => {
         if (auth.isAdmin){
             return true;
         }
-        let min = 0;
+         let min = 0;
         let value = -1;
         const aKeys = (_allowed) ? Object.keys(_allowed) : allowedKeys;
+        console.log("alowwwwwwwwwwwwwwwwwwwwwww",aKeys,_allowed, permissionKeys)
         for (const k of permissionKeys) {
             if (aKeys.includes(k)) {
                 min = (min > allowed[k]) ? allowed[k] : min;

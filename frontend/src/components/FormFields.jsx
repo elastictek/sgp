@@ -96,7 +96,7 @@ const StyledHRuleTitle = styled('div').withConfig({
     
 `;
 
-export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, setShowFilter, form, mask = false }) => {
+export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, setShowFilter, form, onFinish, mask = false }) => {
     return (
         <>
             <Drawer
@@ -105,16 +105,16 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                 mask={mask}
                 /* style={{ top: "48px" }} */
                 onClose={() => setShowFilter(false)}
-                visible={showFilter}
+                open={showFilter}
                 bodyStyle={{ paddingBottom: 80 }}
                 footer={
                     <div style={{ textAlign: 'right' }}>
                         <Button onClick={() => form.resetFields()} style={{ marginRight: 8 }}>Limpar</Button>
-                        <Button onClick={() => form.submit()} type="primary">Aplicar</Button>
+                        <Button onClick={() => onFinish("filter",form.getFieldsValue(true))} type="primary">Aplicar</Button>
                     </div>
                 }
             >
-                <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { form.submit(); } }}>
+                <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter",form.getFieldsValue(true)); } }}>
                     {schema.map((line, ridx) => (
                         <Row key={`rf-${ridx}`} gutter={16}>
                             {Object.keys(line).map((col, cidx) => {
@@ -395,7 +395,7 @@ const _filterOptions = (arr1, arr2) => {
     return res;
 }
 
-export const SelectMultiField = ({ value, data, onChange, ...rest }) => {
+export const SelectMultiField = ({ value, data, options, onChange, ...rest }) => {
     const [selectedItems, setSelectedItems] = useState(value || []);
 
     const onItemsChange = (v) => {
@@ -406,7 +406,7 @@ export const SelectMultiField = ({ value, data, onChange, ...rest }) => {
     return (
         <Select labelInValue mode="multiple" value={value} {...rest} onChange={onItemsChange}>
 
-            {_filterOptions(data, selectedItems).map(item => (
+            {_filterOptions(data ? data : options, selectedItems).map(item => (
                 <Select.Option key={item.value} value={item.value}>
                     {item.label}
                 </Select.Option>

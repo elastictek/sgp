@@ -202,13 +202,9 @@ class BaseSql:
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                #print(f'SIMPLE LIST SQL--> {sql()}')
-                #print(f'PARAMS--> {parameters}')
                 cursor.execute(sql(), parameters)
                 rows = fetchall(cursor, ignore)
         else:
-            #print(f'SIMPLE LIST SQL--> {sql()}')
-            #print(f'PARAMS--> {parameters}')
             connOrCursor.execute(sql(), parameters)
             rows = fetchall(connOrCursor, ignore)
         return {"rows": rows}

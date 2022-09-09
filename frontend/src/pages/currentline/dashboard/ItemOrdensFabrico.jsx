@@ -14,7 +14,7 @@ import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
 import { Button, Select, Typography, Card, Collapse, Space, Form } from "antd";
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, UnorderedListOutlined , CheckOutlined  } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, UnorderedListOutlined , CheckOutlined,SyncOutlined   } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
 import TagButton from "components/TagButton";
@@ -87,19 +87,19 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {fofstatus:'IN(2,3,9)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 120 }, filter: {fofstatus:'IN(2,3,9)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
     const primaryKeys = ['ofabrico', 'item', 'iorder'];
     const columns = [
         
-        { key: 'ofabrico', name: 'Ordem Fabrico', formatter: p => <Button type="link" size="small" onClick={() => onOfClick(p.row)}>{p.row.ofabrico}</Button> },
-        { key: 'prf', name: 'Ordem Fabrico' },
-        { key: 'iorder', name: 'Ordem Fabrico' },
-        { key: 'cod', name: 'Agg' },
-        { key: 'estado', name: 'Estado', formatter: p => <ColumnEstado p={p} /> },
+        { key: 'ofabrico',width:120, frozen:true, name: 'Ordem Fabrico', formatter: p => <Button type="link" size="small" onClick={() => onOfClick(p.row)}>{p.row.ofabrico}</Button> },
+        { key: 'prf', frozen:true, width:120, name: 'Prf' },
+        { key: 'iorder',width:120, name: 'Encomenda' },
+        { key: 'cod',width:120, name: 'Agg' },
+        { key: 'estado',width:140, name: 'Estado', formatter: p => <ColumnEstado p={p} /> },
         { key: 'item_nome', name: 'Artigo' },
         { key: 'cliente_nome', name: 'Cliente' },
-        { key: 'start_date', name: 'Início Previsto' },
-        { key: 'end_date', name: 'Fim Previsto' }
+        { key: 'start_date',width:100, name: 'Início Previsto' },
+        { key: 'end_date',width:100, name: 'Fim Previsto' }
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
@@ -128,9 +128,13 @@ export default ({ record, card, parentReload }) => {
         dataAPI.fetchPost();
     }
 
+/*     useEffect(()=>{
+        console.log("entrei ofsssssssssssssssssssssssssss")
+    },[record]) */
+
     return (
         <>
-            {Object.keys(record).length > 0 && <Card
+            <Card
                 hoverable
                 headStyle={{ padding: "0px 32px 0px 12px" }}
                 style={{ height: "100%", border: "1px solid #8c8c8c" }}
@@ -165,7 +169,6 @@ export default ({ record, card, parentReload }) => {
                     />
                 </YScroll>
             </Card>
-            }
         </>
     );
 }

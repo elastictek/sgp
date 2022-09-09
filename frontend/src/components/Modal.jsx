@@ -67,7 +67,7 @@ export default ({ responsive = true, width = 800, height = 300, children, footer
             {size.computed &&
                 <Modal
                     title={<TitleModal title={iTitle} eTitle={title} />}
-                    visible={true}
+                    open={true}
                     centered={size.fullscreen ? false : true}
                     maskClosable={true}
                     destroyOnClose={true}

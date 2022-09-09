@@ -748,7 +748,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     return (
         <div /* onKeyDown={keydownHandler} */ tabIndex={-1} style={{ ...focusStyle }} /* onFocus={() => onFocus(true)} onBlur={() => onFocus(false)} */>
             <Modalv4 />
-            {record.feature === 'dosers_change' && <Modal title="Lotes Picados" center visible={hasLinePick} onOk={handleOkLinePick} confirmLoading={LinePickLoading} onCancel={handleCancelLinePick}><PickedLotes data={linePick} /></Modal>}
+            {record.feature === 'dosers_change' && <Modal title="Lotes Picados" center open={hasLinePick} onOk={handleOkLinePick} confirmLoading={LinePickLoading} onCancel={handleCancelLinePick}><PickedLotes data={linePick} /></Modal>}
             <ResultMessage
                 result={resultMessage}
                 successButtonOK={operation.key === "insert" && <Button type="primary" key="goto-of" onClick={onSuccessOK}>Criar Nova Formulação</Button>}

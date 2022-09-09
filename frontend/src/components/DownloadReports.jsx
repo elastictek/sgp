@@ -223,14 +223,14 @@ export default ({ button, items = [], onExport, dataAPI, title, columns }) => {
     return (
         <>
             {!button && <Popover
-                visible={clickPopover}
-                onVisibleChange={handleClickPopover}
+                open={clickPopover}
+                onOpenChange={handleClickPopover}
                 placement="bottomRight" title="Exportar" content={<Content setIsDirty={setIsDirty} orientation={orientation} setOrientation={setOrientation} limit={limit} setLimit={setLimit} onClick={onClick} menuItems={menuItems} />} trigger="click">
                 <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
             </Popover>}
             {button && <Popover
-                visible={clickPopover}
-                onVisibleChange={handleClickPopover}
+                open={clickPopover}
+                onOpenChange={handleClickPopover}
                 placement="bottomRight" title="Exportar" content={<Content setIsDirty={setIsDirty} orientation={orientation} setOrientation={setOrientation} limit={limit} setLimit={setLimit} onClick={onClick} menuItems={menuItems} />} trigger="click">
                 {button}
             </Popover>}
