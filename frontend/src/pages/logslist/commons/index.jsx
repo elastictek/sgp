@@ -1,33 +1,40 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, lazy } from 'react';
-import { createUseStyles } from 'react-jss';
-import styled from 'styled-components';
-import dayjs from 'dayjs';
-import Joi from 'joi';
-import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
-import { useDataAPI } from "utils/useDataAPI";
-import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
-
-import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField } from "components/formLayout";
-import Drawer from "components/Drawer";
-import Table, { setColumns } from "components/table";
-import Toolbar from "components/toolbar";
-import Portal from "components/portal";
 import ResponsiveModal from "components/ResponsiveModal";
-import MoreFilters from 'assets/morefilters.svg';
-import { Outlet, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
-import { MdAdjust } from 'react-icons/md';
+import { Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
+import { useSubmitting, noValue } from "utils";
+import { GiBandageRoll } from 'react-icons/gi';
+import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
+import { VscDebugStart } from 'react-icons/vsc';
+import { BsFillStopFill } from 'react-icons/bs';
+import { IoCodeWorkingOutline } from 'react-icons/io5';
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
+export const EventColumn = ({ v }) => {
+    return (<>
 
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
-const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
-const { Title } = Typography;
+        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
+        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
+        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
+        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
+        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
+        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
+
+    </>);
+}
+
+export const doserConsume = (d, dlag, dreset, event) => {
+    if (event !== 1) {
+        return null;
+    }
+    let _d = noValue(d, 0);
+    let _dlag = noValue(dlag, 0);
+    let _dreset = noValue(dreset, 0);
+    return <div style={{ textAlign: "right" }}>{((((_d < _dlag) ? _dreset : 0) + _d) - _dlag).toFixed(2)} kg</div>;
+
+}
+
+
 
 
 export const WndTitle = ({ data }) => {

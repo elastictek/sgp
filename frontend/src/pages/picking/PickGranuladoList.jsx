@@ -8,7 +8,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
 import loadInit from "utils/loadInit";
-import { API_URL } from "config";
+import { API_URL, DOSERS } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -33,32 +33,53 @@ import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
+import { Cuba } from "../currentline/dashboard/commons/Cuba";
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
-const title = "Registo Nonwovens - Entrada em Linha";
+const title = "Registo Granulado - Entrada em Linha";
+const cFormulacao = (record) => {
+    let _formulacao = {};
+    for (let v of record.formulacao.items) {
+        const _dosers = [];
+        const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
+        if (v?.doseador_A) _dosers.push(v.doseador_A);
+        if (v?.doseador_B) _dosers.push(v.doseador_B);
+        if (v?.doseador_C) _dosers.push(v.doseador_C);
+        const _cod = v.matprima_cod;
+        const _des = v.matprima_des;
+        if (_cod in _formulacao) {
+            _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
+            _formulacao[_cod].cubas = [..._formulacao[_cod].cubas, _cuba];
+        } else {
+            _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
+        }
+    }
+    return _formulacao;
+}
 const TitleForm = ({ data, onChange, record, level, form }) => {
+    const [formulacao, setFormulacao] = useState(cFormulacao(record));
     const st = JSON.stringify(record?.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
+
+
     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
         <Col>
-            <Row>
+            <Row style={{ marginBottom: "5px" }}>
                 <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
                 <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
             </Row>
-            <Row style={{ marginTop: "10px" }}>
-                <Col>Nonwoven Inferior</Col>
-                <Col>Nonwoven Superior</Col>
-            </Row>
-            <Row>
-                <Col>
-                    <span style={{ fontWeight: 700 }}>{record.nonwovens?.nw_cod_inf}</span> {record.nonwovens?.nw_des_inf}
-                </Col>
-                <Col>
-                    <span style={{ fontWeight: 700 }}>{record.nonwovens?.nw_cod_sup}</span> {record.nonwovens?.nw_des_sup}
-                </Col>
-            </Row>
+            {formulacao && Object.keys(formulacao).map((k, i) => {
+                return (
+                    <Row key={`if-${k}-${i}`}>
+                        <Col width={60} style={{ display: "flex" }}>{[...new Set(formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
+                        <Col width={100}><div style={{ textAlign: "center", fontSize: "14px" }}><b>{formulacao[k].dosers.join()}</b></div></Col>
+                        <Col width={150}><div style={{ fontSize: "12px" }}>{k}</div></Col>
+                        <Col><div style={{ fontSize: "12px" }}>{formulacao[k].matprima_des}</div></Col>
+                    </Row>
+                );
+            })}
         </Col>
     </>
     } right={
@@ -129,7 +150,7 @@ const useStyles = createUseStyles({
     }
 });
 
-const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent }) => {
+const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent, formulacao }) => {
     const permission = usePermission({ allowed: {} });
     const value = useRef('');
     const pick = useRef(true);
@@ -144,33 +165,41 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     useEffect(() => {
         if (lastJsonMessage !== null) {
-            setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, type: prev?.type, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
+            setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
         }
     }, [lastJsonMessage]);
 
-    const onPick = () => {
+    const onPick = (formulacao) => {
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
-            if (v.toUpperCase() === "SUP" || v.toUpperCase() === "INF") {
-                setLastValue(prev => ({ ...prev, picked: true, type: v.toUpperCase() === "SUP" ? 1 : 0 }));
+            if (DOSERS.some(x => x.value === v.toUpperCase())) {
+                setLastValue(prev => {
+                    let av = (prev?.dosers) ? prev.dosers.split(",") : [];
+                    if (!av.includes(v)) {
+                        av.push(v);
+                    } else {
+                        av.splice(av.indexOf(v), 1);
+                    }
+                    return { ...prev, picked: true, dosers: av.join() }
+                });
                 value.current = '';
                 setCurrent(value.current);
             } else {
-                sendJsonMessage({ cmd: 'getnwlotequantity', lote: v, unit: "m2" });
+                sendJsonMessage({ cmd: 'getgranuladolotequantity', lote: v, unit: "kg" });
                 value.current = '';
                 setCurrent(value.current);
             }
         }
     }
 
-    const keydownHandler = async (e, obj) => {
+    const keydownHandler = async (e, obj, formulacao) => {
         if (e.srcElement.name === "qty_lote" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
-            onPick();
+            onPick(formulacao);
         } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
@@ -207,12 +236,13 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     useEffect(() => {
-        document.body.addEventListener('keydown', keydownHandler);
+        const keyDown = (e, obj) => keydownHandler(e, obj, formulacao());
+        document.body.addEventListener('keydown', keyDown);
         document.body.addEventListener('focusout', focusOut);
         document.body.addEventListener('focusin', focusIn);
         //window.addEventListener('paste', paste);
         return () => {
-            document.body.removeEventListener('keydown', keydownHandler);
+            document.body.removeEventListener('keydown', keyDown);
             document.body.removeEventListener('focusout', focusOut);
             document.body.removeEventListener('focusin', focusIn);
             //window.removeEventListener('paste', paste);
@@ -228,7 +258,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                         <Col style={{ maxWidth: "100px", width: "100px" }}>Unidade Medida</Col>
                     </Row>
                     <Row gutterWidth={5} align='center'>
-                        <Col style={{ fontSize: "14px", fontWeight: 700 }}>{lastValue?.last?.type === 0 ? "INF" : "SUP"}</Col>
+                        <Col style={{ fontSize: "14px", fontWeight: 700 }}>{lastValue?.last?.dosers}</Col>
                         <Col style={{ fontSize: "14px", fontWeight: 700 }}>{lastValue?.last?.n_lote}</Col>
                         {lastValue?.last?.n_lote &&
                             <>
@@ -240,7 +270,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                 </Col>
             </Row>
         }
-        {(lastValue.row?.n_lote || lastValue?.type === 0 || lastValue?.type === 1) &&
+        {(lastValue.row?.n_lote || lastValue?.dosers) &&
             <Row style={lastValue.error === null ? { border: "solid 1px #d9d9d9", background: "#fafafa", padding: "5px", marginTop: "5px" } : { border: "solid 1px #ffccc7", background: "#fff2f0", padding: "5px", marginTop: "5px" }}>
                 <Col>
                     <Row align='center' gutterWidth={5}>
@@ -250,8 +280,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                     </Row>
                     <Row gutterWidth={5} align='center'>
                         <Col style={{ fontSize: "14px", fontWeight: 700 }}>
-                            {lastValue?.type === 0 && "INF"}
-                            {lastValue?.type === 1 && "SUP"}
+                            {lastValue?.dosers && lastValue?.dosers.toUpperCase()}
                         </Col>
                         <Col style={{ fontSize: "14px", fontWeight: 700 }}>{lastValue?.row?.n_lote}</Col>
                         {lastValue?.row?.n_lote &&
@@ -286,11 +315,11 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
 const schemaOut = (options = {}) => {
     return getSchema({
-        lote: Joi.number().label("Lote").required(),
+        entrada_linha: Joi.number().label("Lote").required(),
     }, options).unknown(true);
 }
-const loadNWListLookup = async (filter, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, filter: { ...filter }, sort: [], signal });
+const loadGranuladoListLookup = async (filter, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/granuladolistlookup/`, filter: { ...filter }, sort: [], signal });
     return rows;
 }
 const OutContent = ({ parentRef, closeParent, loadParentData }) => {
@@ -300,13 +329,14 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
     const submitting = useSubmitting(true);
 
 
-    const [nwl, setNWl] = useState([]);
+    const [granuladol, setGranuladol] = useState([]);
+    const [granulado, setGranulado] = useState([]);
     /*const estado = [{ id: "G", txt: "GOOD" }, { id: "R", txt: "REJEITADO" }];
     const tara = [{ id: 15, txt: "15 kg" }, { id: 30, txt: "30 kg" }]
  */
     const loadData = async ({ loteId, signal } = {}) => {
-        const nl = await loadNWListLookup({ status: 1, cs_status: 3 }, signal);
-        setNWl(nl);
+        const gl = await loadGranuladoListLookup({ type_mov: 1, cs_status: 3 }, signal);
+        setGranuladol(gl);
         submitting.end();
     };
 
@@ -318,16 +348,15 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
 
     const onFinish = async (values) => {
         submitting.trigger();
-        console.log(values)
         const v = schemaOut().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updatenw/`, filter: { id: values.lote }, parameters: {status:0} });
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values,vcr_num:granulado[0].vcr_num }, parameters: { status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
-                    Modal.success({title:"Saída de Lote da linha efetuada!"})
+                    Modal.success({ title: "Saída de Lote da linha efetuada!" })
                 } else {
                     status.formStatus.error.push({ message: response.data.title });
                     setFormStatus({ ...status.formStatus });
@@ -340,7 +369,9 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
     }
 
     const onValuesChange = (changedValues, values) => {
-
+        if ("entrada_linha" in changedValues){
+            setGranulado(granuladol.filter(v=>v.id===changedValues.entrada_linha));
+        }
     }
 
     return (
@@ -348,13 +379,19 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-OUT" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaOut} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>
-                    <Col><Field wrapFormItem={true} name="lote" label={{ enabled: true, text: "Lote de Nonwoven" }}>
-                        <SelectField showSearch style={{ width: "100%" }} size="small" keyField="id" textField="n_lote" data={nwl} optionsRender={d => ({
+                    <Col><Field wrapFormItem={true} name="entrada_linha" label={{ enabled: true, text: "Lote de Granulado" }}>
+                        <SelectField showSearch style={{ width: "100%" }} size="small" keyField="id" textField="n_lote" data={granuladol} optionsRender={d => ({
                             label: <div>
-                                <div><span><b>{d["n_lote"]}</b></span> <span>[Quantidade Restante: <b>{d["qty_lote"] - d["qty_consumed"]} m<sup>2</sup></b>]</span></div>
+                                <div><span><b>{d["n_lote"]}</b></span> <span>[Quantidade Restante: <b>{d["qty_reminder"]} kg</b>]</span></div>
                                 <div><span>{d["artigo_cod"]}</span> <span>{d["artigo_des"]}</span></div>
                             </div>, value: d["id"]
                         })} />
+                    </Field>
+                    </Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}>
+                        <InputNumber disabled={granulado.length==0} size="small" addonAfter="kg" min={1} max={granulado.length>0 && granulado[0].qty_reminder}/>
                     </Field>
                     </Col>
                 </Row>
@@ -378,12 +415,8 @@ const moreFiltersSchema = ({ form }) => [
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
     { fdata: { label: "Data Entrada", field: { type: "rangedate", size: 'small' } } },
-    { ftype: { label: 'Posição', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Inferior" }, { value: 1, label: "Superior" }] }, span: 12 } },
     { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fqty_consumed: { label: "Quantidade Consumida", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
-    { flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } }
     /*     { ftime: { label: "Início/Fim", field: { type: "rangetime", size: 'small' } } },
         { fduracao: { label: "Duração", field: { type: 'input', size: 'small' }, span: 12 } },
         { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fdiam: { label: "Diâmetro", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -428,34 +461,22 @@ export default ({ setFormTitle, ...props }) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "picknwlist", payload: { url: `${API_URL}/nwlist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ id: "pickgranuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const submitting = useSubmitting(true);
     const primaryKeys = ['id'];
     const columns = [
-        { key: 'status', width: 90, name: 'Movimento', formatter: p => <MovColumn value={p.row.status} /> },
+        { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovColumn value={p.row.type_mov} /> },
+        { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
+        { key: 'dosers', width: 90, name: 'Doseadores', formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', formatter: p => p.row.artigo_cod },
         { key: 'artigo_des', name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
-        { key: 'n_lote', width: 110, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
-        { key: 'type', width: 90, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
-        { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} m<sup>2</sup></div> },
-        { key: 'qty_consumed', width: 110, name: 'Qtd. Consumida', formatter: p => <div>{parseFloat(p.row.qty_consumed).toFixed(2)} m<sup>2</sup></div> },
-        { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} m<sup>2</sup></div> },
-        { key: 'largura', name: 'Largura', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura} mm</div> },
-        { key: 'comp', name: 'Comp.', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.comp).toFixed(2)} m</div> },
+        { key: 'n_lote', width: 310, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
+        { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div>, editor: p => <InputNumber bordered={false} size="small" value={p.row.qty_lote} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qty_lote: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
+        { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> },
-        { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Button /* disabled={details?.status === 1} */ size="small" onClick={() => onDelete(p.row, p)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
-        //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
-        //{ key: 'lote', sortable: false, name: 'Lote', formatter: p => <b>{p.row.lote}</b> },
-        //{ key: 'source', sortable: false, name: 'Origem', formatter: p => source(p.row.source) },
-        //{ key: 'itm', sortable: false, name: 'Artigo', formatter: p => p.row.itm },
-        //{ key: 'itm_des', sortable: false, name: 'Artigo Des.', formatter: p => p.row.itm_des },
-        //{ key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber bordered={false} size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
-        //{ key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, true)} size="small" keyField="value" textField="label" data={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
-        //{ key: 'timestamp', sortable: false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
-        //{ key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button disabled={details?.status === 1} size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
+        { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
     ];
     const [record, setRecord] = useState();
     const [modalParameters, setModalParameters] = useState({});
@@ -463,13 +484,29 @@ export default ({ setFormTitle, ...props }) => {
     const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
         const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null, type: null });
         const [dirty, setDirty] = useState(false);
+        const [formulacao, setFormulacao] = useState(cFormulacao(record));
         useEffect(() => {
             if (lastValue.picked && lastValue.error === null) {
-                if (lastValue.row.n_lote && (lastValue.type === 0 || lastValue.type === 1)) {
-                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote) : -1;
+                if (lastValue.row.n_lote && lastValue?.dosers) {
+                    let dosers="";
+                    let cuba;
+                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid===1) : -1;
+                    if (lastValue.row.artigo_cod in formulacao) {
+                        const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
+                        if (!dosersOk) {
+                            setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
+                            return;
+                        }else{
+                            dosers=formulacao[lastValue.row.artigo_cod].dosers.join();
+                            cuba = [...new Set(formulacao[lastValue.row.artigo_cod].cubas)][0];
+                        }
+                    } else {
+                        setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
+                        return;
+                    }
                     if (idx === -1) {
-                        dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), type: lastValue.type, status: 1 }, primaryKeys, 0);
-                        setLastValue(prev => ({ ...prev, row: {}, type: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, type: lastValue.type } }));
+                        dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), dosers: dosers, group_id:cuba, type_mov: 1 }, primaryKeys, 0);
+                        setLastValue(prev => ({ ...prev, row: {}, dosers: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, dosers: dosers, group_id:cuba } }));
                     } else {
                         setLastValue(prev => ({ ...prev, error: "O Lote já foi registado!", picked: false }));
                     }
@@ -477,7 +514,7 @@ export default ({ setFormTitle, ...props }) => {
             } else {
                 setLastValue(prev => ({ ...prev, picked: false }));
             }
-        }, [lastValue.picked, lastValue?.row?.n_lote, lastValue?.type]);
+        }, [lastValue.picked, lastValue?.row?.n_lote, lastValue?.dosers]);
         const onChange = (v, f) => {
             const rows = dataAPI.getData().rows;
             const idx = rows.findIndex(x => x.n_lote === lastValue.last.n_lote);
@@ -492,7 +529,7 @@ export default ({ setFormTitle, ...props }) => {
             onCancel={hidePickingModal}
             /*onOk={() => onPickFinish(lastValue)} */
             width={600} height={250} footer="ref">
-            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} />
+            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={() => cFormulacao(record)} />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp()]);
     const [showOutModal, hideOutModal] = useModal(({ in: open, onExited }) => {
@@ -508,8 +545,9 @@ export default ({ setFormTitle, ...props }) => {
         const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
         const data = loadInit({}, {}, props, location?.state, [...Object.keys(location?.state || {})]);
         setRecord(data);
-        formFilter.setFieldsValue({ ...initFilters, type:data?.type });
-        dataAPI.addFilters({ ...initFilters, type:data?.type, agg_of_id:data?.agg_of_id }, true, true);
+        formFilter.setFieldsValue({ ...initFilters, type: data?.type });
+        dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
+        dataAPI.setSort([{column:"`order`", direction:"DESC"}]);
         dataAPI.addParameters({}, true, true);
         dataAPI.fetchPost({ signal });
         submitting.end();
@@ -520,7 +558,7 @@ export default ({ setFormTitle, ...props }) => {
         const controller = new AbortController();
         loadData({ signal: controller.signal });
         return (() => controller.abort());
-    }, [ location?.state?.type ]);
+    }, [location?.state?.type]);
 
     const onPickFinish = (values) => { console.log("picking", values) };
 
@@ -528,7 +566,7 @@ export default ({ setFormTitle, ...props }) => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-            const response = await fetchPost({ url: `${API_URL}/deletenwitem/`, filter: { id } });
+            const response = await fetchPost({ url: `${API_URL}/deletegranuladoitem/`, filter: { id } });
             if (response.data.status !== "error") {
                 dataAPI.fetchPost();
             } else {
@@ -554,7 +592,7 @@ export default ({ setFormTitle, ...props }) => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-             const response = await fetchPost({ url: `${API_URL}/savenwitems/`, parameters: { rows: dataAPI.getData().rows }, dates: [{ key: "t_stamp", format: DATETIME_FORMAT }] });
+            const response = await fetchPost({ url: `${API_URL}/savegranuladoitems/`, parameters: { rows: dataAPI.getData().rows }, dates: [{ key: "t_stamp", format: DATETIME_FORMAT }] });
             if (response.data.status !== "error") {
                 setFormStatus({ ...status });
                 dataAPI.fetchPost();
@@ -583,6 +621,7 @@ export default ({ setFormTitle, ...props }) => {
                     flote: getFilterValue(vals?.flote, 'any'),
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                 };
+                console.log(_values)
                 dataAPI.addFilters(_values);
                 dataAPI.addParameters({})
                 dataAPI.first();
@@ -592,7 +631,7 @@ export default ({ setFormTitle, ...props }) => {
 
 
     };
-    const onFilterChange = (changedValues, values) => { 
+    const onFilterChange = (changedValues, values) => {
         if ("type" in changedValues) {
             console.log("aaaaa")
             navigate("/app/picking/picknwlist", { state: { ...location?.state, ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });

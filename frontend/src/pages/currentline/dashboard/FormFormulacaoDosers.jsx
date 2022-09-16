@@ -19,7 +19,7 @@ import ResponsiveModal from 'components/Modal';
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
-import {Cuba} from "./ItemFormulacao";
+import {Cuba} from "./commons/Cuba";
 
 const title = "Alterar Doseadores";
 const useStyles = createUseStyles({});

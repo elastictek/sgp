@@ -411,7 +411,8 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
-        navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg } });
+        navigate("/app", { state: { aggId:temp_ofabrico_agg, tstamp: Date.now() } , replace:true });
+        //navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg } });
         //setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
     }
 

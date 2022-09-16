@@ -1,3 +1,4 @@
+from email.policy import default
 import re
 import itertools
 from django.utils.connection import ConnectionProxy
@@ -73,7 +74,6 @@ def encloseColumn(col, enclose=True, join=True, ignore=[], colSeparator='.', lis
 
 def DBSql(alias):
     type = AppSettings.typeDB.get(alias)
-    print(f"----------------{type}")
     if type == TypeDB.POSTGRES:
         return PostgresSql(type,alias)
     elif type == TypeDB.MYSQL:
@@ -83,9 +83,10 @@ def DBSql(alias):
 
 
 class BaseSql:
-    def __init__(self):
+    def __init__(self,typeDB):
         self.id = itertools.count()
         self.encloseColumns = True
+        self.typeDB = typeDB
 
     class Dql:
         def __init__(self) -> None:
@@ -131,7 +132,7 @@ class BaseSql:
     @encloseColumns.setter
     def encloseColumns(self, encloseColumns):
         self.__encloseColumns = encloseColumns
-
+    
     def __computeSort(self, dictData):
         sort = {"column": None, "field": None, "direction": "ASC", "options": "", **dictData}
         tbl = f"{sort['table']}." if sort.get('table') else ''
@@ -141,10 +142,14 @@ class BaseSql:
             return f"""{column} {sort["direction"]} {sort.get('options')}"""
         return ""
 
-    def __getSort(self, data={}):
-        if "sort" not in data:
+    def __getSort(self, data={},defaultSort=[]):
+        if "sort" in data and len(data["sort"])>0:
+            sortData = data.get('sort')
+        elif len(defaultSort)>0:
+            sortData=defaultSort
+        else:
             return ""
-        sortData = data.get('sort')
+
         if isinstance(sortData, list):
             if len(sortData) > 0:
                 sort = ", ".join(
@@ -166,35 +171,57 @@ class BaseSql:
 
     def disableCols(self,v):
         return 'count(*)'
+    
+    def computeSequencial(self,sql,parameters):
+        if self.typeDB==TypeDB.SQLSERVER:
+            sqParameters=[]
+            def replaceParams(m):
+                sqParameters.append(parameters[m.group(0)[2:-2]])
+                return rep[re.escape(m.group(0))]
+
+            rep = dict((re.escape(f"%({k})s"), "%s") for k, v in parameters.items()) 
+            pattern = re.compile("|".join(rep.keys()))
+            text = pattern.sub(replaceParams, sql)
+            return {"sql":text,"parameters":sqParameters}
+        return {"sql":sql,"parameters":parameters}
 
     def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
-                print(f'PARAMS--> {parameters}')
-                cursor.execute(sql(self.enable, self.enable,self.enable), parameters)
+                execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
+                print("1-###########################################################################")
+                print(f'SQL--> {execSql["sql"]}')
+                print(f'PARAMS--> {execSql["parameters"]}')
+                print("###########################################################################")
+                cursor.execute(execSql["sql"],execSql["parameters"])
                 rows = fetchall(cursor, ignore)
                 if (countSql is None):
-                    cursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                    execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                    cursor.execute(execSql["sql"],execSql["parameters"])
                     count = cursor.fetchone()[0]
                 else:
-                    cursor.execute(countSql, parameters)
+                    execSql = self.computeSequencial(countSql, parameters)
+                    cursor.execute(execSql["sql"],execSql["parameters"])
                     count = cursor.fetchone()[0]
         else:
-            print(f'SQL--> {sql(self.enable,self.enable,self.enable)}')
-            print(f'PARAMS--> {parameters} {connOrCursor}')
-            print("-------------------------------------")
             if (connOrCursor):
                 print("DB init success")
             else:
                 print("DB init fail")
-            connOrCursor.execute(sql(self.enable, self.enable,self.enable), parameters)
+            execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
+            print("2-###########################################################################")
+            print(f'SQL--> {execSql["sql"]}')
+            print(f'PARAMS--> {execSql["parameters"]}')
+            print("###########################################################################")
+            connOrCursor.execute(execSql["sql"],execSql["parameters"])
             rows = fetchall(connOrCursor, ignore)
             if (countSql is None):
-                connOrCursor.execute(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                connOrCursor.execute(execSql["sql"],execSql["parameters"])
                 count = connOrCursor.fetchone()[0]
             else:
-                connOrCursor.execute(countSql, parameters)
+                execSql = self.computeSequencial(countSql, parameters)
+                connOrCursor.execute(execSql["sql"],execSql["parameters"])
                 count = connOrCursor.fetchone()[0]
 
         return {"rows": rows, "total": count}
@@ -202,10 +229,12 @@ class BaseSql:
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                cursor.execute(sql(), parameters)
+                execSql = self.computeSequencial(sql(), parameters)
+                cursor.execute(execSql["sql"],execSql["parameters"])
                 rows = fetchall(cursor, ignore)
         else:
-            connOrCursor.execute(sql(), parameters)
+            execSql = self.computeSequencial(sql(), parameters)
+            connOrCursor.execute(execSql["sql"],execSql["parameters"])
             rows = fetchall(connOrCursor, ignore)
         return {"rows": rows}
 
@@ -215,14 +244,16 @@ class BaseSql:
             with connOrCursor.cursor() as cursor:
                 print(f'EXECUTE--> {sql}')
                 print(f'PARAMS--> {parameters}')
-                cursor.execute(sql, parameters)
+                execSql = self.computeSequencial(sql, parameters)
+                cursor.execute(execSql["sql"],execSql["parameters"])
                 if returning:
                     ret = cursor.fetchone()[0]
                     return ret
         else:
             print(f'EXECUTE--> {sql}')
             print(f'PARAMS--> {parameters}')
-            connOrCursor.execute(sql, parameters)
+            execSql = self.computeSequencial(sql, parameters)
+            connOrCursor.execute(execSql["sql"],execSql["parameters"])
             if returning:
                 ret = connOrCursor.fetchone()[0]
                 return ret
@@ -230,7 +261,7 @@ class BaseSql:
 
 class PostgresSql(BaseSql):
     def __init__(self, typeDB,alias):
-        super().__init__()
+        super().__init__(typeDB)
         self.typeDB = typeDB
         self.dbAlias = AppSettings.dbAlias.get(alias)
 
@@ -238,11 +269,11 @@ class PostgresSql(BaseSql):
     def columns(self, cols, enclose=True, join=True, ignore=['*', 'count(*)']):
         return encloseColumn(cols, enclose, join, ignore)
 
-    def dql(self, data, computeColumns=True, encloseColumns=True):
+    def dql(self, data, computeColumns=True, encloseColumns=True, defaultSort=[]):
         "Compute query items: sort and pagination"
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
-        ret.sort = self._BaseSql__getSort(data)
+        ret.sort = self._BaseSql__getSort(data,defaultSort)
         pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None,
                       "offset": 0, "enabled": False, **data.get('pagination', {})}
         ret.currentPage = pagination.get('currentPage') if pagination.get(
@@ -389,18 +420,18 @@ class PostgresSql(BaseSql):
 
 class MySqlSql(BaseSql):
     def __init__(self, typeDB,alias):
-        super().__init__()
+        super().__init__(typeDB)
         self.typeDB = typeDB
         self.dbAlias = AppSettings.dbAlias.get(alias)
 
     def columns(self, cols, enclose=False, join=True, ignore=['*', 'count(*)']):
         return encloseColumn(cols, enclose, join, ignore)
 
-    def dql(self, data, computeColumns=True, encloseColumns=False):
+    def dql(self, data, computeColumns=True, encloseColumns=False, defaultSort=[]):
         "Compute query items: sort and pagination"
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
-        ret.sort = self._BaseSql__getSort(data)
+        ret.sort = self._BaseSql__getSort(data,defaultSort)
         pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None, "offset": 0, "enabled": False, **data.get('pagination', {})}
         ret.currentPage = pagination.get('currentPage') if pagination.get('page') is None else pagination.get('page')
         limit, pageSize, offset, enabled = pagination.get('limit'), pagination.get('pageSize'), pagination.get('offset'), pagination.get('enabled')
@@ -545,16 +576,173 @@ class MySqlSql(BaseSql):
                 ret.rows = fetchall(connOrCursor)
         return ret
 
-
-
-
-
-class SqlServerSql:
+class SqlServerSql(BaseSql):
     def __init__(self, typeDB,alias):
-        super().__init__()
+        super().__init__(typeDB)
         self.typeDB = typeDB
         self.dbAlias = AppSettings.dbAlias.get(alias)
-        print("I'M SQLSERVER")
+    
+    def columns(self, cols, enclose=False, join=True, ignore=['*', 'count(*)']):
+        return encloseColumn(cols, enclose, join, ignore)
+
+    def dql(self, data, computeColumns=True, encloseColumns=False, defaultSort=[]):
+        "Compute query items: sort and pagination"
+        ret = BaseSql.Dql()
+        self.encloseColumns = encloseColumns
+        print("oiii")
+        print(defaultSort)
+        ret.sort = self._BaseSql__getSort(data,defaultSort)
+        pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None, "offset": 0, "enabled": False, **data.get('pagination', {})}
+        ret.currentPage = pagination.get('currentPage') if pagination.get('page') is None else pagination.get('page')
+        limit, pageSize, offset, enabled = pagination.get('limit'), pagination.get('pageSize'), pagination.get('offset'), pagination.get('enabled')
+        if enabled:
+            a = (0 if offset < 0 else offset) + \
+                (((1 if ret.currentPage <= 0 else ret.currentPage) - 1) * pageSize)
+            b = 1 if pageSize <= 0 else pageSize
+            ret.paging = f"""
+                OFFSET {a} ROWS 
+                FETCH NEXT {b} ROWS ONLY
+            """
+        if limit != 0:
+            ret.limit = f"""
+                OFFSET 0 ROWS 
+                FETCH FIRST {limit} ROWS ONLY
+            """
+        else:
+            ret.limit = ''
+        ret.pageSize = pageSize
+        if computeColumns:
+            ret.columns = self.columns(
+                data.get('columns', ['*']), super().encloseColumns)
+        return ret
+
+    def dml(self, typeDml, data, table=None, filterParameters=None, returning=None, encloseColumns=False, ignoreKeys=[]):
+        "Compute insert/update/delete items and statement"
+        ret = BaseSql.Dml()
+        return None
+        filter = None
+        if filterParameters is not None:
+            if isinstance(filterParameters,dict):
+                filter = Filters(filterParameters)
+                filter.where()
+                filter.auto([], [], encloseColumns)
+                ret.filter = filter.value('and').text
+                ret.parameters = filter.parameters
+            else:
+                filter = filterParameters
+                ret.filter = filterParameters.value('and').text
+                ret.parameters = filterParameters.parameters
+
+        if typeDml == TypeDml.DELETE:
+            if filter is None:
+                raise Exception("Filtro Não pode ser None!")
+
+            if table is not None:
+                if returning is None:
+                    ret.statement = f'DELETE FROM {table} {filter.text}'
+                else:
+                    ret.statement = f'DELETE FROM {table} {filter.text}'
+            return ret
+        #d = data.get('data', {})
+        ks = list(data.keys())
+        ret.columns = self.columns(ks, encloseColumns, False)
+        if typeDml == TypeDml.INSERT:
+            for i, c in enumerate(ks):
+                if (c in ignoreKeys):
+                    ret.tags.append(data.get(c))
+                else:
+                    ret.tags.append(f'%({c})s')
+                    ret.parameters[c] = data.get(c)
+            if table is not None:
+                _cols = f'({",".join(ret.columns)})' if len(ret.columns)>0 else ''
+                _values = f'VALUES({",".join(ret.tags)})' if len(ret.columns)>0 else 'DEFAULT VALUES'
+                if returning is None:
+                    ret.statement = f'INSERT INTO {table}{_cols} {_values}'
+                else:
+                    ret.statement = f'INSERT INTO {table}{_cols} {_values} returning {returning}'
+        elif typeDml == TypeDml.UPDATE:
+            if filter is None:
+                raise Exception("Filtro Não pode ser None!")
+            for i, c in enumerate(ks):
+                ret.tags.append(f'{ret.columns[i]} = %({c})s')
+                ret.parameters[c] = data.get(c)
+            if table is not None:
+                if returning is None:
+                    ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text}'
+                else:
+                    ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text} returning {returning}'
+        return ret
+
+    def count(self, table, p={}, connOrCursor=None, encloseColumns=False):
+        ret = BaseSql.Count()
+        f = Filters(p)
+        f.where()
+        f.auto([], [], encloseColumns)
+        ret.filter = f.value('and').text
+        ret.parameters = f.parameters
+        ret.statement = f'SELECT count(*) as "count" FROM {table} {f.text}'
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.count = cursor.fetchone()[0]
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.count = connOrCursor.fetchone()[0]
+        return ret
+
+    def exists(self, table, p={}, connOrCursor=None, encloseColumns=False):
+        if isinstance(p,dict):
+            ret = BaseSql.Exists()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {f.text})'
+        else:
+            ret = BaseSql.Exists()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {p.text})'
+
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.exists = cursor.fetchone()[0]
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.exists = connOrCursor.fetchone()[0]
+        return ret
+
+    def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):
+        if isinstance(p,dict):
+            ret = BaseSql.Rows()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'select * from {table} {f.text} OFFSET 0 ROWS FETCH FIRST {limit} ROWS ONLY'
+            print(ret.statement)
+        else:
+            ret = BaseSql.Rows()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'select * from {table} {p.text} OFFSET 0 ROWS FETCH FIRST {limit} ROWS ONLY'
+
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
+        return ret
+
+
 
 class Filters:
     def __init__(self, filterData={}):
@@ -608,18 +796,20 @@ class Filters:
             val = None
             k = value['key'] if 'key' in value else key
             fld = k
+            none = value['none'] if 'none' in value else True
             if callable(value['value']):
                 val = value['value'](self.filterData)
             else:
                 val = value['value']
-            if 'field' in value:
-                if callable(value['field']):
-                    fld = value['field'](k, self.filterData)
-                else:
-                    fld = value['field']
-            self.paramsSet[key] = {"value": val, "field": fld}
-            self.paramsSetValues[key] = val
-            self.paramsSetFields[key] = fld
+            if none==True or val is not None:
+                if 'field' in value:
+                    if callable(value['field']):
+                        fld = value['field'](k, self.filterData)
+                    else:
+                        fld = value['field']
+                self.paramsSet[key] = {"value": val, "field": fld}
+                self.paramsSetValues[key] = val
+                self.paramsSetFields[key] = fld
         if (clearData):
             self.filterData.clear()
         return self

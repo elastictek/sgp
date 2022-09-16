@@ -133,7 +133,6 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
 
     const clearSort = (applyState = false) => {
         addAction('sort');
-        console.log("CLEARING SORT....", payload);
         _sort.current = [];
         if (applyState) {
             setDataState(prev => ({ ...prev, sort: _sort.current }));
@@ -159,7 +158,6 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const addParameters = (obj, assign = true, applyState = false) => {
         addAction('parameters');
         if (assign) {
-            console.log("ADD PARAMETERS->", obj);
             _parameters = obj;
             if (applyState) {
                 setDataState(prev => ({ ...prev, parameters: { ...obj } }));
@@ -238,7 +236,6 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     }
 
     const setData = (data, payload) => {
-        console.log("SETTING DATA", payload);
         setDataState(prev => ({
             ...prev,
             ...((isAction('nav') || isAction('pageSize')) && { pagination: { ...prev.pagination, ...payload.pagination } }),
@@ -310,6 +307,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const _fetchPost = ({ url, token, signal, rowFn } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = { ...getPayload(), tstamp: Date.now() };
+        console.log(payload);
         setIsLoading(true);
         return (async () => {
             let ok=true;
@@ -319,7 +317,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             try {
                 const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? {signal} : {cancelToken: token}) })).data;
                 if (rowFn){
-                    setData(rowFn(dt), payload);
+                    setData(await rowFn(dt), payload);
                 }else{
                     setData(dt, payload);
                 }

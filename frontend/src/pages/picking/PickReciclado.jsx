@@ -30,9 +30,9 @@ import YScroll from 'components/YScroll';
 import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 
-const title = "Registo de Granulado";
+const title = "Registo de Reciclado";
 const TitleForm = ({ data, onChange, details, level }) => {
-    return (<ToolbarTitle history={level === 0 ? [] : ['Reciclado(Granulado) Lote']} title={
+    return (<ToolbarTitle history={level === 0 ? [] : ['Reciclado Lotes']} title={
         <Col xs='content' style={{}}>
             <Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row>
             <Row nogutter><Col><Details details={details} minWidth="300px" maxWidth="600px" /></Col></Row>
@@ -235,7 +235,7 @@ const WeighContent = ({ loteId, parentRef, closeParent, loadParentData }) => {
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/pesargranulado/`, filter: { id: loteId }, parameters: values });
+                let response = await fetchPost({ url: `${API_URL}/pesarreciclado/`, filter: { id: loteId }, parameters: values });
                 if (response.data.status !== "error") {
                     loadParentData();
                 } else {
@@ -313,8 +313,8 @@ const Details = ({ details, maxWidth, minWidth }) => {
     );
 }
 
-const loadGranuladoLookup = async (id, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/granuladolookup/`, filter: { id }, sort: [], signal });
+const loadRecicladoLookup = async (id, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/recicladolookup/`, filter: { id }, sort: [], signal });
     return rows;
 }
 
@@ -336,7 +336,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/granuladoloteslist/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { reciclado_id: location?.state?.id }, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/recicladoloteslist/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { reciclado_id: location?.state?.id }, sort: [] } });
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const [details, setDetails] = useState();
@@ -390,7 +390,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp()]);
     const [showWeighModal, hideWeighModal] = useModal(({ in: open, onExited }) => {
-        return <ResponsiveModal title={`Pesar Granulado ${modalParameters.lote}`}
+        return <ResponsiveModal title={`Pesar Reciclado ${modalParameters.lote}`}
             onCancel={hideWeighModal}
             //onOk={() => onPickFinish(lastValue)}
             width={600} height={340} footer="ref" >
@@ -399,7 +399,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     }, [dataAPI.getTimeStamp(), modalParameters]);
 
     const loadData = async ({ signal } = {}) => {
-        const _details = await loadGranuladoLookup(location?.state?.id, signal);
+        const _details = await loadRecicladoLookup(location?.state?.id, signal);
         if (_details.length > 0) {
             setDetails(_details[0]);
             submitting.end();
@@ -419,7 +419,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-            const response = await fetchPost({ url: `${API_URL}/deletegranuladoitem/`, filter: { id } });
+            const response = await fetchPost({ url: `${API_URL}/deleterecicladoitem/`, filter: { id } });
             if (response.data.status !== "error") {
                 dataAPI.fetchPost();
             } else {
@@ -445,9 +445,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-            const response = await fetchPost({ url: `${API_URL}/savegranuladoitems/`, parameters: { id: details.id, rows: dataAPI.getData().rows }, dates: [{ key: "timestamp", format: DATETIME_FORMAT }] });
+            const response = await fetchPost({ url: `${API_URL}/saverecicladoitems/`, parameters: { id: details.id, rows: dataAPI.getData().rows }, dates: [{ key: "timestamp", format: DATETIME_FORMAT }] });
             if (response.data.status !== "error") {
-                //navigate('/app/picking/pickgranulado', { state: { id: response.data.id[0] } });
+                //navigate('/app/picking/pickreciclado', { state: { id: response.data.id[0] } });
                 setFormStatus({ ...status });
                 dataAPI.fetchPost();
             } else {
@@ -498,7 +498,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 leftToolbar={<>
                     {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length === 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Granulado</Button>}
+                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length === 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}
                 </>}
                 //content={<PickHolder/>}
                 //paginationPos='top'

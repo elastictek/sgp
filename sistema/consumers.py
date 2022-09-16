@@ -188,6 +188,16 @@ class RealTimeGeneric(WebsocketConsumer):
         hsh = json.dumps(rows,default=str)
         self.send(text_data=json.dumps({"rows":rows,"item":"reciclado","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
     
+    def checkGranulado(self, data):
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT id
+            FROM lotesdosers
+            order by t_stamp desc
+        """),connection,{})['rows']
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"granulado","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
     def checkNW(self, data):
         connection = connections["default"].cursor()
         rows = dbgw.executeSimpleList(lambda:(f"""		
@@ -208,10 +218,18 @@ class RealTimeGeneric(WebsocketConsumer):
         hsh = json.dumps(rows,default=str)
         self.send(text_data=json.dumps({"rows":rows,"item":"cores","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
     
+    def checkLineEvents(self, data):
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
+            hsh = json.dumps(rows,default=str)
+            self.send(text_data=json.dumps({"rows":rows,"item":"checklineevents","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
     commands = {
         'checkreciclado':checkReciclado,
+        'checkgranulado':checkGranulado,
         'checknw':checkNW,
-        'checkcores':checkCores
+        'checkcores':checkCores,
+        'checklineevents':checkLineEvents
     }
 
     def connect(self):
@@ -294,7 +312,38 @@ class LotesPickConsumer(WebsocketConsumer):
             self.send(text_data=json.dumps({"error":"O lote de Nonwoven não existe ou não se enconta em buffer!","row":{"qty_lote":0, "unit":"m2", "n_lote":lote}},default=str))
 
 
-        
+    def getGranuladoLoteQuantity(self,data):
+        lote = data['lote']
+        conngw = connections[connGatewayName].cursor()
+        sageAlias = dbgw.dbAlias.get("sage")
+        sgpAlias = dbgw.dbAlias.get("sgp")
+        rows = dbgw.executeSimpleList(lambda:(f"""
+            SELECT * FROM(
+                SELECT
+                ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0" artigo_cod,ST."LOT_0" n_lote,ST."LOC_0",ST."VCRNUM_0" vcr_num,
+                SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+                ST."QTYPCU_0" qty_lote,
+                round(ST."QTYPCU_0",2) peso,
+                ST."PCU_0" unit,mprima."ITMDES1_0" artigo_des
+                FROM {sageAlias}."STOJOU" ST
+                JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+                where ST."LOT_0" = '{lote}' and (LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM') AND ST."LOC_0" in ('BUFFER') AND ST."CREDATTIM_0">= now() - INTERVAL '4 DAYS'
+                AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = ST."VCRNUM_0")
+            ) t
+            where (QTY_SUM > 0) 
+        """),conngw,{})["rows"]
+        if len(rows)>0:            
+            conn = connections["default"].cursor()
+            #rowsx = db.executeSimpleList(lambda:(f"""select id from lotesnwlinha where n_lote = '{lote}' and artigo_cod='{rows[0]["artigo_cod"]}'"""),conn,{})['rows']
+            #if len(rowsx)>0:
+            #    self.send(text_data=json.dumps({"error":"O lote de Granulado já foi registado!","row":{"qty_lote":rows[0]["qty_lote"],"unit":"kg", "n_lote":lote}},default=str))
+            self.send(text_data=json.dumps({"error":None,"row":{**rows[0], "unit":"kg", "n_lote":lote }},default=str))
+        else:
+            self.send(text_data=json.dumps({"error":"O lote de Granulado não existe ou não se enconta em buffer!","row":{"qty_lote":0, "unit":"kg", "n_lote":lote}},default=str))
+
+
+
+
 
     def getLote(self, data):
         lotePicked = data['value']
@@ -487,7 +536,8 @@ class LotesPickConsumer(WebsocketConsumer):
         'loaddoserssets':loadDosersSets,
         'pick':getLote,
         'getlotequantity':getLoteQuantity,
-        'getnwlotequantity':getNWLoteQuantity
+        'getnwlotequantity':getNWLoteQuantity,
+        'getgranuladolotequantity':getGranuladoLoteQuantity
     }
 
     def connect(self):

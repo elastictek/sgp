@@ -3,7 +3,7 @@
 {% block title %}Detalhes Ordem de Fabrico | {{ block.super }}{% endblock %}
 {% block content %}
 <div class="container">
-    <a href="{% url 'planeamento:list_ordem' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+    <a href="#" onClick="history.go(-1);" class="btn btn-outline-primary" role="button">Voltar</a>
     {% if ordem.retrabalho == False %}
     <a href="{% url 'planeamento:ordem_add_stock' pk=ordem.pk %}"  class="btn btn-outline-primary" role="button">Adicionar Paletes em Stock</a>
     {% else %}

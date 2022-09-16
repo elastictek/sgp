@@ -2,6 +2,8 @@ from django.urls import re_path, include
 from django.contrib import admin
 #from producao.api.views import ArtigoListAPIView, ClienteListAPIView, ArtigoDetailAPIView, PaleteListStockAPIView, PaleteListAPIView, CargaListAPIView, PaleteListHistoricoAPIView, BobinagemListHistoricoAPIView, CargaPaletesAPIView, StockListAPIView, BobineListDmAPIView, CargaDetailAPIView, EncomendaCargaAPIView, CargaDetailSerializer, EncomendaListAPIView, BobinagemListDmAPIView, BobinagemCreateDmAPIView, BobineListAPIView, PaleteDetailAPIView, BobineList, EmendaListAPIView, EmendaCreateAPIView, PaleteDmBobinesAPIView, BobinagemListAPIView, BobineDetailAPIView, BobineListAllAPIView,ClienteDetailAPIView,BobinesBobinagemAPIView,PaleteDmAPIView
 from producao.api import views 
+from producao.api import reports
+from producao.api import materias_primas
 app_name="producao" 
 
 urlpatterns = [
@@ -136,22 +138,22 @@ urlpatterns = [
 
     #PICAGEM LOTES
     
-    re_path(r'^nwlistlookup/$', views.NWListLookup),
-    re_path(r'^nwlist/$', views.NWList),
-    re_path(r'^deletenwitem/$', views.DeleteNWItem),
-    re_path(r'^savenwitems/$', views.SaveNWItems),
-    re_path(r'^updatenw/$', views.UpdateNW),
+    re_path(r'^nwlistlookup/$', materias_primas.NWListLookup),
+    re_path(r'^nwlist/$', materias_primas.NWList),
+    re_path(r'^deletenwitem/$', materias_primas.DeleteNWItem),
+    re_path(r'^savenwitems/$', materias_primas.SaveNWItems),
+    re_path(r'^updatenw/$', materias_primas.UpdateNW),
     
-    re_path(r'^granuladolist/$', views.GranuladoList),
-    re_path(r'^granuladoloteslist/$', views.GranuladoLotesList),
-    re_path(r'^savegranuladoitems/$', views.SaveGranuladoItems),
-    re_path(r'^pesargranulado/$', views.PesarGranulado),
-    re_path(r'^deletegranuladoitem/$', views.DeleteGranuladoItem),
-    re_path(r'^updategranulado/$', views.UpdateGranulado),
-    
-    re_path(r'^granuladolookup/$', views.GranuladoLookup),
-    re_path(r'^newlotegranulado/$', views.NewLoteGranulado),
+    re_path(r'^recicladolist/$', views.RecicladoList),
+    re_path(r'^recicladoloteslist/$', views.RecicladoLotesList),
+    re_path(r'^saverecicladoitems/$', views.SaveRecicladoItems),
+    re_path(r'^pesarreciclado/$', views.PesarReciclado),
+    re_path(r'^deleterecicladoitem/$', views.DeleteRecicladoItem),
+    re_path(r'^updatereciclado/$', views.UpdateReciclado),
+    re_path(r'^recicladolookup/$', views.RecicladoLookup),
+    re_path(r'^newlotereciclado/$', views.NewLoteReciclado),
     re_path(r'^produtogranuladolookup/$', views.ProdutoGranuladoLookup),
+
     re_path(r'^pick/$', views.Pick),
     re_path(r'^pickmanual/$', views.PickManual),
     re_path(r'^saidamp/$', views.SaidaMP),
@@ -161,13 +163,15 @@ urlpatterns = [
     re_path(r'^lotesavailable/$', views.LotesAvailable),
     re_path(r'^getconsumosbobinagenslookup/$', views.GetConsumosBobinagensLookup),
     
-    
-    
+    re_path(r'^granuladolist/$', materias_primas.GranuladoList),
+    re_path(r'^savegranuladoitems/$', materias_primas.SaveGranuladoItems),
+    re_path(r'^granuladolistlookup/$', materias_primas.GranuladoListLookup),
+    re_path(r'^updategranulado/$', materias_primas.UpdateGranulado),
     #PICAGEM LOTES
 
     #MATERIAS-PRIMAS
     re_path(r'^stocklist/$', views.StockList),
-    re_path(r'^stocklistbuffer/$', views.StockListBuffer),
+    re_path(r'^stocklistbuffer/$', materias_primas.MateriasPrimasList),
     re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
     re_path(r'^mpginout/$', views.MPGranuladoIO),
     re_path(r'^pickmp/$', views.PickMP),
@@ -186,7 +190,7 @@ urlpatterns = [
     
     #REPORTS
     re_path(r'^exportfile/$',views.ExportFile),
-
+    re_path(r'^report/reciclado/$',reports.Reciclado),
     #re_path(r'^tempaggofabricoitemsget/$', views.TempAggOFabricoItemsGet),
 
     re_path(r'^createpalete/$', views.CreatePalete),

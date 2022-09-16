@@ -25,7 +25,7 @@ import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 import YScroll from 'components/YScroll';
 
-const title = "Reciclado(Granulado) Lotes";
+const title = "Reciclado Lotes";
 const TitleForm = ({ data, onChange }) => {
     return (<ToolbarTitle title={
         <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
@@ -110,9 +110,9 @@ const NewLoteContent = ({ loteId, parentRef, closeParent }) => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
-            const response = await fetchPost({ url: `${API_URL}/newlotegranulado/`, parameters: { peso: 0, tara: '15 kg', estado: 'ND', produto_granulado_id: values.produto } });
+            const response = await fetchPost({ url: `${API_URL}/newlotereciclado/`, parameters: { peso: 0, tara: '15 kg', estado: 'ND', produto_granulado_id: values.produto } });
             if (response.data.status !== "error") {
-                navigate('/app/picking/pickgranulado', { state: { id: response.data.id[0] } });
+                navigate('/app/picking/pickreciclado', { state: { id: response.data.id[0] } });
             } else {
                 status.error.push({ message: <div>{response.data.title} {response.data.subTitle && response.data.subTitle}</div> });
                 setFormStatus({ ...status });
@@ -203,7 +203,7 @@ const ModalEstadoChange = ({ p, submitting, dataAPI }) => {
             if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
 
                 try {
-                    const response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { id: p.row.id }, parameters: { estado, obs } });
+                    const response = await fetchPost({ url: `${API_URL}/updatereciclado/`, filter: { id: p.row.id }, parameters: { estado, obs } });
                     if (response.data.status !== "error") {
                         dataAPI.fetchPost();
                     } else {
@@ -248,7 +248,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "granuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: "timestamp", direction: "DESC" }] } });
+    const dataAPI = useDataAPI({ id: "recicladolist", payload: { url: `${API_URL}/recicladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: "timestamp", direction: "DESC" }] } });
 
     const permission = usePermission({ allowed: { producao: 100, logistica: 100, qualidade: 100 } });
     const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });
@@ -257,7 +257,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const primaryKeys = ['id'];
     const columns = [
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },
-        { key: 'lote', name: 'Lote', formatter: p => <Button type="link" size="small" onClick={() => navigate('/app/picking/pickgranulado', { state: { id: p.row.id } })}>{p.row.lote}</Button> },
+        { key: 'lote', name: 'Lote', formatter: p => <Button type="link" size="small" onClick={() => navigate('/app/picking/pickreciclado', { state: { id: p.row.id } })}>{p.row.lote}</Button> },
         { key: 'estado', name: 'Estado', width: 80, formatter: p => <Status estado={p.row.estado} />, editor(p) { return p.row.status === 1 && <ModalEstadoChange p={p} submitting={submitting} dataAPI={dataAPI} /> }, editorOptions: { editOnClick: true } },
         { key: 'peso', name: 'Peso', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso} kg</div> },
         { key: 'tara', name: 'Tara', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tara}</div> },
@@ -265,7 +265,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         { key: 'timestamp', name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) }
     ];
     const [showNewLoteModal, hideNewLoteModal] = useModal(({ in: open, onExited }) => {
-        return <ResponsiveModal title="Novo Lote de Granulado"
+        return <ResponsiveModal title="Novo Lote de Reciclado"
             onCancel={hideNewLoteModal}
             width={600} height={200} footer="ref" >
             <NewLoteContent />

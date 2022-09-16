@@ -27,7 +27,7 @@ const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList'));
 const BobinagensList = lazy(() => import('./bobinagens/BobinagensList'));
 const StockList = lazy(() => import('./artigos/StockList'));
-const StockListBuffer = lazy(() => import('./artigos/StockListBuffer'));
+const MPBufferList = lazy(() => import('./artigos/MPBufferList'));
 const LayoutPage = lazy(() => import('./LayoutPage'));
 const FormPickMP = lazy(() => import('./currentline/FormPickMP'));
 const LineLogList = lazy(() => import('./logslist/LineLogList'));
@@ -40,9 +40,10 @@ const BobinesValidarList = lazy(() => import('./bobines/BobinesValidarList'));
 const BobinagensFixLotes = lazy(() => import('./bobinagens/BobinagensFixLotes'));
 const FormMenuActions = lazy(() => import('./currentline/FormMenuActions'));
 const FormPalete = lazy(() => import('./paletes/FormPalete'));
-const GranuladoList = lazy(() => import('./picking/GranuladoList'));
-const PickGranulado = lazy(() => import('./picking/PickGranulado'));
+const RecicladoList = lazy(() => import('./picking/RecicladoList'));
+const PickReciclado = lazy(() => import('./picking/PickReciclado'));
 const PickNWList = lazy(() => import('./picking/PickNWList'));
+const PickGranuladoList = lazy(() => import('./picking/PickGranuladoList'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 
@@ -115,7 +116,7 @@ const RenderRouter = () => {
                 { path: "paletes/palete", element: <Suspense fallback={<Spin />}><FormPalete /></Suspense> },
                 { path: "ofabricoshortlist", element: <Suspense fallback={<Spin />}><OFabricoShortList /></Suspense> },
                 { path: "stocklist", element: <Suspense fallback={<Spin />}><StockList /></Suspense> },
-                { path: "stocklistbuffer", element: <Suspense fallback={<Spin />}><StockListBuffer /></Suspense> },
+                { path: "artigos/mpbufferlist", element: <Suspense fallback={<Spin />}><MPBufferList /></Suspense> },
                 { path: "logslist/lineloglist", element: <Suspense fallback={<Spin />}><LineLogList /></Suspense> },
                 { path: "logslist/stockloglist", element: <Suspense fallback={<Spin />}><StockLogList /></Suspense> },
                 { path: "logslist/comsumptionneedloglist", element: <Suspense fallback={<Spin />}><ConsumptionNeedLogList /></Suspense> },
@@ -125,8 +126,9 @@ const RenderRouter = () => {
                 { path: "currentline/menuactions", element: <Suspense fallback={<Spin />}><FormMenuActions /></Suspense> },
                 { path: "expedicoes/timearmazem", element: <Suspense fallback={<Spin />}><ExpedicoesTempoList /></Suspense> },
 
-                { path: "picking/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
-                { path: "picking/pickgranulado", element: <Suspense fallback={<Spin />}><PickGranulado /></Suspense> },
+                { path: "picking/recicladolist", element: <Suspense fallback={<Spin />}><RecicladoList /></Suspense> },
+                { path: "picking/pickreciclado", element: <Suspense fallback={<Spin />}><PickReciclado /></Suspense> },
+                { path: "picking/pickgranuladolist", element: <Suspense fallback={<Spin />}><PickGranuladoList /></Suspense> },
                 { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */

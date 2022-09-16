@@ -18,6 +18,7 @@ import { Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select,
 const { Option, OptGroup } = Select;
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
+import Reports, { downloadReport } from "components/DownloadReports";
 
 import FormRequirements from './FormRequirements';
 import FormNonwovens from './FormNonwovens';
@@ -46,7 +47,7 @@ const LoadOFabricoTemp = async (record, token) => {
 
 
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput=true }) => {
     /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -94,8 +95,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
 
     useEffect(() => {
         const cancelFetch = cancelToken();
-        setFormTitle({ title: `Planear Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
+        setFormTitle({ title: `Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
         (async () => {
+            console.log("plannninggggg",forInput)
             let [oFabricoTemp] = await LoadOFabricoTemp(record, cancelFetch);
             oFabricoTemp = { ...oFabricoTemp /* core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } */ };
             form.setFieldsValue({ ...oFabricoTemp, nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) });
@@ -254,11 +256,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                     </OFabricoContext.Provider>
                 </ResultMessage>
                 <Portal elId={parentRef.current}>
-                    <Space>
+                    {forInput && <Space>
                         <Button disabled={submitting.state} type="primary" onClick={onSubmitForProduction}>Submeter para Produção</Button>
                         <Button disabled={submitting.state} onClick={onSubmit}>Guardar Ordem de Fabrico</Button>
                         {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>
+}
                 </Portal>
             </Spin>
         </>

@@ -838,10 +838,8 @@ def CreatePalete(request, format=None):
 @permission_classes([IsAuthenticated])
 def StockListBuffer(request, format=None):
     connection = connections[connGatewayName].cursor()    
-    
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    print(request.data['filter'])
-    
+    type = int(request.data['filter']['type'] if 'type' in request.data['filter'] else -1)
+    loc = request.data['filter']['loc'] if 'loc' in request.data['filter'] else -1
     f = Filters(request.data['filter'])
     print(f.filterData)
     f.setParameters({
@@ -878,11 +876,22 @@ def StockListBuffer(request, format=None):
 
 
     parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
-    #parameters = {**f.parameters}
     
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
     sageAlias = dbgw.dbAlias.get("sage")
+
+    typeFilter=""
+    if type==1:
+        typeFilter = f""" and (LOWER(mprima."ITMDES1_0") LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") LIKE '%%gsm%%' AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) """
+    elif type==2:
+        typeFilter = f""" and (LOWER(mprima."ITMDES1_0") LIKE 'core%%' AND (mprima."ACCCOD_0" = 'PT_EMBALAG')) """
+    elif type==3:
+        typeFilter = f""" and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) """
+    elif type==4:
+        typeFilter = f""" and (ST."ITMREF_0" LIKE 'R000%%' and LOWER(mprima."ITMDES1_0") LIKE 'reciclado%%') """
+
+    locFilter = f""" and ST."LOC_0" in ('{loc}') """ if loc!="-1" else ""
 
     cols = f'''*'''
     sql = lambda p, c, s: (
@@ -895,16 +904,15 @@ def StockListBuffer(request, format=None):
                 ST."QTYPCU_0",ST."PCU_0",mprima."ITMDES1_0"
                 FROM {sageAlias}."STOJOU" ST
                 JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-                where (
-                    ST."LOC_0" in ('BUFFER') 
-                    --OR ST."ITMREF_0" LIKE 'R000%%'
-                    )
+                where 1=1
+                {locFilter} 
+                {typeFilter}
                 {f.text} {f2["text"]} {flocation.text}
                 --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
 
             ) t
             where (QTY_SUM > 0)
-        {s(dql.sort)} {p(dql.paging)}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     print(sql)
@@ -5363,7 +5371,7 @@ def ValidarBobinagem(request, format=None):
             exists = db.exists("producao_bobinagem", f, cursor).exists
         return exists
     
-    def checkGranulado(data, cursor):
+    def checkReciclado(data, cursor):
         f = Filters({"status": 0})
         f.where()
         f.add(f'status = :status', True)
@@ -5378,12 +5386,12 @@ def ValidarBobinagem(request, format=None):
             with connections["default"].cursor() as cursor:
                 isValid = checkIfIsValid(data,cursor)
                 if isValid==0:
-                    granulado_id = checkGranulado(data,cursor)
-                    if (granulado_id is None):
-                        granulado_id = _newLoteGranulado(request.user.id,{"peso": 0, "tara": '15 kg', "estado": 'ND', "produto_granulado_id":data["produto_id"]},cursor)
+                    reciclado_id = checkReciclado(data,cursor)
+                    if (reciclado_id is None):
+                        reciclado_id = _newLoteReciclado(request.user.id,{"peso": 0, "tara": '15 kg', "estado": 'ND', "produto_granulado_id":data["produto_id"]},cursor)
                     print("Adicionar apara ao reciclado")
                     qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
-                    dml = db.dml(TypeDml.INSERT, {"reciclado_id":granulado_id,"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, "producao_recicladolotes",None,None,False)
+                    dml = db.dml(TypeDml.INSERT, {"reciclado_id":reciclado_id,"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, "producao_recicladolotes",None,None,False)
                     dml.statement = f"""
                     {dml.statement}
                     ON DUPLICATE KEY UPDATE 
@@ -5400,9 +5408,19 @@ def ValidarBobinagem(request, format=None):
 
                     print("Atualizar a bobinagem")
                     bobinagem_values = {key: data["values"][key] for key in data["values"] if key in ['largura_bruta','comp_par','lotenwinf','lotenwsup',]}
-                    dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}'}, None, False)
+                    dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 
+                    print("Atualizar nw")
+                    dml = db.dml(TypeDml.UPDATE,{},"lotesnwlinha lnw",{"n_lote":f'=={data["values"]["lotenwinf"]}'},None,False)
+                    rep =f"""    
+                        join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id and cs.status=3
+                        set qty_consumed=qty_consumed + ({data["values"]["nwinf"]}*(largura/1000))
+                        ,qty_reminder= qty_lote - (qty_consumed + ({data["values"]["nwinf"]}*(largura/1000)))        
+                    """
+                    statement = f"""{dml.statement.replace('SET',rep,1)} """
+                    db.execute(statement, cursor, dml.parameters)
+
                 columns = ['estado','con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'obs', 'l_real', 'nok', 
                 'car', 'fc', 'fc_diam_fim', 'fc_diam_ini', 'ff', 'ff_m_fim', 'ff_m_ini', 'fmp', 'lac', 'ncore', 'prop', 'prop_obs', 'sbrt'
                 , 'suj', 'buracos_pos', 'fc_pos', 'ff_pos', 'furos_pos']
@@ -5520,237 +5538,8 @@ def FixSimulatorList(request, format=None):
 
 #region PICAGEM DE LOTES
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def NWListLookup(request, format=None):
-    f = Filters(request.data['filter'])
-    f.setParameters({}, False)
-    f.where()
-    f.add(f'cs.status = :cs_status', lambda v:(v!=None))
-    f.add(f'lnw.status = :status', lambda v:(v!=None))
-    f.value("and")
-    parameters = {**f.parameters}
-    
-    dql = db.dql(request.data, False)
-    with connections["default"].cursor() as cursor:
-        response = db.executeSimpleList(lambda: (
-            f"""
-                SELECT lnw.* 
-                FROM lotesnwlinha lnw
-                join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
-                {f.text}
-                {dql.sort} {dql.limit}
-            """
-        ), cursor, parameters)
-        return Response(response)
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def NWList(request, format=None):
-    connection = connections["default"].cursor()
-    f = Filters(request.data['filter'])
-    f.setParameters({
-        **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(lnw.{k})'),
-        # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
-        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lnw.{k}'},
-        "fof": {"value": lambda v: v.get('fof')},
-        "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'lnw.{k}'},
-        "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'lnw.{k}'},
-        "qty_consumed": {"value": lambda v: v.get('fqty_consumed'), "field": lambda k, v: f'lnw.{k}'},
-        "type": {"value": lambda v: v.get('ftype'), "field": lambda k, v: f'lnw.{k}'},
-        "largura": {"value": lambda v: v.get('flargura'), "field": lambda k, v: f'lnw.{k}'},
-        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'lnw.{k}'},
-        "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
-        # "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
-        # "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
-        # "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
-        # "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
-        # "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
-        # "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
-    }, True)
-    f.where()
-    f.auto(['fof'])
-    f.add(f"JSON_SEARCH(acs.ofs, 'all', :fof, '', '$[*].of_cod') is not null", lambda v:(v!=None))
-    f.value()
-
-    f2 = filterMulti(request.data['filter'], {
-        'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table":"lnw."}
-    }, False, "and" if f.hasFilters else "where",False) 
-
-        
-    parameters = {**f.parameters,**f2["parameters"]}
-
-    dql = db.dql(request.data, False)
-    cols = f"""lnw.*,acs.ofs ->> "$[*].of_cod" ofs """
-    dql.columns=encloseColumn(cols,False)
-
-    sql = lambda p, c, s: (
-        f""" 
-           SELECT {c(f'{dql.columns}')}
-            FROM lotesnwlinha lnw
-            join audit_currentsettings acs on acs.id=lnw.audit_cs_id
-           {f.text} {f2["text"]}
-           {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
-        """
-    )
-    print("-----------------------------------------------------------")
-    print(sql)
-    print(parameters)
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters)
-    return Response(response)
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def DeleteNWItem(request, format=None):
-    filter = request.data.get("filter")
-
-    def checkNW(id, cursor):
-        f = Filters({"id":id})
-        f.where()
-        f.add(f'lt.id = :id', True)
-        f.value("and")
-        response = db.executeSimpleList(lambda: (f"""
-            select id 
-            from lotesnwlinha lt
-            where exists (select 1 producao_bobinagem bm where data>=DATE_SUB(NOW(), INTERVAL 5 DAY) and lt.n_lote = bm.lotenwsup or lt.n_lote = bm.lotenwinf)
-            {f.text} limit 1
-        """), cursor, f.parameters)
-        if len(response["rows"])>0:
-            return response["rows"][0]["id"]
-        return None
-
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                nwid = checkNW(filter["id"],cursor)
-                print("NW-ID-ID")
-                print(nwid)
-                #if (granulado_id is not None):
-                #    dml = db.dml(TypeDml.DELETE, None,'producao_recicladolotes',{"id":f'=={granulado_id}'},None,False)
-                #    db.execute(dml.statement, cursor, dml.parameters)
-                #else:
-                #    return Response({"status": "error", "title": f"Não é possível Remover o lote!", "subTitle":"O lote j á se encontra fechado ou não existe!"})     
-        return Response({"status": "success", "title": "Lote removido com Sucesso!", "subTitle":f'{None}'})
-    except Error:
-        return Response({"status": "error", "title": "Erro ao remover lote!"})
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def SaveNWItems(request, format=None):
-    data = request.data.get("parameters")
-
-    def inProduction(data,cursor):
-        response = db.executeSimpleList(lambda: (
-            f"""
-                select * from
-                (
-                SELECT acs.*, max(acs.id) over () mx_id 
-                from producao_currentsettings cs
-                join audit_currentsettings acs on cs.id=acs.contextid
-                where cs.status=3
-                ) t
-                where id=mx_id
-            """
-        ), cursor, {})
-        if len(response["rows"])>0:
-            return response["rows"][0]
-        return None
 
 
-
-    def saveItems(data,cursor):
-        nws = json.loads(acs["nonwovens"])
-        for idx, item in enumerate(data["rows"]):
-            #if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
-            #    raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-            #if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
-            #    raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-            dml = db.dml(TypeDml.INSERT, {
-                "lote_id":item["lote_id"], 
-                "qty_lote":item["qty_lote"],
-                "artigo_des":item["artigo_des"],
-                "artigo_cod":item["artigo_cod"], 
-                "type":item["type"], 
-                "t_stamp":item["t_stamp"],
-                "n_lote":item["n_lote"],
-                "status":1,
-                "vcr_num":item["vcr_num"],
-                "largura":item["largura"],
-                "comp":item["comp"],
-                "qty_reminder":item["qty_reminder"],
-                "qty_consumed":item["qty_consumed"],
-                "audit_cs_id":acs["id"],
-                "inuse":0,
-                "agg_of_id":acs["agg_of_id"],
-                "user_id":request.user.id}, 
-                "lotesnwlinha",None,None,False)
-            dml.statement = f"""
-                {dml.statement}
-                ON DUPLICATE KEY UPDATE 
-                    status = VALUES(status),
-                    user_id = VALUES(user_id)
-            """
-            print(dml.statement)
-            print(dml.parameters)
-            db.execute(dml.statement, cursor, dml.parameters)
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                acs = inProduction(data,cursor)
-                if acs is None:
-                    return Response({"status": "error", "title": "Não existe nenhuma ordem de fabrico a decorrer!"})
-                else:
-                    saveItems(data,cursor)
-                    return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
-    except Exception as error:
-        return Response({"status": "error", "title": str(error)})
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def UpdateNW(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    def checkNW(id, cursor):
-        f = Filters({"status": 1,"id":id})
-        f.where()
-        f.add(f'status = :status', True)
-        f.add(f'id = :id', True)
-        f.value("and")
-        response = db.executeSimpleList(lambda: (f"""
-            select id 
-            from lotesnwlinha
-            {f.text} limit 1
-        """), cursor, f.parameters)
-        print(f.parameters)
-        if len(response["rows"])>0:
-            return response["rows"][0]["id"]
-        return None
-
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                nwid = checkNW(filter["id"],cursor)
-                if (nwid is not None):
-                    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                else:
-                    return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
-        return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})
-    except Error:
-        return Response({"status": "error", "title": "Erro ao alterar lote!"})
 
 
 
@@ -5779,7 +5568,7 @@ def ProdutoGranuladoLookup(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def GranuladoLookup(request, format=None):
+def RecicladoLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
@@ -5806,7 +5595,7 @@ def GranuladoLookup(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def GranuladoList(request, format=None):
+def RecicladoList(request, format=None):
     connection = connections["default"].cursor()
     
     f = Filters(request.data['filter'])
@@ -5851,7 +5640,7 @@ def GranuladoList(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def GranuladoLotesList(request, format=None):
+def RecicladoLotesList(request, format=None):
     connection = connections["default"].cursor()
     
     f = Filters(request.data['filter'])
@@ -5893,7 +5682,7 @@ def GranuladoLotesList(request, format=None):
     return Response(response)
 
 
-def _newLoteGranulado(user_id,data,cursor):
+def _newLoteReciclado(user_id,data,cursor):
     dml = db.dml(TypeDml.INSERT, {**data, "status":0, "timestamp": datetime.now(), "timestamp_edit": datetime.now(), "user_id":user_id, "lote":"$$$-1", "num":"$$$-2"}, "producao_reciclado",None,None,False,["lote","num"])
     dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
     dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
@@ -5904,10 +5693,10 @@ def _newLoteGranulado(user_id,data,cursor):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def NewLoteGranulado(request, format=None):
+def NewLoteReciclado(request, format=None):
     data = request.data.get("parameters")
     
-    def checkGranulado(data, cursor):
+    def checkReciclado(data, cursor):
         f = Filters({"status": 0})
         f.where()
         f.add(f'status = :status', True)
@@ -5920,23 +5709,23 @@ def NewLoteGranulado(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                granulado_id = checkGranulado(data,cursor)
-                if (granulado_id is None):
-                    id = _newLoteGranulado(request.user.id,data,cursor)
+                reciclado_id = checkReciclado(data,cursor)
+                if (reciclado_id is None):
+                    id = _newLoteReciclado(request.user.id,data,cursor)
                 else:
-                    return Response({"status": "error", "title": f"Não é possível criar um novo lote!", "subTitle":"Já existe um Lote de Granulado a decorrer!"})     
-        return Response({"status": "success","id":{id}, "title": "Lote de Granulado criado com Sucesso!", "subTitle":f'{None}'})
+                    return Response({"status": "error", "title": f"Não é possível criar um novo lote!", "subTitle":"Já existe um Lote de Reciclado a decorrer!"})     
+        return Response({"status": "success","id":{id}, "title": "Lote de Reciclado criado com Sucesso!", "subTitle":f'{None}'})
     except Error:
-        return Response({"status": "error", "title": "Erro ao criar Lote de Granulado!"})
+        return Response({"status": "error", "title": "Erro ao criar Lote de Reciclado!"})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def UpdateGranulado(request, format=None):
+def UpdateReciclado(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
-    def checkGranulado(id, cursor):
+    def checkReciclado(id, cursor):
         f = Filters({"status": 1,"id":id})
         f.where()
         f.add(f'pr.status = :status', True)
@@ -5955,25 +5744,25 @@ def UpdateGranulado(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                granulado_id = checkGranulado(filter["id"],cursor)
-                if (granulado_id is not None):
-                    dml = db.dml(TypeDml.UPDATE,{**data},"producao_reciclado",{"id":f'=={granulado_id}'},None,False)
+                reciclado_id = checkReciclado(filter["id"],cursor)
+                if (reciclado_id is not None):
+                    dml = db.dml(TypeDml.UPDATE,{**data},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
-                    return Response({"status": "error", "title": f"Não é possível alterar o lote de granulado!", "subTitle":"O lote de granulado já se encontra fechado ou não existe!"})     
-        return Response({"status": "success", "title": "Lote de granulado alterado Sucesso!", "subTitle":f'{None}'})
+                    return Response({"status": "error", "title": f"Não é possível alterar o lote de reciclado!", "subTitle":"O lote de reciclado já se encontra fechado ou não existe!"})     
+        return Response({"status": "success", "title": "Lote de reciclado alterado Sucesso!", "subTitle":f'{None}'})
     except Error:
-        return Response({"status": "error", "title": "Erro ao alterar lote de granulado!"})
+        return Response({"status": "error", "title": "Erro ao alterar lote de reciclado!"})
 
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def PesarGranulado(request, format=None):
+def PesarReciclado(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
-    def checkGranulado(id, cursor):
+    def checkReciclado(id, cursor):
         f = Filters({"status": 0,"id":id})
         f.where()
         f.add(f'status = :status', True)
@@ -5989,25 +5778,25 @@ def PesarGranulado(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                granulado_id = checkGranulado(filter["id"],cursor)
-                if (granulado_id is not None):
-                    dml = db.dml(TypeDml.UPDATE,{"produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={granulado_id}'},None,False)
+                reciclado_id = checkReciclado(filter["id"],cursor)
+                if (reciclado_id is not None):
+                    dml = db.dml(TypeDml.UPDATE,{"produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível Pesar o lote!", "subTitle":"O lote já se encontra pesado ou não existe!"})     
-        return Response({"status": "success", "title": "Lote de Granulado pesado com Sucesso!", "subTitle":f'{None}'})
+        return Response({"status": "success", "title": "Lote de Reciclado pesado com Sucesso!", "subTitle":f'{None}'})
     except Error:
-        return Response({"status": "error", "title": "Erro ao pesar lote de granulado!"})
+        return Response({"status": "error", "title": "Erro ao pesar lote de reciclado!"})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def DeleteGranuladoItem(request, format=None):
+def DeleteRecicladoItem(request, format=None):
     filter = request.data.get("filter")
 
 
-    def checkGranulado(id, cursor):
+    def checkReciclado(id, cursor):
         f = Filters({"status": 0,"id":id})
         f.where()
         f.add(f'pr.status = :status', True)
@@ -6026,9 +5815,9 @@ def DeleteGranuladoItem(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                granulado_id = checkGranulado(filter["id"],cursor)
-                if (granulado_id is not None):
-                    dml = db.dml(TypeDml.DELETE, None,'producao_recicladolotes',{"id":f'=={granulado_id}'},None,False)
+                reciclado_id = checkReciclado(filter["id"],cursor)
+                if (reciclado_id is not None):
+                    dml = db.dml(TypeDml.DELETE, None,'producao_recicladolotes',{"id":f'=={reciclado_id}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível Remover o lote!", "subTitle":"O lote j á se encontra fechado ou não existe!"})     
@@ -6040,7 +5829,7 @@ def DeleteGranuladoItem(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def SaveGranuladoItems(request, format=None):
+def SaveRecicladoItems(request, format=None):
     data = request.data.get("parameters")
 
     def saveItems(data,cursor):
@@ -6064,7 +5853,7 @@ def SaveGranuladoItems(request, format=None):
                 db.execute(dml.statement, cursor, dml.parameters)
     try:
         if not data.get("id"):            
-            raise Exception("O id de granulado é obrigatório")
+            raise Exception("O id de reciclado é obrigatório")
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 saveItems(data,cursor)

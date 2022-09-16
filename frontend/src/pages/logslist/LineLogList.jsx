@@ -1,134 +1,46 @@
-import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
-import dayjs from 'dayjs';
 import Joi from 'joi';
-import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
-import { useDataAPI } from "utils/useDataAPI";
+import moment from 'moment';
+import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, getFilterValue, isValue, noValue } from 'utils';
-import uuIdInt from "utils/uuIdInt";
-import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField, SelectMultiField } from "components/formLayout";
-import Drawer from "components/Drawer";
-import Table, { setColumns } from "components/table";
-import Toolbar from "components/toolbar";
+import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
+import { API_URL } from "config";
+import { useDataAPI } from "utils/useDataAPI";
+import loadInit from "utils/loadInit";
+import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
-import ResponsiveModal from "components/ResponsiveModal";
-import MoreFilters from 'assets/morefilters.svg';
-import { Outlet, useNavigate } from "react-router-dom";
-import YScroll from "components/YScroll";
-import { MdAdjust } from 'react-icons/md';
-import { GiBandageRoll } from 'react-icons/gi';
-import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
-import { VscDebugStart } from 'react-icons/vsc';
-import { BsFillStopFill } from 'react-icons/bs';
-import { IoCodeWorkingOutline } from 'react-icons/io5';
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag } from "antd";
+const { Title, Text } = Typography;
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined } from '@ant-design/icons';
+import Table from 'components/TableV2';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
+import { useModal } from "react-modal-hook";
+import ResponsiveModal from 'components/Modal';
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField, SelectMultiField  } from 'components/FormFields';
+//import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
+import ToolbarTitle from 'components/ToolbarTitle';
+import { EventColumn, doserConsume } from './commons';
 
-
-
-
-
-
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
-
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
-const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
-const { Title } = Typography;
-import { SocketContext, MediaContext } from '../App';
-
-const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
-
-
-const mainTitle ='Eventos da Linha de Produção';
-
-
-const useStyles = createUseStyles({
-    noRelationRow: {
-        backgroundColor: '#ffa39e'
-    }
-});
-
-const TitleWnd = ({ title }) => {
-    return (
-        <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-            <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Space>
-                    <div><b style={{ textTransform: "capitalize" }}></b>{title}</div>
-                </Space>
-            </div>
-        </div>
-    );
+const schema = (options = {}) => {
+    return getSchema({}, options).unknown(true);
 }
 
-const Wnd = ({ parameters, setVisible }) => {
-    return (
-        <ResponsiveModal
-            title={<TitleWnd title={parameters.title} />}
-            visible={parameters.visible}
-            centered
-            responsive
-            onCancel={setVisible}
-            maskClosable={true}
-            destroyOnClose={true}
-            fullWidthDevice={parameters.fullWidthDevice}
-            width={parameters?.width}
-            height={parameters?.height}
-            bodyStyle={{ /* backgroundColor: "#f0f0f0" */ }}
-        >
-            <YScroll>
-                {parameters.type === "ofabricotimelinelist" && <Suspense fallback={<></>}><OFabricoTimeLineShortList params={parameters} parentClose={setVisible} /></Suspense>}
-            </YScroll>
-        </ResponsiveModal>
-    );
-
-}
-
-
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
-}
-
-const filterRules = (keys) => {
-    return getSchema({
-        //field1: Joi.string().label("Designação")
-    }, keys).unknown(true);
-}
-
-const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
-
-const ToolbarTable = ({ form, dataAPI }) => {
-    //const navigate = useNavigate();
-
-    const onChange = (v) => {
-        form.submit();
-    }
-
-    const leftContent = (
-        <>
-            {/* <button onClick={() => navigate(-1)}>go back</button> */}
-            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prer.visible }))}>Flyout</Button> */}
-        </>
-    );
-
-    const rightContent = (
-        <Space>
-            <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
-
-            </div>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                {/* <Form form={form} initialValues={{ typelist: [] }}>
-                    <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
-                    </Form.Item>
-                </Form> */}
-            </div>
-        </Space>
-    );
-    return (
-        <>{/* <Toolbar left={leftContent} right={rightContent} /> */}</>
+const ToolbarFilters = ({ dataAPI, ...props }) => {
+    return (<>
+        <Col xs='content'>
+            <Field name="fdate" label={{ enabled: true, text: "Data", pos: "top", padding: "0px" }}>
+                <RangeDateField size='small' allowClear />
+            </Field>
+        </Col>
+        <Col xs='content'>
+            <Field name="ftime" label={{ enabled: true, text: "Hora", pos: "top", padding: "0px" }}>
+                <RangeTimeField size='small' allowClear />
+            </Field>
+        </Col>
+    </>
     );
 }
 
@@ -158,314 +70,202 @@ const EventField = () => (
     />
 );
 
-const filterSchema = ({ }) => [
-    { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
-    { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
+
+const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
+const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
+const moreFiltersSchema = ({ form }) => [
+    // { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },
+    { fdate: { label: "Data", field: { type: "rangedate", size: 'small' } } },
+    { ftime: { label: "Hora", field: { type: "rangetime", size: 'small' } } },
     { fduracao: { label: "Duração", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
+    { fhasbobinagem: { label: "Bobinagem Associada", field: HasBobinagemField } },
     { fevento: { label: "Evento", field: EventField } }
+    // { fduracao: { label: "Duração", field: { type: 'input', size: 'small' }, span: 12 } },
+    // { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fdiam: { label: "Diâmetro", field: { type: 'input', size: 'small' }, span: 12 } },
+    // { fcore: { label: "Core", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
+    // //Defeitos
+    // {
+    //     freldefeitos: { label: " ", field: TipoRelation, span: 4 },
+    //     fdefeitos: { label: 'Defeitos', field: { type: 'selectmulti', size: 'small', options: BOBINE_DEFEITOS }, span: 20 }
+    // },
+    // //Estados
+    // { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
+    // { fofabrico: { label: "Ordem de Fabrico", field: { type: 'input', size: 'small' } } },
+    // { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' } } },
+    // { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } }
 ];
 
-const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
-    const [changed, setChanged] = useState(false);
-    const onFinish = (type, values) => {
+
+const useStyles = createUseStyles({
+    noOutline: {
+        outline: "none !important"
+    },
+    notValid: {
+        background: "#ffe7ba"
+    }
+});
+const TitleForm = ({ data, onChange, form }) => {
+    const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
+    return (<ToolbarTitle title={<>
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>Eventos da Linha</span></Col>
+        {/*         <Col xs='content' style={{ paddingTop: "3px" }}>{st &&<Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+    </>} right={
+        <Col xs="content">
+            <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
+                <Col style={{ alignItems: "center" }}>
+                    <Row gutterWidth={2} justify='end'>
+                        {/* <Col xs="content">
+                            <Field name="typelist" label={{ enabled: false }}>
+                                <SelectField size="small" keyField="value" textField="label" data={
+                                    [{ value: "A", label: "Estado Bobines" },
+                                    { value: "B", label: "Consumo Bobinagem" },
+                                    { value: "C", label: "Ordens de Fabrico" }]} />
+                            </Field>
+                        </Col>
+                        <Col xs="content">
+                            <Field name="type" label={{ enabled: false }}>
+                                <SelectField size="small" keyField="value" textField="label" data={
+                                    [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
+                                    { value: "-1", label: "Todas as Bobinagens" }]} />
+                            </Field>
+                        </Col>
+                        <Col xs="content">
+                            <Field name="valid" label={{ enabled: false }}>
+                                <SelectField size="small" keyField="value" textField="label" data={
+                                    [{ value: "0", label: "Por validar" },
+                                    { value: "1", label: "Validadas" },
+                                    { value: "-1", label: " " }
+                                    ]} /></Field>
+                        </Col> */}
+                    </Row>
+                </Col>
+            </FormContainer>
+        </Col>
+    } />);
+}
+
+
+
+export default (props) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const classes = useStyles();
+    const [formFilter] = Form.useForm();
+    const dataAPI = useDataAPI({ id: "lineloglist", payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' }] } });
+    const primaryKeys = ['id'];
+    const columns = [
+        { key: 'type_desc', name: '', width: 40, frozen: true, formatter: p => <EventColumn v={p.row.type_desc} /> },
+        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => moment(props.row.inicio_ts).format(DATETIME_FORMAT) },
+        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => moment(props.row.fim_ts).format(DATETIME_FORMAT) },
+        { key: 'nome', name: 'Bobinagem', frozen: true, width: 100 },
+        { key: 'diametro', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diametro} mm</div> },
+        { key: 'metros', name: 'Comprimento', width: 110, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros} m</div> },
+        { key: 'nw_inf', name: 'NW Inferior', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nw_inf} m</div> },
+        { key: 'nw_sup', name: 'NW Superior', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nw_sup} m</div> },
+        { key: 'peso', name: 'Peso', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.peso).toFixed(2)} kg</div> },
+        { key: 'cast_speed', name: 'Vel. Cast', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.cast_speed} m/s</div> },
+        { key: 'A1', name: 'A1', width: 90, formatter: p => doserConsume(p.row.A1, p.row.A1_LAG, p.row.A1_RESET, p.row.type) },
+        { key: 'A2', name: 'A2', width: 90, formatter: p => doserConsume(p.row.A2, p.row.A2_LAG, p.row.A2_RESET, p.row.type) },
+        { key: 'A3', name: 'A3', width: 90, formatter: p => doserConsume(p.row.A3, p.row.A3_LAG, p.row.A3_RESET, p.row.type) },
+        { key: 'A4', name: 'A4', width: 90, formatter: p => doserConsume(p.row.A4, p.row.A4_LAG, p.row.A4_RESET, p.row.type) },
+        { key: 'A5', name: 'A5', width: 90, formatter: p => doserConsume(p.row.A5, p.row.A5_LAG, p.row.A5_RESET, p.row.type) },
+        { key: 'A6', name: 'A6', width: 90, formatter: p => doserConsume(p.row.A6, p.row.A6_LAG, p.row.A6_RESET, p.row.type) },
+        { key: 'B1', name: 'B1', width: 90, formatter: p => doserConsume(p.row.B1, p.row.B1_LAG, p.row.B1_RESET, p.row.type) },
+        { key: 'B2', name: 'B2', width: 90, formatter: p => doserConsume(p.row.B2, p.row.B2_LAG, p.row.B2_RESET, p.row.type) },
+        { key: 'B3', name: 'B3', width: 90, formatter: p => doserConsume(p.row.B3, p.row.B3_LAG, p.row.B3_RESET, p.row.type) },
+        { key: 'B4', name: 'B4', width: 90, formatter: p => doserConsume(p.row.B4, p.row.B4_LAG, p.row.B4_RESET, p.row.type) },
+        { key: 'B5', name: 'B5', width: 90, formatter: p => doserConsume(p.row.B5, p.row.B5_LAG, p.row.B5_RESET, p.row.type) },
+        { key: 'B6', name: 'B6', width: 90, formatter: p => doserConsume(p.row.B6, p.row.B6_LAG, p.row.B6_RESET, p.row.type) },
+        { key: 'C1', name: 'C1', width: 90, formatter: p => doserConsume(p.row.C1, p.row.C1_LAG, p.row.C1_RESET, p.row.type) },
+        { key: 'C2', name: 'C2', width: 90, formatter: p => doserConsume(p.row.C2, p.row.C2_LAG, p.row.C2_RESET, p.row.type) },
+        { key: 'C3', name: 'C3', width: 90, formatter: p => doserConsume(p.row.C3, p.row.C3_LAG, p.row.C3_RESET, p.row.type) },
+        { key: 'C4', name: 'C4', width: 90, formatter: p => doserConsume(p.row.C4, p.row.C4_LAG, p.row.C4_RESET, p.row.type) },
+        { key: 'C5', name: 'C5', width: 90, formatter: p => doserConsume(p.row.C5, p.row.C5_LAG, p.row.C5_RESET, p.row.type) },
+        { key: 'C6', name: 'C6', width: 90, formatter: p => doserConsume(p.row.C6, p.row.C6_LAG, p.row.C6_RESET, p.row.type) },
+        { key: 'id', name: 'ID', width: 90 }
+    ];
+
+    const loadData = ({ signal }) => {
+        const { ...filters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
+        formFilter.setFieldsValue({ ...filters });
+        dataAPI.addFilters(filters, true, true);
+        //dataAPI.addParameters({}, true, true);
+        dataAPI.fetchPost({ signal });
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+
+    }, [/* location?.state?.typelist, location?.state?.type, location?.state?.valid */]);
+
+    const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
-                (!changed) && setChanged(true);
-                const { typelist, ...vals } = values;
+                //remove empty values
+                const vals = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
                 const _values = {
                     ...vals,
-                    fdate: getFilterRangeValues(values["fdate"]?.formatted),
-                    ftime: getFilterRangeValues(values["ftime"]?.formatted),
-                    fduracao: getFilterValue(vals?.fduracao, '==')
+                    //fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
+                    fdate: getFilterRangeValues(vals["fdate"]?.formatted),
+                    ftime: getFilterRangeValues(vals["ftime"]?.formatted),
+                    //fduracao: getFilterValue(vals?.fduracao, '=='),
+                    //fofabrico: getFilterValue(vals?.fofabrico, 'any'),
+                    //fcliente: getFilterValue(vals?.fcliente, 'any'),
+                    //fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
                 dataAPI.addFilters(_values);
-                dataAPI.addParameters({ typelist })
+                //dataAPI.addParameters({ typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
         }
     };
-
-    const onValuesChange = (type, changedValues, allValues) => {
-        switch (type) {
-            case "filter":
-                form.setFieldsValue(allValues);
-                break;
-        }
-    }
-
-    const downloadFile = (data, filename, mime, bom) => {
-        var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
-        var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
-        if (typeof window.navigator.msSaveBlob !== 'undefined') {
-            // IE workaround for "HTML7007: One or more blob URLs were
-            // revoked by closing the blob for which they were created.
-            // These URLs will no longer resolve as the data backing
-            // the URL has been freed."
-            window.navigator.msSaveBlob(blob, filename);
-        }
-        else {
-            var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
-            var tempLink = document.createElement('a');
-            tempLink.style.display = 'none';
-            tempLink.href = blobURL;
-            tempLink.setAttribute('download', filename);
-
-            // Safari thinks _blank anchor are pop ups. We only want to set _blank
-            // target if the browser does not support the HTML5 download attribute.
-            // This allows you to download files in desktop safari if pop up blocking
-            // is enabled.
-            if (typeof tempLink.download === 'undefined') {
-                tempLink.setAttribute('target', '_blank');
-            }
-
-            document.body.appendChild(tempLink);
-            tempLink.click();
-
-            // Fixes "webkit blob resource error 1"
-            setTimeout(function () {
-                document.body.removeChild(tempLink);
-                window.URL.revokeObjectURL(blobURL);
-            }, 200);
-        }
-    }
-
-    const menu = (
-        <Menu onClick={(v) => exportFile(v)}>
-            <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
-            <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
-            <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
-        </Menu>
-    );
-
-    const exportFile = async (type) => {
-        const requestData = dataAPI.getPostRequest();
-
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
-            "orientation": "landscape",
-            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": mainTitle,
-            "export": type.key,
-            cols: columns
-        }
-        const response = await fetchPostBlob(requestData);
-        switch (type.key) {
-            case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
-                break;
-            case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
-                break;
-            case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
-                break;
-        }
-    }
+    const onFilterChange = (changedValues, values) => {
+        /*  if ("typelist" in changedValues) {
+             navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), typelist: changedValues.typelist, tstamp: Date.now() }, replace: true });
+         } else if ("type" in changedValues) {
+             navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
+         } else if ("valid" in changedValues) {
+             navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), valid: changedValues.valid, tstamp: Date.now() }, replace: true });
+         } */
+    };
 
     return (
         <>
-
-            <FilterDrawer schema={filterSchema({ form })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
-                <FormLayout
-                    id="LAY-BOBINAGENS"
-                    layout="horizontal"
-                    style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
-                    schema={schema}
-                    field={{ guides: false, wide: [4, 4, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
-                    fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
-                >
-                    <Field name="fdate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Início/Fim", pos: "top" }}>
-                        <RangeDateField size='small' />
-                    </Field>
-                    <Field name="ftime" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Hora Início/Fim", pos: "top" }}>
-                        <RangeTimeField size='small' format={TIME_FORMAT} />
-                    </Field>
-                    <FieldItem label={{ enabled: false }}>
-                        <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
-                            <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
-                        </ButtonGroup>
-                    </FieldItem>
-                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
-                        <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
-                    </Dropdown>
-                    </FieldItem>
-                </FormLayout>
-            </Form>
+            {/*  <ToolbarTitle data={dataAPI.getAllFilter()} onChange={onFilterChange} form={formFilter} /> */}
+            <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />
+            <Table
+                //title=""
+                reportTitle="Eventos da Linha"
+                loadOnInit={false}
+                columns={columns}
+                dataAPI={dataAPI}
+                //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+                toolbar={true}
+                search={true}
+                moreFilters={true}
+                rowSelection={false}
+                primaryKeys={primaryKeys}
+                editable={true}
+                clearSort={true}
+                //rowHeight={formFilter.getFieldValue('typelist') === "C" ? 44 : 28}
+                //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
+                //selectedRows={selectedRows}
+                //onSelectedRowsChange={setSelectedRows}
+                leftToolbar={<>
+                    {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
+                </>}
+                //content={<PickHolder/>}
+                //paginationPos='top'
+                toolbarFilters={{
+                    form: formFilter, schema, wrapFormItem: true,
+                    onFinish: onFilterFinish, onValuesChange: onFilterChange,
+                    filters: <ToolbarFilters dataAPI={dataAPI} />,
+                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
+                }}
+            />
         </>
     );
-}
-
-const EventColumn = ({ v }) => {
-    return (<>
-
-        {v === "reeling_exchange" && <GiBandageRoll color="#69c0ff" size={20} />}
-        {v === "state_stop" && <BsFillStopFill color="red" size={20} />}
-        {v === "state_start" && <VscDebugStart color="orange" size={20} />}
-        {v === "state_working" && <IoCodeWorkingOutline color="green" size={20} />}
-        {v === "nw_sup_change" && <AiOutlineVerticalAlignTop size={20} />}
-        {v === "nw_inf_change" && <AiOutlineVerticalAlignBottom size={20} />}
-
-    </>);
-}
-
-const ExclamationButton = styled(Button)`
-  &&& {
-    background-color: #ffa940;
-    border-color: #ffc069;
-    color:#fff;
-    &:hover{
-        background-color: #fa8c16;
-        border-color: #ffe7ba;
-    }
-  }
-`;
-
-const AssignOFColumn = ({ v, e, onClick, fim_ts, id }) => {
-
-    return (<>
-        {v && <b>{v}</b>}
-        {(!v && e === 1) && <ExclamationButton size="small" icon={<ExclamationCircleOutlined />} onClick={() => onClick(id, fim_ts)} />}
-    </>);
-}
-
-export default () => {
-    const classes = useStyles();
-    const [loading, setLoading] = useState(false);
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [showFilter, setShowFilter] = useState(false);
-    const [showValidar, setShowValidar] = useState({ show: false, data: {} });
-    const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/lineloglist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'id', direction: 'DESC' },] } });
-    const elFilterTags = document.getElementById('filter-tags');
-    const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
-    const [modalParameters, setModalParameters] = useState({ visible: false });
-
-    const onModalVisible = (e, type, params) => {
-        if (!type) {
-            setModalParameters(prev => ({ visible: false }));
-        } else {
-            switch (type) {
-                case "ofabricotimelinelist":
-                    let title = "Ordens de Fabrico";
-                    setModalParameters(prev => ({ visible: !prev.visible, type, width: "900px", height: "500px", fullWidthDevice: 2, data: { ...params }, title })); break;
-            }
-        }
-    }
-
-    useEffect(() => {
-        const cancelFetch = cancelToken();
-        dataAPI.first();
-        dataAPI.fetchPost({ token: cancelFetch });
-        return (() => cancelFetch.cancel());
-    }, [dataSocket?.igbobinagens]);
-
-    const selectionRowKey = (record) => {
-        return `${record.id}`;
-    }
-
-    const doserConsume = (d, dlag, dreset, event) => {
-        if (event !== 1) {
-            return null;
-        }
-        let _d = noValue(d, 0);
-        let _dlag = noValue(dlag, 0);
-        let _dreset = noValue(dreset, 0);
-        console.log(_d,"-",_dlag,"-",_dreset);
-        return <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{((((_d < _dlag) ? _dreset : 0) + _d) - _dlag).toFixed(2)}</div>kg</div>
-
-    }
-
-    const reload = () => {
-        dataAPI.fetchPost();
-    }
-
-    const onAssignOF = (id, fim_ts) => {
-        onModalVisible(null, 'ofabricotimelinelist', { id, fim_ts, parentReload: reload });
-    }
-
-    const columns = setColumns(
-        {
-            dataAPI,
-            data: dataAPI.getData().rows,
-            uuid: "logigbobinagem",
-            include: {
-                ...((common) => (
-                    {
-                        type_desc: { title: "", width: 40, align: "center", fixed: 'left', render: (v, r) => <EventColumn v={v} />, ...common }
-                        , inicio_ts: { title: "Início", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , fim_ts: { title: "Fim", width: 120, fixed: 'left', render: (v, r) => v && dayjs(v).format(DATETIME_FORMAT), ...common }
-                        , nome: { title: "Bobinagem", width: 100, align: "center", style: { backgroundColor: "undet" }, render: (v, r) => <AssignOFColumn v={v} e={r.type} fim_ts={r.fim_ts} id={r.id} onClick={onAssignOF} />, ...common }
-                        , diametro: { title: "Diâmetro", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>mm</div>, ...common }
-                        , metros: { title: "Comprimento", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, metros_evento_estado: { title: "metros_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        //, n_trocas: { title: "n_trocas", width: 90, render: (v, r) => v, ...common }
-                        , nw_inf: { title: "NW Inf.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_inf_evento_estado: { title: "nw_inf_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , nw_sup: { title: "NW Sup.", width: 100, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m</div>, ...common }
-                        //, nw_sup_evento_estado: { title: "nw_sup_evento_estado", width: 90, render: (v, r) => v, ...common }
-                        , peso: { title: "Peso", width: 90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div>kg</div>, ...common }
-                        , cast_speed: { title: "Cast Vel.", width:90, render: (v, r) => <div style={{ display: "flex", flexDirection: "row" }}><div style={{ width: "60px" }}>{v}</div>m/s</div>, ...common }
-                        , A1: { title: "A1", width: 90, render: (v, r) => doserConsume(r.A1, r.A1_LAG, r.A1_RESET, r.type), ...common }
-                        , A2: { title: "A2", width: 90, render: (v, r) => doserConsume(r.A2, r.A2_LAG, r.A2_RESET, r.type), ...common }
-                        , A3: { title: "A3", width: 90, render: (v, r) => doserConsume(r.A3, r.A3_LAG, r.A3_RESET, r.type), ...common }
-                        , A4: { title: "A4", width: 90, render: (v, r) => doserConsume(r.A4, r.A4_LAG, r.A4_RESET, r.type), ...common }
-                        , A5: { title: "A5", width: 90, render: (v, r) => doserConsume(r.A5, r.A5_LAG, r.A5_RESET, r.type), ...common }
-                        , A6: { title: "A6", width: 90, render: (v, r) => doserConsume(r.A6, r.A6_LAG, r.A6_RESET, r.type), ...common }
-
-                        , B1: { title: "B1", width: 90, render: (v, r) => doserConsume(r.B1, r.B1_LBG, r.B1_RESET, r.type), ...common }
-                        , B2: { title: "B2", width: 90, render: (v, r) => doserConsume(r.B2, r.B2_LBG, r.B2_RESET, r.type), ...common }
-                        , B3: { title: "B3", width: 90, render: (v, r) => doserConsume(r.B3, r.B3_LBG, r.B3_RESET, r.type), ...common }
-                        , B4: { title: "B4", width: 90, render: (v, r) => doserConsume(r.B4, r.B4_LBG, r.B4_RESET, r.type), ...common }
-                        , B5: { title: "B5", width: 90, render: (v, r) => doserConsume(r.B5, r.B5_LBG, r.B5_RESET, r.type), ...common }
-                        , B6: { title: "B6", width: 90, render: (v, r) => doserConsume(r.B6, r.B6_LBG, r.B6_RESET, r.type), ...common }
-
-                        , C1: { title: "C1", width: 90, render: (v, r) => doserConsume(r.C1, r.C1_LAG, r.C1_RESET, r.type), ...common }
-                        , C2: { title: "C2", width: 90, render: (v, r) => doserConsume(r.C2, r.C2_LAG, r.C2_RESET, r.type), ...common }
-                        , C3: { title: "C3", width: 90, render: (v, r) => doserConsume(r.C3, r.C3_LAG, r.C3_RESET, r.type), ...common }
-                        , C4: { title: "C4", width: 90, render: (v, r) => doserConsume(r.C4, r.C4_LAG, r.C4_RESET, r.type), ...common }
-                        , C5: { title: "C5", width: 90, render: (v, r) => doserConsume(r.C5, r.C5_LAG, r.C5_RESET, r.type), ...common }
-                        , C6: { title: "C6", width: 90, render: (v, r) => doserConsume(r.C6, r.C6_LAG, r.C6_RESET, r.type), ...common }
-                        , id: { title: "ID", width: 60, render: (v, r) => v, ...common }
-                    }
-                ))({ idx: 1, optional: false })
-            },
-            exclude: []
-        }
-    );
-
-    return (
-        <>
-            <Wnd parameters={modalParameters} setVisible={onModalVisible} />
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
-                {elFilterTags && <Portal elId={elFilterTags}>
-                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                </Portal>}
-                <Table
-                    title={<Title level={4}>{mainTitle}</Title>}
-                    columnChooser={false}
-                    reload
-                    rowHover={false}
-                    stripRows={false}
-                    darkHeader
-                    rowClassName={(record) => (record.nome || record.type !== 1) ? 'data-row' : `data-row ${classes.noRelationRow}`}
-                    size="small"
-                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
-                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                    dataAPI={dataAPI}
-                    columns={columns}
-                    onFetch={dataAPI.fetchPost}
-                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                />
-            </Spin>
-        </>
-    )
 }

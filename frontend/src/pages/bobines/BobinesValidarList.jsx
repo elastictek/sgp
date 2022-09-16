@@ -52,7 +52,7 @@ const useStyles = createUseStyles({
     }
 });
 
-const TitleForm = ({bobinagem, data, onChange}) => {
+const TitleForm = ({ bobinagem, data, onChange }) => {
     return (<ToolbarTitle title={bobinagem && <>
         <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{bobinagem.valid == 0 ? title.A : title.B}</span></Col>
         <Col xs='content' style={{ paddingTop: "3px" }}><Tag icon={<MoreOutlined />} color="#2db7f5">{bobinagem.nome}</Tag></Col>
@@ -428,7 +428,16 @@ const CortesField = ({ value }) => {
     );
 }
 
-const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setModeEdit, allowEdit }) => {
+
+
+const loadNWLookup = async (signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, filter: {}, sort: [], signal });
+    return rows;
+}
+
+
+
+const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setModeEdit, allowEdit, nwList }) => {
     const permission = usePermission();
     const [form] = Form.useForm();
     const [fieldStatus, setFieldStatus] = useState({});
@@ -487,7 +496,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             }
             if (status.formStatus.error.length === 0) {
                 try {
-                    const { data: { rows: granulado } } = await fetchPost({ url: `${API_URL}/granuladolookup/`, pagination: { enabled: false, limit: 1 }, filter: { status: 0 }, sort: [{ column: "timestamp", direction: "desc" }] });
+                    const { data: { rows: granulado } } = await fetchPost({ url: `${API_URL}/recicladolookup/`, pagination: { enabled: false, limit: 1 }, filter: { status: 0 }, sort: [{ column: "timestamp", direction: "desc" }] });
                     if (granulado.length === 0) {
                         setModalParameters({ setFormStatus, submitting, status, data: { bobines: rows, values, bobinagem }, loadData });
                         showNewLoteModal();
@@ -604,8 +613,12 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Tipo</b></Col>
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
-                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwinf" label={{ enabled: false }}><Input style={{}} /></Field></Col>
-                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1)  || modeEdit.elevated} name="lotenwsup" label={{ enabled: false }}><Input style={{}} /></Field></Col>
+                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwinf" label={{ enabled: false }}>
+                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v=>v.qty_reminder>=(dataAPI.getData()["nwinf"]*v.largura)/1000 && v.type==0)} />
+                                                </Field></Col>
+                                                <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwsup" label={{ enabled: false }}>
+                                                <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v=>v.qty_reminder>=(dataAPI.getData()["nwsup"]*v.largura)/1000 && v.type==1)} />
+                                                </Field></Col>
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Lote</b></Col>
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
@@ -645,6 +658,7 @@ export default (props) => {
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const primaryKeys = ['id'];
     const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
+    const [nwList, setNWList] = useState([]);
 
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 115, frozen: true },
@@ -660,16 +674,17 @@ export default (props) => {
         { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} />, width: 450, ...modeEdit.datagrid && { editor(p) { return <ModalObsEditor p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> } }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
     ];
 
-    const loadData = ({ signal } = {}) => {
+    const loadData = async ({ signal } = {}) => {
         if (!permission.allow()) {
             Modal.error({ content: "Não tem permissões!" });
             return;
         }
         const { bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
         const bobineDefeitos = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'ff' && v.value !== 'fc');
+
         dataAPI.addFilters({ bobinagem_id, ...initFilters }, true, true);
         dataAPI.fetchPost({
-            signal, rowFn: (dt) => {
+            signal, rowFn: async (dt) => {
                 for (let [i, v] of dt.rows.entries()) {
                     let defeitos = [];
                     for (let p of bobineDefeitos) {
@@ -683,15 +698,26 @@ export default (props) => {
                     dt.rows[i]["buracos_pos"] = JSON.parse(dt.rows[i]["buracos_pos"]);
                 }
                 const _allowEdit = {
-                    elevated:(dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
+                    elevated: (dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
                     form: (dt.valid === 0) ? permission.allow({ producao: 100 }) : false,
                     datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ qualidade: 100 })
                 };
 
+
                 setAllowEdit({ ..._allowEdit });
-                setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated:false });
+                setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
 
                 setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, valid: dt["valid"] });
+                let vvv = await loadNWLookup(signal);
+                for (let i of vvv){
+                    console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                    console.log(i.qty_reminder)
+                    console.log(2350*i.largura/1000)
+                }
+
+
+                setNWList(await loadNWLookup(signal));
+
                 submitting.end();
                 return dt;
             }
@@ -757,7 +783,7 @@ export default (props) => {
     return (
         <>
             <TitleForm data={dataAPI.getAllFilter()} bobinagem={bobinagem} onChange={onFilterChange} />
-            <FormRegister submitting={submitting} dataAPI={dataAPI} allowEdit={allowEdit} setModeEdit={setModeEdit} modeEdit={modeEdit} loadData={loadData} bobinagem={bobinagem} />
+            <FormRegister nwList={nwList} submitting={submitting} dataAPI={dataAPI} allowEdit={allowEdit} setModeEdit={setModeEdit} modeEdit={modeEdit} loadData={loadData} bobinagem={bobinagem} />
             <Table
                 loading={submitting.state}
                 reportTitle="Bobines"

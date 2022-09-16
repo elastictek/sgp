@@ -83,10 +83,14 @@ export default ({ record, ofItem, card, parentReload }) => {
                 showPaletizacaoModal();
                 break;
             case 'paletes_stock':
-                const paletesstock = (record?.paletesstock) ? JSON.parse(record.paletesstock?.filter(v => v.of_id === ofItem.of_id)[0].paletes) : [];
-                setPaletesStockParams({ aggItem: { ...ofItem }, paletesstock, csid: record.id });
-                showPaletesStockModal();
+                window.location.href = `/planeamento/ordemdeproducao/details/${ofItem?.of_id}/`;    
+                //const paletesstock = (record?.paletesstock) ? JSON.parse(record.paletesstock?.filter(v => v.of_id === ofItem.of_id)[0].paletes) : [];
+                //setPaletesStockParams({ aggItem: { ...ofItem }, paletesstock, csid: record.id });
+                //showPaletesStockModal();
                 break;
+            case "palete":                
+                window.location.href = `/producao/palete/create/`;
+            break;
         }
     }
 

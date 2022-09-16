@@ -69,10 +69,10 @@ export default ({dark=false}) => {
 
         <StyledCollapse defaultActiveKey={selectedItems} ghost={true} expandIconPosition="end" onChange={onMenuChange}>
             <Panel header={<b>Picagem de Material</b>} key="1">
-                <Button size='small' type="link" onClick={() => navigate('/app/picking/granuladolist', {})}>Reciclado (Granulado)</Button>
-                <Button size='small' type="link" onClick={() => alert('aaaa')} onTouchStart={() => alert('aaaa')}>Linha de Produção - Nonwoven</Button>
+                <Button size='small' type="link" onClick={() => navigate('/app/picking/recicladolist', {})}>Reciclado (Granulado)</Button>
+                <Button size='small' type="link" onClick={() => navigate('/app/picking/picknwlist', {})}>Linha de Produção - Nonwoven</Button>
                 <Button size='small' type="link">Linha de Produção - Cores</Button>
-                <Button size='small' type="link">Linha de Produção - Granulado</Button>
+                <Button size='small' type="link" onClick={() => navigate('/app/picking/pickgranuladolist', {})}>Linha de Produção - Granulado</Button>
             </Panel>
             <Panel header={<b>Planeamento</b>} key="2">
                 <Button size='small' type="link" onClick={() => navigate('/app/ofabricolist', {})}>Ordens de Fabrico</Button>
