@@ -1,0 +1,188 @@
+DELIMITER //
+CREATE DEFINER=`root`@`%` TRIGGER `ig_bobinagens_BEFORE_INSERT` BEFORE INSERT ON `ig_bobinagens` FOR EACH ROW BEGIN
+    DECLARE _audit_cs_id int;
+    SELECT acs.id INTO _audit_cs_id
+	from producao_currentsettings cs
+	join audit_currentsettings acs on cs.id=acs.contextid
+	where cs.status=3
+	order by acs.id desc
+	limit 1;
+    SET NEW.audit_cs_id = _audit_cs_id;
+    
+    #DECLARE _n_trocas int;
+	#if NEW.type<>1 THEN
+	#	SELECT n_trocas into _n_trocas FROM ig_bobinagens where type=1 order by id desc limit 1;
+    #    IF _n_trocas is not null and _n_trocas<>NEW.n_trocas and 
+    #    (NEW.A1 IS NOT NULL OR NEW.A2 IS NOT NULL OR NEW.A3 IS NOT NULL OR NEW.A4 IS NOT NULL OR NEW.A5 IS NOT NULL OR NEW.A6 IS NOT NULL) 
+    #    THEN
+	#		SET NEW.type = 1;
+	#		SET NEW.type_desc = 'reeling_exchange';
+    #    END IF;
+    #END IF;
+    
+    #IF NEW.A1 IS NOT NULL THEN
+	#	SET NEW.type = 1;
+    #    SET NEW.type_desc = 'reeling_exchange';
+    #END IF;
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE DEFINER=`root`@`192.168.0.59` TRIGGER `ig_bobinagens_AFTER_INSERT` AFTER INSERT ON `ig_bobinagens` FOR EACH ROW BEGIN
+    DECLARE line varchar(1000);
+    DECLARE acs_id int;
+    DECLARE cs_id int;
+    DECLARE _agg_of_id int;
+    
+    IF NEW.type = 1 THEN     
+        BEGIN
+		CALL create_bobinagem(NEW.id,NEW.diametro, NEW.metros, NEW.peso, NEW.nw_inf, NEW.nw_sup, NEW.inicio_ts, NEW.fim_ts,
+        (CASE WHEN NEW.A1 < NEW.A1_LAG THEN IFNULL(NEW.A1_RESET,0) ELSE 0 END + IFNULL(NEW.A1,0))-IFNULL(NEW.A1_LAG,0),
+        (CASE WHEN NEW.A2 < NEW.A2_LAG THEN IFNULL(NEW.A2_RESET,0) ELSE 0 END + IFNULL(NEW.A2,0))-IFNULL(NEW.A2_LAG,0),
+        (CASE WHEN NEW.A3 < NEW.A3_LAG THEN IFNULL(NEW.A3_RESET,0) ELSE 0 END + IFNULL(NEW.A3,0))-IFNULL(NEW.A3_LAG,0),
+        (CASE WHEN NEW.A4 < NEW.A4_LAG THEN IFNULL(NEW.A4_RESET,0) ELSE 0 END + IFNULL(NEW.A4,0))-IFNULL(NEW.A4_LAG,0),
+        (CASE WHEN NEW.A5 < NEW.A5_LAG THEN IFNULL(NEW.A5_RESET,0) ELSE 0 END + IFNULL(NEW.A5,0))-IFNULL(NEW.A5_LAG,0),
+        (CASE WHEN NEW.A6 < NEW.A6_LAG THEN IFNULL(NEW.A6_RESET,0) ELSE 0 END + IFNULL(NEW.A6,0))-IFNULL(NEW.A6_LAG,0),
+        (CASE WHEN NEW.B1 < NEW.B1_LAG THEN IFNULL(NEW.B1_RESET,0) ELSE 0 END + IFNULL(NEW.B1,0))-IFNULL(NEW.B1_LAG,0),
+		(CASE WHEN NEW.B2 < NEW.B2_LAG THEN IFNULL(NEW.B2_RESET,0) ELSE 0 END + IFNULL(NEW.B2,0))-IFNULL(NEW.B2_LAG,0),
+		(CASE WHEN NEW.B3 < NEW.B3_LAG THEN IFNULL(NEW.B3_RESET,0) ELSE 0 END + IFNULL(NEW.B3,0))-IFNULL(NEW.B3_LAG,0),
+		(CASE WHEN NEW.B4 < NEW.B4_LAG THEN IFNULL(NEW.B4_RESET,0) ELSE 0 END + IFNULL(NEW.B4,0))-IFNULL(NEW.B4_LAG,0),
+		(CASE WHEN NEW.B5 < NEW.B5_LAG THEN IFNULL(NEW.B5_RESET,0) ELSE 0 END + IFNULL(NEW.B5,0))-IFNULL(NEW.B5_LAG,0),
+		(CASE WHEN NEW.B6 < NEW.B6_LAG THEN IFNULL(NEW.B6_RESET,0) ELSE 0 END + IFNULL(NEW.B6,0))-IFNULL(NEW.B6_LAG,0),
+		(CASE WHEN NEW.C1 < NEW.C1_LAG THEN IFNULL(NEW.C1_RESET,0) ELSE 0 END + IFNULL(NEW.C1,0))-IFNULL(NEW.C1_LAG,0),
+		(CASE WHEN NEW.C2 < NEW.C2_LAG THEN IFNULL(NEW.C2_RESET,0) ELSE 0 END + IFNULL(NEW.C2,0))-IFNULL(NEW.C2_LAG,0),
+		(CASE WHEN NEW.C3 < NEW.C3_LAG THEN IFNULL(NEW.C3_RESET,0) ELSE 0 END + IFNULL(NEW.C3,0))-IFNULL(NEW.C3_LAG,0),
+		(CASE WHEN NEW.C4 < NEW.C4_LAG THEN IFNULL(NEW.C4_RESET,0) ELSE 0 END + IFNULL(NEW.C4,0))-IFNULL(NEW.C4_LAG,0),
+		(CASE WHEN NEW.C5 < NEW.C5_LAG THEN IFNULL(NEW.C5_RESET,0) ELSE 0 END + IFNULL(NEW.C5,0))-IFNULL(NEW.C5_LAG,0),
+		(CASE WHEN NEW.C6 < NEW.C6_LAG THEN IFNULL(NEW.C6_RESET,0) ELSE 0 END + IFNULL(NEW.C6,0))-IFNULL(NEW.C6_LAG,0)
+        ,null);
+	END; 
+    
+    
+    SELECT 
+		JSON_ARRAY(
+		JSON_OBJECT('id',NEW.id,'doser','A1','cons',(CASE WHEN NEW.A1 < NEW.A1_LAG THEN IFNULL(NEW.A1_RESET,0) ELSE 0 END + IFNULL(NEW.A1,0))-IFNULL(NEW.A1_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','A2','cons',(CASE WHEN NEW.A2 < NEW.A2_LAG THEN IFNULL(NEW.A2_RESET,0) ELSE 0 END + IFNULL(NEW.A2,0))-IFNULL(NEW.A2_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','A3','cons',(CASE WHEN NEW.A3 < NEW.A3_LAG THEN IFNULL(NEW.A3_RESET,0) ELSE 0 END + IFNULL(NEW.A3,0))-IFNULL(NEW.A3_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','A4','cons',(CASE WHEN NEW.A4 < NEW.A4_LAG THEN IFNULL(NEW.A4_RESET,0) ELSE 0 END + IFNULL(NEW.A4,0))-IFNULL(NEW.A4_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','A5','cons',(CASE WHEN NEW.A5 < NEW.A5_LAG THEN IFNULL(NEW.A5_RESET,0) ELSE 0 END + IFNULL(NEW.A5,0))-IFNULL(NEW.A5_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','A6','cons',(CASE WHEN NEW.A6 < NEW.A6_LAG THEN IFNULL(NEW.A6_RESET,0) ELSE 0 END + IFNULL(NEW.A6,0))-IFNULL(NEW.A6_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B1','cons',(CASE WHEN NEW.B1 < NEW.B1_LAG THEN IFNULL(NEW.B1_RESET,0) ELSE 0 END + IFNULL(NEW.B1,0))-IFNULL(NEW.B1_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B2','cons',(CASE WHEN NEW.B2 < NEW.B2_LAG THEN IFNULL(NEW.B2_RESET,0) ELSE 0 END + IFNULL(NEW.B2,0))-IFNULL(NEW.B2_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B3','cons',(CASE WHEN NEW.B3 < NEW.B3_LAG THEN IFNULL(NEW.B3_RESET,0) ELSE 0 END + IFNULL(NEW.B3,0))-IFNULL(NEW.B3_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B4','cons',(CASE WHEN NEW.B4 < NEW.B4_LAG THEN IFNULL(NEW.B4_RESET,0) ELSE 0 END + IFNULL(NEW.B4,0))-IFNULL(NEW.B4_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B5','cons',(CASE WHEN NEW.B5 < NEW.B5_LAG THEN IFNULL(NEW.B5_RESET,0) ELSE 0 END + IFNULL(NEW.B5,0))-IFNULL(NEW.B5_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','B6','cons',(CASE WHEN NEW.B6 < NEW.B6_LAG THEN IFNULL(NEW.B6_RESET,0) ELSE 0 END + IFNULL(NEW.B6,0))-IFNULL(NEW.B6_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C1','cons',(CASE WHEN NEW.C1 < NEW.C1_LAG THEN IFNULL(NEW.C1_RESET,0) ELSE 0 END + IFNULL(NEW.C1,0))-IFNULL(NEW.C1_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C2','cons',(CASE WHEN NEW.C2 < NEW.C2_LAG THEN IFNULL(NEW.C2_RESET,0) ELSE 0 END + IFNULL(NEW.C2,0))-IFNULL(NEW.C2_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C3','cons',(CASE WHEN NEW.C3 < NEW.C3_LAG THEN IFNULL(NEW.C3_RESET,0) ELSE 0 END + IFNULL(NEW.C3,0))-IFNULL(NEW.C3_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C4','cons',(CASE WHEN NEW.C4 < NEW.C4_LAG THEN IFNULL(NEW.C4_RESET,0) ELSE 0 END + IFNULL(NEW.C4,0))-IFNULL(NEW.C4_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C5','cons',(CASE WHEN NEW.C5 < NEW.C5_LAG THEN IFNULL(NEW.C5_RESET,0) ELSE 0 END + IFNULL(NEW.C5,0))-IFNULL(NEW.C5_LAG,0)),
+		JSON_OBJECT('id',NEW.id,'doser','C6','cons',(CASE WHEN NEW.C6 < NEW.C6_LAG THEN IFNULL(NEW.C6_RESET,0) ELSE 0 END + IFNULL(NEW.C6,0))-IFNULL(NEW.C6_LAG,0))
+		) t into line;
+        
+        SELECT acs.agg_of_id INTO _agg_of_id from audit_currentsettings acs where id = NEW.audit_cs_id;
+
+INSERT INTO lotesdosers(`doser`,`status`,`t_stamp`,`qty_consumed`,`type_mov`,`ig_bobinagem_id`,`qty_to_consume`,`agg_of_id`)
+SELECT t.doser,1,now(),t.cons*-1,'C',NEW.id,t.cons,_agg_of_id
+FROM JSON_TABLE(line,"$[*]" COLUMNS(rowid FOR ORDINALITY,id INT PATH "$.id",doser VARCHAR(2) PATH "$.doser",cons DOUBLE PATH "$.cons")) t;
+
+
+/*INSERT INTO lotesdosers(`doser`,`lote_id`,`n_lote`,`artigo_cod`,`status`,`t_stamp`,`qty_consumed`,`type_mov`,`loteslinha_id`,`group_id`,`ig_bobinagem_id`,`qty_to_consume`,`agg_of_id`)    
+SELECT * FROM(		
+WITH CONSUMOS AS(
+SELECT * FROM JSON_TABLE(line,"$[*]" COLUMNS(rowid FOR ORDINALITY,id INT PATH "$.id",doser VARCHAR(2) PATH "$.doser",cons DOUBLE PATH "$.cons")) t
+),
+VIEW_LINHA AS(SELECT * FROM sistema.loteslinha where `status` = 1 AND closed=0),
+VIEW_DOSERS AS(
+	SELECT id,doser,n_lote,artigo_cod,t_stamp,qty_consumed,type_mov,loteslinha_id,group_id,ig_bobinagem_id,qty_to_consume,lote_id,t_stamp_fix,`order`,closed 
+	FROM sistema.lotesdosers where `status` = 1 AND closed=0
+),
+QTY_LOTES_AVAILABLE AS(
+	select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+	FROM (
+		SELECT DISTINCT * FROM (
+		SELECT 
+		DOSERS.group_id, LOTES.artigo_cod,LOTES.lote_id,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,DOSERS.`order`,
+		SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_consumed,
+		qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.lote_id) qty_lote_available,
+		MIN(DOSERS.`order`) over (PARTITION BY LOTES.lote_id) min_order, #FIFO DATE TO ORDER ASC
+		MAX(DOSERS.`order`) over (PARTITION BY LOTES.lote_id) max_order
+		FROM VIEW_LINHA LOTES
+		LEFT JOIN VIEW_DOSERS DOSERS ON LOTES.id=DOSERS.loteslinha_id
+		WHERE DOSERS.group_id is not null
+		) t WHERE  max_order=`order`
+	) t WHERE qty_lote_available>0
+),
+GROUP_DOSER AS(
+	SELECT D.doser, IFNULL(VD.group_id,D.group_id) group_id,IFNULL(VD.n_dosers,D.n_dosers) n_dosers, IFNULL(VD.share_c,D.share_c) share_c  FROM(
+    SELECT DOSERS.doser,DOSERS.group_id,COUNT(*) OVER (PARTITION BY group_id) n_dosers, 1 share_c FROM VIEW_DOSERS DOSERS 
+    WHERE DOSERS.`order` in (SELECT DISTINCT MAX(`order`) OVER (PARTITION BY D.doser) FROM VIEW_DOSERS D)
+    ) D
+    LEFT JOIN (
+		SELECT t.*,COUNT(*) OVER (PARTITION BY t.group_id) n_dosers,COUNT(*) OVER (PARTITION BY t.doser) share_c
+        FROM(
+			SELECT DISTINCT DOSERS.doser,DOSERS.group_id 
+			FROM (SELECT MAX(`order`) `order` FROM VIEW_DOSERS D WHERE (D.group_id is not null or D.type_mov='OUT') GROUP BY D.doser,D.group_id) t
+			JOIN VIEW_DOSERS DOSERS ON DOSERS.`order`=t.`order`
+        ) t
+        #SELECT DOSERS.doser,DOSERS.group_id,COUNT(*) OVER (PARTITION BY group_id) n_dosers,COUNT(*) OVER (PARTITION BY DOSERS.doser) share_c 
+		#FROM (SELECT MAX(`order`) `order` FROM VIEW_DOSERS D WHERE (D.group_id is not null or D.type_mov='OUT') GROUP BY D.doser,D.group_id) t
+		#JOIN VIEW_DOSERS DOSERS ON DOSERS.`order`=t.`order`
+	) VD ON D.doser=VD.doser
+    
+    #SELECT DISTINCT C.doser,VD.group_id,VD.n_dosers,VD.share_c from CONSUMOS C
+	#LEFT JOIN (
+	#	SELECT DOSERS.doser,DOSERS.group_id,COUNT(*) OVER (PARTITION BY group_id) n_dosers,COUNT(*) OVER (PARTITION BY DOSERS.doser) share_c 
+	#	FROM (SELECT MAX(`order`) `order` FROM VIEW_DOSERS D WHERE (D.group_id is not null or D.type_mov='OUT') GROUP BY D.doser,D.group_id) t
+	#	JOIN VIEW_DOSERS DOSERS ON DOSERS.`order`=t.`order`
+	#) VD ON C.doser=VD.doser
+    
+    #SELECT DOSERS.doser,DOSERS.group_id,COUNT(*) OVER (PARTITION BY group_id) n_dosers FROM VIEW_DOSERS DOSERS 
+    #WHERE DOSERS.`order` in (SELECT DISTINCT MAX(`order`) OVER (PARTITION BY D.doser) FROM VIEW_DOSERS D)
+),
+CONS_BY_LOTE AS(
+	SELECT 
+	GD.group_id, QLA.min_order,C.doser, QLA.artigo_cod, QLA.lote_id, QLA.n_lote,QLA.loteslinha_id,C.id ig_bobinage_id, GD.n_dosers,
+	QLA.qty_lote,QLA.qty_lote_consumed/GD.share_c qty_lote_consumed,QLA.qty_lote_available,QLA.qty_artigo_available, C.cons/GD.share_c qty_to_consume,
+	SUM(CASE WHEN QLA.lote_id IS NULL THEN NULL ELSE C.cons/GD.share_c END) OVER (PARTITION BY QLA.lote_id) qty_to_consume_lote,
+	((C.cons/GD.share_c)/SUM(CASE WHEN QLA.lote_id IS NULL THEN NULL ELSE C.cons/GD.share_c END) OVER (PARTITION BY QLA.lote_id)) percent_to_consume,
+	CASE WHEN LAG(GD.doser,1) OVER (ORDER BY GD.group_id IS NULL, group_id, GD.doser, min_order) is null or LAG(GD.doser,1) OVER (ORDER BY GD.group_id IS NULL, group_id, GD.doser, min_order) <> GD.doser THEN 1 ELSE 0 END doser_changed,
+	CASE WHEN ((SUM(CASE WHEN QLA.lote_id IS NULL THEN NULL ELSE C.cons/GD.share_c END) OVER (PARTITION BY QLA.lote_id)) > QLA.qty_lote_available) THEN 1 ELSE 0 END qty_exceeds
+	FROM CONSUMOS C
+	LEFT JOIN GROUP_DOSER GD ON GD.doser=C.doser
+	LEFT JOIN QTY_LOTES_AVAILABLE QLA ON GD.group_id = QLA.group_id
+	order by GD.group_id IS NULL, group_id, GD.doser, min_order
+)
+SELECT 
+doser,lote_id,n_lote,artigo_cod,1 `status`,now() t_stamp,to_consume_cumulative qty_consumed,'C' type_mov,
+CASE WHEN to_consume_cumulative >= 0 THEN NULL ELSE loteslinha_id END loteslinha_id,
+group_id,NEW.id, qty_to_consume,_agg_of_id agg_of_id
+FROM (
+	SELECT 
+		CBL.doser,CBL.lote_id,CBL.n_lote,CBL.artigo_cod,CBL.loteslinha_id,CBL.group_id,CBL.qty_to_consume,
+		CASE WHEN doser_changed=1 THEN @rest_dosers:=qty_to_consume_lote ELSE @rest_dosers END rest_dosers,
+		CASE WHEN doser_changed=1 THEN @rest_doser:=qty_to_consume ELSE @rest_doser END rest_doser,
+		@auxdosers:=@rest_dosers auxdosers,
+		@auxdoser:=@rest_doser auxdoser,
+		CASE WHEN @rest_doser=0 THEN 1 ELSE 0 END all_consumed_doser,
+		-1*(CASE WHEN @auxdosers > qty_lote_available THEN qty_lote_available*percent_to_consume ELSE @rest_doser END) to_consume_cumulative,
+		CASE WHEN @auxdosers > qty_lote_available THEN @rest_dosers:=@rest_dosers-(qty_lote_available*percent_to_consume) ELSE @rest_dosers:=@rest_dosers-@rest_doser END updated_rest_dosers,
+		CASE WHEN @auxdosers > qty_lote_available THEN @rest_doser:=@rest_doser-(qty_lote_available*percent_to_consume) ELSE @rest_doser:=0 END updated_rest_doser
+	FROM CONS_BY_LOTE CBL
+) t where not (all_consumed_doser=1 and to_consume_cumulative=0)
+)t;
+*/
+
+UPDATE lotesdosers set `order`= id*100000000 WHERE ig_bobinagem_id = NEW.id; 
+
+UPDATE ig_doseadores SET
+	ig_bobinagem_id=NEW.id,
+	audit_cs_id = NEW.audit_cs_id
+where ig_bobinagem_id is null;
+    
+    END IF;
+END;
+//
+DELIMITER ;

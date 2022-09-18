@@ -123,6 +123,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: 'specs', specs: { ...form.getFieldsValue(true), produto_id: record.artigospecs.produto_id, cliente_cod, cliente_nome } } });
                 setResultMessage(response.data);
                 if (response.data.status !== "error") {
+                    parentReload();
                     //throw 'TODO RELOAD PARENT'
                     //parentReload({ formulacao_id: record.formulacao.id }, "init");
                 }

@@ -130,8 +130,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         if (!v.error && status.error.length === 0) {
             const { of_id, of_cod, draft_of_id, agg_of_id } = record.aggItem;
             const {paletizacao, ...vals} = values;
-            const dt = { of_id, of_cod, draft_of_id, paletizacao: { id: values.paletizacao_id, ...vals, details:paletizacao } };
-            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.csid }, parameters: { type: 'paletizacao', paletizacao: dt } });
+            console.log(record);
+            const dt = { of_id, of_cod, draft_of_id, paletizacao: { id: values.paletizacao_id, ...vals, details:paletizacao.reverse() } };
+            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.csid }, parameters: { type: 'paletizacao', paletizacao: dt, artigo:record.aggItem } });
             if (response.data.status !== "error") {
                 parentReload({ aggId: agg_of_id });
             }

@@ -1,0 +1,13 @@
+TRUNCATE TABLE sistema.producao_produtos;
+insert into sistema.producao_produtos
+select * from sistema_dev2.producao_produtos
+
+######################################################
+
+update sistema.producao_artigo dv
+join sistema_dev2.producao_artigo dv2 on dv.cod = dv2.cod and dv2.produto_id is not null
+set dv.produto_id=dv2.produto_id 
+
+######################################################
+
+

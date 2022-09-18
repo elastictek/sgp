@@ -342,7 +342,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 }
                 const { cliente_cod: { value: cliente_cod, label: cliente_nome } = {}, source, ...vals } = values;
                  try {
-                    console.log("x--x-x-x-x-x-x",{ type: `formulacao_${record.feature}`, formulacao: { ...vals, items, produto_id: record.formulacao.produto_id, cliente_cod, cliente_nome, valid:0 } })
                     const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ...vals, items, produto_id: record.formulacao.produto_id, cliente_cod, cliente_nome, valid:0 } } });
                     if (response.data.status !== "error") {
                         Modal.success({title:"Formulação alterada com sucesso!",onOk:()=>{parentReload();closeParent();}})

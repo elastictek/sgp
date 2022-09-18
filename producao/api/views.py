@@ -2821,7 +2821,6 @@ def createEmendas(data,cursor):
 @permission_classes([IsAuthenticated])
 def UpdateCurrentSettings(request, format=None):
     data = request.data.get("parameters")
-
     def getCurrentSettings(data,cursor):
         f = Filters({"id": data["csid"],"status":9})
         f.where()
@@ -2832,6 +2831,32 @@ def UpdateCurrentSettings(request, format=None):
         if len(rows)>0:
             return rows[0]
         return None
+
+    def compPaletizacao(cp,paletizacao):
+        
+        sqm_paletes_total = 0
+        nitems = 0
+        items = []
+        computed = {}
+        if paletizacao is not None:
+            for pitem in [d for d in paletizacao["details"] if 'item_numbobines' in d and d['item_numbobines'] is not None]:
+                if pitem["id"] is not None:
+                    nitems += 1
+                    items.append({
+                        "id":pitem["id"],
+                        "num_bobines":pitem["item_numbobines"],
+                        "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
+                    })
+                    sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
+            if nitems>0:
+                computed["total"] = {
+                    "sqm_paletes_total":sqm_paletes_total,
+                    "sqm_contentor":sqm_paletes_total*paletizacao["npaletes"],
+                    "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
+                }
+                computed["items"] = items
+        return computed
+            
 
     try:
         with connections["default"].cursor() as cursor:
@@ -2997,7 +3022,8 @@ def UpdateCurrentSettings(request, format=None):
                 emendas = json.loads(cs["emendas"])
                 for idx,x in enumerate(emendas):
                     if x["of_id"]==data["ofabrico_cod"]:
-                        emendas[idx]['emendas']={**json.loads(x["emendas"]),"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]}
+                        print(x["emendas"])
+                        emendas[idx]['emendas']=json.dumps({**json.loads(x["emendas"]),"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]})
                 cores = json.loads(cs["cores"])
                 for idx,x in enumerate(cores):
                     if x["of_id"]==data["ofabrico_cod"]:
@@ -3008,11 +3034,10 @@ def UpdateCurrentSettings(request, format=None):
                         limites[idx] = {**x}
                 sentido_enrolamento= cs["sentido_enrolamento"]
                 amostragem = cs["amostragem"]
-
-                for x in json.loads(cs["ofs"]):
+                ofs = json.loads(cs["ofs"])
+                for idx,x in enumerate(ofs):
                     if x["of_id"]==data["ofabrico_cod"]:
-                        cp = computeLinearMeters(data) #talvez não seja necessário
-                        cpp = computePaletizacao(cp,data,cursor) #talvez não seja necessário
+                        ofs[idx]['n_paletes_total']=data['n_paletes_total']
                         dataop = {
                             "largura": data['artigo_width'],
                             "core": data['artigo_core'] + '"',
@@ -3026,33 +3051,42 @@ def UpdateCurrentSettings(request, format=None):
                             "tipo_emenda":tipoemendas[str(data["tipo_emenda"])],
                         }
                         ofabrico_cod = data["ofabrico_cod"]
- 
                         dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
-                        #db.execute(dml.statement, cursor, dml.parameters)
+                        db.execute(dml.statement, cursor, dml.parameters)
                         dml = db.dml(TypeDml.UPDATE,{
                             "emendas":json.dumps(emendas,ensure_ascii=False),
                             "cores":json.dumps(cores,ensure_ascii=False),
                             "limites":json.dumps(limites,ensure_ascii=False),
+                            "ofs":json.dumps(ofs,ensure_ascii=False),
                             "sentido_enrolamento":sentido_enrolamento,
                             "amostragem":amostragem,
                             "type_op":"settings_of_change"
-                            },"producao_currentsettings",{"id":f'=={data["csid"]}'},None,False)
-                        #db.execute(dml.statement, cursor, dml.parameters)
-                        print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-                        print(dml.statement)
-                        print(dml.parameters)
-
-
-
+                            },"producao_currentsettings",{"id":f'=={request.data["filter"]["csid"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
     if data['type'] == 'paletizacao':
         paletizacoes = json.loads(cs["paletizacao"])
+        #ofs = json.loads(cs["ofs"])
+        _paletizacao=data["paletizacao"]["paletizacao"]
         for idx,x in enumerate(paletizacoes):
             if x["of_id"]==data["paletizacao"]["of_id"]:
+                data["paletizacao"]["paletizacao"]=json.dumps(_paletizacao,ensure_ascii=False)
                 paletizacoes[idx]= data["paletizacao"]
+        # for idx,x in enumerate(ofs):
+        #     if x["of_id"]==data["paletizacao"]["of_id"]:
+        #         cp = computeLinearMeters(data) #talvez não seja necessário
+        #         cpp = compPaletizacao(cp,_paletizacao) #talvez não seja necessário
+        #         p={}
+        #         if (len(cp.keys())>0):
+        #             p['qty_encomenda'] = cp['qty_encomenda'],
+        #             p['linear_meters'] = cp["linear_meters"],
+        #             p['n_voltas'] = cp["n_voltas"],
+        #             p['sqm_bobine'] = cp["sqm_bobine"]
+        #             p['n_paletes'] = json.dumps(cpp,ensure_ascii=False)
+        #         ofs[idx] = {**ofs[idx],**p}
         dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
@@ -4158,42 +4192,43 @@ def computeLinearMeters(data):
     artigo = data["artigo"] if "artigo" in data else data
     if artigo is not None:
         t = (float(artigo['artigo_thickness'])/1000)
-        D1 = float(artigo['artigo_diam'])
+        D1 = float(artigo['artigo_diam'] if "artigo_diam" in artigo else artigo["artigo_diam_ref"])
         d1 = float(artigo['artigo_core']) * 25.4
         l = (( math.pi * ( (D1/2)**2 - (d1/2)**2 ) ) / t) / 1000
         nvoltas = (D1 - d1) / ( 2 * t )
         return {
-            "qty_encomenda":artigo['qty_item'] if 'qty_item' in artigo else data['qty_item'],
+            "qty_encomenda":artigo['qty_item'] if 'qty_item' in artigo else data['qty_item'] if "qty_item" in data else artigo["qty_encomenda"],
             "linear_meters":l,
             "n_voltas":nvoltas,
-            "sqm_bobine":(l*float(artigo['artigo_width']))/1000
+            "sqm_bobine":(l*float(artigo['artigo_width'] if "artigo_width" in artigo else artigo["artigo_lar"]))/1000
         }
     return None
 
 def computePaletizacao(cp,data,cursor):
     paletizacao = None
-    if "paletizacao_id" in data and data["paletizacao_id"] is not None:
-        rows = db.executeSimpleList(lambda: (f"""
-            select  pp.npaletes,ppd.* 
-            from producao_paletizacao pp
-            left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-            where pp.id={data['paletizacao_id']}
-        """), cursor, {})['rows']
-        if len(rows)>0:
-            paletizacao=rows
-    else:
-        computed = {}
-        if ("ofabrico_id" not in data):
-            return computed
-        rows = db.executeSimpleList(lambda: (f"""
-            select pp.npaletes, ppd.* 
-            from producao_tempordemfabrico tof
-            left join producao_paletizacao pp on pp.id=tof.paletizacao_id
-            left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-            where tof.id='{data['ofabrico_id']}'
-        """), cursor, {})['rows']
-        if len(rows)>0:
-            paletizacao=rows
+    if paletizacao is None:
+        if "paletizacao_id" in data and data["paletizacao_id"] is not None:
+            rows = db.executeSimpleList(lambda: (f"""
+                select  pp.npaletes,ppd.* 
+                from producao_paletizacao pp
+                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
+                where pp.id={data['paletizacao_id']}
+            """), cursor, {})['rows']
+            if len(rows)>0:
+                paletizacao=rows
+        else:
+            computed = {}
+            if ("ofabrico_id" not in data):
+                return computed
+            rows = db.executeSimpleList(lambda: (f"""
+                select pp.npaletes, ppd.* 
+                from producao_tempordemfabrico tof
+                left join producao_paletizacao pp on pp.id=tof.paletizacao_id
+                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
+                where tof.id='{data['ofabrico_id']}'
+            """), cursor, {})['rows']
+            if len(rows)>0:
+                paletizacao=rows
     sqm_paletes_total = 0
     nitems = 0
     items = []

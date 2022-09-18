@@ -24,6 +24,17 @@ const schema = (keys, excludeKeys) => {
     }, keys, excludeKeys).unknown(true);
 }
 
+/* const schema = (options = {}) => {
+    return getSchema({
+        n_paletes_total: Joi.number().label("Nº Paletes Total").min(0).required(),
+        nemendas_paletescontentor: Joi.number().label("Nº Emendas Por Palete/Contentor").min(0).required(),
+        nemendas_rolo: Joi.number().label("Nº Emendas Por Bobine").min(0).required(),
+        maximo: Joi.number().label("Percentagem Máxima de Emendas").min(0).required(),
+        tipo_emenda: Joi.number().label("Tipo Emenda").required(),
+        cliente_cod: Joi.object().label("Cliente").required()
+    }, options).unknown(true);
+} */
+
 const loadCoresLookup = async (core, largura, token) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, parameters: { type: 'cores', core, largura }, cancelToken: token });
     return rows;
@@ -108,7 +119,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
         if (!v.error) {
             const cliente = (!aggItem.order_cod) ? { cliente_nome: values.cliente_cod.label, cliente_cod: values.cliente_cod.value } : { cliente_nome: aggItem.cliente_nome, cliente_cod: aggItem.cliente_cod };
             const { core_cod: { value: core_cod, label: core_des } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, parameters: { type: "settings", ...values, csid: record.csid, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id: draft_of_id, paletizacao_id: aggItem.paletizacao_id, qty_item: aggItem.qty_encomenda, ofabrico_cod: of_id } });
+            const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter:{csid: record.csid}, parameters: { type: "settings", ...values, core_cod, core_des, ...cliente, artigo_cod: aggItem.item_cod, ofabrico_id: draft_of_id, paletizacao_id: aggItem.paletizacao_id, qty_item: aggItem.qty_encomenda, ofabrico_cod: of_id } });
             if (response.data.status !== "error") {
                 parentReload({ agg_id: aggItem.id });
                 closeParent();

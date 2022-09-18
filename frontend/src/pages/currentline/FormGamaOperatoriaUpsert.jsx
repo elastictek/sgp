@@ -71,6 +71,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     }
 
     const init = (lookup = false, token) => {
+
         (async () => {
             if (lookup) {
 
@@ -122,7 +123,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: 'gamaoperatoria', gamaoperatoria: { ...form.getFieldsValue(true), produto_id: record.gamaoperatoria.produto_id } } });
                 setResultMessage(response.data);
                 if (response.data.status !== "error") {
-                    throw 'TODO RELOAD PARENT'
+                    parentReload();
                     //parentReload({ formulacao_id: record.formulacao.id }, "init");
                 }
                 // //const response = await fetchPost({ url: `${API_URL}/newgamaoperatoria/`, parameters: { ...form.getFieldsValue(true), produto_id: record.gamaoperatoria.produto_id } });

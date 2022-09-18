@@ -1,0 +1,77 @@
+CREATE TABLE audit_producao_bobine (audit_id INT AUTO_INCREMENT PRIMARY KEY,`audit_timestamp` DATETIME, `action` varchar(20)) SELECT * FROM producao_bobine limit 0;
+DELIMITER //
+CREATE TRIGGER `producao_bobine_BEFORE_UPDATE` BEFORE UPDATE ON `producao_bobine` 
+FOR EACH ROW INSERT INTO audit_producao_bobine 
+SELECT NULL, NOW(),'update', t.* FROM producao_bobine t WHERE id = OLD.id
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER `producao_bobine_BEFORE_DELETE` BEFORE DELETE ON `producao_bobine` 
+FOR EACH ROW INSERT INTO audit_producao_bobine 
+SELECT NULL, NOW(),'delete', t.* FROM producao_bobine t WHERE id = OLD.id
+//
+DELIMITER ;
+
+
+CREATE TABLE audit_planeamento_ordemproducao (audit_id INT AUTO_INCREMENT PRIMARY KEY,`audit_timestamp` DATETIME, `action` varchar(20)) SELECT * FROM planeamento_ordemproducao limit 0;
+DELIMITER //
+CREATE TRIGGER `planeamento_ordemproducao_BEFORE_UPDATE` BEFORE UPDATE ON `planeamento_ordemproducao` 
+FOR EACH ROW INSERT INTO audit_planeamento_ordemproducao 
+SELECT NULL, NOW(),'update', t.* FROM planeamento_ordemproducao t WHERE id = OLD.id
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER `planeamento_ordemproducao_BEFORE_DELETE` BEFORE DELETE ON `planeamento_ordemproducao` 
+FOR EACH ROW INSERT INTO audit_planeamento_ordemproducao 
+SELECT NULL, NOW(),'delete', t.* FROM planeamento_ordemproducao t WHERE id = OLD.id
+//
+DELIMITER ;
+
+
+CREATE TABLE audit_producao_bobinagem (audit_id INT AUTO_INCREMENT PRIMARY KEY,`audit_timestamp` DATETIME, `action` varchar(20)) SELECT * FROM producao_bobinagem limit 0;
+DELIMITER //
+CREATE TRIGGER `producao_bobinagem_BEFORE_UPDATE` BEFORE UPDATE ON `producao_bobinagem` 
+FOR EACH ROW INSERT INTO audit_producao_bobinagem 
+SELECT NULL, NOW(),'update', t.* FROM producao_bobinagem t WHERE id = OLD.id
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER `producao_bobinagem_BEFORE_DELETE` BEFORE DELETE ON `producao_bobinagem` 
+FOR EACH ROW INSERT INTO audit_producao_bobinagem 
+SELECT NULL, NOW(),'delete', t.* FROM producao_bobinagem t WHERE id = OLD.id
+//
+DELIMITER ;
+
+CREATE TABLE audit_producao_carga (audit_id INT AUTO_INCREMENT PRIMARY KEY,`audit_timestamp` DATETIME, `action` varchar(20)) SELECT * FROM producao_carga limit 0;
+DELIMITER //
+CREATE TRIGGER `producao_carga_BEFORE_UPDATE` BEFORE UPDATE ON `producao_carga` 
+FOR EACH ROW INSERT INTO audit_producao_carga 
+SELECT NULL, NOW(),'update', t.* FROM producao_carga t WHERE id = OLD.id
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER `producao_carga_BEFORE_DELETE` BEFORE DELETE ON `producao_carga` 
+FOR EACH ROW INSERT INTO audit_producao_carga 
+SELECT NULL, NOW(),'delete', t.* FROM producao_carga t WHERE id = OLD.id
+//
+DELIMITER ;
+
+
+CREATE TABLE audit_producao_palete (audit_id INT AUTO_INCREMENT PRIMARY KEY,`audit_timestamp` DATETIME, `action` varchar(20)) SELECT * FROM producao_palete limit 0;
+DELIMITER //
+CREATE TRIGGER `producao_palete_BEFORE_UPDATE` BEFORE UPDATE ON `producao_palete` 
+FOR EACH ROW INSERT INTO audit_producao_palete 
+SELECT NULL, NOW(),'update', t.* FROM producao_palete t WHERE id = OLD.id
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER `producao_palete_BEFORE_DELETE` BEFORE DELETE ON `producao_palete` 
+FOR EACH ROW INSERT INTO audit_producao_palete 
+SELECT NULL, NOW(),'delete', t.* FROM producao_palete t WHERE id = OLD.id
+//
+DELIMITER ;

@@ -60,7 +60,7 @@ export const pick = (keys, obj, exclude = []) => {
 };
 
 export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false) => {
-    if (typeof keys === 'object' && keys !== null) {
+    if (keys !== null && !Array.isArray(keys)) {
         return getSchemav2(rules, keys);
     }
     if (keys.length == 0 && excludeKeys.length == 0) {
