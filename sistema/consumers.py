@@ -146,16 +146,23 @@ class RealTimeOfs(WebsocketConsumer):
     def loadPaletes(self, data):
         print("PALETES ATENÇÃO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print("O VALOR ENCONTRA-SE FIXO!!!!!!")
-        ofid = 958#data['value']['of_id']
+        #ofid = 958#data['value']['of_id']
+        fof = data['value']['of_id'] if "of_id" in data['value'] else data['value']['ofs_id'] if "ofs_id" in data['value'] else None
         print("GETTING PALETES")
-        if ofid:
+        if fof:
             connection = connections["default"].cursor()
-            rows = dbgw.executeSimpleList(lambda:(f"""		
-                SELECT ROW_NUMBER() OVER (order by pl.timestamp) num,pl.nome, pl.num_bobines,pl.num_bobines_act
-                FROM sistema.producao_palete pl
-                join sistema.planeamento_ordemproducao op on ordem_original=op.op and op.id=%(ofid)s
-                order by pl.timestamp asc
-            """),connection,{"ofid":ofid})['rows']
+            rows = dbgw.executeSimpleList(lambda:(f"""
+                    SELECT
+                    op.op,op.id,
+                    op.num_paletes_total,
+                    op.num_paletes_stock_in,
+                    op.num_paletes_produzidas,
+                    count(*) cnt
+                    FROM sistema.planeamento_ordemproducao op
+                    left join sistema.producao_palete pl on pl.ordem_id=op.id
+                    where pl.num_bobines=pl.num_bobines_act and op.id in ({fof})
+                    group by op.id
+            """),connection,{})['rows']
         else:
             rows=[]
         hsh = json.dumps(rows,default=str)
