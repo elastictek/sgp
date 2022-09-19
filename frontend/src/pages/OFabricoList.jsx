@@ -434,14 +434,14 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     ), [modalParameters]);
 
     const onShowConfirm = (action) => {
-        const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
+        const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id, prf } = record;
         modal.show({
             propsToChild: true, footer: "ref",
             maskClosable: false,
             closable: false,
             height: "300px",
             title: <TitleConfirm status={status} action={action} ofabrico={ofabrico} />,
-            content: <PromiseFormConfirm data={{ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, onAction }} />
+            content: <PromiseFormConfirm data={{ status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, action, qty_item, item_thickness, item_diam, item_core, item_width, item_id, prf, onAction }} />
         });
     }
     const onShowMenuActions = () => {
