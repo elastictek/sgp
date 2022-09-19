@@ -10,7 +10,7 @@ import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
 
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer } from "components/formLayout";
+import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer } from "components/formLayout";
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
@@ -23,6 +23,8 @@ import TagButton from "components/TagButton";
 import ResponsiveModal from 'components/ResponsiveModal';
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
+import { useModal } from "react-modal-hook";
+import ResponsiveModalv2 from 'components/Modal';
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
@@ -38,7 +40,28 @@ const ButtonGroup = Button.Group;
 import { VerticalSpace } from 'components/formLayout';
 import { useForm } from 'antd/lib/form/Form';
 const { Title } = Typography;
-import Container from 'components/columnSettingContainer'
+import ToolbarTitle from 'components/ToolbarTitle';
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+
+const title = "Ordens de Fabrico";
+const TitleForm = ({ data, form, ordemFabricoStatusField }) => {
+
+    const onChange = () => {
+        form.submit();
+    }
+
+    return (<ToolbarTitle title={
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
+    } right={
+        <Col xs="content">
+            <Form form={form} initialValues={{ fofstatus: "Todos" }}>
+                <FormLayout id="tbt-of" schema={schema}>
+                    <Field name="fofstatus" label={{ enabled: true, width: "60px", text: "Estado", pos: "left" }}>{ordemFabricoStatusField({ onChange })}</Field>
+                </FormLayout>
+            </Form>
+        </Col>
+    } />);
+}
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -392,11 +415,23 @@ const PromiseFormConfirm = ({ data, parentRef, closeSelf }) => {
     );
 };
 
+const IFrame = ({src})=> {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+}
+
+
 const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
-    const { status, temp_ofabrico } = record;
+    const { status, temp_ofabrico, ofabrico_sgp } = record;
     const modal = useModalv4();
     const [action, setAction] = useState();
     const navigate = useNavigate();
+
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModalv2 footer="ref" onCancel={hideModal} width={5000} height={5000} title={modalParameters.title}>
+            <IFrame src={`/planeamento/ordemdeproducao/details/${modalParameters.ofabrico_sgp}/`}/>
+        </ResponsiveModalv2>
+    ), [modalParameters]);
 
     const onShowConfirm = (action) => {
         const { status, temp_ofabrico, cliente_cod, cliente_nome, iorder, item, item_nome, ofabrico, produto_id, produto_cod, qty_item, item_thickness, item_diam, item_core, item_width, item_id } = record;
@@ -411,15 +446,30 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
     }
     const onShowMenuActions = () => {
         const { status, cod, temp_ofabrico_agg } = record;
-        navigate("/app", { state: { aggId:temp_ofabrico_agg, tstamp: Date.now() } , replace:true });
+        navigate("/app", { state: { aggId: temp_ofabrico_agg, tstamp: Date.now() }, replace: true });
         //navigate('/app/currentline/menuactions', { state: { status, aggCod: cod, aggId: temp_ofabrico_agg } });
         //setShowMenuActions({ show: true, data: { status, aggCod: cod, aggId: temp_ofabrico_agg, onAction } });
     }
 
+    const onClickSgpBack = (v) =>{
+        setModalParameters({title:"Ordem de Produção", ofabrico_sgp});
+        showModal();
+    }
+
     return (
+        
         <div style={{ display: "flex", flexDirection: "row" }}>
-            {((status == 0 || !status) && !temp_ofabrico) && <>
+            {((status == 0 || !status) && !temp_ofabrico && !ofabrico_sgp) && <>
                 <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+            </>}
+            {((status == 0 || !status) && !temp_ofabrico && ofabrico_sgp && record?.completa==1) && <>
+                <TagButton onClick={() => onClickSgpBack(ofabrico_sgp)} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
+            </>}
+            {((status == 0 || !status) && !temp_ofabrico && ofabrico_sgp && record?.completa==0 && record.ativa==1) && <>
+                <TagButton onClick={() => onClickSgpBack(ofabrico_sgp)} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+            </>}
+            {((status == 0 || !status) && !temp_ofabrico && ofabrico_sgp && record?.completa==0 && record.ativa==0) && <>
+                <TagButton onClick={() => onClickSgpBack(ofabrico_sgp)} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
                 <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
@@ -427,6 +477,8 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
             {(status == 2 && temp_ofabrico) && <>
                 <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
+
+
             {/*             {status == 4 && <>
                 <TagButton onClick={() => showPopconfirm('finalizar')} style={{ width: "98px", textAlign: "center" }} icon={<SyncOutlined spin />} color="processing">Em Curso</TagButton>
                 <Dropdown overlay={() => menu(['reabrir', 'suspender'], showPopconfirm)} trigger={['click']}>
@@ -599,7 +651,7 @@ const Action = ({ v, r, dataAPI }) => {
                 "MODO-EXP": values.modo_exp,
                 ...(values.carga && { "CARGA_ID": values.carga }),
                 "PRF_COD": r.prf,
-                "PO_COD":values.po
+                "PO_COD": values.po
             }
         };
         downloadReport({ dataAPI, url: `${API_URL}/exportfile/`, type, dataexport, limit, orientation, isDirty });
@@ -780,12 +832,11 @@ export default () => {
                     <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ /* top: "50%", left: "50%", position: "absolute" */ }} >
                         <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
                         <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
-                        <ToolbarTable form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
+                        <TitleForm form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
                         {elFilterTags && <Portal elId={elFilterTags}>
                             <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
                         </Portal>}
                         <Table
-                            title={<Title level={4}>Ordens de Fabrico</Title>}
                             columnChooser={false}
                             reload
                             stripRows

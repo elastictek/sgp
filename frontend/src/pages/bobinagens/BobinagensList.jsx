@@ -166,6 +166,9 @@ const TitleForm = ({ data, onChange, form }) => {
     } />);
 }
 
+const IFrame = ({src})=> {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+}
 
 
 export default (props) => {
@@ -175,8 +178,15 @@ export default (props) => {
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const primaryKeys = ['id'];
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal footer="ref" onCancel={hideModal} width={5000} height={5000}>
+            <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
+        </ResponsiveModal>
+    ), [modalParameters]);
+
     const columns = [
-        { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" /* onClick={()=>onBobinagemClick(p.row)} */>{p.row.nome}</Button> },
+        { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },
         { key: 'inico', name: 'Início', width: 90 },
         { key: 'fim', name: 'Fim', width: 90 },
         { key: 'duracao', name: 'Duração', width: 90 },
@@ -218,6 +228,18 @@ export default (props) => {
 
         ] : []
     ];
+
+    
+
+    const onBobinagemClick = (row) => {
+        if (row?.valid === 1) {
+            setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
+            showModal();
+            //window.location.href = `/producao/bobinagem/${row.id}/`;
+        } else {
+            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        }
+    }
 
     const loadData = ({ signal }) => {
         const { typelist, ...initFilters } = loadInit({ typelist: "A", type: "-1", valid: "-1" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
