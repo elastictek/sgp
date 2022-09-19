@@ -203,10 +203,11 @@ urlpatterns = [
 
     #LAYOUTS
     re_path(r'^savelayout/$', views.SaveLayout),
-    re_path(r'^loadlayout/$', views.LoadLayout)
+    re_path(r'^loadlayout/$', views.LoadLayout),
     
     #LAYOUTS
     
+    re_path(r'^printetiqueta/$',views.PrintEtiqueta)
     
     
     

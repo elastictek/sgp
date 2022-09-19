@@ -168,7 +168,7 @@ export const bColors = (estado) => {
     }
 }
 
-export const Bobines = ({ b, bm, setShow }) => {
+export const Bobines = ({ b, bm, setShow, onClick }) => {
     const handleClick = () => {
         //setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
@@ -176,7 +176,7 @@ export const Bobines = ({ b, bm, setShow }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row", lineHeight:"12px" }}>
             {b.map((v, i) => {
-                return (<StyledBobine onClick={handleClick} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${v.id}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
+                return (<StyledBobine onClick={()=>onClick(v)} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${v.id}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>
     );

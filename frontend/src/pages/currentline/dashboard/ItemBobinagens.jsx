@@ -55,6 +55,10 @@ const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
     );
 }
 
+const IFrame = ({src})=> {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+}
+
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
@@ -77,18 +81,19 @@ export default ({ record, card, parentReload }) => {
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
-            {/* <FormCortes forInput={modalParameters.forInput} record={modalParameters} parentReload={parentReload} /> */}
-        </ResponsiveModal>
+            <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
     ), [modalParameters]);
 
     const onBobinagemClick = (row) => {
-        if (row?.valid === 1) {
-            window.location.href = `/producao/bobinagem/${row.id}/`;
+        if (row?.valid === 1 && !row?.agg_of_id) {
+            setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
+            showModal();
+            //window.location.href = `/producao/bobinagem/${row.id}/`;
         } else {
             navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
         }
     }
+
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 

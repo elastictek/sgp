@@ -15,9 +15,9 @@ import loadInit from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Typography, Modal, Checkbox, Tag, Badge, Alert, DatePicker, TimePicker, Divider, Drawer } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Typography, Modal, Checkbox, Tag, Badge, Alert, DatePicker, TimePicker, Divider, Drawer, Select } from "antd";
 const { TextArea } = Input;
-import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined } from '@ant-design/icons';
+import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined, PrinterOutlined } from '@ant-design/icons';
 import { CgCloseO } from 'react-icons/cg';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
@@ -59,14 +59,13 @@ const TitleForm = ({ bobinagem, data, onChange }) => {
     </>} />);
 }
 
-const CheckColumn = ({ id, name, onChange, defaultChecked = false, forInput }) => {
+const CheckColumn = ({ id, name, onChange, defaultChecked = false, forInput, valid }) => {
     const ref = useRef();
-
     const onCheckChange = (e) => {
         ref.current.checked = !ref.current.checked;
         onChange(id, e);
     }
-    return (<Space>{name}{forInput && <Checkbox ref={ref} onChange={onCheckChange} defaultChecked={defaultChecked} />}</Space>);
+    return (<Space>{name}{(forInput && valid === 1) && <Checkbox ref={ref} onChange={onCheckChange} defaultChecked={defaultChecked} />}</Space>);
 };
 
 const focus = (el, h,) => { el?.focus(); };
@@ -204,7 +203,7 @@ const ItemsField = ({ row, column }) => {
     )
 }
 
-const ModalRangeEditor = ({ p, column, title, forInput, ...props }) => {
+const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
     const classes = useStyles();
     const [visible, setVisible] = useState(true);
     const [value, setvalue] = useState();
@@ -218,7 +217,7 @@ const ModalRangeEditor = ({ p, column, title, forInput, ...props }) => {
     }, []);
 
     const onFinish = (e) => {
-        if (!forInput) {
+        if (!forInput || valid !== 1) {
             p.onClose();
             setVisible(false);
             return;
@@ -614,10 +613,10 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
                                                 <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwinf" label={{ enabled: false }}>
-                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v=>v.qty_reminder>=(dataAPI.getData()["nwinf"]*v.largura)/1000 && v.type==0)} />
+                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v => v.qty_reminder >= (dataAPI.getData()["nwinf"] * v.largura) / 1000 && v.type == 0)} />
                                                 </Field></Col>
                                                 <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwsup" label={{ enabled: false }}>
-                                                <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v=>v.qty_reminder>=(dataAPI.getData()["nwsup"]*v.largura)/1000 && v.type==1)} />
+                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v => v.qty_reminder >= (dataAPI.getData()["nwsup"] * v.largura) / 1000 && v.type == 1)} />
                                                 </Field></Col>
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Lote</b></Col>
                                             </Row>
@@ -643,6 +642,52 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
     );
 }
 
+const FormPrint = ({ v, parentRef, closeParent }) => {
+    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: 1 })
+    const onClick = async () => {
+        const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
+        if (response.data.status !== "error") {
+            closeParent();
+        }else{
+            Modal.error({title:response.data.title})
+        }
+        
+    }
+
+    const onChange = (t, v) => {
+        setValues(prev => ({ ...prev, [t]: v }));
+    }
+
+    return (<>
+        <Container>
+            <Row>
+                <Col><b>Cópias:</b></Col>
+            </Row>
+            <Row>
+                <Col><InputNumber onChange={(v) => onChange("num_copias", v)} min={1} max={3} defaultValue={values.num_copias} /></Col>
+            </Row>
+            <Row>
+                <Col><b>Impressora:</b></Col>
+            </Row>
+            <Row>
+                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'Bobinadora_CAB_A4_200', label: 'BOBINADORA' }, { value: 'DM12_CAB_A4_200', label: 'DM12' }]} /></Col>
+            </Row>
+            <Row style={{ marginTop: "15px" }}>
+                <Col style={{ textAlign: "right" }}>
+                    <Space>
+                        <Button onClick={closeParent}>Cancelar</Button>
+                        <Button type="primary" onClick={onClick}>Imprimir</Button>
+                    </Space>
+                </Col>
+            </Row>
+        </Container>
+    </>);
+}
+
+const IFrame = ({src})=> {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+}
+
 export default (props) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
@@ -659,19 +704,27 @@ export default (props) => {
     const primaryKeys = ['id'];
     const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
     const [nwList, setNWList] = useState([]);
+    const [modalParameters, setModalParameters] = useState({});
+    const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
+    ), [modalParameters]);
+
 
     const columns = [
-        { key: 'nome', sortable: false, name: 'Bobine', width: 115, frozen: true },
-        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, ...modeEdit.datagrid && { editor: p => <FieldEstadoEditor p={p} /> }, editorOptions: { editOnClick: true } },
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, ...modeEdit.datagrid && { editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} /> }, editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
-        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} />, editor(p) { return <ModalRangeEditor p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} />, editor(p) { return <ModalRangeEditor p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} />, editor(p) { return <ModalRangeEditor p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} />, editor(p) { return <ModalRangeEditor p={p} column="furos_pos" title="Furos" forInput={modeEdit.datagrid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, ...(modeEdit.datagrid && dataAPI.getData().valid == 1) && { editor: p => <FieldEstadoEditor p={p} /> }, editorOptions: { editOnClick: true } },
+        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, ...(modeEdit.datagrid && dataAPI.getData().valid == 1) && { editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} /> }, editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
+        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, ...(dataAPI.getData().valid == 1) && { editor(p) { return <ModalRangeEditor p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} /> } }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, ...(dataAPI.getData().valid == 1) && { editor(p) { return <ModalRangeEditor p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} /> } }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, ...(dataAPI.getData().valid == 1) && { editor(p) { return <ModalRangeEditor p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} /> } }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, ...(dataAPI.getData().valid == 1) && { editor(p) { return <ModalRangeEditor p={p} column="furos_pos" title="Furos" forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} /> } }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
-        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} />, ...modeEdit.datagrid && { editor: p => <FieldDefeitosEditor p={p} /> }, editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
-        { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} />, width: 450, ...modeEdit.datagrid && { editor(p) { return <ModalObsEditor p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> } }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
-        { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} />, width: 450, ...modeEdit.datagrid && { editor(p) { return <ModalObsEditor p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> } }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
+        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, ...(modeEdit.datagrid && dataAPI.getData().valid == 1) && { editor: p => <FieldDefeitosEditor p={p} /> }, editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
+        { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, width: 450, ...(modeEdit.datagrid && dataAPI.getData().valid == 1) && { editor(p) { return <ModalObsEditor p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> } }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
+        { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} valid={dataAPI.getData().valid} />, width: 450, ...(modeEdit.datagrid && dataAPI.getData().valid == 1) && { editor(p) { return <ModalObsEditor p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> } }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
     ];
 
     const loadData = async ({ signal } = {}) => {
@@ -709,10 +762,10 @@ export default (props) => {
 
                 setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, valid: dt["valid"] });
                 let vvv = await loadNWLookup(signal);
-                for (let i of vvv){
+                for (let i of vvv) {
                     console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
                     console.log(i.qty_reminder)
-                    console.log(2350*i.largura/1000)
+                    console.log(2350 * i.largura / 1000)
                 }
 
 
@@ -731,6 +784,12 @@ export default (props) => {
         return (() => controller.abort());
 
     }, []);
+
+    const onBobineClick=(row)=>{
+            setModalParameters({ src:`/producao/bobine/details/${row.id}/`,title:`Bobine ${row.nome}`  });
+            showModal();
+    }
+
 
     const onFilterFinish = (type, values) => { };
     const onFilterChange = (changedValues, values) => { };
@@ -780,6 +839,11 @@ export default (props) => {
         dataAPI.setRows(rows);
     }
 
+    const onPrint = () => {
+        setModalParameters({ bobinagem, title: `Imprimir Bobinagem ${bobinagem.nome} ` });
+        showPrintModal();
+    }
+
     return (
         <>
             <TitleForm data={dataAPI.getAllFilter()} bobinagem={bobinagem} onChange={onFilterChange} />
@@ -799,6 +863,10 @@ export default (props) => {
                 clearSort={false}
                 rowHeight={28}
                 onRowsChange={onRowsChange}
+                toolbarFilters
+                leftToolbar={<>
+                    <Button disabled={!dataAPI.getData().valid} type='primary' icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
+                </>}
             />
         </>
     );

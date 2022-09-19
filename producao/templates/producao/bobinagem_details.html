@@ -7,8 +7,6 @@
 <div class="container">
     {% if bobinagem.perfil.retrabalho == True %}
     <a href="{% url 'producao:bobinagem_retrabalho_list_v2' %}" class="btn btn-outline-primary" role="button">Voltar</a>
-    {% else %}
-    <a href="{% url 'producao:bobinagem_list_v3' %}" class="btn btn-outline-primary" role="button">Voltar</a>
     {% endif %}
     {% if request.user|has_group:"Produção Supervisor" and bobinagem.perfil.retrabalho == False %}
     <a href="{% url 'producao:bobinagem_edit' pk=bobinagem.pk %}" class="btn btn-outline-primary" role="button">Editar</a>

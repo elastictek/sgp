@@ -180,9 +180,7 @@ export default (props) => {
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal footer="ref" onCancel={hideModal} width={5000} height={5000}>
             <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
-        </ResponsiveModal>
     ), [modalParameters]);
 
     const columns = [
@@ -198,7 +196,7 @@ export default (props) => {
         { key: 'diam', name: 'Diâmetro', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
         { key: 'nwinf', name: 'Nw Inf.', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
         { key: 'nwsup', name: 'Nw Sup.', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> },
-        ...formFilter.getFieldValue('typelist') === "A" ? [{ key: 'bobines', minWidth: 750, width: 750, name: <ColumnBobines n={28} />, sortable: false, formatter: p => <Bobines b={JSON.parse(p.row.bobines)} bm={p.row}/*  setShow={setShowValidar} */ /> }] : [],
+        ...formFilter.getFieldValue('typelist') === "A" ? [{ key: 'bobines', minWidth: 750, width: 750, name: <ColumnBobines n={28} />, sortable: false, formatter: p => <Bobines onClick={onBobineClick} b={JSON.parse(p.row.bobines)} bm={p.row}/*  setShow={setShowValidar} */ /> }] : [],
         ...formFilter.getFieldValue('typelist') === "B" ? [
             { key: 'A1', name: 'A1 kg', width: 55, sortable: false },
             { key: 'A2', name: 'A2 kg', width: 55, sortable: false },
@@ -229,7 +227,10 @@ export default (props) => {
         ] : []
     ];
 
-    
+    const onBobineClick = (v) => {
+        setModalParameters({ src:`/producao/bobine/details/${v.id}/`,title:`Detalhes da Bobine` });
+        showModal();
+    }
 
     const onBobinagemClick = (row) => {
         if (row?.valid === 1) {
