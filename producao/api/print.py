@@ -16,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
-import cups
+#import cups
 import os, tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
@@ -77,17 +77,17 @@ def PrintMPBuffer(request,format=None):
     try:
         print(tmp.name)
         tmp.write(fstream.content)
-        conn = cups.Connection()
-        conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
+        #conn = cups.Connection()
+        #conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
         print("###########################")
     except Exception as error:
           print("error----> print")
           print(error)
           return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
     finally:
-        #pass
-        tmp.close()
-        os.unlink(tmp.name)
+        pass
+        #tmp.close()
+        #os.unlink(tmp.name)
     
     #p = request.data["parameters"]
     #req = {**p}
