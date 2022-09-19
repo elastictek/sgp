@@ -81,10 +81,8 @@ export default ({ responsive = true, width = 800, height = 300, children, footer
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
-                    <YScroll>
                         {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}</Suspense>}
                         {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}
-                    </YScroll>
                 </Modal>
             }
         </>

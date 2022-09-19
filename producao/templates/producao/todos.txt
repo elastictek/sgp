@@ -7,4 +7,5 @@
 --modals com app anterior
 --Melhorar listagem de items (nomeadamente matérias primas de nonwovens e granulado, mostrar se é entrada/saída etc...)
 --Ao validar bobinagens ver integração com reciclado........ NW
--- Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
+--Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
+--Nos cortes agregar as larguras iguais
