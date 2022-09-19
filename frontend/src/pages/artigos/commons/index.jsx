@@ -21,8 +21,8 @@ export const Quantity = ({ v, u }) => {
     return (<div style={{ textAlign: "right" }}>{v} {getUnit()}</div>);
 }
 
-export const ColumnPrint = ({ record, dataAPI }) => {
-    const onClick = async () => {
+export const ColumnPrint = ({ record, dataAPI, onClick }) => {
+    const onPrintClick = async () => {
         const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...record } });
         if (response.data.status !== "error") {
             Modal.confirm({ title: 'Etiqueta Impressa', content: <div><b>{record.ITMDES1_0}</b>  {record.LOT_0}</div> });
@@ -30,5 +30,5 @@ export const ColumnPrint = ({ record, dataAPI }) => {
             Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
         }
     }
-    return (<>{record.LOC_0==="BUFFER" && <Button onClick={onClick} icon={<PrinterOutlined />}></Button>}</>);
+    return (<>{record.LOC_0==="BUFFER" && <Button onClick={onClick ? onClick : onPrintClick} icon={<PrinterOutlined />}></Button>}</>);
 }

@@ -85,14 +85,65 @@ const SelectedTitle = ({ v, cardTitle }) => {
 }
 
 
+const FormPrint = ({ v, parentRef, closeParent }) => {
+    const [values, setValues] = useState({ impressora: "PRINTER-BUFFER" })
+    const onClick = async () => {
+        
+        const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...v.row, ...values } });
+        if (response.data.status !== "error") {
+            Modal.confirm({ title: 'Etiqueta Impressa', content: <div><b>{v.row.ITMDES1_0}</b>  {v.row.LOT_0}</div> });
+            closeParent();
+        } else {
+            Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
+        }
+        
+        
+        
+        // const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
+        // if (response.data.status !== "error") {
+        //     closeParent();
+        // }else{
+        //     Modal.error({title:response.data.title})
+        // }
+        
+    }
+
+    const onChange = (t, v) => {
+        setValues(prev => ({ ...prev, [t]: v }));
+    }
+
+    return (<>
+        <Container>
+            <Row>
+                <Col><b>Impressora:</b></Col>
+            </Row>
+            <Row>
+                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]} /></Col>
+            </Row>
+            <Row style={{ marginTop: "15px" }}>
+                <Col style={{ textAlign: "right" }}>
+                    <Space>
+                        <Button onClick={closeParent}>Cancelar</Button>
+                        <Button type="primary" onClick={onClick}>Imprimir</Button>
+                    </Space>
+                </Col>
+            </Row>
+        </Container>
+    </>);
+}
+
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ id: "dashb-mpbuffer", payload: { url: `${API_URL}/stocklistbuffer/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 'CREDATTIM_0', direction: 'DESC' }] } });
     const primaryKeys = ['ROWID'];
+    const [modalParameters, setModalParameters] = useState({});
+    const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
     const columns = [
-        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} /> },
+        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/> },
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
@@ -100,8 +151,6 @@ export default ({ record, card, parentReload }) => {
         { key: 'LOC_0', name: 'Localização', width: 110 },
         { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
-
-
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
         onOpen: () => console.log(`Connected to Web Socket`),
         queryParams: { /* 'token': '123456' */ },
@@ -110,6 +159,11 @@ export default ({ record, card, parentReload }) => {
         reconnectInterval: 5000,
         reconnectAttempts: 500
     });
+
+    const onPrint = (row)=>{
+        setModalParameters({title:"Imprimir Etiqueta",row});
+        showPrintModal();
+    }
 
     const loadData = async ({ signal } = {}) => {
         //const request = (async () => sendJsonMessage({ cmd: 'checklineevents', value: {} }));

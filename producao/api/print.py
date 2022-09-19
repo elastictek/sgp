@@ -78,7 +78,7 @@ def PrintMPBuffer(request,format=None):
         print(tmp.name)
         tmp.write(fstream.content)
         #conn = cups.Connection()
-        #conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
+        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
         print("###########################")
     except Exception as error:
           print("error----> print")
