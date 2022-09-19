@@ -59,10 +59,6 @@ def Reciclado(request, format=None):
     f.where()
     f.value("and")
     parameters = {**f.parameters}
-    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    print(request.data['filter'])
-    print(parameters)
-    print(f.text)
 
     dql = db.dql(request.data, False)
     dql.columns = encloseColumn(cols,False)
@@ -111,5 +107,4 @@ def Reciclado(request, format=None):
                     ORDER BY R.dt
             """
         ), cursor, parameters)
-        print(response)
         return Response(response)

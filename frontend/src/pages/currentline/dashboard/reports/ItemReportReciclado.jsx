@@ -198,6 +198,7 @@ export default ({ record, card, parentReload }) => {
             const columns = [];
             let categories = [];
             const rows = dataAPI.getData().rows;
+            console.log("####################yeah----",rows);
             //const { data: { rows } } = await fetchPost({ url: `${API_URL}/report/reciclado/`, filter: { ...(date && { date: moment(date).format(DATE_FORMAT) }) }, sort: [], signal });
 
             const weeks = rows.filter((e, i) => rows.findIndex(a => a.nweek === e.nweek) === i);
