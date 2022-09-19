@@ -1,11 +1,11 @@
---verificar se imprime as etiquetas do buffer
---alteração de nonwoven
---importar tabelas de detalhes das ofs...
---testar com a Ana criação de ofs
---se possível widget de estado currente...
 --permissões de ediçoes
---modals com app anterior
---Melhorar listagem de items (nomeadamente matérias primas de nonwovens e granulado, mostrar se é entrada/saída etc...)
 --Ao validar bobinagens ver integração com reciclado........ NW
+--verificar se imprime as etiquetas do buffer
+--Melhorar listagem de items (nomeadamente matérias primas de nonwovens e granulado, mostrar se é entrada/saída etc...)
+--Criar Etiqueta Retrabalho ao criar Bobinagem
+
+--alteração de nonwoven
+--se possível widget de estado currente...
+--modals com app anterior
 --Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
 --Nos cortes agregar as larguras iguais

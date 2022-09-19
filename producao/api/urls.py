@@ -4,6 +4,7 @@ from django.contrib import admin
 from producao.api import views 
 from producao.api import reports
 from producao.api import materias_primas
+from producao.api import print
 app_name="producao" 
 
 urlpatterns = [
@@ -175,7 +176,7 @@ urlpatterns = [
     re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
     re_path(r'^mpginout/$', views.MPGranuladoIO),
     re_path(r'^pickmp/$', views.PickMP),
-    re_path(r'^printmpbuffer/$', views.PrintMPBuffer),
+    re_path(r'^printmpbuffer/$', print.PrintMPBuffer),
     
     
     #MATERIAS-PRIMAS

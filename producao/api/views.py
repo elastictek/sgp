@@ -16,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
-# import cups
+#import cups
 import os, tempfile
 
 from pyodbc import Cursor, Error, connect, lowercase
@@ -316,48 +316,6 @@ def ExportFile(request, format=None):
             resp['Content-Disposition'] = "inline; filename=list.docx"
         return resp
 
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def PrintMPBuffer(request,format=None):
-    #Canon_iR-ADV_C3720_UFR_II
-    print(request.data)
-    tmp = tempfile.NamedTemporaryFile()
-    print(tmp)
-    print(tmp.name)
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
-        "config":"default",
-        "conn-name":"MYSQL-SGP",
-        "name":"ETIQUETAS-BUFFER",
-        "path":"ETIQUETAS/MP-BUFFER",
-        "export":"pdf",
-        "data":{      
-            "artigo_cod":request.data["parameters"]["ITMREF_0"],
-            "n_lote":request.data["parameters"]["LOT_0"],
-            "artigo_des":request.data["parameters"]["ITMDES1_0"],
-            "unit":request.data["parameters"]["PCU_0"],
-            "qty":float(request.data["parameters"]["QTYPCU_0"])
-        }
-    })
-    print(fstream)
-    try:
-        print(tmp.name)
-        tmp.write(fstream.content)
-        # conn = cups.Connection()
-        # conn.printFile("PRINTER-BUFFER",tmp.name,"",{}) 
-        print("###########################")
-    finally:
-        pass
-        #tmp.close()
-        #os.unlink(tmp.name)
-    
-    #p = request.data["parameters"]
-    #req = {**p}
-    #conn = cups.Connection()
-    #conn.printFile(printer_name,'/home/pi/Desktop/a.pdf',"",{}) 
-    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
