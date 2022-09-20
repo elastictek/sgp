@@ -5447,9 +5447,9 @@ def ValidarBobinagem(request, format=None):
                     nw_consumed_s = float(nws["qty_consumed"]) + (float(data["values"]["nwsup"])*(nws["largura"]/1000))
                     nw_reminder_s = float(nws["qty_reminder"]) - (float(data["values"]["nwsup"])*(nws["largura"]/1000))
 
-                    if nw_reminder_i<-100:
+                    if nw_reminder_i<-300:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    if nw_reminder_s<-100:
+                    if nw_reminder_s<-300:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
                     reciclado_id = checkReciclado(data,cursor)
@@ -5893,11 +5893,10 @@ def DeleteRecicladoItem(request, format=None):
 @permission_classes([IsAuthenticated])
 def SaveRecicladoItems(request, format=None):
     data = request.data.get("parameters")
-
     def saveItems(data,cursor):
         eb = [p["lote"] for p in data["rows"] if p["source"] == "elasticband"]
         nw = [p["lote"] for p in data["rows"] if p["source"] == "nw"]
-        leb = db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
+        leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
         if len(leb["rows"])==0:
             for idx, item in enumerate(data["rows"]):
                 dml = db.dml(TypeDml.INSERT, {"reciclado_id":data["id"],"qtd":item["qtd"],"source":item["source"],"timestamp":item["timestamp"],"lote":item["lote"],"unit":item["unit"],"user_id":request.user.id}, "producao_recicladolotes",None,None,False)
@@ -5912,6 +5911,7 @@ def SaveRecicladoItems(request, format=None):
                         unit=VALUES(unit),
                         reciclado_id=VALUES(reciclado_id)
                 """
+                print(dml.statement)
                 db.execute(dml.statement, cursor, dml.parameters)
     try:
         if not data.get("id"):            

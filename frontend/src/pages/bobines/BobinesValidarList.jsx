@@ -509,12 +509,12 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             }else{
                 let vs = lns.qty_reminder - convertToM2(values.nwsup,lns.largura);
                 let vi = lni.qty_reminder - convertToM2(values.nwinf,lni.largura);
-                
-                if (vs<0){
-                    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
-                }else if (vi<0){
-                    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
-                }
+                console.log("44444444444444444444444444 ",vs)
+                //if (vs<(-100)){
+                //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
+                //}else if (vi<-100){
+                //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
+                //}
             }
             if (status.formStatus.error.length === 0) {
                 try {
