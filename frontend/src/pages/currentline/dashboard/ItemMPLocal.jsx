@@ -24,7 +24,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
 import useWebSocket from 'react-use-websocket';
-import { Quantity, ColumnPrint } from '../../artigos/commons';
+import { Quantity, ColumnPrint, FormPrint } from '../../artigos/commons';
 
 const title = "Matérias Primas";
 const useStyles = createUseStyles({
@@ -57,7 +57,7 @@ const SelectData = ({ onView, onChangeContent, dataAPI }) => {
                 <Option value="BUFFER">Buffer</Option>
                 <Option value="DM12">DM12</Option>
                 <Option value="EPIS">EPIS</Option>
-                <Option value="INT">int</Option>
+                <Option value="INT">Int</Option>
             </Select>
             <Select defaultValue={noValue(dataAPI.getFilter(true)?.type, "-1")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="-1">Todas M.P.</Option>
@@ -85,52 +85,7 @@ const SelectedTitle = ({ v, cardTitle }) => {
 }
 
 
-const FormPrint = ({ v, parentRef, closeParent }) => {
-    const [values, setValues] = useState({ impressora: "PRINTER-BUFFER" })
-    const onClick = async () => {
-        
-        const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...v.row, ...values } });
-        if (response.data.status !== "error") {
-            Modal.confirm({ title: 'Etiqueta Impressa', content: <div><b>{v.row.ITMDES1_0}</b>  {v.row.LOT_0}</div> });
-            closeParent();
-        } else {
-            Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
-        }
-        
-        
-        
-        // const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
-        // if (response.data.status !== "error") {
-        //     closeParent();
-        // }else{
-        //     Modal.error({title:response.data.title})
-        // }
-        
-    }
 
-    const onChange = (t, v) => {
-        setValues(prev => ({ ...prev, [t]: v }));
-    }
-
-    return (<>
-        <Container>
-            <Row>
-                <Col><b>Impressora:</b></Col>
-            </Row>
-            <Row>
-                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]} /></Col>
-            </Row>
-            <Row style={{ marginTop: "15px" }}>
-                <Col style={{ textAlign: "right" }}>
-                    <Space>
-                        <Button onClick={closeParent}>Cancelar</Button>
-                        <Button type="primary" onClick={onClick}>Imprimir</Button>
-                    </Space>
-                </Col>
-            </Row>
-        </Container>
-    </>);
-}
 
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();

@@ -4,6 +4,7 @@ import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Modal } f
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, PrinterOutlined } from '@ant-design/icons';
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 
 
 
@@ -31,4 +32,51 @@ export const ColumnPrint = ({ record, dataAPI, onClick }) => {
         }
     }
     return (<>{record.LOC_0==="BUFFER" && <Button onClick={onClick ? onClick : onPrintClick} icon={<PrinterOutlined />}></Button>}</>);
+}
+
+export const FormPrint = ({ v, parentRef, closeParent }) => {
+    const [values, setValues] = useState({ impressora: "PRINTER-BUFFER" })
+    const onClick = async () => {
+        
+        const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...v.row, ...values } });
+        if (response.data.status !== "error") {
+            Modal.confirm({ title: 'Etiqueta Impressa', content: <div><b>{v.row.ITMDES1_0}</b>  {v.row.LOT_0}</div> });
+            closeParent();
+        } else {
+            Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
+        }
+        
+        
+        
+        // const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
+        // if (response.data.status !== "error") {
+        //     closeParent();
+        // }else{
+        //     Modal.error({title:response.data.title})
+        // }
+        
+    }
+
+    const onChange = (t, v) => {
+        setValues(prev => ({ ...prev, [t]: v }));
+    }
+
+    return (<>
+        <Container>
+            <Row>
+                <Col><b>Impressora:</b></Col>
+            </Row>
+            <Row>
+                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]} /></Col>
+            </Row>
+            <Row style={{ marginTop: "15px" }}>
+                <Col style={{ textAlign: "right" }}>
+                    <Space>
+                        <Button onClick={closeParent}>Cancelar</Button>
+                        <Button type="primary" onClick={onClick}>Imprimir</Button>
+                    </Space>
+                </Col>
+            </Row>
+        </Container>
+    </>);
 }

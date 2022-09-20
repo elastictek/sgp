@@ -22,7 +22,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField } from 'components/FormFields';
 /* import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons"; */
 import ToolbarTitle from 'components/ToolbarTitle';
-import { Quantity,ColumnPrint } from './commons';
+import { Quantity, ColumnPrint, FormPrint } from './commons';
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -30,14 +30,14 @@ const schema = (options = {}) => {
 
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
-        <Col xs='content'><Field name="fbobinagem" label={{ enabled: true, text: "Nº Bobinagem", pos: "top", padding: "0px" }}>
+        <Col xs='content'><Field name="fartigo" label={{ enabled: true, text: "Artigo", pos: "top", padding: "0px" }}>
             <Input size='small' allowClear />
         </Field></Col>
-        <Col xs='content'><Field name="fdata" label={{ enabled: true, text: "Data Bobinagem", pos: "top", padding: "0px" }}>
-            <RangeDateField size='small' allowClear />
+        <Col xs='content'><Field name="flote" label={{ enabled: true, text: "Lote", pos: "top", padding: "0px" }}>
+            <Input size='small' allowClear />
         </Field></Col>
-        <Col xs='content'><Field name="ftime" label={{ enabled: true, text: "Início/Fim", pos: "top", padding: "0px" }}>
-            <RangeTimeField size='small' format={TIME_FORMAT} allowClear />
+        <Col xs='content'><Field name="fdate" label={{ enabled: true, text: "Data", pos: "top", padding: "0px" }}>
+            <RangeDateField size='small' allowClear />
         </Field></Col>
     </>
     );
@@ -79,34 +79,36 @@ const TitleForm = ({ data, onChange, form }) => {
     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
     return (<ToolbarTitle title={<>
         <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>Matérias Primas em Buffer</span></Col>
-        <Col xs='content' style={{ paddingTop: "3px" }}>{st &&<Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
+        <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
     </>} right={
         <Col xs="content">
             <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
                 <Col style={{ alignItems: "center" }}>
                     <Row gutterWidth={2} justify='end'>
                         <Col xs="content">
-                            <Field name="typelist" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "A", label: "Estado Bobines" },
-                                    { value: "B", label: "Consumo Bobinagem" },
-                                    { value: "C", label: "Ordens de Fabrico" }]} />
-                            </Field>
-                        </Col>
-                        <Col xs="content">
                             <Field name="type" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
-                                    { value: "-1", label: "Todas as Bobinagens" }]} />
+                                <SelectField style={{ width: "200px" }} size="small" keyField="value" textField="label" data={
+                                    [{ value: "-1", label: "Todas M.P." },
+                                    { value: "1", label: "Nonwovens" },
+                                    { value: "2", label: "Cores" },
+                                    { value: "3", label: "Granulado" },
+                                    { value: "4", label: "Reciclado" }
+                                    ]} />
                             </Field>
                         </Col>
                         <Col xs="content">
-                            <Field name="valid" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "0", label: "Por validar" },
-                                    { value: "1", label: "Validadas" },
-                                    { value: "-1", label: " " }
-                                    ]} /></Field>
+                            <Field name="loc" label={{ enabled: false }}>
+                                <SelectField style={{ width: "200px" }} size="small" keyField="value" textField="label" data={
+                                    [{ value: "-1", label: "Todas as Localizações" },
+                                    { value: "ARM", label: "Armazém" },
+                                    { value: "ARM2", label: "Armazém 2" },
+                                    { value: "BUFFER", label: "Buffer" },
+                                    { value: "DM12", label: "DM12" },
+                                    { value: "EPIS", label: "EPIS" },
+                                    { value: "INT", label: "Int" }
+
+                                    ]} />
+                            </Field>
                         </Col>
                     </Row>
                 </Col>
@@ -124,8 +126,12 @@ export default (props) => {
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ id: "mpbufflerlist", payload: { url: `${API_URL}/stocklistbuffer/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'CREDATTIM_0', direction: 'DESC' }] } });
     const primaryKeys = ['ROWID'];
+    const [modalParameters, setModalParameters] = useState({});
+    const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
     const columns = [
-        { key: 'print', frozen:true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} /> },
+        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/>  },
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
@@ -134,11 +140,17 @@ export default (props) => {
         { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
 
+
+    const onPrint = (row)=>{
+        setModalParameters({title:"Imprimir Etiqueta",row});
+        showPrintModal();
+    }
+
     const loadData = ({ signal }) => {
-        /* const { typelist, ...initFilters } = loadInit({ typelist: "A", type: "-1", valid: "-1" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
-        formFilter.setFieldsValue({ typelist, ...initFilters });
+        const { ...initFilters } = loadInit({ type: "-1", loc: "BUFFER" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
+        formFilter.setFieldsValue({ ...initFilters });
         dataAPI.addFilters(initFilters, true, true);
-        dataAPI.addParameters({ typelist }, true, true); */
+        //dataAPI.addParameters({ typelist }, true, true);
         dataAPI.fetchPost({ signal });
     }
 
@@ -152,26 +164,30 @@ export default (props) => {
     const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
-                // //remove empty values
-                // const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
-                // const _values = {
-                //     ...vals,
-                //     fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
-                //     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
-                //     ftime: getFilterRangeValues(vals["ftime"]?.formatted),
-                //     fduracao: getFilterValue(vals?.fduracao, '=='),
-                //     fofabrico: getFilterValue(vals?.fofabrico, 'any'),
-                //     fcliente: getFilterValue(vals?.fcliente, 'any'),
-                //     fdestino: getFilterValue(vals?.fdestino, 'any'),
-                // };
-                // dataAPI.addFilters(_values);
-                // dataAPI.addParameters({ typelist })
-                // dataAPI.first();
-                // dataAPI.fetchPost();
+                //remove empty values
+                const { ...vals } = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
+                const _values = {
+                    ...vals,
+                    fartigo: getFilterValue(vals?.fartigo, 'any'),
+                    flote: getFilterValue(vals?.flote, 'any'),
+                    fdate: getFilterRangeValues(vals["fdate"]?.formatted)
+                };
+                dataAPI.addFilters(_values);
+                dataAPI.first();
+                dataAPI.fetchPost();
                 break;
         }
     };
     const onFilterChange = (changedValues, values) => {
+        if ("type" in changedValues) {
+            dataAPI.addFilters({type:changedValues.type}, false, true);
+            dataAPI.fetchPost();
+        } else if ("loc" in changedValues) {
+            dataAPI.addFilters({loc:changedValues.loc}, false, true);
+            dataAPI.fetchPost();
+        }
+        
+
         /* if ("typelist" in changedValues) {
             navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), typelist: changedValues.typelist, tstamp: Date.now() }, replace: true });
         } else if ("type" in changedValues) {
