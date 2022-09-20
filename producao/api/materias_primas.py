@@ -408,7 +408,7 @@ def SaveNWItems(request, format=None):
 
     def saveItems(data,cursor):
         nws = json.loads(acs["nonwovens"])
-        for idx, item in enumerate(data["rows"]):
+        for idx, item in enumerate([d for d in data["rows"] if "notValid" in d and d['notValid']==1]):
             #if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
             #    raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
             #if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
