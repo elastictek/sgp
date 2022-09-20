@@ -73,7 +73,7 @@ const ChangeStatus = ({ parameters, parentRef, closeParent }) => {
         try {
             const { fbobinagem, date } = form.getFieldsValue(true);
             const dt = moment.isMoment(date) ? date.format(DATETIME_FORMAT) : moment(date).format(DATETIME_FORMAT);
-            const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: parameters.id, status: parameters.status, agg_of_id: parameters.agg_of_id, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: dt } });
+            const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: parameters.id, status: parameters.status, agg_of_id: parameters.agg_of_id, ig_id: fbobinagem?.key, last: (lastId === fbobinagem?.key ? true : false), date: dt } });
             if (response.data.status !== "error") {
                 Modal.success({ title: "Estado da ordem de fabrico alterado com sucesso!", onOk: () => { parameters.parentReload(); closeParent(); } });
             } else {
