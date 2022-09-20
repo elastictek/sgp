@@ -5447,9 +5447,9 @@ def ValidarBobinagem(request, format=None):
                     nw_consumed_s = float(nws["qty_consumed"]) + (float(data["values"]["nwsup"])*(nws["largura"]/1000))
                     nw_reminder_s = float(nws["qty_reminder"]) - (float(data["values"]["nwsup"])*(nws["largura"]/1000))
 
-                    if nw_reminder_i<0:
+                    if nw_reminder_i<-100:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    if nw_reminder_s<0:
+                    if nw_reminder_s<-100:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
                     reciclado_id = checkReciclado(data,cursor)
