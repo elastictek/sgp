@@ -77,7 +77,7 @@ const SelectedTitle = ({ v, cardTitle }) => {
     const title = () => {
         switch (v) {
             case "-1": return "";
-            default: return `em ${v}`;
+            default: return v!==undefined ? `em ${v}` : "" ;
         }
     }
 
