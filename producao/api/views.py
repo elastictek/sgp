@@ -5410,11 +5410,44 @@ def ValidarBobinagem(request, format=None):
             return response["rows"][0]["id"]
         return None
 
+    def checkNw(data, type,lote, cursor):
+        f = Filters({"status": 1,"type":type,"agg_of_id":data["bobinagem"]["agg_of_id"],"n_lote":lote})
+        f.where()
+        f.add(f'`status` = :status', True)
+        f.add(f'`type` = :type', True)
+        f.add(f'`n_lote` = :n_lote', True)
+        f.add(f'agg_of_id = :agg_of_id', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"select * from lotesnwlinha {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+
+
+
                 isValid = checkIfIsValid(data,cursor)
                 if isValid==0:
+                    nwi = checkNw(data,0,data["values"]["lotenwinf"],cursor)
+                    nws = checkNw(data,1,data["values"]["lotenwsup"],cursor)
+                    
+                    if nwi is None or nws is None:
+                        Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
+
+                    nw_consumed_i = float(nwi["qty_consumed"]) + (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
+                    nw_reminder_i = float(nwi["qty_reminder"]) - (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
+                    nw_consumed_s = float(nws["qty_consumed"]) + (float(data["values"]["nwsup"])*(nws["largura"]/1000))
+                    nw_reminder_s = float(nws["qty_reminder"]) - (float(data["values"]["nwsup"])*(nws["largura"]/1000))
+
+                    if nw_reminder_i<0:
+                        Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
+                    if nw_reminder_s<0:
+                        Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
+
                     reciclado_id = checkReciclado(data,cursor)
                     if (reciclado_id is None):
                         reciclado_id = _newLoteReciclado(request.user.id,{"peso": 0, "tara": '15 kg', "estado": 'ND', "produto_granulado_id":data["produto_id"]},cursor)
@@ -5441,14 +5474,10 @@ def ValidarBobinagem(request, format=None):
                     db.execute(dml.statement, cursor, dml.parameters)
                 
                     print("Atualizar nw")
-                    dml = db.dml(TypeDml.UPDATE,{},"lotesnwlinha lnw",{"n_lote":f'=={data["values"]["lotenwinf"]}'},None,False)
-                    rep =f"""    
-                        join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id and cs.status=3
-                        set qty_consumed=qty_consumed + ({data["values"]["nwinf"]}*(largura/1000))
-                        ,qty_reminder= qty_lote - (qty_consumed + ({data["values"]["nwinf"]}*(largura/1000)))        
-                    """
-                    statement = f"""{dml.statement.replace('SET',rep,1)} """
-                    db.execute(statement, cursor, dml.parameters)
+                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_i,"qty_reminder":nw_reminder_i},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_s,"qty_reminder":nw_reminder_s},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
 
                 columns = ['estado','con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'obs', 'l_real', 'nok', 
                 'car', 'fc', 'fc_diam_fim', 'fc_diam_ini', 'ff', 'ff_m_fim', 'ff_m_ini', 'fmp', 'lac', 'ncore', 'prop', 'prop_obs', 'sbrt'

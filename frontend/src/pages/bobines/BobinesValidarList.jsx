@@ -342,7 +342,6 @@ const validarSubmit = async (status, parameters, setFormStatus, submitting, load
         if (response.data.status !== "error") {
             loadData();
         } else {
-            console.log(status)
             status.formStatus.error.push({ message: response.data.title });
             setFormStatus({ ...status.formStatus });
         }
@@ -429,11 +428,14 @@ const CortesField = ({ value }) => {
 
 
 
-const loadNWLookup = async (signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, filter: {}, sort: [], signal });
+const loadNWLookup = async (signal, data) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, filter: { ...data }, sort: [], signal });
     return rows;
 }
 
+const convertToM2 = (v, largura) => {
+    return (v * largura) / 1000;
+}
 
 
 const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setModeEdit, allowEdit, nwList }) => {
@@ -492,6 +494,27 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                 rows[i]["ff"] = (r.ff_pos?.length > 0) ? 1 : 0;
                 rows[i]["furos"] = (r.furos_pos?.length > 0) ? 1 : 0;
                 rows[i]["buraco"] = (r.buracos_pos?.length > 0) ? 1 : 0;
+
+            }
+
+
+            console.log("list nw", nwList);
+            console.log(values.lotenwsup, "--", values.lotenwinf);
+            console.log(values.nwsup, "--", values.nwinf);
+            const lns = nwList.find(v => v.n_lote === values.lotenwsup && v.type === 1);
+            const lni = nwList.find(v => v.n_lote === values.lotenwinf && v.type === 0);
+
+            if (!lns || !lni) {
+                status.formStatus.error.push({ message: <span>Não foram encontrados lotes de Nonwoven em linha!</span> });
+            }else{
+                let vs = lns.qty_reminder - convertToM2(values.nwsup,lns.largura);
+                let vi = lni.qty_reminder - convertToM2(values.nwinf,lni.largura);
+                
+                if (vs<0){
+                    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
+                }else if (vi<0){
+                    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
+                }
             }
             if (status.formStatus.error.length === 0) {
                 try {
@@ -541,6 +564,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                 nwinf: dataAPI.getData()["nwinf"],
                 largura_bruta: dataAPI.getData()["largura_bruta"]
             });
+            console.log("nwlist", nwList)
         }
     }, [dataAPI.hasData()]);
 
@@ -549,6 +573,8 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             setModeEdit({ elevated: (modeEdit.form) ? false : allowEdit.elevated, form: (modeEdit.form) ? false : allowEdit.form, datagrid: (modeEdit.datagrid) ? false : allowEdit.datagrid });
         }
     }
+
+
 
     return (
         <>
@@ -613,10 +639,10 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                             </Row>
                                             <Row gutterWidth={3} style={{ padding: "2px 10px" }}>
                                                 <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwinf" label={{ enabled: false }}>
-                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v => v.qty_reminder >= (dataAPI.getData()["nwinf"] * v.largura) / 1000 && v.type == 0)} />
+                                                    <Input />
                                                 </Field></Col>
                                                 <Col><Field forInput={(modeEdit.form && dataAPI.getData().new_nw_lotes === 1) || modeEdit.elevated} name="lotenwsup" label={{ enabled: false }}>
-                                                    <SelectField style={{ width: "100%" }} keyField="n_lote" textField="n_lote" data={nwList.filter(v => v.qty_reminder >= (dataAPI.getData()["nwsup"] * v.largura) / 1000 && v.type == 1)} />
+                                                    <Input />
                                                 </Field></Col>
                                                 <Col width={80} style={{ alignSelf: "center", paddingLeft: "10px" }}><b>Lote</b></Col>
                                             </Row>
@@ -648,10 +674,10 @@ const FormPrint = ({ v, parentRef, closeParent }) => {
         const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
         if (response.data.status !== "error") {
             closeParent();
-        }else{
-            Modal.error({title:response.data.title})
+        } else {
+            Modal.error({ title: response.data.title })
         }
-        
+
     }
 
     const onChange = (t, v) => {
@@ -684,8 +710,8 @@ const FormPrint = ({ v, parentRef, closeParent }) => {
     </>);
 }
 
-const IFrame = ({src})=> {
-    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+const IFrame = ({ src }) => {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>` }} />;
 }
 
 export default (props) => {
@@ -709,7 +735,7 @@ export default (props) => {
         <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
     ), [modalParameters]);
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
+        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
     ), [modalParameters]);
 
 
@@ -749,6 +775,7 @@ export default (props) => {
                     dt.rows[i]["ff_pos"] = JSON.parse(dt.rows[i]["ff_pos"]);
                     dt.rows[i]["furos_pos"] = JSON.parse(dt.rows[i]["furos_pos"]);
                     dt.rows[i]["buracos_pos"] = JSON.parse(dt.rows[i]["buracos_pos"]);
+                    dt.rows[i]["estado"] = (dt.valid === 0 && dataAPI.getData()?.isba == 1) ? "BA" : dt.rows[i]["estado"];
                 }
                 const _allowEdit = {
                     elevated: (dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
@@ -760,17 +787,8 @@ export default (props) => {
                 setAllowEdit({ ..._allowEdit });
                 setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
 
-                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, valid: dt["valid"] });
-                let vvv = await loadNWLookup(signal);
-                for (let i of vvv) {
-                    console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-                    console.log(i.qty_reminder)
-                    console.log(2350 * i.largura / 1000)
-                }
-
-
-                setNWList(await loadNWLookup(signal));
-
+                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id:dt["agg_of_id"], valid: dt["valid"] });
+                setNWList(await loadNWLookup(signal, { cs_status: 3, status: 1 }));
                 submitting.end();
                 return dt;
             }
@@ -785,11 +803,14 @@ export default (props) => {
 
     }, []);
 
-    const onBobineClick=(row)=>{
-            setModalParameters({ src:`/producao/bobine/details/${row.id}/`,title:`Bobine ${row.nome}`  });
-            showModal();
+    const onBobineClick = (row) => {
+        setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
+        showModal();
     }
 
+    useEffect(() => {
+        console.log("BOBINAGEM--", dataAPI.getData())
+    }, [dataAPI.hasData()])
 
     const onFilterFinish = (type, values) => { };
     const onFilterChange = (changedValues, values) => { };

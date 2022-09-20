@@ -5,7 +5,7 @@
 
 
 <div class="container">
-    <a href="{% url 'producao:armazem_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+<!--     <a href="{% url 'producao:armazem_home' %}" class="btn btn-outline-primary" role="button">Voltar</a> -->
     <a href="{% url 'producao:carga_list_completa' %}"  class="btn btn-outline-primary" role="button">Cargas completas</a>                                                                                                                                                                                                 
     {% if request.user|has_group:"Logistica Supervisor" %}
     <a href="{% url 'producao:carga_create' %}"  class="btn btn-outline-primary" role="button">Nova Carga</a>

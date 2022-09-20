@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class="container">
-    <a href="{% url 'producao:producao_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+<!--     <a href="{% url 'producao:producao_home' %}" class="btn btn-outline-primary" role="button">Voltar</a> -->
     {% if request.user|has_group:"Produção Supervisor" or request.user|has_group:"Produção Operador" %}
     <a href="{% url 'producao:palete_create' %}"  class="btn btn-outline-primary" role="button">Criar Palete</a>
     {% endif %}

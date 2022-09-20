@@ -17,6 +17,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { CgArrowDownO, CgArrowUpO, CgCloseO } from 'react-icons/cg';
 import { DATE_FORMAT, DATETIME_FORMAT, PALETIZACAO_ITEMS, PALETE_SIZES, CONTENTORES_OPTIONS, CINTASPALETES_OPTIONS } from 'config';
 import SvgSchema from './SvgSchema';
+import { usePermission } from "utils/usePermission";
 
 const schema = (keys, excludeKeys) => {
     return getSchema({

@@ -25,6 +25,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
 import { useModal } from "react-modal-hook";
 import ResponsiveModalv2 from 'components/Modal';
+import { usePermission } from "utils/usePermission";
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
@@ -420,7 +421,7 @@ const IFrame = ({src})=> {
 }
 
 
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions }) => {
+const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions, allow }) => {
     const { status, temp_ofabrico, ofabrico_sgp } = record;
     const modal = useModalv4();
     const [action, setAction] = useState();
@@ -460,7 +461,10 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico && !ofabrico_sgp) && <>
+                {allow ?
                 <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+                : <Tag style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">A Validar</Tag>
+                }
             </>}
             {((status == 0 || !status) && !temp_ofabrico && ofabrico_sgp && record?.completa==1) && <>
                 <TagButton onClick={() => onClickSgpBack(ofabrico_sgp)} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
@@ -472,7 +476,11 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
                 <TagButton onClick={() => onClickSgpBack(ofabrico_sgp)} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
+                {allow ?
                 <TagButton onClick={() => onAction(record, "inpreparation", () => { })} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+                :
+                <Tag style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</Tag>
+                }
             </>}
             {(status == 2 && temp_ofabrico) && <>
                 <TagButton onClick={() => onShowMenuActions()} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
@@ -702,6 +710,7 @@ export default () => {
     const elFilterTags = document.getElementById('filter-tags');
     const [flyoutStatus, setFlyoutStatus] = useState({ visible: false, fullscreen: false });
     const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
+    const permission = usePermission({ allowed: { logistica: 100 } });
 
     useEffect(() => {
         const cancelFetch = cancelToken();
@@ -773,7 +782,7 @@ export default () => {
                         iorder: { title: "Encomenda(s)", width: 130, ...common },
                         cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        estado: { title: "", width: 125, render: (v, r) => <ColumnEstado allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },

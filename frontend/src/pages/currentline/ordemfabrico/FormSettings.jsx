@@ -12,6 +12,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip } from "antd";
 import { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
+import { usePermission } from "utils/usePermission";
 
 const schema = (keys, excludeKeys) => {
     return getSchema({
@@ -56,6 +57,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
     const [guides, setGuides] = useState(false);
     const [loading, setLoading] = useState(false);
     const [coresLookup, setCoresLookup] = useState([]);
+    const permission = usePermission();
 
     const loadData = (data = {}, type = "init") => {
         const { paletesstock, core_des, ...aggItem } = record.aggItem;
@@ -233,7 +235,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        <Button type="primary" onClick={() => form.submit()}>Guardar</Button>
+                        <Button type="primary" disabled={!permission.allow({ producao: 200, logistica:100 })} onClick={() => form.submit()}>Guardar</Button>
                         <Button onClick={closeParent}>Cancelar</Button>
                     </Space>
                 </Portal>

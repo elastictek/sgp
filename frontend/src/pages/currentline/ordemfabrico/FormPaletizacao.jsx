@@ -15,6 +15,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { LoadingOutlined, EditOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT, PALETIZACAO_ITEMS, PALETE_SIZES, CONTENTORES_OPTIONS, CINTASPALETES_OPTIONS } from 'config';
 /* import FormPaletizacaoSchema from './paletizacaoSchema/FormPaletizacaoSchema'; */
+import { usePermission } from "utils/usePermission";
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -84,6 +85,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const [paletizacoes, setPaletizacoes] = useState([]);
     /*     const [changedValues, setChangedValues] = useState({}); */
     const [resultMessage, setResultMessage] = useState({ status: "none" });
+    const permission = usePermission();
 
     const init = ({ signal }) => {
         (setFormTitle) && setFormTitle({ title: `Esquema de Paletização ${record.aggItem.cliente_nome}`, subTitle: `${record.aggItem.item_cod}` });
@@ -311,7 +313,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 </Form>
                 {parentRef && <Portal elId={parentRef.current}>
                     <Space>
-                        {isTouched && <Button disabled={submitting} onClick={onSubmit} type="primary">Guardar</Button>}
+                        {isTouched && <Button  disabled={!permission.allow({ producao: 200, logistica:100 },!submitting && !submitting)} onClick={onSubmit} type="primary">Guardar</Button>}
                         <Button onClick={onClose}>Fechar</Button>
                         {/* <Button onClick={() => setGuides(!guides)}>{guides ? "No Guides" : "Guides"}</Button> */}
                     </Space>

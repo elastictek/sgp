@@ -144,9 +144,6 @@ class RealTimeAlerts(WebsocketConsumer):
 class RealTimeOfs(WebsocketConsumer):
 
     def loadPaletes(self, data):
-        print("PALETES ATENÇÃO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("O VALOR ENCONTRA-SE FIXO!!!!!!")
-        #ofid = 958#data['value']['of_id']
         fof = data['value']['of_id'] if "of_id" in data['value'] else data['value']['ofs_id'] if "ofs_id" in data['value'] else None
         print("GETTING PALETES")
         if fof:

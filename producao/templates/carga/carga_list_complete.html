@@ -4,7 +4,7 @@
 {% block content %}
 
 <div class="container">
-    <a href="{% url 'producao:armazem_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
+<!--     <a href="{% url 'producao:armazem_home' %}" class="btn btn-outline-primary" role="button">Voltar</a> -->
     <a href="{% url 'producao:carga_list' %}"  class="btn btn-outline-primary" role="button">Cargas Incompletas</a>                                                                                                                                                                                                 
     {% if request.user|has_group:"Logistica Supervisor" %}
     <a href="{% url 'producao:carga_create' %}"  class="btn btn-outline-primary" role="button">Nova Carga</a>

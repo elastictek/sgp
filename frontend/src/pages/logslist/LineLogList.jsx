@@ -186,7 +186,7 @@ export default (props) => {
     ];
 
     const loadData = ({ signal }) => {
-        const { ...filters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
+        const { ...filters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
         formFilter.setFieldsValue({ ...filters });
         dataAPI.addFilters(filters, true, true);
         //dataAPI.addParameters({}, true, true);

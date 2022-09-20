@@ -25,6 +25,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
 import {Cuba} from "./commons/Cuba";
+import { usePermission } from "utils/usePermission";
 
 const title = "Formulação";
 const useStyles = createUseStyles({});
@@ -57,6 +58,7 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
+    const permission = usePermission({ allowed: { producao: 200, logistica: 100 } });
    
     const dataAPI_A = useDataAPI({ id: "dashb-formulacao-a", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
     const dataAPI_BC = useDataAPI({ id: "dashb-formulacao-bc", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
@@ -109,7 +111,7 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard data={record} title={card.title} />}
-                extra={<>{Object.keys(record).length > 0 && <Space><Button onClick={() => onEdit("doseadores")}>Doseadores</Button><Button onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
+                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow()} onClick={() => onEdit("doseadores")}>Doseadores</Button><Button disabled={!permission.allow()} onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
             >
                 {Object.keys(record).length > 0 &&
                 <YScroll>

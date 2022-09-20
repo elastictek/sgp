@@ -85,13 +85,12 @@ export default ({ record, card, parentReload }) => {
     ), [modalParameters]);
 
     const onBobinagemClick = (row) => {
-        if (row?.valid === 1 && !row?.agg_of_id) {
-            setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
-            showModal();
-            //window.location.href = `/producao/bobinagem/${row.id}/`;
-        } else {
+        //if (row?.valid === 1 && !row?.agg_of_id) {
+        //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
+        //    showModal();
+        //} else {
             navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
-        }
+        //}
     }
 
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
