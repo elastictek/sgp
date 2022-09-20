@@ -256,7 +256,7 @@ def PrintEtiqueta(request, format=None):
                     for v in etiquetas:
                         dta={"impressora":data["impressora"], "num_copias":data["num_copias"], "estado_impressao":1}
                         dml = db.dml(TypeDml.UPDATE,dta,"producao_etiquetaretrabalho",{"id":f'=={v["id"]}'},None,False)
-                        #db.execute(dml.statement, cursor, dml.parameters)
+                        db.execute(dml.statement, cursor, dml.parameters)
         return Response({"status": "success", "title": f'Etiqueta(s) imprimidas com sucesso', "subTitle":None})
     except Exception as error:
         return Response({"status": "error", "title": f'Erro ao imprimir etiquetas', "subTitle":str(error)})
