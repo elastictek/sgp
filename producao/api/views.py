@@ -5911,7 +5911,6 @@ def SaveRecicladoItems(request, format=None):
                         unit=VALUES(unit),
                         reciclado_id=VALUES(reciclado_id)
                 """
-                print(dml.statement)
                 db.execute(dml.statement, cursor, dml.parameters)
     try:
         if not data.get("id"):            

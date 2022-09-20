@@ -498,7 +498,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 leftToolbar={<>
                     {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length === 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}
+                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}
                 </>}
                 //content={<PickHolder/>}
                 //paginationPos='top'
