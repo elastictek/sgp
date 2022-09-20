@@ -5418,7 +5418,7 @@ def ValidarBobinagem(request, format=None):
         f.add(f'`n_lote` = :n_lote', True)
         f.add(f'agg_of_id = :agg_of_id', True)
         f.value("and")
-        response = db.executeSimpleList(lambda: (f"select lw.*, qty_consumed + (({nw} * largura)/1000) consumed, qty_reminder + (({nw} * largura)/1000) reminder from lotesnwlinha lw {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
+        response = db.executeSimpleList(lambda: (f"select lw.*, (qty_consumed + (({nw} * largura)/1000)) consumed, (qty_reminder + (({nw} * largura)/1000)) reminder from lotesnwlinha lw {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
         if len(response["rows"])>0:
             return response["rows"][0]
         return None
