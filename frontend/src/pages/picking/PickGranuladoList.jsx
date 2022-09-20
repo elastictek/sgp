@@ -545,12 +545,17 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ signal } = {}) => {
         const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
         const data = loadInit({}, {}, props, location?.state, [...Object.keys(location?.state || {})]);
-        setRecord(data);
-        formFilter.setFieldsValue({ ...initFilters, type: data?.type });
-        dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
-        dataAPI.setSort([{column:"`order`", direction:"DESC"}]);
-        dataAPI.addParameters({}, true, true);
-        dataAPI.fetchPost({ signal });
+        if (data?.formulacao){
+            setRecord(data);
+            formFilter.setFieldsValue({ ...initFilters, type: data?.type });
+            dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
+            dataAPI.setSort([{column:"`order`", direction:"DESC"}]);
+            dataAPI.addParameters({}, true, true);
+            dataAPI.fetchPost({ signal });
+        }
+        else{            
+            Modal.error({title:"Não existe neste momento nenhuma produção em curso!"});
+        }
         submitting.end();
     };
 
@@ -641,7 +646,7 @@ export default ({ setFormTitle, ...props }) => {
 
     return (
         <>
-            {record &&
+            {record?.formulacao &&
                 <>
                     {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={record} level={location?.state?.level} form={formFilter} />}
                     <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
