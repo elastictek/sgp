@@ -186,6 +186,8 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                 value.current = '';
                 setCurrent(value.current);
             } else {
+                console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+                console.log("value",value.current)
                 sendJsonMessage({ cmd: 'getgranuladolotequantity', lote: v, unit: "kg" });
                 value.current = '';
                 setCurrent(value.current);
@@ -197,6 +199,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         if (e.srcElement.name === "qty_lote" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
+        
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {

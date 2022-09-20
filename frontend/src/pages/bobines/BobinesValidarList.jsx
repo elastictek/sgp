@@ -780,7 +780,7 @@ export default (props) => {
                 const _allowEdit = {
                     elevated: (dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
                     form: (dt.valid === 0) ? permission.allow({ producao: 100 }) : false,
-                    datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ qualidade: 100 })
+                    datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ producao: 100,qualidade: 100 })
                 };
 
 
