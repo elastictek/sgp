@@ -33,6 +33,7 @@ import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
+import {MovColumn,PosColumn} from "./commons";
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -403,7 +404,7 @@ const moreFiltersSchema = ({ form }) => [
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const PosColumn = ({ value }) => {
+/* const PosColumn = ({ value }) => {
     return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
         {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
@@ -414,7 +415,7 @@ const MovColumn = ({ value }) => {
         {value === 1 ? <ImArrowRight color='green' /> : <ImArrowLeft color="red" />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "Entrada" : "Saída"}</div>
     </div>);
-}
+} */
 const OfsColumn = ({ value }) => {
     return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
         {value && value.map(v => <div style={{ marginRight: "3px", fontWeight: 700 }} key={`${v}`}>{v}</div>)}

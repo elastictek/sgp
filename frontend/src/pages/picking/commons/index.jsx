@@ -17,6 +17,8 @@ import Portal from "components/portal";
 import ResponsiveModal from "components/ResponsiveModal";
 import MoreFilters from 'assets/morefilters.svg';
 import YScroll from "components/YScroll";
+import { GoArrowUp } from 'react-icons/go';
+import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
 
 
 
@@ -59,4 +61,24 @@ export const Status = ({estado}) =>{
     return(
         <StyledStatus color={bColors(estado).color} fontColor={bColors(estado).fontColor}><b>{estado}</b></StyledStatus>
     );
+}
+
+export const PosColumn = ({ value }) => {
+    return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+        {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
+        <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
+    </div>);
+}
+export const MovColumn = ({ value }) => {
+    return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+        {value === 1 ? <ImArrowRight color='green' /> : <ImArrowLeft color="red" />}
+        <div style={{ marginRight: "5px" }}>{value === 1 ? "Entrada" : "Saída"}</div>
+    </div>);
+}
+
+export const MovGranuladoColumn = ({ value }) => {
+    return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+        {value === 1 ? <ImArrowRight color='green' /> : <ImArrowLeft color="red" />}
+        <div style={{ marginRight: "5px" }}>{value === 1 ? "Entrada" : "Saída"}</div>
+    </div>);
 }

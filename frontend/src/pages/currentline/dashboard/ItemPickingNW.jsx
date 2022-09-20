@@ -23,7 +23,7 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import useWebSocket from 'react-use-websocket';
-import { Status } from '../../picking/commons';
+import { Status, MovColumn, PosColumn } from '../../picking/commons';
 import TitleCard from './TitleCard';
 
 const title = "Nonwovens Lotes";
@@ -43,7 +43,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
 }
 
 const SelectItems = ({ onView, onChangeContent, dataAPI }) => {
-    
+
     return (
         <Space>
             <Select defaultValue={noValue(dataAPI.getFilter(true)?.type, "1")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
@@ -97,13 +97,14 @@ export default ({ record, card, parentReload }) => {
             }
             dataAPI.fetchPost();
         }
-    }, [lastJsonMessage?.hash,record?.agg_of_id]);
+    }, [lastJsonMessage?.hash, record?.agg_of_id]);
 
     const columns = [
+        { key: 'status', width: 90, name: 'Movimento', formatter: p => <MovColumn value={p.row.status} /> },
         { key: 'artigo_cod', name: 'Artigo' },
         { key: 'artigo_des', name: 'Designação' },
         { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.lote },
-        { key: 'type_mov', name: 'Movimento' },
+        { key: 'type', width: 90, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote} m<sup>2</sup></div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) }
     ];
@@ -129,7 +130,7 @@ export default ({ record, card, parentReload }) => {
             navigate("/app/picking/picknwlist", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
         }
 
-        
+
     }
 
     const onChangeContent = async (v, field) => {

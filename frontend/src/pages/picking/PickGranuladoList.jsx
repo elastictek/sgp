@@ -34,6 +34,7 @@ import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
+import {MovGranuladoColumn} from "./commons"
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -442,12 +443,12 @@ const PosColumn = ({ value }) => {
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
     </div>);
 }
-const MovColumn = ({ value }) => {
+/* const MovColumn = ({ value }) => {
     return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
         {value === 1 ? <ImArrowRight color='green' /> : <ImArrowLeft color="red" />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "Entrada" : "Saída"}</div>
     </div>);
-}
+} */
 const OfsColumn = ({ value }) => {
     return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
         {value && value.map(v => <div style={{ marginRight: "3px", fontWeight: 700 }} key={`${v}`}>{v}</div>)}
@@ -467,7 +468,7 @@ export default ({ setFormTitle, ...props }) => {
     const submitting = useSubmitting(true);
     const primaryKeys = ['id'];
     const columns = [
-        { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovColumn value={p.row.type_mov} /> },
+        { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', formatter: p => p.row.artigo_cod },

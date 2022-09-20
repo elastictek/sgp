@@ -9,19 +9,19 @@ class AppSettings:
     }
     dbAlias = {
         "sqlserver":{
-            "sgp":f'"SGP-DEV"'
+            "sgp":f'"SGP-PROD"'
         },
         "postgres":{
-            "sgp":f'"SGP-DEV"',
+            "sgp":f'"SGP-PROD"',
             "sage":f'"SAGE-PROD"'
         }
     }
     reportConn = {
         "sage":"MSSQL-SAGE",
-        "sgp":"MYSQL-SGP-DEV",
+        "sgp":"MYSQL-SGP-PROD",
         "gw":"PG-SGP-GW"
     }
     materializedViews = {
-        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST_DEV'
+        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST'
     }
 

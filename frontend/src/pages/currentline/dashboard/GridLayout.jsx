@@ -230,15 +230,15 @@ const saveToLS = (key, value, user) => {
 }
 
 const originalDashboards = [
-    { id: "tpl-01", description: "Produção", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "tpl-02", description: "Planeamento", oneElement:false, ofs: { visible: true, static: false, allowChange: false } },
-    { id: "tpl-03", description: "Matérias Prima", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-01", description: "Dashboard 1", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-02", description: "Dashboard 2", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-03", description: "Dashboard 3", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-04", description: "Dashboard 4", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-05", description: "Dashboard 5", oneElement:false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-06", description: "Dashboard 6", oneElement:false, ofs: { visible: false, static: false, allowChange: true } }
+    { id: "tpl-01", description: "Produção", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "tpl-02", description: "Planeamento", oneElement: false, ofs: { visible: true, static: false, allowChange: false } },
+    { id: "tpl-03", description: "Matérias Prima", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-01", description: "Dashboard 1", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-02", description: "Dashboard 2", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-03", description: "Dashboard 3", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-04", description: "Dashboard 4", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-05", description: "Dashboard 5", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
+    { id: "ly-06", description: "Dashboard 6", oneElement: false, ofs: { visible: false, static: false, allowChange: true } }
 ];
 
 const allItems = {
@@ -347,7 +347,7 @@ const ToolboxItem = ({ currentBreakpoint, item, onTakeItem }) => {
 
                                     <Menu onClick={(v) => itemsClick(v)} items={Object.keys(toolItem.children).map((x) => {
                                         return (
-                                            { style:{display:"flex",alignItems:"center"}, label: <Text style={{}}>{toolItem.children[x].description}</Text>, icon: toolItem.children[x].icon, key: `${item.i}#${x}` }
+                                            { style: { display: "flex", alignItems: "center" }, label: <Text style={{}}>{toolItem.children[x].description}</Text>, icon: toolItem.children[x].icon, key: `${item.i}#${x}` }
                                         );
                                     })}></Menu>
                                 </div>
@@ -444,7 +444,7 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
         return dashboards.find(v => v.id === id)?.description;
     }
 
-    const getOneElement = () =>{
+    const getOneElement = () => {
         return dashboards.find(v => v.id === currentDashboard)?.oneElement;
     }
 
@@ -466,14 +466,14 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
 
                     {showOfs.allowChange === true && <><Divider style={{ margin: "8px 0" }} />
                         <Menu onClick={() => onChange("ofs")} items={[
-                            { label: <Checkbox onClick={(e)=>e.stopPropagation()} checked={showOfs.visible}>Mostrar ordens de fabrico</Checkbox>, key: 'viewofs', icon: <GoPrimitiveDot /> }
+                            { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={showOfs.visible}>Mostrar ordens de fabrico</Checkbox>, key: 'viewofs', icon: <GoPrimitiveDot /> }
                         ]}></Menu>
                     </>}
                     <Divider style={{ margin: "8px 0" }} />
                     <Menu onClick={(v) => onSettingsClick(v)} items={[
-                        { label: <Checkbox onClick={(e)=>e.stopPropagation()} checked={getOneElement()}>Apenas um elemento na área de trabalho</Checkbox>, key: 'oneelement', icon: <GoPrimitiveDot /> },
-                        { label: <Checkbox onClick={(e)=>e.stopPropagation()} checked={preventCollisions}>Prevenir colisões</Checkbox>, key: 'collisions', icon: <GoPrimitiveDot /> },
-                        { label: <Checkbox onClick={(e)=>e.stopPropagation()} checked={overlap}>Permitir sobreposições</Checkbox>, key: 'overlap', icon: <GoPrimitiveDot /> }
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={getOneElement()}>Apenas um elemento na área de trabalho</Checkbox>, key: 'oneelement', icon: <GoPrimitiveDot /> },
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={preventCollisions}>Prevenir colisões</Checkbox>, key: 'collisions', icon: <GoPrimitiveDot /> },
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={overlap}>Permitir sobreposições</Checkbox>, key: 'overlap', icon: <GoPrimitiveDot /> }
                     ]}></Menu>
                     <Divider style={{ margin: "8px 0" }} />
                     <Menu onClick={(v) => onSettingsClick(v)} items={[
@@ -497,10 +497,10 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
     );
 }
 
-const ButtonSettings = ({onClick, dashboards, currentDashboard}) => {
+const ButtonSettings = ({ onClick, dashboards, currentDashboard }) => {
     const { auth } = useContext(AppContext);
     return (
-        <div style={{ cursor: "pointer", textAlign: "center" }} onClick={()=>onClick(true)}>
+        <div style={{ cursor: "pointer", textAlign: "center" }} onClick={() => onClick(true)}>
             <StyledLink type="link" size="small" icon={<SettingOutlined />} style={{ marginLef: "5px", marginBottom: "0px" }}><span style={{ fontSize: "12px", fontWeight: 700 }}>{dashboards.find(v => v.id === currentDashboard)?.description}</span></StyledLink>
             <div style={{ textAlign: "center", whiteSpace: "nowrap", padding: "0px 5px" }}>{auth.name} {auth.turno.enabled && <span><Text type="secondary">|</Text> Turno <b>{`${auth.turno.turno}`}</b></span>}</div>
         </div>
@@ -652,12 +652,12 @@ export default (props) => {
             const db = dashboards.find(v => v.id === currentDashboard);
             let _layouts;
             let _toolbox;
-            if (db.oneElement===true){
-                _layouts = { ...layouts, [currentBreakpoint]: [ item] };
-                _toolbox = { ...toolbox, [currentBreakpoint]: [...allItems[currentBreakpoint].filter(v => !v?.disabled && v.i!==item.i)] };
-            }else{
-            _layouts = { ...layouts, [currentBreakpoint]: [...layouts[currentBreakpoint] || [], item] };
-            _toolbox = { ...toolbox, [currentBreakpoint]: [...(toolbox[currentBreakpoint] || []).filter(({ i }) => i !== item.i)] };
+            if (db.oneElement === true) {
+                _layouts = { ...layouts, [currentBreakpoint]: [item] };
+                _toolbox = { ...toolbox, [currentBreakpoint]: [...allItems[currentBreakpoint].filter(v => !v?.disabled && v.i !== item.i)] };
+            } else {
+                _layouts = { ...layouts, [currentBreakpoint]: [...layouts[currentBreakpoint] || [], item] };
+                _toolbox = { ...toolbox, [currentBreakpoint]: [...(toolbox[currentBreakpoint] || []).filter(({ i }) => i !== item.i)] };
             }
             setLayouts(_layouts);
             setToolbox(_toolbox);
@@ -775,21 +775,21 @@ export default (props) => {
         }
     }
 
-    const onOneElement = ()=>{
+    const onOneElement = () => {
         const db = dashboards.find(v => v.id === currentDashboard);
-        const _layouts = {...layouts};
-        const _toolbox = {...toolbox};
-        const oe = db?.oneElement===true ? false : true;
-        const _dashboards = dashboards.map(v=>v.id===currentDashboard ? {...v,oneElement:oe} : v);
-        for (let k of Object.keys(_layouts)){
-            if (oe && _layouts[k].length>1){
-                _layouts[k]=[_layouts[k][0]];
+        const _layouts = { ...layouts };
+        const _toolbox = { ...toolbox };
+        const oe = db?.oneElement === true ? false : true;
+        const _dashboards = dashboards.map(v => v.id === currentDashboard ? { ...v, oneElement: oe } : v);
+        for (let k of Object.keys(_layouts)) {
+            if (oe && _layouts[k].length > 1) {
+                _layouts[k] = [_layouts[k][0]];
                 let cb = !(k in allItems) ? "lg" : k;
-                _toolbox[k]= allItems[cb].filter(v => !v?.disabled && !_layouts[k].some(x => x.i === v.i));
+                _toolbox[k] = allItems[cb].filter(v => !v?.disabled && !_layouts[k].some(x => x.i === v.i));
             }
         }
         setDashboards(_dashboards);
-        console.log("---",_dashboards)
+        console.log("---", _dashboards)
         setLayouts(_layouts);
         setToolbox(_toolbox);
     }
@@ -811,6 +811,11 @@ export default (props) => {
                             let response = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: permission.auth.user }, parameters: {} });
                             if (response.data.status !== "error" && response.data.rows.length > 0) {
                                 saveToLS("saveall", response.data.rows[0].layout, permission.auth.user);
+                            }else{
+                                let defaultt = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: "default" }, parameters: {} });
+                                if (defaultt.data.status !== "error" && defaultt.data.rows.length > 0) {
+                                    saveToLS("saveall", defaultt.data.rows[0].layout, permission.auth.user);
+                                }
                             }
                         } catch (e) { };
                     }
@@ -864,7 +869,7 @@ export default (props) => {
     return (
         <div/*  style={{transform: 'scale(0.8)',transformOrigin: "left top"}} */ /* style={{ transform: 'scale(0.8) translate(-12%, -12%)' }} */>
             {(layouts) && <>
-                <Drawer title={<div style={{fontWeight:900}}>Definições</div>} placement='right' closable={false} onClose={() => setRightDrawerVisible(false)} visible={rightDrawerVisible}>
+                <Drawer title={<div style={{ fontWeight: 900 }}>Definições</div>} placement='right' closable={false} onClose={() => setRightDrawerVisible(false)} visible={rightDrawerVisible}>
                     <SettingsLayout clickSettings={clickSettings} handleSettingsClick={handleSettingsClick} onSettingsClick={onSettingsClick} setDashboards={setDashboards} dashboards={dashboards} currentDashboard={currentDashboard} showOfs={showOfs} setShowOfs={setShowOfs} preventCollisions={preventCollisions} overlap={overlap} />
                 </Drawer>
                 <StyledDrawer
@@ -898,9 +903,6 @@ export default (props) => {
                         //transformScale={0.8}
                         onLayoutChange={onLayoutChange}
                     >
-                        {(Object.keys(currentSettings).length > 0 && showOfs.visible) && currentSettings.ofs.map((ofItem, idx) => {
-                            return (<div key={`agg-${ofItem.of_id}-${idx}`} data-grid={{ x: 0, y: 0, w: 2, h: 6, minW: 2, maxW: 3, minH: 5, static: showOfs.static }}><ItemAgg record={{ ...currentSettings }} ofItem={ofItem} parentReload={loadData} /></div>)
-                        })}
                         {layouts[currentBreakpoint].filter(v => !v?.disabled && !v.i.startsWith('agg-')).map(v => {
                             return (
                                 <CustomGridItemComponent key={v.i}>
@@ -923,6 +925,9 @@ export default (props) => {
                             );
                         })
                         }
+                        {(Object.keys(currentSettings).length > 0 && showOfs.visible) && currentSettings.ofs.map((ofItem, idx) => {
+                            return (<div key={`agg-${ofItem.of_id}-${idx}`} data-grid={{ x: 0, y: 0, w: 2, h: 6, minW: 2, maxW: 3, minH: 5, static: showOfs.static }}><ItemAgg record={{ ...currentSettings }} ofItem={ofItem} parentReload={loadData} /></div>)
+                        })}
                     </ResponsiveReactGridLayout>
                 </Suspense>
             </>

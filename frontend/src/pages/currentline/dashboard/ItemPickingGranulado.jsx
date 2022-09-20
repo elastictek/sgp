@@ -23,7 +23,7 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import useWebSocket from 'react-use-websocket';
-import { Status } from '../../picking/commons';
+import { Status, MovGranuladoColumn } from '../../picking/commons';
 import TitleCard from './TitleCard';
 
 const title = "Granulado Lotes";
@@ -100,6 +100,7 @@ export default ({ record, card, parentReload }) => {
     }, [lastJsonMessage?.hash,record?.agg_of_id]);
 
     const columns = [
+        { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: 'artigo_cod', name: 'Artigo' },
         { key: 'artigo_des', name: 'Designação' },
         { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.lote },
