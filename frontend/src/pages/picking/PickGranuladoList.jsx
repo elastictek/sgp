@@ -469,7 +469,7 @@ export default ({ setFormTitle, ...props }) => {
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const submitting = useSubmitting(true);
-    const primaryKeys = ['id'];
+    const primaryKeys = ['vcr_num'];
     const columns = [
         { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },

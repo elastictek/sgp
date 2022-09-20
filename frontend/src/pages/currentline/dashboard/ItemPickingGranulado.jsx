@@ -61,7 +61,7 @@ export default ({ record, card, parentReload }) => {
     const classes = useStyles();
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ id: "dashb-granuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [{ column: 't_stamp', direction: 'DESC' }] } });
-    const primaryKeys = ['id'];
+    const primaryKeys = ['vcr_num'];
 
 
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
