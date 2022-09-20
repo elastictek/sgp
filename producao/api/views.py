@@ -5437,19 +5437,15 @@ def ValidarBobinagem(request, format=None):
                     
                     if nwi is None or nws is None:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
-                    print("----->>")
-                    print(nwi["qty_consumed"])
-                    print(float(data["values"]["nwinf"]))
-                    print(nwi["largura"]/1000)
-                    print("<<------")
+
                     nw_consumed_i = float(nwi["qty_consumed"]) + (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
                     nw_reminder_i = float(nwi["qty_reminder"]) - (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
                     nw_consumed_s = float(nws["qty_consumed"]) + (float(data["values"]["nwsup"])*(nws["largura"]/1000))
                     nw_reminder_s = float(nws["qty_reminder"]) - (float(data["values"]["nwsup"])*(nws["largura"]/1000))
 
-                    if nw_reminder_i<-300:
+                    if nw_reminder_i<-2000:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    if nw_reminder_s<-300:
+                    if nw_reminder_s<-2000:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
                     reciclado_id = checkReciclado(data,cursor)
