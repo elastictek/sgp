@@ -165,6 +165,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     const keydownHandler = async (e, obj) => {
+        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$4----------")
         if (e.srcElement.name === "qty_lote" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }

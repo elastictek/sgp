@@ -56,6 +56,7 @@ dbmssql = DBSql(connections[connMssqlName].alias)
 def PrintMPBuffer(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
     print(request.data)
+
     tmp = tempfile.NamedTemporaryFile()
     print(tmp)
     print(tmp.name)
@@ -74,6 +75,7 @@ def PrintMPBuffer(request,format=None):
         }
     })
     print(fstream)
+    return
     try:
         print(tmp.name)
         tmp.write(fstream.content)

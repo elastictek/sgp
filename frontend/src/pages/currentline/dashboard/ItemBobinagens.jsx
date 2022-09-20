@@ -20,6 +20,7 @@ import ResponsiveModal from 'components/Modal';
 import loadInit from "utils/loadInit";
 /* const FormCortes = React.lazy(() => import('../FormCortes')); */
 import Table from 'components/TableV2';
+import useWebSocket from 'react-use-websocket';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
@@ -55,8 +56,8 @@ const SelectBobinagens = ({ onView, onChangeContent, dataAPI }) => {
     );
 }
 
-const IFrame = ({src})=> {
-    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>`}} />;
+const IFrame = ({ src }) => {
+    return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>` }} />;
 }
 
 export default ({ record, card, parentReload }) => {
@@ -81,15 +82,54 @@ export default ({ record, card, parentReload }) => {
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-            <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src}/></ResponsiveModal>
+        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
     ), [modalParameters]);
+
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
+
+
+
+    const loadData = async ({ signal } = {}) => {
+        const request = (async () => sendJsonMessage({ cmd: 'checkbobinagens', value: {} }));
+        request();
+        //const ok = dataAPI.fetchPost();
+        //return (ok) ? setInterval(request, 30000) : null;
+        return setInterval(request, 30000);
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const interval = loadData({ signal: controller.signal });
+        return (() => { controller.abort(); clearInterval(interval); });
+    }, []);
+
+
+    useEffect(() => {
+        if (lastJsonMessage) {
+            //dataAPI.fetchPost();
+            if (record?.agg_of_id) {
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
+            } else {
+                const { agg_of_id, ...f } = dataAPI.getFilter(true);
+                dataAPI.addFilters(f, true, true);
+            }
+            dataAPI.fetchPost();
+        }
+    }, [lastJsonMessage?.hash, record?.agg_of_id]);
 
     const onBobinagemClick = (row) => {
         //if (row?.valid === 1 && !row?.agg_of_id) {
         //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
         //    showModal();
         //} else {
-            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
         //}
     }
 
@@ -104,12 +144,16 @@ export default ({ record, card, parentReload }) => {
         }
     }
 
+
+
+
+
     const onChangeContent = async (v, field) => {
         dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v }, true, true);
         dataAPI.fetchPost();
     }
 
-    useEffect(() => {
+/*     useEffect(() => {
         if (record?.agg_of_id) {
             dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
         } else {
@@ -118,6 +162,10 @@ export default ({ record, card, parentReload }) => {
         }
         dataAPI.fetchPost();
     }, [record?.agg_of_id]);
+ */
+
+
+
 
     return (
         <>
@@ -127,7 +175,7 @@ export default ({ record, card, parentReload }) => {
                 style={{ height: "100%", border: "1px solid #8c8c8c" }}
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
-                title={<TitleCard data={record} title={card.title}  />}
+                title={<TitleCard data={record} title={card.title} />}
                 extra={<SelectBobinagens onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
             >
                 <YScroll>

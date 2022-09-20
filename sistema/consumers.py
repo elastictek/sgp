@@ -228,12 +228,20 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checklineevents","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
+    def checkBobinagens(self,data):
+            with connections["default"].cursor() as cursor:
+                rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
+                hsh = json.dumps(rows,default=str)
+                self.send(text_data=json.dumps({"rows":rows,"item":"checkbobinagens","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
+
     commands = {
         'checkreciclado':checkReciclado,
         'checkgranulado':checkGranulado,
         'checknw':checkNW,
         'checkcores':checkCores,
-        'checklineevents':checkLineEvents
+        'checklineevents':checkLineEvents,
+        'checkbobinagens':checkBobinagens
     }
 
     def connect(self):
