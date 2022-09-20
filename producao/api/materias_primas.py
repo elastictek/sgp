@@ -525,7 +525,7 @@ def GranuladoList(request, format=None):
                 {c(f'{dql.columns}')}
             from(
             select distinct 
-            t.*
+            t.type_mov,t.artigo_cod,t.n_lote,t.t_stamp,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.`order`,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder
             ,(select GROUP_CONCAT(tld.doser) dosers from lotesdoserslinha tld where tld.loteslinha_id=t.loteslinha_id) dosers
             from(
             select ld.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ld.t_stamp,ll.qty_lote,ll.vcr_num,ll.artigo_des,
