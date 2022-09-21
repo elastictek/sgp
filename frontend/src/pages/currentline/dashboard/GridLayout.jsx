@@ -255,14 +255,14 @@ const allItems = {
         { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
         { i: "ordemfabrico", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "mp" },
         { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "prod-reports" },
-        { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        //{ i: "prod-reports" },
+        //{ i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -293,7 +293,7 @@ const toolboxItems = {
     ordemfabrico: { description: "Ordens Fabrico", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     operations: { description: "Ações", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     linelog: { description: "Eventos da Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
-    nav: { description: "Estado", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+    //nav: { description: "Estado", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     mp: {
         description: "Matérias Primas", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} />, children: {
             local: { description: "Localização Matérias Primas", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
@@ -308,11 +308,11 @@ const toolboxItems = {
             specs: { description: "Especificações", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> }
         }
     },
-    "prod-reports": {
-        description: "Relatórios Produção", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} />, children: {
-            reciclado: { description: "Reciclado produzido e consumido", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} /> }
-        }
-    }
+    //"prod-reports": {
+    //    description: "Relatórios Produção", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} />, children: {
+    //        reciclado: { description: "Reciclado produzido e consumido", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} /> }
+    //    }
+    //}
 }
 
 
