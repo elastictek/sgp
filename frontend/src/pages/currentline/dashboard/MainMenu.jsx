@@ -105,6 +105,8 @@ export default ({dark=false}) => {
             </Panel>
             <Panel header={<b>Armazém</b>} key="5">
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`,'Cargas')}>Cargas</Button>
+                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`,'Pesagem')}>Pesagem</Button>
+                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`,'Stock')}>Stock</Button>
             </Panel>
         </StyledCollapse>
 
