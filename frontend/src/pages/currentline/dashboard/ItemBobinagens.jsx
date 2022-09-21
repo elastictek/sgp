@@ -97,11 +97,11 @@ export default ({ record, card, parentReload }) => {
 
 
     const loadData = async ({ signal } = {}) => {
-        const request = (async () => sendJsonMessage({ cmd: 'checkbobinagens', value: {} }));
-        request();
-        //const ok = dataAPI.fetchPost();
+        //const request = (async () => sendJsonMessage({ cmd: 'checkbobinagens', value: {} }));
+        //request();
+        const ok = dataAPI.fetchPost();
         //return (ok) ? setInterval(request, 30000) : null;
-        return setInterval(request, 30000);
+        //return setInterval(request, 30000);
     }
 
     useEffect(() => {
