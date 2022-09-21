@@ -5428,8 +5428,6 @@ def ValidarBobinagem(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
 
-
-
                 isValid = checkIfIsValid(data,cursor)
                 if isValid==0:
                     nwi = checkNw(data,0,data["values"]["lotenwinf"],data["values"]["nwinf"],cursor)
@@ -5479,12 +5477,19 @@ def ValidarBobinagem(request, format=None):
                     dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_s,"qty_reminder":nw_reminder_s},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
 
+                
+
                 columns = ['estado','con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'obs', 'l_real', 'nok', 
                 'car', 'fc', 'fc_diam_fim', 'fc_diam_ini', 'ff', 'ff_m_fim', 'ff_m_ini', 'fmp', 'lac', 'ncore', 'prop', 'prop_obs', 'sbrt'
                 , 'suj', 'buracos_pos', 'fc_pos', 'ff_pos', 'furos_pos']
                 if 'bobines' in data:
                     for v in data['bobines']:
-                        bobine_values = {key: v[key] for key in v if key in columns}
+                        b={}
+                        if "defeitos" in v:
+                            for x in v["defeitos"]:
+                                if x["key"] in columns:
+                                    b[x["key"]] = 1
+                        bobine_values = {**{key: v[key] for key in v if key in columns}, **b} 
                         bobine_values['ff_m_ini'] = bobine_values['ff_pos'][0]['min'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['ff_m_fim'] = bobine_values['ff_pos'][0]['max'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['fc_diam_ini'] = bobine_values['fc_pos'][0]['min'] if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else None
