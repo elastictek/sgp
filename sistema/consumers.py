@@ -146,6 +146,7 @@ class RealTimeOfs(WebsocketConsumer):
     def loadPaletes(self, data):
         fof = data['value']['of_id'] if "of_id" in data['value'] else data['value']['ofs_id'] if "ofs_id" in data['value'] else None
         print("GETTING PALETES")
+        print(fof)
         if fof:
             connection = connections["default"].cursor()
             rows = dbgw.executeSimpleList(lambda:(f"""
@@ -156,7 +157,7 @@ class RealTimeOfs(WebsocketConsumer):
                     op.num_paletes_produzidas,
                     count(*) cnt
                     FROM sistema.planeamento_ordemproducao op
-                    left join sistema.producao_palete pl on pl.ordem_id=op.id
+                    left join sistema.producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
                     where pl.num_bobines=pl.num_bobines_act and op.id in ({fof})
                     group by op.id
             """),connection,{})['rows']
@@ -229,10 +230,11 @@ class RealTimeGeneric(WebsocketConsumer):
             self.send(text_data=json.dumps({"rows":rows,"item":"checklineevents","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
     def checkBobinagens(self,data):
-            with connections["default"].cursor() as cursor:
-                rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
-                hsh = json.dumps(rows,default=str)
-                self.send(text_data=json.dumps({"rows":rows,"item":"checkbobinagens","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+        print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEconsumers")
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
+            hsh = json.dumps(rows,default=str)
+            self.send(text_data=json.dumps({"rows":rows,"item":"checkbobinagens","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
 
     commands = {

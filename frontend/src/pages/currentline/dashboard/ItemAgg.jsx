@@ -64,7 +64,8 @@ export default ({ record, ofItem, card, parentReload }) => {
     useEffect(() => {
         if (lastJsonMessage) {
             const _totais = computeQty(ofItem, record.paletesstock);
-            _totais["paletes_produzidas"] = lastJsonMessage.rows.filter(obj => obj.num_bobines === obj.num_bobines_act).length;
+            _totais["paletes_produzidas"] = lastJsonMessage.rows.length>0 ? lastJsonMessage.rows[0].cnt : 0;
+            _totais["paletes_stock"] = lastJsonMessage.rows.length>0 ? lastJsonMessage.rows[0].num_paletes_stock_in : 0;
             _totais["done"] = (_totais["n_paletes"] === (_totais["paletes_produzidas"] + _totais["paletes_stock"])) ? 1 : (_totais["n_paletes"] < (_totais["paletes_produzidas"] + _totais["paletes_stock"])) ? 2 : 0;
             setTotais({ ..._totais });
         }
