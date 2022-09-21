@@ -474,12 +474,12 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             for (let [i, r] of dataAPI.getData().rows.entries()) {
                 const hasDefeitos = (r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
                 const estado = r.estado;
-                if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
-                    status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
-                }
-                if ((estado === "HOLD")/*  && !permission.allow() */) {
-                    status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
-                }
+                // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
+                //     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
+                // }
+                // if ((estado === "HOLD")/*  && !permission.allow() */) {
+                //     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
+                // }
                 if ((estado === "R" || estado === "DM") && !hasDefeitos) {
                     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
                 }
@@ -525,7 +525,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             if (status.formStatus.error.length === 0) {
                 try {
                     const { data: { rows: granulado } } = await fetchPost({ url: `${API_URL}/recicladolookup/`, pagination: { enabled: false, limit: 1 }, filter: { status: 0 }, sort: [{ column: "timestamp", direction: "desc" }] });
-                    if (granulado.length === 0) {
+                    if (granulado.length === 0 && bobinagem.valid==0) {
                         setModalParameters({ setFormStatus, submitting, status, data: { bobines: rows, values, bobinagem }, loadData });
                         showNewLoteModal();
                     } else {

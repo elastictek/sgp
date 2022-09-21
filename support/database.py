@@ -539,7 +539,6 @@ class MySqlSql(BaseSql):
             ret.filter = p.text
             ret.parameters = p.parameters
             ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {p.text})'
-
         if connOrCursor is not None:
             if isinstance(connOrCursor,ConnectionProxy):
                 with connOrCursor.cursor() as cursor:
@@ -705,7 +704,7 @@ class SqlServerSql(BaseSql):
             ret.filter = p.text
             ret.parameters = p.parameters
             ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {p.text})'
-
+        print(ret.statement)
         if connOrCursor is not None:
             if isinstance(connOrCursor,ConnectionProxy):
                 with connOrCursor.cursor() as cursor:
@@ -725,7 +724,6 @@ class SqlServerSql(BaseSql):
             ret.filter = f.value('and').text
             ret.parameters = f.parameters
             ret.statement = f'select * from {table} {f.text} OFFSET 0 ROWS FETCH FIRST {limit} ROWS ONLY'
-            print(ret.statement)
         else:
             ret = BaseSql.Rows()
             ret.filter = p.text

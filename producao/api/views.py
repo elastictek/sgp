@@ -5390,15 +5390,15 @@ def ValidarBobinagem(request, format=None):
     data = request.data['parameters']
 
     def checkIfIsValid(data, cursor):
-        exists = 0
-        if ("bobinagem_id" in data):
+        exists = 1
+        if ("bobinagem_id" in data or "bobinagem" in data):
             f = Filters({"id": data["bobinagem"]["id"], "valid":0})
             f.where()
             f.add(f'id = :id', True)
             f.add(f'valid = :valid', True)
             f.value("and")
             exists = db.exists("producao_bobinagem", f, cursor).exists
-        return exists
+        return 1 if exists==0 else 0
     
     def checkReciclado(data, cursor):
         f = Filters({"status": 0})
