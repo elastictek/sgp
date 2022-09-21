@@ -5482,9 +5482,6 @@ def ValidarBobinagem(request, format=None):
                 'car', 'fc', 'ff', 'fmp', 'lac', 'ncore', 'prop', 'sbrt', 'suj']
                 if 'bobines' in data:
                     for v in data['bobines']:
-                        print("####################xx##############################")
-                        print(v["defeitos"])
-                        print("#####################xx#############################")
                         b={}
                         for x in columns_defeitos:
                             if "defeitos" in v:
@@ -5508,7 +5505,7 @@ def ValidarBobinagem(request, format=None):
                         bobine_values['furos_pos'] = json.dumps(bobine_values['furos_pos'], ensure_ascii=False)
                         bobine_values['buracos_pos'] = json.dumps(bobine_values['buracos_pos'], ensure_ascii=False)
                         dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
-                        #db.execute(dml.statement, cursor, dml.parameters)
+                        db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": "Não existem dados para validar/classificar!"})
         return Response({"status": "success", "id": None, "title": f"A Bobinagem {data['bobinagem']['nome']} foi Validada/Classificada com Sucesso!", "subTitle": ''})
