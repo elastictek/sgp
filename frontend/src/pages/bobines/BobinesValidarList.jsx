@@ -320,7 +320,7 @@ const HoldButton = styled(Button)`
 const schemaRegister = ({ wrapObject = false, wrapArray = false, excludeKeys = [], keys = [] } = {}) => {
     return getSchema(Joi.object(
         pick(keys, {
-            largura_bruta: Joi.number().positive().label("Largura Bruta").required(),
+            //largura_bruta: Joi.number().positive().label("Largura Bruta").required(),
             comp_par: Joi.when(Joi.ref('$new_lote'), { is: 1, then: Joi.number().required() }).label("Comprimento da Emenda"),
             lotenwinf: Joi.string().required().label("Lote Nonwoven Inferior"),
             lotenwsup: Joi.string().required().label("Lote Nonwoven Superior")
@@ -474,10 +474,10 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             for (let [i, r] of dataAPI.getData().rows.entries()) {
                 const hasDefeitos = (r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
                 const estado = r.estado;
-                if ((r.estado_original === "HOLD") && !permission.allow()) {
+                if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
                     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
                 }
-                if ((estado === "HOLD") && !permission.allow()) {
+                if ((estado === "HOLD")/*  && !permission.allow() */) {
                     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
                 }
                 if ((estado === "R" || estado === "DM") && !hasDefeitos) {
@@ -497,24 +497,30 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
 
             }
 
+            if (bobinagem.nome.startsWith("20") && bobinagem.id>=107127){
+                if (!values?.largura_bruta || values?.largura_bruta<=0){
+                    status.formStatus.error.push({ message: <span>A<b>Largura Bruta</b> tem de ser preenchida!</span> });
+                }
+            }
 
-            console.log("list nw", nwList);
-            console.log(values.lotenwsup, "--", values.lotenwinf);
-            console.log(values.nwsup, "--", values.nwinf);
-            const lns = nwList.find(v => v.n_lote === values.lotenwsup && v.type === 1);
-            const lni = nwList.find(v => v.n_lote === values.lotenwinf && v.type === 0);
+            if (bobinagem.valid == 0) {
+                console.log("list nw", nwList);
+                console.log(values.lotenwsup, "--", values.lotenwinf);
+                console.log(values.nwsup, "--", values.nwinf);
+                const lns = nwList.find(v => v.n_lote === values.lotenwsup && v.type === 1);
+                const lni = nwList.find(v => v.n_lote === values.lotenwinf && v.type === 0);
 
-            if (!lns || !lni) {
-                status.formStatus.error.push({ message: <span>Não foram encontrados lotes de Nonwoven em linha!</span> });
-            }else{
-                let vs = lns.qty_reminder - convertToM2(values.nwsup,lns.largura);
-                let vi = lni.qty_reminder - convertToM2(values.nwinf,lni.largura);
-                console.log("44444444444444444444444444 ",vs)
-                //if (vs<(-100)){
-                //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
-                //}else if (vi<-100){
-                //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
-                //}
+                if (!lns || !lni) {
+                    status.formStatus.error.push({ message: <span>Não foram encontrados lotes de Nonwoven em linha!</span> });
+                } else {
+                    let vs = lns.qty_reminder - convertToM2(values.nwsup, lns.largura);
+                    let vi = lni.qty_reminder - convertToM2(values.nwinf, lni.largura);
+                    //if (vs<(-100)){
+                    //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
+                    //}else if (vi<-100){
+                    //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
+                    //}
+                }
             }
             if (status.formStatus.error.length === 0) {
                 try {
@@ -741,14 +747,14 @@ export default (props) => {
 
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
-        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>,editor: p => <FieldEstadoEditor p={p} /> , editorOptions: { editOnClick: true } },
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} /> , editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
-        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> } , formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> } , formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> } , formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, editor: p => <FieldEstadoEditor p={p} />, editorOptions: { editOnClick: true } },
+        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} />, editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
+        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
         { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="furos_pos" title="Furos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
-        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor: p => <FieldDefeitosEditor p={p} /> , editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
+        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
         { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
         { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
     ];
@@ -779,14 +785,14 @@ export default (props) => {
                 const _allowEdit = {
                     elevated: (dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
                     form: (dt.valid === 0) ? permission.allow({ producao: 100 }) : false,
-                    datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ producao: 100,qualidade: 100 })
+                    datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ producao: 100, qualidade: 100 })
                 };
 
 
                 setAllowEdit({ ..._allowEdit });
                 setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
 
-                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id:dt["agg_of_id"], valid: dt["valid"] });
+                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"] });
                 setNWList(await loadNWLookup(signal, { cs_status: 3, status: 1 }));
                 submitting.end();
                 return dt;
