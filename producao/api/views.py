@@ -5489,7 +5489,7 @@ def ValidarBobinagem(request, format=None):
                                     b[x]=0
                                 else:
                                     for y in v["defeitos"]:
-                                        if y["key"]==x:
+                                        if "key" in y and y["key"]==x:
                                             b[x] = 1
                                         else:
                                             b[x]=0
