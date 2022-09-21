@@ -28,7 +28,7 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer } from 
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission } from "utils/usePermission";
-import { Status } from './commons';
+import { Status, FormPrint } from './commons';
 
 const title = "Registo de Reciclado";
 const TitleForm = ({ data, onChange, details, level }) => {
@@ -354,7 +354,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button disabled={details?.status === 1} size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
     ];
     const [modalParameters, setModalParameters] = useState({});
-
     const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
         const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null });
         const [dirty, setDirty] = useState(false);
@@ -397,6 +396,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
             <WeighContent loteId={location?.state?.id} loadParentData={loadData} />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp(), modalParameters]);
+    const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={350} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
+
 
     const loadData = async ({ signal } = {}) => {
         const _details = await loadRecicladoLookup(location?.state?.id, signal);
@@ -474,6 +477,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         }
     }, [dataAPI.hasData(), details]);
 
+    const onPrint = () => {
+        setModalParameters({ reciclado:details, title: `Imprimir Etiqueta Reciclado ${details.lote} ` });
+        showPrintModal();
+    }
+
     return (
         <>
             {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} details={details} level={location?.state?.level} />}
@@ -496,6 +504,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<>
+                    <Button disabled={details?.status < 1} type='primary' icon={<PrinterOutlined />} onClick={onPrint} style={{ marginLeft: "5px" }}>Imprimir Etiqueta</Button>
                     {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}

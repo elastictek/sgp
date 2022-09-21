@@ -19,6 +19,7 @@ import MoreFilters from 'assets/morefilters.svg';
 import YScroll from "components/YScroll";
 import { MdAdjust } from 'react-icons/md';
 import { useNavigate, useLocation } from "react-router-dom";
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
@@ -79,6 +80,49 @@ export const Status = ({b}) =>{
     return(
         <StyledStatus onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b><div className='lar'>{b.largura}</div></StyledStatus>
     );
+}
+
+
+export const FormPrint = ({ v, parentRef, closeParent }) => {
+    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: 1 })
+    const onClick = async () => {
+        const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { type: "bobinagem", bobinagem: v.bobinagem, ...values } });
+        if (response.data.status !== "error") {
+            closeParent();
+        } else {
+            Modal.error({ title: response.data.title })
+        }
+
+    }
+
+    const onChange = (t, v) => {
+        setValues(prev => ({ ...prev, [t]: v }));
+    }
+
+    return (<>
+        <Container>
+            <Row>
+                <Col><b>Cópias:</b></Col>
+            </Row>
+            <Row>
+                <Col><InputNumber onChange={(v) => onChange("num_copias", v)} min={1} max={3} defaultValue={values.num_copias} /></Col>
+            </Row>
+            <Row>
+                <Col><b>Impressora:</b></Col>
+            </Row>
+            <Row>
+                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'Bobinadora_CAB_A4_200', label: 'BOBINADORA' }, { value: 'DM12_CAB_A4_200', label: 'DM12' }]} /></Col>
+            </Row>
+            <Row style={{ marginTop: "15px" }}>
+                <Col style={{ textAlign: "right" }}>
+                    <Space>
+                        <Button onClick={closeParent}>Cancelar</Button>
+                        <Button type="primary" onClick={onClick}>Imprimir</Button>
+                    </Space>
+                </Col>
+            </Row>
+        </Container>
+    </>);
 }
 
 

@@ -97,6 +97,51 @@ def PrintMPBuffer(request,format=None):
     #conn.printFile(printer_name,'/home/pi/Desktop/a.pdf',"",{}) 
     return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def PrintEtiqueta(request, format=None):
+    conn = connections["default"].cursor()
+    data = request.data.get("parameters")
+
+    def getEtiquetasBobinagem(data,cursor):
+        f = Filters({"bobinagem_id": data["bobinagem"]["id"]})
+        f.where()
+        f.add(f'bobinagem_id = :bobinagem_id', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_etiquetaretrabalho {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows
+        return None        
+
+    try:
+        with conn as cursor:
+            if data["type"] == "bobinagem":
+                etiquetas = getEtiquetasBobinagem(data,cursor)
+                if etiquetas is None:
+                    Response({"status": "error", "title": f'Erro ao imprimir etiquetas! Etiquetas não estão criadas.', "subTitle":None})
+                else:
+                    for v in etiquetas:
+                        dta={"impressora":data["impressora"], "num_copias":data["num_copias"], "estado_impressao":1}
+                        dml = db.dml(TypeDml.UPDATE,dta,"producao_etiquetaretrabalho",{"id":f'=={v["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+            if data["type"] == "reciclado":
+                if "id" not in data["reciclado"]:
+                    raise Exception(f'Erro ao imprimir etiquetas')
+                dml = db.dml(TypeDml.DELETE, None,'producao_etiquetareciclado',{"reciclado_id":f'=={ data["reciclado"]["id"]}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                dta = {
+                    "inicio":data["reciclado"]["timestamp"],"fim":data["reciclado"]["timestamp"],
+                    "lote":data["reciclado"]["lote"],"produto_granulado":data["reciclado"]["produto_granulado"],
+                    "peso":data["reciclado"]["peso"],"reciclado_id":data["reciclado"]["id"],
+                    "user_id":request.user.id,"impressora":data["impressora"],"num_copias":data["num_copias"], "estado_impressao":1
+                }
+                dml = db.dml(TypeDml.INSERT,dta,"producao_etiquetareciclado",None,None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "title": f'Etiqueta(s) imprimidas com sucesso', "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f'Erro ao imprimir etiquetas', "subTitle":str(error)})
 
 
 

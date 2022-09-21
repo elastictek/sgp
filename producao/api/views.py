@@ -228,38 +228,7 @@ def GetAuthUser(request, format=None):
     return Response({"isAuthenticated":user.is_authenticated, "user":user.username, "name":f"{user.first_name} {user.last_name}", "turno":{**turno} ,"groups":groups.all().values_list('name',flat=True), "permissions":items, "isAdmin":True if permission_acum>=admin_value else False})
 
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def PrintEtiqueta(request, format=None):
-    conn = connections["default"].cursor()
-    data = request.data.get("parameters")
 
-    def getEtiquetasBobinagem(data,cursor):
-        f = Filters({"bobinagem_id": data["bobinagem"]["id"]})
-        f.where()
-        f.add(f'bobinagem_id = :bobinagem_id', True)
-        f.value("and")        
-        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_etiquetaretrabalho {f.text}'), cursor, f.parameters)['rows']
-        if len(rows)>0:
-            return rows
-        return None        
-
-    try:
-        with conn as cursor:
-            if data["type"] == "bobinagem":
-                etiquetas = getEtiquetasBobinagem(data,cursor)
-                if etiquetas is None:
-                    Response({"status": "error", "title": f'Erro ao imprimir etiquetas! Etiquetas não estão criadas.', "subTitle":None})
-                else:
-                    for v in etiquetas:
-                        dta={"impressora":data["impressora"], "num_copias":data["num_copias"], "estado_impressao":1}
-                        dml = db.dml(TypeDml.UPDATE,dta,"producao_etiquetaretrabalho",{"id":f'=={v["id"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-        return Response({"status": "success", "title": f'Etiqueta(s) imprimidas com sucesso', "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f'Erro ao imprimir etiquetas', "subTitle":str(error)})
 
 
 

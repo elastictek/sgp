@@ -208,7 +208,7 @@ urlpatterns = [
     
     #LAYOUTS
     
-    re_path(r'^printetiqueta/$',views.PrintEtiqueta)
+    re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     
     
     
