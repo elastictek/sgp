@@ -122,7 +122,6 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     const keydownHandler = async (e, obj) => {
-        console.log("pickedddd--",value.current);
         if (e.srcElement.name === "qtd" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
