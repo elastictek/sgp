@@ -166,8 +166,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     useEffect(() => {
         if (lastJsonMessage !== null) {
-            console.log("LASVVVVVV",lastJsonMessage)
-            //setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
+            setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
         }
     }, [lastJsonMessage]);
 
@@ -496,7 +495,7 @@ export default ({ setFormTitle, ...props }) => {
                 if (lastValue.row.n_lote && lastValue?.dosers) {
                     let dosers = "";
                     let cuba;
-                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1) : -1;
+                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1 &&  x.vcr_num === lastValue.row.vcr_num) : -1;
                     if (lastValue.row.artigo_cod in formulacao) {
                         const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
                         if (!dosersOk) {

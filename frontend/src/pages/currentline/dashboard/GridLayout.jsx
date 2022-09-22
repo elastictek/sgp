@@ -381,7 +381,7 @@ const LeftArrow = ({ items, onShowDrawer }) => {
     const { isFirstItemVisible, scrollPrev } = useContext(VisibilityContext);
     return (
         <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{ fontSize: "8px" }}>v.220919.07.12</div></div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{ fontSize: "8px" }}>v.220922.13.18</div></div>
             <Button type="link" disabled={isFirstItemVisible} onClick={() => scrollPrev()} icon={<BsChevronCompactLeft style={{ fontSize: "24px" }} color={(isFirstItemVisible || items.length === 0) ? "#d9d9d9" : "#262626"} />} />
         </div>
     );
