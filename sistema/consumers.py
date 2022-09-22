@@ -364,7 +364,6 @@ class LotesPickConsumer(WebsocketConsumer):
 
 
         print("GETTTTTTTTTTTTTTTTTTTTTT")
-        print(values)
         values = data['value'].split(";")
         conngw = connections[connGatewayName].cursor()
         sageAlias = dbgw.dbAlias.get("sage")
