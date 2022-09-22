@@ -102,6 +102,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }, [lastJsonMessage]);
 
     const onPick = () => {
+
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
             const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
@@ -121,6 +122,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     const keydownHandler = async (e, obj) => {
+        console.log("pickedddd--",value.current);
         if (e.srcElement.name === "qtd" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
