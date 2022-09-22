@@ -108,6 +108,7 @@ export default ({dark=false}) => {
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`,'Cargas')}>Cargas</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`,'Pesagem')}>Pesagem</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`,'Stock')}>Stock</Button>
+                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/export_bobines_originais/`,'Exportar')}>Exportar</Button>
             </Panel>
         </StyledCollapse>
 
