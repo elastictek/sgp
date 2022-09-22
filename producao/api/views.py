@@ -5885,9 +5885,6 @@ def SaveRecicladoItems(request, format=None):
             where t.estado in ('BA','R')
         """), cursor, {})
         isLob = lob["rows"][0]["cnt"] if len(lob["rows"])>0 else 0
-        print("lotaaaaaaaaaaaa")
-        print(isLob)
-        print(bo)
         leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
         if len(leb["rows"])==0 and isLob==0:
             for idx, item in enumerate(data["rows"]):
