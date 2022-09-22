@@ -129,7 +129,7 @@ class RealTimeAlerts(WebsocketConsumer):
 
     def connect(self):
         print("USER")
-        user = User.objects.get(username=self.scope['user']) # get Some User.
+        #user = User.objects.get(username=self.scope['user']) # get Some User.
         
         async_to_sync(self.channel_layer.group_add)(self.room_group_name,self.channel_name)
         self.accept()
@@ -363,7 +363,8 @@ class LotesPickConsumer(WebsocketConsumer):
             # where (QTY_SUM > 0)
 
 
-
+        print("GETTTTTTTTTTTTTTTTTTTTTT")
+        print(values)
         values = data['value'].split(";")
         conngw = connections[connGatewayName].cursor()
         sageAlias = dbgw.dbAlias.get("sage")
