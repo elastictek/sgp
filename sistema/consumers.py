@@ -24,11 +24,13 @@ connGatewayName = "postgres"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 
+bufferID = None
+
 def executeAlerts():
     group_name = 'broadcast'
     channel_layer = channels.layers.get_channel_layer()
-    val = random.randint(100000, 999999)
-    print(f"{val}")
+
+
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
@@ -83,6 +85,14 @@ def executeAlerts():
          """), cursor, {})['rows']
     dataLotesAvailability = json.dumps(rows[0],default=str)
 
+    with connections[connGatewayName].cursor() as cursor:
+        rows = dbgw.executeSimpleList(lambda:(f"""SELECT "ROWID" FROM "SAGE-PROD"."STOJOU" WHERE "LOC_0"='BUFFER' AND "QTYPCU_0">0 ORDER BY "ROWID" DESC LIMIT 1"""),cursor,{})['rows']
+    bufferIn = json.dumps(rows[0],default=str)
+    if bufferID is None:
+        bufferID = hashlib.md5(bufferIn.encode()).hexdigest()
+    else:
+        print("----AUTO_PRINT----")
+
     async_to_sync(channel_layer.group_send)(group_name,{
         'type': "getAlerts", "data":{
             "igbobinagens":dataig_bobinagens,"bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
@@ -93,7 +103,8 @@ def executeAlerts():
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
                 "hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
                 "hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
-                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
+                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest(),
+                "hash_bufferin":hashlib.md5(bufferIn.encode()).hexdigest()
             }
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
@@ -363,7 +374,6 @@ class LotesPickConsumer(WebsocketConsumer):
             # where (QTY_SUM > 0)
 
 
-        print("GETTTTTTTTTTTTTTTTTTTTTT")
         values = data['value'].split(";")
         conngw = connections[connGatewayName].cursor()
         sageAlias = dbgw.dbAlias.get("sage")
