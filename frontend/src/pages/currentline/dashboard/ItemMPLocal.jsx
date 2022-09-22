@@ -102,6 +102,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
+        { key: 'VCRNUM_0', name: 'Transação' },
         { key: 'QTYPCU_0', name: 'Qtd.', width: 110, formatter: p => <Quantity v={p.row.QTYPCU_0} u={p.row.PCU_0} /> },
         { key: 'LOC_0', name: 'Localização', width: 110 },
         { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }

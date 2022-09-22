@@ -128,13 +128,14 @@ export default (props) => {
     const primaryKeys = ['ROWID'];
     const [modalParameters, setModalParameters] = useState({});
     const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={500} height={280}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
     ), [modalParameters]);
     const columns = [
         { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/>  },
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
+        { key: 'VCRNUM_0', name: 'Transação' },
         { key: 'QTYPCU_0', name: 'Qtd.', width: 110, formatter: p => <Quantity v={p.row.QTYPCU_0} u={p.row.PCU_0} /> },
         { key: 'LOC_0', name: 'Localização', width: 110 },
         { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }

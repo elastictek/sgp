@@ -70,7 +70,8 @@ def PrintMPBuffer(request,format=None):
             "artigo_des":request.data["parameters"]["ITMDES1_0"],
             "unit":request.data["parameters"]["PCU_0"],
             "qty":float(request.data["parameters"]["QTYPCU_0"]),
-            "vcr_num":request.data["parameters"]["VCRNUM_0"]
+            "vcr_num":request.data["parameters"]["VCRNUM_0"],
+            "obs":request.data["parameters"]["obs"] if "obs" in request.data["parameters"] else None 
         }
     })
     try:

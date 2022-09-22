@@ -5,6 +5,7 @@ import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } fro
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, PrinterOutlined } from '@ant-design/icons';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+import TextArea from 'antd/lib/input/TextArea';
 
 
 
@@ -58,7 +59,12 @@ export const FormPrint = ({ v, parentRef, closeParent }) => {
     }
 
     const onChange = (t, v) => {
-        setValues(prev => ({ ...prev, [t]: v }));
+        if (v?.target){
+            setValues(prev => ({ ...prev, [t]: v.target.value }));
+        }
+        else{
+            setValues(prev => ({ ...prev, [t]: v }));
+        }
     }
 
     return (<>
@@ -68,6 +74,9 @@ export const FormPrint = ({ v, parentRef, closeParent }) => {
             </Row>
             <Row>
                 <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]} /></Col>
+            </Row>
+            <Row style={{marginTop:"5px"}}>
+                <Col><TextArea rows={4} onChange={(v) => onChange("obs", v)} defaultValue={values.obs} style={{ width: "100%" }} /></Col>
             </Row>
             <Row style={{ marginTop: "15px" }}>
                 <Col style={{ textAlign: "right" }}>

@@ -299,7 +299,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             </Row>
 
         }
-        <Row align='center' gutterWidth={5}><Col>
+        <Row align='center' gutterWidth={5}><Col xs={11}>
             <Row align='center' gutterWidth={5} style={{ border: status ? "solid 2px #1890ff" : "solid 2px #f0f0f0", height: "50px", margin: "10px 0px" }}>
                 {status && <Col xs="content"><Blinker>|</Blinker></Col>}
                 <Col style={{ fontSize: "22px", fontWeight: 700, overflowX:"hidden", whiteSpace: "nowrap", textOverflow:"ellipsis" }}>{value.current}</Col>

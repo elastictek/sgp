@@ -201,6 +201,7 @@ def MateriasPrimasList(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({
         # "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        "VCRNUM_0": {"value": lambda v: v.get('fvcr'), "field": lambda k, v: f'ST."{k}"'},
         "LOT_0": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'ST."{k}"'},
         "QTYPCU_0": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'"{k}"'},
         **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'ST."CREDATTIM_0"::date')
