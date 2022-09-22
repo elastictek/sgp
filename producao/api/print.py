@@ -55,8 +55,6 @@ dbmssql = DBSql(connections[connMssqlName].alias)
 @permission_classes([IsAuthenticated])
 def PrintMPBuffer(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
-    print(request.data)
-
     tmp = tempfile.NamedTemporaryFile()
     print(tmp)
     print(tmp.name)
@@ -71,11 +69,10 @@ def PrintMPBuffer(request,format=None):
             "n_lote":request.data["parameters"]["LOT_0"],
             "artigo_des":request.data["parameters"]["ITMDES1_0"],
             "unit":request.data["parameters"]["PCU_0"],
-            "qty":float(request.data["parameters"]["QTYPCU_0"])
+            "qty":float(request.data["parameters"]["QTYPCU_0"]),
+            "vcr_num":request.data["parameters"]["VCRNUM_0"]
         }
     })
-    print(fstream)
-    return
     try:
         print(tmp.name)
         tmp.write(fstream.content)

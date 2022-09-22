@@ -34,7 +34,7 @@ import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
-import {MovGranuladoColumn} from "./commons"
+import { MovGranuladoColumn } from "./commons"
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -166,7 +166,8 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     useEffect(() => {
         if (lastJsonMessage !== null) {
-            setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
+            console.log("LASVVVVVV",lastJsonMessage)
+            //setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
         }
     }, [lastJsonMessage]);
 
@@ -186,11 +187,12 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                 value.current = '';
                 setCurrent(value.current);
             } else {
-                console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-                console.log("value",value.current)
-                sendJsonMessage({ cmd: 'getgranuladolotequantity', lote: v, unit: "kg" });
-                value.current = '';
-                setCurrent(value.current);
+                const pickValues = v.split(";");
+                if (pickValues.length === 5) {
+                    sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
+                    value.current = '';
+                    setCurrent(value.current);
+                }
             }
         }
     }
@@ -199,7 +201,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         if (e.srcElement.name === "qty_lote" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
-        
+
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
@@ -356,7 +358,7 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values,vcr_num:granulado[0].vcr_num }, parameters: { status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, vcr_num: granulado[0].vcr_num }, parameters: { status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -373,8 +375,8 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
     }
 
     const onValuesChange = (changedValues, values) => {
-        if ("entrada_linha" in changedValues){
-            setGranulado(granuladol.filter(v=>v.id===changedValues.entrada_linha));
+        if ("entrada_linha" in changedValues) {
+            setGranulado(granuladol.filter(v => v.id === changedValues.entrada_linha));
         }
     }
 
@@ -395,7 +397,7 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
                 </Row>
                 <Row style={{}} gutterWidth={10}>
                     <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}>
-                        <InputNumber disabled={granulado.length==0} size="small" addonAfter="kg" min={1} max={granulado.length>0 && granulado[0].qty_reminder}/>
+                        <InputNumber disabled={granulado.length == 0} size="small" addonAfter="kg" min={1} max={granulado.length > 0 && granulado[0].qty_reminder} />
                     </Field>
                     </Col>
                 </Row>
@@ -471,7 +473,7 @@ export default ({ setFormTitle, ...props }) => {
     const submitting = useSubmitting(true);
     const primaryKeys = ['vcr_num'];
     const columns = [
-        { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
+        { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', formatter: p => p.row.artigo_cod },
@@ -492,16 +494,16 @@ export default ({ setFormTitle, ...props }) => {
         useEffect(() => {
             if (lastValue.picked && lastValue.error === null) {
                 if (lastValue.row.n_lote && lastValue?.dosers) {
-                    let dosers="";
+                    let dosers = "";
                     let cuba;
-                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid===1) : -1;
+                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1) : -1;
                     if (lastValue.row.artigo_cod in formulacao) {
                         const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
                         if (!dosersOk) {
                             setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
                             return;
-                        }else{
-                            dosers=formulacao[lastValue.row.artigo_cod].dosers.join();
+                        } else {
+                            dosers = formulacao[lastValue.row.artigo_cod].dosers.join();
                             cuba = [...new Set(formulacao[lastValue.row.artigo_cod].cubas)][0];
                         }
                     } else {
@@ -509,8 +511,8 @@ export default ({ setFormTitle, ...props }) => {
                         return;
                     }
                     if (idx === -1) {
-                        dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), dosers: dosers, group_id:cuba, type_mov: 1 }, primaryKeys, 0);
-                        setLastValue(prev => ({ ...prev, row: {}, dosers: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, dosers: dosers, group_id:cuba } }));
+                        dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), dosers: dosers, group_id: cuba, type_mov: 1 }, primaryKeys, 0);
+                        setLastValue(prev => ({ ...prev, row: {}, dosers: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, dosers: dosers, group_id: cuba } }));
                     } else {
                         setLastValue(prev => ({ ...prev, error: "O Lote já foi registado!", picked: false }));
                     }
@@ -548,16 +550,16 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ signal } = {}) => {
         const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
         const data = loadInit({}, {}, props, location?.state, [...Object.keys(location?.state || {})]);
-        if (data?.formulacao){
+        if (data?.formulacao) {
             setRecord(data);
             formFilter.setFieldsValue({ ...initFilters, type: data?.type });
             dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
-            dataAPI.setSort([{column:"`order`", direction:"DESC"}]);
+            dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
             dataAPI.addParameters({}, true, true);
             dataAPI.fetchPost({ signal });
         }
-        else{            
-            Modal.error({title:"Não existe neste momento nenhuma produção em curso!"});
+        else {
+            Modal.error({ title: "Não existe neste momento nenhuma produção em curso!" });
         }
         submitting.end();
     };
