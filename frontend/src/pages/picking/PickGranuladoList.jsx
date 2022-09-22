@@ -189,8 +189,8 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                 setCurrent(value.current);
             } else {
                 const pickValues = v.split(";");
-                console.log("oooooooooooo----",v);
                 if (pickValues.length === 5) {
+                    console.log("oooooooooooXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXo----",v);
                     sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
                     value.current = '';
                     setCurrent(value.current);
