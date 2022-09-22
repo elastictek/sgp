@@ -215,6 +215,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             setCurrent(value.current);
         }
         else {
+            console.log("keycode....",keyCode)
             value.current = '';
             //setLastValue('');
         }
