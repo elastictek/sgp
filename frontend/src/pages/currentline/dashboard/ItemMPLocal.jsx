@@ -95,7 +95,7 @@ export default ({ record, card, parentReload }) => {
     const primaryKeys = ['ROWID'];
     const [modalParameters, setModalParameters] = useState({});
     const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={300} height={180}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
+        <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={500} height={280}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
     ), [modalParameters]);
     const columns = [
         { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/> },
