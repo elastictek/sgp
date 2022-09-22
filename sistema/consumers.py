@@ -267,7 +267,7 @@ class LotesPickConsumer(WebsocketConsumer):
             rows = dbgw.executeSimpleList(lambda:(f"""
             select round(pb.comp_actual*pl.largura/1000,2) qtd from producao_bobine pb 
             join producao_largura pl on pl.id=pb.largura_id
-            where nome = '{lote}'"""),connection,{})['rows']
+            where nome = '{lote}' and estado='R'"""),connection,{})['rows']
             if len(rows)>0:
                 if rows[0]["qtd"] == 0:
                     self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
@@ -275,8 +275,27 @@ class LotesPickConsumer(WebsocketConsumer):
                     self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
             else:
                 self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
-                #self.send(text_data=json.dumps({"qtd":2506,"source":type, "unit":unit, "lote":"20220607-01-01jhgjhyutuygjhgjhgYYHKJ JGFH"},default=str))
-                #self.send(text_data="")
+        elif type=='bobinagem':
+            connection = connections["default"].cursor()
+            rows = dbgw.executeSimpleList(lambda:(f"""
+            
+                select estado,cnttotal - count(*) over () cnt from (
+                SELECT 
+                count(*) over () cnttotal, pb.estado
+                FROM producao_bobinagem pbm
+                join producao_bobine pb on pb.bobinagem_id=pbm.id
+                where pbm.nome = '{lote}'
+                ) t 
+                where t.estado in ('R','BA')
+            
+            """),connection,{})['rows']
+            if len(rows)>0:
+                if rows[0]["cnt"] > 0 :
+                    self.send(text_data=json.dumps({"error":"O estado da bobinagem tem de ser R ou BA!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                else:
+                    self.send(text_data=json.dumps({"error":None,"row":{"qtd":0,"source":f'{type}_{rows[0]["estado"].lower()}', "unit":"kg", "lote":lote}},default=str))
+            else:
+                self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
         else:
             connection = connections["default"].cursor()
             rows = dbgw.executeSimpleList(lambda:(f"""SELECT SUM(CASE WHEN lotenwsup='{lote}' THEN nwsup ELSE nwinf END) comp FROM sistema.producao_bobinagem where lotenwsup='{lote}' or lotenwinf='{lote}'"""),connection,{})['rows']

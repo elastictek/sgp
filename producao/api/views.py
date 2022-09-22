@@ -5872,9 +5872,24 @@ def SaveRecicladoItems(request, format=None):
     data = request.data.get("parameters")
     def saveItems(data,cursor):
         eb = [p["lote"] for p in data["rows"] if p["source"] == "elasticband"]
+        bo = [p["lote"] for p in data["rows"] if p["source"] == "bobinagem_ba" or p["source"] == "bobinagem_r"]
         nw = [p["lote"] for p in data["rows"] if p["source"] == "nw"]
+        lob = {"rows":[]} if bo==[] else db.executeSimpleList(lambda: (f"""
+            select distinct  cnttotal - count(*) over () cnt from (
+            SELECT 
+            count(*) over () cnttotal, pb.estado
+            FROM producao_bobinagem pbm
+            join producao_bobine pb on pb.bobinagem_id=pbm.id
+            WHERE pbm.nome in({','.join(f'"{item}"' for item in bo)})
+            ) t 
+            where t.estado in ('BA','R')
+        """), cursor, {})
+        isLob = lob["rows"][0]["cnt"] if len(lob["rows"])>0 else 0
+        print("lotaaaaaaaaaaaa")
+        print(isLob)
+        print(bo)
         leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
-        if len(leb["rows"])==0:
+        if len(leb["rows"])==0 and isLob==0:
             for idx, item in enumerate(data["rows"]):
                 dml = db.dml(TypeDml.INSERT, {"reciclado_id":data["id"],"qtd":item["qtd"],"source":item["source"],"timestamp":item["timestamp"],"lote":item["lote"],"unit":item["unit"],"user_id":request.user.id}, "producao_recicladolotes",None,None,False)
                 dml.statement = f"""

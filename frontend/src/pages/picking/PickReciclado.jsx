@@ -105,7 +105,16 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
             const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
-            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: isElasticBand ? "elasticband" : "nw", unit: isElasticBand ? "m2" : "kg" });
+            let type = "nw";
+            if (isElasticBand) {
+                type = "elasticband";
+            } else {
+                if (v.match(/^\d{4}\d{2}\d{2}-\d{2}$/g)) {
+                    type = "bobinagem";
+                }
+            }
+
+            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: type, unit: isElasticBand ? "m2" : "kg" });
             value.current = '';
             setCurrent(value.current);
         }
@@ -301,7 +310,7 @@ const Details = ({ details, maxWidth, minWidth }) => {
                         <Col style={{ width: "200px", borderRight: "1px solid rgba(0,0,0,.06)" }}><b>{details.produto_granulado}</b></Col>
                         {
                             details.status === 1 && <>
-                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}><Status estado={details.estado}/></Col>
+                                <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}><Status estado={details.estado} /></Col>
                                 <Col xs={2} style={{ borderRight: "1px solid rgba(0,0,0,.06)" }}>{details.peso}</Col>
                                 <Col xs={2}>{details.tara}</Col>
                             </>
@@ -325,6 +334,10 @@ const source = (v) => {
         return "NONWOVEN";
     } else if (v === 'bobinagem') {
         return "BOBINAGEM";
+    } else if (v === 'bobinagem_ba') {
+        return "BOBINAGEM ARRANQUE";
+    } else if (v === 'bobinagem_r') {
+        return "BOBINAGEM REJEITADA";
     }
     return "";
 }
@@ -418,7 +431,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
 
     const onPickFinish = (values) => { console.log("picking", values) };
 
-    const deleteRow = async ({id,dataAPI}) => {
+    const deleteRow = async ({ id, dataAPI }) => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
@@ -438,16 +451,20 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const onDelete = (row, props) => {
         if (row?.notValid === 1) {
             //remove locally
-            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight:900 }}>{row.lote}</span> ?</div>, onOk: () => dataAPI.deleteRow({ id: row.id }, primaryKeys) });
+            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight: 900 }}>{row.lote}</span> ?</div>, onOk: () => dataAPI.deleteRow({ id: row.id }, primaryKeys) });
         }
         else {
-            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight:900 }}>{row.lote}</span> ?</div>, onOk: () => deleteRow({ id: row.id, dataAPI }, primaryKeys) });
+            Modal.confirm({ title: <div>Remover a entrada do Lote: <span style={{ color: "#cf1322", fontWeight: 900 }}>{row.lote}</span> ?</div>, onOk: () => deleteRow({ id: row.id, dataAPI }, primaryKeys) });
         }
     };
     const onSave = async () => {
         const status = { error: [], warning: [], info: [], success: [] };
         submitting.trigger();
         try {
+            let exists = dataAPI.getData().rows.some(v=>v.notValid===1 && (v.qtd===0 || v?.qtd===undefined || v?.qtd===null) );
+            if (exists===true){
+                throw new Error('A quantidade de cada um dos lotes tem de ser maior que zero!');
+            }
             const response = await fetchPost({ url: `${API_URL}/saverecicladoitems/`, parameters: { id: details.id, rows: dataAPI.getData().rows }, dates: [{ key: "timestamp", format: DATETIME_FORMAT }] });
             if (response.data.status !== "error") {
                 //navigate('/app/picking/pickreciclado', { state: { id: response.data.id[0] } });
@@ -458,8 +475,9 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 setFormStatus({ ...status });
             }
         } catch (e) {
-            status.error.push({ message: e.message });
-            setFormStatus({ ...status });
+            Modal.error({content:e.message});
+            //status.error.push({ message: e.message });
+            //setFormStatus({ ...status });
         } finally {
             submitting.end();
         }
@@ -468,17 +486,17 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
-    useEffect(() => {
-        if (dataAPI.hasData()) {
-            console.log("dddddd", details?.status, dataAPI.getData().rows, dataAPI.getData().rows.filter(v => {
-                console.log("######---------->", v?.notValid)
-                return v?.notValid === null
-            }).length);
-        }
-    }, [dataAPI.hasData(), details]);
+    /*     useEffect(() => {
+            if (dataAPI.hasData()) {
+                console.log("dddddd", details?.status, dataAPI.getData().rows, dataAPI.getData().rows.filter(v => {
+                    console.log("######---------->", v?.notValid)
+                    return v?.notValid === null
+                }).length);
+            }
+        }, [dataAPI.hasData(), details]); */
 
     const onPrint = () => {
-        setModalParameters({ reciclado:details, title: `Imprimir Etiqueta Reciclado ${details.lote} ` });
+        setModalParameters({ reciclado: details, title: `Imprimir Etiqueta Reciclado ${details.lote} ` });
         showPrintModal();
     }
 
