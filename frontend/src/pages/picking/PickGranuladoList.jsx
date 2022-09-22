@@ -171,6 +171,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }, [lastJsonMessage]);
 
     const onPick = (formulacao) => {
+        console.log("FFFFFFFFFFFFFFFFFFFFFFFFFF----",value);
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
             if (DOSERS.some(x => x.value === v.toUpperCase())) {
@@ -197,18 +198,12 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     const keydownHandler = async (e, obj, formulacao) => {
-        console.log("picked",pick.current);
         if (e.srcElement.name === "qty_lote" || e.srcElement.name === "unit" || !pick.current) {
             return;
         }
-        console.log("pickedddd--BEFORE-prevent");
         e.preventDefault();
-        console.log("after-prevent")
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
-        console.log(obj);
-        console.log(e);
         if (keyCode == 9 || keyCode == 13) {
-            console.log("onpink")
             onPick(formulacao);
         } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
             value.current = `${value.current}${e.key}`;
