@@ -86,7 +86,7 @@ def executeAlerts():
     dataLotesAvailability = json.dumps(rows[0],default=str)
 
     with connections[connGatewayName].cursor() as cursor:
-        rows = dbgw.executeSimpleList(lambda:(f"""SELECT "ROWID" FROM "SAGE-PROD"."STOJOU" WHERE "LOC_0"='BUFFER' AND "QTYPCU_0">0 ORDER BY "ROWID" DESC LIMIT 1"""),cursor,{})['rows']
+        rows = dbgw.executeSimpleList(lambda:(f"""SELECT 1 FROM "SAGE-PROD"."STOJOU" WHERE "LOC_0"='BUFFER' AND "QTYPCU_0">0 ORDER BY "ROWID" DESC LIMIT 1"""),cursor,{})['rows']
     bufferIn = json.dumps(rows[0],default=str)
     if bufferID is None:
         bufferID = hashlib.md5(bufferIn.encode()).hexdigest()
