@@ -20,11 +20,11 @@ import hashlib
 from django.db import connections
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
 
+connMssqlName = "sqlserver"
 connGatewayName = "postgres"
+dbmssql = DBSql(connections[connMssqlName].alias)
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
-
-bufferID = None
 
 def executeAlerts():
     group_name = 'broadcast'
@@ -85,14 +85,6 @@ def executeAlerts():
          """), cursor, {})['rows']
     dataLotesAvailability = json.dumps(rows[0],default=str)
 
-    with connections[connGatewayName].cursor() as cursor:
-        rows = dbgw.executeSimpleList(lambda:(f"""SELECT 1 FROM "SAGE-PROD"."STOJOU" WHERE "LOC_0"='BUFFER' AND "QTYPCU_0">0 ORDER BY "ROWID" DESC LIMIT 1"""),cursor,{})['rows']
-    bufferIn = json.dumps(rows[0],default=str)
-    if bufferID is None:
-        bufferID = hashlib.md5(bufferIn.encode()).hexdigest()
-    else:
-        print("----AUTO_PRINT----")
-
     async_to_sync(channel_layer.group_send)(group_name,{
         'type': "getAlerts", "data":{
             "igbobinagens":dataig_bobinagens,"bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
@@ -103,8 +95,7 @@ def executeAlerts():
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
                 "hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
                 "hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
-                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest(),
-                "hash_bufferin":hashlib.md5(bufferIn.encode()).hexdigest()
+                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
             }
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
@@ -240,8 +231,21 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checklineevents","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
+    def checkBufferIn(self,data):
+        print("IM CHECKING")
+        with connections[connMssqlName].cursor() as cursor:
+            rows = dbmssql.executeSimpleList(lambda:(f"""
+            
+                SELECT TOP 1 ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0" 
+                FROM ELASTICTEK."STOJOU" ST 
+                JOIN ELASTICTEK."ITMMASTER" IM on IM."ITMREF_0" = ST."ITMREF_0"
+                WHERE ST."LOC_0"='BUFFER' AND ST."QTYPCU_0">0 ORDER BY ST."ROWID" DESC
+            
+            """),cursor,{})['rows']
+            hsh = json.dumps(rows,default=str)
+            self.send(text_data=json.dumps({"rows":rows,"item":"checkbufferin","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
     def checkBobinagens(self,data):
-        print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEconsumers")
         with connections["default"].cursor() as cursor:
             rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
             hsh = json.dumps(rows,default=str)
@@ -254,7 +258,8 @@ class RealTimeGeneric(WebsocketConsumer):
         'checknw':checkNW,
         'checkcores':checkCores,
         'checklineevents':checkLineEvents,
-        'checkbobinagens':checkBobinagens
+        'checkbobinagens':checkBobinagens,
+        'checkbufferin':checkBufferIn
     }
 
     def connect(self):

@@ -12,9 +12,9 @@ import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, noValue } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
-import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Modal } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Modal, Badge } from "antd";
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, PrinterOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, PrinterOutlined, SyncOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
 import loadInit from "utils/loadInit";
@@ -77,13 +77,110 @@ const SelectedTitle = ({ v, cardTitle }) => {
     const title = () => {
         switch (v) {
             case "-1": return "";
-            default: return v!==undefined ? `em ${v}` : "" ;
+            default: return v !== undefined ? `em ${v}` : "";
         }
     }
 
     return (<div>{cardTitle} <span>{title()}</span></div>);
 }
 
+
+const ModeAutoPrint = () => {
+    const [lastNum, setLastNum] = useState(null);
+    const [printed, setPrinted] = useState([]);
+    const [valuesForm, setValuesForm] = useState({ impressora: "PRINTER-BUFFER" })
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
+
+    const onPrint = (row) => {
+        setModalParameters({ title: "Imprimir Etiqueta", row });
+        showPrintModal();
+    }
+
+    const loadData = async ({ signal } = {}) => {
+        const request = (async () => sendJsonMessage({ cmd: 'checkbufferin', value: {} }));
+        request();
+        return setInterval(request, 10000);
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const interval = loadData({ signal: controller.signal });
+        return (() => { controller.abort(); clearInterval(interval); });
+    }, []);
+
+
+    useEffect(() => {
+        if (lastJsonMessage) {
+            if (lastNum === null) {
+                if (lastJsonMessage?.rows && lastJsonMessage.rows.length > 0) {
+                    setLastNum(lastJsonMessage.rows[0]["VCRNUM_0"]);
+                } else {
+                    setLastNum(0);
+                }
+            } else {
+                if (lastJsonMessage?.rows && lastJsonMessage.rows.length > 0) {
+                    if (lastNum !== lastJsonMessage.rows[0]["VCRNUM_0"]) {
+                        print(lastJsonMessage.rows[0]);
+                        setLastNum(lastJsonMessage.rows[0]["VCRNUM_0"]);
+                    }
+                }
+            }
+        }
+    }, [lastJsonMessage?.hash]);
+
+    const print = (record) => {
+
+        (async () => {
+            const response = await fetchPost({ url: `${API_URL}/printmpbuffer/`, parameters: { ...record, ...valuesForm } });
+            if (response.data.status !== "error") {
+                setPrinted(prev => [...prev, { ...record, error: false }]);
+            } else {
+                setPrinted(prev => [...prev, { ...record, error: false }]);
+            }
+        })();
+
+
+    }
+
+    const onChange = (t, v) => {
+        if (v?.target) {
+            setValuesForm(prev => ({ ...prev, [t]: v.target.value }));
+        }
+        else {
+            setValuesForm(prev => ({ ...prev, [t]: v }));
+        }
+    }
+
+    return (<Container fluid>
+        <Row><Col style={{ fontWeight: 900, textAlign: "center", marginBottom: "5px" }}><SyncOutlined spin /> Impressão de entrada em Buffer, via PDA!</Col></Row>
+        <Row>
+            <Col style={{ textAlign: "center" }}><Select onChange={(v) => onChange("impressora", v)} defaultValue={valuesForm.impressora} style={{ width: "250px", textAlign: "left" }} options={[{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]} /></Col>
+        </Row>
+        <Row nogutter><Col style={{ paddingTop: '5px' }}>
+
+            <YScroll style={{ height: "280px" }}>
+
+                {printed.map((v,i) => {
+                    return (
+                        <Row key={`mp-${v.VCRNUM_0}-${i}`} nogutter style={{ borderBottom: "solid 1px #d9d9d9", paddingBottom: "2px" }}>
+                            <Col xs="content" style={{ marginRight: "5px" }}><PrinterOutlined onClick={() => print(v)} style={{ fontSize: "16px", cursor: "pointer" }} /></Col>
+                            <Col xs={2}><b>{v.ITMREF_0}</b></Col><Col xs={2}><b>{v.LOT_0}</b></Col><Col xs={5}>{v.ITMDES1_0}</Col><Col xs={2}>{v.QTYPCU_0} {v.PCU_0}</Col><Col xs="content">{v.error ? <Badge status="error" /> : <Badge status="success" />}</Col>
+                        </Row>
+                    )
+                })}
+
+            </YScroll>
+
+        </Col></Row>
+    </Container>);
+}
 
 
 
@@ -97,8 +194,11 @@ export default ({ record, card, parentReload }) => {
     const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
         <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={500} height={280}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
     ), [modalParameters]);
+    const [showPrintPDAModal, hidePrintPDAModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal maskClosable={false} title={modalParameters.title} footer="none" onCancel={hidePrintPDAModal} width={800} height={380}><ModeAutoPrint v={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
     const columns = [
-        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/> },
+        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
@@ -116,13 +216,13 @@ export default ({ record, card, parentReload }) => {
         reconnectAttempts: 500
     });
 
-    const onPrint = (row)=>{
-        setModalParameters({title:"Imprimir Etiqueta",row});
+    const onPrint = (row) => {
+        setModalParameters({ title: "Imprimir Etiqueta", row });
         showPrintModal();
     }
 
     const loadData = async ({ signal } = {}) => {
-        //const request = (async () => sendJsonMessage({ cmd: 'checklineevents', value: {} }));
+        //const request = (async () => sendJsonMessage({ cmd: 'checkbufferin', value: {} }));
         //request();
         const ok = dataAPI.fetchPost();
         //return (ok) ? setInterval(request, 30000) : null;
@@ -134,8 +234,8 @@ export default ({ record, card, parentReload }) => {
         return (() => { controller.abort(); clearInterval(interval); });
     }, []);
 
-    /* 
-        useEffect(() => {
+
+    /*     useEffect(() => {
             if (lastJsonMessage) {
                 dataAPI.fetchPost();
             }
@@ -159,6 +259,11 @@ export default ({ record, card, parentReload }) => {
         dataAPI.fetchPost();
     }
 
+    const onModePrintPDA = () => {
+        setModalParameters({ title: "Impressão via PDA" });
+        showPrintPDAModal();
+    }
+
     return (
         <>
             <Card
@@ -168,7 +273,7 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard /* data={record} */ title={<SelectedTitle v={dataAPI.getFilter(true)?.loc} cardTitle={card.title} />} />}
-                extra={<SelectData onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
+                extra={<Space><Button onClick={onModePrintPDA}>Impressão PDA</Button><SelectData onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} /></Space>}
             >
                 <YScroll>
                     <Table

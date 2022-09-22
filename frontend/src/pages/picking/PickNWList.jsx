@@ -597,7 +597,6 @@ export default ({ setFormTitle, ...props }) => {
     };
     const onFilterChange = (changedValues, values) => { 
         if ("type" in changedValues) {
-            console.log("aaaaa")
             navigate("/app/picking/picknwlist", { state: { ...location?.state, ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
         }
     };
@@ -605,7 +604,7 @@ export default ({ setFormTitle, ...props }) => {
     return (
         <>
             {record &&
-                <>
+                <YScroll>
                     {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={record} level={location?.state?.level} form={formFilter} />}
                     <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
                     <Table
@@ -637,7 +636,7 @@ export default ({ setFormTitle, ...props }) => {
                             moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
                         }}
                     />
-                </>}
+                </YScroll>}
         </>
     );
 }

@@ -502,7 +502,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
     }
 
     return (
-        <>
+        <YScroll>
             {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} details={details} level={location?.state?.level} />}
             <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
             <Table
@@ -532,6 +532,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 //paginationPos='top'
                 toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
             />
-        </>
+        </YScroll>
     );
 }

@@ -176,8 +176,9 @@ class BaseSql:
         if self.typeDB==TypeDB.SQLSERVER:
             sqParameters=[]
             def replaceParams(m):
-                sqParameters.append(parameters[m.group(0)[2:-2]])
-                return rep[re.escape(m.group(0))]
+                if m.group(0)[2:-2] in parameters:
+                    sqParameters.append(parameters[m.group(0)[2:-2]])
+                    return rep[re.escape(m.group(0))]
 
             rep = dict((re.escape(f"%({k})s"), "%s") for k, v in parameters.items()) 
             pattern = re.compile("|".join(rep.keys()))
