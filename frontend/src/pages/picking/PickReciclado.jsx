@@ -130,10 +130,10 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
             onPick();
-        } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
+        } else if ((keyCode >= 48 && keyCode <= 90) || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
-        } else if (keyCode == 16) {
+        } else if (keyCode == 16 || keyCode == 18) {
 
         } else if (keyCode === 8) {
             value.current = value.current.slice(0, -1);
