@@ -5,9 +5,7 @@
 
 
 <div class="container">
-    <a href="{% url 'producao:planeamento_home' %}" class="btn btn-outline-primary" role="button">Voltar</a>
     {% if request.user|has_group:"Logistica Supervisor" %}
-    <a href="{% url 'planeamento:create_ordem' %}" class="btn btn-outline-primary" role="button">Nova Ordem de Produção Linha</a>
     <a href="{% url 'planeamento:create_ordem_dm' %}" class="btn btn-outline-primary" role="button">Nova Ordem de Produção DM</a>
     {% endif %}
     
@@ -23,9 +21,6 @@
             <input type="submit" value="Procurar" class="btn btn-primary">
             <a href="{% url 'planeamento:list_ordem_retrabalho' %}" class="btn btn-outline-primary">Reset</a>
         </form>
-        <div>
-            <a href="{% url 'planeamento:list_ordem' %}" class="btn btn-outline-primary" role="button">Ordens de Produção Linha 1</a>
-        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-fixed">

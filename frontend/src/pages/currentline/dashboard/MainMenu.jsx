@@ -100,6 +100,7 @@ export default ({dark=false}) => {
                 <Button size='small' type="link" onClick={() => navigate('/app/logslist/lineloglist', {})}>Eventos da Linha</Button>
             </Panel>
             <Panel header={<b>Retrabalho</b>} key="4">
+                <Button size='small' type="link" onClick={() => onClickItemFrame(`/planeamento/ordemdeproducao/list-retrabalho/`,'Ordens de Retrabalho')}>Ordens de Retrabalho</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/retrabalho/`,'Bobinagens de Retrabalho')}>Bobinagens de Retrabalho</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/retrabalho/`,'Paletes de Retrabalho')}>Paletes de Retrabalho</Button>
             </Panel>
