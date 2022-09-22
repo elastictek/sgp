@@ -151,7 +151,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     const onPick = () => {
         if (value.current !== '') {
-            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
+            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
             if (v.toUpperCase() === "SUP" || v.toUpperCase() === "INF") {
                 setLastValue(prev => ({ ...prev, picked: true, type: v.toUpperCase() === "SUP" ? 1 : 0 }));
                 value.current = '';

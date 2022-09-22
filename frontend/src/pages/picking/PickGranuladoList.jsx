@@ -172,7 +172,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     const onPick = (formulacao) => {
         if (value.current !== '') {
-            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
+            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
             if (DOSERS.some(x => x.value === v.toUpperCase())) {
                 setLastValue(prev => {
                     let av = (prev?.dosers) ? prev.dosers.split(",") : [];

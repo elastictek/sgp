@@ -103,7 +103,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
     const onPick = () => {
         if (value.current !== '') {
-            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current;
+            const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
             const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
             let type = "nw";
             if (isElasticBand) {
