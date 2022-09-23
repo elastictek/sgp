@@ -5474,6 +5474,11 @@ def ValidarBobinagem(request, format=None):
                         bobine_values['ff_pos'] = json.dumps(bobine_values['ff_pos'], ensure_ascii=False)
                         bobine_values['furos_pos'] = json.dumps(bobine_values['furos_pos'], ensure_ascii=False)
                         bobine_values['buracos_pos'] = json.dumps(bobine_values['buracos_pos'], ensure_ascii=False)
+                        bobine_values["ff"] = 1 if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else 0
+                        bobine_values["fc"] = 1 if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else 0
+                        bobine_values["furos"] = 1 if bobine_values['furos_pos'] is not None and len(bobine_values['furos_pos'])>0 else 0
+                        bobine_values["buraco"] = 1 if bobine_values['buracos_pos'] is not None and len(bobine_values['buracos_pos'])>0 else 0
+
                         dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
                         db.execute(dml.statement, cursor, dml.parameters)
                 else:
