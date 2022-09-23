@@ -158,7 +158,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
                 setCurrent(value.current);
             } else {
                 let _value = v.split(";");
-                _value = _value.length===5 ? _value[1] : v;
+                _value = _value.length>=5 ? _value[1] : v;
                 sendJsonMessage({ cmd: 'getnwlotequantity', lote: _value, unit: "m2" });
                 value.current = '';
                 setCurrent(value.current);

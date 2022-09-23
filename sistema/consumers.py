@@ -396,7 +396,8 @@ class LotesPickConsumer(WebsocketConsumer):
             rowsx = db.executeSimpleList(lambda:(f"""select id from lotesnwlinha where n_lote = '{values[1]}' and artigo_cod='{values[0]}' and vcr_num='{values[4]}'"""),conn,{})['rows']
             if len(rowsx)>0:
                 self.send(text_data=json.dumps({"error":"O lote de Granulado já foi registado!","row":{"qty_lote":values[2],"unit":values[3], "n_lote":values[1]}},default=str))
-            self.send(text_data=json.dumps({"error":None,"row":{"lote_id":rows[0]["lote_id"],"artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }},default=str))
+            obs = values[5] if len(values>5) else ''
+            self.send(text_data=json.dumps({"error":None,"row":{"lote_id":rows[0]["lote_id"],"obs":obs, "artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }},default=str))
         else:
             self.send(text_data=json.dumps({"error":"O lote de Granulado não existe ou não se enconta em buffer!","row":{"qty_lote":0, "unit":values[3], "n_lote":values[1]}},default=str))
 

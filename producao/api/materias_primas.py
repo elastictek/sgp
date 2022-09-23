@@ -584,6 +584,7 @@ def SaveGranuladoItems(request, format=None):
                  "status":-1,
                  "vcr_num":item["vcr_num"],
                  "qty_reminder":item["qty_reminder"],
+                 "obs": item["obs"] if "obs" in item else "",
                  "user_id":request.user.id}, 
                  "lotesgranuladolinha",None,None,False)
             dml.statement = f"""

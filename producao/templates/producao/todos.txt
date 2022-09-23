@@ -10,6 +10,8 @@
 --Formulação para alteração de doseadores dividir Extrusora B e C
 --widget alteração da ordem de produção
 --ao preencher defeitos com range não marca bit a 1
+--ao dar entrada na granuladora adicionar opção da tara com ou sem e (peso do core)
+--Guardar obs das etiquetas aquando da entrada de material em linha
 
 
 --alteração de nonwoven (Planeamento)
