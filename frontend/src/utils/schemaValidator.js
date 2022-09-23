@@ -59,8 +59,9 @@ export const pick = (keys, obj, exclude = []) => {
     return result;
 };
 
-export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false) => {
-    if (keys !== null && !Array.isArray(keys)) {
+export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false,forceversion1=false) => {
+    if (keys !== null && !Array.isArray(keys) && !forceversion1) {
+        console.log("v222222222222222222222222222222222222")
         return getSchemav2(rules, keys);
     }
     if (keys.length == 0 && excludeKeys.length == 0) {

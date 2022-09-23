@@ -30,7 +30,7 @@ const schema = (keys, excludeKeys) => {
         densidade_BC: Joi.number().label("Densidade").required(),
         arranque_BC: Joi.number().label("Arranque").required()
        /*  mangueira_BC: Joi.string().label("Mangueira Extrusora BC").required() */
-    }, keys, excludeKeys).unknown(true);
+    }, keys, excludeKeys,false,true).unknown(true);
 }
 
 const setId = (id) => {
@@ -328,12 +328,14 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         const items = [];
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["formu_materiasprimas_A", "formu_materiasprimas_BC"];
-        const v = schema(false, [/* 'mangueira_A', */ 'matprima_cod_A', 'densidade_A', 'arranque_A', /* 'mangueira_BC', */ 'matprima_cod_BC', 'densidade_BC', 'arranque_BC']).validate(values, { abortEarly: false });
+        const v = schema(false, [/* 'mangueira_A', */ 'matprima_cod_A', 'densidade_A', 'arranque_A', /* 'mangueira_BC', */ 'matprima_cod_BC', 'densidade_BC', 'arranque_BC'],1).validate(values, { abortEarly: false });
         status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
         let fieldValues;
+        console.log("UYUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU",v.error,values)
         if (!v.error) {
             fieldValues = updateGlobals({ values, action: "finish" });
+            
             /* let mA = fieldValues.formu_materiasprimas_A.map((v) => v.mangueira_A);
             let mBC = fieldValues.formu_materiasprimas_BC.map((v) => v.mangueira_BC); */
 
@@ -356,7 +358,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 status.error.push({ message: "O Total das Matérias Primas das Extrusoras B&C tem de ser 100%!" });
             }
         }
-
         if (status.error.length === 0 && fieldValues) {
             for (let v of fieldValues?.formu_materiasprimas_A) {
                 let matprima_des = matPrimasLookup.find(val => val.ITMREF_0 === v.matprima_cod_A)?.ITMDES1_0;
