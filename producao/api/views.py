@@ -5465,6 +5465,9 @@ def ValidarBobinagem(request, format=None):
                                             b[x]=0
                             else:
                                 b[x]=0
+                        print("VALIDATING-------------------")
+                        print(bobine_values['buracos_pos'])
+                        print("END VALIDATING")
                         bobine_values = {**{key: v[key] for key in v if key in columns}, **b} 
                         bobine_values['ff_m_ini'] = bobine_values['ff_pos'][0]['min'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['ff_m_fim'] = bobine_values['ff_pos'][0]['max'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
