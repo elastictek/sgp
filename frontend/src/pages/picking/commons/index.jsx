@@ -89,7 +89,7 @@ export const MovGranuladoColumn = ({ value }) => {
 
 
 export const FormPrint = ({ v, parentRef, closeParent }) => {
-    const [values, setValues] = useState({ impressora: "1ARMAZEM_CAB_SQUIX_6.3_200", num_copias: 4 })
+    const [values, setValues] = useState({ impressora: "ARMAZEM_CAB_SQUIX_6.3_200", num_copias: 4 })
     const onClick = async () => {
         const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { type: "reciclado", reciclado: { ...v.reciclado, timestamp: moment(v.reciclado.timestamp).format(DATETIME_FORMAT) }, ...values } });
         if (response.data.status !== "error") {

@@ -165,7 +165,6 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     });
 
     useEffect(() => {
-        console.log(lastJsonMessage,"----------------------------------------------")
         if (lastJsonMessage !== null) {
             setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, dosers: prev?.dosers, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));
         }
@@ -174,7 +173,6 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     const onPick = (formulacao) => {
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
-            console.log("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV----",v);
             if (DOSERS.some(x => x.value === v.toUpperCase())) {
                 setLastValue(prev => {
                     let av = (prev?.dosers) ? prev.dosers.split(",") : [];
@@ -190,7 +188,6 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             } else {
                 const pickValues = v.split(";");
                 if (pickValues.length === 5) {
-                    console.log("oooooooooooXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXo----",v);
                     sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
                     value.current = '';
                     setCurrent(value.current);
