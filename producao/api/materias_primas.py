@@ -431,7 +431,7 @@ def SaveNWItems(request, format=None):
                 "qty_consumed":item["qty_consumed"],
                 "audit_cs_id":acs["id"],
                 "inuse":0,
-                "queue":"(SELECT q FROM (SELECT ifnull(max(queue),0)+1 q FROM sistema.lotesnwlinha where status=1) t)",
+                "queue":f"""(SELECT q FROM (SELECT ifnull(max(queue),0)+1 q FROM sistema.lotesnwlinha where status=1 and type={item["type"]}) t)""",
                 "agg_of_id":acs["agg_of_id"],
                 "user_id":request.user.id}, 
                 "lotesnwlinha",None,None,False,["queue"])
@@ -471,26 +471,25 @@ def UpdateNW(request, format=None):
         f.add(f'id = :id', True)
         f.value("and")
         response = db.executeSimpleList(lambda: (f"""
-            select id 
+            select id, type 
             from lotesnwlinha
             {f.text} limit 1
         """), cursor, f.parameters)
         print(f.parameters)
         if len(response["rows"])>0:
-            return response["rows"][0]["id"]
+            return response["rows"][0]
         return None
-
+    
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                nwid = checkNW(filter["id"],cursor)
-                if (nwid is not None):
-                    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
+                nwd = checkNW(filter["id"],cursor)
+                if (nwd is not None):
+                    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwd["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                     if "status" in data and data["status"]==0:
-                        dml = db.dml(TypeDml.UPDATE,{"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
+                        dml = db.dml(TypeDml.UPDATE,{"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1',"type":f'=={nwd["type"]}'},None,False,["queue"])
                         db.execute(dml.statement, cursor, dml.parameters)
-
                 else:
                     return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
         return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})

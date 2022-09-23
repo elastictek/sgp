@@ -188,7 +188,6 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             } else {
                 const pickValues = v.split(";");
                 if (pickValues.length >= 5) {
-                    console.log("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",v)
                     sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
                     value.current = '';
                     setCurrent(value.current);
@@ -553,6 +552,9 @@ export default ({ setFormTitle, ...props }) => {
         if (data?.formulacao) {
             setRecord(data);
             formFilter.setFieldsValue({ ...initFilters, type: data?.type });
+
+
+            
             dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
             dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
             dataAPI.addParameters({}, true, true);
@@ -571,6 +573,9 @@ export default ({ setFormTitle, ...props }) => {
         return (() => controller.abort());
     }, [location?.state?.type]);
 
+
+
+    
     const onPickFinish = (values) => { console.log("picking", values) };
 
     const deleteRow = async ({ id, dataAPI }) => {
