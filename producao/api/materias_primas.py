@@ -410,10 +410,10 @@ def SaveNWItems(request, format=None):
     def saveItems(data,cursor):
         nws = json.loads(acs["nonwovens"])
         for idx, item in enumerate([d for d in data["rows"] if "notValid" in d and d['notValid']==1]):
-            #if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
-            #    raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-            #if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
-            #    raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+            if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
+                raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+            if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
+                raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
             dml = db.dml(TypeDml.INSERT, {
                 "lote_id":item["lote_id"], 
                 "qty_lote":item["qty_lote"],
@@ -430,9 +430,10 @@ def SaveNWItems(request, format=None):
                 "qty_consumed":item["qty_consumed"],
                 "audit_cs_id":acs["id"],
                 "inuse":0,
+                "queue":"(SELECT ifnull(max(queue),0)+1 FROM sistema.lotesnwlinha where status=1)",
                 "agg_of_id":acs["agg_of_id"],
                 "user_id":request.user.id}, 
-                "lotesnwlinha",None,None,False)
+                "lotesnwlinha",None,None,False,["queue"])
             dml.statement = f"""
                 {dml.statement}
                 ON DUPLICATE KEY UPDATE 
@@ -484,6 +485,10 @@ def UpdateNW(request, format=None):
                 if (nwid is not None):
                     dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
+                    if "status" in data and data["status"]==0:
+                        dml = db.dml(TypeDml.UPDATE,{"queue":"(queue-1)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
+                        db.execute(dml.statement, cursor, dml.parameters)
+
                 else:
                     return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
         return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})

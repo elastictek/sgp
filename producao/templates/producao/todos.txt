@@ -8,6 +8,7 @@
 --Dados base exportar dados das bobines originais (Falar com o João)
 --Queues de Nonwovens para entrada em linha
 --Formulação para alteração de doseadores dividir Extrusora B e C
+--widget alteração da ordem de produção
 
 
 --alteração de nonwoven (Planeamento)
