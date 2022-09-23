@@ -5825,7 +5825,7 @@ def PesarReciclado(request, format=None):
             with connections["default"].cursor() as cursor:
                 reciclado_id = checkReciclado(filter["id"],cursor)
                 if (reciclado_id is not None):
-                    dml = db.dml(TypeDml.UPDATE,{"produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
+                    dml = db.dml(TypeDml.UPDATE,{"timestamp_edit":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível Pesar o lote!", "subTitle":"O lote já se encontra pesado ou não existe!"})     
