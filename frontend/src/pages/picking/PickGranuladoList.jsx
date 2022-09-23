@@ -188,6 +188,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             } else {
                 const pickValues = v.split(";");
                 if (pickValues.length >= 5) {
+                    console.log("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",v)
                     sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
                     value.current = '';
                     setCurrent(value.current);
@@ -470,7 +471,7 @@ export default ({ setFormTitle, ...props }) => {
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const submitting = useSubmitting(true);
-    const primaryKeys = ['vcr_num'];
+    const primaryKeys = ['vcr_num','type_mov','lote_id'];
     const columns = [
         { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },

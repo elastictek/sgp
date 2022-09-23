@@ -364,6 +364,18 @@ class LotesPickConsumer(WebsocketConsumer):
     def getGranuladoLoteQuantity(self,data):
 
 
+            
+
+
+            # SELECT
+            # ST."ROWID" lote_id,ST."VCRNUM_0",ST."LOC_0",ST."QTYPCU_0", mprima."ITMDES1_0" artigo_des
+            # FROM {sageAlias}."STOJOU" ST
+            # JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            # WHERE ST."VCRNUM_0"='{values[4]}' AND ST."QTYPCU_0">0
+            # AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = ST."VCRNUM_0") 
+
+
+
             # SELECT * FROM(
             #     SELECT
             #     ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0" artigo_cod,ST."LOT_0" n_lote,ST."LOC_0",ST."VCRNUM_0" vcr_num,
@@ -384,19 +396,24 @@ class LotesPickConsumer(WebsocketConsumer):
         sageAlias = dbgw.dbAlias.get("sage")
         sgpAlias = dbgw.dbAlias.get("sgp")
         rows = dbgw.executeSimpleList(lambda:(f"""
-            SELECT
-            ST."ROWID" lote_id,ST."VCRNUM_0",ST."LOC_0",ST."QTYPCU_0", mprima."ITMDES1_0" artigo_des
-            FROM {sageAlias}."STOJOU" ST
-            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            WHERE ST."VCRNUM_0"='{values[4]}' AND ST."QTYPCU_0">0
-            AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = ST."VCRNUM_0") 
+            SELECT * FROM(
+                SELECT
+                    ST."ROWID" lote_id,ST."VCRNUM_0",ST."LOC_0", mprima."ITMDES1_0" artigo_des,
+                    SUM(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") "QTYPCU_0"
+                FROM {sageAlias}."STOCK" STK
+                JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+                JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+                WHERE ST."VCRNUM_0"='{values[4]}'
+            ) t
+            where ("QTYPCU_0" > 0)
+            AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = "VCRNUM_0") 
         """),conngw,{})["rows"]
         if len(rows)>0:            
             conn = connections["default"].cursor()
             rowsx = db.executeSimpleList(lambda:(f"""select id from lotesnwlinha where n_lote = '{values[1]}' and artigo_cod='{values[0]}' and vcr_num='{values[4]}'"""),conn,{})['rows']
             if len(rowsx)>0:
                 self.send(text_data=json.dumps({"error":"O lote de Granulado já foi registado!","row":{"qty_lote":values[2],"unit":values[3], "n_lote":values[1]}},default=str))
-            obs = values[5] if len(values>5) else ''
+            obs = values[5] if len(values)>5 else ''
             self.send(text_data=json.dumps({"error":None,"row":{"lote_id":rows[0]["lote_id"],"obs":obs, "artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }},default=str))
         else:
             self.send(text_data=json.dumps({"error":"O lote de Granulado não existe ou não se enconta em buffer!","row":{"qty_lote":0, "unit":values[3], "n_lote":values[1]}},default=str))

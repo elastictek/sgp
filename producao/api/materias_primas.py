@@ -249,7 +249,7 @@ def MateriasPrimasList(request, format=None):
     elif type==4:
         typeFilter = f""" and (ST."ITMREF_0" LIKE 'R000%%' and LOWER(mprima."ITMDES1_0") LIKE 'reciclado%%') """
 
-    locFilter = f""" and ST."LOC_0" in ('{loc}') """ if loc!="-1" else ""
+    locFilter = f""" and "LOC_0" in ('{loc}') """ if loc!="-1" else ""
 
     cols = f'''*'''
     # sql = lambda p, c, s: (
@@ -287,19 +287,20 @@ def MateriasPrimasList(request, format=None):
         FROM ELASTICTEK.STOCK STK
         JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
         JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-         where 1=1
-        {locFilter} 
+        WHERE 1=1 
         {typeFilter}
-        {f.text} {f2["text"]} {flocation.text}
-        --AND STK.ITMREF_0='NNWSB0023000056' AND STK.LOT_0='E0120/00741'
+        {f.text} {f2["text"]}
         ) t
         where (QTY_SUM > 0)
+        {flocation.text} {locFilter}
         {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}        
         """
     )
 
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
+    print("----------------------------")
+    print("sql")
     response = dbmssql.executeList(sql, connection, parameters, [])
     return Response(response)
 
