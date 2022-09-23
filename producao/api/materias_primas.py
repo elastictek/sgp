@@ -430,7 +430,7 @@ def SaveNWItems(request, format=None):
                 "qty_consumed":item["qty_consumed"],
                 "audit_cs_id":acs["id"],
                 "inuse":0,
-                "queue":"(SELECT ifnull(max(queue),0)+1 FROM sistema.lotesnwlinha where status=1)",
+                "queue":"(SELECT q FROM (SELECT ifnull(max(queue),0)+1 q FROM sistema.lotesnwlinha where status=1) t)",
                 "agg_of_id":acs["agg_of_id"],
                 "user_id":request.user.id}, 
                 "lotesnwlinha",None,None,False,["queue"])
@@ -453,6 +453,7 @@ def SaveNWItems(request, format=None):
                     saveItems(data,cursor)
                     return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
     except Exception as error:
+
         return Response({"status": "error", "title": str(error)})
 
 @api_view(['POST'])
@@ -486,7 +487,7 @@ def UpdateNW(request, format=None):
                     dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                     if "status" in data and data["status"]==0:
-                        dml = db.dml(TypeDml.UPDATE,{"queue":"(case when ifnull(queue,0)-1) < 0 then 1 else ifnull(queue,0)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
+                        dml = db.dml(TypeDml.UPDATE,{"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
                         db.execute(dml.statement, cursor, dml.parameters)
 
                 else:

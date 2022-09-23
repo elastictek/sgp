@@ -499,8 +499,11 @@ class MySqlSql(BaseSql):
             if filter is None:
                 raise Exception("Filtro Não pode ser None!")
             for i, c in enumerate(ks):
-                ret.tags.append(f'{ret.columns[i]} = %({c})s')
-                ret.parameters[c] = data.get(c)
+                if (c in ignoreKeys):
+                    ret.tags.append(data.get(c))
+                else:
+                    ret.tags.append(f'{ret.columns[i]} = %({c})s')
+                    ret.parameters[c] = data.get(c)
             if table is not None:
                 if returning is None:
                     ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text}'
