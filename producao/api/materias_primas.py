@@ -486,7 +486,7 @@ def UpdateNW(request, format=None):
                     dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwid}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                     if "status" in data and data["status"]==0:
-                        dml = db.dml(TypeDml.UPDATE,{"queue":"(queue-1)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
+                        dml = db.dml(TypeDml.UPDATE,{"queue":"(case when ifnull(queue,0)-1) < 0 then 1 else ifnull(queue,0)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1'},None,False,["queue"])
                         db.execute(dml.statement, cursor, dml.parameters)
 
                 else:

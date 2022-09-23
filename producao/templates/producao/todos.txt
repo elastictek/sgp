@@ -9,6 +9,7 @@
 --Queues de Nonwovens para entrada em linha
 --Formulação para alteração de doseadores dividir Extrusora B e C
 --widget alteração da ordem de produção
+--ao preencher defeitos com range não marca bit a 1
 
 
 --alteração de nonwoven (Planeamento)

@@ -106,7 +106,7 @@ const ModeAutoPrint = () => {
     const loadData = async ({ signal } = {}) => {
         const request = (async () => sendJsonMessage({ cmd: 'checkbufferin', value: {} }));
         request();
-        return setInterval(request, 10000);
+        return setInterval(request, 2000);
     }
 
     useEffect(() => {
