@@ -236,7 +236,7 @@ class RealTimeGeneric(WebsocketConsumer):
         with connections[connMssqlName].cursor() as cursor:
             rows = dbmssql.executeSimpleList(lambda:(f"""
             
-                SELECT TOP 1 ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0" 
+                SELECT TOP 1 ST."CREDATTIM_0",ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0" 
                 FROM ELASTICTEK."STOJOU" ST 
                 JOIN ELASTICTEK."ITMMASTER" IM on IM."ITMREF_0" = ST."ITMREF_0"
                 WHERE ST."LOC_0"='BUFFER' AND ST."QTYPCU_0">0 ORDER BY ST."ROWID" DESC

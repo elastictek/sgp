@@ -472,7 +472,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
         if (errors === 0) {
             const rows = dataAPI.getData().rows;
             for (let [i, r] of dataAPI.getData().rows.entries()) {
-                r.defeitos= (r?.defeitos ? r.defeitos : [])
+                r.defeitos = (r?.defeitos ? r.defeitos : [])
                 const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
                 const estado = r.estado;
                 // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
@@ -498,8 +498,8 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
 
             }
 
-            if (bobinagem.nome.startsWith("20") && bobinagem.id>=107127){
-                if (!values?.largura_bruta || values?.largura_bruta<=0){
+            if (bobinagem.nome.startsWith("20") && bobinagem.id >= 107127) {
+                if (!values?.largura_bruta || values?.largura_bruta <= 0) {
                     status.formStatus.error.push({ message: <span>A<b>Largura Bruta</b> tem de ser preenchida!</span> });
                 }
             }
@@ -526,7 +526,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             if (status.formStatus.error.length === 0) {
                 try {
                     const { data: { rows: granulado } } = await fetchPost({ url: `${API_URL}/recicladolookup/`, pagination: { enabled: false, limit: 1 }, filter: { status: 0 }, sort: [{ column: "timestamp", direction: "desc" }] });
-                    if (granulado.length === 0 && bobinagem.valid==0) {
+                    if (granulado.length === 0 && bobinagem.valid == 0) {
                         setModalParameters({ setFormStatus, submitting, status, data: { bobines: rows, values, bobinagem }, loadData });
                         showNewLoteModal();
                     } else {
@@ -617,11 +617,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                         <Col xs="content"><Field name="duracao" label={{ enabled: true, text: "Duração", padding: "0px" }}><Input style={{ padding: "0px 10px" }} /></Field></Col>
                                     </Row>
 
-                                    {dataAPI.getData()["agg_of_id"] && <Row gutterWidth={5} style={{ marginBottom: "10px" }}>
-                                        <Col xs="content"><CortesField value={dataAPI.getData()["cortes"]} /></Col>
-                                        <Col xs="content"><Field name="core" label={{ enabled: true, text: "Core", padding: "0px" }}><Input style={{ padding: "0px 10px" }} addonAfter={<b>''</b>} /></Field></Col>
-                                    </Row>
-                                    }
+
 
                                     <Row gutterWidth={5} style={{ marginBottom: "10px" }}>
                                         <Col width={150}><Field name="lar_util" label={{ enabled: true, text: "Largura Útil", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>mm</b>} /></Field></Col>
@@ -629,6 +625,10 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                         <Col width={150}><Field name="comp_par" forInput={modeEdit.form && dataAPI.getData().troca_nw === 1} required label={{ enabled: true, text: "Comprimento Emenda", padding: "0px" }}><InputNumber style={{ textAlign: "right" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
                                         <Col width={150}><Field name="diam" label={{ enabled: true, text: "Diâmetro", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>mm</b>} /></Field></Col>
                                         <Col width={150}><Field name="area" label={{ enabled: true, text: "Área", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>m<sup>2</sup></b>} /></Field></Col>
+                                        {dataAPI.getData()["agg_of_id"] && <>
+                                            <Col><CortesField value={dataAPI.getData()["cortes"]} /></Col>
+                                            <Col xs="content"><Field name="core" label={{ enabled: true, text: "Core", padding: "0px" }}><Input style={{ padding: "0px 10px" }} addonAfter={<b>''</b>} /></Field></Col>
+                                        </>}
                                     </Row>
 
                                     <Row nogutter>

@@ -24,6 +24,7 @@ import useWebSocket from 'react-use-websocket';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
+import { TbCircles } from "react-icons/tb";
 
 const title = "Bobinagens";
 const useStyles = createUseStyles({});
@@ -68,6 +69,7 @@ export default ({ record, card, parentReload }) => {
     const primaryKeys = ['id'];
     const columns = [
         { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'action', name: '', width: 90, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" />},
         { key: 'inico', name: 'Início', width: 90 },
         { key: 'fim', name: 'Fim', width: 90 },
         { key: 'duracao', name: 'Duração', width: 90 },
@@ -113,7 +115,7 @@ export default ({ record, card, parentReload }) => {
 
     useEffect(() => {
         if (lastJsonMessage) {
-            console.log("#############------------###",record.agg_of_id)
+            console.log("#############------------###", record.agg_of_id)
 
             //dataAPI.fetchPost();
             if (record?.agg_of_id) {
@@ -155,16 +157,16 @@ export default ({ record, card, parentReload }) => {
         dataAPI.fetchPost();
     }
 
-/*     useEffect(() => {
-        if (record?.agg_of_id) {
-            dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
-        } else {
-            const { agg_of_id, ...f } = dataAPI.getFilter(true);
-            dataAPI.addFilters(f, true, true);
-        }
-        dataAPI.fetchPost();
-    }, [record?.agg_of_id]);
- */
+    /*     useEffect(() => {
+            if (record?.agg_of_id) {
+                dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
+            } else {
+                const { agg_of_id, ...f } = dataAPI.getFilter(true);
+                dataAPI.addFilters(f, true, true);
+            }
+            dataAPI.fetchPost();
+        }, [record?.agg_of_id]);
+     */
 
 
 
