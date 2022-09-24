@@ -533,44 +533,74 @@ export default ({ setFormTitle, ...props }) => {
             <OutContent loadParentData={loadData} />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp(), modalParameters]);
-
-    const loadData = async ({ signal } = {}) => {
-        const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
-        const data = loadInit({}, {}, props, location?.state, [...Object.keys(location?.state || {})]);
-        if (data?.formulacao) {
-            setRecord(data);
-            formFilter.setFieldsValue({ ...initFilters, type: data?.type });
-
-
-
-            dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
-            dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
-            dataAPI.addParameters({}, true, true);
-            dataAPI.fetchPost({ signal });
-        }
-        else {
-            Modal.error({ title: "Não existe neste momento nenhuma produção em curso!" });
-        }
-        submitting.end();
-    };
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
 
     useEffect(() => {
-        (setFormTitle) && setFormTitle({ title });
         const controller = new AbortController();
-        loadData({ signal: controller.signal });
-        return (() => controller.abort());
+        const interval = loadData({ init: true, signal: controller.signal });
+        return (() => { controller.abort(); clearInterval(interval); });
     }, []);
 
+    const loadData = async ({ init = false, signal } = {}) => {
+        if (init) {
+            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
+            formFilter.setFieldsValue({ ...initFilters });
+            dataAPI.addFilters({ ...initFilters }, true, true);
+            dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
+            dataAPI.addParameters({}, true, true);
+        }
+        const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+        request();
+        const ok = dataAPI.fetchPost();
+        return (ok) ? setInterval(request, 30000) : null;
+    }
+
+    useEffect(() => {
+         if (lastJsonMessage && lastJsonMessage.rows) {
+            console.log("lasjson----",lastJsonMessage.rows[0].mx===null) 
+            //dataAPI.fetchPost();
+         }
+    }, [lastJsonMessage?.hash]);
 
 
-    // const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
-    //     onOpen: () => console.log(`Connected to Web Socket`),
-    //     queryParams: { /* 'token': '123456' */ },
-    //     onError: (event) => { console.error(event); },
-    //     shouldReconnect: (closeEvent) => true,
-    //     reconnectInterval: 5000,
-    //     reconnectAttempts: 500
-    // });
+
+    /*     const loadData = async ({ signal } = {}) => {
+            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
+            const data = loadInit({}, {}, props, location?.state, [...Object.keys(location?.state || {})]);
+            if (data?.formulacao) {
+                setRecord(data);
+                formFilter.setFieldsValue({ ...initFilters, type: data?.type });
+    
+    
+    
+                dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
+                dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
+                dataAPI.addParameters({}, true, true);
+                dataAPI.fetchPost({ signal });
+            }
+            else {
+                Modal.error({ title: "Não existe neste momento nenhuma produção em curso!" });
+            }
+            submitting.end();
+        }; */
+
+    /*     useEffect(() => {
+            (setFormTitle) && setFormTitle({ title });
+            const controller = new AbortController();
+            loadData({ signal: controller.signal });
+            return (() => controller.abort());
+        }, []); */
+
+
+
+
 
     // const loadData = async ({ signal } = {}) => {
     //     const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
@@ -579,11 +609,7 @@ export default ({ setFormTitle, ...props }) => {
     //     return (ok) ? setInterval(request, 30000) : null;
     // }
 
-    // useEffect(() => {
-    //     const controller = new AbortController();
-    //     const interval = loadData({ signal: controller.signal });
-    //     return (() => { controller.abort(); clearInterval(interval); });
-    // }, []);
+
 
 
     // useEffect(() => {

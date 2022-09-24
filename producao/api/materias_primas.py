@@ -249,7 +249,7 @@ def MateriasPrimasList(request, format=None):
     elif type==4:
         typeFilter = f""" and (ST."ITMREF_0" LIKE 'R000%%' and LOWER(mprima."ITMDES1_0") LIKE 'reciclado%%') """
 
-    locFilter = f""" and "LOC_0" in ('{loc}') """ if loc!="-1" else ""
+    #locFilter = f""" and "LOC_0" in ('{loc}') """ if loc!="-1" else ""
 
     cols = f'''*'''
     # sql = lambda p, c, s: (
@@ -309,7 +309,7 @@ def MateriasPrimasList(request, format=None):
             ) t
             where (QTYPCU_0 > 0)
             and "LOC_0" in ('BUFFER')
-            {flocation.text} {locFilter}
+            {flocation.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
 
 

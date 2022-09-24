@@ -253,7 +253,8 @@ class RealTimeGeneric(WebsocketConsumer):
 
     def checkCurrentSettings(self,data):
         with connections["default"].cursor() as cursor:
-            rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx cnt FROM audit_currentsettings'), cursor, {})['rows']
+            print("ALTERAR STATUS DE 66 PARA 3!!!!!!")
+            rows = db.executeSimpleList(lambda: (f'SELECT max(acs.id) mx from producao_currentsettings cs join audit_currentsettings acs on cs.id=acs.contextid where cs.status=66'), cursor, {})['rows']
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
