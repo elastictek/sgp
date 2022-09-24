@@ -23,7 +23,7 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import useWebSocket from 'react-use-websocket';
-import { Status, MovColumn, PosColumn } from '../../picking/commons';
+import { Status, MovColumn, PosColumn, QueueNwColumn } from '../../picking/commons';
 import TitleCard from './TitleCard';
 
 const title = "Nonwovens Lotes";
@@ -100,13 +100,14 @@ export default ({ record, card, parentReload }) => {
     }, [lastJsonMessage?.hash, record?.agg_of_id]);
 
     const columns = [
-        { key: 'status', width: 90, name: 'Movimento', formatter: p => <MovColumn value={p.row.status} /> },
+        { key: 'status', width: 80, name: 'Movimento', formatter: p => <MovColumn value={p.row.status} /> },
         { key: 'artigo_cod', name: 'Artigo' },
-        { key: 'artigo_des', name: 'Designação' },
-        { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.lote },
-        { key: 'type', width: 90, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
+        //{ key: 'artigo_des', name: 'Designação' },
+        { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.n_lote },
+        { key: 'type', width: 70, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote} m<sup>2</sup></div> },
-        { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) }
+        { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 'queue', width: 100,maxWidth:100, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (

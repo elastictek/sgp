@@ -43,27 +43,27 @@ const schema = (options = {}) => {
 const title = "Registo Granulado - Entrada em Linha";
 const cFormulacao = (record) => {
     let _formulacao = {};
-    for (let v of record.formulacao.items) {
-        const _dosers = [];
-        const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
-        if (v?.doseador_A) _dosers.push(v.doseador_A);
-        if (v?.doseador_B) _dosers.push(v.doseador_B);
-        if (v?.doseador_C) _dosers.push(v.doseador_C);
-        const _cod = v.matprima_cod;
-        const _des = v.matprima_des;
-        if (_cod in _formulacao) {
-            _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
-            _formulacao[_cod].cubas = [..._formulacao[_cod].cubas, _cuba];
-        } else {
-            _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
+    if (record?.formulacao) {
+        for (let v of record.formulacao.items) {
+            const _dosers = [];
+            const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
+            if (v?.doseador_A) _dosers.push(v.doseador_A);
+            if (v?.doseador_B) _dosers.push(v.doseador_B);
+            if (v?.doseador_C) _dosers.push(v.doseador_C);
+            const _cod = v.matprima_cod;
+            const _des = v.matprima_des;
+            if (_cod in _formulacao) {
+                _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
+                _formulacao[_cod].cubas = [..._formulacao[_cod].cubas, _cuba];
+            } else {
+                _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
+            }
         }
     }
     return _formulacao;
 }
 const TitleForm = ({ data, onChange, record, level, form }) => {
-    const [formulacao, setFormulacao] = useState(cFormulacao(record));
-    const st = JSON.stringify(record?.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
-
+    const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
 
     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
         <Col>
@@ -76,13 +76,13 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
     </>
     }
         details={
-            <>{formulacao && Object.keys(formulacao).map((k, i) => {
+            <>{record.formulacao && Object.keys(record.formulacao).map((k, i) => {
                 return (
                     <Row key={`if-${k}-${i}`}>
-                        <Col width={60} style={{ display: "flex" }}>{[...new Set(formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
-                        <Col width={100}><div style={{ textAlign: "center", fontSize: "14px" }}><b>{formulacao[k].dosers.join()}</b></div></Col>
+                        <Col width={60} style={{ display: "flex" }}>{[...new Set(record.formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
+                        <Col width={100}><div style={{ textAlign: "center", fontSize: "14px" }}><b>{record.formulacao[k].dosers.join()}</b></div></Col>
                         <Col width={150}><div style={{ fontSize: "12px" }}>{k}</div></Col>
-                        <Col><div style={{ fontSize: "12px" }}>{formulacao[k].matprima_des}</div></Col>
+                        <Col><div style={{ fontSize: "12px" }}>{record.formulacao[k].matprima_des}</div></Col>
                     </Row>
                 );
             })}</>
@@ -229,7 +229,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
     }
 
     useEffect(() => {
-        const keyDown = (e, obj) => keydownHandler(e, obj, formulacao());
+        const keyDown = (e, obj) => keydownHandler(e, obj, formulacao);
         document.body.addEventListener('keydown', keyDown);
         document.body.addEventListener('focusout', focusOut);
         document.body.addEventListener('focusin', focusIn);
@@ -447,6 +447,15 @@ const OfsColumn = ({ value }) => {
     </div>);
 }
 
+const loadCurrentSettings = async (signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/currentsettingsinproductionget/`, filter: {}, sort: [], signal });
+    if (rows && rows.length>0){
+        rows[0].formulacao=JSON.parse(rows[0].formulacao);
+        rows[0].ofs=JSON.parse(rows[0].ofs)
+    }
+    return rows;
+}
+
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -471,14 +480,16 @@ export default ({ setFormTitle, ...props }) => {
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
     ];
-    const [record, setRecord] = useState();
+    const [formulacao, setFormulacao] = useState();
+    const [ofs, setOfs] = useState();
+    const [aggStatus, setAggStatus] = useState();
     const [modalParameters, setModalParameters] = useState({});
 
     const [showPickingModal, hidePickingModal] = useModal(({ in: open, onExited }) => {
         const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null, type: null });
         const [dirty, setDirty] = useState(false);
-        const [formulacao, setFormulacao] = useState(cFormulacao(record));
         useEffect(() => {
+            console.log("3333333333333333333")
             if (lastValue.picked && lastValue.error === null) {
                 if (lastValue.row.n_lote && lastValue?.dosers) {
                     let dosers = "";
@@ -522,9 +533,16 @@ export default ({ setFormTitle, ...props }) => {
             onCancel={hidePickingModal}
             /*onOk={() => onPickFinish(lastValue)} */
             width={600} height={250} footer="ref">
-            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={() => cFormulacao(record)} />
+            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={formulacao} />
         </ResponsiveModal>;
-    }, [dataAPI.getTimeStamp()]);
+    }, [dataAPI.getTimeStamp(),formulacao]);
+
+
+
+
+
+
+
     const [showOutModal, hideOutModal] = useModal(({ in: open, onExited }) => {
         return <ResponsiveModal title={`Saída de lote em linha`}
             onCancel={hideOutModal}
@@ -558,15 +576,50 @@ export default ({ setFormTitle, ...props }) => {
         }
         const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
         request();
-        const ok = dataAPI.fetchPost();
-        return (ok) ? setInterval(request, 30000) : null;
+        //const ok = dataAPI.fetchPost();
+        return setInterval(request, 30000);
     }
 
     useEffect(() => {
-         if (lastJsonMessage && lastJsonMessage.rows) {
-            console.log("lasjson----",lastJsonMessage.rows[0].mx===null) 
-            //dataAPI.fetchPost();
-         }
+        if (lastJsonMessage && lastJsonMessage.rows) {
+            if (lastJsonMessage.rows[0].mx === null) {
+                Modal.error({ title: "Não existe neste momento nenhuma produção em curso!" });
+            } else {
+                (async () => {
+                    try {
+                        const cs = await loadCurrentSettings();
+                        let _formulacao = {};
+                        if (cs[0].formulacao) {
+                            for (let v of cs[0].formulacao.items) {
+                                const _dosers = [];
+                                const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
+                                if (v?.doseador_A) _dosers.push(v.doseador_A);
+                                if (v?.doseador_B) _dosers.push(v.doseador_B);
+                                if (v?.doseador_C) _dosers.push(v.doseador_C);
+                                const _cod = v.matprima_cod;
+                                const _des = v.matprima_des;
+                                if (_cod in _formulacao) {
+                                    _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
+                                    _formulacao[_cod].cubas = [..._formulacao[_cod].cubas, _cuba];
+                                } else {
+                                    _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
+                                }
+                            }
+                        }
+                        setFormulacao(_formulacao);
+                        setOfs(cs[0].ofs.map(v=>v.of_cod));
+                        setAggStatus(cs[0].status);
+                        dataAPI.fetchPost();
+                    } catch (e) {
+                        Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+                    }finally{
+                        submitting.end();
+                    };
+
+                })();
+
+            }
+        }
     }, [lastJsonMessage?.hash]);
 
 
@@ -701,40 +754,40 @@ export default ({ setFormTitle, ...props }) => {
 
     return (
         <>
-            {record?.formulacao &&
-                <>
-                    {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={record} level={location?.state?.level} form={formFilter} />}
-                    <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
-                    <Table
-                        //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
-                        reportTitle={title}
-                        loadOnInit={false}
-                        columns={columns}
-                        dataAPI={dataAPI}
-                        //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
-                        toolbar={true}
-                        search={true}
-                        moreFilters={true}
-                        rowSelection={false}
-                        primaryKeys={primaryKeys}
-                        editable={true}
-                        clearSort={false}
-                        rowClass={(row) => (row?.notValid === 1 ? classes.notValid : undefined)}
-                        //selectedRows={selectedRows}
-                        //onSelectedRowsChange={setSelectedRows}
-                        leftToolbar={record?.status === 3 && <>
-                            <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>
-                            {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                            {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<GoArrowUp color='red' fontSize={18} style={{ verticalAlign: "top" }} />} onClick={() => { setModalParameters({}); showOutModal(); }}>Saída de Linha</Button>}
-                        </>}
-                        //content={<PickHolder />}
-                        //paginationPos='top'
-                        toolbarFilters={{
-                            form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} />,
-                            moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
-                        }}
-                    />
-                </>}
+
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={{formulacao,ofs,aggStatus}} level={location?.state?.level} form={formFilter} />}
+            <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
+            {formulacao &&
+                <Table
+                    //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
+                    reportTitle={title}
+                    loadOnInit={false}
+                    columns={columns}
+                    dataAPI={dataAPI}
+                    //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+                    toolbar={true}
+                    search={true}
+                    moreFilters={true}
+                    rowSelection={false}
+                    primaryKeys={primaryKeys}
+                    editable={true}
+                    clearSort={false}
+                    rowClass={(row) => (row?.notValid === 1 ? classes.notValid : undefined)}
+                    //selectedRows={selectedRows}
+                    //onSelectedRowsChange={setSelectedRows}
+                    leftToolbar={aggStatus === 3 && <>
+                        <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>
+                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
+                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<GoArrowUp color='red' fontSize={18} style={{ verticalAlign: "top" }} />} onClick={() => { setModalParameters({}); showOutModal(); }}>Saída de Linha</Button>}
+                    </>}
+                    //content={<PickHolder />}
+                    //paginationPos='top'
+                    toolbarFilters={{
+                        form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} />,
+                        moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
+                    }}
+                />
+            }
         </>
     );
 }

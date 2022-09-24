@@ -87,6 +87,21 @@ export const MovGranuladoColumn = ({ value }) => {
     </div>);
 }
 
+export const QueueNwColumn = ({ value, status }) => {
+
+    const getValue = () => {
+        if (status===0){
+            return <div/>;
+        }
+        switch(value){
+            case 1 : return <Tag style={{width:"100%"}} color="#87d068">Em uso</Tag>;
+            case 2 : return <Tag style={{width:"100%"}} color="#fff566">Em espera</Tag>
+            default: return <Tag style={{width:"100%"}} color="#2db7f5">Em preparação</Tag>
+        }
+    }
+
+    return (<>{getValue(value)}</>);
+}
 
 export const FormPrint = ({ v, parentRef, closeParent }) => {
     const [values, setValues] = useState({ impressora: "ARMAZEM_CAB_SQUIX_6.3_200", num_copias: 4 })

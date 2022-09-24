@@ -97,11 +97,11 @@ export default ({ record, card, parentReload }) => {
 
 
     const loadData = async ({ signal } = {}) => {
-        //const request = (async () => sendJsonMessage({ cmd: 'checkbobinagens', value: {} }));
-        //request();
-        const ok = dataAPI.fetchPost();
+        const request = (async () => sendJsonMessage({ cmd: 'checkbobinagens', value: {} }));
+        request();
+        //const ok = dataAPI.fetchPost();
         //return (ok) ? setInterval(request, 30000) : null;
-        //return setInterval(request, 30000);
+        return setInterval(request, 5000);
     }
 
     useEffect(() => {
@@ -113,6 +113,8 @@ export default ({ record, card, parentReload }) => {
 
     useEffect(() => {
         if (lastJsonMessage) {
+            console.log("#############------------###",record.agg_of_id)
+
             //dataAPI.fetchPost();
             if (record?.agg_of_id) {
                 dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
