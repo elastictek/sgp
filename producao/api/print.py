@@ -15,11 +15,12 @@ from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteLi
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 #TO UNCOMMENT ON PRODUCTION
 #import cups
 ###########################
 import os, tempfile
+import pytz
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -60,6 +61,14 @@ def PrintMPBuffer(request,format=None):
     tmp = tempfile.NamedTemporaryFile()
     print(tmp)
     print(tmp.name)
+
+    #UTC TO LISBON TIME
+    tzutc = pytz.timezone('UTC')
+    tz = pytz.timezone('Europe/Lisbon')
+    cdate = datetime.fromisoformat(request.data["parameters"]["CREDATTIM_0"])
+    utc_time = tzutc.localize(cdate)
+    ###################
+    
     fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
@@ -74,7 +83,7 @@ def PrintMPBuffer(request,format=None):
             "qty":float(request.data["parameters"]["QTYPCU_0"]),
             "vcr_num":request.data["parameters"]["VCRNUM_0"],
             "obs":request.data["parameters"]["obs"] if "obs" in request.data["parameters"] else None,
-            "data_buffer":request.data["parameters"]["CREDATTIM_0"].replace("T"," ")
+            "data_buffer":utc_time.astimezone(tz).strptime("%Y-%m-%d %H:%M:%S")            
         }
     })
     try:

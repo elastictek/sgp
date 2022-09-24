@@ -103,7 +103,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'type_mov', width: 90, name: 'Movimento', froze:true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: 'artigo_cod', name: 'Artigo' },
         { key: 'artigo_des', name: 'Designação' },
-        { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.lote },
+        { key: 'n_lote', name: 'Lote', formatter: p => p.row.n_lote },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote} kg</div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) }
     ];
