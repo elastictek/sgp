@@ -104,7 +104,8 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
         let valid = true;
         const status = { error: [], warning: [], info: [], success: [] };
         const _formulacao = { ...record.formulacao };
-        for (let [i, v] of _formulacao.formu_materiasprimas_A.entries()) {
+        console.log(record)
+       for (let [i, v] of _formulacao.formu_materiasprimas_A.entries()) {
             const d = dataAPI_A.getData().rows.find(x => x.matprima_cod === v.matprima_cod_A);
             if ((!d?.cuba_A || !d?.doseador_A) && valid) { valid = false; }
             _formulacao.formu_materiasprimas_A[i]["cuba_A"] = d?.cuba_A;

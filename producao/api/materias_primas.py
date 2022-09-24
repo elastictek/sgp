@@ -299,7 +299,6 @@ def MateriasPrimasList(request, format=None):
             SELECT
             ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",        
             LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
-            --SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
             ST."PCU_0",mprima."ITMDES1_0"
             FROM ELASTICTEK.STOCK STK
             JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
@@ -309,7 +308,7 @@ def MateriasPrimasList(request, format=None):
             {f.text} {f2["text"]}
             ) t
             where (QTYPCU_0 > 0)
-            and "LOC_0" in ('BUFFER') --AND LOT_0='LO22070019'
+            and "LOC_0" in ('BUFFER')
             {flocation.text} {locFilter}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
 
