@@ -251,6 +251,12 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkbobinagens","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
+    def checkCurrentSettings(self,data):
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx cnt FROM audit_currentsettings'), cursor, {})['rows']
+            hsh = json.dumps(rows,default=str)
+            self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
 
     commands = {
         'checkreciclado':checkReciclado,
@@ -259,7 +265,8 @@ class RealTimeGeneric(WebsocketConsumer):
         'checkcores':checkCores,
         'checklineevents':checkLineEvents,
         'checkbobinagens':checkBobinagens,
-        'checkbufferin':checkBufferIn
+        'checkbufferin':checkBufferIn,
+        'checkcurrentsettings':checkCurrentSettings
     }
 
     def connect(self):

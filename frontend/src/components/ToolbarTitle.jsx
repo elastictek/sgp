@@ -22,7 +22,7 @@ const StyledDrawer = styled(Drawer)`
 
 `;
 
-export default ({ title, right, history = [] }) => {
+export default ({ title, right, history = [], details }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const onShowDrawer = () => {
@@ -89,6 +89,11 @@ export default ({ title, right, history = [] }) => {
                         }
                     </Col>
                 </Row>
+                {details && <Row>
+                    <Col>
+                        {details}
+                    </Col>
+                </Row>}
             </FormContainer>
 
         </>

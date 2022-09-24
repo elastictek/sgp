@@ -71,7 +71,12 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
                 <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
                 <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
             </Row>
-            {formulacao && Object.keys(formulacao).map((k, i) => {
+
+        </Col>
+    </>
+    }
+        details={
+            <>{formulacao && Object.keys(formulacao).map((k, i) => {
                 return (
                     <Row key={`if-${k}-${i}`}>
                         <Col width={60} style={{ display: "flex" }}>{[...new Set(formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
@@ -80,26 +85,9 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
                         <Col><div style={{ fontSize: "12px" }}>{formulacao[k].matprima_des}</div></Col>
                     </Row>
                 );
-            })}
-        </Col>
-    </>
-    } right={
-        <Col xs="content">
-            <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
-                <Col style={{ alignItems: "center" }}>
-                    <Row gutterWidth={2} justify='end'>
-                        <Col xs="content">
-                            <Field name="type" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "1", label: "Lotes da Ordem de Fabrico" },
-                                    { value: "-1", label: "Todas os Lotes" }]} />
-                            </Field>
-                        </Col>
-                    </Row>
-                </Col>
-            </FormContainer>
-        </Col>
-    } />);
+            })}</>
+        }
+    />);
 }
 
 const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
@@ -188,7 +176,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             } else {
                 const pickValues = v.split(";");
                 if (pickValues.length >= 5) {
-                    sendJsonMessage({ cmd: 'getgranuladolotequantity', value:v });
+                    sendJsonMessage({ cmd: 'getgranuladolotequantity', value: v });
                     value.current = '';
                     setCurrent(value.current);
                 }
@@ -204,7 +192,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
             onPick(formulacao);
-        } else if ((keyCode >= 48 && keyCode <= 90)  || keyCode == 18 || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
+        } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 18 || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
         } else if (keyCode == 16 || keyCode == 220) {
@@ -214,7 +202,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             setCurrent(value.current);
         }
         else {
-            console.log("keycode....",keyCode)
+            console.log("keycode....", keyCode)
             value.current = '';
             //setLastValue('');
         }
@@ -302,7 +290,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         <Row align='center' gutterWidth={5}><Col xs={11}>
             <Row align='center' gutterWidth={5} style={{ border: status ? "solid 2px #1890ff" : "solid 2px #f0f0f0", height: "50px", margin: "10px 0px" }}>
                 {status && <Col xs="content"><Blinker>|</Blinker></Col>}
-                <Col style={{ fontSize: "22px", fontWeight: 700, overflowX:"hidden", whiteSpace: "nowrap", textOverflow:"ellipsis" }}>{value.current}</Col>
+                <Col style={{ fontSize: "22px", fontWeight: 700, overflowX: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{value.current}</Col>
             </Row>
         </Col>
             <Col xs='content'><Button icon={<SnippetsOutlined />} onClick={paste} title="Colar" /></Col>
@@ -470,7 +458,7 @@ export default ({ setFormTitle, ...props }) => {
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const submitting = useSubmitting(true);
-    const primaryKeys = ['vcr_num','type_mov','lote_id'];
+    const primaryKeys = ['vcr_num', 'type_mov', 'lote_id'];
     const columns = [
         { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
@@ -495,7 +483,7 @@ export default ({ setFormTitle, ...props }) => {
                 if (lastValue.row.n_lote && lastValue?.dosers) {
                     let dosers = "";
                     let cuba;
-                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1 &&  x.vcr_num === lastValue.row.vcr_num) : -1;
+                    const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1 && x.vcr_num === lastValue.row.vcr_num) : -1;
                     if (lastValue.row.artigo_cod in formulacao) {
                         const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
                         if (!dosersOk) {
@@ -554,7 +542,7 @@ export default ({ setFormTitle, ...props }) => {
             formFilter.setFieldsValue({ ...initFilters, type: data?.type });
 
 
-            
+
             dataAPI.addFilters({ ...initFilters, type: data?.type, agg_of_id: data?.agg_of_id }, true, true);
             dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
             dataAPI.addParameters({}, true, true);
@@ -571,11 +559,42 @@ export default ({ setFormTitle, ...props }) => {
         const controller = new AbortController();
         loadData({ signal: controller.signal });
         return (() => controller.abort());
-    }, [location?.state?.type]);
+    }, []);
 
 
 
-    
+    // const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+    //     onOpen: () => console.log(`Connected to Web Socket`),
+    //     queryParams: { /* 'token': '123456' */ },
+    //     onError: (event) => { console.error(event); },
+    //     shouldReconnect: (closeEvent) => true,
+    //     reconnectInterval: 5000,
+    //     reconnectAttempts: 500
+    // });
+
+    // const loadData = async ({ signal } = {}) => {
+    //     const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+    //     request();
+    //     const ok = dataAPI.fetchPost();
+    //     return (ok) ? setInterval(request, 30000) : null;
+    // }
+
+    // useEffect(() => {
+    //     const controller = new AbortController();
+    //     const interval = loadData({ signal: controller.signal });
+    //     return (() => { controller.abort(); clearInterval(interval); });
+    // }, []);
+
+
+    // useEffect(() => {
+    //     if (lastJsonMessage) {
+    //         dataAPI.fetchPost();
+    //     }
+    // }, [lastJsonMessage?.hash]);
+
+
+
+
     const onPickFinish = (values) => { console.log("picking", values) };
 
     const deleteRow = async ({ id, dataAPI }) => {
