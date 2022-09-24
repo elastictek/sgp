@@ -68,7 +68,7 @@ def PrintMPBuffer(request,format=None):
     cdate = datetime.fromisoformat(request.data["parameters"]["CREDATTIM_0"])
     utc_time = tzutc.localize(cdate)
     ###################
-    
+
     fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
@@ -83,7 +83,7 @@ def PrintMPBuffer(request,format=None):
             "qty":float(request.data["parameters"]["QTYPCU_0"]),
             "vcr_num":request.data["parameters"]["VCRNUM_0"],
             "obs":request.data["parameters"]["obs"] if "obs" in request.data["parameters"] else None,
-            "data_buffer":utc_time.astimezone(tz).strptime("%Y-%m-%d %H:%M:%S")            
+            "data_buffer":utc_time.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")            
         }
     })
     try:
