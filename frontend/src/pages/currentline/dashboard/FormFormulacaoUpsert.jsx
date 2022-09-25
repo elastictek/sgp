@@ -106,8 +106,8 @@ const updateGlobals = ({ values = {}, adjust = { extrusora: null, index: null },
 }
 
 const transformData = ({ items, formulacao }) => {
-    let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ global: v.vglobal, matprima_cod_A: v.matprima_cod, orig_matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, removeCtrl: true }));
-    let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, removeCtrl: true }));
+    let formu_materiasprimas_A = items?.filter(v => (v.extrusora === 'A')).map(v => ({ ...(v?.cuba_A && { cuba_A: v.cuba_A }), ...(v?.doseador_A && { doseador_A: v.doseador_A }), global: v.vglobal, matprima_cod_A: v.matprima_cod, orig_matprima_cod_A: v.matprima_cod, densidade_A: v.densidade, arranque_A: v.arranque, tolerancia_A: v.tolerancia, removeCtrl: true }));
+    let formu_materiasprimas_BC = items?.filter(v => (v.extrusora === 'BC')).map(v => ({ ...(v?.cuba_BC && { cuba_BC: v.cuba_BC }), ...(v?.doseador_B && { doseador_B: v.doseador_B }), ...(v?.doseador_C && { doseador_C: v.doseador_C }), global: v.vglobal, matprima_cod_BC: v.matprima_cod, orig_matprima_cod_BC: v.matprima_cod, densidade_BC: v.densidade, arranque_BC: v.arranque, tolerancia_BC: v.tolerancia, removeCtrl: true }));
     const cliente_cod = { key: formulacao?.cliente_cod, value: formulacao?.cliente_cod, label: formulacao?.cliente_nome };
     return { ...formulacao, cliente_cod, formu_materiasprimas_A, formu_materiasprimas_BC, totalGlobal: 100 };
 }
@@ -306,7 +306,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         }
         if (Object.keys(_fieldStatus).length === 0) {
             const fieldValues = updateGlobals({ values, action: "finish" });
-            console.log("#############################", fieldValues)
             let sumA = fieldValues.formu_materiasprimas_A.reduce((a, b) => a + (b["arranque_A"] || 0), 0);
             let sumBC = fieldValues.formu_materiasprimas_BC.reduce((a, b) => a + (b["arranque_BC"] || 0), 0);
             if (Math.round(fieldValues.totalGlobal) !== 100) {
@@ -343,6 +342,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                         matprima_des
                     });
                 }
+
                 const { cliente_cod: { value: cliente_cod, label: cliente_nome } = {}, source, ...vals } = values;
                 try {
                     const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ...vals, items, produto_id: record.formulacao.produto_id, cliente_cod, cliente_nome, valid: 0 } } });

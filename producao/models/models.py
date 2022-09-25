@@ -871,6 +871,9 @@ class Bobine(models.Model):
     ff_pos = models.JSONField(blank=True, null=True) #ADDED
     buracos_pos = models.JSONField(blank=True, null=True) #ADDED
     furos_pos = models.JSONField(blank=True, null=True) #ADDED
+    rugas_pos = models.JSONField(blank=True, null=True) #ADDED
+    rugas = models.BooleanField(default=False, verbose_name="Rugas", null=True, blank=True) #ADDED
+    tr = models.BooleanField(default=False, verbose_name="Troca Rápida", null=True, blank=True) #ADDED
 
     def __str__(self):
         return self.nome

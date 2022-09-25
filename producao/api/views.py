@@ -4854,7 +4854,7 @@ def BobinagensList(request, format=None):
     parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado)) bobines"""
+    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines"""
     dql.columns=encloseColumn(cols,False)
 
     w = "where" if f.text=='' and f2["text"] == '' else 'and'
@@ -5447,9 +5447,9 @@ def ValidarBobinagem(request, format=None):
                     dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_s,"qty_reminder":nw_reminder_s},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
 
-                columns = ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs']
-                columns_defeitos = ['con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'nok', 
-                'car', 'fc', 'ff', 'fmp', 'lac', 'ncore', 'prop', 'sbrt', 'suj']
+                columns = ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'rugas_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs']
+                columns_defeitos = ['con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'nok', 'rugas', 'tr',
+                'car', 'fc', 'ff', 'fmp', 'lac', 'ncore', 'prop', 'sbrt', 'suj','prop']
                 if 'bobines' in data:
                     for v in data['bobines']:
                         b={}
@@ -5474,10 +5474,12 @@ def ValidarBobinagem(request, format=None):
                         bobine_values['ff_pos'] = json.dumps(bobine_values['ff_pos'], ensure_ascii=False) if bobine_values['ff_pos'] is not None else None
                         bobine_values['furos_pos'] = json.dumps(bobine_values['furos_pos'], ensure_ascii=False) if bobine_values['furos_pos'] is not None else None
                         bobine_values['buracos_pos'] = json.dumps(bobine_values['buracos_pos'], ensure_ascii=False) if bobine_values['buracos_pos'] is not None else None
+                        bobine_values['rugas_pos'] = json.dumps(bobine_values['rugas_pos'], ensure_ascii=False) if bobine_values['rugas_pos'] is not None else None
                         bobine_values["ff"] = 1 if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else 0
                         bobine_values["fc"] = 1 if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else 0
                         bobine_values["furos"] = 1 if bobine_values['furos_pos'] is not None and len(bobine_values['furos_pos'])>0 else 0
                         bobine_values["buraco"] = 1 if bobine_values['buracos_pos'] is not None and len(bobine_values['buracos_pos'])>0 else 0
+                        bobine_values["rugas"] = 1 if bobine_values['rugas_pos'] is not None and len(bobine_values['rugas_pos'])>0 else 0
 
                         dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
                         db.execute(dml.statement, cursor, dml.parameters)

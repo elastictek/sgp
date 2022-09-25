@@ -78,14 +78,14 @@ const FieldEstadoEditor = ({ p }) => {
 const FieldDefeitosEditor = ({ p }) => {
     const onChange = (v) => p.onRowChange({ ...p.row, defeitos: v }, true);
     return (
-        <SelectMultiField autoFocus defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.defeitos} /* ref={focus}  */ onChange={onChange} allowClear size="small" data={BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'ff' && v.value !== 'fc')} />
+        <SelectMultiField autoFocus defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.defeitos} /* ref={focus}  */ onChange={onChange} allowClear size="small" data={BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc')} />
     );
 }
 const FieldDefeitos = ({ p }) => {
     return (
         <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
             <div style={{ display: "flex", flexDirection: "row" }}>
-                {p.row.defeitos && p.row.defeitos.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'ff' && v.value !== 'fc').map((v) => {
+                {p.row.defeitos && p.row.defeitos.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc').map((v) => {
                     return (<Tag key={`d${v.value}-${p.row.id}`} color="error">{v.label}</Tag>);
                 })}
             </div>
@@ -203,7 +203,7 @@ const ItemsField = ({ row, column }) => {
     )
 }
 
-const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
+const ModalRangeEditor = ({ p, type, column, title, forInput, valid, unit = "m", ...props }) => {
     const classes = useStyles();
     const [visible, setVisible] = useState(true);
     const [value, setvalue] = useState();
@@ -230,7 +230,7 @@ const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
             setFieldStatus({ ...status.fieldStatus });
             setFormStatus({ ...status.formStatus });
             if (errors === 0) {
-                p.onRowChange({ ...p.row, [column]: value.map(({ min, max }) => ({ min, max })) }, true);
+                p.onRowChange({ ...p.row, [column]: value.map(({ min, max, unit, type }) => ({ min, max, unit, type })) }, true);
                 p.onClose(true);
                 setVisible(false);
             }
@@ -246,7 +246,7 @@ const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
     };
 
     return (
-        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={onFinish} width="250px">
+        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={onFinish} width="350px">
 
             <Form form={form} name={`f-range`} onValuesChange={onValuesChange} initialValues={{}}>
                 <AlertsContainer /* id="el-external" */ mask /* fieldStatus={fieldStatus} */ formStatus={formStatus} portal={false} />
@@ -254,7 +254,11 @@ const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
                     <Form.List name="items">
                         {(fields, { add, remove, move }) => {
                             const addRow = (fields) => {
-                                add({ [`min`]: null, [`max`]: null, removeCtrl: true });
+                                if (fields.length === 0 && type == "furos") {
+                                    add({ [`min`]: 1, [`max`]: p.row.comp_actual, "unit": unit, removeCtrl: true });
+                                } else {
+                                    add({ [`min`]: null, [`max`]: null, "unit": unit, ...(type == "ff" && { "type": "Desbobinagem" }), removeCtrl: true });
+                                }
                             }
                             const removeRow = (fieldName, field) => {
                                 remove(fieldName);
@@ -268,8 +272,9 @@ const ModalRangeEditor = ({ p, column, title, forInput, valid, ...props }) => {
                                         <YScroll>
                                             {fields.map((field, index) => (
                                                 <Row key={field.key} gutterWidth={1}>
-                                                    <Col><Field name={[field.name, `min`]} label={{ enabled: false }}><InputNumber autoFocus size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>m</b>} min={0} max={p.row.comp} /></Field></Col>
-                                                    <Col><Field name={[field.name, `max`]} label={{ enabled: false }} includeKeyRules={['min']} allValues={{ min: form.getFieldValue(['items', index, 'min']) }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>m</b>} min={0} max={p.row.comp} /></Field></Col>
+                                                    <Col><Field name={[field.name, `min`]} label={{ enabled: false }}><InputNumber autoFocus size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>{unit}</b>} min={0} max={p.row.comp} /></Field></Col>
+                                                    <Col><Field name={[field.name, `max`]} label={{ enabled: false }} includeKeyRules={['min']} allValues={{ min: form.getFieldValue(['items', index, 'min']) }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>{unit}</b>} min={0} max={p.row.comp_actual} /></Field></Col>
+                                                    {type === "ff" && <Col xs="content"><Field name={[field.name, `type`]} label={{ enabled: false }}><Select size="small" style={{ width: "100%", textAlign: "right" }} options={[{ value: "Bobinagem" }, { value: "Desbobinagem" }]} /></Field></Col>}
                                                     <Col xs={2}>{forInput && <div className={classNames(classes.center)}><IconButton onClick={() => removeRow(field.name, field)} style={{ alignSelf: "center" }}><CgCloseO /></IconButton></div>}</Col>
                                                 </Row>
                                             ))}
@@ -473,7 +478,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             const rows = dataAPI.getData().rows;
             for (let [i, r] of dataAPI.getData().rows.entries()) {
                 r.defeitos = (r?.defeitos ? r.defeitos : [])
-                const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
+                const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.rugas_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
                 const estado = r.estado;
                 // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
                 //     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
@@ -488,13 +493,17 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                     status.formStatus.error.push({ message: <span><b>{r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
                 }
                 if (r.defeitos.some(x => x.key === "esp") && !r.prop_obs?.length > 0) {
-                    status.formStatus.error.push({ message: <span><b>{r.nome}</b>: <b>Gramagem</b>, preencher nas propriedades observações o motivo.</span> });
+                    status.formStatus.error.push({ message: <span><b>{r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+                }
+                if (r.defeitos.some(x => x.key === "prop") && !r.prop_obs?.length > 0) {
+                    status.formStatus.error.push({ message: <span><b>{r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
                 }
                 rows[i]["prop"] = (r.prop_obs?.length > 0) ? 1 : 0;
                 rows[i]["fc"] = (r.fc_pos?.length > 0) ? 1 : 0;
                 rows[i]["ff"] = (r.ff_pos?.length > 0) ? 1 : 0;
                 rows[i]["furos"] = (r.furos_pos?.length > 0) ? 1 : 0;
                 rows[i]["buraco"] = (r.buracos_pos?.length > 0) ? 1 : 0;
+                rows[i]["rugas"] = (r.rugas_pos?.length > 0) ? 1 : 0;
 
             }
 
@@ -592,7 +601,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                         <Col>
                             {(modeEdit.form || modeEdit.datagrid) ? <Row nogutter justify='end'>
                                 <Col xs="content">
-                                    <Button onClick={() => onFinish("save")}>{(bobinagem?.valid === 1) ? 'Classificar Bobinagem' : 'Validar Bobinagem'}</Button>
+                                    <Portal elId="save-btn"><Button type="primary" onClick={() => onFinish("save")}>{(bobinagem?.valid === 1) ? 'Guardar Registos' : 'Validar Bobinagem'}</Button></Portal>
                                     <Divider type="vertical" style={{ margin: "0 8px" }} />
                                     <Button onClick={changeMode} icon={<ReadOutlined title="Modo de Leitura" />} />
                                 </Col>
@@ -622,7 +631,7 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                                     <Row gutterWidth={5} style={{ marginBottom: "10px" }}>
                                         <Col width={150}><Field name="lar_util" label={{ enabled: true, text: "Largura Útil", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>mm</b>} /></Field></Col>
                                         <Col width={150}><Field required forInput={modeEdit.form} name="largura_bruta" label={{ enabled: true, text: "Largura Bruta", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={larguraUtil()} addonAfter={<b>mm</b>} /></Field></Col>
-                                        <Col width={150}><Field name="comp_par" forInput={modeEdit.form && dataAPI.getData().troca_nw === 1} required label={{ enabled: true, text: "Comprimento Emenda", padding: "0px" }}><InputNumber style={{ textAlign: "right" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
+                                        <Col width={150}><Field name="comp_par" forInput={modeEdit.form && (dataAPI.getData().troca_nw === 1 || dataAPI.getData().tr === 1)} required label={{ enabled: true, text: "Comprimento Emenda", padding: "0px" }}><InputNumber style={{ textAlign: "right" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
                                         <Col width={150}><Field name="diam" label={{ enabled: true, text: "Diâmetro", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>mm</b>} /></Field></Col>
                                         <Col width={150}><Field name="area" label={{ enabled: true, text: "Área", padding: "0px" }}><InputNumber style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>m<sup>2</sup></b>} /></Field></Col>
                                         {dataAPI.getData()["agg_of_id"] && <>
@@ -690,7 +699,7 @@ export default (props) => {
     const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false });
 
     const [bobinagem, setBobinagem] = useState();
-    const [checkData, setCheckData] = useImmer({ estado: false, defeitos: false, fc_pos: false, ff_pos: false, buracos_pos: false, furos_pos: false, prop_obs: false, obs: false });
+    const [checkData, setCheckData] = useImmer({ estado: false, defeitos: false, fc_pos: false, ff_pos: false, buracos_pos: false, furos_pos: false, prop_obs: false, rugas_pos: false, obs: false });
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const primaryKeys = ['id'];
     const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
@@ -708,10 +717,11 @@ export default (props) => {
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
         { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, editor: p => <FieldEstadoEditor p={p} />, editorOptions: { editOnClick: true } },
         { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} />, editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
-        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} column="furos_pos" title="Furos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'rugas_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="rugas_pos" name='Rugas' onChange={onCheckChange} defaultChecked={checkData.rugas_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editorOptions: { editOnClick: true } },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
         { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
         { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
@@ -724,7 +734,7 @@ export default (props) => {
             return;
         }
         const { bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
-        const bobineDefeitos = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'ff' && v.value !== 'fc');
+        const bobineDefeitos = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
         dataAPI.addFilters({ bobinagem_id, ...initFilters }, true, true);
         dataAPI.fetchPost({
             signal, rowFn: async (dt) => {
@@ -739,6 +749,7 @@ export default (props) => {
                     dt.rows[i]["ff_pos"] = JSON.parse(dt.rows[i]["ff_pos"]);
                     dt.rows[i]["furos_pos"] = JSON.parse(dt.rows[i]["furos_pos"]);
                     dt.rows[i]["buracos_pos"] = JSON.parse(dt.rows[i]["buracos_pos"]);
+                    dt.rows[i]["rugas_pos"] = JSON.parse(dt.rows[i]["rugas_pos"]);
                     dt.rows[i]["estado"] = (dt.valid === 0 && dataAPI.getData()?.isba == 1) ? "BA" : dt.rows[i]["estado"];
                 }
                 const _allowEdit = {
@@ -789,7 +800,7 @@ export default (props) => {
             if (checkData.defeitos === true) {
                 rows = applyToAllRows(rows, "defeitos", indexRow, added, removed);
 
-            } else if (added.some(v => v.value === "troca_nw") || removed.some(v => v.value === "troca_nw")) {
+            } else if (added.some(v => (v.value === "troca_nw" || v.value === "tr")) || removed.some(v => (v.value === "troca_nw" || v.value === "tr"))) {
                 rows = applyToAllRows(rows, "defeitos", indexRow, added, removed);
             }
 
@@ -806,6 +817,8 @@ export default (props) => {
         if (column === "estado") {
             const estado = rows[indexRow].estado;
             if (checkData.estado === true) {
+                rows = applyValueToAllRows(rows, "estado", indexRow, estado);
+            } else if (estado === "BA") {
                 rows = applyValueToAllRows(rows, "estado", indexRow, estado);
             }
         }
@@ -848,9 +861,9 @@ export default (props) => {
                 clearSort={false}
                 rowHeight={28}
                 onRowsChange={onRowsChange}
-                toolbarFilters
+                toolbarFilters={{ content: <Col xs="content"><Button disabled={!bobinagem?.valid} icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button></Col> }}
                 leftToolbar={<>
-                    <Button disabled={!bobinagem?.valid} type='primary' icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
+                    <div id="save-btn"></div>
                 </>}
             />
         </>

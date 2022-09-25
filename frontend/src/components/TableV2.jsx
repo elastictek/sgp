@@ -133,13 +133,14 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
     );
 }
 
-const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters }) => {
+const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content }) => {
     return (
         <Form form={form} name={`f-ltf`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
 
-            <FormContainer id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true}>
+            <FormContainer id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true} fluid>
                 <Row style={{ justifyContent: "end" }} gutterWidth={2}>
                     {filters}
+                    {content}
                 </Row>
             </FormContainer>
         </Form>
@@ -300,7 +301,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
                         </div>
                     </Col>
                     {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small"><SearchOutlined /></Button></Col>}
-                    {settings && <Col xs="content" style={{ alignSelf: "end" }}>
+                    {settings && <Col xs="content" style={{ alignSelf: "center" }}>
 
                         <Popover
                             open={clickSettings}

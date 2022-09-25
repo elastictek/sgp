@@ -12,7 +12,7 @@ import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, noValue } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
-import { Button, Select, Typography, Card, Collapse, Space, Form, Tag } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Drawer } from "antd";
 const { Option } = Select;
 import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
@@ -25,6 +25,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
 import { TbCircles } from "react-icons/tb";
+import { Status } from "../../bobines/commons";
 
 const title = "Bobinagens";
 const useStyles = createUseStyles({});
@@ -61,6 +62,57 @@ const IFrame = ({ src }) => {
     return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>` }} />;
 }
 
+const BobinesPopup = ({ record }) => {
+    const [visible, setVisible] = useState({ drawer: { open: false } });
+    const dataAPI = useDataAPI({ id: "pop-bobines-0", payload: { parameters: {}, pagination: { enabled: false, limit: 30 }, filter: {}, sort: [] } });
+    const primaryKeys = ['id'];
+    const columns = [
+        { key: 'nome', name: 'Bobine', width: 150, formatter: p => <Button size="small" type="link" onClick={() => onOpen("drawer", p.row)}>{p.row.nome}</Button> },
+        { key: 'estado', name: 'Estado', formatter: p => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={{ estado: p.row.estado, largura: p.row.lar }} /></div> }
+    ];
+
+    useEffect(() => {
+        console.log(record)
+        dataAPI.setData({ rows: record.bobines }, { tstamp: Date.now() });
+    }, []);
+
+    const onOpen = (component, data) => {
+        setVisible(prev => ({ ...prev, [component]: { ...data, title:<div>Bobine <span style={{fontWeight:900}}>{data.nome}</span></div>, open: true } }));
+    }
+
+    const onClose = (component) => {
+        setVisible(prev => ({ ...prev, [component]: { open: false } }));
+    }
+
+    return (<YScroll>
+        <Drawer title={visible.drawer?.title} open={visible.drawer.open} size="large" onClose={() => onClose("drawer")}></Drawer>
+        <Table
+            //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
+            rowStyle={`font-size:10px;`}
+            headerStyle={`background-color:#f0f0f0;font-size:10px;`}
+            loadOnInit={false}
+            columns={columns}
+            dataAPI={dataAPI}
+            //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+            toolbar={false}
+            search={false}
+            moreFilters={false}
+            rowSelection={false}
+            primaryKeys={primaryKeys}
+            editable={false}
+            rowHeight={28}
+        />
+    </YScroll>);
+}
+
+const FormBobine = ({record}) => {
+
+return(<FormContainer>
+
+</FormContainer>);
+
+}
+
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
@@ -69,7 +121,7 @@ export default ({ record, card, parentReload }) => {
     const primaryKeys = ['id'];
     const columns = [
         { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },
-        { key: 'action', name: '', width: 90, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" />},
+        { key: 'action', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onBobinesPopup(p.row)} /> },
         { key: 'inico', name: 'Início', width: 90 },
         { key: 'fim', name: 'Fim', width: 90 },
         { key: 'duracao', name: 'Duração', width: 90 },
@@ -86,6 +138,9 @@ export default ({ record, card, parentReload }) => {
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
         <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
     ), [modalParameters]);
+    const [showBobinesModal, hideBobinesModal] = useModal(({ in: open, onExited }) => (
+        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideBobinesModal} width={320} height={500}><BobinesPopup record={{ ...modalParameters }} /></ResponsiveModal>
+    ), [modalParameters]);
 
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
         onOpen: () => console.log(`Connected to Web Socket`),
@@ -96,6 +151,11 @@ export default ({ record, card, parentReload }) => {
         reconnectAttempts: 500
     });
 
+    const onBobinesPopup = (row) => {
+        console.log(row)
+        setModalParameters({ title: <div>Bobinagem <span style={{fontWeight:900}}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        showBobinesModal();
+    }
 
 
     const loadData = async ({ signal } = {}) => {
@@ -115,8 +175,6 @@ export default ({ record, card, parentReload }) => {
 
     useEffect(() => {
         if (lastJsonMessage) {
-            console.log("#############------------###", record.agg_of_id)
-
             //dataAPI.fetchPost();
             if (record?.agg_of_id) {
                 dataAPI.addFilters({ ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id }, true, true);
