@@ -173,6 +173,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
             if ("cortesordem_id" in values && values["cortesordem_id"] === undefined) {
                 values["cortesordem_id"] = -1;
             }
+
             const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod: ofabrico, ofabrico_id: temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), /* end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), */ cliente_cod, cliente_nome, iorder, prf, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
             setResultMessage(response.data);
             if (forproduction) {

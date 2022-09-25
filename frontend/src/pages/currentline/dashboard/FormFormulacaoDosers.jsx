@@ -19,11 +19,11 @@ import ResponsiveModal from 'components/Modal';
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
-import {Cuba} from "./commons/Cuba";
+import { Cuba } from "./commons/Cuba";
 
 const title = "Alterar Doseadores";
 const useStyles = createUseStyles({});
-const schema = (options={}) => {
+const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
@@ -45,7 +45,7 @@ const columns = (extrusora, onChange) => [
             key: 'doseador_B', sortable: false, name: `Doseador`, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_B}</b></div>,
             editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_B} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_B', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["B"]} keyField="key" textField="key" />,
             editorOptions: { editOnClick: true },
-            colSpan(args) {if (args.type === 'HEADER') {return 2;}return undefined;}
+            colSpan(args) { if (args.type === 'HEADER') { return 2; } return undefined; }
         },
         {
             key: 'doseador_C', sortable: false, name: ``, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_C}</b></div>,
@@ -104,8 +104,41 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
         let valid = true;
         const status = { error: [], warning: [], info: [], success: [] };
         const _formulacao = { ...record.formulacao };
-        console.log(record)
-       for (let [i, v] of _formulacao.formu_materiasprimas_A.entries()) {
+        if (!("formu_materiasprimas_BC" in _formulacao) || !("formu_materiasprimas_A" in _formulacao)) {
+            const formu_materiasprimas_BC = [];
+            const formu_materiasprimas_A = [];
+            for (let x of _formulacao.items) {
+                if (x.extrusora === "A") {
+                    formu_materiasprimas_A.push({
+                        [`arranque_${x.extrusora}`]: x.arranque,
+                        ...(`cuba_${x.extrusora}` in x && { [`cuba_${x.extrusora}`]: x[`cuba_${x.extrusora}`] }),
+                        [`densidade_${x.extrusora}`]: x.densidade,
+                        ...(`doseador_${x.extrusora}` in x && { [`doseador_${x.extrusora}`]: x[`doseador_${x.extrusora}`] }),
+                        [`global`]: x.vglobal,
+                        [`matprima_cod_${x.extrusora}`]: x.matprima_cod,
+                        [`orig_matprima_cod_${x.extrusora}`]: x.matprima_cod,
+                        [`removeCtrl`]: true,
+                        [`tolerancia_${x.extrusora}`]: x.tolerancia
+                    });
+                } else {
+                    formu_materiasprimas_BC.push({
+                        [`arranque_${x.extrusora}`]: x.arranque,
+                        ...(`cuba_${x.extrusora}` in x && { [`cuba_${x.extrusora}`]: x[`cuba_${x.extrusora}`] }),
+                        [`densidade_${x.extrusora}`]: x.densidade,
+                        ...(`doseador_B` in x && { [`doseador_B`]: x[`doseador_B`] }),
+                        ...(`doseador_C` in x && { [`doseador_C`]: x[`doseador_C`] }),
+                        [`global`]: x.vglobal,
+                        [`matprima_cod_${x.extrusora}`]: x.matprima_cod,
+                        [`orig_matprima_cod_${x.extrusora}`]: x.matprima_cod,
+                        [`removeCtrl`]: true,
+                        [`tolerancia_${x.extrusora}`]: x.tolerancia
+                    });
+                }
+            }
+            _formulacao.formu_materiasprimas_BC = formu_materiasprimas_BC;
+            _formulacao.formu_materiasprimas_A = formu_materiasprimas_A;
+        }
+        for (let [i, v] of _formulacao.formu_materiasprimas_A.entries()) {
             const d = dataAPI_A.getData().rows.find(x => x.matprima_cod === v.matprima_cod_A);
             if ((!d?.cuba_A || !d?.doseador_A) && valid) { valid = false; }
             _formulacao.formu_materiasprimas_A[i]["cuba_A"] = d?.cuba_A;
@@ -118,19 +151,19 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
             _formulacao.formu_materiasprimas_BC[i]["doseador_B"] = d?.doseador_B;
             _formulacao.formu_materiasprimas_BC[i]["doseador_C"] = d?.doseador_C;
         }
-        _formulacao["items"] = [...dataAPI_A.getData().rows,...dataAPI_BC.getData().rows];
+        _formulacao["items"] = [...dataAPI_A.getData().rows, ...dataAPI_BC.getData().rows];
 
         if (!valid) {
             status.error.push({ message: "Os doseadores têm de ser todos definidos!" });
             setFormStatus({ ...status });
         } else {
             try {
-                 const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ..._formulacao, valid:1 } } });
-                 if (response.data.status !== "error") {
-                     Modal.success({ title: "Doseadores alterados com sucesso!", onOk: () => { parentReload(); closeParent(); } })
-                 } else {
-                     status.error.push({ message: response.data.title });
-                     setFormStatus({ ...status });
+                const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ..._formulacao, valid: 1 } } });
+                if (response.data.status !== "error") {
+                    Modal.success({ title: "Doseadores alterados com sucesso!", onOk: () => { parentReload(); closeParent(); } })
+                } else {
+                    status.error.push({ message: response.data.title });
+                    setFormStatus({ ...status });
                 }
             } catch (e) {
                 status.error.push({ message: e.message });
@@ -176,7 +209,7 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
     return (
         <FormContainer id="f-dosers" wrapForm={false} wrapFormItem={false} loading={submitting.state}>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
-            <Container style={{ marginBottom: "5px", marginTop:"5px" }}>
+            <Container style={{ marginBottom: "5px", marginTop: "5px" }}>
                 <Row style={{ border: "solid 1px #dee2e6", background: "#f8f9fa", padding: "5px" }}>
                     <Col>
                         <Button size="small" onClick={assignVats}>Atribuir Cubas</Button>
