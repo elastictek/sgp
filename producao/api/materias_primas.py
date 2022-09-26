@@ -342,7 +342,7 @@ def NWListLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
-    f.add(f'cs.status = :cs_status', lambda v:(v!=None))
+    #f.add(f'cs.status = :cs_status', lambda v:(v!=None))
     f.add(f'lnw.status = :status', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
@@ -353,7 +353,7 @@ def NWListLookup(request, format=None):
             f"""
                 SELECT lnw.* 
                 FROM lotesnwlinha lnw
-                join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
+                #join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
                 {f.text}
                 {dql.sort} {dql.limit}
             """
