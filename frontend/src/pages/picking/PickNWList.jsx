@@ -448,7 +448,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'largura', name: 'Largura', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura} mm</div> },
         { key: 'comp', name: 'Comp.', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.comp).toFixed(2)} m</div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 'queue', width: 100,maxWidth:100, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
+        { key: 'queue', width: 110,maxWidth:110, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
         { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> },
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Button /* disabled={details?.status === 1} */ size="small" onClick={() => onDelete(p.row, p)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
         //{ key: 'print', name: '',  minWidth: 45, width: 45, sortable: false, resizable: false, formatter:props=><Button size="small"><PrinterOutlined/></Button> },

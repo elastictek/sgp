@@ -107,7 +107,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'type', width: 70, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote} m<sup>2</sup></div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 'queue', width: 100,maxWidth:100, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
+        { key: 'queue', width: 110,maxWidth:110, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
