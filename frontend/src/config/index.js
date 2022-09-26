@@ -14,6 +14,7 @@ export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
+export const RECICLADO_ARTIGO = {cod:"R00000000000001",des:"Reciclado ElasticTek"};
 //DOSERS
 export const DOSERS = [{value:'A1'}, {value:'A2'}, {value:'A3'}, {value:'A4'}, {value:'A5'}, {value:'A6'}, {value:'B1'}, {value:'B2'}, {value:'B3'}, {value:'B4'}, {value:'B5'}, {value:'B6'}, {value:'C1'}, {value:'C2'}, {value:'C3'}, {value:'C4'}, {value:'C5'}, {value:'C6'}]
 //CORES

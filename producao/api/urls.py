@@ -177,6 +177,7 @@ urlpatterns = [
     re_path(r'^mpginout/$', views.MPGranuladoIO),
     re_path(r'^pickmp/$', views.PickMP),
     re_path(r'^printmpbuffer/$', print.PrintMPBuffer),
+    re_path(r'^printreciclado/$', print.PrintReciclado),
     
     
     #MATERIAS-PRIMAS

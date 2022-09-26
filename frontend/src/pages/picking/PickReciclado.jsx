@@ -373,7 +373,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const [dirty, setDirty] = useState(false);
         useEffect(() => {
             if (lastValue.picked && lastValue.error === null) {
-                const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.lote === lastValue.row.lote) : -1;
+                const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => (x.lote === lastValue.row.lote && x.source===lastValue.row.source)) : -1;
                 if (idx === -1) {
                     dataAPI.addRow({ ...lastValue.row }, primaryKeys, 0);
                     setLastValue(prev => ({ ...prev, picked: false }));
@@ -500,6 +500,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         setModalParameters({ reciclado: details, title: `Imprimir Etiqueta Reciclado ${details.lote} ` });
         showPrintModal();
     }
+    const onPrintOld = () => {
+        setModalParameters({ old:true, reciclado: details, title: `Imprimir Etiqueta Reciclado ${details.lote} ` });
+        showPrintModal();
+    }
 
     return (
         <YScroll>
@@ -523,7 +527,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<>
-                    <Button disabled={details?.status < 1} type='primary' icon={<PrinterOutlined />} onClick={onPrint} style={{ marginLeft: "5px" }}>Imprimir Etiqueta</Button>
+                    {/* <Button disabled={details?.status < 1} type='primary' icon={<PrinterOutlined />} onClick={onPrint} style={{ marginLeft: "5px" }}>Imprimir Etiqueta New</Button> */}
+                    <Button disabled={details?.status < 1} type='primary' icon={<PrinterOutlined />} onClick={onPrintOld} style={{ marginLeft: "5px" }}>Imprimir Etiqueta</Button>
                     {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}

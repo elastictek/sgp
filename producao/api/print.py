@@ -151,6 +151,51 @@ def PrintEtiqueta(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": f'Erro ao imprimir etiquetas', "subTitle":str(error)})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def PrintReciclado(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    tmp = tempfile.NamedTemporaryFile()
+    print(tmp)
+    print(tmp.name)
+    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":"ETIQUETAS-RECICLADO",
+        "path":"ETIQUETAS/MP-RECICLADO",
+        "export":"pdf",
+        "data":{      
+            "artigo_cod":request.data["parameters"]["artigo_cod"],
+            "n_lote":request.data["parameters"]["n_lote"],
+            "artigo_des":request.data["parameters"]["artigo_des"],
+            "unit":request.data["parameters"]["unit"],
+            "qty":float(request.data["parameters"]["qty"]),
+            "inicio":request.data["parameters"]["inicio"],
+            "fim":request.data["parameters"]["fim"],
+            "tara":request.data["parameters"]["tara"],
+            "produto":request.data["parameters"]["produto"]
+        }
+    })
+    try:
+        print(tmp.name)
+        tmp.write(fstream.content)
+        #TO UNCOMMENT ON PRODUCTION
+        #conn = cups.Connection()
+        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":request.data["parameters"]["num_copias"]}) 
+        ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        #tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
 
 
