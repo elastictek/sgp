@@ -5385,7 +5385,7 @@ def ValidarBobinagem(request, format=None):
         f.add(f'`status` = :status', True)
         f.add(f'`type` = :type', True)
         f.add(f'`n_lote` = :n_lote', True)
-        f.add(f'agg_of_id = :agg_of_id', True)
+        #f.add(f'agg_of_id = :agg_of_id', True)
         f.add(f'queue = :queue', True)
         f.value("and")
         response = db.executeSimpleList(lambda: (f"select lw.*, (qty_consumed + (({nw} * largura)/1000)) consumed, (qty_reminder + (({nw} * largura)/1000)) reminder from lotesnwlinha lw {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
@@ -5405,6 +5405,7 @@ def ValidarBobinagem(request, format=None):
                     
                     if nwi is None or nws is None:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
+
 
                     nw_consumed_i = float(nwi["qty_consumed"]) + (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
                     nw_reminder_i = float(nwi["qty_reminder"]) - (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
