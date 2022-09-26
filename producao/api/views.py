@@ -5388,7 +5388,7 @@ def ValidarBobinagem(request, format=None):
         #f.add(f'agg_of_id = :agg_of_id', True)
         f.add(f'queue = :queue', True)
         f.value("and")
-        response = db.executeSimpleList(lambda: (f"select lw.*, (qty_consumed + (({nw} * largura)/1000)) consumed, (qty_reminder + (({nw} * largura)/1000)) reminder from lotesnwlinha lw {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
+        response = db.executeSimpleList(lambda: (f"select lw.*, (qty_consumed + (({nw} * largura)/1000)) consumed, (qty_reminder - (({nw} * largura)/1000)) reminder from lotesnwlinha lw {f.text} order by t_stamp desc limit 1"), cursor, f.parameters)
         if len(response["rows"])>0:
             return response["rows"][0]
         return None
@@ -5406,16 +5406,10 @@ def ValidarBobinagem(request, format=None):
                     if nwi is None or nws is None:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
 
-
-                    nw_consumed_i = float(nwi["qty_consumed"]) + (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
-                    nw_reminder_i = float(nwi["qty_reminder"]) - (float(data["values"]["nwinf"])*(nwi["largura"]/1000))
-                    nw_consumed_s = float(nws["qty_consumed"]) + (float(data["values"]["nwsup"])*(nws["largura"]/1000))
-                    nw_reminder_s = float(nws["qty_reminder"]) - (float(data["values"]["nwsup"])*(nws["largura"]/1000))
-
-                    #if nw_reminder_i<-2000:
-                    #    return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    #if nw_reminder_s<-2000:
-                    #    return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
+                    if float(nwi["qty_reminder"])<-400:
+                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
+                    if float(nws["qty_reminder"])<-400:
+                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
                     reciclado_id = checkReciclado(data,cursor)
                     if (reciclado_id is None):
@@ -5443,9 +5437,9 @@ def ValidarBobinagem(request, format=None):
                     db.execute(dml.statement, cursor, dml.parameters)
                 
                     print("Atualizar nw")
-                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_i,"qty_reminder":nw_reminder_i},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
+                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nwi["qty_consumed"],"qty_reminder":nwi["qty_reminder"]},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
-                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nw_consumed_s,"qty_reminder":nw_reminder_s},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
+                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nws["qty_consumed"],"qty_reminder":nws["qty_reminder"]},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
 
                 columns = ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'rugas_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs']
