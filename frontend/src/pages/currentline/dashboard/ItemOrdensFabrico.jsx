@@ -101,14 +101,15 @@ const Action = ({ r, dataAPI }) => {
         let itm = rowReportItems.filter(v => v.key === type.key);
         if (itm.length <= 0) { return false; }
         let { parameters, ...data } = itm[0].data;
-        console.log("$#$#$#$#row-",r.temp_ofabrico_agg)
         let dataexport = {
             ...data,
-            "conn-name": "MYSQL-SGP-DEV",
+            "conn-name": "MYSQL-SGP",
             "data": {
                 agg_of_id:r.temp_ofabrico_agg
             }
         };
+        console.log("$#$#$#$#row-",dataexport)
+
         downloadReport({ dataAPI, url: `${API_URL}/exportfile/`, type, dataexport, limit, orientation, isDirty });
     }
 

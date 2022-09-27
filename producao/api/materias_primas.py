@@ -303,6 +303,7 @@ def MateriasPrimasList(request, format=None):
             FROM ELASTICTEK.STOCK STK
             JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
             JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            LEFT JOIN (select * from openquery([SGP-PROD], 'select id,vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
             WHERE 1=1
             {typeFilter}
             {f.text} {f2["text"]}
@@ -592,74 +593,90 @@ def GranuladoList(request, format=None):
 def SaveGranuladoItems(request, format=None):
     data = request.data.get("parameters")
    
+    def allowItem(item, cursor):
+        f = Filters({"artigo_cod": item})
+        f.where()
+        f.add(f'`artigo_cod` = :artigo_cod', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"SELECT type_mov FROM lotesgranuladolinha {f.text} order by `order` desc limit 1"), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return True if response["rows"][0]["type_mov"]==0 else False
+        return False
+
     def saveItems(data,cursor):
+        errors = []
         #nws = json.loads(acs["nonwovens"])
         for idx, item in enumerate([d for d in data["rows"] if "notValid" in d and d['notValid']==1]):
             #if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
             #    raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
             #if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
             #    raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-
-            dml = db.dml(TypeDml.INSERT, {
-                 "lote_id":item["lote_id"], 
-                 "qty_lote":item["qty_lote"],
-                 "artigo_des":item["artigo_des"],
-                 "artigo_cod":item["artigo_cod"], 
-                 "type_mov":item["type_mov"], 
-                 "t_stamp":item["t_stamp"],
-                 "n_lote":item["n_lote"],
-                 "status":-1,
-                 "vcr_num":item["vcr_num"],
-                 "qty_reminder":item["qty_reminder"],
-                 "obs": item["obs"] if "obs" in item else "",
-                 "user_id":request.user.id}, 
-                 "lotesgranuladolinha",None,None,False)
-            dml.statement = f"""
-                {dml.statement}
-                ON DUPLICATE KEY UPDATE 
-                    status = VALUES(status),
-                    user_id = VALUES(user_id)
-            """
-            print(dml.statement)
-            print(dml.parameters)
-            db.execute(dml.statement, cursor, dml.parameters)
-            lastid = cursor.lastrowid
-            linha_order = lastid*100000000
-            reciclado = 0
-            if item["artigo_cod"].startswith("R000"):
-                reciclado = 1
-            lote_id =  linha_order if reciclado==1 else item["lote_id"]
-            dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order,"lote_id":lote_id},"lotesgranuladolinha",{"id":f'=={lastid}'},None,False)
-            db.execute(dml.statement, cursor, dml.parameters)
-
-            #DOSERS ADD
-            doser_order = linha_order
-            for doser in item["dosers"].split(','):
+            allow = allowItem(item["artigo_cod"],cursor)
+            if allow==True:
                 dml = db.dml(TypeDml.INSERT, {
-                    "t_stamp":item["t_stamp"],
-                    "doser":doser,
-                    "`order`":doser_order,
-                    "loteslinha_id":lastid,
+                    "lote_id":item["lote_id"], 
+                    "qty_lote":item["qty_lote"],
+                    "artigo_des":item["artigo_des"],
+                    "artigo_cod":item["artigo_cod"], 
                     "type_mov":item["type_mov"], 
-                    "status":-1,
-                    "artigo_cod":item["artigo_cod"],
+                    "t_stamp":item["t_stamp"],
                     "n_lote":item["n_lote"],
-                    "lote_id":lote_id,
-                    "group_id":item["group_id"],
-                    "qty_consumed":0,
-                    "audit_cs_id":acs["id"],
-                    "agg_of_id":acs["agg_of_id"],
-                    "closed":0,
-                    "fixing":0,
-                    "user_id":request.user.id
-                    },"lotesdoserslinha",None,None,False)
+                    "status":-1,
+                    "vcr_num":item["vcr_num"],
+                    "qty_reminder":item["qty_reminder"],
+                    "obs": item["obs"] if "obs" in item else "",
+                    "user_id":request.user.id}, 
+                    "lotesgranuladolinha",None,None,False)
                 dml.statement = f"""
                     {dml.statement}
                     ON DUPLICATE KEY UPDATE 
                         status = VALUES(status),
                         user_id = VALUES(user_id)
                 """
+                print(dml.statement)
+                print(dml.parameters)
                 db.execute(dml.statement, cursor, dml.parameters)
+                lastid = cursor.lastrowid
+                linha_order = lastid*100000000
+                reciclado = 0
+                if item["artigo_cod"].startswith("R000"):
+                    reciclado = 1
+                lote_id =  linha_order if reciclado==1 else item["lote_id"]
+                dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order,"lote_id":lote_id},"lotesgranuladolinha",{"id":f'=={lastid}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+
+                #DOSERS ADD
+                doser_order = linha_order
+                for doser in item["dosers"].split(','):
+                    dml = db.dml(TypeDml.INSERT, {
+                        "t_stamp":item["t_stamp"],
+                        "doser":doser,
+                        "`order`":doser_order,
+                        "loteslinha_id":lastid,
+                        "type_mov":item["type_mov"], 
+                        "status":-1,
+                        "artigo_cod":item["artigo_cod"],
+                        "n_lote":item["n_lote"],
+                        "lote_id":lote_id,
+                        "group_id":item["group_id"],
+                        "qty_consumed":0,
+                        "audit_cs_id":acs["id"],
+                        "agg_of_id":acs["agg_of_id"],
+                        "closed":0,
+                        "fixing":0,
+                        "user_id":request.user.id
+                        },"lotesdoserslinha",None,None,False)
+                    dml.statement = f"""
+                        {dml.statement}
+                        ON DUPLICATE KEY UPDATE 
+                            status = VALUES(status),
+                            user_id = VALUES(user_id)
+                    """
+                    db.execute(dml.statement, cursor, dml.parameters)
+            else:
+                errors.append({"message":f"""Tem de efetuar a saída do artigo {item["artigo_cod"]} {item["artigo_des"]} antes de dar entrada em linha."""})
+        return errors
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -667,8 +684,8 @@ def SaveGranuladoItems(request, format=None):
                 if acs is None:
                     return Response({"status": "error", "title": "Não existe nenhuma ordem de fabrico a decorrer!"})
                 else:
-                    saveItems(data,cursor)
-                    return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+                    errors = saveItems(data,cursor)
+                    return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}', "errors":errors})
     except Exception as error:
         print(error)
         return Response({"status": "error", "title": str(error)})
@@ -681,29 +698,21 @@ def SaveGranuladoItems(request, format=None):
 def GranuladoListLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
-    f.where()
-    f.add(f'cs.status = :cs_status', lambda v:(v!=None))
+    f.where(True,"and")
+    #f.add(f'cs.status = :cs_status', lambda v:(v!=None))
     f.add(f'll.type_mov = :type_mov', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
     dql = db.dql(request.data, False)
     with connections["default"].cursor() as cursor:
-        print(f"""
-                SELECT distinct ll.*
-                FROM lotesgranuladolinha ll
-                join lotesdoserslinha ld on ld.loteslinha_id=ll.id
-                join producao_currentsettings cs on cs.agg_of_id = ld.agg_of_id
-                where (select type_mov from lotesgranuladolinha tll order by `order` desc limit 1)=1
-                {f.text}
-                {dql.sort} {dql.limit}
-            """)
         response = db.executeSimpleList(lambda: (
             f"""
                 SELECT distinct ll.*
                 FROM lotesgranuladolinha ll
                 join lotesdoserslinha ld on ld.loteslinha_id=ll.id
-                join producao_currentsettings cs on cs.agg_of_id = ld.agg_of_id
+                where (select type_mov from lotesgranuladolinha tll order by `order` desc limit 1)=1
+                #join producao_currentsettings cs on cs.agg_of_id = ld.agg_of_id
                 {f.text}
                 {dql.sort} {dql.limit}
             """
@@ -730,8 +739,8 @@ def UpdateGranulado(request, format=None):
             select *,max(`order`) over () maxorder
             from lotesgranuladolinha
             {f.text}
-            )t where `order`=maxorder and type_mov=1 and 
-            exists (select 1 from lotesdoserslinha ldl where ldl.agg_of_id={acs["agg_of_id"]} and ldl.loteslinha_id=t.id)
+            )t where `order`=maxorder and type_mov=1 
+            #and exists (select 1 from lotesdoserslinha ldl where ldl.agg_of_id={acs["agg_of_id"]} and ldl.loteslinha_id=t.id)
             limit 1
         """), cursor, f.parameters)
         if len(response["rows"])>0:
@@ -747,7 +756,7 @@ def UpdateGranulado(request, format=None):
                 max(`order`) over (partition by doser) maxorder 
                 from lotesdoserslinha ldl
                 where loteslinha_id={data["loteslinha_id"]}
-                and ldl.agg_of_id={data["agg_of_id"]}
+                #and ldl.agg_of_id={data["agg_of_id"]}
                 ) t
                 where t.`order`=t.maxorder and t.type_mov=1
             """
@@ -758,6 +767,7 @@ def UpdateGranulado(request, format=None):
                 d["type_mov"]=0
                 d["t_stamp"]: datetime.now()
                 d["user_id"]=request.user.id
+                d["agg_of_id"]=data["agg_of_id"]
                 d["`order`"]=data["linha_order"]
                 d["loteslinha_id"]=data["linha_id"]
                 dml = db.dml(TypeDml.INSERT, d,"lotesdoserslinha",None,None,False)

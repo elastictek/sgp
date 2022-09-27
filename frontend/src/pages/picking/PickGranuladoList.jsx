@@ -708,6 +708,7 @@ export default ({ setFormTitle, ...props }) => {
         try {
             const response = await fetchPost({ url: `${API_URL}/savegranuladoitems/`, parameters: { rows: dataAPI.getData().rows }, dates: [{ key: "t_stamp", format: DATETIME_FORMAT }] });
             if (response.data.status !== "error") {
+                status.error.push(...response.data.errors);
                 setFormStatus({ ...status });
                 dataAPI.fetchPost();
             } else {
