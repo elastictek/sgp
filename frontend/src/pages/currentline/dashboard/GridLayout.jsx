@@ -261,8 +261,8 @@ const allItems = {
         { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        //{ i: "prod-reports" },
-        //{ i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        { i: "prod-reports" },
+        { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -308,11 +308,11 @@ const toolboxItems = {
             specs: { description: "Especificações", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> }
         }
     },
-    //"prod-reports": {
-    //    description: "Relatórios Produção", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} />, children: {
-    //        reciclado: { description: "Reciclado produzido e consumido", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} /> }
-    //    }
-    //}
+    "prod-reports": {
+        description: "Relatórios Produção", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} />, children: {
+            reciclado: { description: "Reciclado produzido e consumido", icon: <ProjectOutlined style={{ fontSize: '18px', color: '#08c' }} /> }
+        }
+    }
 }
 
 

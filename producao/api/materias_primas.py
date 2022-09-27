@@ -297,18 +297,19 @@ def MateriasPrimasList(request, format=None):
 
             SELECT * FROM(
             SELECT
-            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",        
+            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
+            SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
             LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
             ST."PCU_0",mprima."ITMDES1_0"
             FROM ELASTICTEK.STOCK STK
             JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
             JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            LEFT JOIN (select * from openquery([SGP-PROD], 'select id,vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
+            --LEFT JOIN (select * from openquery([SGP-PROD], 'select distinct vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
             WHERE 1=1
             {typeFilter}
             {f.text} {f2["text"]}
             ) t
-            where (QTYPCU_0 > 0)
+            where (QTYPCU_0 > 0 AND QTY_SUM>0)
             and "LOC_0" in ('BUFFER')
             {flocation.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
