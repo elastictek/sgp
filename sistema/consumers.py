@@ -252,8 +252,15 @@ class RealTimeGeneric(WebsocketConsumer):
             self.send(text_data=json.dumps({"rows":rows,"item":"checkbobinagens","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
     def checkCurrentSettings(self,data):
+        value = data["value"] if "value" in data else {"status":3}
+        f = Filters(value)
+        f.where()
+        f.add(f'cs.agg_of_id = :agg_of_id', lambda v: v is not None)
+        f.add(f'cs.id = :cs_id', lambda v: v is not None)
+        f.add(f'cs.status = :status', lambda v: v is not None)
+        f.value("and")
         with connections["default"].cursor() as cursor:
-            rows = db.executeSimpleList(lambda: (f'SELECT max(acs.id) mx from producao_currentsettings cs join audit_currentsettings acs on cs.id=acs.contextid where cs.status=3'), cursor, {})['rows']
+            rows = db.executeSimpleList(lambda: (f'SELECT max(acs.id) mx from producao_currentsettings cs join audit_currentsettings acs on cs.id=acs.contextid {f.text}'), cursor, f.parameters)['rows']
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 

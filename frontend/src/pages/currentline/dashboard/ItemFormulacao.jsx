@@ -58,7 +58,7 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({ allowed: { producao: 200, logistica: 100 } });
+    const permission = usePermission({ allowed: { producao: 200, planeamento: 200 } });
    
     const dataAPI_A = useDataAPI({ id: "dashb-formulacao-a", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
     const dataAPI_BC = useDataAPI({ id: "dashb-formulacao-bc", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
@@ -79,6 +79,7 @@ export default ({ record, card, parentReload }) => {
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     useEffect(() => {
+        console.log("Entrei formulacao---",record)
         if (record?.formulacao){
             dataAPI_A.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "A") }, { tstamp: Date.now() });
             dataAPI_BC.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "BC") }, { tstamp: Date.now() });
@@ -92,13 +93,21 @@ export default ({ record, card, parentReload }) => {
     const onEdit = (type) => {
         switch (type) {
             case "formulacao":
-                setModalParameters({ forInput: true, feature: "formulation_change" });
+                setModalParameters({ forInput: !ofClosed(), feature: "formulation_change" });
                 showFormulacaoModal();
                 break;
             case "doseadores":
-                setModalParameters({ forInput: true, feature: "dosers_change" });
+                setModalParameters({ forInput: !ofClosed(), feature: "dosers_change" });
                 showFormulacaoDosersModal();
                 break;
+        }
+    }
+
+    const ofClosed = () =>{
+        if (record?.status===9 || !record?.status){
+            return true;
+        }else{
+            return false;
         }
     }
 
@@ -111,7 +120,7 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard data={record} title={card.title} />}
-                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow()} onClick={() => onEdit("doseadores")}>Doseadores</Button><Button disabled={!permission.allow()} onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
+                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow(null,[!ofClosed()])} onClick={() => onEdit("doseadores")}>Doseadores</Button><Button disabled={!permission.allow(null)} onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
             >
                 {Object.keys(record).length > 0 &&
                 <YScroll>

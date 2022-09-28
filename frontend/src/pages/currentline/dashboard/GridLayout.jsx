@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { API_URL, ROOT_URL } from "config";
+import { API_URL, ROOT_URL, SOCKET } from "config";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -23,6 +23,7 @@ import { BsChevronCompactLeft, BsChevronCompactRight, BsDot } from 'react-icons/
 import { GoPrimitiveDot } from 'react-icons/go';
 import { TbPinnedOff, TbPin } from 'react-icons/tb';
 import { usePermission } from "utils/usePermission";
+import useWebSocket from 'react-use-websocket';
 
 
 
@@ -577,12 +578,55 @@ export default (props) => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [rightDrawerVisible, setRightDrawerVisible] = useState(false);
     const permission = usePermission();
+    
+    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+        onOpen: () => console.log(`Connected to Web Socket`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
+
+/*     const loadData = async ({ signal, aggId } = {}) => {
+        const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+        request();
+        const ok = dataAPI.fetchPost();
+        return (ok) ? setInterval(request, 30000) : null;
+    } */
+
+    const loadInterval = async () =>{
+        const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+        request();
+        return setInterval(request, 30000);
+    }
 
     useEffect(() => {
+        //const controller = new AbortController();
+        const interval = loadInterval();
+        return (() => { clearInterval(interval); });
+    }, []);
+
+    useEffect(() => {
+        if (lastJsonMessage) {
+            const controller = new AbortController();
+            loadData({ aggId: props?.aggId , signal: controller.signal });
+            return (() => { controller.abort(); });
+        }
+    }, [lastJsonMessage?.hash,location]);
+
+
+
+
+
+
+
+
+/*     useEffect(() => {
         const controller = new AbortController();
         loadData({ aggId: props?.aggId, signal: controller.signal });
         return (() => controller.abort());
-    }, [location]);
+    }, [location]); */
 
     const hideSettings = () => {
         setClickSettings(false);
@@ -795,6 +839,7 @@ export default (props) => {
     }
 
     const loadData = (data = {}, type = "init") => {
+        console.log("data loaded-gridlayout")
         const { signal } = data;
         const { aggId } = loadInit({}, {}, data, location?.state, [...Object.keys(location?.state || {}), ...Object.keys(data || {})]);
         //let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;

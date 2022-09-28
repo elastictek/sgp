@@ -489,7 +489,6 @@ export default ({ setFormTitle, ...props }) => {
         const [lastValue, setLastValue] = useState({ picked: false, row: {}, error: null, type: null });
         const [dirty, setDirty] = useState(false);
         useEffect(() => {
-            console.log("3333333333333333333")
             if (lastValue.picked && lastValue.error === null) {
                 if (lastValue.row.n_lote && lastValue?.dosers) {
                     let dosers = "";

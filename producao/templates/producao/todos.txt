@@ -1,21 +1,21 @@
 --no mysql criar os stored procs (apenas criei o create_bobinagem falta o resto)
 --permissões de ediçoes (Muito à pressa rever melhor cada situação...)
-####--Ao validar bobinagens ver integração com reciclado........ NW
 --Melhorar listagem de items (nomeadamente matérias primas de nonwovens e granulado, mostrar se é entrada/saída etc...)
 --Troca de bobinagem manual
 --Alterar cortes via input (sem ser dragndrop)
 --Nav Bar com as OFs / Estado currente (dois widgets??)
 --Dados base exportar dados das bobines originais (Falar com o João)
---Queues de Nonwovens para entrada em linha
+--Botão para permitir alterar as picagens de Granulado/Nw (ex. não existe em buffer, saída mal efetuada,...)
 --Formulação para alteração de doseadores dividir Extrusora B e C
 --widget alteração da ordem de produção
---ao preencher defeitos com range não marca bit a 1
 --ao dar entrada na granuladora adicionar opção da tara com ou sem e (peso do core)
---Guardar obs das etiquetas aquando da entrada de material em linha
+--ver atualizações automáticas dos widgets/layouts...
+--Ficha de Processo impressão (Modelo PDF)
+
+--Falha de corte pode ser em m ou diametros...
 
 
 --alteração de nonwoven (Planeamento)
 --se possível widget de estado currente...
-####--modals com app anterior
 --Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
 --Nos cortes agregar as larguras iguais

@@ -7,19 +7,24 @@ export const usePermission = ({ allowed = {} } = {}) => {
     const permissionKeys = Object.keys(auth.permissions);
 
     const allow = (_allowed = null, forInput = null) => {
+        if (Array.isArray(forInput)){
+            if (forInput.includes(false)){
+                return false;
+            }
+        }
         if (forInput === false || !auth.isAuthenticated) {
             return false;
         }
         if (auth.isAdmin){
             return true;
         }
-         let min = 0;
+        let min = null;
         let value = -1;
         const aKeys = (_allowed) ? Object.keys(_allowed) : allowedKeys;
-        console.log("alowwwwwwwwwwwwwwwwwwwwwww",aKeys,_allowed, permissionKeys)
+        const a = (_allowed) ? _allowed : allowed;
         for (const k of permissionKeys) {
             if (aKeys.includes(k)) {
-                min = (min > allowed[k]) ? allowed[k] : min;
+                min = (min > a[k] || min===null) ? a[k] : min;
                 value = (value < auth.permissions[k]) ? auth.permissions[k] : value;
             }
         }

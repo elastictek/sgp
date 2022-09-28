@@ -603,7 +603,7 @@ def SaveGranuladoItems(request, format=None):
         response = db.executeSimpleList(lambda: (f"SELECT type_mov FROM lotesgranuladolinha {f.text} order by `order` desc limit 1"), cursor, f.parameters)
         if len(response["rows"])>0:
             return True if response["rows"][0]["type_mov"]==0 else False
-        return False
+        return True
 
     def saveItems(data,cursor):
         errors = []
@@ -698,11 +698,12 @@ def SaveGranuladoItems(request, format=None):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def GranuladoListLookup(request, format=None):
-    f = Filters(request.data['filter'])
+    f = Filters({**request.data['filter'],"t_stamp":"2022-09-28 00:00:00"})
     f.setParameters({}, False)
     f.where(True,"and")
     #f.add(f'cs.status = :cs_status', lambda v:(v!=None))
     f.add(f'll.type_mov = :type_mov', lambda v:(v!=None))
+    f.add(f'll.t_stamp >= :t_stamp', True)
     f.value("and")
     parameters = {**f.parameters}
     
@@ -713,7 +714,7 @@ def GranuladoListLookup(request, format=None):
                 SELECT distinct ll.*
                 FROM lotesgranuladolinha ll
                 join lotesdoserslinha ld on ld.loteslinha_id=ll.id
-                where (select type_mov from lotesgranuladolinha tll order by `order` desc limit 1)=1
+                where (select type_mov from lotesgranuladolinha tll where tll.t_stamp>='2022-09-28 00:00:00' order by `order` desc limit 1)=1
                 #join producao_currentsettings cs on cs.agg_of_id = ld.agg_of_id
                 {f.text}
                 {dql.sort} {dql.limit}

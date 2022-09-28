@@ -200,32 +200,40 @@ def GetAuthUser(request, format=None):
     user = request.user
     groups = user.groups.all().values_list('name',flat=True)
     items = {}
-    admin_value=600
-    permission_acum=0
+    isAdmin=False
     for idx, v in enumerate(groups):
         key = ""
-        if (v.startswith("Logistica")):
-            key = "logistica"
-        elif (v.startswith("Produção")):
-            key = "producao"
-        elif (v.startswith("Qualidade")):
-            key = "qualidade"
-        permission_value = 100 if v.endswith("Operador") or v.endswith("Tecnico") else 200
+        grp = v.split("#")
+        if grp == "admin":
+            isAdmin=True
+        elif len(grp)==2:
+            key=grp[0]
+            permission_value=grp[1]
+        else:
+            if (v.startswith("Logistica")):
+                key = "logistica"
+            elif (v.startswith("Produção")):
+                key = "producao"
+            elif (v.startswith("Qualidade")):
+                key = "qualidade"
+            permission_value = 100 if v.endswith("Operador") or v.endswith("Tecnico") else 200
         if key in items:
             if items[key]<permission_value:
-                items[key] = permission_value
+                items[key] = int(permission_value)
         else:
-            items[key] = permission_value
-    for k in items:
-        permission_acum+=items[k]
+            items[key] = int(permission_value)
     
+    print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    isAdmin=False
+    items={"planeamento":100,"producao":100,"qualidade":100}
+
     turno = {"enabled":False}
     if hasattr(user, 'turno'):
         turno["dep"] = user.turno.dep
         turno["turno"] = user.turno.turno
         turno["enabled"] = True
 
-    return Response({"isAuthenticated":user.is_authenticated, "user":user.username, "name":f"{user.first_name} {user.last_name}", "turno":{**turno} ,"groups":groups.all().values_list('name',flat=True), "permissions":items, "isAdmin":True if permission_acum>=admin_value else False})
+    return Response({"isAuthenticated":user.is_authenticated, "user":user.username, "name":f"{user.first_name} {user.last_name}", "turno":{**turno} ,"groups":groups.all().values_list('name',flat=True), "permissions":items, "isAdmin":isAdmin})
 
 
 
