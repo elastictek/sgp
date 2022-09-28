@@ -422,6 +422,26 @@ class LotesPickConsumer(WebsocketConsumer):
         conngw = connections[connGatewayName].cursor()
         sageAlias = dbgw.dbAlias.get("sage")
         sgpAlias = dbgw.dbAlias.get("sgp")
+        print("CONSUMERRRRRRRRRRRRRRRRRRRRRRRRRRRR")
+        print(f"""
+
+            SELECT * FROM(
+            SELECT
+                ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",mprima."ITMDES1_0" artigo_des,
+                LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) "QTYPCU_0",
+                --SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+                ST."PCU_0",mprima."ITMDES1_0"
+                FROM {sageAlias}."STOCK" STK
+                JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+                JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+                WHERE ST."VCRNUM_0"='{values[4]}'
+            ) t
+            where ("QTYPCU_0" > 0)
+            and "LOC_0" in ('BUFFER')
+            AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = "VCRNUM_0") 
+
+
+        """)
         rows = dbgw.executeSimpleList(lambda:(f"""
 
             SELECT * FROM(
