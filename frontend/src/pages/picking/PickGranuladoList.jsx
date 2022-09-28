@@ -312,6 +312,7 @@ const schemaOut = (options = {}) => {
     }, options).unknown(true);
 }
 const loadGranuladoListLookup = async (filter, signal) => {
+    console.log("loadingggggggggggggggggggggggggggggggggggggg",filter)
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/granuladolistlookup/`, filter: { ...filter }, sort: [], signal });
     return rows;
 }
@@ -329,6 +330,7 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
  */
     const loadData = async ({ loteId, signal } = {}) => {
         const gl = await loadGranuladoListLookup({ type_mov: 1, cs_status: 3 }, signal);
+        console.log(gl)
         setGranuladol(gl);
         submitting.end();
     };

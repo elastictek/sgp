@@ -714,12 +714,13 @@ def GranuladoListLookup(request, format=None):
                 SELECT distinct ll.*
                 FROM lotesgranuladolinha ll
                 join lotesdoserslinha ld on ld.loteslinha_id=ll.id
-                where (select type_mov from lotesgranuladolinha tll where tll.t_stamp>='2022-09-28 00:00:00' order by `order` desc limit 1)=1
+                where (select type_mov from lotesgranuladolinha tll where tll.t_stamp>='2022-09-28 00:00:00' and tll.vcr_num=ll.vcr_num order by `order` desc limit 1)=1
                 #join producao_currentsettings cs on cs.agg_of_id = ld.agg_of_id
                 {f.text}
                 {dql.sort} {dql.limit}
             """
         ), cursor, parameters)
+        print(parameters)
         return Response(response)
 
 @api_view(['POST'])
