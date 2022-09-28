@@ -595,9 +595,10 @@ def SaveGranuladoItems(request, format=None):
     data = request.data.get("parameters")
    
     def allowItem(item, cursor):
-        f = Filters({"artigo_cod": item})
+        f = Filters({"artigo_cod": item,"t_stamp":"2022-09-28 00:00:00"})
         f.where()
         f.add(f'`artigo_cod` = :artigo_cod', True)
+        f.add(f't_stamp >= :t_stamp', True)
         f.value("and")
         response = db.executeSimpleList(lambda: (f"SELECT type_mov FROM lotesgranuladolinha {f.text} order by `order` desc limit 1"), cursor, f.parameters)
         if len(response["rows"])>0:
@@ -788,7 +789,7 @@ def UpdateGranulado(request, format=None):
                     del gr["maxorder"]
                     gr = {key: gr[key] for key in gr if key not in ["id", "t_stamp","group","order","maxorder"]}
                     gr["type_mov"]=0
-                    gr["qty_reminder"]=filter["qty_reminder"]
+                    gr["qty_reminder"]= filter["qty_reminder"] if "reminder" in filter else 0
                     gr["t_stamp"]: datetime.now()
                     gr["user_id"]=request.user.id
                     dml = db.dml(TypeDml.INSERT, gr,"lotesgranuladolinha",None,None,False)

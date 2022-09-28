@@ -94,9 +94,9 @@ export const QueueNwColumn = ({ value, status }) => {
             return <div />;
         }
         switch (value) {
-            case 1: return <Tag style={{ width: "100%" }} color="#87d068">Em uso</Tag>;
-            case 2: return <Tag style={{ width: "100%" }} color="#fff566">Em espera</Tag>
-            default: return <Tag style={{ width: "100%" }} color="#2db7f5">Em preparação</Tag>
+            case 1: return <Tag style={{ width: "100%", color:"#000" }} color="#87d068">Em uso</Tag>;
+            case 2: return <Tag style={{ width: "100%",color:"#000" }} color="#fff566">Em espera</Tag>
+            default: return <Tag style={{ width: "100%",color:"#000" }} color="#2db7f5">Em preparação</Tag>
         }
     }
 
