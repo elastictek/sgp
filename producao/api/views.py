@@ -225,7 +225,7 @@ def GetAuthUser(request, format=None):
     
     print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     isAdmin=False
-    #items={"planeamento":100,"producao":100,"qualidade":100}
+    items={"planeamento":300,"producao":300,"qualidade":300}
 
     turno = {"enabled":False}
     if hasattr(user, 'turno'):
