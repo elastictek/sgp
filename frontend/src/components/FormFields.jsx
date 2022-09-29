@@ -370,6 +370,10 @@ export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
 
+    useEffect(()=>{
+        console.log("sssssssssssssss")
+        console.log(options,rest)
+    },[])
 
 
     const onChange = (v, option) => {

@@ -304,7 +304,7 @@ class LotesPickConsumer(WebsocketConsumer):
                 else:
                     self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
             else:
-                self.send(text_data=json.dumps({"error":"O lote não existe!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                self.send(text_data=json.dumps({"error":"O lote não existe, ou não está definido como R!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
         elif type=='bobinagem':
             connection = connections["default"].cursor()
             rows = dbgw.executeSimpleList(lambda:(f"""

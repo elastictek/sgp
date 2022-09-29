@@ -14,6 +14,7 @@
 
 --Falha de corte pode ser em m ou diametros...
 --Não deixar imprimir etiqueta do buffer se (no caso de reciclado antigo) não existir observações e regex match do lote
+--A palete não reflete o diametro das bobines
 
 --alteração de nonwoven (Planeamento)
 --se possível widget de estado currente...

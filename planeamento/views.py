@@ -574,7 +574,7 @@ def finalizar_ordem(request, pk):
         ordem.ativa = False
         ordem.completa = True
         ordem.save()
-        return redirect('planeamento:details_ordem', pk=ordem.pk)
+    return redirect('planeamento:details_ordem', pk=ordem.pk)
 
 @login_required
 def reabrir_ordem(request, pk):
