@@ -105,17 +105,19 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
 
         if (value.current !== '') {
             const v = value.current.startsWith("000026") ? value.current.replace("000026", "") : value.current.startsWith("\\000026") ? value.current.replace("\\000026", "") : value.current;
+            let _value = v.split(";");
+            _value = _value.length>=5 ? _value[1] : v;
             const isElasticBand = v.match(/^\d{4}\d{2}\d{2}-\d{2}-\d{2}$/g);
             let type = "nw";
             if (isElasticBand) {
                 type = "elasticband";
             } else {
-                if (v.match(/^\d{4}\d{2}\d{2}-\d{2}$/g)) {
+                if (_value.match(/^\d{4}\d{2}\d{2}-\d{2}$/g)) {
                     type = "bobinagem";
                 }
             }
 
-            sendJsonMessage({ cmd: 'getlotequantity', lote: v, type: type, unit: isElasticBand ? "m2" : "kg" });
+            sendJsonMessage({ cmd: 'getlotequantity', lote: _value, type: type, unit: isElasticBand ? "m2" : "kg" });
             value.current = '';
             setCurrent(value.current);
         }
