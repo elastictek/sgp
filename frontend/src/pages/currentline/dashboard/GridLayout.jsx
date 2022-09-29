@@ -38,6 +38,7 @@ const ItemNav = React.lazy(() => import('./ItemNav'));
 const ItemReciclado = React.lazy(() => import('./ItemReciclado'));
 const ItemBobinagens = React.lazy(() => import('./ItemBobinagens'));
 const ItemFormulacao = React.lazy(() => import('./ItemFormulacao'));
+const ItemNonwovens = React.lazy(() => import('./ItemNonwovens'));
 const ItemGamaOperatoria = React.lazy(() => import('./ItemGamaOperatoria'));
 const ItemSpecs = React.lazy(() => import('./ItemSpecs'));
 const ItemOrdensFabrico = React.lazy(() => import('./ItemOrdensFabrico'));
@@ -251,6 +252,7 @@ const allItems = {
         { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
         { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true },
         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+        { i: "nonwovens", x: 0, y: 0, w: 4, h: 4, minH: 4, closable: true },
         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
         { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true },
         { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
@@ -289,6 +291,7 @@ const templates = {
 const toolboxItems = {
     cortes: { description: "Cortes", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     formulacao: { description: "Formulação", icon: <MdOutlineReceipt style={{ fontSize: '18px', color: '#08c' }} /> },
+    nonwovens: { description: "Nonwovens", icon: <MdOutlineReceipt style={{ fontSize: '18px', color: '#08c' }} /> },
     bobinagens: { description: "Bobinagens", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     actions: { description: "Menu", icon: <MdOutlineMenu style={{ fontSize: '18px', color: '#08c' }} /> },
     ordemfabrico: { description: "Ordens Fabrico", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
@@ -951,6 +954,7 @@ export default (props) => {
                         {layouts[currentBreakpoint].filter(v => !v?.disabled && !v.i.startsWith('agg-')).map(v => {
                             return (
                                 <CustomGridItemComponent key={v.i}>
+                                    {v.i === "nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemNonwovens card={{ title: "Nonwovens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "formulacao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "bobinagens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}

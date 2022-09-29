@@ -191,18 +191,21 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
+            console.log("enter",value.current)
             onPick(formulacao);
         } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 18 || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
+            console.log("ok",keyCode,'-',e.key)
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
-        } else if (keyCode == 16 || keyCode == 220) {
-
+        } else if (keyCode == 17 || keyCode == 16 || keyCode == 220) {
+            console.log("16-20",keyCode,'-',e.key)
         } else if (keyCode === 8) {
+            console.log("8",keyCode,'-',e.key)
             value.current = value.current.slice(0, -1);
             setCurrent(value.current);
         }
         else {
-            console.log("keycode....", keyCode)
+            console.log("keycode....", keyCode,'-',e.key)
             value.current = '';
             //setLastValue('');
         }
