@@ -11,12 +11,14 @@ import YScroll from "components/YScroll";
 import { Button, Select, Typography, Card, Collapse, Space } from "antd";
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import TitleCard from './TitleCard';
+import { usePermission } from "utils/usePermission";
 
 import ResponsiveModal from 'components/Modal';
 const FormCortes = React.lazy(() => import('../FormCortes'));
 
 
 export default ({ record, card, parentReload }) => {
+    const permission = usePermission({ allowed: { producao: 200, planeamento: 200 } });
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
         <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
@@ -25,12 +27,20 @@ export default ({ record, card, parentReload }) => {
     ), [modalParameters]);
 
     const onEdit = () => {
-        setModalParameters({ ...record });
+        setModalParameters({ ...record, forInput: !ofClosed() });
         showModal();
     }
 
     useEffect(() => {
     }, [record?.agg_of_id]);
+
+    const ofClosed = () => {
+        if (record?.status === 9 || !record?.status) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     return (
         <>
@@ -42,7 +52,7 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard data={record} title={card.title} />}
-                extra={<>{Object.keys(record).length > 0 && <Space><Button onClick={onEdit} icon={<EditOutlined />} /></Space>}</>}
+                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow(null, [!ofClosed()])} onClick={onEdit} icon={<EditOutlined />} /></Space>}</>}
             >
                 {Object.keys(record).length > 0 &&
                     <YScroll>

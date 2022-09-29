@@ -65,7 +65,7 @@ const CheckColumn = ({ id, name, onChange, defaultChecked = false, forInput, val
         ref.current.checked = !ref.current.checked;
         onChange(id, e);
     }
-    return (<Space>{name}{(/* forInput &&  */valid === 1) && <Checkbox ref={ref} onChange={onCheckChange} defaultChecked={defaultChecked} />}</Space>);
+    return (<Space>{name}{(forInput && valid === 1) && <Checkbox ref={ref} onChange={onCheckChange} defaultChecked={defaultChecked} />}</Space>);
 };
 
 const focus = (el, h,) => { el?.focus(); };
@@ -163,7 +163,7 @@ const MultiLine = ({ children, isCellSelected, value }) => {
     );
 }
 
-const ModalObsEditor = ({ p, column, title, ...props }) => {
+const ModalObsEditor = ({ p, column, title, forInput, ...props }) => {
     const [visible, setVisible] = useState(true);
     const [value, setvalue] = useState(p.row[column]);
 
@@ -180,8 +180,8 @@ const ModalObsEditor = ({ p, column, title, ...props }) => {
     };
 
     return (
-        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={onConfirm}>
-            <TextArea autoFocus value={value} onChange={(e) => setvalue(e.target.value)} onKeyDown={e => (e.key === 'Enter') && e.stopPropagation()} {...props} />
+        <Modal title={title} open={visible} destroyOnClose onCancel={onCancel} onOk={forInput ? onConfirm : onCancel}>
+            <TextArea disabled={!forInput} autoFocus value={value} onChange={(e) => setvalue(e.target.value)} onKeyDown={e => (e.key === 'Enter') && e.stopPropagation()} {...props} />
         </Modal>
     );
 }
@@ -601,13 +601,16 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                         <Col>
                             {(modeEdit.form || modeEdit.datagrid) ? <Row nogutter justify='end'>
                                 <Col xs="content">
-                                    <Portal elId="save-btn"><Button type="primary" onClick={() => onFinish("save")}>{(bobinagem?.valid === 1) ? 'Guardar Registos' : 'Validar Bobinagem'}</Button></Portal>
+                                    <Portal elId="save-btn">
+                                    {(bobinagem?.valid === 1) && <Button disabled={(!allowEdit.form || !allowEdit.datagrid) ? false : true} type="primary" onClick={() => onFinish("save")}>Guardar Registos</Button>}
+                                    {(bobinagem?.valid === 0) && <Button disabled={!allowEdit.validate} type="primary" onClick={() => onFinish("save")}>Validar Bobinagem</Button>}
+                                    </Portal>
                                     <Divider type="vertical" style={{ margin: "0 8px" }} />
                                     <Button onClick={changeMode} icon={<ReadOutlined title="Modo de Leitura" />} />
                                 </Col>
                             </Row> :
                                 <Row nogutter>
-                                    <Col xs={12} style={{ textAlign: "right" }}><Button icon={<EditOutlined />} onClick={changeMode} title="Editar" /></Col>
+                                    <Col xs={12} style={{ textAlign: "right" }}><Button  disabled={(!allowEdit.form || !allowEdit.datagrid) ? false : true} icon={<EditOutlined />} onClick={changeMode} title="Editar" /></Col>
                                 </Row>
                             }
                         </Col>
@@ -693,7 +696,7 @@ export default (props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useStyles();
-    const permission = usePermission({ allowed: { producao: 100, logistica: 100, qualidade: 100 } });
+    const permission = usePermission({ allowed: { producao: 100, logistica: 100, qualidade: 100, planeamento: 100 } });
 
     const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });
     const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false });
@@ -715,24 +718,24 @@ export default (props) => {
 
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
-        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, editor: p => <FieldEstadoEditor p={p} />, editorOptions: { editOnClick: true } },
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} />, editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
-        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
-        { key: 'rugas_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="rugas_pos" name='Rugas' onChange={onCheckChange} defaultChecked={checkData.rugas_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={modeEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'estado', sortable: false, headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData.estado} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>, ...((modeEdit.datagrid && allowEdit.datagrid) && {editor: p => <FieldEstadoEditor p={p} />}), editorOptions: { editOnClick: true } },
+        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, ...((modeEdit.datagrid && allowEdit.datagrid) && {editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, l_real: e === null ? 0 : e }, true)} min={0} />}), editorOptions: { editOnClick: true }, formatter: ({ row }) => row.l_real },
+        { key: 'fc_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="fc_pos" name='F. Corte' onChange={onCheckChange} defaultChecked={checkData.fc_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={modeEdit.datagrid && allowEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'ff_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="ff_pos" name='F. Filme' onChange={onCheckChange} defaultChecked={checkData.ff_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={modeEdit.datagrid && allowEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'buracos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="buracos_pos" name='Buracos' onChange={onCheckChange} defaultChecked={checkData.buracos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={modeEdit.datagrid && allowEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'furos_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="furos_pos" name='Furos' onChange={onCheckChange} defaultChecked={checkData.furos_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={modeEdit.datagrid && allowEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editorOptions: { editOnClick: true } },
+        { key: 'rugas_pos', sortable: false, width: 85, headerRenderer: p => <CheckColumn id="rugas_pos" name='Rugas' onChange={onCheckChange} defaultChecked={checkData.rugas_pos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={modeEdit.datagrid && allowEdit.datagrid} valid={bobinagem?.valid} /> }, formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editorOptions: { editOnClick: true } },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
-        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
-        { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
-        { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
+        { key: 'defeitos', sortable: false, width: 250, headerRenderer: p => <CheckColumn id="defeitos" name='Outros Defeitos' onChange={onCheckChange} defaultChecked={checkData.defeitos} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, ...((modeEdit.datagrid && allowEdit.datagrid) && {editor: p => <FieldDefeitosEditor p={p} />}), editorOptions: { editOnClick: true }, formatter: (p) => <FieldDefeitos p={p} />, editorOptions: { editOnClick: true } },
+        { key: 'prop_obs', sortable: false, headerRenderer: p => <CheckColumn id="prop_obs" name='Propriedades Observações' onChange={onCheckChange} defaultChecked={checkData.prop_obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor  forInput={modeEdit.datagrid && allowEdit.datagrid} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine> },
+        { key: 'obs', sortable: false, headerRenderer: p => <CheckColumn id="obs" name='Observações' onChange={onCheckChange} defaultChecked={checkData.obs} forInput={modeEdit.datagrid} valid={bobinagem?.valid} />, width: 450, editor(p) { return <ModalObsEditor forInput={modeEdit.datagrid && allowEdit.datagrid} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine> },
     ];
 
     const loadData = async ({ signal } = {}) => {
-        if (!permission.allow()) {
-            Modal.error({ content: "Não tem permissões!" });
-            return;
-        }
+        /*         if (!permission.allow()) {
+                    Modal.error({ content: "Não tem permissões!" });
+                    return;
+                } */
         const { bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state), ...Object.keys(dataAPI.getAllFilter())]);
         const bobineDefeitos = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
         dataAPI.addFilters({ bobinagem_id, ...initFilters }, true, true);
@@ -753,6 +756,7 @@ export default (props) => {
                     dt.rows[i]["estado"] = (dt.valid === 0 && dataAPI.getData()?.isba == 1) ? "BA" : dt.rows[i]["estado"];
                 }
                 const _allowEdit = {
+                    validate: permission.allow({ producao: 100 }),
                     elevated: (dt.valid === 0) ? permission.allow({ producao: 200 }) : false,
                     form: (dt.valid === 0) ? permission.allow({ producao: 100 }) : false,
                     datagrid: (dt.valid === 0) ? permission.allow({ producao: 100, qualidade: 100 }) : permission.allow({ producao: 100, qualidade: 100 })

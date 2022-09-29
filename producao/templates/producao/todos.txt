@@ -19,3 +19,11 @@
 --se possível widget de estado currente...
 --Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
 --Nos cortes agregar as larguras iguais
+
+
+
+
+########################################################################################################
+PERMISSÕES
+--itemFormulacao
+--itemCortes

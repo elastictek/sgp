@@ -218,14 +218,14 @@ def GetAuthUser(request, format=None):
                 key = "qualidade"
             permission_value = 100 if v.endswith("Operador") or v.endswith("Tecnico") else 200
         if key in items:
-            if items[key]<permission_value:
+            if items[key]<int(permission_value):
                 items[key] = int(permission_value)
         else:
             items[key] = int(permission_value)
     
     print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     isAdmin=False
-    items={"planeamento":100,"producao":100,"qualidade":100}
+    #items={"planeamento":100,"producao":100,"qualidade":100}
 
     turno = {"enabled":False}
     if hasattr(user, 'turno'):
@@ -5885,6 +5885,7 @@ def SaveRecicladoItems(request, format=None):
         eb = [p["lote"] for p in data["rows"] if p["source"] == "elasticband"]
         bo = [p["lote"] for p in data["rows"] if p["source"] == "bobinagem_ba" or p["source"] == "bobinagem_r"]
         nw = [p["lote"] for p in data["rows"] if p["source"] == "nw"]
+
         lob = {"rows":[]} if bo==[] else db.executeSimpleList(lambda: (f"""
             select distinct  cnttotal - count(*) over () cnt from (
             SELECT 
@@ -5896,8 +5897,12 @@ def SaveRecicladoItems(request, format=None):
             where t.estado in ('BA','R')
         """), cursor, {})
         isLob = lob["rows"][0]["cnt"] if len(lob["rows"])>0 else 0
-        leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
+        leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado not in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
+        print("B-SAVING-------------------------")
+        print(leb["rows"])
+        print(data["rows"])
         if len(leb["rows"])==0 and isLob==0:
+            print("B-SAVING-------------------------")
             for idx, item in enumerate(data["rows"]):
                 dml = db.dml(TypeDml.INSERT, {"reciclado_id":data["id"],"qtd":item["qtd"],"source":item["source"],"timestamp":item["timestamp"],"lote":item["lote"],"unit":item["unit"],"user_id":request.user.id}, "producao_recicladolotes",None,None,False)
                 dml.statement = f"""
@@ -5911,6 +5916,9 @@ def SaveRecicladoItems(request, format=None):
                         unit=VALUES(unit),
                         reciclado_id=VALUES(reciclado_id)
                 """
+                print("SAVING-------------------------")
+                print(dml.statement)
+                print(dml.parameters)
                 db.execute(dml.statement, cursor, dml.parameters)
     try:
         if not data.get("id"):            
