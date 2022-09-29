@@ -95,7 +95,16 @@ def Reciclado(request, format=None):
                     entrada dt,
                     ((CASE WHEN artigo = 'R00000000000001' THEN peso ELSE 0 END)-CASE WHEN artigo = 'R00000000000001' THEN resto ELSE 0 END) consumo        
                     FROM sistema.producao_consumoraw
-                    WHERE saida IS NOT NULL) CR on DATE(CR.dt)=t.dt
+                    WHERE saida IS NOT NULL
+                    union
+                    (SELECT 
+					t_stamp dt,
+					qty_lote - qty_reminder consumo
+					 FROM sistema.lotesgranuladolinha 
+					where artigo_cod='R00000000000001' 
+					and type_mov=0 
+					)
+                    ) CR on DATE(CR.dt)=t.dt
                     )
                     SELECT 
                     R.*,
