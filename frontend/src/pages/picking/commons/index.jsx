@@ -104,7 +104,7 @@ export const QueueNwColumn = ({ value, status }) => {
 }
 
 export const FormPrint = ({ v, parentRef, closeParent }) => {
-    const [values, setValues] = useState({ impressora: v?.old ? "ARMAZEM_CAB_SQUIX_6.3_200" : "cab_SQUIX_6.3_200", num_copias: 4 })
+    const [values, setValues] = useState({ impressora: v?.old ? "ARMAZEM_CAB_SQUIX_6.3_200" : "CAB_SQUIX_6.3_200", num_copias: 4 })
     const onClick = async () => {
         if (v?.old === true) {
             const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { type: "reciclado", reciclado: { ...v.reciclado, timestamp: moment(v.reciclado.timestamp).format(DATETIME_FORMAT) }, ...values } });
@@ -177,7 +177,7 @@ export const FormPrint = ({ v, parentRef, closeParent }) => {
                 <Col><b>Impressora:</b></Col>
             </Row>
             <Row>
-                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'cab_SQUIX_6.3_200', label: 'ARMAZÉM' }]} /></Col>
+                <Col><Select onChange={(v) => onChange("impressora", v)} defaultValue={values.impressora} style={{ width: "100%" }} options={[{ value: 'CAB_SQUIX_6.3_200', label: 'ARMAZÉM' }]} /></Col>
             </Row>
             <Row style={{ marginTop: "15px" }}>
                 <Col style={{ textAlign: "right" }}>
