@@ -17,7 +17,11 @@ from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta, timezone
 #TO UNCOMMENT ON PRODUCTION
-import cups
+try:
+    import cups
+except ModuleNotFoundError:
+    # Error handling
+    pass
 ###########################
 import os, tempfile
 import pytz
