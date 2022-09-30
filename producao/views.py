@@ -412,6 +412,8 @@ def create_palete(request):
                 except:
                     ordem = OrdemProducao.objects.get(pk=instance.ordem.pk)
                     num_paletes_ordem = Palete.objects.filter(ordem=instance.ordem).count()
+                    instance.ordem_original = ordem.op
+                    instance.ordem_id_original = ordem.pk
                     instance.ordem_original_stock = True
                     ordem.num_paletes_produzidas += 1
                     if num_paletes_ordem == 0:

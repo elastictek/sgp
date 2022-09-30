@@ -889,6 +889,8 @@ class Bobine(models.Model):
         bobine = Bobine.objects.get(pk=bobine)
         palete = Palete.objects.get(pk=palete)
         if palete.estado == 'DM':
+            if bobine.ordem_id is None:
+                bobine.ordem_id=palete.ordem_id_original
             bobine.posicao_palete = palete.num_bobines_act + 1
             bobine.palete = palete
             palete.num_bobines_act += 1
@@ -897,6 +899,8 @@ class Bobine(models.Model):
             palete.save()
 
         elif palete.num_bobines_act < palete.num_bobines:
+            if bobine.ordem_id is None:
+                bobine.ordem_id=palete.ordem_id_original
             bobine.posicao_palete = palete.num_bobines_act + 1
             bobine.palete = palete
             palete.num_bobines_act += 1
