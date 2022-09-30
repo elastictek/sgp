@@ -663,7 +663,7 @@ class Palete(models.Model):
     destino = models.CharField(max_length=200, null=True, blank=True, verbose_name="Destino")
     add = models.BooleanField(default=False, verbose_name="Adicionar Palete")
     ordem_original_stock = models.BooleanField(default=False, verbose_name="Ordem original Stock")
-
+    ordem_id_original = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ordem ID Original") #ADDED
     def __str__(self):
         return self.nome
 

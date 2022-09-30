@@ -52,7 +52,7 @@ export default ({ record, card, parentReload }) => {
     /* const [matPrimasLookup, setMatPrimasLookup] = useState(); */
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal lazy={true} footer="ref" onCancel={hideModal} width={600} height={250}>
+        <ResponsiveModal lazy={true} footer="ref" onCancel={hideModal} width={600} height={250} title={modalParameters.title}>
             <FormNonwovensUpsert forInput={modalParameters.forInput} record={{ ...modalParameters.record }} parentReload={parentReload} />
         </ResponsiveModal>
     ), [modalParameters]);
@@ -92,7 +92,7 @@ export default ({ record, card, parentReload }) => {
     const onEdit = (type) => {
         switch (type) {
             default:
-                setModalParameters({ forInput: true, record: { id: record.id, nonwovens } });
+                setModalParameters({ forInput: true, title:"Alterar Nonwovens", record: { id: record.id, nonwovens } });
                 showModal();
                 break;
         }

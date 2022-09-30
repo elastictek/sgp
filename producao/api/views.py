@@ -3066,7 +3066,21 @@ def UpdateCurrentSettings(request, format=None):
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Paletização Atual Atualizada com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Paletização Atual', "subTitle":str(error)})
+    if data['type'] == 'nonwovens':
+        dta = {
+            "nonwovens" : json.dumps({**data["nonwovens"]}, ensure_ascii=False),
+            "type_op":"nonwovens"
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                pass
+                #db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Nonwovens Atualizados com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Alteração de Nonwovens', "subTitle":str(error)})
 
+        
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])

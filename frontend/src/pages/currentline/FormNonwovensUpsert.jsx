@@ -5,10 +5,10 @@ import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
-import { getSchema } from "utils/schemaValidator";
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import Toolbar from "components/toolbar";
+import { useSubmitting, noValue } from "utils";
+import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 
 import AlertMessages from "components/alertMessages";
 import ResultMessage from 'components/resultMessage';
@@ -31,8 +31,8 @@ const setId = (id) => {
     return { key: "insert", values: {} };
 }
 
-const LoadMateriasPrimasLookup = async (token) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, parameters: { type: 'nonwovens' }, cancelToken: token });
+const LoadMateriasPrimasLookup = async (signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, filter: {}, parameters: { type: 'nonwovens' }, signal });
     return rows;
 }
 
@@ -41,65 +41,38 @@ const loadNonwovensLookup = async ({ produto_id, signal }) => {
     return rows;
 }
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput, changedValues, parentLoading }) => {
+export default ({ record, parentRef, closeParent, parentReload, forInput }) => {
     /* const ctx = useContext(OFabricoContext); */
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
+    const submitting = useSubmitting(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
-    const [guides, setGuides] = useState(false);
     const [operation, setOperation] = useState(setId(record.nonwovens_id));
-    const [resultMessage, setResultMessage] = useState({ status: "none" });
     const [matPrimasLookup, setMatPrimasLookup] = useState();
     const [fieldStatus, setFieldStatus] = useState({});
     const [nonwovensLookup, setNonwovensLookup] = useState();
+    const [isTouched, setIsTouched] = useState(false);
 
-    const init = async (data = {}, lookup = false, token) => {
-        setNonwovensLookup(await loadNonwovensLookup({ produto_id: record.nonwovens.produto_id, token }));
-        if (record?.nonwovens) {
+    const transformData = (values) => {
+        if (values) {
             const nw_cod_inf = {
-                value: record.nonwovens.nw_cod_inf,
-                label: record.nonwovens.nw_des_inf
+                value: values.nw_cod_inf,
+                label: values.nw_des_inf.trim()
             };
             const nw_cod_sup = {
-                value: record.nonwovens.nw_cod_sup,
-                label: record.nonwovens.nw_des_sup
+                value: values.nw_cod_sup,
+                label: values.nw_des_sup.trim()
             };
-            form.setFieldsValue({ nw_cod_inf, nw_cod_sup });
+            form.setFieldsValue({ id: values.id, nw_cod_inf, nw_cod_sup });
         }
+    }
 
-
-        /* const { nonwovens } = record;
-        const { nonwovens_id, token } = data;
-        (async () => {
-            let _matPrimas = null;
-            if (lookup || !matPrimasLookup) {
-                _matPrimas = await LoadMateriasPrimasLookup(token);
-                setMatPrimasLookup(_matPrimas);
-            }
-            let nData = {};
-            if (nonwovens_id) {
-                if (!_matPrimas) {
-                    _matPrimas = matPrimasLookup;
-                }
-
-                let [n] = nonwovens.filter(v => v.id === nonwovens_id);
-                if (n) {
-                    nData = {
-                        nw_cod_sup: { key: n.nw_cod_sup, value: n.nw_cod_sup, label: n.nw_des_sup },
-                        nw_cod_inf: { key: n.nw_cod_inf, value: n.nw_cod_inf, label: n.nw_des_inf },
-                        designacao: n.designacao
-                    };
-                }
-            }
- */
-        /* if (operation.key === "update") {
-            (setFormTitle) && setFormTitle({ title: `Editar Nonwovens ${ctx.item_cod}`, subTitle: `${ctx.item_nome}` });
-        } else {
-            (setFormTitle) && setFormTitle({ title: `Definir Nonwovens ${ctx.item_cod}`, subTitle: `${ctx.item_nome}` });
-        } */
-        //form.setFieldsValue(nData);
-        //})();
+    const init = async ({ signal }) => {
+        const _matPrimas = await LoadMateriasPrimasLookup(signal);
+        setMatPrimasLookup(_matPrimas);
+        setNonwovensLookup(await loadNonwovensLookup({ produto_id: record.nonwovens.produto_id, signal }));
+        console.log(record)
+        transformData(record?.nonwovens);
+        submitting.end();
     }
 
 
@@ -107,31 +80,41 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
     useEffect(() => {
         const controller = new AbortController();
-        init({ signal:controller.signal });
+        init({ signal: controller.signal });
         return (() => { controller.abort(); });
     }, []);
 
     const onFinish = async (values) => {
-        const status = { error: [], warning: [], info: [], success: [] };
-        const msgKeys = [];
-        const v = schema().validate(values, { abortEarly: false });
-        status.error = [...status.error, ...(v.error ? v.error?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        status.warning = [...status.warning, ...(v.warning ? v.warning?.details.filter((v) => msgKeys.includes(v.context.key)) : [])];
-        if (v.error) {
-            status.error.push({ message: "OS Nonwovens Superior e Inferior têm de estar preenchidos!" });
-            setSubmitting(false);
+        submitting.trigger();
+        //const values = form.getFieldsValue(true);
+        //const v = schema().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        const { errors, warnings, value, ...status } = getStatus();
+        setFieldStatus({ ...status.fieldStatus });
+        setFormStatus({ ...status.formStatus });
+        console.log("values",values,record)
+        const vals = {
+            "nw_cod_inf": values.nw_cod_inf.value,
+            "nw_cod_sup": values.nw_cod_sup.value,
+            "nw_des_inf": values.nw_cod_inf.label,
+            "nw_des_sup": values.nw_cod_sup.label,
+            "produto_id": record.nonwovens.produto_id
         }
-
-        if (status.error.length === 0) {
-            const { nw_cod_sup: { value: nw_cod_sup, label: nw_des_sup } = {} } = values;
-            const { nw_cod_inf: { value: nw_cod_inf, label: nw_des_inf } = {} } = values;
-            const response = await fetchPost({ url: `${API_URL}/newartigononwovens/`, parameters: { ...values, id: record?.nonwovens_id, produto_id: ctx.produto_id, nw_cod_sup, nw_des_sup, nw_cod_inf, nw_des_inf } });
-            if (response.data.status !== "error") {
-                parentReload({}, "lookup");
+        if (errors === 0) {
+            try {
+                const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `nonwovens`, nonwovens: { ...vals } } });
+                if (response.data.status !== "error") {
+                    Modal.success({ title: "Nonwovens alterados com sucesso!", onOk: () => { parentReload(); closeParent(); } })
+                } else {
+                    status.error.push({ message: response.data.title });
+                    setFormStatus({ ...status });
+                }
+            } catch (e) {
+                console.log(status)
+                status.formStatus.error.push({ message: e.message });
+                setFormStatus({ ...status.formStatus });
             }
-            setResultMessage(response.data);
         }
-        setFormStatus(status);
+        submitting.end();
     }
 
     const onSuccessOK = () => {
@@ -159,7 +142,12 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
 
 
     const onValuesChange = async (changedValues, allValues) => {
-        console.log("---------------------",changedValues,nonwovensLookup);
+        if (!isTouched) {
+            setIsTouched(true);
+        }
+        if ("id" in changedValues) {
+            transformData(nonwovensLookup.find(v => v.id == changedValues["id"]));
+        }
     }
 
     return (
@@ -168,7 +156,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 <FormContainer id="FRM-NONWOVENS" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} style={{ marginTop: "5px" }} schema={schema} wrapFormItem={true} alert={{ tooltip: true, pos: "none" }} forInput={forInput}>
                     <Row style={{ border: "solid 1px #dee2e6", background: "#f8f9fa", padding: "5px" }}>
                         <Col>
-                            <Field name="id" label={{ enabled: false, text: "Formulação", pos: "left" }}>
+                            <Field name="id" label={{ enabled: false, text: "Nonwovens", pos: "left" }}>
                                 <SelectField size="small" data={nonwovensLookup} keyField="id" textField="designacao"
                                     optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
                                 />
@@ -178,8 +166,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     <Row>
                         <Col>
                             <Field name="nw_cod_sup" label={{ enabled: true, text: "Nonwoven Superior", pos: "top" }}>
-                                <SelectField size="small" keyField="ITMREF_0" textField="ITMDES1_0"
-                                    //optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                    optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                     showSearch
                                     labelInValue
                                     filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
@@ -190,8 +178,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                     <Row>
                         <Col>
                             <Field name="nw_cod_inf" label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
-                                <SelectField size="small" keyField="ITMREF_0" textField="ITMDES1_0"
-                                    //optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                <SelectField size="small" data={matPrimasLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                    optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
                                     showSearch
                                     labelInValue
                                     filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
@@ -200,6 +188,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                         </Col>
                     </Row>
                 </FormContainer>
+                {parentRef && <Portal elId={parentRef.current}>
+                    <Space>
+                        {isTouched && <Button disabled={submitting.state} type="primary" onClick={()=>form.submit()}>Guardar</Button>}
+                        <Button onClick={closeParent}>Fechar</Button>
+                    </Space>
+                </Portal>
+                }
             </Form>
         </>
     );
