@@ -17,7 +17,7 @@ from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta, timezone
 #TO UNCOMMENT ON PRODUCTION
-#import cups
+import cups
 ###########################
 import os, tempfile
 import pytz
@@ -90,8 +90,8 @@ def PrintMPBuffer(request,format=None):
         print(tmp.name)
         tmp.write(fstream.content)
         #TO UNCOMMENT ON PRODUCTION
-        #conn = cups.Connection()
-        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+        conn = cups.Connection()
+        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
         ###########################
     except Exception as error:
           print("error----> print")
@@ -99,7 +99,7 @@ def PrintMPBuffer(request,format=None):
           return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
     finally:
         #TO UNCOMMENT ON PRODUCTION
-        #tmp.close()
+        tmp.close()
         ###########################
         print("PRINT OK")
         #os.unlink(tmp.name)
@@ -185,8 +185,8 @@ def PrintReciclado(request,format=None):
         tmp.write(fstream.content)
         print(tmp.name)
         #TO UNCOMMENT ON PRODUCTION
-        #conn = cups.Connection()
-        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":request.data["parameters"]["num_copias"]}) 
+        conn = cups.Connection()
+        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
         ###########################
     except Exception as error:
           print("error----> print")
@@ -194,7 +194,7 @@ def PrintReciclado(request,format=None):
           return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
     finally:
         #TO UNCOMMENT ON PRODUCTION
-        #tmp.close()
+        tmp.close()
         ###########################
         print("PRINT OK")
         #os.unlink(tmp.name)
