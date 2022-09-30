@@ -12,7 +12,7 @@ import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, noValue } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
-import { Button, Select, Typography, Card, Collapse, Space, Form } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Form, Input } from "antd";
 const { Option } = Select;
 import { EditOutlined, HistoryOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
@@ -45,8 +45,6 @@ export default ({ record, card, parentReload }) => {
     const [form] = Form.useForm();
     const permission = usePermission({ allowed: { producao: 200, planeamento: 200 } });
     const [fieldStatus, setFieldStatus] = useState({});
-    const [forInput, setForInput] = useState(false);
-    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const submitting = useSubmitting(true);
     const [nonwovens, setNonwovens] = useState();
     /* const [matPrimasLookup, setMatPrimasLookup] = useState(); */
@@ -70,36 +68,22 @@ export default ({ record, card, parentReload }) => {
     }, [])
 
     useEffect(() => {
-            if (record?.nonwovens) {
-                setNonwovens(record.nonwovens);
-            }
-
-        /* if (record?.nonwovens) {
-            const nw_cod_inf = {
-                value: record.nonwovens.nw_cod_inf,
-                label: record.nonwovens.nw_des_inf
-            };
-            const nw_cod_sup = {
-                value: record.nonwovens.nw_cod_sup,
-                label: record.nonwovens.nw_des_sup
-            };
-            form.setFieldsValue({ nw_cod_inf, nw_cod_sup });
-            submitting.end();
-        } */
+        if (record?.nonwovens) {
+            form.setFieldsValue({ nw_des_inf: record.nonwovens.nw_des_inf, nw_des_sup: record.nonwovens.nw_des_sup });
+        }
     }, [record?.nonwovens]);
 
 
     const onEdit = (type) => {
-        switch (type) {
-            default:
-                setModalParameters({ forInput: true, title:"Alterar Nonwovens", record: { id: record.id, nonwovens } });
-                showModal();
-                break;
+        if (record?.nonwovens) {
+            switch (type) {
+                default:
+                    setModalParameters({ forInput: true, title: "Alterar Nonwovens", record: { id: record.id, nonwovens: record?.nonwovens } });
+                    showModal();
+                    break;
+            }
         }
     }
-
-
-
 
     const ofClosed = () => {
         if (record?.status === 9 || !record?.status) {
@@ -125,32 +109,22 @@ export default ({ record, card, parentReload }) => {
                 </>}
             >
                 {Object.keys(record).length > 0 &&
-                        <FormContainer id="FRM-NONWOVENS" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} style={{ marginTop: "5px" }} schema={schema} wrapFormItem={false} alert={{ tooltip: true, pos: "none" }} forInput={forInput}>
-                            <Row>
-                                <Col>
-                                    <Field name="nw_cod_sup" label={{ enabled: true, text: "Nonwoven Superior", pos: "top" }}>
-                                        <SelectField size="small" keyField="ITMREF_0" textField="ITMDES1_0"
-                                            //optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                            showSearch
-                                            labelInValue
-                                            filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                                        />
-                                    </Field>
-                                </Col>
-                            </Row>
-                            <Row>
-                                <Col>
-                                    <Field name="nw_cod_inf" label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
-                                        <SelectField size="small" keyField="ITMREF_0" textField="ITMDES1_0"
-                                            //optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
-                                            showSearch
-                                            labelInValue
-                                            filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                                        />
-                                    </Field>
-                                </Col>
-                            </Row>
-                        </FormContainer>
+                    <FormContainer id="frm-dsh-nw" form={form} wrapForm={true} wrapFormItem={true} label={{ enabled: false }} forInput={false} fluid>
+                        <Row>
+                            <Col>
+                                <Field name="nw_des_sup" label={{ enabled: true, text: "Nonwoven Superior", pos: "top" }}>
+                                    <Input />
+                                </Field>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col>
+                                <Field name="nw_des_sup" label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
+                                    <Input />
+                                </Field>
+                            </Col>
+                        </Row>
+                    </FormContainer>
                 }
             </Card>
         </>

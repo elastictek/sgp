@@ -91,7 +91,6 @@ export default ({ record, parentRef, closeParent, parentReload, forInput }) => {
         const { errors, warnings, value, ...status } = getStatus();
         setFieldStatus({ ...status.fieldStatus });
         setFormStatus({ ...status.formStatus });
-        console.log("values",values,record)
         const vals = {
             "nw_cod_inf": values.nw_cod_inf.value,
             "nw_cod_sup": values.nw_cod_sup.value,
@@ -109,7 +108,6 @@ export default ({ record, parentRef, closeParent, parentReload, forInput }) => {
                     setFormStatus({ ...status });
                 }
             } catch (e) {
-                console.log(status)
                 status.formStatus.error.push({ message: e.message });
                 setFormStatus({ ...status.formStatus });
             }

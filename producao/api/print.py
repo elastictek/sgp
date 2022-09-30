@@ -157,6 +157,8 @@ def PrintEtiqueta(request, format=None):
 @permission_classes([IsAuthenticated])
 def PrintReciclado(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
+    print(request.data["parameters"]["impressora"])
+    print(request.data["parameters"]["num_copias"])
     tmp = tempfile.NamedTemporaryFile()
     print(tmp)
     print(tmp.name)
@@ -181,6 +183,7 @@ def PrintReciclado(request,format=None):
     try:
         print(tmp.name)
         tmp.write(fstream.content)
+        print(tmp.name)
         #TO UNCOMMENT ON PRODUCTION
         #conn = cups.Connection()
         #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":request.data["parameters"]["num_copias"]}) 

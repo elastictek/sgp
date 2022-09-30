@@ -252,7 +252,7 @@ const allItems = {
         { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
         { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true },
         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "nonwovens", x: 0, y: 0, w: 4, h: 4, minH: 4, closable: true },
+        { i: "nonwovens", x: 0, y: 0, w: 4, h: 5, minH: 5, closable: true },
         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
         { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true },
         { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },

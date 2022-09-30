@@ -710,7 +710,7 @@ export default () => {
     const elFilterTags = document.getElementById('filter-tags');
     const [flyoutStatus, setFlyoutStatus] = useState({ visible: false, fullscreen: false });
     const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
-    const permission = usePermission({ allowed: { logistica: 100 } });
+    const permission = usePermission({ allowed: { planeamento:200 } });
 
     useEffect(() => {
         const cancelFetch = cancelToken();
