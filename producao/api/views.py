@@ -5527,7 +5527,7 @@ def ValidarBobinagem(request, format=None):
 
                     #Adicionar apara ao reciclado
                     qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
-                    addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id},data["produto_id"])
+                    addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, data["produto_id"] if "produto_id" in data else None )
                     #############################
                 
 
