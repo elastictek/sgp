@@ -5520,8 +5520,12 @@ def ValidarBobinagem(request, format=None):
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
 
                     if float(nwi["qty_reminder"])<-2400:
+                        print("REMINDER")
+                        print(float(nwi["qty_reminder"]))
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
                     if float(nws["qty_reminder"])<-2400:
+                        print("REMINDER")
+                        print(float(nws["qty_reminder"]))
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
                     #Adicionar apara ao reciclado
