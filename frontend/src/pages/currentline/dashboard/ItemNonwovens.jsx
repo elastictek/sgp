@@ -119,7 +119,7 @@ export default ({ record, card, parentReload }) => {
                         </Row>
                         <Row>
                             <Col>
-                                <Field name="nw_des_sup" label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
+                                <Field name="nw_des_inf" label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
                                     <Input />
                                 </Field>
                             </Col>

@@ -3073,8 +3073,7 @@ def UpdateCurrentSettings(request, format=None):
         dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
             with connections["default"].cursor() as cursor:
-                pass
-                #db.execute(dml.statement, cursor, dml.parameters)
+                db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Nonwovens Atualizados com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Alteração de Nonwovens', "subTitle":str(error)})
