@@ -3551,7 +3551,7 @@ def retrabalho_confirmacao(request, pk, b1, m1, b2=None, m2=None, b3=None, m3=No
         if recycle_1 == True and b_1 != "N/A":
             b_1.recycle = True
             a_1 = round(Decimal(b_1.comp_actual) * (Decimal(b_1.largura.largura) * Decimal(0.001)), 2)
-            reciclado_status = addToReciclado({"qtd":a_1,"source":"bobinagem_retrabalho","timestamp":datetime.now(),"lote":b_1.nome,"unit":"m2","user_id":request.user.id},None )
+            reciclado_status = addToReciclado({"qtd":a_1,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_1.nome,"unit":"m2","user_id":request.user.id},None )
             if reciclado_status == False:
                 pass
             try:
