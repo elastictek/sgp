@@ -806,7 +806,7 @@ export default (props) => {
                 setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
 
                 setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"] });
-                if (dt["valid"]===1){
+                if (dt["valid"]===0){
                     let nwl = await loadNWLookup(signal, { cs_status: 3, status: 1, queue: 1 });
                     let ni = nwl.find(x=>x.type==0);
                     let ns = nwl.find(x=>x.type==1);
