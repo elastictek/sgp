@@ -346,10 +346,20 @@ def NWListLookup(request, format=None):
     f.where()
     #f.add(f'cs.status = :cs_status', lambda v:(v!=None))
     f.add(f'lnw.status = :status', lambda v:(v!=None))
+    f.add(f'lnw.queue = :queue', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
     dql = db.dql(request.data, False)
+    print("lookuop")
+    print(f"""
+                SELECT lnw.* 
+                FROM lotesnwlinha lnw
+                #join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
+                {f.text}
+                {dql.sort} {dql.limit}
+            """)
+    print(parameters)
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""

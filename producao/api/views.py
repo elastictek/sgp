@@ -15,7 +15,7 @@ from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteLi
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
-from datetime import datetime, timedelta
+from datetime import timedelta
 #import cups
 import os, tempfile
 
@@ -5302,8 +5302,8 @@ def ValidarBobinesList(request, format=None):
         r = db.executeSimpleList(lambda:(f"""
             SELECT 
             acs.produto_cod,
-            CASE WHEN acs.id is not null then CONVERT(acs.nonwovens->> '$.nw_des_inf' USING utf8) else tiponwinf end tiponwinf,
-            CASE WHEN acs.id is not null then CONVERT(acs.nonwovens->> '$.nw_des_sup' USING utf8) else tiponwsup end tiponwsup,
+            #CASE WHEN acs.id is not null then CONVERT(acs.nonwovens->> '$.nw_des_inf' USING utf8) else tiponwinf end tiponwinf,
+            #CASE WHEN acs.id is not null then CONVERT(acs.nonwovens->> '$.nw_des_sup' USING utf8) else tiponwsup end tiponwsup,
             CASE WHEN acs.id is not null then CAST(acs.ofs->> '$[0].artigo_core' AS UNSIGNED) else pf.core end core,
             pf.id perfil_id,
             pf.nome perfil_nome,
