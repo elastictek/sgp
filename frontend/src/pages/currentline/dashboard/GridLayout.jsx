@@ -44,8 +44,9 @@ const ItemSpecs = React.lazy(() => import('./ItemSpecs'));
 const ItemOrdensFabrico = React.lazy(() => import('./ItemOrdensFabrico'));
 const ItemOperations = React.lazy(() => import('./ItemOperations'));
 const ItemPickingNW = React.lazy(() => import('./ItemPickingNW'));
-const ItemPickingGranulado = React.lazy(() => import('./ItemPickingGranulado'));
+const ItemGranuladoList = React.lazy(() => import('./ItemGranuladoList'));
 const ItemLineLogList = React.lazy(() => import('./ItemLineLogList'));
+const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
 import { AppContext } from "../../App";
@@ -261,6 +262,7 @@ const allItems = {
         //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "mp" },
         { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+        { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -301,8 +303,9 @@ const toolboxItems = {
     mp: {
         description: "Matérias Primas", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} />, children: {
             local: { description: "Localização Matérias Primas", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
-            nonwovens: { description: "Nonwovens Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
-            granulado: { description: "Granulado Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+            nonwovens: { description: "Nonwovens Movimentos", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+            granulado: { description: "Granulado Movimentos", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+            granuladoinline: { description: "Granulado em Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
             reciclado: { description: "Reciclado", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> }
         }
     },
@@ -960,12 +963,13 @@ export default (props) => {
                                     {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "actions" && <><PinItem value={v} onClick={() => onPinItem(v)} color="#fff" background="#2a3142" pinnable={true} /><CloseItem closable={v?.closable} color="#fff" background="#2a3142" onClick={() => onPutItem(v)} /><ItemActions card={{ title: "Menu" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "mp#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemReciclado card={{ title: "Reciclado Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemPickingNW card={{ title: "Nonwovens em Linha - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#granulado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemPickingGranulado card={{ title: "Granulado em Linha - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "mp#nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemPickingNW card={{ title: "Nonwovens Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "mp#granulado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoList card={{ title: "Granulado Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "ordemfabrico" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemOrdensFabrico card={{ title: "Ordens de Fabrico" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "linelog" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemLineLogList card={{ title: "Eventos da Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "nav" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemNav card={{ title: "Estado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "mp#local" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemMPLocal card={{ title: "Matérias Primas" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "mp#granuladoinline" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoInLine card={{ title: "Granulado em Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "operations" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemOperations card={{ title: "Ações" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "prod-reports#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemReportReciclado card={{ title: "Reciclado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></>}

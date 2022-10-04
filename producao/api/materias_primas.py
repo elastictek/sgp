@@ -305,7 +305,7 @@ def MateriasPrimasList(request, format=None):
             JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
             JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
             --LEFT JOIN (select * from openquery([SGP-PROD], 'select distinct vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
-            WHERE 1=1
+            WHERE ST.VCRTYP_0 NOT IN (28)
             {typeFilter}
             {f.text} {f2["text"]}
             ) t
@@ -439,7 +439,8 @@ def SaveNWItems(request, format=None):
 
     def saveItems(data,cursor):
         nws = json.loads(acs["nonwovens"])
-        for idx, item in enumerate([d for d in data["rows"] if "notValid" in d and d['notValid']==1]):
+        sorted_rows = sorted([d for d in data["rows"] if "notValid" in d and d['notValid']==1], key=lambda d: d['n'])
+        for idx, item in enumerate(sorted_rows):
             if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
                 raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
             if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
@@ -534,6 +535,78 @@ def UpdateNW(request, format=None):
 #endregion
 
 #region GRANULADO
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def GranuladoListInLine(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+
+    f.setParameters({
+        #"type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'agg_of_id'},
+       # **rangeP(f.filterData.get('forderdate'), 'ORDDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #**rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+       #"LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
+       #"status": {"value": lambda v: statusFilter(v.get('ofstatus')), "field": lambda k, v: f'"of"."{k}"'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    cols = f"""FR.cuba,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,FR.matprima_des,group_concat(FR.doser) dosers"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+                with INLINE AS(
+                select ld.*,t.qty_lote,t.qty_reminder from(
+                select 
+                LAST_VALUE(id) OVER (PARTITION BY vcr_num ORDER BY t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+                lg.*
+                from lotesgranuladolinha lg
+                )t
+                join lotesdoserslinha ld on ld.loteslinha_id=t.id
+                where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+                ),
+                FORMULACAO AS(
+                select formulacao
+                from producao_currentsettings cs
+                where status=3
+                ),
+                FORMULACAO_DOSERS AS(
+                SELECT doser,matprima_cod, arranque,cuba,matprima_des
+                FROM FORMULACAO F,
+                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_A",doser VARCHAR(3) PATH "$.doseador_A",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+                WHERE doser is not null and arranque>0
+                UNION
+                SELECT doser,matprima_cod, arranque,cuba,matprima_des
+                FROM FORMULACAO F,
+                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_B",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+                WHERE doser is not null and arranque>0
+                UNION
+                SELECT doser,matprima_cod, arranque,cuba,matprima_des
+                FROM FORMULACAO F,
+                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_C",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+                WHERE doser is not null and arranque>0
+                )
+                SELECT {c(f'{dql.columns}')} 
+                FROM FORMULACAO_DOSERS FR
+                LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+                group by FR.cuba,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,FR.matprima_des
+                {s(dql.sort)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeList(sql, connection, parameters)
+    except Exception as error:
+        print(error)
+        return Response({"status": "error", "title": "Erro!"})
+    return Response(response)
+
+
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

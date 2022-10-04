@@ -472,7 +472,8 @@ export default ({ setFormTitle, ...props }) => {
                 if (lastValue.row.n_lote && (lastValue.type === 0 || lastValue.type === 1)) {
                     const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote) : -1;
                     if (idx === -1) {
-                        dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), type: lastValue.type, status: 1 }, primaryKeys, 0);
+                        const n = dataAPI.getData().rows.filter(x=>x.notValid===1).length;
+                        dataAPI.addRow({ ...lastValue.row, n, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), type: lastValue.type, status: 1 }, primaryKeys, 0);
                         setLastValue(prev => ({ ...prev, row: {}, type: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, type: lastValue.type } }));
                     } else {
                         setLastValue(prev => ({ ...prev, error: "O Lote já foi registado!", picked: false }));

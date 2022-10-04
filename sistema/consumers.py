@@ -199,7 +199,7 @@ class RealTimeGeneric(WebsocketConsumer):
         connection = connections["default"].cursor()
         rows = dbgw.executeSimpleList(lambda:(f"""		
             SELECT id
-            FROM lotesdosers
+            FROM lotesdoserslinha
             order by t_stamp desc
         """),connection,{})['rows']
         hsh = json.dumps(rows,default=str)
@@ -239,7 +239,7 @@ class RealTimeGeneric(WebsocketConsumer):
                 SELECT TOP 1 ST."CREDATTIM_0",ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0" 
                 FROM ELASTICTEK."STOJOU" ST 
                 JOIN ELASTICTEK."ITMMASTER" IM on IM."ITMREF_0" = ST."ITMREF_0"
-                WHERE ST."LOC_0"='BUFFER' AND ST."QTYPCU_0">0 ORDER BY ST."ROWID" DESC
+                WHERE ST."LOC_0"='BUFFER' AND ST."QTYPCU_0">0 AND ST.VCRTYP_0 NOT IN (28) ORDER BY ST."ROWID" DESC
             
             """),cursor,{})['rows']
             hsh = json.dumps(rows,default=str)

@@ -33,14 +33,14 @@ import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
-import { MovGranuladoColumn } from "./commons"
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
+import { MovGranuladoColumn } from "../picking/commons"
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
-const title = "Registo Granulado - Entrada em Linha";
+const title = "Ganulado Movimentos";
 const cFormulacao = (record) => {
     let _formulacao = {};
     if (record?.formulacao) {
@@ -75,18 +75,18 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
         </Col>
     </>
     }
-    /* details={
-        <>{record.formulacao && Object.keys(record.formulacao).map((k, i) => {
-            return (
-                <Row key={`if-${k}-${i}`}>
-                    <Col width={60} style={{ display: "flex" }}>{[...new Set(record.formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
-                    <Col width={100}><div style={{ textAlign: "center", fontSize: "14px" }}><b>{record.formulacao[k].dosers.join()}</b></div></Col>
-                    <Col width={150}><div style={{ fontSize: "12px" }}>{k}</div></Col>
-                    <Col><div style={{ fontSize: "12px" }}>{record.formulacao[k].matprima_des}</div></Col>
-                </Row>
-            );
-        })}</>
-    } */
+       /*  details={
+            <>{record.formulacao && Object.keys(record.formulacao).map((k, i) => {
+                return (
+                    <Row key={`if-${k}-${i}`}>
+                        <Col width={60} style={{ display: "flex" }}>{[...new Set(record.formulacao[k].cubas)].map(v => <Cuba key={`${i}-${v}`} value={v} />)}</Col>
+                        <Col width={100}><div style={{ textAlign: "center", fontSize: "14px" }}><b>{record.formulacao[k].dosers.join()}</b></div></Col>
+                        <Col width={150}><div style={{ fontSize: "12px" }}>{k}</div></Col>
+                        <Col><div style={{ fontSize: "12px" }}>{record.formulacao[k].matprima_des}</div></Col>
+                    </Row>
+                );
+            })}</>
+        } */
     />);
 }
 
@@ -136,13 +136,6 @@ const useStyles = createUseStyles({
     },
     notValid: {
         background: "#ffe7ba"
-    },
-    error: {
-        background: "#cf1322",
-        color: "#fff",
-        '&:hover': {
-            color: '#000',
-        }
     }
 });
 
@@ -198,21 +191,21 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
         if (keyCode == 9 || keyCode == 13) {
-            console.log("enter", value.current)
+            console.log("enter",value.current)
             onPick(formulacao);
         } else if ((keyCode >= 48 && keyCode <= 90) || keyCode == 18 || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
-            console.log("ok", keyCode, '-', e.key)
+            console.log("ok",keyCode,'-',e.key)
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
         } else if (keyCode == 17 || keyCode == 16 || keyCode == 220) {
-            console.log("16-20", keyCode, '-', e.key)
+            console.log("16-20",keyCode,'-',e.key)
         } else if (keyCode === 8) {
-            console.log("8", keyCode, '-', e.key)
+            console.log("8",keyCode,'-',e.key)
             value.current = value.current.slice(0, -1);
             setCurrent(value.current);
         }
         else {
-            console.log("keycode....", keyCode, '-', e.key)
+            console.log("keycode....", keyCode,'-',e.key)
             value.current = '';
             //setLastValue('');
         }
@@ -307,17 +300,11 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         </Row>
     </FormContainer >
         {parentRef && <Portal elId={parentRef.current}>
-            <Container fluid>
-                <Row>
-                    <Col style={{ textAlign: "left" }}>
-                        <Button onClick={closeParent}>Cancelar</Button>
-                    </Col>
-                    {/* <Button disabled={current === ''} type="primary" onClick={onPick}>Registar</Button> */}
-                    <Col>
-                        <Button type="primary" onClick={onSave}>Guardar Registos</Button>
-                    </Col>
-                </Row>
-            </Container>
+            <Space>
+                <Button type="primary" onClick={onSave}>Guardar Registos</Button>
+                {/* <Button disabled={current === ''} type="primary" onClick={onPick}>Registar</Button> */}
+                <Button onClick={closeParent}>Cancelar</Button>
+            </Space>
         </Portal>
         }
     </>);
@@ -466,9 +453,9 @@ const OfsColumn = ({ value }) => {
 
 const loadCurrentSettings = async (signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/currentsettingsinproductionget/`, filter: {}, sort: [], signal });
-    if (rows && rows.length > 0) {
-        rows[0].formulacao = JSON.parse(rows[0].formulacao);
-        rows[0].ofs = JSON.parse(rows[0].ofs)
+    if (rows && rows.length>0){
+        rows[0].formulacao=JSON.parse(rows[0].formulacao);
+        rows[0].ofs=JSON.parse(rows[0].ofs)
     }
     return rows;
 }
@@ -480,21 +467,13 @@ export default ({ setFormTitle, ...props }) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "pickgranuladolist", payload: { url: `${API_URL}/granuladolistinline/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [{ column: 'FR.cuba', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ id: "pickgranuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const submitting = useSubmitting(true);
-    const primaryKeys = ['cuba', 'dosers', 'matprima_cod'];
+    const primaryKeys = ['vcr_num', 'type_mov', 'lote_id'];
     const columns = [
-        { key: `cuba`, sortable: false, name: ``, frozen: true, minWidth: 45, width: 45, formatter: p => <Cuba value={p.row?.cuba ? parseInt(p.row.cuba) : parseInt(p.row?.group_id)} /> },
-        { key: 'dosers', sortable: false, name: ``, frozen: true, minWidth: 90, width: 90, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.dosers}</b></div> },
-        { key: 'arranque', sortable: false, name: 'Arranque', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row?.arranque && `${p.row.arranque} %`}</div> },
-        { key: 'matprima_cod', sortable: false, name: `Matéria Prima`, frozen: true, formatter: p => <b>{p.row?.matprima_cod ? p.row.matprima_cod : p.row.artigo_cod}</b> },
-        { key: 'matprima_des', sortable: false, name: `Designação`, frozen: true, formatter: p => <b>{p.row?.matprima_des ? p.row.matprima_des : p.row.artigo_des}</b> },
-        { key: 'n_lote', sortable: false, name: `Lote`, frozen: true, formatter: p => <b>{p.row.n_lote}</b> },
-        { key: 'qty_lote', name: 'Quantidade', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote && `${parseFloat(p.row.qty_lote).toFixed(2)} kg`}</div> },
-        { key: 't_stamp', name: 'Data', width: 130, frozen: true, formatter: props => props.row.t_stamp && moment(props.row.t_stamp).format(DATETIME_FORMAT) }
-        /* { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
+        { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', formatter: p => p.row.artigo_cod },
@@ -503,7 +482,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div>, editor: p => <InputNumber bordered={false} size="small" value={p.row.qty_lote} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qty_lote: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
         { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> } */
+        { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
     ];
     const [formulacao, setFormulacao] = useState();
     const [ofs, setOfs] = useState();
@@ -554,17 +533,17 @@ export default ({ setFormTitle, ...props }) => {
 
         }
 
-        const onSave = async () => {
+        const onSave = async () =>{
             await modalParameters.onSave();
         }
 
-        return <ResponsiveModal closable={false} maskClosable={false} title={<div style={{ display: "flex", flexDirection: "row" }}><div><SyncOutlined spin /></div><div style={{ marginLeft: "5px" }}>Registo de Lotes em Curso...</div></div>}
+        return <ResponsiveModal title={<div style={{ display: "flex", flexDirection: "row" }}><div><SyncOutlined spin /></div><div style={{ marginLeft: "5px" }}>Registo de Lotes em Curso...</div></div>}
             onCancel={hidePickingModal}
             /*onOk={() => onPickFinish(lastValue)} */
             width={600} height={250} footer="ref">
-            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={formulacao} onSave={onSave} />
+            <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={formulacao} onSave={onSave}/>
         </ResponsiveModal>;
-    }, [dataAPI.getTimeStamp(), formulacao, modalParameters]);
+    }, [dataAPI.getTimeStamp(),formulacao,modalParameters]);
 
 
 
@@ -577,7 +556,7 @@ export default ({ setFormTitle, ...props }) => {
             onCancel={hideOutModal}
             //onOk={() => onPickFinish(lastValue)}
             width={600} height={180} footer="ref" >
-            <OutContent loadParentData={modalParameters.loadData} />
+            <OutContent loadParentData={loadData} />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp(), modalParameters]);
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
@@ -591,16 +570,16 @@ export default ({ setFormTitle, ...props }) => {
 
     useEffect(() => {
         const controller = new AbortController();
-        const interval = initData({ init: true, signal: controller.signal });
+        const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); clearInterval(interval); });
     }, []);
 
-    const initData = async ({ init = false, signal } = {}) => {
+    const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
             formFilter.setFieldsValue({ ...initFilters });
             dataAPI.addFilters({ ...initFilters }, true, true);
-            dataAPI.setSort([{ column: "cuba", direction: "ASC" }]);
+            dataAPI.setSort([{ column: "`order`", direction: "DESC" }]);
             dataAPI.addParameters({}, true, true);
         }
         const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
@@ -636,12 +615,12 @@ export default ({ setFormTitle, ...props }) => {
                             }
                         }
                         setFormulacao(_formulacao);
-                        setOfs(cs[0].ofs.map(v => v.of_cod));
+                        setOfs(cs[0].ofs.map(v=>v.of_cod));
                         setAggStatus(cs[0].status);
                         dataAPI.fetchPost();
                     } catch (e) {
                         Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-                    } finally {
+                    }finally{
                         submitting.end();
                     };
 
@@ -651,9 +630,6 @@ export default ({ setFormTitle, ...props }) => {
         }
     }, [lastJsonMessage?.hash]);
 
-    const loadData = () => {
-        dataAPI.fetchPost()
-    }
 
 
     /*     const loadData = async ({ signal } = {}) => {
@@ -780,20 +756,19 @@ export default ({ setFormTitle, ...props }) => {
     };
     const onFilterChange = (changedValues, values) => {
         if ("type" in changedValues) {
-            console.log("aaaaa")
             navigate("/app/picking/picknwlist", { state: { ...location?.state, ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
         }
     };
 
-    const onShowPicking = () => {
-        setModalParameters({ onSave });
+    const onShowPicking = () =>{
+        setModalParameters({onSave});
         showPickingModal();
     }
 
     return (
         <>
 
-            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={{ formulacao, ofs, aggStatus }} level={location?.state?.level} form={formFilter} />}
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} record={{formulacao,ofs,aggStatus}} level={location?.state?.level} form={formFilter} />}
             <AlertsContainer mask formStatus={formStatus} portal={false} style={{ margin: "5px" }} />
             {formulacao &&
                 <Table
@@ -804,26 +779,21 @@ export default ({ setFormTitle, ...props }) => {
                     dataAPI={dataAPI}
                     //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
                     toolbar={true}
-                    search={false}
-                    moreFilters={false}
+                    search={true}
+                    moreFilters={true}
                     rowSelection={false}
                     primaryKeys={primaryKeys}
                     editable={true}
                     clearSort={false}
-                    settings={false}
-                    rowClass={(row) => (row?.notValid === 1 ? classes.notValid : (row?.n_lote ? undefined : classes.error))}
+                    rowClass={(row) => (row?.notValid === 1 ? classes.notValid : undefined)}
                     //selectedRows={selectedRows}
                     //onSelectedRowsChange={setSelectedRows}
-                    leftToolbar={aggStatus === 3 && <>
-                        <Button style={{ fontSize: "20px", height: "40px" }} disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={onShowPicking}>Picar Lotes</Button>
-                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button disabled={submitting.state} style={{ marginLeft: "15px", fontSize: "20px", height: "40px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "15px", fontSize: "20px", height: "40px" }} icon={<GoArrowUp color='red' fontSize={18} style={{}} />} onClick={() => { setModalParameters({loadData}); showOutModal(); }}>Saída de Linha</Button>}
-                    </>}
+                    leftToolbar={<></>}
                     //content={<PickHolder />}
                     //paginationPos='top'
                     toolbarFilters={{
-                        //form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} />,
-                        //moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
+                        form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} />,
+                        moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
                     }}
                 />
             }

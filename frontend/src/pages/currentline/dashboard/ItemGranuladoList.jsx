@@ -122,14 +122,7 @@ export default ({ record, card, parentReload }) => {
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     const onView = () => {
-
-        if (Object.keys(record).length > 0) {
-            navigate("/app/picking/pickgranuladolist", { state: { ...dataAPI.getFilter(true), agg_of_id: record.agg_of_id, formulacao: record.formulacao, ofs: record.ofs?.map(v => v.of_cod), status: record.status, tstamp: Date.now() } });
-        } else {
-            navigate("/app/picking/pickgranuladolist", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
-        }
-
-        
+        navigate("/app/artigos/granuladolist", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
     }
 
     const onChangeContent = async (v, field) => {

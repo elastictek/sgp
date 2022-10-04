@@ -176,6 +176,8 @@ class BaseCurrentSettings(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username", null=True)
     type_op = models.CharField(max_length=45, blank=True, null=True)
     created = models.DateTimeField(blank=True, null=True)
+    start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
+    end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
     class Meta:
         abstract = True
 

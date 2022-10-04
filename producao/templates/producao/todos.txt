@@ -15,8 +15,15 @@
 --Falha de corte pode ser em m ou diametros...
 --Não deixar imprimir etiqueta do buffer se (no caso de reciclado antigo) não existir observações e regex match do lote
 --A palete não reflete o diametro das bobines
+--Corrigir etiqueta do reciclado
+--Ao criar retrabalho, e cortar metros a uma bobine, acrescentar o restante ao reciclado, como source (ex. Bobine de retrabalho)
+--referenciar as ordens de produção às bobines/paletes...
+--Ao validar a bobinagem, verificar se anteriormente houve alguma paragem/abrandamento da linha e obrigar a justificação antes de permitir a validação.
+--Ao validar bobinagem verificar as entradas de material com os doseadores/formulação se faltar ou não estiver conforme não permitir validação.
+--Na listagem de nw (movimentos) mostrar data entrada/saída e peso depois da entrada em reciclado.
+--Detetar automáticamente se é bobine de arranque.
 
---alteração de nonwoven (Planeamento)
+
 --se possível widget de estado currente...
 --Na localização de matérias primas quando se entra sem nada selecionado (1ª vez aparece undefined...)
 --Nos cortes agregar as larguras iguais

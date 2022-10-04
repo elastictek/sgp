@@ -130,7 +130,7 @@ export default ({ record, card, parentReload }) => {
     const classes = useStyles();
     const [show, setShow] = useState({ show: false });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 120 }, filter: {fofstatus:'IN(2,3,9)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 120 }, filter: {fofstatus:'IN(2,3)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
     const primaryKeys = ['ofabrico', 'item', 'iorder'];
     const columns = [
         { key: 'options', frozen:true,name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Action r={p.row} dataAPI={dataAPI} /> },

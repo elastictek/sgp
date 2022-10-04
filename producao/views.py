@@ -39,6 +39,8 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 import pyodbc
 import openpyxl
+from django.db import connections, transaction
+from api.views import addToReciclado
 
 
 

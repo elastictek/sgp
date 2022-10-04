@@ -3134,7 +3134,10 @@ def ChangeCurrSettingsStatus(request, format=None):
                 if (exists==0):
                     #CHECK IF DOSERS AND CUTS ARE CORRECTLY DEFINED
                     if checkOfIsValid(data["id"],data,cursor)==1:
-                        dml = db.dml(TypeDml.UPDATE, {"status":3,"type_op":"status_inproduction"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        dta = {"status":3,"type_op":"status_inproduction"}
+                        if (db.count("audit_currentsettings",{"status":3,"contexid":data["id"]}).count==0):
+                            dta["start_date"]=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        dml = db.dml(TypeDml.UPDATE, dta , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                         updateOP(data["id"],data,cursor,f"`status`=3,ativa=1,completa=0,inicio='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
                         return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Iniciada!', "subTitle":f""})
@@ -3162,7 +3165,7 @@ def ChangeCurrSettingsStatus(request, format=None):
                 print(exists)
                 if (exists==1):
                         maxOrder = getLastOrder(data["ig_id"],cursor)
-                        dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished","end_date":datetime.now().strftime('%Y-%m-%d %H:%M:%S')} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                         updateOP(data["id"],data,cursor,f"`status`=9,ativa=0,completa=1,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
                         t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
@@ -5330,18 +5333,6 @@ def ValidarBobinesList(request, format=None):
                     ) t
                     limit 2
                 """),connection,{})
-                print(f"""
-                    select * from (
-                        select 
-                        bm.id,bm.timestamp,bm.nome,bm.lotenwsup,bm.lotenwinf,
-                        (SELECT troca_nw FROM producao_bobine b where b.bobinagem_id=bm.id limit 1) troca_nw
-                        FROM producao_bobinagem bm
-                        JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
-                        where acs.agg_of_id =  {agg_of_id} and bm.timestamp<=(SELECT _b.timestamp tb FROM producao_bobinagem _b where _b.id={request.data['filter']["bobinagem_id"]})
-                        order by bm.timestamp desc
-                    ) t
-                    limit 2
-                """)
                 if len(r['rows'])>0:
                     if r['rows'][0]["troca_nw"] == 1:
                         if len(r['rows'])>1: 
@@ -5359,17 +5350,54 @@ def ValidarBobinesList(request, format=None):
                             response["lotenwsup"]=r['rows'][1]["lotenwsup"]
                             response["lotenwinf"]=r['rows'][1]["lotenwinf"]
                 r = db.executeSimpleList(lambda: (f"""
-                    select bm.id
-                    FROM producao_bobinagem bm 
-                    JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
-                    where bm.valid=0 and acs.agg_of_id = {agg_of_id}
-                    order by bm.timestamp
-                    limit 1
+                    select ig.type
+                    FROM ig_bobinagens ig 
+                    LEFT JOIN producao_bobinagem bm on bm.ig_bobinagem_id=ig.id
+                    WHERE ig.type in (1,7)
+                    order by ig.id desc
+                    limit 1 offset 1
                 """),connection,{})
                 if len(r['rows'])>0:
-                    if response['rows'][0]["bobinagem_id"] == r['rows'][0]["id"]:
+                    if r['rows'][0]["type"]==7:
                         response["isba"]=1
     return Response(response)
+
+
+def addToReciclado(data,produto_id):
+    
+    def checkReciclado(data, cursor):
+        f = Filters({"status": 0})
+        f.where()
+        f.add(f'status = :status', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"select id from producao_reciclado {f.text} order by timestamp desc limit 1"), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]["id"]
+        return None
+
+    
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                reciclado_id = checkReciclado({},cursor)
+                if (reciclado_id is None and produto_id is not None):
+                    reciclado_id = _newLoteReciclado(request.user.id,{"peso": 0, "tara": '15 kg', "estado": 'ND', "produto_granulado_id":produto_id},cursor)
+                dml = db.dml(TypeDml.INSERT, {"reciclado_id":reciclado_id, **data}, "producao_recicladolotes",None,None,False)
+                dml.statement = f"""
+                    {dml.statement}
+                    ON DUPLICATE KEY UPDATE 
+                        id = LAST_INSERT_ID(id),
+                        qtd=VALUES(qtd),
+                        source=VALUES(source),
+                        timestamp=VALUES(timestamp),
+                        lote=VALUES(lote),
+                        unit=VALUES(unit),
+                        reciclado_id=VALUES(reciclado_id)
+                    """
+                db.execute(dml.statement, cursor, dml.parameters)
+    except Error:
+        return False
+    return True
 
 
 @api_view(['POST'])
@@ -5390,15 +5418,15 @@ def ValidarBobinagem(request, format=None):
             exists = db.exists("producao_bobinagem", f, cursor).exists
         return 1 if exists==0 else 0
     
-    def checkReciclado(data, cursor):
-        f = Filters({"status": 0})
-        f.where()
-        f.add(f'status = :status', True)
-        f.value("and")
-        response = db.executeSimpleList(lambda: (f"select id from producao_reciclado {f.text} order by timestamp desc limit 1"), cursor, f.parameters)
-        if len(response["rows"])>0:
-            return response["rows"][0]["id"]
-        return None
+    #def checkReciclado(data, cursor):
+    #    f = Filters({"status": 0})
+    #    f.where()
+    #    f.add(f'status = :status', True)
+    #    f.value("and")
+    #    response = db.executeSimpleList(lambda: (f"select id from producao_reciclado {f.text} order by timestamp desc limit 1"), cursor, f.parameters)
+    #    if len(response["rows"])>0:
+    #        return response["rows"][0]["id"]
+    #    return None
 
     def checkNw(data, type,lote,nw, cursor):
         f = Filters({"queue": 1,"status": 1,"type":type,"agg_of_id":data["bobinagem"]["agg_of_id"],"n_lote":lote})
@@ -5414,6 +5442,65 @@ def ValidarBobinagem(request, format=None):
             return response["rows"][0]
         return None
 
+    def checkGranulado(type, data, cursor):
+        f = Filters({})
+        f.where()
+        f.value("and")
+
+        if type=="out":
+           sl = f"""
+            select IL.artigo_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.doser from INLINE IL
+            LEFT JOIN FORMULACAO_DOSERS FR ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+            where FR.doser is null
+            """
+        else:
+            sl=f"""
+                SELECT FR.cuba,FR.doser,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote 
+                FROM FORMULACAO_DOSERS FR
+                LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+                where IL.id is null
+            """
+
+        response = db.executeSimpleList(lambda: (f"""
+        
+            with INLINE AS(
+            select ld.*,t.qty_lote from(
+            select 
+            LAST_VALUE(id) OVER (PARTITION BY vcr_num ORDER BY t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+            lg.*
+            from lotesgranuladolinha lg
+            )t
+            join lotesdoserslinha ld on ld.loteslinha_id=t.id
+            where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+            ),
+            FORMULACAO AS(
+            select formulacao
+            from producao_currentsettings cs
+            where status=3
+            ),
+            FORMULACAO_DOSERS AS(
+            SELECT doser,matprima_cod, arranque,cuba
+            FROM FORMULACAO F,
+            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_A",doser VARCHAR(3) PATH "$.doseador_A",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            WHERE doser is not null and arranque>0
+            UNION
+            SELECT doser,matprima_cod, arranque,cuba
+            FROM FORMULACAO F,
+            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_B",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            WHERE doser is not null and arranque>0
+            UNION
+            SELECT doser,matprima_cod, arranque,cuba
+            FROM FORMULACAO F,
+            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_C",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            WHERE doser is not null and arranque>0
+            )
+            {sl}        
+        """), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"]
+        return None
+
+
 
     try:
         with transaction.atomic():
@@ -5421,6 +5508,12 @@ def ValidarBobinagem(request, format=None):
 
                 isValid = checkIfIsValid(data,cursor)
                 if isValid==0:
+
+                    gri = checkGranulado("in",data,cursor)
+                    gro = checkGranulado("out",data,cursor)
+                    if gri is not None or gro is not None:
+                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem!","rowsi":gri,"rowso":gro})
+                    
                     nwi = checkNw(data,0,data["values"]["lotenwinf"],data["values"]["nwinf"],cursor)
                     nws = checkNw(data,1,data["values"]["lotenwsup"],data["values"]["nwsup"],cursor)
                     
@@ -5432,24 +5525,10 @@ def ValidarBobinagem(request, format=None):
                     if float(nws["qty_reminder"])<-400:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
-                    reciclado_id = checkReciclado(data,cursor)
-                    if (reciclado_id is None):
-                        reciclado_id = _newLoteReciclado(request.user.id,{"peso": 0, "tara": '15 kg', "estado": 'ND', "produto_granulado_id":data["produto_id"]},cursor)
-                    print("Adicionar apara ao reciclado")
+                    #Adicionar apara ao reciclado
                     qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
-                    dml = db.dml(TypeDml.INSERT, {"reciclado_id":reciclado_id,"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, "producao_recicladolotes",None,None,False)
-                    dml.statement = f"""
-                    {dml.statement}
-                    ON DUPLICATE KEY UPDATE 
-                        id = LAST_INSERT_ID(id),
-                        qtd=VALUES(qtd),
-                        source=VALUES(source),
-                        timestamp=VALUES(timestamp),
-                        lote=VALUES(lote),
-                        unit=VALUES(unit),
-                        reciclado_id=VALUES(reciclado_id)
-                    """
-                    db.execute(dml.statement, cursor, dml.parameters)
+                    addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id},data["produto_id"])
+                    #############################
                 
 
                     print("Atualizar a bobinagem")
@@ -5843,7 +5922,9 @@ def PesarReciclado(request, format=None):
             with connections["default"].cursor() as cursor:
                 reciclado_id = checkReciclado(filter["id"],cursor)
                 if (reciclado_id is not None):
-                    dml = db.dml(TypeDml.UPDATE,{"timestamp_edit":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
+                    dml = db.dml(TypeDml.UPDATE,{"lote":"$$$-1", "num":"$$$-2","timestamp_edit":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
+                    dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+                    dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível Pesar o lote!", "subTitle":"O lote já se encontra pesado ou não existe!"})     

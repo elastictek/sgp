@@ -164,6 +164,8 @@ urlpatterns = [
     re_path(r'^lotesavailable/$', views.LotesAvailable),
     re_path(r'^getconsumosbobinagenslookup/$', views.GetConsumosBobinagensLookup),
     
+    
+    re_path(r'^granuladolistinline/$', materias_primas.GranuladoListInLine),
     re_path(r'^granuladolist/$', materias_primas.GranuladoList),
     re_path(r'^savegranuladoitems/$', materias_primas.SaveGranuladoItems),
     re_path(r'^granuladolistlookup/$', materias_primas.GranuladoListLookup),
