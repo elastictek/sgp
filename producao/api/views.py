@@ -5519,11 +5519,11 @@ def ValidarBobinagem(request, format=None):
                     if nwi is None or nws is None:
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
 
-                    if float(nwi["qty_reminder"])<-2400:
+                    if float(nwi["qty_reminder"])<-32400:
                         print("REMINDER")
                         print(float(nwi["qty_reminder"]))
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    if float(nws["qty_reminder"])<-2400:
+                    if float(nws["qty_reminder"])<-32400:
                         print("REMINDER")
                         print(float(nws["qty_reminder"]))
                         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
