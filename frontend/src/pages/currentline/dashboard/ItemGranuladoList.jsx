@@ -42,14 +42,15 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<></>);
 }
 
-const SelectItems = ({ onView, onChangeContent, dataAPI }) => {
+const SelectItems = ({ onView, onPick, onChangeContent, dataAPI }) => {
     
     return (
         <Space>
-            <Select defaultValue={noValue(dataAPI.getFilter(true)?.type, "1")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
+            {/* <Select defaultValue={noValue(dataAPI.getFilter(true)?.type, "1")} style={{ width: 200 }} onChange={(v) => onChangeContent(v, "type")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="1">Lotes da Ordem de Fabrico</Option>
                 <Option value="-1">Todos os Lotes</Option>
-            </Select>
+            </Select> */}
+            <Button onClick={(e) => { e.stopPropagation(); onPick(); }} disabled={dataAPI.isLoading()}>Registar Granulado</Button>
             <Button onClick={(e) => { e.stopPropagation(); onView(); }} icon={<BiWindowOpen style={{ fontSize: "16px", marginTop: "4px" }} />} disabled={dataAPI.isLoading()} />
         </Space>
     );
@@ -125,6 +126,10 @@ export default ({ record, card, parentReload }) => {
         navigate("/app/artigos/granuladolist", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
     }
 
+    const onPick = () => {
+        navigate("/app/picking/pickgranuladolist", { state: { ...dataAPI.getFilter(true), type: '-1', tstamp: Date.now() } });
+    }
+
     const onChangeContent = async (v, field) => {
         dataAPI.addFilters({ ...dataAPI.getFilter(true), [field]: v });
         dataAPI.fetchPost();
@@ -139,7 +144,7 @@ export default ({ record, card, parentReload }) => {
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard data={record} title={card.title} />}
-                extra={<SelectItems onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} />}
+                extra={<SelectItems onChangeContent={onChangeContent} onView={onView} dataAPI={dataAPI} onPick={onPick} />}
             >
                 <YScroll>
                     <Table
