@@ -5526,7 +5526,9 @@ def ValidarBobinagem(request, format=None):
 
                     #Adicionar apara ao reciclado
                     qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
-                    addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, data["produto_id"] if "produto_id" in data else None )
+                    reciclado_status = addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, data["produto_id"] if "produto_id" in data else None )
+                    if reciclado_status == False:
+                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Não foi possível adicionar a apara no reciclado."})
                     #############################
                 
 
@@ -5921,9 +5923,9 @@ def PesarReciclado(request, format=None):
             with connections["default"].cursor() as cursor:
                 reciclado_id = checkReciclado(filter["id"],cursor)
                 if (reciclado_id is not None):
-                    dml = db.dml(TypeDml.UPDATE,{"lote":"$$$-1", "num":"$$$-2","timestamp_edit":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False)
-                    dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
-                    dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+                    dml = db.dml(TypeDml.UPDATE,{"lote":"$$$-1", "num":"$$$-2","timestamp_edit":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "produto_granulado_id":data["produto"],"estado":data["estado"],"peso":data["peso"],"tara":data["tara"],"obs":data["obs"] if "obs" in data else None, "status":1},"producao_reciclado",{"id":f'=={reciclado_id}'},None,False,["lote","num"])
+                    dml.statement = dml.statement.replace("$$$-1",f"""lote=(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+                    dml.statement = dml.statement.replace("$$$-2",f"""num=(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
                     db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível Pesar o lote!", "subTitle":"O lote já se encontra pesado ou não existe!"})     
