@@ -3550,10 +3550,10 @@ def retrabalho_confirmacao(request, pk, b1, m1, b2=None, m2=None, b3=None, m3=No
 
         if recycle_1 == True and b_1 != "N/A":
             b_1.recycle = True
-            a_1 = round(Decimal(b_1.comp_actual) * (Decimal(b_1.largura.largura) * Decimal(0.001)), 2)
-            reciclado_status = addToReciclado({"qtd":a_1,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_1.nome,"unit":"m2","user_id":request.user.id},None )
-            if reciclado_status == False:
-                pass
+            #a_1 = round(Decimal(b_1.comp_actual) * (Decimal(b_1.largura.largura) * Decimal(0.001)), 2)
+            #reciclado_status = addToReciclado({"qtd":a_1,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_1.nome,"unit":"m2","user_id":request.user.id},None )
+            #if reciclado_status == False:
+            #    pass
             try:
                 movimento_bobine = MovimentosBobines.objects.create(
                     bobine=b_1, palete=b_1.palete, timestamp=bobinagem.timestamp, destino="Reciclada")
@@ -3564,10 +3564,10 @@ def retrabalho_confirmacao(request, pk, b1, m1, b2=None, m2=None, b3=None, m3=No
 
         if recycle_2 == True and b_2 != "N/A":
             b_2.recycle = True
-            a_2 = round(Decimal(b_2.comp_actual) * (Decimal(b_2.largura.largura) * Decimal(0.001)), 2)
-            reciclado_status = addToReciclado({"qtd":a_2,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_2.nome,"unit":"m2","user_id":request.user.id},None )
-            if reciclado_status == False:
-                pass
+            #a_2 = round(Decimal(b_2.comp_actual) * (Decimal(b_2.largura.largura) * Decimal(0.001)), 2)
+            #reciclado_status = addToReciclado({"qtd":a_2,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_2.nome,"unit":"m2","user_id":request.user.id},None )
+            #if reciclado_status == False:
+            #    pass
             try:
                 movimento_bobine = MovimentosBobines.objects.create(
                     bobine=b_2, palete=b_2.palete, timestamp=bobinagem.timestamp, destino="Reciclada")
@@ -3578,10 +3578,10 @@ def retrabalho_confirmacao(request, pk, b1, m1, b2=None, m2=None, b3=None, m3=No
 
         if recycle_3 == True and b_3 != "N/A":
             b_3.recycle = True
-            a_3 = round(Decimal(b_3.comp_actual) * (Decimal(b_3.largura.largura) * Decimal(0.001)), 2)
-            reciclado_status = addToReciclado({"qtd":a_3,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_3.nome,"unit":"m2","user_id":request.user.id},None )
-            if reciclado_status == False:
-                pass
+            #a_3 = round(Decimal(b_3.comp_actual) * (Decimal(b_3.largura.largura) * Decimal(0.001)), 2)
+            #reciclado_status = addToReciclado({"qtd":a_3,"source":"bobinagem_retrabalho","timestamp":datetime.datetime.now(),"lote":b_3.nome,"unit":"m2","user_id":request.user.id},None )
+            #if reciclado_status == False:
+            #    pass
             try:
                 movimento_bobine = MovimentosBobines.objects.create(
                     bobine=b_3, palete=b_3.palete, timestamp=bobinagem.timestamp, destino="Reciclada")
