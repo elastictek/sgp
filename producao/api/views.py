@@ -5830,8 +5830,8 @@ def RecicladoLotesList(request, format=None):
 
 def _newLoteReciclado(user_id,data,cursor):
     dml = db.dml(TypeDml.INSERT, {**data, "status":0, "timestamp": datetime.now(), "timestamp_edit": datetime.now(), "user_id":user_id, "lote":"$$$-1", "num":"$$$-2"}, "producao_reciclado",None,None,False,["lote","num"])
-    dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
-    dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+    dml.statement = dml.statement.replace("$$$-1",f"""(SELECT * FROM (SELECT concat('{datetime.now().strftime('%Y%m%d')}-', LPAD(count(*)+1,2,'0')) FROM producao_reciclado where date(timestamp_edit)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
+    dml.statement = dml.statement.replace("$$$-2",f"""(SELECT * FROM (SELECT count(*)+1 FROM producao_reciclado where date(timestamp_edit)='{datetime.now().strftime('%Y-%m-%d')}') t)""")
     print(dml.statement)
     db.execute(dml.statement, cursor, dml.parameters)
     return cursor.lastrowid
