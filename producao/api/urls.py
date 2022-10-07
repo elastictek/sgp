@@ -4,6 +4,7 @@ from django.contrib import admin
 from producao.api import views 
 from producao.api import reports
 from producao.api import materias_primas
+from producao.api import currentsettings
 from producao.api import print
 app_name="producao" 
 
@@ -183,6 +184,13 @@ urlpatterns = [
     
     
     #MATERIAS-PRIMAS
+
+    #CURRENTSETTINGS
+    re_path(r'^eventosproducao/$', currentsettings.EventosProducao),
+    re_path(r'^auditcurrentsettingsget/$', currentsettings.AuditCurrentSettingsGet),
+    
+    #CURRENTSETTINGS
+
 
     #REPORTS
     re_path(r'^ofabricotimelinelist',views.OFabricoTimeLineList),

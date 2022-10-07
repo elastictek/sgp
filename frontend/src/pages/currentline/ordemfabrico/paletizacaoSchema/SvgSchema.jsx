@@ -100,8 +100,12 @@ export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%",
     useEffect(() => {
         let data = {};
         if (items) {
-            console.log("aaaaaaaaaaaaaaaaaaaa-ITEMS", items);
-            let itms = items?.paletizacao?.sort((a, b) => b.item_order - a.item_order);
+            let itms;
+            if ("paletizacao" in items){
+                itms = items?.paletizacao?.sort((a, b) => b.item_order - a.item_order);
+            }else{
+                itms = items?.details?.sort((a, b) => b.item_order - a.item_order);
+            }
             data = { paletizacao: itms, cintas: items.cintas, ncintas: items.ncintas, filmeestiravel_bobines: items.filmeestiravel_bobines, filmeestiravel_exterior: items.filmeestiravel_exterior }
         } else {
             data = { paletizacao: form.getFieldValue(["paletizacao"]), cintas: form.getFieldValue(["cintas"]), ncintas: form.getFieldValue(["ncintas"]), filmeestiravel_bobines: form.getFieldValue(["filmeestiravel_bobines"]), filmeestiravel_exterior: form.getFieldValue(["filmeestiravel_exterior"]) }

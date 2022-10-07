@@ -161,11 +161,13 @@ const App = () => {
     useEffect(() => { }, [
         lastJsonMessage?.hash.hash_igbobinagens,
         lastJsonMessage?.hash.hash_bobinagens,
-        lastJsonMessage?.hash.hash_buffer,
-        lastJsonMessage?.hash.hash_dosers,
-        lastJsonMessage?.hash.hash_doserssets,
+        lastJsonMessage?.hash.hash_auditcs,
+
+        //lastJsonMessage?.hash.hash_buffer,
+        //lastJsonMessage?.hash.hash_dosers,
+        //lastJsonMessage?.hash.hash_doserssets,
         lastJsonMessage?.hash.hash_inproduction,
-        lastJsonMessage?.hash.hash_lotes_availability
+        //lastJsonMessage?.hash.hash_lotes_availability
     ]);
 
 
@@ -222,14 +224,15 @@ const App2 = () => {
     });
     const [auth, setAuth] = useState();
 
-    useEffect(() => { }, [
+    useEffect(() => {}, [
         lastJsonMessage?.hash.hash_igbobinagens,
         lastJsonMessage?.hash.hash_bobinagens,
-        lastJsonMessage?.hash.hash_buffer,
-        lastJsonMessage?.hash.hash_dosers,
-        lastJsonMessage?.hash.hash_doserssets,
+        lastJsonMessage?.hash.hash_auditcs,
+        //lastJsonMessage?.hash.hash_buffer,
+        //lastJsonMessage?.hash.hash_dosers,
+        //lastJsonMessage?.hash.hash_doserssets,
         lastJsonMessage?.hash.hash_inproduction,
-        lastJsonMessage?.hash.hash_lotes_availability
+        //lastJsonMessage?.hash.hash_lotes_availability
     ]);
 
     const loadData = async ({ signal }) => {

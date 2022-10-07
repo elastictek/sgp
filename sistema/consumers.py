@@ -40,11 +40,18 @@ def executeAlerts():
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
     data = json.dumps(rows[0],default=str)
 
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
-    dataDosersSets = json.dumps(rows[0],default=str)
+    #with connections["default"].cursor() as cursor:
+    #    rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
+    #dataDosersSets = json.dumps(rows[0],default=str)
 
-    
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f"""		
+                SELECT acs.id 
+                from audit_currentsettings acs
+                order by acs.id desc
+                limit 1
+         """), cursor, {})['rows']
+    dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f"""		
@@ -57,45 +64,54 @@ def executeAlerts():
          """), cursor, {})['rows']
     dataInProd = json.dumps(rows[0] if len(rows)>0 else {},default=str)
 
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f"""		
-                select max(t_stamp) from lotesdosers limit 1
-         """), cursor, {})['rows']
-    dataDosers = json.dumps(rows[0],default=str)
+    #with connections["default"].cursor() as cursor:
+    #    rows = db.executeSimpleList(lambda: (f"""		
+    #            select max(t_stamp) from lotesdosers limit 1
+    #     """), cursor, {})['rows']
+    #dataDosers = json.dumps(rows[0],default=str)
 
-    with connections[connGatewayName].cursor() as cursor:
-        rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%') ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
-    dataBuffer = json.dumps(rows[0],default=str)
+    #with connections[connGatewayName].cursor() as cursor:
+    #    rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%') ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
+    #dataBuffer = json.dumps(rows[0],default=str)
 
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f"""		
-            select SUM(t.qty_lote_available) available FROM (
-            SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
-            FROM (
-            select * from(
-                select
-                l.*,
-                l.t_stamp lt_stamp ,MAX(l.t_stamp) over (PARTITION BY l.artigo_cod,l.n_lote) max_t_stamp
-                FROM loteslinha l
-            ) t WHERE max_t_stamp=lt_stamp and `status`=1 and `group` is not null
-            ) LOTES
-            LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
-            WHERE DOSERS.status=1
-            ) t
-         """), cursor, {})['rows']
-    dataLotesAvailability = json.dumps(rows[0],default=str)
+    #with connections["default"].cursor() as cursor:
+    #    rows = db.executeSimpleList(lambda: (f"""		
+    #        select SUM(t.qty_lote_available) available FROM (
+    #        SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
+    #        FROM (
+    #        select * from(
+    #            select
+    #            l.*,
+    #            l.t_stamp lt_stamp ,MAX(l.t_stamp) over (PARTITION BY l.artigo_cod,l.n_lote) max_t_stamp
+    #            FROM loteslinha l
+    #        ) t WHERE max_t_stamp=lt_stamp and `status`=1 and `group` is not null
+    #        ) LOTES
+    #        LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+    #        WHERE DOSERS.status=1
+    #        ) t
+    #     """), cursor, {})['rows']
+    #dataLotesAvailability = json.dumps(rows[0],default=str)
 
     async_to_sync(channel_layer.group_send)(group_name,{
         'type': "getAlerts", "data":{
-            "igbobinagens":dataig_bobinagens,"bobinagens":data,"buffer":dataBuffer,"inproduction":dataInProd,"dosers":dataDosers,"availability":dataLotesAvailability, "doserssets":dataDosersSets}, 
+            "igbobinagens":dataig_bobinagens,
+            "bobinagens":data,
+            "auditcs":dataAuditCs,
+            #"buffer":dataBuffer,
+            "inproduction":dataInProd,
+            #"dosers":dataDosers,
+            #"availability":dataLotesAvailability, 
+            #"doserssets":dataDosersSets
+            }, 
             "hash":{
                 "hash_igbobinagens":hashlib.md5(dataig_bobinagens.encode()).hexdigest(),
                 "hash_bobinagens":hashlib.md5(data.encode()).hexdigest(),
-                "hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
+                "hash_auditcs":hashlib.md5(dataAuditCs.encode()).hexdigest(),
+                #"hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
-                "hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
-                "hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
-                "hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
+                #"hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
+                #"hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
+                #"hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
             }
     })
     #self.send(text_data=json.dumps({"val":val},default=str))

@@ -29,27 +29,27 @@ const schema = (options = {}) => {
 
 const primaryKeys = [];
 
-const columns = (extrusora, onChange) => [
+const columns = (extrusora, onChange,forInput) => [
     {
         key: `cuba_${extrusora}`, sortable: false, name: `Cuba`, frozen: true, minWidth: 65, width: 65, formatter: p => <Cuba value={p.row[`cuba_${extrusora}`]} />,
-        editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row[`cuba_${extrusora}`]} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange(`cuba_${extrusora}`, v, p)} size="small" data={FORMULACAO_CUBAS} keyField="key" textField="value" />,
+        ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row[`cuba_${extrusora}`]} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange(`cuba_${extrusora}`, v, p)} size="small" data={FORMULACAO_CUBAS} keyField="key" textField="value" />}),
         editorOptions: { editOnClick: true }
     },
     ...extrusora === "A" ? [{
         key: 'doseador_A', sortable: false, name: `Doseador`, frozen: true, minWidth: 80, width: 80, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_A}</b></div>,
-        editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_A} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_A', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["A"]} keyField="key" textField="key" />,
+        ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_A} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_A', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["A"]} keyField="key" textField="key" />}),
         editorOptions: { editOnClick: true }
     }] : [],
     ...extrusora === "BC" ? [
         {
             key: 'doseador_B', sortable: false, name: `Doseador`, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_B}</b></div>,
-            editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_B} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_B', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["B"]} keyField="key" textField="key" />,
+            ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_B} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_B', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["B"]} keyField="key" textField="key" />}),
             editorOptions: { editOnClick: true },
             colSpan(args) { if (args.type === 'HEADER') { return 2; } return undefined; }
         },
         {
             key: 'doseador_C', sortable: false, name: ``, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_C}</b></div>,
-            editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_C} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_C', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["C"]} keyField="key" textField="key" />,
+            ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_C} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_C', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["C"]} keyField="key" textField="key" />}),
             editorOptions: { editOnClick: true }
         }
     ] : [],
@@ -60,7 +60,7 @@ const columns = (extrusora, onChange) => [
     { key: 'vglobal', sortable: false, name: '% Global', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.vglobal} %</div> }
 ];
 
-export default ({ record, card, parentReload, setFormTitle, parentRef, closeParent }) => {
+export default ({ record, card, parentReload, setFormTitle, parentRef, closeParent, forInput = true }) => {
     const navigate = useNavigate();
     const [isTouched, setIsTouched] = useState(false);
     const classes = useStyles();
@@ -209,7 +209,7 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
     return (
         <FormContainer id="f-dosers" wrapForm={false} wrapFormItem={false} loading={submitting.state}>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
-            <Container style={{ marginBottom: "5px", marginTop: "5px" }}>
+            {forInput && <Container style={{ marginBottom: "5px", marginTop: "5px" }}>
                 <Row style={{ border: "solid 1px #dee2e6", background: "#f8f9fa", padding: "5px" }}>
                     <Col>
                         <Button size="small" onClick={assignVats}>Atribuir Cubas</Button>
@@ -219,6 +219,7 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
                     </Col>
                 </Row>
             </Container>
+            }
 
             <Table
                 //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
@@ -226,7 +227,7 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
                 //headerStyle={`background-color:#f0f0f0;font-size:10px;`}
                 reportTitle={title}
                 loadOnInit={false}
-                columns={columns('A', onChange)}
+                columns={columns('A', onChange,forInput)}
                 dataAPI={dataAPI_A}
                 //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
                 toolbar={false}

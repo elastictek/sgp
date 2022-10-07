@@ -46,6 +46,7 @@ const ItemOperations = React.lazy(() => import('./ItemOperations'));
 const ItemPickingNW = React.lazy(() => import('./ItemPickingNW'));
 const ItemGranuladoList = React.lazy(() => import('./ItemGranuladoList'));
 const ItemLineLogList = React.lazy(() => import('./ItemLineLogList'));
+const ItemEventosProducao = React.lazy(() => import('./ItemEventosProducao'));
 const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
@@ -259,6 +260,7 @@ const allItems = {
         { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
         { i: "ordemfabrico", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        { i: "eventosproducao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "mp" },
         { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
@@ -299,6 +301,7 @@ const toolboxItems = {
     ordemfabrico: { description: "Ordens Fabrico", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     operations: { description: "Ações", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     linelog: { description: "Eventos da Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+    eventosproducao: { description: "Eventos Produção", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     //nav: { description: "Estado", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     mp: {
         description: "Matérias Primas", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} />, children: {
@@ -967,6 +970,7 @@ export default (props) => {
                                     {v.i === "mp#granulado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoList card={{ title: "Granulado Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "ordemfabrico" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemOrdensFabrico card={{ title: "Ordens de Fabrico" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "linelog" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemLineLogList card={{ title: "Eventos da Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "eventosproducao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemEventosProducao card={{ title: "Eventos Produção" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "nav" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemNav card={{ title: "Estado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "mp#local" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemMPLocal card={{ title: "Matérias Primas" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "mp#granuladoinline" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoInLine card={{ title: "Granulado em Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}

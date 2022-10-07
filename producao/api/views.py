@@ -3881,7 +3881,7 @@ def sgpForProduction(data,aggid,user,cursor):
             'id',pp.id,'cliente_cod',pp.cliente_cod,'artigo_cod',pp.artigo_cod,'contentor_id',pp.contentor_id,'filmeestiravel_bobines',pp.filmeestiravel_bobines,
             'filmeestiravel_exterior',pp.filmeestiravel_exterior,'cintas',pp.cintas,'ncintas',pp.ncintas,'paletes_sobrepostas',pp.paletes_sobrepostas,'npaletes',pp.npaletes, 
             'palete_maxaltura',pp.palete_maxaltura,'netiquetas_bobine',pp.netiquetas_bobine,'netiquetas_lote',pp.netiquetas_lote,'netiquetas_final',pp.netiquetas_final,      
-            'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'cliente_nome',pp.cliente_nome,
+            'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'folha_identificativa',pp.folha_identificativa, 'cliente_nome',pp.cliente_nome,
             'details', (select JSON_ARRAYAGG(JSON_OBJECT('order',ppdb.item_order,'num_bobines',ppdb.item_numbobines))
             FROM producao_paletizacaodetails ppdb WHERE ppdb.paletizacao_id=pp.id and ppdb.item_id=2)
             ) paletizacao_bobines,
@@ -3889,7 +3889,7 @@ def sgpForProduction(data,aggid,user,cursor):
             'id',pp.id,'cliente_cod',pp.cliente_cod,'artigo_cod',pp.artigo_cod,'contentor_id',pp.contentor_id,'filmeestiravel_bobines',pp.filmeestiravel_bobines,
             'filmeestiravel_exterior',pp.filmeestiravel_exterior,'cintas',pp.cintas,'ncintas',pp.ncintas,'paletes_sobrepostas',pp.paletes_sobrepostas,'npaletes',pp.npaletes, 
             'palete_maxaltura',pp.palete_maxaltura,'netiquetas_bobine',pp.netiquetas_bobine,'netiquetas_lote',pp.netiquetas_lote,'netiquetas_final',pp.netiquetas_final,      
-            'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'cliente_nome',pp.cliente_nome,
+            'designacao',pp.designacao,'cintas_palete',pp.cintas_palete,'folha_identificativa',pp.folha_identificativa,'cliente_nome',pp.cliente_nome,
             'details', (select JSON_ARRAYAGG(JSON_OBJECT('id', ppd.id,'item_des', ppd.item_des,'item_id', ppd.item_id,'item_numbobines', ppd.item_numbobines,
             'item_order', ppd.item_order,'item_paletesize', ppd.item_paletesize,'paletizacao_id', ppd.paletizacao_id))
             FROM producao_paletizacaodetails ppd WHERE ppd.paletizacao_id=pp.id)

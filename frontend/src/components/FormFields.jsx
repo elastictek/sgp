@@ -570,7 +570,7 @@ const FieldRowBottom = styled('div').withConfig({
  * 
  * @returns 
  */
-export const Field = ({ children, forInput = null, forViewBorder = true, wrapFormItem = null, alert, ...props }) => {
+export const Field = ({ children, forInput = null, forViewBorder = true, forViewBackground=true, wrapFormItem = null, alert, ...props }) => {
     const ctx = useContext(Context);
     const _forInput = forInput === null ? ctx?.forInput : forInput;
     const _wrapFormItem = wrapFormItem === null ? ctx?.wrapFormItem : wrapFormItem;
@@ -583,7 +583,7 @@ export const Field = ({ children, forInput = null, forViewBorder = true, wrapFor
                 } else if (_forInput) {
                     return children;
                 } else if (children) {
-                    return <ForView {...children?.props} forViewBorder={forViewBorder}>{children}</ForView>;
+                    return <ForView {...children?.props} forViewBackground={forViewBackground} forViewBorder={forViewBorder}>{children}</ForView>;
                 }
             })()}
         </InnerField>
@@ -814,9 +814,9 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
 
 
 
-const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, style, ...rest }) => {
+const ForView = ({ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder = true, forViewBackground = true, style, ...rest }) => {
     let type = null; //'any' //children.props.tpy;
-    //console.log("zzzzzzz->",children.type === DatePicker, children.type === InputAddon, children.type === Input,children.props)
+    //console.log("zzzzzzz->",children.type)
     if (!type || type === 'C') {
         if (children.type === DatePicker || children.type === TimePicker) {
             //console.log("FIELD-> PICKER");
@@ -866,7 +866,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                     const { value, onDoubleClick } = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },display:"flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },display:"flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
                             return (
                                 <CheckboxField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
@@ -885,35 +885,35 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
             ) */
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {
                                 text = value?.label;
                             } else {
-                                const r = data.find(v => v[keyField] === value);
+                                const r = data.find(v => v[keyField] == value);
                                 if (r !== undefined) {
                                     text = (typeof optionsRender === 'function') ? optionsRender(r, keyField, textField).label : r[textField];
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), whiteSpace: "nowrap", background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), whiteSpace: "nowrap", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
                             )
                         default:
 
                             if ("addonAfter" in children.props || "addonAfter" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },minHeight: height(), display: "flex", flexDirection: "row", alignItems:"center", background:"#f0f0f0", ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },minHeight: height(), display: "flex", flexDirection: "row", alignItems:"center", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display:"flex", minHeight: height(), alignItems:"center", background:"#f0f0f0", ...(style && style)}} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display:"flex", minHeight: height(), alignItems:"center", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style)}} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                     }
 
                 })()}
