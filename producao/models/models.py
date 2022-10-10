@@ -544,6 +544,7 @@ class Bobinagem(models.Model):
     audit_current_settings=models.ForeignKey('producao.AuditCurrentSettings', on_delete = models.PROTECT, verbose_name = "Audit Current Settings", null = True) #ADDED
     ig_bobinagem_id=models.IntegerField(verbose_name = "IG_BOBINAGEM", null = True, blank = True, default = 0) #ADDED
     largura_bruta=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Largura Bruta", default = 0, null = True, blank = True) #ADDED
+    valid_tsamp = models.DateTimeField(verbose_name="Data Validação", null=True, blank=True) #ADDED
     def __str__(self):
         return self.nome
 

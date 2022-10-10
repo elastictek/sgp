@@ -5538,7 +5538,7 @@ def ValidarBobinagem(request, format=None):
 
                     print("Atualizar a bobinagem")
                     bobinagem_values = {key: data["values"][key] for key in data["values"] if key in ['largura_bruta','comp_par','lotenwinf','lotenwsup',]}
-                    dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
+                    dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1,"valid_tstamp":datetime.now()}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 
                     print("Atualizar nw")
