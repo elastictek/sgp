@@ -25,6 +25,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
 
     const action = useRef([]);
     const _sort = useRef([]);
+    const local_filter = useRef(payload?.filter);
     var _filter = payload?.filter;
     var _pagination = payload?.pagination;
     var _parameters = payload?.parameters;
@@ -142,14 +143,14 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const addFilters = (obj, assign = true, applyState = false) => {
         addAction('filter');
         if (assign) {
-            _filter = obj;
+            local_filter.current = obj;
             if (applyState) {
                 setDataState(prev => ({ ...prev, filter: { ...obj } }));
             }
         } else {
-            _filter = { ...dataState.filter, ..._filter, ...obj };
+            local_filter.current = { ...dataState.filter, ...local_filter.current, ...obj };
             if (applyState) {
-                setDataState(prev => ({ ...prev, filter: { ..._filter } }));
+                setDataState(prev => ({ ...prev, filter: { ...local_filter.current } }));
             }
 
         }
@@ -178,7 +179,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         } else {
             return {
                 pagination: { ...((isAction('nav') || isAction('pageSize'))) ? _pagination : dataState.pagination },
-                filter: { ...(isAction('filter')) ? _filter : dataState.filter },
+                filter: { ...(isAction('filter')) ? local_filter.current : dataState.filter },
                 sort: [...(isAction('sort')) ? _sort.current : dataState.sort],
                 parameters: { ...(isAction('parameters')) ? _parameters : dataState.parameters }
             }
@@ -207,12 +208,12 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         if (fromState) {
             return { ...dataState.filter };
         } else {
-            return { ..._filter };
+            return { ...local_filter.current };
         }
     }
 
     const getAllFilter = () => {
-        return { ...dataState.filter, ..._filter };
+        return { ...dataState.filter, ...local_filter.current };
     }
 
     const getParameters = () => {
@@ -304,10 +305,9 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return { ...dataState.data };
     }
 
-    const _fetchPost = ({ url, token, signal, rowFn } = {}) => {
+    const _fetchPost = ({ url, token, signal, rowFn, fromSate=false } = {}) => {
         let _url = (url) ? url : dataState.url;
-        const payload = { ...getPayload(), tstamp: Date.now() };
-        console.log(payload);
+        const payload = { ...getPayload(fromSate), tstamp: Date.now() };
         setIsLoading(true);
         return (async () => {
             let ok=true;

@@ -159,6 +159,7 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
             } else {
                 let _value = v.split(";");
                 _value = _value.length>=5 ? _value[1] : v;
+                console.log("%%%%%%%%%%%%%-getquamtity",_value)
                 sendJsonMessage({ cmd: 'getnwlotequantity', lote: _value, unit: "m2" });
                 value.current = '';
                 setCurrent(value.current);
@@ -172,18 +173,23 @@ const PickContent = ({ lastValue, setLastValue, onChange, parentRef, closeParent
         }
         e.preventDefault();
         const keyCode = (e === null) ? obj.keyCode : e.keyCode;
+        console.log("entrei")
         if (keyCode == 9 || keyCode == 13) {
+            console.log("KEYCODE",keyCode)
             onPick();
+
         } else if ((keyCode >= 48 && keyCode <= 90) || (keyCode >= 96 && keyCode <= 111) || keyCode == 186 || keyCode == 188 || keyCode == 110 || keyCode == 190 || keyCode == 189) {
             value.current = `${value.current}${e.key}`;
             setCurrent(value.current);
         } else if (keyCode == 16) {
-
+            console.log("KEYCODE-16",keyCode)
         } else if (keyCode === 8) {
+            console.log("KEYCODE-8",keyCode)
             value.current = value.current.slice(0, -1);
             setCurrent(value.current);
         }
         else {
+            console.log("KEYCODE-x",keyCode)
             value.current = '';
             //setLastValue('');
         }

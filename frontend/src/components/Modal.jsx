@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, Suspense, useContext, 
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import YScroll from "components/YScroll";
-import { Modal } from "antd";
+import { Modal, Drawer } from "antd";
 
 import { MediaContext } from '../pages/App';
 
@@ -22,7 +22,7 @@ const TitleModal = ({ title, eTitle }) => {
 
 
 
-export default ({ responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, ...props }) => {
+export default ({ type = "modal", responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -66,7 +66,7 @@ export default ({ responsive = true, width = 800, height = 300, children, footer
 
     return (
         <>
-            {size.computed &&
+            {(size.computed && type === "modal") &&
                 <Modal
                     title={<TitleModal title={iTitle} eTitle={title} />}
                     open={true}
@@ -76,14 +76,35 @@ export default ({ responsive = true, width = 800, height = 300, children, footer
                     okText="Confirmar"
                     cancelText="Cancelar"
                     width={size.width}
+                    onCancel={onCancel}
                     {...(footer && { footer: footerButtons() })}
                     bodyStyle={{ height: size.height }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
-                        {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}</Suspense>}
-                        {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}
+                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}</Suspense>}
+                    {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}
                 </Modal>
+            }
+            {(size.computed && type === "drawer") &&
+                <Drawer
+                    title={<TitleModal title={iTitle} eTitle={title} />}
+                    open={true}
+                    //centered={size.fullscreen ? false : true}
+                    maskClosable={true}
+                    destroyOnClose={true}
+                    okText="Confirmar"
+                    cancelText="Cancelar"
+                    width={size.width}
+                    onClose={onCancel}
+                    {...(footer && { footer: footerButtons() })}
+                    //bodyStyle={{ height: size.height }}
+                    style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
+                    {...props}
+                >
+                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}</Suspense>}
+                    {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}
+                </Drawer>
             }
         </>
     );

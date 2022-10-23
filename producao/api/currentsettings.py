@@ -46,6 +46,7 @@ connMssqlName = "sqlserver"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
+tipoemendas = { "1": "Fita Preta", "2": "Fita metálica e Fita Preta","3": "Fita metálica" }
 
 
 @api_view(['GET'])
@@ -211,13 +212,17 @@ def EventosProducao(request, format=None):
     
     return Response(response)
 
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def AuditCurrentSettingsGet(request, format=None):
-    cols = ['*']
+    cols = ['''
+        `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,
+        `status`,`observacoes`,`start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`type_op`,
+        `timestamp`,`action`,`contextid`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,`dosers`,`created`,`limites`,
+        `ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` formulacao
+    ''']
     f = Filters(request.data['filter'])
     f.setParameters({
         "id": {"value": lambda v: v.get('acsid'), "field": lambda k, v: f'acs.{k}'},
@@ -240,3 +245,471 @@ def AuditCurrentSettingsGet(request, format=None):
             """
         ), cursor, parameters)
         return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CurrentSettingsGet(request, format=None):
+    cols = ['''
+        `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,`status`,`observacoes`,
+        `start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,
+        `type_op`,`dosers`,`created`,`limites`,`ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` `formulacao`
+    ''']
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "st": {"value": 3, "field": lambda k, v: f'{k}'},
+    }, False)
+    f.where()
+    f.add(f'agg_of_id = :aggId', lambda v:(v!=None))
+    f.add(f'status = :st',lambda v:"aggId" not in request.data['filter'])
+    f.value("and")
+    parameters = {**f.parameters}
+    
+
+    dql = db.dql(request.data, False, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_currentsettings
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CurrentSettingsInProductionGet(request, format=None):
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                
+                        `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,
+                        `status`,`observacoes`,`start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`type_op`,
+                        `timestamp`,`action`,`contextid`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,`dosers`,`created`,`limites`,
+                        `ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` formulacao, mx_id
+                
+                from
+                (
+                SELECT acs.*, max(acs.id) over () mx_id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                ) t
+                where id=mx_id
+            """
+        ), cursor, {})
+        return Response(response)
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def UpdateCurrentSettings(request, format=None):
+    data = request.data.get("parameters")
+    def getCurrentSettings(data,cursor):
+        f = Filters({"id": data["csid"],"status":9})
+        f.where()
+        f.add(f'id = :id', True)
+        f.add(f'status <> :status', True)
+        f.value("and")  
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_currentsettings {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
+    def compPaletizacao(cp,paletizacao):
+        
+        sqm_paletes_total = 0
+        nitems = 0
+        items = []
+        computed = {}
+        if paletizacao is not None:
+            for pitem in [d for d in paletizacao["details"] if 'item_numbobines' in d and d['item_numbobines'] is not None]:
+                if pitem["id"] is not None:
+                    nitems += 1
+                    items.append({
+                        "id":pitem["id"],
+                        "num_bobines":pitem["item_numbobines"],
+                        "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
+                    })
+                    sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
+            if nitems>0:
+                computed["total"] = {
+                    "sqm_paletes_total":sqm_paletes_total,
+                    "sqm_contentor":sqm_paletes_total*paletizacao["npaletes"],
+                    "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
+                }
+                computed["items"] = items
+        return computed
+            
+
+    try:
+        with connections["default"].cursor() as cursor:
+            cs = getCurrentSettings(request.data['filter'],cursor)
+            if cs is None:
+                return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Ordem de Fabrico', "subTitle":"Não é possível alterar as Definições da Ordem (O estado atual não o permite!!)."})
+    except Exception as error:
+        return Response({"status": "error", "id":None, "title": f'Erro de Execução', "subTitle":str(error)})
+
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'id = :csid', True)
+    f.value("and")
+    if data['type'].startswith('formulacao'):
+        ok=1
+        for v in data['formulacao']['items']:
+            if "doseador_A" in v:
+                pass
+            elif  "doseador_B" in v or "doseador_C" in v:
+                pass
+            elif "doseador" in v:
+                pass
+            else:
+                ok=0
+                break
+        data["formulacao"]["valid"] = ok
+        dosers = []
+        for v in data["formulacao"]["items"]:
+            if "doseador_A" in v:
+                dosers.append({
+                    "nome":v["doseador_A"],
+                    "grupo":v["cuba_A"],
+                    "matprima_cod": v["matprima_cod"],
+                    "matprima_des": v["matprima_des"]
+                })
+            if "doseador_B" in v:
+                dosers.append({
+                    "nome":v["doseador_B"],
+                    "grupo":v["cuba_BC"],
+                    "matprima_cod": v["matprima_cod"],
+                    "matprima_des": v["matprima_des"]
+                })
+            if "doseador_C" in v:
+                dosers.append({
+                    "nome":v["doseador_C"],
+                    "grupo":v["cuba_BC"],
+                    "matprima_cod": v["matprima_cod"],
+                    "matprima_des": v["matprima_des"]
+                })
+            if "doseador" in v:
+                dosers.append({
+                    "nome":v["doseador"],
+                    "grupo":v["cuba"],
+                    "matprima_cod": v["matprima_cod"],
+                    "matprima_des": v["matprima_des"]
+            })
+        dta = {
+            "dosers":json.dumps(dosers, ensure_ascii=False),
+            "formulacaov2":json.dumps(data['formulacao'], ensure_ascii=False),
+            "type_op":data['type']
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'gamaoperatoria':
+        items = []
+        itms = collections.OrderedDict(sorted(data["gamaoperatoria"].items()))
+        for i in range(data["gamaoperatoria"]['nitems']):            
+            key = itms[f'key-{i}']
+            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+            items.append({
+                "item_des":itms[f'des-{i}'], 
+                "item_values":values, 
+                "tolerancia":itms[f'tolerancia-{i}'],
+                "gamaoperatoria_id":data["gamaoperatoria"]['id'],
+                "item_key":key,
+                "item_nvalues":len(values)
+            })
+        dta = {
+            "gamaoperatoria" : json.dumps({ 
+                'id': data["gamaoperatoria"]['id'],
+                'produto_id': data["gamaoperatoria"]["produto_id"],
+                'designacao': data["gamaoperatoria"]["designacao"],
+                'versao': data["gamaoperatoria"]["versao"],
+                "created_date": data["gamaoperatoria"]["created_date"],
+                "updated_date": data["gamaoperatoria"]["updated_date"],
+                "items":items
+            }, ensure_ascii=False),
+            "type_op":"gamaoperatoria"
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'specs':
+        items = []
+        itms = collections.OrderedDict(sorted(data["specs"].items()))
+        for i in range(data["specs"]['nitems']):            
+            key = itms[f'key-{i}']
+            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+            items.append({
+                "item_des":itms[f'des-{i}'], 
+                "item_values":json.dumps(values),
+                "artigospecs_id":data["specs"]['id'],
+                "item_key":key,
+                "item_nvalues":len(values)
+            })
+        dta = {
+            "artigospecs":json.dumps({ 
+                'id': data["specs"]['id'],
+                'produto_id': data["specs"]["produto_id"],
+                'designacao': data["specs"]["designacao"],
+                'versao': data["specs"]["versao"],
+                'cliente_cod': data["specs"]["cliente_cod"],
+                'cliente_nome': data["specs"]["cliente_nome"],
+                "created_date": data["specs"]["created_date"],
+                "updated_date": data["specs"]["updated_date"],
+                "items":items
+            }, ensure_ascii=False),
+            "type_op":"specs"
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'cortes':
+        dml = db.dml(TypeDml.UPDATE,{"cortes_id":data["cortes"]["cortes_id"],"cortesordem_id":data["cortes"]["cortesordem_id"]},"producao_currentsettings",f,None,False)
+        dml.statement = f"""        
+                update 
+                producao_currentsettings pcs
+                JOIN (
+                select 
+                %(csid)s csid,
+                (select 
+                JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
+                ) cortes
+                FROM producao_cortes pc
+                where pc.id=%(cortes_id)s) cortes,
+                (select 
+                JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
+                pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
+                ) cortesordem
+                FROM producao_cortesordem pco
+                WHERE pco.id=%(cortesordem_id)s) cortesordem
+                ) tbl
+                on tbl.csid=pcs.id
+                set
+                pcs.cortes = tbl.cortes,
+                pcs.cortesordem = tbl.cortesordem,
+                pcs.type_op = 'cortes'     
+        """
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'settings':
+        try:
+            with connections["default"].cursor() as cursor:
+                emendas = json.loads(cs["emendas"])
+                for idx,x in enumerate(emendas):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        print(x["emendas"])
+                        emendas[idx]['emendas']=json.dumps({**json.loads(x["emendas"]),"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]})
+                cores = json.loads(cs["cores"])
+                for idx,x in enumerate(cores):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        cores[idx]['cores'][0] = {**x['cores'][0],"core_cod":data["core_cod"],"core_des":data["core_des"]}
+                limites = json.loads(cs["limites"])
+                for x in json.loads(cs["limites"]):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        limites[idx] = {**x}
+                sentido_enrolamento= cs["sentido_enrolamento"]
+                amostragem = cs["amostragem"]
+                ofs = json.loads(cs["ofs"])
+                for idx,x in enumerate(ofs):
+                    if x["of_id"]==data["ofabrico_cod"]:
+                        ofs[idx]['n_paletes_total']=data['n_paletes_total']
+                        dataop = {
+                            "largura": data['artigo_width'],
+                            "core": data['artigo_core'] + '"',
+                            "num_paletes_produzir":data['n_paletes_total'] - data['n_paletes_stock'],
+                            "num_paletes_stock":data['n_paletes_stock'],
+                            "num_paletes_total":data['n_paletes_total'],
+                            "emendas":f"{data['nemendas_rolo']}/rolo (máximo {data['maximo']}% - {data['nemendas_paletescontentor']} paletes/contentor)",
+                            "enrolamento":sentido_enrolamento,
+                            "freq_amos":amostragem,
+                            "user_id":request.user.id,
+                            "tipo_emenda":tipoemendas[str(data["tipo_emenda"])],
+                        }
+                        ofabrico_cod = data["ofabrico_cod"]
+                        dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        dml = db.dml(TypeDml.UPDATE,{
+                            "emendas":json.dumps(emendas,ensure_ascii=False),
+                            "cores":json.dumps(cores,ensure_ascii=False),
+                            "limites":json.dumps(limites,ensure_ascii=False),
+                            "ofs":json.dumps(ofs,ensure_ascii=False),
+                            "sentido_enrolamento":sentido_enrolamento,
+                            "amostragem":amostragem,
+                            "type_op":"settings_of_change"
+                            },"producao_currentsettings",{"id":f'=={request.data["filter"]["csid"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
+    if data['type'] == 'paletizacao':
+        paletizacoes = json.loads(cs["paletizacao"])
+        #ofs = json.loads(cs["ofs"])
+        _paletizacao=data["paletizacao"]["paletizacao"]
+        for idx,x in enumerate(paletizacoes):
+            if x["of_id"]==data["paletizacao"]["of_id"]:
+                data["paletizacao"]["paletizacao"]=json.dumps(_paletizacao,ensure_ascii=False)
+                paletizacoes[idx]= data["paletizacao"]
+        # for idx,x in enumerate(ofs):
+        #     if x["of_id"]==data["paletizacao"]["of_id"]:
+        #         cp = computeLinearMeters(data) #talvez não seja necessário
+        #         cpp = compPaletizacao(cp,_paletizacao) #talvez não seja necessário
+        #         p={}
+        #         if (len(cp.keys())>0):
+        #             p['qty_encomenda'] = cp['qty_encomenda'],
+        #             p['linear_meters'] = cp["linear_meters"],
+        #             p['n_voltas'] = cp["n_voltas"],
+        #             p['sqm_bobine'] = cp["sqm_bobine"]
+        #             p['n_paletes'] = json.dumps(cpp,ensure_ascii=False)
+        #         ofs[idx] = {**ofs[idx],**p}
+        dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Paletização Atual Atualizada com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Paletização Atual', "subTitle":str(error)})
+    if data['type'] == 'nonwovens':
+        dta = {
+            "nonwovens" : json.dumps({**data["nonwovens"]}, ensure_ascii=False),
+            "type_op":"nonwovens"
+        }
+        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        try:
+            with connections["default"].cursor() as cursor:
+                db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Nonwovens Atualizados com Sucesso', "subTitle":f""})
+        except Exception as error:
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Alteração de Nonwovens', "subTitle":str(error)})
+
+        
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ChangeCurrSettingsStatus(request, format=None):
+    data = request.data.get("parameters")
+    def checkOfIsValid(id,data,cursor):
+        f = Filters({"id": id})
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")   
+        return db.executeSimpleList(lambda: (f"""
+            SELECT CASE WHEN 
+            JSON_EXTRACT(formulacaov2, "$.valid")=1 AND 
+            JSON_EXTRACT(cortes, "$.id") IS NOT NULL AND 
+            JSON_EXTRACT(cortesordem, "$.id") IS NOT NULL 
+            THEN 1 ELSE 0 END 
+            valid
+            FROM producao_currentsettings 
+            {f.text}
+        """), cursor, f.parameters)['rows'][0]['valid']
+
+    def updateOP(id,data,cursor,status_str):
+        dml = db.dml(TypeDml.UPDATE,{"id":id},"planeamento_ordemproducao",{},None,False)
+        dml.statement = f"""
+                update planeamento_ordemproducao op
+                join (select t.ofid from
+                (SELECT JSON_EXTRACT(ofs, "$[*].of_id") ofids FROM producao_currentsettings where id=%(id)s) ofs
+                join JSON_TABLE(CAST(ofids as JSON), "$[*]" COLUMNS(ofid INT PATH "$")) t ON TRUE
+                ) t on op.id=t.ofid
+                set 
+                {status_str}
+        """
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    def getLastOrder(ig_id,cursor):
+        f = Filters({"id":ig_id})
+        f.where(False,"and")
+        f.add(f'ig_bobinagem_id = :id', True)
+        f.value("and")  
+        rows = db.executeSimpleList(lambda: (f'select IFNULL(max(`order`),0) n from lotesdosers where closed=0 and status<>0 {f.text}'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows[0]
+        return None
+
+    try:
+        with connections["default"].cursor() as cursor:
+            if (data["status"]==3):
+                print("Em producao")
+                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
+                if (exists==0):
+                    #CHECK IF DOSERS AND CUTS ARE CORRECTLY DEFINED
+                    if checkOfIsValid(data["id"],data,cursor)==1:
+                        dta = {"status":3,"type_op":"status_inproduction"}
+                        if (db.count("audit_currentsettings",{"status":3,"contexid":data["id"]}).count==0):
+                            dta["start_date"]=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        dml = db.dml(TypeDml.UPDATE, dta , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,f"`status`=3,ativa=1,completa=0,inicio='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Iniciada!', "subTitle":f""})
+                    else:
+                        return Response({"status": "error", "id":0, "title": f'A formulação ou Posição dos Cortes não estão corretamente definidos !', "subTitle":""})
+            elif (data["status"]==0):
+                print("redo plan....")
+                pass
+            elif (data["status"]==1):
+                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
+                if (exists==1):
+                        maxOrder = getLastOrder(data["ig_id"],cursor)
+                        dml = db.dml(TypeDml.UPDATE, {"status":1,"type_op":"status_stopped"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,f"`status`=2,ativa=0,completa=0,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
+                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
+                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada/Suspensa!', "subTitle":f""})
+            elif (data["status"]==9):
+                #FINALIZAR ORDEM DE FABRICO
+                exists = db.exists("producao_currentsettings",{"status":"<9"},cursor).exists
+                print("finish")
+                print(exists)
+                if (exists==1):
+                        maxOrder = getLastOrder(data["ig_id"],cursor)
+                        dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished","end_date":datetime.now().strftime('%Y-%m-%d %H:%M:%S')} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        updateOP(data["id"],data,cursor,f"`status`=9,ativa=0,completa=1,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
+                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
+                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Finalizada!', "subTitle":f""})
+                pass
+    except Exception as error:
+        return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})
+    return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
+
+
+
+

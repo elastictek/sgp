@@ -547,8 +547,8 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
             }
 
             if (bobinagem.nome.startsWith("20") && bobinagem.id >= 107127) {
-                if (!values?.largura_bruta || values?.largura_bruta <= 0) {
-                    status.formStatus.error.push({ message: <span>A<b>Largura Bruta</b> tem de ser preenchida!</span> });
+                if (!values?.largura_bruta || values?.largura_bruta < values.lar_util) {
+                    status.formStatus.error.push({ message: <span>A<b>Largura Bruta</b> tem de ser preenchida ou maior que a Largura Útil!</span> });
                 }
             }
 
@@ -812,6 +812,7 @@ export default (props) => {
                     let ns = nwl.find(x=>x.type==1);
                     dt["tiponwinf"] = ni ? ni.artigo_des : null;
                     dt["tiponwsup"] = ns ? ns.artigo_des : null;
+                    
                     setNWList(nwl);
                 }
                 submitting.end();

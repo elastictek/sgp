@@ -156,7 +156,7 @@ const CheckboxFormatter = forwardRef(
     }
 );
 
-export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerStyle, rowStyle, actionColumn, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
@@ -218,13 +218,13 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
             setColumns([
                 ...rowSelection ? [SelectColumn] : [],
                 {
-                    key: 'action', name: '', minWidth: 40, width: 40, sortable: false, resizable: false,
+                    key: 'action', name: '', frozen: frozenActionColumn, minWidth: 40, width: 40, sortable: false, resizable: false,
                     formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
                 }, ...cols]);
         } else {
             setColumns([...rowSelection ? [SelectColumn] : [], ...cols]);
         }
-    }, [dataAPI.getTimeStamp(), cols]);
+    }, [dataAPI.getTimeStamp(),cols]);
 
     const onColumnResize = (idx, width) => {
         console.log("column resize->", idx, "-", width);
@@ -278,7 +278,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
 
     return (
         <Spin loading={dataAPI.isLoading() || loading}>
-            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form })} filterRules={toolbarFilters.moreFilters.rules()} onFinish={toolbarFilters?.onFinish} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} />}
+            {(moreFilters && toolbarFilters?.moreFilters) && <FilterDrawer mask={toolbarFilters.moreFilters?.mask} schema={toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form })} filterRules={toolbarFilters.moreFilters.rules()} onFinish={toolbarFilters?.onFinish} form={toolbarFilters?.form} width={toolbarFilters.moreFilters?.width} setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} dataAPI={dataAPI} />}
             {(!toolbar && title) &&
                 <Container fluid style={{ background: "#f8f9fa", border: "1px solid #dee2e6", borderRadius: "3px", padding: "5px" }}>
                     <Row align='start' wrap="nowrap" gutterWidth={2}>
@@ -300,7 +300,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
                             {toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} />}
                         </div>
                     </Col>
-                    {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small"><SearchOutlined /></Button></Col>}
+                    {search && <Col xs="content" style={{ padding: "0px", alignSelf: "center" }}><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Col>}
                     {settings && <Col xs="content" style={{ alignSelf: "center" }}>
 
                         <Popover

@@ -86,6 +86,7 @@ def PrintMPBuffer(request,format=None):
             "unit":request.data["parameters"]["PCU_0"],
             "qty":float(request.data["parameters"]["QTYPCU_0"]),
             "vcr_num":request.data["parameters"]["VCRNUM_0"],
+            "loc":request.data["parameters"]["LOC_0"],
             "obs":request.data["parameters"]["obs"] if "obs" in request.data["parameters"] else None,
             "data_buffer":utc_time.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")            
         }

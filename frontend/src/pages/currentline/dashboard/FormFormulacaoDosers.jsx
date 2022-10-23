@@ -20,45 +20,64 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import { Cuba } from "./commons/Cuba";
+import {transformFormulacaoDataList} from "./commons";
+import { GiArrowWings } from 'react-icons/gi';
 
 const title = "Alterar Doseadores";
-const useStyles = createUseStyles({});
+const useStyles = createUseStyles({
+    extrusora: {
+        outline: "none !important",
+        background: "#f0f0f0"
+    },
+});
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
 const primaryKeys = [];
 
-const columns = (extrusora, onChange,forInput) => [
+const ExtrusoraTitle = ({ id }) => {
+    const getExtrusora = () => {
+        switch (id) {
+            case -1: return "A";
+            case -2: return "B";
+            case -3: return "C";
+        }
+    }
+    return (<div style={{ fontWeight: 800, textAlign: "right", marginRight: "20px" }}>Extrusora {getExtrusora()}</div>);
+}
+
+const columns = (onChange, forInput) => [
     {
-        key: `cuba_${extrusora}`, sortable: false, name: `Cuba`, frozen: true, minWidth: 65, width: 65, formatter: p => <Cuba value={p.row[`cuba_${extrusora}`]} />,
-        ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row[`cuba_${extrusora}`]} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange(`cuba_${extrusora}`, v, p)} size="small" data={FORMULACAO_CUBAS} keyField="key" textField="value" />}),
+        key: `cuba`, sortable: false, name: `Cuba`, minWidth: 65, width: 65, formatter: p => <>{p.row.id < 0 ? <ExtrusoraTitle id={p.row.id} /> : <Cuba value={p.row.cuba} />}</>,
+        ...((forInput) && { editor: p => <>{p.row.id !== -1 ? <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.cuba} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange(`cuba`, v, p)} size="small" data={FORMULACAO_CUBAS} keyField="key" textField="value" /> : <ExtrusoraTitle id={p.row.id} />}</> }),
+        editorOptions: { editOnClick: true }, colSpan(args) { if (args.type === "ROW" && args.row.id < 0) { return 8; }; return undefined; }
+    },
+    {
+        key: 'doseador', sortable: false, name: `Doseador`, minWidth: 80, width: 80, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador}</b></div>,
+        ...((forInput) && { editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador', v, p)} size="small" data={FORMULACAO_MANGUEIRAS[p.row.extrusora]} keyField="key" textField="key" /> }),
         editorOptions: { editOnClick: true }
     },
-    ...extrusora === "A" ? [{
-        key: 'doseador_A', sortable: false, name: `Doseador`, frozen: true, minWidth: 80, width: 80, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_A}</b></div>,
-        ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_A} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_A', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["A"]} keyField="key" textField="key" />}),
-        editorOptions: { editOnClick: true }
-    }] : [],
-    ...extrusora === "BC" ? [
-        {
-            key: 'doseador_B', sortable: false, name: `Doseador`, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_B}</b></div>,
-            ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_B} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_B', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["B"]} keyField="key" textField="key" />}),
-            editorOptions: { editOnClick: true },
-            colSpan(args) { if (args.type === 'HEADER') { return 2; } return undefined; }
-        },
-        {
-            key: 'doseador_C', sortable: false, name: ``, frozen: true, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_C}</b></div>,
-            ...((forInput) && {editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_C} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_C', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["C"]} keyField="key" textField="key" />}),
-            editorOptions: { editOnClick: true }
-        }
-    ] : [],
-    { key: 'matprima_des', sortable: false, name: `Extrusora ${extrusora}`, frozen: true, formatter: p => <b>{p.row.matprima_des}</b> },
-    { key: 'densidade', sortable: false, name: 'Densidade', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.densidade}</div> },
-    { key: 'arranque', sortable: false, name: 'Arranque', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.arranque} %</div> },
-    { key: 'tolerancia', sortable: false, name: 'Tolerância', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tolerancia} %</div> },
-    { key: 'vglobal', sortable: false, name: '% Global', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.vglobal} %</div> }
+    // ...extrusora === "BC" ? [
+    //     {
+    //         key: 'doseador_B', sortable: false, name: `Doseador`, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_B}</b></div>,
+    //         ...((forInput) && { editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_B} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_B', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["B"]} keyField="key" textField="key" /> }),
+    //         editorOptions: { editOnClick: true },
+    //         colSpan(args) { if (args.type === 'HEADER') { return 2; } return undefined; }
+    //     },
+    //     {
+    //         key: 'doseador_C', sortable: false, name: ``, minWidth: 40, width: 40, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_C}</b></div>,
+    //         ...((forInput) && { editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.doseador_C} ref={(el, h,) => { el?.focus(); }} onChange={(v) => onChange('doseador_C', v, p)} size="small" data={FORMULACAO_MANGUEIRAS["C"]} keyField="key" textField="key" /> }),
+    //         editorOptions: { editOnClick: true }
+    //     }
+    // ] : [],
+    { key: 'matprima_des', sortable: false, name: `Matéria Prima`, formatter: p => p.row.matprima_des },
+    { key: 'densidade', sortable: false, name: 'Densidade', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.densidade}</div> },
+    { key: 'arranque', sortable: false, name: 'Arranque', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.arranque} %</div> },
+    { key: 'tolerancia', sortable: false, name: 'Tolerância', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tolerancia} %</div> },
+    { key: 'vglobal', sortable: false, name: '% Global', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.vglobal} %</div> }
 ];
+
 
 export default ({ record, card, parentReload, setFormTitle, parentRef, closeParent, forInput = true }) => {
     const navigate = useNavigate();
@@ -68,33 +87,58 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const submitting = useSubmitting(true);
-    const dataAPI_A = useDataAPI({ id: "dashb-formulacao-a", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
-    const dataAPI_BC = useDataAPI({ id: "dashb-formulacao-bc", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ id: "dashb-formulacao", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
 
     useEffect(() => {
         submitting.trigger();
         (setFormTitle) && setFormTitle({ title });
-        dataAPI_A.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "A") }, { tstamp: Date.now() });
-        dataAPI_BC.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "BC") }, { tstamp: Date.now() });
+        console.log(record)
+        dataAPI.setData({ rows: transformFormulacaoDataList(record.formulacao) }, { tstamp: Date.now() });
         submitting.end();
     }, [record.formulacao]);
 
     const rowKeyGetter = (row) => {
-        return `${row.extrusora}-${row.matprima_cod}`;
+        if (row.id < 0) {
+            return `e-${row.id}`;
+        }
+        return `${row.extrusora}-${row.doseador}-${row.matprima_cod}`;
     }
 
     const onChange = (field, v, p) => {
-        if (field.startsWith('cuba_')) {
-            const rowsA = dataAPI_A.getData().rows;
-            const rowsBC = dataAPI_BC.getData().rows;
-            dataAPI_A.setData({ rows: rowsA.map(x => (x.matprima_cod === p.row.matprima_cod) ? { ...x, cuba_A: v } : x) }, { tstamp: Date.now() });
-            dataAPI_BC.setData({ rows: rowsBC.map(x => (x.matprima_cod === p.row.matprima_cod) ? { ...x, cuba_BC: v } : x) }, { tstamp: Date.now() });
-        } else if (field === 'doseador_A') {
-            p.onRowChange({ ...p.row, [field]: v }, true);
-        } else if (field === 'doseador_B') {
-            p.onRowChange({ ...p.row, [field]: v, ...((!p.row['doseador_C']) && { doseador_C: v.replace('B', 'C') }) }, true);
-        } else if (field === 'doseador_C') {
-            p.onRowChange({ ...p.row, [field]: v, ...((!p.row['doseador_B']) && { doseador_B: v.replace('C', 'B') }) }, true);
+        if (field === 'cuba') {
+            let rows = dataAPI.getData().rows;
+            rows = rows.map(x => {
+                if (p.row.extrusora === "A" && x.matprima_cod === p.row.matprima_cod) {
+                    return { ...x, cuba: v };
+                } else if (p.row.extrusora === "B" && x.matprima_cod === p.row.matprima_cod) {
+                    if (x.extrusora !== "A") {
+                        return { ...x, cuba: v };
+                    }
+                } else if (p.row.extrusora === "C" && x.matprima_cod === p.row.matprima_cod) {
+                    if (x.extrusora === "C") {
+                        return { ...x, cuba: v };
+                    }
+                }
+                return x;
+            });
+            dataAPI.setData({ rows }, { tstamp: Date.now() });
+        } else if (field === 'doseador') {
+            if (p.row.extrusora === "A") {
+                p.onRowChange({ ...p.row, [field]: v }, true);
+            } else if (p.row.extrusora === "B") {
+                let rows = dataAPI.getData().rows;
+                rows = rows.map(x => {
+                    if (x.extrusora == "C" && x.matprima_cod === p.row.matprima_cod && (x?.doseador===undefined || x.doseador===p.row.doseador.replace('B', 'C'))) {
+                        return { ...x, "doseador": v.replace('B', 'C') };
+                    }else if (p.row.cuba === x.cuba && p.row.doseador === x.doseador && x.matprima_cod === p.row.matprima_cod) {
+                        return { ...x, "doseador": v };
+                    }
+                    return x;
+                });
+                dataAPI.setData({ rows }, { tstamp: Date.now() });
+            } else if (p.row.extrusora === "C") {
+                p.onRowChange({ ...p.row, [field]: v }, true);
+            }
         }
         setIsTouched(true);
     }
@@ -104,60 +148,67 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
         let valid = true;
         const status = { error: [], warning: [], info: [], success: [] };
         const _formulacao = { ...record.formulacao };
-        if (!("formu_materiasprimas_BC" in _formulacao) || !("formu_materiasprimas_A" in _formulacao)) {
-            const formu_materiasprimas_BC = [];
-            const formu_materiasprimas_A = [];
-            for (let x of _formulacao.items) {
-                if (x.extrusora === "A") {
-                    formu_materiasprimas_A.push({
-                        [`arranque_${x.extrusora}`]: x.arranque,
-                        ...(`cuba_${x.extrusora}` in x && { [`cuba_${x.extrusora}`]: x[`cuba_${x.extrusora}`] }),
-                        [`densidade_${x.extrusora}`]: x.densidade,
-                        ...(`doseador_${x.extrusora}` in x && { [`doseador_${x.extrusora}`]: x[`doseador_${x.extrusora}`] }),
-                        [`global`]: x.vglobal,
-                        [`matprima_cod_${x.extrusora}`]: x.matprima_cod,
-                        [`orig_matprima_cod_${x.extrusora}`]: x.matprima_cod,
-                        [`removeCtrl`]: true,
-                        [`tolerancia_${x.extrusora}`]: x.tolerancia
-                    });
-                } else {
-                    formu_materiasprimas_BC.push({
-                        [`arranque_${x.extrusora}`]: x.arranque,
-                        ...(`cuba_${x.extrusora}` in x && { [`cuba_${x.extrusora}`]: x[`cuba_${x.extrusora}`] }),
-                        [`densidade_${x.extrusora}`]: x.densidade,
-                        ...(`doseador_B` in x && { [`doseador_B`]: x[`doseador_B`] }),
-                        ...(`doseador_C` in x && { [`doseador_C`]: x[`doseador_C`] }),
-                        [`global`]: x.vglobal,
-                        [`matprima_cod_${x.extrusora}`]: x.matprima_cod,
-                        [`orig_matprima_cod_${x.extrusora}`]: x.matprima_cod,
-                        [`removeCtrl`]: true,
-                        [`tolerancia_${x.extrusora}`]: x.tolerancia
-                    });
-                }
-            }
-            _formulacao.formu_materiasprimas_BC = formu_materiasprimas_BC;
-            _formulacao.formu_materiasprimas_A = formu_materiasprimas_A;
-        }
-        for (let [i, v] of _formulacao.formu_materiasprimas_A.entries()) {
-            const d = dataAPI_A.getData().rows.find(x => x.matprima_cod === v.matprima_cod_A);
-            if ((!d?.cuba_A || !d?.doseador_A) && valid) { valid = false; }
-            _formulacao.formu_materiasprimas_A[i]["cuba_A"] = d?.cuba_A;
-            _formulacao.formu_materiasprimas_A[i]["doseador_A"] = d?.doseador_A;
-        }
-        for (let [i, v] of _formulacao.formu_materiasprimas_BC.entries()) {
-            const d = dataAPI_BC.getData().rows.find(x => x.matprima_cod === v.matprima_cod_BC);
-            if ((!d?.cuba_BC || !d?.doseador_B || !d?.doseador_C) && valid) { valid = false; }
-            _formulacao.formu_materiasprimas_BC[i]["cuba_BC"] = d?.cuba_BC;
-            _formulacao.formu_materiasprimas_BC[i]["doseador_B"] = d?.doseador_B;
-            _formulacao.formu_materiasprimas_BC[i]["doseador_C"] = d?.doseador_C;
-        }
-        _formulacao["items"] = [...dataAPI_A.getData().rows, ...dataAPI_BC.getData().rows];
 
+        console.log("formulacao....",_formulacao)
+        const rows = dataAPI.getData().rows.filter(v=>v.id>=0);
+        const formu_materiasprimas_A =[];
+        const formu_materiasprimas_B =[];
+        const formu_materiasprimas_C =[];
+        for (let v of rows){
+            if ((!v?.cuba || !v?.doseador) && valid) { valid = false; }
+            if (!valid){
+                break;
+            }
+            if (v.extrusora === "A") {
+                formu_materiasprimas_A.push({
+                    [`arranque`]: v.arranque,
+                    [`cuba`]: v.cuba,
+                    [`densidade`]: v.densidade,
+                    [`doseador`]: v.doseador,
+                    [`global`]: v.vglobal,
+                    [`matprima_cod`]: v.matprima_cod,
+                    [`orig_matprima_cod`]: v.matprima_cod,
+                    [`removeCtrl`]: true,
+                    [`tolerancia`]: v.tolerancia
+                });
+            }else if (v.extrusora === "B") {
+                formu_materiasprimas_B.push({
+                    [`arranque`]: v.arranque,
+                    [`cuba`]: v.cuba,
+                    [`densidade`]: v.densidade,
+                    [`doseador`]: v.doseador,
+                    [`global`]: v.vglobal,
+                    [`matprima_cod`]: v.matprima_cod,
+                    [`orig_matprima_cod`]: v.matprima_cod,
+                    [`removeCtrl`]: true,
+                    [`tolerancia`]: v.tolerancia
+                });
+            }else if (v.extrusora === "C") {
+                formu_materiasprimas_C.push({
+                    [`arranque`]: v.arranque,
+                    [`cuba`]: v.cuba,
+                    [`densidade`]: v.densidade,
+                    [`doseador`]: v.doseador,
+                    [`global`]: v.vglobal,
+                    [`matprima_cod`]: v.matprima_cod,
+                    [`orig_matprima_cod`]: v.matprima_cod,
+                    [`removeCtrl`]: true,
+                    [`tolerancia`]: v.tolerancia
+                });
+            } 
+        }
         if (!valid) {
             status.error.push({ message: "Os doseadores têm de ser todos definidos!" });
             setFormStatus({ ...status });
         } else {
             try {
+                if ("formu_materiasprimas_BC" in _formulacao){
+                    delete _formulacao.formu_materiasprimas_BC;
+                }
+                _formulacao.items = rows;
+                _formulacao.formu_materiasprimas_A=formu_materiasprimas_A;
+                _formulacao.formu_materiasprimas_B=formu_materiasprimas_B;
+                _formulacao.formu_materiasprimas_C=formu_materiasprimas_C;
                 const response = await fetchPost({ url: `${API_URL}/updatecurrentsettings/`, filter: { csid: record.id }, parameters: { type: `formulacao_${record.feature}`, formulacao: { ..._formulacao, valid: 1 } } });
                 if (response.data.status !== "error") {
                     Modal.success({ title: "Doseadores alterados com sucesso!", onOk: () => { parentReload(); closeParent(); } })
@@ -173,36 +224,22 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
         submitting.end();
     }
 
-
     const assignVats = () => {
         let vatPos = 0;
         const _aux = {};
-        const rowsA = dataAPI_A.getData().rows;
-        const rowsBC = dataAPI_BC.getData().rows;
-        dataAPI_A.setData({
-            rows: rowsA.map(x => {
-                let vat = FORMULACAO_CUBAS[vatPos].key;
-                if (x.matprima_cod in _aux) {
-                    vat = _aux[x.matprima_cod];
-                } else {
-                    _aux[x.matprima_cod] = vat;
-                    vatPos++;
-                }
-                return { ...x, cuba_A: vat };
-            })
-        }, { tstamp: Date.now() });
-        dataAPI_BC.setData({
-            rows: rowsBC.map(x => {
-                let vat = FORMULACAO_CUBAS[vatPos].key;
-                if (x.matprima_cod in _aux) {
-                    vat = _aux[x.matprima_cod];
-                } else {
-                    _aux[x.matprima_cod] = vat;
-                    vatPos++;
-                }
-                return { ...x, cuba_BC: vat };
-            })
-        }, { tstamp: Date.now() });
+        let rows = dataAPI.getData().rows;
+        rows = rows.map(x => {
+            if (x.id<0){return x;}
+            let vat = FORMULACAO_CUBAS[vatPos].key;
+            if (x.matprima_cod in _aux) {
+                vat = _aux[x.matprima_cod];
+            } else {
+                _aux[x.matprima_cod] = vat;
+                vatPos++;
+            }
+            return { ...x, cuba: vat };
+        });
+        dataAPI.setData({ rows }, { tstamp: Date.now() });
         setIsTouched(true);
     }
 
@@ -227,51 +264,17 @@ export default ({ record, card, parentReload, setFormTitle, parentRef, closePare
                 //headerStyle={`background-color:#f0f0f0;font-size:10px;`}
                 reportTitle={title}
                 loadOnInit={false}
-                columns={columns('A', onChange,forInput)}
-                dataAPI={dataAPI_A}
+                columns={columns(onChange, forInput)}
+                dataAPI={dataAPI}
                 //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
                 toolbar={false}
                 search={false}
                 moreFilters={false}
                 rowSelection={false}
+                rowClass={(row) => (row?.id < 0 ? classes.extrusora : undefined)}
                 //primaryKeys={primaryKeys}
                 editable={false}
                 rowKeyGetter={rowKeyGetter}
-            //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
-            //selectedRows={selectedRows}
-            //onSelectedRowsChange={setSelectedRows}
-            // leftToolbar={<>
-            //     {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
-            // </>}
-            //content={<PickHolder/>}
-            //paginationPos='top'
-            // toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
-            />
-            <Table
-                //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
-                rowStyle={`font-size:12px;`}
-                //headerStyle={`background-color:#f0f0f0;font-size:10px;`}
-                reportTitle={title}
-                loadOnInit={false}
-                columns={columns('BC', onChange)}
-                dataAPI={dataAPI_BC}
-                //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
-                toolbar={false}
-                search={false}
-                moreFilters={false}
-                rowSelection={false}
-                //primaryKeys={primaryKeys}
-                editable={false}
-                rowKeyGetter={rowKeyGetter}
-            //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
-            //selectedRows={selectedRows}
-            //onSelectedRowsChange={setSelectedRows}
-            // leftToolbar={<>
-            //     {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
-            // </>}
-            //content={<PickHolder/>}
-            //paginationPos='top'
-            // toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
             />
             {parentRef && <Portal elId={parentRef.current}>
                 <Space>

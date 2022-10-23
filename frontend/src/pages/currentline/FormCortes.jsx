@@ -10,6 +10,7 @@ import AlertMessages from "components/alertMessages";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import ResultMessage from 'components/resultMessage';
+import { ConditionalWrapper } from 'components/conditionalWrapper';
 import { Button, Spin, Input, Form, InputNumber, Skeleton, Space } from "antd";
 import { LoadingOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
@@ -67,7 +68,7 @@ const colors = [
     { bcolor: '#ffffff', color: '#000000' }
 ];
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = "form", forInput = true }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = true, forInput = true }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
@@ -123,6 +124,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             setLoading(true);
         }
         (async () => {
+            console.log("UUUUUUUUUUUUUUUUUUUUUUUUUUU-", record)
             const { cortes, cortesordem, ofs } = record;
             const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, token }) : [{ ...cortesordem }];
             const _larguras = JSON.parse(cortes.largura_json);
@@ -258,7 +260,10 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                 <AlertMessages formStatus={formStatus} />
                 <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
                     <Drawer showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
-                    <Form form={form} name={`fps-c`} onFinish={onFinish} onValuesChange={onValuesChange}>
+                    <ConditionalWrapper
+                        condition={wrapForm}
+                        wrapper={children => <Form form={form} name={`fps-c`} onFinish={onFinish} onValuesChange={onValuesChange}>{children}</Form>}
+                    >
                         <FormLayout
                             id="LAY-CORTES"
                             layout="vertical"
@@ -350,7 +355,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 </FieldItem>
                             </FieldSet>
                         </FormLayout>
-                    </Form>
+                    </ConditionalWrapper>
+
                     {parentRef && <Portal elId={parentRef.current}>
                         <Space>
                             {isTouched && <Button type="primary" onClick={() => onFinish(form.getFieldsValue(true))}>Guardar</Button>}

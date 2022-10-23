@@ -24,12 +24,18 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import TitleCard from './TitleCard';
-import {Cuba} from "./commons/Cuba";
+import { Cuba } from "./commons/Cuba";
+import { transformFormulacaoDataList } from "./commons";
 import { usePermission } from "utils/usePermission";
 
 const title = "Formulação";
-const useStyles = createUseStyles({});
-const schema = (options={}) => {
+const useStyles = createUseStyles({
+    extrusora: {
+        outline: "none !important",
+        background: "#f0f0f0"
+    }
+});
+const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
@@ -40,37 +46,43 @@ const cubaValue = (v) => {
     }
     return null;
 }
-const columns = (extrusora) => [
-    { key: `cuba_${extrusora}`, sortable: false, name: ``, frozen: true, minWidth: 45, width: 45, formatter: p => <Cuba value={p.row[`cuba_${extrusora}`]} /> },
-    ...extrusora === "A" ? [{ key: 'doseador_A', sortable: false, name: ``, frozen: true, minWidth: 60, width: 60, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_A}</b></div> }] : [],
-    ...extrusora === "BC" ? [
-        { key: 'doseador_B', sortable: false, name: ``, frozen: true, minWidth: 30, width: 30, colSpan(args) { if (args.type === 'HEADER') { return 2; } return undefined; }, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_B}</b></div> },
-        { key: 'doseador_C', sortable: false, name: ``, frozen: true, minWidth: 30, width: 30, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador_C}</b></div> }
-    ] : [],
-    { key: 'matprima_des', sortable: false, name: `Extrusora ${extrusora}`, frozen: true, formatter: p => <b>{p.row.matprima_des}</b> },
-    { key: 'densidade', sortable: false, name: 'Densidade', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.densidade}</div> },
-    { key: 'arranque', sortable: false, name: 'Arranque', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.arranque} %</div> },
-    { key: 'tolerancia', sortable: false, name: 'Tolerância', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tolerancia} %</div> },
-    { key: 'vglobal', sortable: false, name: '% Global', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.vglobal} %</div> }
+
+const columns = () => [
+    {key: `cuba`, sortable: false, name: `Cuba`, minWidth: 65, width: 65, formatter: p => <>{p.row.id < 0 ? <ExtrusoraTitle id={p.row.id} /> : <Cuba value={p.row.cuba} />}</>,
+        colSpan(args) { if (args.type === "ROW" && args.row.id < 0) { return 8; }; return undefined; }},
+    {key: 'doseador', sortable: false, name: `Doseador`, minWidth: 80, width: 80, formatter: p => <div style={{ textAlign: "center", fontSize: "14px" }}><b>{p.row.doseador}</b></div>},
+    { key: 'matprima_des', sortable: false, name: `Matéria Prima`, formatter: p => p.row.matprima_des },
+    { key: 'densidade', sortable: false, name: 'Densidade', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.densidade}</div> },
+    { key: 'arranque', sortable: false, name: 'Arranque', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.arranque} %</div> },
+    { key: 'tolerancia', sortable: false, name: 'Tolerância', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tolerancia} %</div> },
+    { key: 'vglobal', sortable: false, name: '% Global', width: 80, formatter: p => <div style={{ textAlign: "right" }}>{p.row.vglobal} %</div> }
 ];
+const ExtrusoraTitle = ({ id }) => {
+    const getExtrusora = () => {
+        switch (id) {
+            case -1: return "A";
+            case -2: return "B";
+            case -3: return "C";
+        }
+    }
+    return (<div style={{ fontWeight: 800, textAlign: "right", marginRight: "20px" }}>Extrusora {getExtrusora()}</div>);
+}
 
 export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
     const permission = usePermission({ allowed: { producao: 200, planeamento: 200 } });
-   
-    const dataAPI_A = useDataAPI({ id: "dashb-formulacao-a", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
-    const dataAPI_BC = useDataAPI({ id: "dashb-formulacao-bc", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ id: "dashb-formulacao", payload: { parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
 
     const [modalParameters, setModalParameters] = useState({});
     const [showFormulacaoModal, hideFormulacaoModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal lazy={true} footer="ref" onCancel={hideFormulacaoModal} width={1100} height={700}>
+        <ResponsiveModal type="drawer" lazy={true} footer="ref" onCancel={hideFormulacaoModal} width={1000}>
             <FormFormulacao forInput={modalParameters.forInput} record={{ ...record, ...modalParameters }} parentReload={parentReload} />
         </ResponsiveModal>
     ), [modalParameters]);
     const [showFormulacaoDosersModal, hideFormulacaoDosersModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal lazy={true} footer="ref" onCancel={hideFormulacaoDosersModal} width={1100} height={550}>
+        <ResponsiveModal type="drawer" lazy={true} footer="ref" onCancel={hideFormulacaoDosersModal}>
             <FormFormulacaoDosers forInput={modalParameters.forInput} record={{ ...record, ...modalParameters }} parentReload={parentReload} />
         </ResponsiveModal>
     ), [modalParameters]);
@@ -79,14 +91,15 @@ export default ({ record, card, parentReload }) => {
     const onFilterChange = (value, changedValues) => { console.log("aaaa", value, changedValues) };
 
     useEffect(() => {
-        console.log("Entrei formulacao---",record)
-        if (record?.formulacao){
-            dataAPI_A.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "A") }, { tstamp: Date.now() });
-            dataAPI_BC.setData({ rows: record.formulacao.items.filter(v => v.extrusora === "BC") }, { tstamp: Date.now() });
+        if (record?.formulacao) {
+            dataAPI.setData({ rows: transformFormulacaoDataList(record.formulacao) }, { tstamp: Date.now() });
         }
     }, [record.formulacao]);
 
     const rowKeyGetter = (row) => {
+        if (row.id < 0) {
+            return `e-${row.id}`;
+        }
         return `${row.extrusora}-${row.matprima_cod}`;
     }
 
@@ -103,10 +116,10 @@ export default ({ record, card, parentReload }) => {
         }
     }
 
-    const ofClosed = () =>{
-        if (record?.status===9 || !record?.status){
+    const ofClosed = () => {
+        if (record?.status === 9 || !record?.status) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
@@ -115,69 +128,35 @@ export default ({ record, card, parentReload }) => {
         <>
             <Card
                 hoverable
-                headStyle={{padding:"0px 32px 0px 12px"}}
-                style={{ height: "100%", border:"1px solid #8c8c8c" }} 
+                headStyle={{ padding: "0px 32px 0px 12px" }}
+                style={{ height: "100%", border: "1px solid #8c8c8c" }}
                 bodyStyle={{ height: "calc(100% - 61px)" }}
                 size="small"
                 title={<TitleCard data={record} title={card.title} />}
-                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow(null,[!ofClosed()])} onClick={() => onEdit("doseadores")}>Doseadores</Button><Button disabled={!permission.allow(null)} onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
+                extra={<>{Object.keys(record).length > 0 && <Space><Button disabled={!permission.allow(null, [!ofClosed()])} onClick={() => onEdit("doseadores")}>Doseadores</Button><Button disabled={!permission.allow(null)} onClick={() => onEdit("formulacao")} icon={<EditOutlined />} /></Space>}</>}
             >
                 {Object.keys(record).length > 0 &&
-                <YScroll>
-                    <Table
-                        //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
-                        rowStyle={`font-size:10px;`}
-                        headerStyle={`background-color:#f0f0f0;font-size:10px;`}
-                        reportTitle={title}
-                        loadOnInit={false}
-                        columns={columns('A')}
-                        dataAPI={dataAPI_A}
-                        //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
-                        toolbar={false}
-                        search={false}
-                        moreFilters={false}
-                        rowSelection={false}
-                        //primaryKeys={primaryKeys}
-                        editable={false}
-                        rowKeyGetter={rowKeyGetter}
-                    //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
-                    //selectedRows={selectedRows}
-                    //onSelectedRowsChange={setSelectedRows}
-                    // leftToolbar={<>
-                    //     {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
-                    // </>}
-                    //content={<PickHolder/>}
-                    //paginationPos='top'
-                    // toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
-                    />
-                    <Table
-                        //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
-                        rowStyle={`font-size:10px;`}
-                        headerStyle={`background-color:#f0f0f0;font-size:10px;`}
-                        reportTitle={title}
-                        loadOnInit={false}
-                        columns={columns('BC')}
-                        dataAPI={dataAPI_BC}
-                        //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
-                        toolbar={false}
-                        search={false}
-                        moreFilters={false}
-                        rowSelection={false}
-                        //primaryKeys={primaryKeys}
-                        editable={false}
-                        rowKeyGetter={rowKeyGetter}
-                    //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
-                    //selectedRows={selectedRows}
-                    //onSelectedRowsChange={setSelectedRows}
-                    // leftToolbar={<>
-                    //     {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
-                    // </>}
-                    //content={<PickHolder/>}
-                    //paginationPos='top'
-                    // toolbarFilters={{ form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange, filters: <ToolbarFilters dataAPI={dataAPI} /> }}
-                    />
-                </YScroll>
-}
+                    <YScroll>
+                        <Table
+                            //title={!setFormTitle && <Title style={{ marginBottom: "0px" }} level={4}>{title}</Title>}
+                            rowStyle={`font-size:12px;`}
+                            //headerStyle={`background-color:#f0f0f0;font-size:10px;`}
+                            reportTitle={title}
+                            loadOnInit={false}
+                            columns={columns()}
+                            dataAPI={dataAPI}
+                            //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+                            toolbar={false}
+                            search={false}
+                            moreFilters={false}
+                            rowSelection={false}
+                            rowClass={(row) => (row?.id < 0 ? classes.extrusora : undefined)}
+                            //primaryKeys={primaryKeys}
+                            editable={false}
+                            rowKeyGetter={rowKeyGetter}
+                        />
+                    </YScroll>
+                }
             </Card>
         </>
     );

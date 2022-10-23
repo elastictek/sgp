@@ -178,6 +178,8 @@ class BaseCurrentSettings(models.Model):
     created = models.DateTimeField(blank=True, null=True)
     start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
     end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
+    formulacaov2 = models.JSONField(blank=True, null=True)
+    ignore_audit = models.IntegerField(verbose_name="No Log", null=True)
     class Meta:
         abstract = True
 

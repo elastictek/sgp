@@ -230,11 +230,11 @@ class BaseSql:
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
-                execSql = self.computeSequencial(sql(), parameters)
+                execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
                 cursor.execute(execSql["sql"],execSql["parameters"])
                 rows = fetchall(cursor, ignore)
         else:
-            execSql = self.computeSequencial(sql(), parameters)
+            execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
             rows = fetchall(connOrCursor, ignore)
         return {"rows": rows}

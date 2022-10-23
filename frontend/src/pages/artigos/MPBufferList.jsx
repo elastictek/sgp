@@ -8,7 +8,7 @@ import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
-import loadInit from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag } from "antd";
@@ -24,6 +24,7 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeD
 import ToolbarTitle from 'components/ToolbarTitle';
 import { Quantity, ColumnPrint, FormPrint } from './commons';
 
+const focus = (el, h,) => { el?.focus(); };
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
@@ -43,28 +44,14 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     );
 }
 
-
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
-    { fbobinagem: { label: "Nº Bobinagem", field: { type: 'input', size: 'small' } } },
-    { fdata: { label: "Data Bobinagem", field: { type: "rangedate", size: 'small' } } },
-    { ftime: { label: "Início/Fim", field: { type: "rangetime", size: 'small' } } },
-    { fduracao: { label: "Duração", field: { type: 'input', size: 'small' }, span: 12 } },
-    { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fdiam: { label: "Diâmetro", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fcore: { label: "Core", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
-    //Defeitos
-    {
-        freldefeitos: { label: " ", field: TipoRelation, span: 4 },
-        fdefeitos: { label: 'Defeitos', field: { type: 'selectmulti', size: 'small', options: BOBINE_DEFEITOS }, span: 20 }
-    },
-    //Estados
-    { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
-    { fofabrico: { label: "Ordem de Fabrico", field: { type: 'input', size: 'small' } } },
-    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' } } },
-    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } }
+    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
+    { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
+    { fvcr: { label: "Cód. Movimento", field: { type: 'input', size: 'small' } } },
+    { fdate: { label: "Data Movimento", field: { type: "rangedate", size: 'small' } } }
 ];
-
 
 const useStyles = createUseStyles({
     noOutline: {
@@ -75,10 +62,11 @@ const useStyles = createUseStyles({
     }
 });
 
+const title = "Matérias Primas";
 const TitleForm = ({ data, onChange, form }) => {
     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
     return (<ToolbarTitle title={<>
-        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>Matérias Primas em Buffer</span></Col>
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}{form.getFieldValue("loc") !== '-1' ? ` em ${form.getFieldValue("loc")}` : ""}</span></Col>
         <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
     </>} right={
         <Col xs="content">
@@ -117,98 +105,119 @@ const TitleForm = ({ data, onChange, form }) => {
     } />);
 }
 
+const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
+    const items = [
+        /* { label: 'Eliminar Entrada', key: 'delete', icon: <DeleteOutlined /> } */
+    ];
+    return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
+}
 
+const InputNumberEditor = ({ field, p, ...props }) => {
+    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
+}
 
 export default (props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "mpbufflerlist", payload: { url: `${API_URL}/stocklistbuffer/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [{ column: 'CREDATTIM_0', direction: 'DESC' }] } });
+    const submitting = useSubmitting(true);
+    const dataAPI = useDataAPI({ id: "mpbufflerlist", payload: { url: `${API_URL}/stocklistbuffer/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
     const primaryKeys = ['ROWID'];
     const [modalParameters, setModalParameters] = useState({});
+    const defaultFilters = { type: "-1", loc: "BUFFER" };
+    const defaultSort = [{ column: 'CREDATTIM_0', direction: 'DESC' }];
     const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
         <ResponsiveModal title={modalParameters.title} footer="none" onCancel={hidePrintModal} width={500} height={280}><FormPrint v={{ ...modalParameters }} /></ResponsiveModal>
     ), [modalParameters]);
     const columns = [
-        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={()=>onPrint(p.row)}/>  },
+        { key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         { key: 'LOT_0', name: 'Lote', width: 180, frozen: true },
         { key: 'ITMREF_0', name: 'Artigo Cód.', width: 180, frozen: true },
         { key: 'ITMDES1_0', name: 'Artigo' },
-        { key: 'VCRNUM_0', name: 'Transação' },
+        { key: 'VCRNUM_0', name: 'Cód. Movimento' },
         { key: 'QTYPCU_0', name: 'Qtd.', width: 110, formatter: p => <Quantity v={p.row.QTYPCU_0} u={p.row.PCU_0} /> },
         { key: 'LOC_0', name: 'Localização', width: 110 },
         { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
 
-
-    const onPrint = (row)=>{
-        setModalParameters({title:"Imprimir Etiqueta",row});
-        showPrintModal();
+    const editable = (row) => {
+        return (modeEdit.datagrid && allowEdit.datagrid && row?.valid===1);
+    }
+    const editableClass = (row)=>{
+        return (modeEdit.datagrid && row?.valid===1) && classes.edit;
     }
 
-    const loadData = ({ signal }) => {
-        const { ...initFilters } = loadInit({ type: "-1", loc: "BUFFER" }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
-        formFilter.setFieldsValue({ ...initFilters });
-        dataAPI.addFilters(initFilters, true, true);
-        //dataAPI.addParameters({ typelist }, true, true);
-        dataAPI.fetchPost({ signal });
+    const onPrint = (row) => {
+        setModalParameters({ title: "Imprimir Etiqueta", row });
+        showPrintModal();
     }
 
     useEffect(() => {
         const controller = new AbortController();
-        loadData({ signal: controller.signal });
+        loadData({ init: true, signal: controller.signal });
         return (() => controller.abort());
 
     }, [location?.state?.type, location?.state?.loc]);
+
+    const loadData = ({ init = false, signal }) => {
+        if (init) {
+            let { ...initFilters } = loadInit(defaultFilters, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
+            let {filterValues,fieldValues} = fixRangeDates(['fdate'], initFilters);
+            formFilter.setFieldsValue({ ...fieldValues });
+            dataAPI.addFilters(filterValues, true, false);
+            dataAPI.setSort(defaultSort);
+            dataAPI.addParameters({}, true, false);
+            dataAPI.fetchPost({ signal });
+        }
+        submitting.end();
+    }
 
     const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
                 //remove empty values
-                const { ...vals } = Object.fromEntries(Object.entries({ ...dataAPI.getAllFilter(), ...values }).filter(([_, v]) => v !== null && v!==''));
+                const { ...vals } = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
                 const _values = {
                     ...vals,
                     fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
                     fdate: getFilterRangeValues(vals["fdate"]?.formatted)
                 };
-                dataAPI.addFilters(_values);
+                dataAPI.addFilters(_values, true);
+                dataAPI.addParameters({});
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
         }
     };
+
     const onFilterChange = (changedValues, values) => {
         if ("type" in changedValues) {
-            dataAPI.addFilters({type:changedValues.type}, false, true);
+            dataAPI.addFilters({ type: changedValues.type }, false, true);
             dataAPI.fetchPost();
         } else if ("loc" in changedValues) {
-            dataAPI.addFilters({loc:changedValues.loc}, false, true);
+            dataAPI.addFilters({ loc: changedValues.loc }, false, true);
             dataAPI.fetchPost();
         }
-        
-
-        /* if ("typelist" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), typelist: changedValues.typelist, tstamp: Date.now() }, replace: true });
-        } else if ("type" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
-        } else if ("valid" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), valid: changedValues.valid, tstamp: Date.now() }, replace: true });
-        } */
     };
+
+
+    const onAction = (item,row) => {
+        console.log(item,row);
+    }
 
     return (
         <>
-            {/*  <ToolbarTitle data={dataAPI.getAllFilter()} onChange={onFilterChange} form={formFilter} /> */}
             <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />
             <Table
-                //title=""
+                loading={submitting.state}
                 reportTitle="Matérias Primas em buffer"
+                actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+                frozenActionColumn={true}
                 loadOnInit={false}
                 columns={columns}
                 dataAPI={dataAPI}
-                //actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
                 toolbar={true}
                 search={true}
                 moreFilters={true}
@@ -216,15 +225,7 @@ export default (props) => {
                 primaryKeys={primaryKeys}
                 editable={true}
                 clearSort={true}
-                //rowHeight={formFilter.getFieldValue('typelist') === "C" ? 44 : 28}
-                //rowClass={(row) => (row?.status === 0 ? classes.notValid : undefined)}
-                //selectedRows={selectedRows}
-                //onSelectedRowsChange={setSelectedRows}
-                leftToolbar={<>
-                    {/* <Button type='primary' icon={<AppstoreAddOutlined />} onClick={(showNewLoteModal)}>Novo Lote</Button> */}
-                </>}
-                //content={<PickHolder/>}
-                //paginationPos='top'
+                leftToolbar={<></>}
                 toolbarFilters={{
                     form: formFilter, schema, wrapFormItem: true,
                     onFinish: onFilterFinish, onValuesChange: onFilterChange,

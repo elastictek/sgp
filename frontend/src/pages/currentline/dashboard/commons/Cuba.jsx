@@ -32,7 +32,7 @@ const StyledCuba = styled.div`
     }
 `;
 
-export const getValue = (v) => (v) ? FORMULACAO_CUBAS.find(x => x.key === v)?.value : null;
+export const getValue = (v) => (v) ? FORMULACAO_CUBAS.find(x => x.key == v)?.value : null;
 
 export const Cuba = ({ value }) => {
     const val = getValue(value);

@@ -46,6 +46,7 @@ const PickReciclado = lazy(() => import('./picking/PickReciclado'));
 const PickNWList = lazy(() => import('./picking/PickNWList'));
 const PickGranuladoList = lazy(() => import('./picking/PickGranuladoList'));
 const GranuladoList = lazy(() => import('./artigos/GranuladoList'));
+const MPAlternativas = lazy(() => import('./artigos/MPAlternativas'));
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 
@@ -134,6 +135,7 @@ const RenderRouter = () => {
                 { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
                 { path: "artigos/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
+                { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

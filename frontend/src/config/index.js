@@ -14,11 +14,11 @@ export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
-export const RECICLADO_ARTIGO = {cod:"R00000000000001",des:"Reciclado ElasticTek"};
+export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
 //DOSERS
-export const DOSERS = [{value:'A1'}, {value:'A2'}, {value:'A3'}, {value:'A4'}, {value:'A5'}, {value:'A6'}, {value:'B1'}, {value:'B2'}, {value:'B3'}, {value:'B4'}, {value:'B5'}, {value:'B6'}, {value:'C1'}, {value:'C2'}, {value:'C3'}, {value:'C4'}, {value:'C5'}, {value:'C6'}]
+export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES
-export const COLORS = ["#d50329","#2fb48e","#8dbbca","#dfcc88","#9e4f36","#bc5fcb","#02b5f7","#f0cd48"];
+export const COLORS = ["#d50329", "#2fb48e", "#8dbbca", "#dfcc88", "#9e4f36", "#bc5fcb", "#02b5f7", "#f0cd48"];
 //ORDEM FABRICO TIPO ANEXOS
 export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Processo" }, { value: "Ficha Técnica", key: "Ficha Técnica" }, { value: "Resumo de Produção", key: "Resumo de Produção" },
 { value: "Packing List", key: "Packing List" },
@@ -46,16 +46,21 @@ export const FORMULACAO_MANGUEIRAS = {
     A: [{ key: 'A1' }, { key: 'A2' }, { key: 'A3' }, { key: 'A4' }, { key: 'A5' }, { key: 'A6' }], BC: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }, { key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }],
     B: [{ key: 'B1' }, { key: 'B2' }, { key: 'B3' }, { key: 'B4' }, { key: 'B5' }, { key: 'B6' }], C: [{ key: 'C1' }, { key: 'C2' }, { key: 'C3' }, { key: 'C4' }, { key: 'C5' }, { key: 'C6' }]
 };
-export const FORMULACAO_CUBAS = [{ key: 1, value: "A" }, { key: 2, value: "B" },{ key: 3, value: "C" },{ key: 4, value: "D" },{ key: 5, value: "E" },{ key: 6, value: "F" },{ key: 7, value: "G" },{ key: 8, value: "H" },{ key: 9, value: "I" },{ key: 10, value: "J" }];
+export const FORMULACAO_CUBAS = [{ key: 1, value: "A" }, { key: 2, value: "B" }, { key: 3, value: "C" }, { key: 4, value: "D" }, { key: 5, value: "E" }, { key: 6, value: "F" }, { key: 7, value: "G" }, { key: 8, value: "H" }, { key: 9, value: "I" }, { key: 10, value: "J" }];
 export const FORMULACAO_EXTRUSORAS_VAL = [5, 22.5, 45, 22.5, 5];
 export const FORMULACAO_TOLERANCIA = 0.5;
 const ponderacaoExtrusoras = () => {
-    const p = [0, 0];
+    const p = [0, 0, 0, 0];
     for (const [index, value] of FORMULACAO_EXTRUSORAS_COD.entries()) {
         if (value === "A") {
             p[0] += FORMULACAO_EXTRUSORAS_VAL[index];
         } else {
             p[1] += FORMULACAO_EXTRUSORAS_VAL[index];
+            if (value === "B") {
+                p[2] += FORMULACAO_EXTRUSORAS_VAL[index];
+            } else if (value === "C") {
+                p[3] += FORMULACAO_EXTRUSORAS_VAL[index];
+            }
         }
     }
     return p;
@@ -104,5 +109,5 @@ export const BOBINE_DEFEITOS = [
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' },{ value: 'tr', label: 'Troca Rápida' },{ value: 'prop', label: 'Propriedades' }
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }
 ];

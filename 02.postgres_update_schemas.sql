@@ -24,6 +24,7 @@ OPTIONS (import_default 'true');
 
 
 DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_list;
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_ofabrico_list
 TABLESPACE pg_default
 AS
@@ -111,7 +112,6 @@ WITH DATA;
 
 ALTER TABLE IF EXISTS public.mv_ofabrico_list
     OWNER TO postgres;
-
 
 
 DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_list_dev;
@@ -203,7 +203,8 @@ WITH DATA;
 
 ALTER TABLE IF EXISTS public.mv_ofabrico_list_dev
     OWNER TO postgres;
-	
+
+
 DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_list_test;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_ofabrico_list_test
@@ -293,3 +294,4 @@ WITH DATA;
 
 ALTER TABLE IF EXISTS public.mv_ofabrico_list_test
     OWNER TO postgres;
+

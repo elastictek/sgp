@@ -32,7 +32,7 @@ export const ColumnPrint = ({ record, dataAPI, onClick }) => {
             Modal.error({ title: 'Erro ao Imprimir Etiqueta', content: response.data.title });
         }
     }
-    return (<>{record.LOC_0==="BUFFER" && <Button onClick={onClick ? onClick : onPrintClick} icon={<PrinterOutlined />}></Button>}</>);
+    return (<>{(record.LOC_0==="BUFFER" || record.LOC_0==="ARM") && <Button onClick={onClick ? onClick : onPrintClick} icon={<PrinterOutlined />}></Button>}</>);
 }
 
 export const FormPrint = ({ v, parentRef, closeParent }) => {

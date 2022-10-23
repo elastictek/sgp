@@ -47,7 +47,6 @@ dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
 
-
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
@@ -95,7 +94,6 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
             if (not hasFilters):
                 hasFilters = f.hasFilters
     return {"hasFilters": hasFilters, "text": txt, "parameters": p}
-
 
 def rangeP(data, key, field, fieldDiff=None,pName=None):
     ret = {}
@@ -174,7 +172,12 @@ def export(sql, db_parameters, parameters,conn_name):
 def inProduction(data,cursor):
         response = db.executeSimpleList(lambda: (
             f"""
-                select * from
+                select 
+                    `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,
+                    `status`,`observacoes`,`start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`type_op`,
+                    `timestamp`,`action`,`contextid`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,`dosers`,`created`,`limites`,
+                    `ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` formulacao, mx_id
+                 from
                 (
                 SELECT acs.*, max(acs.id) over () mx_id 
                 from producao_currentsettings cs
@@ -197,20 +200,28 @@ def MateriasPrimasList(request, format=None):
     connection = connections[connMssqlName].cursor()    
     #connection = connections[connGatewayName].cursor()    
     type = int(request.data['filter']['type'] if 'type' in request.data['filter'] else -1)
-    loc = request.data['filter']['loc'] if 'loc' in request.data['filter'] else -1
+    loc = request.data['filter']['loc'] if 'loc' in request.data['filter'] and request.data['filter']['loc']!="-1" else None
+    lookup = request.data["parameters"]["lookup"] if "parameters" in request.data and "lookup" in request.data["parameters"] else False
     f = Filters(request.data['filter'])
     f.setParameters({
         # "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        "ITMREF_0": {"value": lambda v: v.get('fitm'), "field": lambda k, v: f'ST."{k}"'},
         "VCRNUM_0": {"value": lambda v: v.get('fvcr'), "field": lambda k, v: f'ST."{k}"'},
         "LOT_0": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'ST."{k}"'},
+        "LOC_0": {"value": lambda v: v.get('floc'), "field": lambda k, v: f'ST."{k}"'},
         "QTYPCU_0": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'"{k}"'},
-        **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'ST."CREDATTIM_0"::date')
+        **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'CONVERT(date, ST."CREDATTIM_0")')
         # "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
         # "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
     }, True)
     f.where(False,"and")
     f.auto()
     f.value("and")
+
+    print("simple")
+    print(f.text)
+    print(f.parameters)
+    print(request.data['filter'])
 
     f2 = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ['ITMREF_0', 'ITMDES1_0'], "table":"mprima"}
@@ -221,17 +232,17 @@ def MateriasPrimasList(request, format=None):
         fP = {}
         #v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
         v = [] if name not in data else data[name]
-        dt = [o['value'] for o in v]
-        value = None if len(v)==0 else 'in:' + ','.join(f"{w}" for w in dt)
-        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
+        dt = [o['value'] for o in v if o["value"] is not None]
+        if len(dt) > 0:
+            value = None if len(v)==0 else 'in:' + ','.join(f"{w}" for w in dt)
+            fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
         f.setParameters({**fP}, True)
         f.auto()
         f.where(False, hasFilters)
         f.value()
         return f
-    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
-    print(flocation.text)
-
+    #flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
+    flocation = filterLocationMultiSelect({"loc":[{"value":loc}]},'loc','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
 
     parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
     dql = dbmssql.dql(request.data, False,False,[{"column":"CREDATTIM_0", "direction":"DESC"}])
@@ -249,55 +260,11 @@ def MateriasPrimasList(request, format=None):
     elif type==4:
         typeFilter = f""" and (ST."ITMREF_0" LIKE 'R000%%' and LOWER(mprima."ITMDES1_0") LIKE 'reciclado%%') """
 
-    #locFilter = f""" and "LOC_0" in ('{loc}') """ if loc!="-1" else ""
-
-    cols = f'''*'''
-    # sql = lambda p, c, s: (
-    #     f"""
-
-    #         SELECT {c(f'{cols}')} FROM(
-    #             SELECT
-    #             ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
-    #             SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
-    #             ST."QTYPCU_0",ST."PCU_0",mprima."ITMDES1_0"
-    #             FROM {sageAlias}."STOJOU" ST
-    #             JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-    #             where 1=1
-    #             {locFilter} 
-    #             {typeFilter}
-    #             {f.text} {f2["text"]} {flocation.text}
-    #             --AND NOT EXISTS(SELECT 1 FROM "SGP-PROD".loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
-
-    #         ) t
-    #         where (QTY_SUM > 0)
-    #         {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
-    #     """
-    # )
-
-        # SELECT {c(f'{cols}')} FROM(
-        # SELECT
-        # ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
-        # SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
-        # ST."QTYPCU_0",ST."PCU_0",mprima."ITMDES1_0"
-        # FROM ELASTICTEK.STOCK STK
-        # JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
-        # JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-        # WHERE 1=1 
-        # {typeFilter}
-        # {f.text} {f2["text"]}
-        # ) t
-        # where (QTY_SUM > 0)
-        # {flocation.text} {locFilter}
-        # {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}    
-
-
+    cols = f"""*"""
     sql = lambda p, c, s: (
         f"""
-
-
-            SELECT * FROM(
-            SELECT
-            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
+            SELECT {c(f'{cols}')} FROM(
+            SELECT DISTINCT ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
             SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
             LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
             ST."PCU_0",mprima."ITMDES1_0"
@@ -310,27 +277,17 @@ def MateriasPrimasList(request, format=None):
             {f.text} {f2["text"]}
             ) t
             where (QTYPCU_0 > 0 AND QTY_SUM>0)
-            and "LOC_0" in ('BUFFER')
             {flocation.text}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-
-
-
-
-
-
-
-
-
-    
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
 
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
-    print("----------------------------")
-    print("sql")
-    response = dbmssql.executeList(sql, connection, parameters, [])
+    if lookup:
+        response = dbmssql.executeSimpleList(sql(lambda v:'',lambda v:v,lambda v:v), connection, parameters, [])
+    else:
+        response = dbmssql.executeList(sql, connection, parameters, [])
     return Response(response)
 
 
@@ -579,24 +536,14 @@ def GranuladoListInLine(request, format=None):
                 where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
                 ),
                 FORMULACAO AS(
-                select formulacao
+                select formulacaov2
                 from producao_currentsettings cs
                 where status=3
                 ),
                 FORMULACAO_DOSERS AS(
                 SELECT doser,matprima_cod, arranque,cuba,matprima_des
                 FROM FORMULACAO F,
-                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_A",doser VARCHAR(3) PATH "$.doseador_A",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
-                WHERE doser is not null and arranque>0
-                UNION
-                SELECT doser,matprima_cod, arranque,cuba,matprima_des
-                FROM FORMULACAO F,
-                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_B",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
-                WHERE doser is not null and arranque>0
-                UNION
-                SELECT doser,matprima_cod, arranque,cuba,matprima_des
-                FROM FORMULACAO F,
-                JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_C",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+                JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
                 WHERE doser is not null and arranque>0
                 )
                 SELECT {c(f'{dql.columns}')} 
@@ -625,16 +572,23 @@ def GranuladoList(request, format=None):
     f = Filters(request.data['filter'])
 
     f.setParameters({
-        "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'agg_of_id'},
-       # **rangeP(f.filterData.get('forderdate'), 'ORDDAT_0', lambda k, v: f'"enc"."{k}"'),
-       #**rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
-       #"LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'},
-       #"status": {"value": lambda v: statusFilter(v.get('ofstatus')), "field": lambda k, v: f'"of"."{k}"'}
+       **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+       "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+       "fof": {"value": lambda v: v.get('fof')},
+       "vcr_num": {"value": lambda v: v.get('fvcr')},
+       "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+       "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+       "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
     }, True)
     f.where(False,"and")
     f.auto()
     f.value()
-    parameters = {**f.parameters}
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
     dql = db.dql(request.data, False)
     cols = f"""t.*,acs.ofs ->> "$[*].of_cod" ofs"""
     dql.columns=encloseColumn(cols,False)
@@ -644,18 +598,18 @@ def GranuladoList(request, format=None):
                 {c(f'{dql.columns}')}
             from(
             select distinct 
-            t.type_mov,t.artigo_cod,t.n_lote,t.t_stamp,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.`order`,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder
+            t.type_mov,t.artigo_cod,t.n_lote,t.t_stamp,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.`order`,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
             ,(select GROUP_CONCAT(tld.doser) dosers from lotesdoserslinha tld where tld.loteslinha_id=t.loteslinha_id) dosers
             from(
             select ld.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ld.t_stamp,ll.qty_lote,ll.vcr_num,ll.artigo_des,
             MAX(ld.`order`) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
-            ld.`order`,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder
+            ld.`order`,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed
             from lotesdoserslinha ld
             JOIN lotesgranuladolinha ll on ll.id=ld.loteslinha_id
             WHERE ld.type_mov in (0,1,2) AND ld.closed=0 AND ld.`status`<>0
             ) t
             where `order` = max_order
-            {f.text}
+            {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) t
             join audit_currentsettings acs on acs.id=t.audit_cs_id
@@ -874,7 +828,7 @@ def UpdateGranulado(request, format=None):
                     del gr["maxorder"]
                     gr = {key: gr[key] for key in gr if key not in ["id", "t_stamp","group","order","maxorder"]}
                     gr["type_mov"]=0
-                    gr["qty_reminder"]= filter["qty_reminder"] if "reminder" in filter else 0
+                    gr["qty_reminder"]= filter["qty_reminder"] if "qty_reminder" in filter else 0
                     gr["t_stamp"]: datetime.now()
                     gr["user_id"]=request.user.id
                     dml = db.dml(TypeDml.INSERT, gr,"lotesgranuladolinha",None,None,False)
@@ -892,7 +846,238 @@ def UpdateGranulado(request, format=None):
     except Error:
         return Response({"status": "error", "title": "Erro ao alterar lote!"})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def DeleteGranulado(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    def checkGranulado(vcr_num, cursor):
+        f = Filters({"closed": 1,"vcr_num":vcr_num})
+        f.where()
+        f.add(f'(ll.closed = :closed or ld.closed = :closed)', True)
+        f.add(f'vcr_num = :vcr_num', True)
+        f.value("and")
+
+        print(f"""select ll.id 
+        from lotesgranuladolinha ll
+        join lotesdoserslinha ld on ld.loteslinha_id=ll.id
+        {f.text}""")
+
+        response = db.executeSimpleList(lambda: (f"""select ll.id 
+        from lotesgranuladolinha ll
+        join lotesdoserslinha ld on ld.loteslinha_id=ll.id
+        {f.text}"""), cursor, f.parameters)
+        return len(response["rows"])
+
+    def delete(vcr_num,cursor):
+        dml = db.dml(TypeDml.DELETE,None,"lotesdoserslinha",{"vcr_num":f'=={vcr_num}'},None,False)
+        dml.statement = f"""
+                DELETE FROM lotesdoserslinha ld WHERE ld.closed=0 and ld.loteslinha_id in (
+                    SELECT ll.id FROM lotesgranuladolinha ll WHERE ll.vcr_num=%(vcr_num)s) and closed = 0
+                ) 
+        """
+        db.execute(dml.statement, cursor, dml.parameters)
+        dml = db.dml(TypeDml.DELETE,None,"lotesgranuladolinha",{"closed":0,"vcr_num":f'=={vcr_num}'},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                ln = checkGranulado(filter["vcr_num"],cursor)
+                if (ln==0):
+                   delete(filter["vcr_num"],cursor)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível eliminar o movimento!"})     
+        return Response({"status": "success", "title": "Movimento eliminado com sucesso!", "subTitle":f'{None}'})
+    except Error:
+        return Response({"status": "error", "title": "Erro ao eliminar o movimento!"})
 
 
 
 #endregion
+
+
+#region MP ALTERNATIVAS
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ListMPAlternativas(request, format=None):
+    connection = connections[connGatewayName].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        "group": {"value": lambda v: v.get('fgroup'), "field": lambda k, v: f'GMP.{k}'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+    
+    parameters = {**f.parameters,**f2["parameters"]}
+    dql = dbgw.dql(request.data, False,False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+
+    cols = f'''ITM."ROWID",GMP.group,GMP.max_in,ITM."ITMREF_0",ITM."ITMDES1_0"'''
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} 
+            FROM {sageAlias}."ITMMASTER" ITM
+            LEFT JOIN {sgpAlias}.group_materiasprimas GMP ON GMP.artigo_cod=ITM."ITMREF_0"
+            WHERE ((LOWER(ITM."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(ITM."ITMDES1_0") NOT LIKE 'core%%') AND (ITM."ACCCOD_0" = 'PT_MATPRIM'))
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    response = dbgw.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def SaveMPAlternativas(request, format=None):
+    data = request.data.get("parameters")
+
+    def saveItems(data,cursor):
+        for idx, item in enumerate(data["rows"]):
+            item["`group`"] = item["group"]
+            item.pop('group', None) 
+            dml = db.dml(TypeDml.INSERT, {**item,"user_id":request.user.id,"t_stamp":datetime.now()}, "group_materiasprimas",None,None,False)
+            dml.statement = f"""
+                    {dml.statement}
+                    ON DUPLICATE KEY UPDATE 
+                        artigo_cod=VALUES(artigo_cod),
+                        user_id=VALUES(user_id),
+                        t_stamp=VALUES(t_stamp),
+                        max_in=VALUES(max_in),
+                        `group`=VALUES(`group`)
+            """
+            db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                saveItems(data,cursor)
+                return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "content": str(error)})
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def ListMPGroupsLookup(request, format=None):
+    conn = connections["default"].cursor()
+    cols = ['`group`']
+    f = Filters(request.data['filter'])
+    f.setParameters({"group":{"value": lambda v: v.get('group'), "field": lambda k, v: f'`{k}`'}}, True)
+    f.auto()
+    f.where()
+    f.value("and")
+    
+
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select 
+            distinct {dql.columns}
+            from group_materiasprimas
+            {f.text}
+            {dql.sort}
+            {dql.limit}
+        """
+    ), conn, f.parameters)
+
+    return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def GetMPAlternativas(request, format=None):
+    conn = connections["default"].cursor()
+    cols = ['*']
+    
+    artigos=""
+    if "parameters" in request.data and "artigos" in request.data['parameters'] and len(request.data['parameters']['artigos'])>0:
+        artigos = f"""in({','.join(f"'{w}'" for w in request.data['parameters']['artigos'])})"""
+    else:
+        return Response({"rows":[]})
+
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select {dql.columns} from group_materiasprimas where `group` in (
+                SELECT `group` FROM group_materiasprimas gmp where gmp.artigo_cod {artigos}
+            )
+        """
+    ), conn, {})
+    print(response)
+    return Response(response)
+
+
+
+#endregion
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def MateriasPrimasLookup(request, format=None):
+    conn = connections[connGatewayName].cursor()
+    cols = ['"ITMREF_0"','"ITMDES1_0"','"ZFAMILIA_0"','"ZSUBFAMILIA_0"','"STU_0"', '"SAUSTUCOE_0"']
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.value("and")
+    
+    f2 = filterMulti(request.data['filter'], {
+        'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mprima.'}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    type = None if "type" not in request.data['parameters'] else request.data['parameters']['type']
+    cfilter = ""
+    if type=='nonwovens':
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
+    elif type=='cores':
+        core = int(int(request.data['parameters']['core']) * 25.4)
+        largura = str(request.data['parameters']['largura'])[:-1]
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+    elif type == 'all':
+        cfilter=''
+    else:
+        cfilter = f"""(LOWER("ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER("ITMDES1_0") NOT LIKE 'core%%') AND ("ACCCOD_0" = 'PT_MATPRIM')"""
+
+    if cfilter != "":
+        cfilter = f"and ({cfilter})" if f.hasFilters or f2["hasFilters"] else f"where ({cfilter})"
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    dql.columns = encloseColumn(cols,False)
+
+    response = dbgw.executeSimpleList(lambda: (
+        f"""
+            select 
+            {dql.columns}
+            from {sageAlias}."ITMMASTER" mprima
+            {f.text} {f2["text"]} {cfilter}
+            {dql.sort}
+            {dql.limit}
+        """
+    ), conn, parameters)
+    return Response(response)

@@ -192,53 +192,6 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
     return ret
 
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def GetAuthUser(request, format=None):
-    user = request.user
-    groups = user.groups.all().values_list('name',flat=True)
-    items = {}
-    isAdmin=False
-    for idx, v in enumerate(groups):
-        key = ""
-        grp = v.split("#")
-        if grp == "admin":
-            isAdmin=True
-        elif len(grp)==2:
-            key=grp[0]
-            permission_value=grp[1]
-        else:
-            if (v.startswith("Logistica")):
-                key = "logistica"
-            elif (v.startswith("Produção")):
-                key = "producao"
-            elif (v.startswith("Qualidade")):
-                key = "qualidade"
-            permission_value = 100 if v.endswith("Operador") or v.endswith("Tecnico") else 200
-        if key in items:
-            if items[key]<int(permission_value):
-                items[key] = int(permission_value)
-        else:
-            items[key] = int(permission_value)
-    
-    print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    isAdmin=False
-   
-    turno = {"enabled":False}
-    if hasattr(user, 'turno'):
-        turno["dep"] = user.turno.dep
-        turno["turno"] = user.turno.turno
-        turno["enabled"] = True
-
-    return Response({"isAuthenticated":user.is_authenticated, "user":user.username, "name":f"{user.first_name} {user.last_name}", "turno":{**turno} ,"groups":groups.all().values_list('name',flat=True), "permissions":items, "isAdmin":isAdmin})
-
-
-
-
-
-
 #Ordens de Fabrico
 
 def export(sql, db_parameters, parameters,conn_name):
@@ -572,46 +525,6 @@ def MateriasPrimasGet(request, format=None):
     ), conn, parameters)
     return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def MateriasPrimasLookup(request, format=None):
-    conn = connections[connGatewayName].cursor()
-    cols = ['"ITMREF_0"','"ITMDES1_0"','"ZFAMILIA_0"','"ZSUBFAMILIA_0"','"STU_0"', '"SAUSTUCOE_0"']
-    f = Filters(request.data['filter'])
-    f.setParameters({}, False)
-    f.where()
-    f.value("and")
-    parameters = {**f.parameters}
-
-    type = None if "type" not in request.data['parameters'] else request.data['parameters']['type']
-    cfilter = ""
-    if type=='nonwovens':
-        cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
-    elif type=='cores':
-        core = int(int(request.data['parameters']['core']) * 25.4)
-        largura = str(request.data['parameters']['largura'])[:-1]
-        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
-    else:
-        cfilter = f"""(LOWER("ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER("ITMDES1_0") NOT LIKE 'core%%') AND ("ACCCOD_0" = 'PT_MATPRIM')"""
-
-    dql = dbgw.dql(request.data, False)
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
-    dql.columns = encloseColumn(cols,False)
-    print(f'LARGURA--{cfilter}')
-    response = dbgw.executeSimpleList(lambda: (
-        f"""
-            select 
-            {dql.columns}
-            from {sageAlias}."ITMMASTER" mprima
-            where 
-            {cfilter}
-            {dql.sort}
-        """
-    ), conn, parameters)
-    return Response(response)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -892,290 +805,290 @@ def StockListBuffer(request, format=None):
     return Response(response)
 
 
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def StockList(request, format=None):
-    connection = connections[connGatewayName].cursor()    
-    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
+#REVIEW
+# @api_view(['POST'])
+# @renderer_classes([JSONRenderer])
+# @authentication_classes([SessionAuthentication])
+# @permission_classes([IsAuthenticated])
+# def StockList(request, format=None):
+#     connection = connections[connGatewayName].cursor()    
+#     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else [{"value":'B'}]
     
-    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    print(request.data['filter'])
+#     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+#     print(request.data['filter'])
     
-    f = Filters(request.data['filter'])
-    f.setParameters({
-        "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
-        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-        "qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
-        "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
-        "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
+#     f = Filters(request.data['filter'])
+#     f.setParameters({
+#         "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+#         "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+#         "qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+#         "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+#         "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+#     }, True)
+#     f.where()
+#     f.auto()
+#     f.value("and")
 
-    f2 = filterMulti(request.data['filter'], {
-        'fartigo': {"keys": ['matprima_cod', 'matprima_des']}
-    }, False, "and" if f.hasFilters else False)    
+#     f2 = filterMulti(request.data['filter'], {
+#         'fartigo': {"keys": ['matprima_cod', 'matprima_des']}
+#     }, False, "and" if f.hasFilters else False)    
 
-    def filterLocationMultiSelect(data,name,field):
-        f = Filters(data)
-        fP = {}
-        v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
-        dt = [o['value'] for o in v]
-        value = 'in:' + ','.join(f"{w}" for w in dt)
-        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ST.{k}'}
-        f.setParameters({**fP}, True)
-        f.auto()
-        f.where(False, "and")
-        f.value()
-        return f
+#     def filterLocationMultiSelect(data,name,field):
+#         f = Filters(data)
+#         fP = {}
+#         v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+#         dt = [o['value'] for o in v]
+#         value = 'in:' + ','.join(f"{w}" for w in dt)
+#         fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ST.{k}'}
+#         f.setParameters({**fP}, True)
+#         f.auto()
+#         f.where(False, "and")
+#         f.value()
+#         return f
     
-    def filterDosersMultiSelect(data,name,hasFilters):
-        v = data[name] if name in data else []
-        dt = [o['value'] for o in v]
-        value = '|'.join(f"{w}" for w in dt)
-        if not value:
-            return ""
-        _filter = f"""{"and" if hasFilters else "WHERE"} frm @? '$[*] ? (@.doseador like_regex "{value}" )'"""
-        return _filter
+#     def filterDosersMultiSelect(data,name,hasFilters):
+#         v = data[name] if name in data else []
+#         dt = [o['value'] for o in v]
+#         value = '|'.join(f"{w}" for w in dt)
+#         if not value:
+#             return ""
+#         _filter = f"""{"and" if hasFilters else "WHERE"} frm @? '$[*] ? (@.doseador like_regex "{value}" )'"""
+#         return _filter
 
-    fdosers = filterDosersMultiSelect(request.data['filter'],'fmulti_dosers', (True if f.hasFilters or f2['hasFilters'] else False))
-    flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"')
+#     fdosers = filterDosersMultiSelect(request.data['filter'],'fmulti_dosers', (True if f.hasFilters or f2['hasFilters'] else False))
+#     flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"')
 
 
 
-    # f2 = filterMulti(request.data['filter'], {
-    #     'fmulti_location': {"keys": ['matprima_cod', 'matprima_des'], "table": 'enc'}
-    # }, False, "and" if f.hasFilters else False)
-    parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
+#     # f2 = filterMulti(request.data['filter'], {
+#     #     'fmulti_location': {"keys": ['matprima_cod', 'matprima_des'], "table": 'enc'}
+#     # }, False, "and" if f.hasFilters else False)
+#     parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
     
-    # print(f2["text"])
+#     # print(f2["text"])
 
-    dql = dbgw.dql(request.data, False)
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
+#     dql = dbgw.dql(request.data, False)
+#     sgpAlias = dbgw.dbAlias.get("sgp")
+#     sageAlias = dbgw.dbAlias.get("sage")
 
-    cols = f'''rowid,loc,qty_lote, unit, inbuffer,frm,ofs,picked,matprima_cod,matprima_des,n_lote,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov'''
-    sql = lambda p, c, s: (
-        f"""
-        SELECT {c(f'{cols}')} FROM(
-            WITH LOTES_EM_LINHA AS(
-            select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
-            FROM (
-                select distinct * from (
-                SELECT 
-                DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS."status",
-                SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
-                qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
-                MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, --FIFO DATE TO ORDER ASC
-                MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp,
-                MAX(LOTES.type_mov) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_type_mov
-                FROM {sgpAlias}.loteslinha LOTES
-                LEFT JOIN {sgpAlias}.lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
-                WHERE LOTES.status=1 
-                ) t WHERE  max_t_stamp=t_stamp and "status"=1
-            ) t
-            ),
-            BASE AS(
-                SELECT * FROM(SELECT acs.*, max(acs.id) over () mx_id, cs.id cs_id 
-                from {sgpAlias}.producao_currentsettings cs
-                join {sgpAlias}.audit_currentsettings acs on cs.id=acs.contextid
-                where cs.status=3) BASE where BASE.id=BASE.mx_id
-            ),
-            OFS AS(
-                SELECT jsonb_agg(json_build_object(
-                    'of_cod',dta.value->>'of_cod','order_cod',dta.value->>'order_cod',
-                    'prf_cod',dta.value->>'prf_cod','item_cod',dta.value->>'item_cod',
-                    'item_des',dta.value->>'item_des','cliente_nome',dta.value->>'cliente_nome')) ofs 
-                FROM BASE
-                JOIN jsonb_array_elements(BASE.ofs::jsonb) dta ON true
-            ),
-            FORMULACAO AS(
-                SELECT 
-                    fitems::jsonb->>'matprima_cod' matprima_cod,
-                    fitems::jsonb->>'matprima_des' matprima_des, 
-                    jsonb_agg(json_build_object(
-                        'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
-                        'arranque',fitems::jsonb->>'arranque',
-                        'densidade',fitems::jsonb->>'densidade'
-                    )) frm
-                FROM BASE
-                join jsonb_array_elements(BASE.formulacao::jsonb->'items') fitems on true
-                group by matprima_cod,matprima_des
-            ),
-            SETTINGS AS(
-                select * from FORMULACAO
-                JOIN OFS ON true
-            )
-            SELECT 
-            ST."LOC_0" loc,ST."ROWID" rowid,
-            CASE WHEN ST."ITMREF_0" IS NULL THEN matprima_cod ELSE ST."ITMREF_0" END matprima_cod,
-            CASE WHEN ST."LOT_0" IS NULL THEN n_lote ELSE ST."LOT_0" END n_lote,
-            CASE WHEN mprima."ITMDES1_0" IS NULL THEN matprima_des ELSE mprima."ITMDES1_0" END matprima_des,
-            CASE WHEN ST."ITMREF_0" IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END inbuffer,
-            CASE WHEN max_type_mov IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END picked,
-            SETTINGS.frm,SETTINGS.ofs,
-            ST."QTYPCU_0" qty_lote, ST."PCU_0" unit,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov 
-            FROM {sageAlias}."STOCK" ST
-            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            LEFT JOIN SETTINGS ON ST."ITMREF_0" = SETTINGS.matprima_cod
-            LEFT JOIN LOTES_EM_LINHA LL ON LL.artigo_cod=ST."ITMREF_0" AND LL.n_lote=ST."LOT_0" {flocation.text}
-            WHERE 
-            (LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM') AND
-            ST."STOFCY_0" = 'E01' {flocation.text}/*and ST."LOC_0"='BUFFER'*/ {"AND frm IS NOT NULL" if any(obj.get('value') == 'B' for obj in typeList) else ""} --AND ST."ITMREF_0"='RAPRA0000000078'
-            --ORDER BY frm ASC, ST."ITMREF_0",ST."LOT_0"
-        ) t
-         {f.text} {f2["text"]} {fdosers}
-        {s(dql.sort)} {p(dql.paging)}
-        """
-    )
-    print(sql)
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
-    response = dbgw.executeList(sql, connection, parameters, [])
-    return Response(response)
+#     cols = f'''rowid,loc,qty_lote, unit, inbuffer,frm,ofs,picked,matprima_cod,matprima_des,n_lote,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov'''
+#     sql = lambda p, c, s: (
+#         f"""
+#         SELECT {c(f'{cols}')} FROM(
+#             WITH LOTES_EM_LINHA AS(
+#             select t.*,SUM(t.qty_lote_available) over (PARTITION BY t.group_id) qty_artigo_available
+#             FROM (
+#                 select distinct * from (
+#                 SELECT 
+#                 DOSERS.group_id, LOTES.artigo_cod,LOTES.n_lote,LOTES.qty_lote,DOSERS.loteslinha_id,LOTES.t_stamp,DOSERS."status",
+#                 SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_consumed,
+#                 qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available,
+#                 MIN(DOSERS.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) min_t_stamp, --FIFO DATE TO ORDER ASC
+#                 MAX(LOTES.t_stamp) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_t_stamp,
+#                 MAX(LOTES.type_mov) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) max_type_mov
+#                 FROM {sgpAlias}.loteslinha LOTES
+#                 LEFT JOIN {sgpAlias}.lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id 
+#                 WHERE LOTES.status=1 
+#                 ) t WHERE  max_t_stamp=t_stamp and "status"=1
+#             ) t
+#             ),
+#             BASE AS(
+#                 SELECT * FROM(SELECT acs.*, max(acs.id) over () mx_id, cs.id cs_id 
+#                 from {sgpAlias}.producao_currentsettings cs
+#                 join {sgpAlias}.audit_currentsettings acs on cs.id=acs.contextid
+#                 where cs.status=3) BASE where BASE.id=BASE.mx_id
+#             ),
+#             OFS AS(
+#                 SELECT jsonb_agg(json_build_object(
+#                     'of_cod',dta.value->>'of_cod','order_cod',dta.value->>'order_cod',
+#                     'prf_cod',dta.value->>'prf_cod','item_cod',dta.value->>'item_cod',
+#                     'item_des',dta.value->>'item_des','cliente_nome',dta.value->>'cliente_nome')) ofs 
+#                 FROM BASE
+#                 JOIN jsonb_array_elements(BASE.ofs::jsonb) dta ON true
+#             ),
+#             FORMULACAO AS(
+#                 SELECT 
+#                     fitems::jsonb->>'matprima_cod' matprima_cod,
+#                     fitems::jsonb->>'matprima_des' matprima_des, 
+#                     jsonb_agg(json_build_object(
+#                         'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
+#                         'arranque',fitems::jsonb->>'arranque',
+#                         'densidade',fitems::jsonb->>'densidade'
+#                     )) frm
+#                 FROM BASE
+#                 join jsonb_array_elements(BASE.formulacao::jsonb->'items') fitems on true
+#                 group by matprima_cod,matprima_des
+#             ),
+#             SETTINGS AS(
+#                 select * from FORMULACAO
+#                 JOIN OFS ON true
+#             )
+#             SELECT 
+#             ST."LOC_0" loc,ST."ROWID" rowid,
+#             CASE WHEN ST."ITMREF_0" IS NULL THEN matprima_cod ELSE ST."ITMREF_0" END matprima_cod,
+#             CASE WHEN ST."LOT_0" IS NULL THEN n_lote ELSE ST."LOT_0" END n_lote,
+#             CASE WHEN mprima."ITMDES1_0" IS NULL THEN matprima_des ELSE mprima."ITMDES1_0" END matprima_des,
+#             CASE WHEN ST."ITMREF_0" IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END inbuffer,
+#             CASE WHEN max_type_mov IS NULL THEN 0 ELSE CASE WHEN ST."LOC_0"='ARM' THEN 0 ELSE 1 END END picked,
+#             SETTINGS.frm,SETTINGS.ofs,
+#             ST."QTYPCU_0" qty_lote, ST."PCU_0" unit,qty_lote_available,qty_lote_consumed,qty_artigo_available,max_type_mov 
+#             FROM {sageAlias}."STOCK" ST
+#             JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+#             LEFT JOIN SETTINGS ON ST."ITMREF_0" = SETTINGS.matprima_cod
+#             LEFT JOIN LOTES_EM_LINHA LL ON LL.artigo_cod=ST."ITMREF_0" AND LL.n_lote=ST."LOT_0" {flocation.text}
+#             WHERE 
+#             (LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM') AND
+#             ST."STOFCY_0" = 'E01' {flocation.text}/*and ST."LOC_0"='BUFFER'*/ {"AND frm IS NOT NULL" if any(obj.get('value') == 'B' for obj in typeList) else ""} --AND ST."ITMREF_0"='RAPRA0000000078'
+#             --ORDER BY frm ASC, ST."ITMREF_0",ST."LOT_0"
+#         ) t
+#          {f.text} {f2["text"]} {fdosers}
+#         {s(dql.sort)} {p(dql.paging)}
+#         """
+#     )
+#     print(sql)
+#     if ("export" in request.data["parameters"]):
+#         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+#     response = dbgw.executeList(sql, connection, parameters, [])
+#     return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def StockListByIgBobinagem(request, format=None):
-    dataFilters = request.data["filter"]
-    connection = connections[connGatewayName].cursor()    
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
+# @api_view(['POST'])
+# @renderer_classes([JSONRenderer])
+# @authentication_classes([SessionAuthentication])
+# @permission_classes([IsAuthenticated])
+# def StockListByIgBobinagem(request, format=None):
+#     dataFilters = request.data["filter"]
+#     connection = connections[connGatewayName].cursor()    
+#     sgpAlias = dbgw.dbAlias.get("sgp")
+#     sageAlias = dbgw.dbAlias.get("sage")
 
-    f1 = Filters(request.data['filter'])
-    f1.setParameters({}, False)
-    f1.where()
-    f1.add("pbm.ig_bobinagem_id = :ig_id",True)
-    f1.value("and")
+#     f1 = Filters(request.data['filter'])
+#     f1.setParameters({}, False)
+#     f1.where()
+#     f1.add("pbm.ig_bobinagem_id = :ig_id",True)
+#     f1.value("and")
 
-    if "lastof" in request.data["parameters"] and request.data["parameters"]["lastof"] == True:
-        end_id = 0
-        default_cursor = connections["default"].cursor()
-        dql = db.dql(request.data, False)
-        response = db.executeSimpleList(lambda: (f"""
-            select id from lotesdosers 
-            where status<>0 and closed=0 and `order`< (select min(`order`) from lotesdosers where status<>0 and closed=0 and ig_bobinagem_id={request.data["parameters"]["ig_id"]})
-            and type_mov="END" order by `order` desc limit 1
-        """), default_cursor, {})
-        if len(response["rows"])>0:
-            end_id = response["rows"][0]["id"]
+#     if "lastof" in request.data["parameters"] and request.data["parameters"]["lastof"] == True:
+#         end_id = 0
+#         default_cursor = connections["default"].cursor()
+#         dql = db.dql(request.data, False)
+#         response = db.executeSimpleList(lambda: (f"""
+#             select id from lotesdosers 
+#             where status<>0 and closed=0 and `order`< (select min(`order`) from lotesdosers where status<>0 and closed=0 and ig_bobinagem_id={request.data["parameters"]["ig_id"]})
+#             and type_mov="END" order by `order` desc limit 1
+#         """), default_cursor, {})
+#         if len(response["rows"])>0:
+#             end_id = response["rows"][0]["id"]
         
-        cols = f'''LOTESAVAILABLE.*,mprima."ITMDES1_0"'''
-        sql = lambda p, c, s: (f"""
-            WITH MATPRIMAS AS(
-            SELECT DISTINCT 
-            fitems->>'matprima_cod' cod,
-            jsonb_agg(json_build_object(
-            'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
-            'arranque',fitems::jsonb->>'arranque',
-            'densidade',fitems::jsonb->>'densidade'
-            )) frm
-            FROM {sgpAlias}.producao_bobinagem pbm
-            LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id = pbm.audit_current_settings_id 
-            LEFT JOIN jsonb_array_elements(acs.formulacao::jsonb->'items') fitems on true
-            {f1.text}
-            GROUP BY fitems->>'matprima_cod'
-            ),
-            LOTESAVAILABLE AS(
-            SELECT ll.lote_id "ROWID", ll.t_stamp "CREDATTIM_0", ll.artigo_cod "ITMREF_0", ll.n_lote "LOT_0", 'PRODUCTION' "LOC_0", ll.qty_reminder "QTYPCU_0", MP.frm, 'kg' "PCU_0",ll.end_id, ll.id
-            FROM {sgpAlias}.loteslinha ll
-            JOIN MATPRIMAS MP ON ll.artigo_cod = MP.cod
-            WHERE 
-            ll.end_id = {end_id}  and ll.status<>0 and ll.closed=0 and ll.type_mov = 'OUT'
-            )
-            select {c(f'{cols}')} from LOTESAVAILABLE
-            JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"
-            WHERE NOT EXISTS (SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=LOTESAVAILABLE."ROWID" and ll.status<>0 and ll.closed=0  and ll.type_mov = 'IN' and ll.end_id = {end_id})
-            {s(dql.sort)} {p(dql.paging)}
-        """
-        )
-        if ("export" in request.data["parameters"]):
-            return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=f1.parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-        response = dbgw.executeList(sql, connection, f1.parameters, [])        
-        return Response(response)
-    else:
+#         cols = f'''LOTESAVAILABLE.*,mprima."ITMDES1_0"'''
+#         sql = lambda p, c, s: (f"""
+#             WITH MATPRIMAS AS(
+#             SELECT DISTINCT 
+#             fitems->>'matprima_cod' cod,
+#             jsonb_agg(json_build_object(
+#             'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
+#             'arranque',fitems::jsonb->>'arranque',
+#             'densidade',fitems::jsonb->>'densidade'
+#             )) frm
+#             FROM {sgpAlias}.producao_bobinagem pbm
+#             LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id = pbm.audit_current_settings_id 
+#             LEFT JOIN jsonb_array_elements(acs.formulacao::jsonb->'items') fitems on true
+#             {f1.text}
+#             GROUP BY fitems->>'matprima_cod'
+#             ),
+#             LOTESAVAILABLE AS(
+#             SELECT ll.lote_id "ROWID", ll.t_stamp "CREDATTIM_0", ll.artigo_cod "ITMREF_0", ll.n_lote "LOT_0", 'PRODUCTION' "LOC_0", ll.qty_reminder "QTYPCU_0", MP.frm, 'kg' "PCU_0",ll.end_id, ll.id
+#             FROM {sgpAlias}.loteslinha ll
+#             JOIN MATPRIMAS MP ON ll.artigo_cod = MP.cod
+#             WHERE 
+#             ll.end_id = {end_id}  and ll.status<>0 and ll.closed=0 and ll.type_mov = 'OUT'
+#             )
+#             select {c(f'{cols}')} from LOTESAVAILABLE
+#             JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"
+#             WHERE NOT EXISTS (SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=LOTESAVAILABLE."ROWID" and ll.status<>0 and ll.closed=0  and ll.type_mov = 'IN' and ll.end_id = {end_id})
+#             {s(dql.sort)} {p(dql.paging)}
+#         """
+#         )
+#         if ("export" in request.data["parameters"]):
+#             return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=f1.parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+#         response = dbgw.executeList(sql, connection, f1.parameters, [])        
+#         return Response(response)
+#     else:
         
 
-        f2 = Filters(request.data['filter'])
-        f2.setParameters({
-            "fartigo": {"value": lambda v:  v.get('fartigo').lower() if v.get('fartigo') is not None else None, "field": lambda k, v: f'lower("ITMDES1_0")'},
-            "flote": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower("LOT_0")'},
-            "fqty":{"value":">0","field":"QTY_SUM"}
-        }, True)
-        f2.where()
-        f2.auto()
-        f2.value("and")
+#         f2 = Filters(request.data['filter'])
+#         f2.setParameters({
+#             "fartigo": {"value": lambda v:  v.get('fartigo').lower() if v.get('fartigo') is not None else None, "field": lambda k, v: f'lower("ITMDES1_0")'},
+#             "flote": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower("LOT_0")'},
+#             "fqty":{"value":">0","field":"QTY_SUM"}
+#         }, True)
+#         f2.where()
+#         f2.auto()
+#         f2.value("and")
 
-        f3 = Filters(request.data['filter'])
-        if "ft_stamp" in dataFilters:
-            f3.setParameters({**rangeP(f3.filterData.get('ft_stamp'), 't_stamp', lambda k, v: f'ST."CREDATTIM_0"::date')},True)
-            f3.where()
-            f3.auto()
-        else:
-            f3.setParameters({}, False)
-            f3.where()
-            f3.add(f'''(ST."CREDATTIM_0"::date BETWEEN (:t_stamp __date  - INTERVAL '2 DAY') AND :t_stamp __date)''',True)
-        f3.value("and")
-
-
-        parameters = {**f1.parameters,**f2.parameters,**f3.parameters}
-        dql = dbgw.dql(request.data, False)
+#         f3 = Filters(request.data['filter'])
+#         if "ft_stamp" in dataFilters:
+#             f3.setParameters({**rangeP(f3.filterData.get('ft_stamp'), 't_stamp', lambda k, v: f'ST."CREDATTIM_0"::date')},True)
+#             f3.where()
+#             f3.auto()
+#         else:
+#             f3.setParameters({}, False)
+#             f3.where()
+#             f3.add(f'''(ST."CREDATTIM_0"::date BETWEEN (:t_stamp __date  - INTERVAL '2 DAY') AND :t_stamp __date)''',True)
+#         f3.value("and")
 
 
-        cols = f'''LOTESAVAILABLE.*,mprima."ITMDES1_0"'''
-        sql = lambda p, c, s: (
-            f"""
-                WITH MATPRIMAS AS(
-                SELECT DISTINCT 
-                    fitems->>'matprima_cod' cod,
-                    jsonb_agg(json_build_object(
-                        'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
-                        'arranque',fitems::jsonb->>'arranque',
-                        'densidade',fitems::jsonb->>'densidade'
-                    )) frm
-                FROM {sgpAlias}.producao_bobinagem pbm
-                LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id = pbm.audit_current_settings_id 
-                LEFT JOIN jsonb_array_elements(acs.formulacao::jsonb->'items') fitems on true
-                {f1.text}
-                GROUP BY fitems->>'matprima_cod'
-                ),
-                LOTESAVAILABLE AS(
-                SELECT 
-                ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0", 
-                SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
-                ST."QTYPCU_0",MP.frm,ST."PCU_0"
-                --ST."PCU_0",ST."QTYPCU_0",mprima."ITMDES1_0",ST."ITMREF_0",ST."LOT_0", ST."ROWID",MP.frm
-                FROM {sageAlias}."STOJOU" ST
-                JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
-                AND --{f3.text.replace(" __date","::date")} AND 
-                ST."LOC_0" in ('BUFFER') AND NOT EXISTS(SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
-                union
-                SELECT
-                    ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",NULL "VCRNUM_0",
-                    SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0") QTY_SUM,
-                    ST."QTYPCU_0",MP.frm,ST."PCU_0"
-                    --ST."PCU_0",ST."QTYPCU_0",mprima."ITMDES1_0",ST."ITMREF_0",ST."LOT_0", ST."ROWID",MP.frm
-                    FROM "SAGE-PROD"."STOCK" ST
-                    JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
-                    where MP.cod LIKE 'R000%%'
-                )
-                select {c(f'{cols}')}
-                from LOTESAVAILABLE
-                JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"  
-                {f2.text}
-                {s(dql.sort)} {p(dql.paging)}
-            """
-        )
-        if ("export" in request.data["parameters"]):
-            return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
-        response = dbgw.executeList(sql, connection, parameters, [])
-        return Response(response)
+#         parameters = {**f1.parameters,**f2.parameters,**f3.parameters}
+#         dql = dbgw.dql(request.data, False)
+
+
+#         cols = f'''LOTESAVAILABLE.*,mprima."ITMDES1_0"'''
+#         sql = lambda p, c, s: (
+#             f"""
+#                 WITH MATPRIMAS AS(
+#                 SELECT DISTINCT 
+#                     fitems->>'matprima_cod' cod,
+#                     jsonb_agg(json_build_object(
+#                         'doseador',concat(fitems::jsonb->>'doseador_A',fitems::jsonb->>'doseador_B',',',fitems::jsonb->>'doseador_C'),
+#                         'arranque',fitems::jsonb->>'arranque',
+#                         'densidade',fitems::jsonb->>'densidade'
+#                     )) frm
+#                 FROM {sgpAlias}.producao_bobinagem pbm
+#                 LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id = pbm.audit_current_settings_id 
+#                 LEFT JOIN jsonb_array_elements(acs.formulacao::jsonb->'items') fitems on true
+#                 {f1.text}
+#                 GROUP BY fitems->>'matprima_cod'
+#                 ),
+#                 LOTESAVAILABLE AS(
+#                 SELECT 
+#                 ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0", 
+#                 SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+#                 ST."QTYPCU_0",MP.frm,ST."PCU_0"
+#                 --ST."PCU_0",ST."QTYPCU_0",mprima."ITMDES1_0",ST."ITMREF_0",ST."LOT_0", ST."ROWID",MP.frm
+#                 FROM {sageAlias}."STOJOU" ST
+#                 JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
+#                 AND --{f3.text.replace(" __date","::date")} AND 
+#                 ST."LOC_0" in ('BUFFER') AND NOT EXISTS(SELECT 1 FROM {sgpAlias}.loteslinha ll WHERE ll.lote_id=ST."ROWID" AND ll.status<>0)
+#                 union
+#                 SELECT
+#                     ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",NULL "VCRNUM_0",
+#                     SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0") QTY_SUM,
+#                     ST."QTYPCU_0",MP.frm,ST."PCU_0"
+#                     --ST."PCU_0",ST."QTYPCU_0",mprima."ITMDES1_0",ST."ITMREF_0",ST."LOT_0", ST."ROWID",MP.frm
+#                     FROM "SAGE-PROD"."STOCK" ST
+#                     JOIN MATPRIMAS MP ON ST."ITMREF_0" = MP.cod
+#                     where MP.cod LIKE 'R000%%'
+#                 )
+#                 select {c(f'{cols}')}
+#                 from LOTESAVAILABLE
+#                 JOIN {sageAlias}."ITMMASTER" mprima on LOTESAVAILABLE."ITMREF_0"= mprima."ITMREF_0"  
+#                 {f2.text}
+#                 {s(dql.sort)} {p(dql.paging)}
+#             """
+#         )
+#         if ("export" in request.data["parameters"]):
+#             return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+#         response = dbgw.executeList(sql, connection, parameters, [])
+#         return Response(response)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1623,131 +1536,132 @@ def ConsumptionNeedLogList(request, format=None):
     response = dbgw.executeList(sql, connection, parameters, [])
     return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def StockLogList(request, format=None):
-    connection = connections[connGatewayName].cursor()
-    print("#$#$$%&$%$%$%$##$#$#$#$#$#")
-    print(request.data)
-    typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
-    f = Filters(request.data['filter'])
-    f.setParameters({
-        #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
-        #**rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
-        #**rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
-        #"bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
-        #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-        #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
-        #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
-        #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
+#REVIEW
+# @api_view(['POST'])
+# @renderer_classes([JSONRenderer])
+# @authentication_classes([SessionAuthentication])
+# @permission_classes([IsAuthenticated])
+# def StockLogList(request, format=None):
+#     connection = connections[connGatewayName].cursor()
+#     print("#$#$$%&$%$%$%$##$#$#$#$#$#")
+#     print(request.data)
+#     typeList = request.data['parameters']['typelist'] if 'typelist' in request.data['parameters'] else 'A'
+#     f = Filters(request.data['filter'])
+#     f.setParameters({
+#         #**rangeP2(f.filterData.get('fdate'), 'inicio_ts', 'fim_ts', lambda k, v: f'DATE(ig.{k})'),
+#         #**rangeP( f.filterData.get('ftime'), ['inicio_ts','fim_ts'], lambda k, v: f'TIME(ig.{k})', lambda k, v: f'TIMEDIFF(ig.{k[1]},ig.{k[0]})','ftime'),
+#         #**rangeP( f.filterData.get('fdate'), ['inicio_ts','fim_ts'], lambda k, v: f'DATE(ig.{k})', lambda k, v: f'DATEDIFF(ig.{k[1]},ig.{k[0]})','fdate'),
+#         #"bobinagem_id": {"value": lambda v: None if "fhasbobinagem" not in v or v.get("fhasbobinagem")=="ALL" else "isnull" if v.get('fhasbobinagem') == 0 else "!isnull" , "field": lambda k, v: f'pbm.id'},
+#         #"n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+#         #"qty_lote": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'{k}'},
+#         #"qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+#         #"qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+#     }, True)
+#     f.where()
+#     f.auto()
+#     f.value("and")
 
 
-    def filterEventoMultiSelect(data,name,field,hasFilters):
-        f = Filters(data)
-        fP = {}
-        v = None if name not in data else data[name]
-        if v is None:
-            value=None
-        else:
-            dt = [o['value'] for o in v]
-            value = 'in:' + ','.join(f"{w}" for w in dt)
-        fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ig.{k}'}
-        f.setParameters({**fP}, True)
-        f.auto()
-        f.where(False, "and" if hasFilters else "where")
-        f.value()
-        return f
-    #fevento = filterEventoMultiSelect(request.data['filter'],'fevento','type',(True if f.hasFilters else False))
-    #parameters = {**f.parameters, **fevento.parameters}
+#     def filterEventoMultiSelect(data,name,field,hasFilters):
+#         f = Filters(data)
+#         fP = {}
+#         v = None if name not in data else data[name]
+#         if v is None:
+#             value=None
+#         else:
+#             dt = [o['value'] for o in v]
+#             value = 'in:' + ','.join(f"{w}" for w in dt)
+#         fP[field] = {"key": field, "value": value, "field": lambda k, v: f'ig.{k}'}
+#         f.setParameters({**fP}, True)
+#         f.auto()
+#         f.where(False, "and" if hasFilters else "where")
+#         f.value()
+#         return f
+#     #fevento = filterEventoMultiSelect(request.data['filter'],'fevento','type',(True if f.hasFilters else False))
+#     #parameters = {**f.parameters, **fevento.parameters}
 
-#group by
-# SELECT contextid,artigo_cod,n_lote,sum(qty_to_consume) FROM (
-# SELECT ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
-# CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
-# ld.type_mov type_mov_doser,
-# ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,acs.contextid
-# FROM "SGP-PROD".loteslinha ll
-# LEFT JOIN "SGP-PROD".lotesdosers ld on ld.loteslinha_id=ll.id
-# LEFT JOIN "SGP-PROD".producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
-# LEFT JOIN "SGP-PROD".audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
-# ) t
-# group by contextid,artigo_cod,n_lote
+# #group by
+# # SELECT contextid,artigo_cod,n_lote,sum(qty_to_consume) FROM (
+# # SELECT ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+# # CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+# # ld.type_mov type_mov_doser,
+# # ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,acs.contextid
+# # FROM "SGP-PROD".loteslinha ll
+# # LEFT JOIN "SGP-PROD".lotesdosers ld on ld.loteslinha_id=ll.id
+# # LEFT JOIN "SGP-PROD".producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+# # LEFT JOIN "SGP-PROD".audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+# # ) t
+# # group by contextid,artigo_cod,n_lote
 
 
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
-    parameters = {**f.parameters}
-    dql = dbgw.dql(request.data, False)
+#     sgpAlias = dbgw.dbAlias.get("sgp")
+#     sageAlias = dbgw.dbAlias.get("sage")
+#     parameters = {**f.parameters}
+#     dql = dbgw.dql(request.data, False)
 
-    if typeList=='A':
-        cols = f'''row_number() over() rowid,nome,"order",id,grp,status,doser_closed,linha_closed,ig_bobinagem_id,dosers,maxid,type_mov,
-        qty_bobinagem_to_consume,qty_bobinagem_consumed,artigo_cod, n_lote,qty_lote, no_lotes,erro_consumos,ofs, t_stamp'''
-        sql = lambda p, c, s: (f"""
-                SELECT {c(f'{cols}')} FROM( 
-                WITH IO AS(
-                SELECT * FROM(
-                SELECT
-                t."order", t.id,t.grp,t.ig_bobinagem_id,t.no_lotes,t.status,t.doser_closed,t.linha_closed,
-                CASE WHEN t.type_mov='C' THEN string_agg(t.doser,',') over w ELSE string_agg(t.doser,',') over wio END dosers,
-                max(t.id) over wio maxid,
-                t.type_mov,t.qty_bobinagem_to_consume,t.qty_bobinagem_consumed,t.artigo_cod,t.n_lote,t.qty_lote,
-                CASE WHEN (t.no_lotes=0 and (t.qty_bobinagem_to_consume+t.qty_bobinagem_consumed) <> 0) or t.no_lotes>0 THEN 1 ELSE 0 END erro_consumos
-                FROM (
-                SELECT
-                ld.id,ld.doser,ld.status,ld.closed doser_closed,ll.closed linha_closed,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.lote_id END lote_id,  
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.artigo_cod END artigo_cod,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.n_lote END n_lote,
-                CASE WHEN ld.type_mov='C' THEN sum(CASE WHEN ld.lote_id is null THEN 1 ELSE 0 END) over (partition by ld.ig_bobinagem_id) ELSE null END no_lotes,
-                CASE WHEN ld.type_mov='C' THEN sum(ld.qty_to_consume) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_to_consume,
-                CASE WHEN ld.type_mov='C' THEN sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_consumed,
-                ld.type_mov,ll.qty_lote,ld.qty_to_consume,ld.ig_bobinagem_id,ld."order",
-                ROW_NUMBER() OVER(ORDER BY ld."order") -  ROW_NUMBER() OVER(PARTITION BY ld.type_mov ORDER BY ld."order") grp
-                FROM {sgpAlias}.loteslinha ll
-                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id and ld.status<>0   
-                WHERE ll.status<>0 or ll.status is null
-                ) t
-                WINDOW w AS (PARTITION BY t.grp,t.ig_bobinagem_id),wio AS (PARTITION BY t.grp,t.ig_bobinagem_id,t.lote_id)
-                order by t."order"
-                ) tbl where tbl.id=tbl.maxid
-                )
-                SELECT pbm.nome,pbm.timestamp t_stamp,IO.*,
-                (select jsonb_agg(tx -> 'of_cod') from jsonb_array_elements(acs.ofs::jsonb) as x(tx)) as ofs
-                FROM IO
-                LEFT JOIN {sgpAlias}.producao_bobinagem pbm ON pbm.ig_bobinagem_id=IO.ig_bobinagem_id
-                LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
-                order by "order"
-                ) t
-                {s(dql.sort)} {p(dql.paging)}
-        """)
+#     if typeList=='A':
+#         cols = f'''row_number() over() rowid,nome,"order",id,grp,status,doser_closed,linha_closed,ig_bobinagem_id,dosers,maxid,type_mov,
+#         qty_bobinagem_to_consume,qty_bobinagem_consumed,artigo_cod, n_lote,qty_lote, no_lotes,erro_consumos,ofs, t_stamp'''
+#         sql = lambda p, c, s: (f"""
+#                 SELECT {c(f'{cols}')} FROM( 
+#                 WITH IO AS(
+#                 SELECT * FROM(
+#                 SELECT
+#                 t."order", t.id,t.grp,t.ig_bobinagem_id,t.no_lotes,t.status,t.doser_closed,t.linha_closed,
+#                 CASE WHEN t.type_mov='C' THEN string_agg(t.doser,',') over w ELSE string_agg(t.doser,',') over wio END dosers,
+#                 max(t.id) over wio maxid,
+#                 t.type_mov,t.qty_bobinagem_to_consume,t.qty_bobinagem_consumed,t.artigo_cod,t.n_lote,t.qty_lote,
+#                 CASE WHEN (t.no_lotes=0 and (t.qty_bobinagem_to_consume+t.qty_bobinagem_consumed) <> 0) or t.no_lotes>0 THEN 1 ELSE 0 END erro_consumos
+#                 FROM (
+#                 SELECT
+#                 ld.id,ld.doser,ld.status,ld.closed doser_closed,ll.closed linha_closed,
+#                 CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.lote_id END lote_id,  
+#                 CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.artigo_cod END artigo_cod,
+#                 CASE WHEN ld.type_mov='C' THEN NULL ELSE ld.n_lote END n_lote,
+#                 CASE WHEN ld.type_mov='C' THEN sum(CASE WHEN ld.lote_id is null THEN 1 ELSE 0 END) over (partition by ld.ig_bobinagem_id) ELSE null END no_lotes,
+#                 CASE WHEN ld.type_mov='C' THEN sum(ld.qty_to_consume) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_to_consume,
+#                 CASE WHEN ld.type_mov='C' THEN sum(ld.qty_consumed) over (partition by ld.ig_bobinagem_id) ELSE null END qty_bobinagem_consumed,
+#                 ld.type_mov,ll.qty_lote,ld.qty_to_consume,ld.ig_bobinagem_id,ld."order",
+#                 ROW_NUMBER() OVER(ORDER BY ld."order") -  ROW_NUMBER() OVER(PARTITION BY ld.type_mov ORDER BY ld."order") grp
+#                 FROM {sgpAlias}.loteslinha ll
+#                 FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id and ld.status<>0   
+#                 WHERE ll.status<>0 or ll.status is null
+#                 ) t
+#                 WINDOW w AS (PARTITION BY t.grp,t.ig_bobinagem_id),wio AS (PARTITION BY t.grp,t.ig_bobinagem_id,t.lote_id)
+#                 order by t."order"
+#                 ) tbl where tbl.id=tbl.maxid
+#                 )
+#                 SELECT pbm.nome,pbm.timestamp t_stamp,IO.*,
+#                 (select jsonb_agg(tx -> 'of_cod') from jsonb_array_elements(acs.ofs::jsonb) as x(tx)) as ofs
+#                 FROM IO
+#                 LEFT JOIN {sgpAlias}.producao_bobinagem pbm ON pbm.ig_bobinagem_id=IO.ig_bobinagem_id
+#                 LEFT JOIN {sgpAlias}.audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+#                 order by "order"
+#                 ) t
+#                 {s(dql.sort)} {p(dql.paging)}
+#         """)
 
-    if typeList=='B':
-        cols = f'''row_number() over() rowid,ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
-                CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
-                ld.type_mov type_mov_doser,
-                ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp'''
-        sql = lambda p, c, s: (
-            f"""
-                SELECT * FROM (
-                SELECT {c(f'{cols}')} 
-                FROM {sgpAlias}.loteslinha ll
-                FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
-                LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
-                {f.text}
-            ) t
-            {s(dql.sort)} {p(dql.paging)}
-            """
-        )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
-    response = dbgw.executeList(sql, connection, parameters, [])
-    return Response(response)
+#     if typeList=='B':
+#         cols = f'''row_number() over() rowid,ll.id idlinha,ld.id iddoser,ld.t_stamp,ld.doser,ll.artigo_cod,ll.n_lote,
+#                 CASE WHEN ld.type_mov='C' THEN NULL ELSE ll.type_mov END type_mov_linha,
+#                 ld.type_mov type_mov_doser,
+#                 ll.qty_lote,ld.qty_consumed,ld.qty_to_consume,ll.qty_reminder,ll.group,ld.ig_bobinagem_id,pbm.nome,pbm.diam,pbm.comp'''
+#         sql = lambda p, c, s: (
+#             f"""
+#                 SELECT * FROM (
+#                 SELECT {c(f'{cols}')} 
+#                 FROM {sgpAlias}.loteslinha ll
+#                 FULL OUTER JOIN {sgpAlias}.lotesdosers ld on ld.loteslinha_id=ll.id
+#                 LEFT JOIN {sgpAlias}.producao_bobinagem pbm on pbm.ig_bobinagem_id=ld.ig_bobinagem_id
+#                 {f.text}
+#             ) t
+#             {s(dql.sort)} {p(dql.paging)}
+#             """
+#         )
+#     if ("export" in request.data["parameters"]):
+#         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+#     response = dbgw.executeList(sql, connection, parameters, [])
+#     return Response(response)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1827,6 +1741,7 @@ def SellCustomersLookup(request, format=None):
        response = dbgw.executeSimpleList(lambda: (
          f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
        ), cursor, parameters)
+       response["rows"].append({"BPCNUM_0":'0',"BPCNAM_0":"Elastictek"})
        return Response(response)
 #endregion
 
@@ -2644,56 +2559,9 @@ def ArtigoSpecsItemsGet(request, format=None):
 #endregion
 
 #region CURRENT SETTINGS
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def CurrentSettingsGet(request, format=None):
-    cols = ['*']
-    f = Filters(request.data['filter'])
-    f.setParameters({
-        "st": {"value": 3, "field": lambda k, v: f'{k}'},
-    }, False)
-    f.where()
-    f.add(f'agg_of_id = :aggId', lambda v:(v!=None))
-    f.add(f'status = :st',lambda v:"aggId" not in request.data['filter'])
-    f.value("and")
-    parameters = {**f.parameters}
-    
 
-    dql = db.dql(request.data, False, False)
-    dql.columns = encloseColumn(cols,False)
-    with connections["default"].cursor() as cursor:
-        response = db.executeSimpleList(lambda: (
-            f"""
-                select 
-                {dql.columns}
-                from producao_currentsettings
-                {f.text}
-                {dql.sort}
-            """
-        ), cursor, parameters)
-        return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def CurrentSettingsInProductionGet(request, format=None):
-    with connections["default"].cursor() as cursor:
-        response = db.executeSimpleList(lambda: (
-            f"""
-                select * from
-                (
-                SELECT acs.*, max(acs.id) over () mx_id 
-                from producao_currentsettings cs
-                join audit_currentsettings acs on cs.id=acs.contextid
-                where cs.status=3
-                ) t
-                where id=mx_id
-            """
-        ), cursor, {})
-        return Response(response)
+
 
 
 
@@ -2783,399 +2651,6 @@ def createEmendas(data,cursor):
     db.execute(dml.statement, cursor, dml.parameters)
     return data["ofabrico_id"]
 
-
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def UpdateCurrentSettings(request, format=None):
-    data = request.data.get("parameters")
-    def getCurrentSettings(data,cursor):
-        f = Filters({"id": data["csid"],"status":9})
-        f.where()
-        f.add(f'id = :id', True)
-        f.add(f'status <> :status', True)
-        f.value("and")  
-        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_currentsettings {f.text}'), cursor, f.parameters)['rows']
-        if len(rows)>0:
-            return rows[0]
-        return None
-
-    def compPaletizacao(cp,paletizacao):
-        
-        sqm_paletes_total = 0
-        nitems = 0
-        items = []
-        computed = {}
-        if paletizacao is not None:
-            for pitem in [d for d in paletizacao["details"] if 'item_numbobines' in d and d['item_numbobines'] is not None]:
-                if pitem["id"] is not None:
-                    nitems += 1
-                    items.append({
-                        "id":pitem["id"],
-                        "num_bobines":pitem["item_numbobines"],
-                        "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
-                    })
-                    sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
-            if nitems>0:
-                computed["total"] = {
-                    "sqm_paletes_total":sqm_paletes_total,
-                    "sqm_contentor":sqm_paletes_total*paletizacao["npaletes"],
-                    "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
-                }
-                computed["items"] = items
-        return computed
-            
-
-    try:
-        with connections["default"].cursor() as cursor:
-            cs = getCurrentSettings(request.data['filter'],cursor)
-            if cs is None:
-                return Response({"status": "error", "id":None, "title": f'Erro ao Alterar Ordem de Fabrico', "subTitle":"Não é possível alterar as Definições da Ordem (O estado atual não o permite!!)."})
-    except Exception as error:
-        return Response({"status": "error", "id":None, "title": f'Erro de Execução', "subTitle":str(error)})
-
-    f = Filters(request.data['filter'])
-    f.setParameters({}, False)
-    f.where()
-    f.add(f'id = :csid', True)
-    f.value("and")
-    if data['type'].startswith('formulacao'):
-        ok=1
-        for v in data['formulacao']['items']:
-            if "doseador_A" in v:
-                pass
-            elif  "doseador_B" in v or "doseador_C" in v:
-                pass
-            else:
-                ok=0
-                break
-        data["formulacao"]["valid"] = ok
-        dosers = []
-        for v in data["formulacao"]["items"]:
-            if "doseador_A" in v:
-                dosers.append({
-                    "nome":v["doseador_A"],
-                    "grupo":v["cuba_A"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-            if "doseador_B" in v:
-                dosers.append({
-                    "nome":v["doseador_B"],
-                    "grupo":v["cuba_BC"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-            if "doseador_C" in v:
-                dosers.append({
-                    "nome":v["doseador_C"],
-                    "grupo":v["cuba_BC"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-        dta = {
-            "dosers":json.dumps(dosers, ensure_ascii=False),
-            "formulacao":json.dumps(data['formulacao'], ensure_ascii=False),
-            "type_op":data['type']
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
-    if data['type'] == 'gamaoperatoria':
-        items = []
-        itms = collections.OrderedDict(sorted(data["gamaoperatoria"].items()))
-        for i in range(data["gamaoperatoria"]['nitems']):            
-            key = itms[f'key-{i}']
-            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
-            items.append({
-                "item_des":itms[f'des-{i}'], 
-                "item_values":values, 
-                "tolerancia":itms[f'tolerancia-{i}'],
-                "gamaoperatoria_id":data["gamaoperatoria"]['id'],
-                "item_key":key,
-                "item_nvalues":len(values)
-            })
-        dta = {
-            "gamaoperatoria" : json.dumps({ 
-                'id': data["gamaoperatoria"]['id'],
-                'produto_id': data["gamaoperatoria"]["produto_id"],
-                'designacao': data["gamaoperatoria"]["designacao"],
-                'versao': data["gamaoperatoria"]["versao"],
-                "created_date": data["gamaoperatoria"]["created_date"],
-                "updated_date": data["gamaoperatoria"]["updated_date"],
-                "items":items
-            }, ensure_ascii=False),
-            "type_op":"gamaoperatoria"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
-    if data['type'] == 'specs':
-        items = []
-        itms = collections.OrderedDict(sorted(data["specs"].items()))
-        for i in range(data["specs"]['nitems']):            
-            key = itms[f'key-{i}']
-            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
-            items.append({
-                "item_des":itms[f'des-{i}'], 
-                "item_values":json.dumps(values),
-                "artigospecs_id":data["specs"]['id'],
-                "item_key":key,
-                "item_nvalues":len(values)
-            })
-        dta = {
-            "artigospecs":json.dumps({ 
-                'id': data["specs"]['id'],
-                'produto_id': data["specs"]["produto_id"],
-                'designacao': data["specs"]["designacao"],
-                'versao': data["specs"]["versao"],
-                'cliente_cod': data["specs"]["cliente_cod"],
-                'cliente_nome': data["specs"]["cliente_nome"],
-                "created_date": data["specs"]["created_date"],
-                "updated_date": data["specs"]["updated_date"],
-                "items":items
-            }, ensure_ascii=False),
-            "type_op":"specs"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
-    if data['type'] == 'cortes':
-        dml = db.dml(TypeDml.UPDATE,{"cortes_id":data["cortes"]["cortes_id"],"cortesordem_id":data["cortes"]["cortesordem_id"]},"producao_currentsettings",f,None,False)
-        dml.statement = f"""        
-                update 
-                producao_currentsettings pcs
-                JOIN (
-                select 
-                %(csid)s csid,
-                (select 
-                JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
-                ) cortes
-                FROM producao_cortes pc
-                where pc.id=%(cortes_id)s) cortes,
-                (select 
-                JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
-                pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
-                ) cortesordem
-                FROM producao_cortesordem pco
-                WHERE pco.id=%(cortesordem_id)s) cortesordem
-                ) tbl
-                on tbl.csid=pcs.id
-                set
-                pcs.cortes = tbl.cortes,
-                pcs.cortesordem = tbl.cortesordem,
-                pcs.type_op = 'cortes'     
-        """
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
-    if data['type'] == 'settings':
-        try:
-            with connections["default"].cursor() as cursor:
-                emendas = json.loads(cs["emendas"])
-                for idx,x in enumerate(emendas):
-                    if x["of_id"]==data["ofabrico_cod"]:
-                        print(x["emendas"])
-                        emendas[idx]['emendas']=json.dumps({**json.loads(x["emendas"]),"maximo":data["maximo"],"tipo_emenda":data["tipo_emenda"],"emendas_rolo":data["nemendas_rolo"],"paletes_contentor":data["nemendas_paletescontentor"]})
-                cores = json.loads(cs["cores"])
-                for idx,x in enumerate(cores):
-                    if x["of_id"]==data["ofabrico_cod"]:
-                        cores[idx]['cores'][0] = {**x['cores'][0],"core_cod":data["core_cod"],"core_des":data["core_des"]}
-                limites = json.loads(cs["limites"])
-                for x in json.loads(cs["limites"]):
-                    if x["of_id"]==data["ofabrico_cod"]:
-                        limites[idx] = {**x}
-                sentido_enrolamento= cs["sentido_enrolamento"]
-                amostragem = cs["amostragem"]
-                ofs = json.loads(cs["ofs"])
-                for idx,x in enumerate(ofs):
-                    if x["of_id"]==data["ofabrico_cod"]:
-                        ofs[idx]['n_paletes_total']=data['n_paletes_total']
-                        dataop = {
-                            "largura": data['artigo_width'],
-                            "core": data['artigo_core'] + '"',
-                            "num_paletes_produzir":data['n_paletes_total'] - data['n_paletes_stock'],
-                            "num_paletes_stock":data['n_paletes_stock'],
-                            "num_paletes_total":data['n_paletes_total'],
-                            "emendas":f"{data['nemendas_rolo']}/rolo (máximo {data['maximo']}% - {data['nemendas_paletescontentor']} paletes/contentor)",
-                            "enrolamento":sentido_enrolamento,
-                            "freq_amos":amostragem,
-                            "user_id":request.user.id,
-                            "tipo_emenda":tipoemendas[str(data["tipo_emenda"])],
-                        }
-                        ofabrico_cod = data["ofabrico_cod"]
-                        dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        dml = db.dml(TypeDml.UPDATE,{
-                            "emendas":json.dumps(emendas,ensure_ascii=False),
-                            "cores":json.dumps(cores,ensure_ascii=False),
-                            "limites":json.dumps(limites,ensure_ascii=False),
-                            "ofs":json.dumps(ofs,ensure_ascii=False),
-                            "sentido_enrolamento":sentido_enrolamento,
-                            "amostragem":amostragem,
-                            "type_op":"settings_of_change"
-                            },"producao_currentsettings",{"id":f'=={request.data["filter"]["csid"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
-    if data['type'] == 'paletizacao':
-        paletizacoes = json.loads(cs["paletizacao"])
-        #ofs = json.loads(cs["ofs"])
-        _paletizacao=data["paletizacao"]["paletizacao"]
-        for idx,x in enumerate(paletizacoes):
-            if x["of_id"]==data["paletizacao"]["of_id"]:
-                data["paletizacao"]["paletizacao"]=json.dumps(_paletizacao,ensure_ascii=False)
-                paletizacoes[idx]= data["paletizacao"]
-        # for idx,x in enumerate(ofs):
-        #     if x["of_id"]==data["paletizacao"]["of_id"]:
-        #         cp = computeLinearMeters(data) #talvez não seja necessário
-        #         cpp = compPaletizacao(cp,_paletizacao) #talvez não seja necessário
-        #         p={}
-        #         if (len(cp.keys())>0):
-        #             p['qty_encomenda'] = cp['qty_encomenda'],
-        #             p['linear_meters'] = cp["linear_meters"],
-        #             p['n_voltas'] = cp["n_voltas"],
-        #             p['sqm_bobine'] = cp["sqm_bobine"]
-        #             p['n_paletes'] = json.dumps(cpp,ensure_ascii=False)
-        #         ofs[idx] = {**ofs[idx],**p}
-        dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Paletização Atual Atualizada com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Paletização Atual', "subTitle":str(error)})
-    if data['type'] == 'nonwovens':
-        dta = {
-            "nonwovens" : json.dumps({**data["nonwovens"]}, ensure_ascii=False),
-            "type_op":"nonwovens"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
-        try:
-            with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Nonwovens Atualizados com Sucesso', "subTitle":f""})
-        except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Alteração de Nonwovens', "subTitle":str(error)})
-
-        
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def ChangeCurrSettingsStatus(request, format=None):
-    data = request.data.get("parameters")
-    def checkOfIsValid(id,data,cursor):
-        f = Filters({"id": id})
-        f.setParameters({}, False)
-        f.where()
-        f.add(f'id = :id', True)
-        f.value("and")   
-        return db.executeSimpleList(lambda: (f"""
-            SELECT CASE WHEN 
-            JSON_EXTRACT(formulacao, "$.valid")=1 AND 
-            JSON_EXTRACT(cortes, "$.id") IS NOT NULL AND 
-            JSON_EXTRACT(cortesordem, "$.id") IS NOT NULL 
-            THEN 1 ELSE 0 END 
-            valid
-            FROM producao_currentsettings 
-            {f.text}
-        """), cursor, f.parameters)['rows'][0]['valid']
-
-    def updateOP(id,data,cursor,status_str):
-        dml = db.dml(TypeDml.UPDATE,{"id":id},"planeamento_ordemproducao",{},None,False)
-        dml.statement = f"""
-                update planeamento_ordemproducao op
-                join (select t.ofid from
-                (SELECT JSON_EXTRACT(ofs, "$[*].of_id") ofids FROM producao_currentsettings where id=%(id)s) ofs
-                join JSON_TABLE(CAST(ofids as JSON), "$[*]" COLUMNS(ofid INT PATH "$")) t ON TRUE
-                ) t on op.id=t.ofid
-                set 
-                {status_str}
-        """
-        db.execute(dml.statement, cursor, dml.parameters)
-
-    def getLastOrder(ig_id,cursor):
-        f = Filters({"id":ig_id})
-        f.where(False,"and")
-        f.add(f'ig_bobinagem_id = :id', True)
-        f.value("and")  
-        rows = db.executeSimpleList(lambda: (f'select IFNULL(max(`order`),0) n from lotesdosers where closed=0 and status<>0 {f.text}'), cursor, f.parameters)['rows']
-        if len(rows)>0:
-            return rows[0]
-        return None
-
-    try:
-        with connections["default"].cursor() as cursor:
-            if (data["status"]==3):
-                print("Em producao")
-                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
-                if (exists==0):
-                    #CHECK IF DOSERS AND CUTS ARE CORRECTLY DEFINED
-                    if checkOfIsValid(data["id"],data,cursor)==1:
-                        dta = {"status":3,"type_op":"status_inproduction"}
-                        if (db.count("audit_currentsettings",{"status":3,"contexid":data["id"]}).count==0):
-                            dta["start_date"]=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        dml = db.dml(TypeDml.UPDATE, dta , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,f"`status`=3,ativa=1,completa=0,inicio='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
-                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Iniciada!', "subTitle":f""})
-                    else:
-                        return Response({"status": "error", "id":0, "title": f'A formulação ou Posição dos Cortes não estão corretamente definidos !', "subTitle":""})
-            elif (data["status"]==0):
-                print("redo plan....")
-                pass
-            elif (data["status"]==1):
-                exists = db.exists("producao_currentsettings",{"status":3},cursor).exists
-                if (exists==1):
-                        maxOrder = getLastOrder(data["ig_id"],cursor)
-                        dml = db.dml(TypeDml.UPDATE, {"status":1,"type_op":"status_stopped"} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,f"`status`=2,ativa=0,completa=0,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
-                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
-                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
-                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Parada/Suspensa!', "subTitle":f""})
-            elif (data["status"]==9):
-                #FINALIZAR ORDEM DE FABRICO
-                exists = db.exists("producao_currentsettings",{"status":"<9"},cursor).exists
-                print("finish")
-                print(exists)
-                if (exists==1):
-                        maxOrder = getLastOrder(data["ig_id"],cursor)
-                        dml = db.dml(TypeDml.UPDATE, {"status":9,"type_op":"status_finished","end_date":datetime.now().strftime('%Y-%m-%d %H:%M:%S')} , "producao_currentsettings",{"id":f'=={data["id"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        updateOP(data["id"],data,cursor,f"`status`=9,ativa=0,completa=1,fim='{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
-                        t_stamp = datetime.strptime(data["date"], "%Y-%m-%d %H:%M:%S") if data["last"] == False else datetime.now()
-                        ld = {"doser":"X","status":-1,"t_stamp":t_stamp,"agg_of_id":data["agg_of_id"],"type_mov":"END","`order`":maxOrder["n"]+1,"closed":0}
-                        dml = db.dml(TypeDml.INSERT, ld , "lotesdosers",None,None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        return Response({"status": "success", "id":0, "title": f'Ordem de Fabrico Finalizada!', "subTitle":f""})
-                pass
-    except Exception as error:
-        return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})
-    return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
 
 
 
@@ -3932,10 +3407,30 @@ def sgpForProduction(data,aggid,user,cursor):
             pfo.extr0,'extr0_val', pfo.extr0_val,'extr1', pfo.extr1,'extr1_val', pfo.extr1_val,'extr2', pfo.extr2,'extr2_val', 
             pfo.extr2_val,'extr3', pfo.extr3,'extr3_val', pfo.extr3_val,'extr4', pfo.extr4,'extr4_val', pfo.extr4_val,'id', 
             pfo.id,'produto_id', pfo.produto_id,'updated_date', pfo.updated_date,'versao', pfo.versao,
-            'items',(select JSON_ARRAYAGG(JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
-            pfomp.extrusora,'formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
-            pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal))
-            FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id))
+            'items',(
+                SELECT JSON_ARRAYAGG(t) FROM (
+                select 
+                JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+                pfomp.extrusora,'formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+                pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+                ) t
+                FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id AND pfomp.extrusora<>'BC'
+                UNION
+                select 
+                JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+                'B','formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+                pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+                ) t
+                FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id AND pfomp.extrusora='BC'
+                UNION
+                select 
+                JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+                'C','formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+                pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+                ) t
+                FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = ptoagg.formulacao_id AND pfomp.extrusora='BC'
+                ) t
+            ))
             formulacao,
             JSON_OBJECT('created_date', pan.created_date,'designacao', pan.designacao,'id', pan.id,'nw_cod_inf', pan.nw_cod_inf,'nw_cod_sup', 
             pan.nw_cod_sup,'nw_des_inf', pan.nw_des_inf,'nw_des_sup', pan.nw_des_sup,'produto_id', pan.produto_id,'updated_date', pan.updated_date,'versao', pan.versao
@@ -4038,7 +3533,7 @@ def sgpForProduction(data,aggid,user,cursor):
             dta = {
                 **atts,
                 "timestamp": datetime.now(),
-                "op": ordemfabrico["cliente_nome"] + ' L' + str(int(_artigo['lar'])) + ' LINHA ' + ordemfabrico["order_cod"],
+                "op": ordemfabrico["cliente_nome"] + ' L' + str(int(_artigo['lar'])) + ' LINHA ' + ordemfabrico["order_cod"] if ordemfabrico["order_cod"] is not None else '',
                 "largura": _artigo['lar'],
                 "core": _artigo['core'] + '"',
                 "num_paletes_produzir":ordemfabrico['n_paletes_total'] - ordemfabrico['n_paletes_stock'],
@@ -4110,7 +3605,7 @@ def sgpForProduction(data,aggid,user,cursor):
 
         aggdata = GetAggData(aggid,",".join(str(v) for v in ops),cursor)
         dta = {
-            "formulacao":aggdata[0]["formulacao"],
+            "formulacaov2":aggdata[0]["formulacao"],
             "gamaoperatoria":aggdata[0]["gamaoperatoria"],
             "nonwovens":aggdata[0]["nonwovens"],
             "artigospecs":aggdata[0]["specs"],
@@ -4144,7 +3639,7 @@ def sgpForProduction(data,aggid,user,cursor):
             {dml.statement}
             ON DUPLICATE KEY UPDATE 
                 id=LAST_INSERT_ID(id),
-                formulacao=values(formulacao),
+                formulacaov2=values(formulacaov2),
                 gamaoperatoria=values(gamaoperatoria),
                 nonwovens=values(nonwovens),
                 artigospecs=values(artigospecs),
@@ -4877,7 +4372,7 @@ def BobinagensList(request, format=None):
     parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines"""
+    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines,sum(pl.largura) largura"""
     dql.columns=encloseColumn(cols,False)
 
     w = "where" if f.text=='' and f2["text"] == '' else 'and'
@@ -5318,7 +4813,8 @@ def ValidarBobinesList(request, format=None):
             agg_of_id = r['rows'][0]["agg_of_id"]
             valid = r['rows'][0]["valid"]
             response = {**response,**r['rows'][0]}
-            print(response)
+            print("ENTREIEIEIEIEIEIEI")
+            print(request.data['filter']["bobinagem_id"])
             if agg_of_id is not None and valid==0:
                 r = db.executeSimpleList(lambda:(f"""
                     select * from (
@@ -5473,24 +4969,14 @@ def ValidarBobinagem(request, format=None):
             where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
             ),
             FORMULACAO AS(
-            select formulacao
+            select formulacaov2
             from producao_currentsettings cs
             where status=3
             ),
             FORMULACAO_DOSERS AS(
             SELECT doser,matprima_cod, arranque,cuba
             FROM FORMULACAO F,
-            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_A",doser VARCHAR(3) PATH "$.doseador_A",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
-            WHERE doser is not null and arranque>0
-            UNION
-            SELECT doser,matprima_cod, arranque,cuba
-            FROM FORMULACAO F,
-            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_B",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
-            WHERE doser is not null and arranque>0
-            UNION
-            SELECT doser,matprima_cod, arranque,cuba
-            FROM FORMULACAO F,
-            JSON_TABLE(F.formulacao->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba_BC",doser VARCHAR(3) PATH "$.doseador_C",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
             WHERE doser is not null and arranque>0
             )
             {sl}        
@@ -5541,6 +5027,25 @@ def ValidarBobinagem(request, format=None):
                     dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1,"valid_tstamp":datetime.now()}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
                     db.execute(dml.statement, cursor, dml.parameters)
                 
+                    print("Relacionar as Entradas dos Lotes nos Doseadores com os Consumos nos Doseadores")
+                    dml = db.dml(TypeDml.UPDATE,{}, "lotesdosers_ig", {'id': data["bobinagem"]["id"]},None,False)
+                    statement = f"""
+                        with LDL as(
+                        SELECT 
+                        ldig.id,
+                        (select id from (select id,type_mov from lotesdoserslinha ldl where ldl.doser=ldig.doser and ldl.group_id=ldig.cuba and ldl.artigo_cod=ldig.matprima_cod and ldl.t_stamp<=pbm.valid_tstamp order by ldl.t_stamp desc limit 1) t where t.type_mov=1) ldl_id 
+                        FROM lotesdosers_ig ldig
+                        JOIN producao_bobinagem pbm on ldig.ig_id=pbm.ig_bobinagem_id
+                        WHERE pbm.id = %(id)s
+                        )
+                        update lotesdosers_ig lig
+                        join LDL on LDL.id=lig.id
+                        set lig.ldl_id=LDL.ldl_id
+                        where lig.`status`=0
+                    """
+                    db.execute(statement, cursor, dml.parameters)
+
+
                     print("Atualizar nw")
                     dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nwi["qty_consumed"],"qty_reminder":nwi["qty_reminder"]},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)

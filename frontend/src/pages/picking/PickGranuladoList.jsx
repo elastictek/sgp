@@ -473,6 +473,40 @@ const loadCurrentSettings = async (signal) => {
     return rows;
 }
 
+const loadMPAlternativas = async (signal, artigos) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/getmpalternativas/`, filter: {}, parameters: { artigos }, signal });
+    return rows;
+}
+
+const checkMPAlternativas = (formulacao, mPas, artigo_cod, dosers) => {
+    const _f = mPas.filter(v => v.artigo_cod);
+    if (_f.length === 0) { return false; }
+    const group = _f[0].group;
+    const _provaveis = formulacao.items.filter(v => dosers.toUpperCase().split(',').includes(v.doseador));
+    for (let x of _provaveis) {
+        if (mPas.some(v => v.artigo_cod === x.matprima_cod && v.group === group)) {
+            let cuba = x.cuba;
+            let dosers = formulacao.items.filter(v => v.matprima_cod === x.matprima_cod && v.cuba == cuba).map(v => v.doseador).join();
+            return { cuba, dosers, artigo_cod, artigo_to_replace: x.matprima_cod };
+        }
+    }
+    return false;
+}
+
+const checkDosersArtigo = (formulacao, dosers, artigo_cod) => {
+    const da = formulacao.items.filter(v => v.matprima_cod === artigo_cod && dosers.toUpperCase().split(',').includes(v.doseador));
+    if (formulacao.items.filter(v => v.matprima_cod === artigo_cod && dosers.toUpperCase().split(',').includes(v.doseador)).length > 0) {
+        let cuba = da[0].cuba;
+        let dosers = formulacao.items.filter(v => v.matprima_cod === artigo_cod && v.cuba == cuba).map(v => v.doseador).join();
+        return { cuba, dosers, artigo_cod };
+    }
+    return false;
+}
+
+const checkAbastecimento = () => {
+
+}
+
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -505,6 +539,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> } */
     ];
+    const [mPas, setMPas] = useState();
     const [formulacao, setFormulacao] = useState();
     const [ofs, setOfs] = useState();
     const [aggStatus, setAggStatus] = useState();
@@ -519,19 +554,30 @@ export default ({ setFormTitle, ...props }) => {
                     let dosers = "";
                     let cuba;
                     const idx = dataAPI.getData().rows ? dataAPI.getData().rows.findIndex(x => x.n_lote === lastValue.row.n_lote && x.notValid === 1 && x.vcr_num === lastValue.row.vcr_num) : -1;
-                    if (lastValue.row.artigo_cod in formulacao) {
-                        const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
-                        if (!dosersOk) {
-                            setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
-                            return;
-                        } else {
-                            dosers = formulacao[lastValue.row.artigo_cod].dosers.join();
-                            cuba = [...new Set(formulacao[lastValue.row.artigo_cod].cubas)][0];
-                        }
-                    } else {
+                    let da = checkDosersArtigo(formulacao, lastValue.dosers, lastValue.row.artigo_cod);
+                    if (da === false) {
+                        da = checkMPAlternativas(formulacao, mPas, lastValue.row.artigo_cod, lastValue.dosers);
+                    }
+                    if (da === false) {
                         setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
                         return;
                     }
+                    
+                    console.log("after 2 checks! ", da);
+                    checkAbastecimento();
+                    /*                     if (lastValue.row.artigo_cod in formulacao) {
+                                            const dosersOk = lastValue.dosers.toUpperCase().split(',').every(r => formulacao[lastValue.row.artigo_cod].dosers.includes(r));
+                                            if (!dosersOk) {
+                                                setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
+                                                return;
+                                            } else {
+                                                dosers = formulacao[lastValue.row.artigo_cod].dosers.join();
+                                                cuba = [...new Set(formulacao[lastValue.row.artigo_cod].cubas)][0];
+                                            }
+                                        } else {
+                                            setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
+                                            return;
+                                        } */
                     if (idx === -1) {
                         dataAPI.addRow({ ...lastValue.row, qty_lote: parseFloat(lastValue.row.qty_lote).toFixed(2), dosers: dosers, group_id: cuba, type_mov: 1 }, primaryKeys, 0);
                         setLastValue(prev => ({ ...prev, row: {}, dosers: null, picked: false, last: { ...prev?.last, ...lastValue.row, error: null, dosers: dosers, group_id: cuba } }));
@@ -564,7 +610,7 @@ export default ({ setFormTitle, ...props }) => {
             width={600} height={250} footer="ref">
             <PickContent lastValue={lastValue} setLastValue={setLastValue} onFinish={onPickFinish} onChange={onChange} formulacao={formulacao} onSave={onSave} />
         </ResponsiveModal>;
-    }, [dataAPI.getTimeStamp(), formulacao, modalParameters]);
+    }, [dataAPI.getTimeStamp(), formulacao, mPas, modalParameters]);
 
 
 
@@ -618,7 +664,32 @@ export default ({ setFormTitle, ...props }) => {
                     try {
                         const cs = await loadCurrentSettings();
                         let _formulacao = {};
+                        const artigos = [];
+
+                        console.log("entreieeeeeeeeeeeeeee", cs[0].formulacao)
+
                         if (cs[0].formulacao) {
+                            for (let v of cs[0].formulacao.items) {
+                                artigos.push(v.matprima_cod);
+                                /* const _dosers = [];
+                                const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
+                                if (v?.doseador_A) _dosers.push(v.doseador_A);
+                                if (v?.doseador_B) _dosers.push(v.doseador_B);
+                                if (v?.doseador_C) _dosers.push(v.doseador_C);
+                                const _cod = v.matprima_cod;
+                                artigos.push(v.matprima_cod);
+                                const _des = v.matprima_des;
+                                if (_cod in _formulacao) {
+                                    _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
+                                    _formulacao[_cod].cubas = [..._formulacao[_cod].cubas, _cuba];
+                                } else {
+                                    _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
+                                } */
+                            }
+                        }
+
+
+                        /* if (cs[0].formulacao) {
                             for (let v of cs[0].formulacao.items) {
                                 const _dosers = [];
                                 const _cuba = (v?.cuba_A) ? v?.cuba_A : v?.cuba_BC;
@@ -626,6 +697,7 @@ export default ({ setFormTitle, ...props }) => {
                                 if (v?.doseador_B) _dosers.push(v.doseador_B);
                                 if (v?.doseador_C) _dosers.push(v.doseador_C);
                                 const _cod = v.matprima_cod;
+                                artigos.push(_cod);
                                 const _des = v.matprima_des;
                                 if (_cod in _formulacao) {
                                     _formulacao[_cod].dosers = [..._formulacao[_cod].dosers, ..._dosers];
@@ -634,8 +706,12 @@ export default ({ setFormTitle, ...props }) => {
                                     _formulacao[_cod] = { dosers: _dosers, matprima_des: v.matprima_des, cubas: [_cuba] };
                                 }
                             }
-                        }
-                        setFormulacao(_formulacao);
+                        } */
+
+                        const mpas = await loadMPAlternativas(null, [...new Set(artigos)]);
+                        setMPas(mpas);
+                        setFormulacao(cs[0].formulacao);
+                        //setFormulacao(_formulacao);
                         setOfs(cs[0].ofs.map(v => v.of_cod));
                         setAggStatus(cs[0].status);
                         dataAPI.fetchPost();
@@ -817,7 +893,7 @@ export default ({ setFormTitle, ...props }) => {
                     leftToolbar={aggStatus === 3 && <>
                         <Button style={{ fontSize: "20px", height: "40px" }} disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={onShowPicking}>Picar Lotes</Button>
                         {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button disabled={submitting.state} style={{ marginLeft: "15px", fontSize: "20px", height: "40px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "15px", fontSize: "20px", height: "40px" }} icon={<GoArrowUp color='red' fontSize={18} style={{}} />} onClick={() => { setModalParameters({loadData}); showOutModal(); }}>Saída de Linha</Button>}
+                        {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length === 0) && <Button disabled={submitting.state} style={{ marginLeft: "15px", fontSize: "20px", height: "40px" }} icon={<GoArrowUp color='red' fontSize={18} style={{}} />} onClick={() => { setModalParameters({ loadData }); showOutModal(); }}>Saída de Linha</Button>}
                     </>}
                     //content={<PickHolder />}
                     //paginationPos='top'

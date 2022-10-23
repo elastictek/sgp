@@ -19,6 +19,7 @@ import random
 import hashlib
 from django.db import connections
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from producao.api.auth_users import authUser
 
 connMssqlName = "sqlserver"
 connGatewayName = "postgres"
@@ -252,7 +253,7 @@ class RealTimeGeneric(WebsocketConsumer):
         with connections[connMssqlName].cursor() as cursor:
             rows = dbmssql.executeSimpleList(lambda:(f"""
             
-                SELECT TOP 1 ST."CREDATTIM_0",ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0" 
+                SELECT TOP 1 ST."CREDATTIM_0",ST."VCRNUM_0", ST."ITMREF_0",ST."LOT_0",ST."QTYPCU_0",ST."PCU_0", IM."ITMDES1_0", ST."LOC_0"
                 FROM ELASTICTEK."STOJOU" ST 
                 JOIN ELASTICTEK."ITMMASTER" IM on IM."ITMREF_0" = ST."ITMREF_0"
                 WHERE ST."LOC_0"='BUFFER' AND ST."QTYPCU_0">0 AND ST.VCRTYP_0 NOT IN (28) ORDER BY ST."ROWID" DESC
@@ -305,22 +306,27 @@ class RealTimeGeneric(WebsocketConsumer):
 class LotesPickConsumer(WebsocketConsumer):
 
     def getLoteQuantity(self, data):
+        usr = User.objects.get(username=self.scope['user'])
+        au = authUser(usr)
+
         lote = data['lote']
         type= data["type"]
         unit= data["unit"]
         if type=='elasticband':
             connection = connections["default"].cursor()
             rows = dbgw.executeSimpleList(lambda:(f"""
-            select round(pb.comp_actual*pl.largura/1000,2) qtd from producao_bobine pb 
+            select round(pb.comp_actual*pl.largura/1000,2) qtd,estado from producao_bobine pb 
             join producao_largura pl on pl.id=pb.largura_id
-            where nome = '{lote}' and estado='R'"""),connection,{})['rows']
+            where nome = '{lote}' and estado in ('R','DM')"""),connection,{})['rows']
             if len(rows)>0:
                 if rows[0]["qtd"] == 0:
                     self.send(text_data=json.dumps({"error":"A quantidade tem de ser maior que zero!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                elif rows[0]["estado"] == "DM" and (("producao" not in au["items"] or au["items"]["producao"]<200) and au["isAdmin"]==False):
+                    self.send(text_data=json.dumps({"error":"Não tem permissões para adicionar bobines em estado DM!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
                 else:
                     self.send(text_data=json.dumps({"error":None,"row":{"qtd":rows[0]["qtd"],"source":type, "unit":unit, "lote":lote}},default=str))
             else:
-                self.send(text_data=json.dumps({"error":"O lote não existe, ou não está definido como R!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
+                self.send(text_data=json.dumps({"error":"O lote não existe, ou não está definido como R ou DM!","row":{"qtd":0,"source":type, "unit":unit, "lote":lote}},default=str))
         elif type=='bobinagem':
             connection = connections["default"].cursor()
             rows = dbgw.executeSimpleList(lambda:(f"""
@@ -381,6 +387,9 @@ class LotesPickConsumer(WebsocketConsumer):
             ) t
             where (QTY_SUM > 0) 
         """),conngw,{})["rows"]
+
+        
+
         if len(rows)>0:            
             conn = connections["default"].cursor()
             rowsx = db.executeSimpleList(lambda:(f"""select id from lotesnwlinha where n_lote = '{lote}' and artigo_cod='{rows[0]["artigo_cod"]}'"""),conn,{})['rows']

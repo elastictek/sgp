@@ -659,6 +659,7 @@ const Action = ({ v, r, dataAPI }) => {
                 "MODO-EXP": values.modo_exp,
                 ...(values.carga && { "CARGA_ID": values.carga }),
                 "PRF_COD": r.prf,
+                "ORDER_COD": r.iorder,
                 "PO_COD": values.po
             }
         };

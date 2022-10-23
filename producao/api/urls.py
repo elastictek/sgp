@@ -6,6 +6,8 @@ from producao.api import reports
 from producao.api import materias_primas
 from producao.api import currentsettings
 from producao.api import print
+from producao.api import auth_users
+from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
 urlpatterns = [
@@ -51,10 +53,9 @@ urlpatterns = [
     re_path(r'^setofabricostatus/$', views.SetOrdemFabricoStatus),
     re_path(r'^sellitemsdetailsget/$', views.SellItemsDetailsGet),
     re_path(r'^materiasprimasget/$', views.MateriasPrimasGet),
-    re_path(r'^materiasprimaslookup/$', views.MateriasPrimasLookup),
     re_path(r'^bomlookup/$', views.BomLookup),
     
-     re_path(r'^getauthuser/$', views.GetAuthUser),
+     re_path(r'^getauthuser/$', auth_users.GetAuthUser),
     #Clientes
     re_path(r'^sellcustomerslookup/$', views.SellCustomersLookup),
     #End Clientes
@@ -120,13 +121,7 @@ urlpatterns = [
 
     re_path(r'^downloadfile/$', views.download_file),
     
-    #CURRENT SETTINGS
-    re_path(r'^currentsettingsget/$', views.CurrentSettingsGet),
     re_path(r'^loteslookup/$', views.LotesLookup),
-    re_path(r'^updatecurrentsettings/$', views.UpdateCurrentSettings),
-    re_path(r'^changecurrsettings/$', views.ChangeCurrSettingsStatus),
-    re_path(r'^currentsettingsinproductionget/$', views.CurrentSettingsInProductionGet),
-    #END CURRENT SETTINGS
 
     #BOBINAGENS
     re_path(r'^bobinagenslist/$', views.BobinagensList),
@@ -145,6 +140,14 @@ urlpatterns = [
     re_path(r'^deletenwitem/$', materias_primas.DeleteNWItem),
     re_path(r'^savenwitems/$', materias_primas.SaveNWItems),
     re_path(r'^updatenw/$', materias_primas.UpdateNW),
+    re_path(r'^listmpalternativas/$', materias_primas.ListMPAlternativas),
+    re_path(r'^savempalternativas/$', materias_primas.SaveMPAlternativas),
+    
+    re_path(r'^materiasprimaslookup/$', materias_primas.MateriasPrimasLookup),
+    re_path(r'^listmpgroupslookup/$', materias_primas.ListMPGroupsLookup),
+    re_path(r'^getmpalternativas/$', materias_primas.GetMPAlternativas),
+    
+    
     
     re_path(r'^recicladolist/$', views.RecicladoList),
     re_path(r'^recicladoloteslist/$', views.RecicladoLotesList),
@@ -171,12 +174,13 @@ urlpatterns = [
     re_path(r'^savegranuladoitems/$', materias_primas.SaveGranuladoItems),
     re_path(r'^granuladolistlookup/$', materias_primas.GranuladoListLookup),
     re_path(r'^updategranulado/$', materias_primas.UpdateGranulado),
+    re_path(r'^deletegranulado/$', materias_primas.DeleteGranulado),
     #PICAGEM LOTES
 
     #MATERIAS-PRIMAS
-    re_path(r'^stocklist/$', views.StockList),
+    #re_path(r'^stocklist/$', views.StockList),
     re_path(r'^stocklistbuffer/$', materias_primas.MateriasPrimasList),
-    re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
+    #re_path(r'^stocklistbyigbobinagem/$', views.StockListByIgBobinagem),
     re_path(r'^mpginout/$', views.MPGranuladoIO),
     re_path(r'^pickmp/$', views.PickMP),
     re_path(r'^printmpbuffer/$', print.PrintMPBuffer),
@@ -188,14 +192,17 @@ urlpatterns = [
     #CURRENTSETTINGS
     re_path(r'^eventosproducao/$', currentsettings.EventosProducao),
     re_path(r'^auditcurrentsettingsget/$', currentsettings.AuditCurrentSettingsGet),
-    
+    re_path(r'^currentsettingsget/$', currentsettings.CurrentSettingsGet),
+    re_path(r'^updatecurrentsettings/$', currentsettings.UpdateCurrentSettings),
+    re_path(r'^changecurrsettings/$', currentsettings.ChangeCurrSettingsStatus),
+    re_path(r'^currentsettingsinproductionget/$', currentsettings.CurrentSettingsInProductionGet),
     #CURRENTSETTINGS
 
 
     #REPORTS
     re_path(r'^ofabricotimelinelist',views.OFabricoTimeLineList),
     re_path(r'^lineloglist/$',views.LineLogList),
-    re_path(r'^stockloglist/$',views.StockLogList),
+    #re_path(r'^stockloglist/$',views.StockLogList),
     re_path(r'^createbobinagem/$',views.CreateBobinagem),
     re_path(r'^bobinesoriginaislist/$',views.BobinesOriginaisList),
     re_path(r'^expedicoestempolist/$',views.ExpedicoesTempoList),

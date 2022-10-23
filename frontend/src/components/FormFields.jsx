@@ -96,7 +96,7 @@ const StyledHRuleTitle = styled('div').withConfig({
     
 `;
 
-export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, setShowFilter, form, onFinish, mask = false }) => {
+export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, setShowFilter, form, onFinish, mask = false, dataAPI }) => {
     return (
         <>
             <Drawer
@@ -109,7 +109,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                 bodyStyle={{ paddingBottom: 80 }}
                 footer={
                     <div style={{ textAlign: 'right' }}>
-                        <Button onClick={() => form.resetFields()} style={{ marginRight: 8 }}>Limpar</Button>
+                        <Button onClick={() => {form.resetFields();dataAPI.addFilters({},true);}} style={{ marginRight: 8 }}>Limpar</Button>
                         <Button onClick={() => onFinish("filter",form.getFieldsValue(true))} type="primary">Aplicar</Button>
                     </div>
                 }
@@ -274,7 +274,7 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
     );
 };
 
-export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }) => {
+export const AutoCompleteField =  React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }, ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -308,6 +308,8 @@ export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChang
 
     return (
         <AutoComplete
+            dropdownMatchSelectWidth={false}
+            ref={ref}
             value={value}
             onSearch={debounceFetcher}
             onChange={onSelectChange}
@@ -317,9 +319,9 @@ export const AutoCompleteField = ({ fetchOptions, debounceTimeout = 800, onChang
             <Input size={size} />
         </AutoComplete>
     );
-}
+});
 
-export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest }) => {
+export const SelectDebounceField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest },ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -353,6 +355,7 @@ export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onCha
 
     return (
         <Select
+            dropdownMatchSelectWidth={false}
             labelInValue
             filterOption={false}
             onSearch={debounceFetcher}
@@ -363,7 +366,7 @@ export const SelectDebounceField = ({ fetchOptions, debounceTimeout = 800, onCha
             options={options}
         />
     );
-}
+});
 
 export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */ textField, showSearch = false, optionsRender, ...rest }, ref) => {
     //const options = data.map((d,i) => <Option disabled={(i<5) ? true :false} key={d[keyField]} value={valueField ? d[valueField] : d[keyField]}>111{d[textField]}</Option>);
@@ -371,8 +374,8 @@ export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
 
     useEffect(()=>{
-        console.log("sssssssssssssss")
-        console.log(options,rest)
+/*         console.log("sssssssssssssss")
+        console.log(options,rest) */
     },[])
 
 
@@ -383,7 +386,7 @@ export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */
     }
 
     return (
-        <Select ref={ref} showSearch={showSearch} options={options} {...rest}>
+        <Select ref={ref} showSearch={showSearch} options={options} dropdownMatchSelectWidth={false} {...rest}>
             {/* {optionsRender({ data, keyField, valueField })} */}
         </Select>
     );
@@ -515,6 +518,7 @@ const FieldRowMiddle = styled('div').withConfig({
     flex-shrink: 0;
     flex-wrap: nowrap;
     align-items: stretch;
+    ${({ layout = {} }) => css`${layout?.middle}`} 
 `;
 
 const FieldLeft = styled('div').withConfig({
@@ -905,7 +909,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             )
                         default:
 
-                            if ("addonAfter" in children.props || "addonAfter" in children.props) {
+                            if ("addonAfter" in children.props || "addonBefore" in children.props) {
                                 return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },minHeight: height(), display: "flex", flexDirection: "row", alignItems:"center", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>

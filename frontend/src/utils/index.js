@@ -77,15 +77,15 @@ export const getFilterValue = (v, type = 'exact') => {
             return `${val}`;
         } else {
             switch (type) {
-                case 'any': return `%${val.replaceAll(' ', '%%')}%`;
-                case 'start': return `${val}%`;
-                case 'end': return `${val}%`;
-                case '==': return `==${val}`;
-                case '<': return `<${val}`;
-                case '>': return `>${val}`;
-                case '<=': return `<=${val}`;
-                case '>=': return `>=${val}`;
-                default: return `==${val}%`;
+                case 'any': return `%${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
+                case 'start': return `${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
+                case 'end': return `%${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}`;
+                case '==': return `==${val.replaceAll('==', '')}`;
+                case '<': return `<${val.replaceAll('==', '')}`;
+                case '>': return `>${val.replaceAll('==', '')}`;
+                case '<=': return `<=${val.replaceAll('==', '')}`;
+                case '>=': return `>=${val.replaceAll('==', '')}`;
+                default: return `==${val.replaceAll('==', '').replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
             }
         }
     }

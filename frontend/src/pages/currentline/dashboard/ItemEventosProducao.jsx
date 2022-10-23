@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, Suspense, useContext, useLayoutEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense, useContext, useLayoutEffect, useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import Joi from 'joi';
 import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, CINTASPALETES_OPTIONS, PALETIZACAO_ITEMS, PALETE_SIZES, ARTIGOS_SPECS } from "config";
+import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, CINTASPALETES_OPTIONS, PALETIZACAO_ITEMS, PALETE_SIZES, ARTIGOS_SPECS, GAMAOPERATORIA } from "config";
 import { useModal } from "react-modal-hook";
 import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
@@ -14,7 +14,7 @@ import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Drawer, T
 const { Panel } = Collapse;
 const { TabPane } = Tabs;
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, FieldTimeOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -33,6 +33,7 @@ import IconButton from "components/iconButton";
 import { CgArrowDownO, CgArrowUpO, CgCloseO } from 'react-icons/cg';
 import SvgSchema from '../ordemfabrico/paletizacaoSchema/SvgSchema';
 import FormFormulacaoDosers from './FormFormulacaoDosers';
+const FormCortes = React.lazy(() => import('../FormCortes'));
 
 
 const title = "Eventos da Linha";
@@ -90,8 +91,25 @@ const loadAuditCurrentSettings = async ({ acsid, signal }) => {
     return rows;
 }
 
+
+const defaultTab = (type_op) => {
+    switch (type_op) {
+        case "formulacao_formulation_change": return '4';
+        case "formulacao_dosers_change": return '4';
+        case "created": return '1';
+        case "status_finished": return '1';
+        case "status_inproduction": return '1';
+        case "status_stopped": return '1';
+        case "gamaoperatoria": return '5';
+        case "cortes": return '6';
+        case "nonwovens": return '2';
+        case "specs": return '3';
+        default: return '1';
+    }
+}
+
 const OrdemFabrico = ({ record }) => {
-    const [activeTab, setActiveTab] = useState("1");
+    const [activeTab, setActiveTab] = useState();
     const submitting = useSubmitting(true);
     const permission = usePermission();
     const navigate = useNavigate();
@@ -99,19 +117,31 @@ const OrdemFabrico = ({ record }) => {
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
 
+    const dTab = useMemo(() => defaultTab(record.type_op), [record.type_op]);
+
+    useEffect(() => {
+        setActiveTab(dTab);
+    }, [dTab])
+
     const loadData = async ({ signal }) => {
         try {
             let acs = await loadAuditCurrentSettings({ acsid: record.id, signal });
             if (acs.length > 0) {
                 const artigospecs = (typeof acs[0].artigospecs === "string") ? JSON.parse(acs[0].artigospecs) : acs[0].artigospecs;
+                const gamaoperatoria = (typeof acs[0].gamaoperatoria === "string") ? JSON.parse(acs[0].gamaoperatoria) : acs[0].gamaoperatoria;
+                const cortes = (typeof acs[0].cortes === "string") ? JSON.parse(acs[0].cortes) : acs[0].cortes;
+                const cortesordem = (typeof acs[0].cortesordem === "string") ? JSON.parse(acs[0].cortesordem) : acs[0].cortesordem;
                 const formulacao = (typeof acs[0].formulacao === "string") ? JSON.parse(acs[0].formulacao) : acs[0].formulacao;
                 const nonwovens = (typeof acs[0].nonwovens === "string") ? JSON.parse(acs[0].nonwovens) : acs[0].nonwovens;
                 const ofs = (typeof acs[0].ofs === "string") ? JSON.parse(acs[0].ofs) : acs[0].ofs;
                 const emendas = (typeof acs[0].emendas === "string") ? JSON.parse(acs[0].emendas) : acs[0].emendas;
                 const paletizacao = (typeof acs[0].paletizacao === "string") ? JSON.parse(acs[0].paletizacao) : acs[0].paletizacao;
                 const values = {
+                    cortes,
+                    cortesordem,
                     nonwovens,
                     artigospecs,
+                    gamaoperatoria,
                     formulacao,
                     ofs: ofs.map(v => {
                         let _em = emendas.find(x => x.of_id == v.of_id).emendas;
@@ -139,8 +169,8 @@ const OrdemFabrico = ({ record }) => {
         { label: 'Nonwovens', key: '2', children: <YScroll style={{ height: "calc(100vh - 160px)" }}><FormNonwovens form={form} record={form.getFieldsValue(["nonwovens"])} /></YScroll> },
         { label: 'Especificações', key: '3', children: <YScroll style={{ height: "calc(100vh - 160px)" }}><FormArtigoSpecs form={form} record={form.getFieldsValue(["artigospecs"])} /></YScroll> },
         { label: 'Formulação', key: '4', children: <YScroll style={{ height: "calc(100vh - 160px)" }}><FormFormulacaoDosers forInput={false} form={form} record={form.getFieldsValue(["formulacao"])} /></YScroll> },
-        { label: 'Gama Operatória', key: '5', children: 'Content 6' },
-        { label: 'Cortes', key: '6', children: 'Content 7' }
+        { label: 'Gama Operatória', key: '5', children: <YScroll style={{ height: "calc(100vh - 160px)" }}><FormGamaOperatoria form={form} record={form.getFieldsValue(["gamaoperatoria"])} /></YScroll> },
+        { label: 'Cortes', key: '6', children: <Suspense fallback={<></>}><FormCortes wrapForm={false} forInput={false} record={{ ...form.getFieldsValue(["cortesordem"]), ...form.getFieldsValue(["cortes"]), ...form.getFieldsValue(["ofs"]) }} /></Suspense> }
     ];
 
     useEffect(() => {
@@ -151,9 +181,11 @@ const OrdemFabrico = ({ record }) => {
 
     return (
         <FormContainer id="frm-of-c" schema={schema} form={form} wrapForm={true} wrapFormItem={true} label={{ enabled: false }} forInput={false} fluid style={{ padding: "0px" }}>
-            <Row nogutter><Col>
-                <Tabs /* onChange={() => { }} */ type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={(k) => setActiveTab(k)} items={tabPanes} />
-            </Col></Row>
+            {submitting.state === false &&
+                <Row nogutter><Col>
+                    <Tabs /* onChange={() => { }} */ type="card" dark={1} activeKey={activeTab} onChange={(k) => setActiveTab(k)} items={tabPanes} />
+                </Col></Row>
+            }
         </FormContainer>
     );
 }
@@ -365,20 +397,20 @@ const FormNonwovens = ({ record, form }) => {
         <FormContainer id="v-nw" form={form} wrapForm={false} wrapFormItem={true} label={{ enabled: false }} forInput={false} fluid>
             <Row>
                 <Col>
-                    <Field forViewBackground={forViewBackground} name={["nonwovens", "nw_des_sup"]} label={{ enabled: true, text: "Nonwoven Superior", pos: "top" }}>
-                        <Input size="small" />
+                    <Field forViewBackground={forViewBackground} forViewBorder={false} name={["nonwovens", "nw_cod_sup"]} label={{ enabled: true, text: "Nonwoven Superior", align: "end" }}>
+                        <Input style={{ fontWeight: 700 }} size="small" />
                     </Field>
-                    <Field forViewBackground={forViewBackground} forViewBorder={false} name={["nonwovens", "nw_cod_sup"]} label={{ enabled: false }}>
+                    <Field forViewBackground={forViewBackground} name={["nonwovens", "nw_des_sup"]} label={{ enabled: false, text: "Nonwoven Superior", pos: "top" }}>
                         <Input size="small" />
                     </Field>
                 </Col>
             </Row>
             <Row>
                 <Col>
-                    <Field forViewBackground={forViewBackground} name={["nonwovens", "nw_des_inf"]} label={{ enabled: true, text: "Nonwoven Inferior", pos: "top" }}>
-                        <Input size="small" />
+                    <Field forViewBackground={forViewBackground} forViewBorder={false} name={["nonwovens", "nw_cod_inf"]} label={{ enabled: true, text: "Nonwoven Inferior", align: "end" }}>
+                        <Input style={{ fontWeight: 700 }} size="small" />
                     </Field>
-                    <Field forViewBackground={forViewBackground} forViewBorder={false} name={["nonwovens", "nw_cod_inf"]} label={{ enabled: false }}>
+                    <Field forViewBackground={forViewBackground} name={["nonwovens", "nw_des_inf"]} label={{ enabled: false, text: "Nonwoven Inferior", pos: "top" }}>
                         <Input size="small" />
                     </Field>
                 </Col>
@@ -400,15 +432,15 @@ const FormArtigoSpecs = ({ record, form }) => {
         <Container fluid style={{ padding: "0px" }}>
             <Row style={{ border: "solid 1px #dee2e6", background: "#f8f9fa", padding: "5px" }}>
                 <Col xs={6}>
-                    <Field forViewBackground={forViewBackground} name={["artigospecs","designacao"]} label={{ enabled: false, text: "Especificações", pos: "left" }}>
-                        <Input size="small" addonAfter={<b>v.{record.artigospecs.versao}</b>}/>
+                    <Field forViewBackground={forViewBackground} name={["artigospecs", "designacao"]} label={{ enabled: false, text: "Especificações", pos: "left" }}>
+                        <Input size="small" addonAfter={<b>v.{record.artigospecs.versao}</b>} />
                     </Field>
                 </Col>
             </Row>
-            <Row nogutter style={{margin:"10px 0px"}}>
+            <Row nogutter style={{ margin: "10px 0px" }}>
                 <Col xs={6}>
-                    <Field forViewBackground={forViewBackground} name={["artigospecs","cliente_nome"]} label={{ enabled: false }}>
-                        <Input size="small"/>
+                    <Field forViewBackground={forViewBackground} name={["artigospecs", "cliente_nome"]} label={{ enabled: false }}>
+                        <Input size="small" />
                     </Field>
                 </Col>
             </Row>
@@ -468,6 +500,78 @@ const FormArtigoSpecs = ({ record, form }) => {
     );
 }
 
+const FormGamaOperatoria = ({ record, form }) => {
+
+    const getItem = (key) => {
+        return GAMAOPERATORIA.find(x => x.key === key);
+    }
+
+    return (
+        <Container fluid style={{ padding: "0px" }}>
+            <Row style={{ border: "solid 1px #dee2e6", background: "#f8f9fa", padding: "5px", marginBottom: "10px" }}>
+                <Col xs={6}>
+                    <Field forViewBackground={forViewBackground} name={["gamaoperatoria", "designacao"]} label={{ enabled: false, text: "Gama Operatória", pos: "left" }}>
+                        <Input size="small" addonAfter={<b>v.{record.gamaoperatoria.versao}</b>} />
+                    </Field>
+                </Col>
+            </Row>
+            {/* <Row nogutter style={{ margin: "10px 0px" }}>
+                <Col xs={6}>
+                    <Field forViewBackground={forViewBackground} name={["gamaoperatoria", "cliente_nome"]} label={{ enabled: false }}>
+                        <Input size="small" />
+                    </Field>
+                </Col>
+            </Row> */}
+            <Row nogutter>
+                <Col>
+                    <Form.List name={[`gamaoperatoria`, `items`]}>
+                        {(fields, { add, remove, move }) => {
+                            const _values = record.gamaoperatoria;
+                            const addRow = (fields) => { }
+                            const removeRow = (fieldName, field) => { }
+                            const moveRow = (from, to) => { }
+                            return (
+                                <Container fluid style={{ padding: "0px" }}>
+                                    {fields.map((field, index) => {
+                                        let v = getItem(_values.items[index].item_key);
+                                        return (
+                                            <Row gutterWidth={2} wrap='nowrap' key={`g-oper-${index + 1}`}>
+                                                <Col xs={5} style={{ fontSize: "11px" }}><b>{v.designacao}</b> ({v.unidade})</Col>
+                                                <Col>
+                                                    <Container fluid style={{ padding: "0px" }}>
+                                                        <Row gutterWidth={2}>
+                                                            {_values.items[index].item_values.map((x, i) => {
+                                                                return (
+                                                                    <React.Fragment key={`ioper-${index}-${i}`}>
+                                                                        <Col style={{ textAlign: "center" }} xs={1}>
+                                                                            <Field name={[field.name, "item_values", i]} label={{ enabled: false }}>
+                                                                                <InputNumber min={v.min} max={v.max} controls={false} size="small" precision={v?.precision} />
+                                                                            </Field>
+                                                                        </Col>
+                                                                    </React.Fragment>
+                                                                )
+                                                            })}
+                                                            <Col style={{ textAlign: "center" }}>
+                                                                <Field layout={{ center: { "max-width": "50px" }, middle: { "justify-content": "end" } }} name={[field.name, "tolerancia"]} label={{ enabled: false }}>
+                                                                    <InputNumber addonBefore="&plusmn;" min={0} max={100} controls={false} size="small" precision={v?.precision} />
+                                                                </Field>
+                                                            </Col>
+                                                        </Row>
+                                                    </Container>
+                                                </Col>
+                                            </Row>
+                                        );
+                                    })}
+                                </Container>
+                            );
+                        }}
+                    </Form.List >
+                </Col>
+            </Row>
+        </Container>
+    );
+}
+
 
 
 export default ({ record, card, parentReload }) => {
@@ -511,7 +615,7 @@ export default ({ record, card, parentReload }) => {
     }
 
     const onOpen = (component, data) => {
-        setModalParameters({ [component]: { ...data, title: <div>Ordem de Fabrico em <span style={{ fontWeight: 900 }}>{moment(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } });
+        setModalParameters({ [component]: { ...data, title: <div style={{display:"flex",alignItems:"center"}}><FieldTimeOutlined style={{fontSize:"18px",marginRight:"5px"}}/>Ordem de Fabrico em <span style={{ marginLeft:"5px", fontWeight: 900 }}>{moment(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } });
         showModal();
         //setVisible(prev => ({...prev, [component]: {...data, title: <div>Ordem de Fabrico em <span style={{ fontWeight: 900 }}>{moment(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } }));
     }
