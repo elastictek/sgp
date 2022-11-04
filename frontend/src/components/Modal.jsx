@@ -3,6 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import YScroll from "components/YScroll";
 import { Modal, Drawer } from "antd";
+import { ConditionalWrapper } from './conditionalWrapper';
 
 import { MediaContext } from '../pages/App';
 
@@ -22,7 +23,7 @@ const TitleModal = ({ title, eTitle }) => {
 
 
 
-export default ({ type = "modal", responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, ...props }) => {
+export default ({ type = "modal", responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -59,8 +60,8 @@ export default ({ type = "modal", responsive = true, width = 800, height = 300, 
 
     const wrapWithClose = (method) => async () => {
         method && await method();
-        if (props?.onCancel) {
-            props.onCancel();
+        if (onCancel) {
+            onCancel();
         }
     };
 
@@ -82,8 +83,13 @@ export default ({ type = "modal", responsive = true, width = 800, height = 300, 
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
-                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}</Suspense>}
-                    {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) } })}
+                    <ConditionalWrapper
+                        condition={yScroll}
+                        wrapper={children => <YScroll>{children}</YScroll>}
+                    >
+                        {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(onCancel), closeParent: wrapWithClose(onCancel) } })}</Suspense>}
+                        {(children && !lazy) && React.cloneElement(children, { ...children.props, ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(onCancel), closeParent: wrapWithClose(onCancel) } })}
+                    </ConditionalWrapper>
                 </Modal>
             }
             {(size.computed && type === "drawer") &&

@@ -82,12 +82,11 @@ export default ({ title, right, history = [], details }) => {
                             {title}
                         </Row>}
                     </Col>
-                    <Col style={{ alignItems: "center" }}>
-                        {right && <Row gutterWidth={2} justify='end'>
+                    {right && <Col style={{ alignItems: "center" }}>
+                        <Row gutterWidth={2} justify='end'>
                             {right}
                         </Row>
-                        }
-                    </Col>
+                    </Col>}
                 </Row>
                 {details && <Row>
                     <Col>

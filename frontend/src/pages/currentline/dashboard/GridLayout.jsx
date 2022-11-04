@@ -575,6 +575,7 @@ export default (props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [currentSettings, setCurrentSettings] = useState({});
+    const [cbp, setCbp] = useState('lg');
     const [currentBreakpoint, setCurrentBreakpoint] = useState();
     const [currentDashboard, setCurrentDashboard] = useState();
     const [layouts, setLayouts] = useState();
@@ -587,7 +588,7 @@ export default (props) => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [rightDrawerVisible, setRightDrawerVisible] = useState(false);
     const permission = usePermission();
-    
+
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
         onOpen: () => console.log(`Connected to Web Socket`),
         queryParams: { /* 'token': '123456' */ },
@@ -597,14 +598,14 @@ export default (props) => {
         reconnectAttempts: 500
     });
 
-/*     const loadData = async ({ signal, aggId } = {}) => {
-        const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
-        request();
-        const ok = dataAPI.fetchPost();
-        return (ok) ? setInterval(request, 30000) : null;
-    } */
+    /*     const loadData = async ({ signal, aggId } = {}) => {
+            const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+            request();
+            const ok = dataAPI.fetchPost();
+            return (ok) ? setInterval(request, 30000) : null;
+        } */
 
-    const loadInterval = async () =>{
+    const loadInterval = async () => {
         const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
         request();
         return setInterval(request, 30000);
@@ -619,10 +620,10 @@ export default (props) => {
     useEffect(() => {
         if (lastJsonMessage) {
             const controller = new AbortController();
-            loadData({ aggId: props?.aggId , signal: controller.signal });
+            loadData({ aggId: props?.aggId, signal: controller.signal });
             return (() => { controller.abort(); });
         }
-    }, [lastJsonMessage?.hash,location]);
+    }, [lastJsonMessage?.hash, location]);
 
 
 
@@ -631,11 +632,11 @@ export default (props) => {
 
 
 
-/*     useEffect(() => {
-        const controller = new AbortController();
-        loadData({ aggId: props?.aggId, signal: controller.signal });
-        return (() => controller.abort());
-    }, [location]); */
+    /*     useEffect(() => {
+            const controller = new AbortController();
+            loadData({ aggId: props?.aggId, signal: controller.signal });
+            return (() => controller.abort());
+        }, [location]); */
 
     const hideSettings = () => {
         setClickSettings(false);
@@ -865,7 +866,7 @@ export default (props) => {
                             let response = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: permission.auth.user }, parameters: {} });
                             if (response.data.status !== "error" && response.data.rows.length > 0) {
                                 saveToLS("saveall", response.data.rows[0].layout, permission.auth.user);
-                            }else{
+                            } else {
                                 let defaultt = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: "default" }, parameters: {} });
                                 if (defaultt.data.status !== "error" && defaultt.data.rows.length > 0) {
                                     saveToLS("saveall", defaultt.data.rows[0].layout, permission.auth.user);
@@ -952,8 +953,8 @@ export default (props) => {
                         rowHeight={35}
                         preventCollision={preventCollisions}
                         allowOverlap={overlap}
-                        measureBeforeMount={true}
-
+                        measureBeforeMount={false}
+                        onBreakpointChange={(v) => { setCbp(v); console.log("-", v === "lg", "------nnnnn------------cbp") }}
                         //transformScale={0.8}
                         onLayoutChange={onLayoutChange}
                     >
@@ -989,6 +990,6 @@ export default (props) => {
                 </Suspense>
             </>
             }
-        </div>
+        </div >
     );
 }

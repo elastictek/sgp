@@ -268,8 +268,8 @@ def MateriasPrimasList(request, format=None):
             SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
             LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
             ST."PCU_0",mprima."ITMDES1_0"
-            FROM ELASTICTEK.STOCK STK
-            JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
+            --FROM ELASTICTEK.STOCK STK
+            FROM ELASTICTEK.STOJOU ST --ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
             JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
             --LEFT JOIN (select * from openquery([SGP-PROD], 'select distinct vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
             WHERE ST.VCRTYP_0 NOT IN (28)
@@ -285,7 +285,9 @@ def MateriasPrimasList(request, format=None):
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
     if lookup:
-        response = dbmssql.executeSimpleList(sql(lambda v:'',lambda v:v,lambda v:v), connection, parameters, [])
+        print(sql(lambda v:v,lambda v:v,lambda v:v))
+        print(parameters)
+        response = dbmssql.executeSimpleList(sql(lambda v:v,lambda v:v,lambda v:v), connection, parameters, [])
     else:
         response = dbmssql.executeList(sql, connection, parameters, [])
     return Response(response)
@@ -485,7 +487,7 @@ def UpdateNW(request, format=None):
                     dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwd["id"]}'},None,False)
                     db.execute(dml.statement, cursor, dml.parameters)
                     if "status" in data and data["status"]==0:
-                        dml = db.dml(TypeDml.UPDATE,{"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1',"type":f'=={nwd["type"]}'},None,False,["queue"])
+                        dml = db.dml(TypeDml.UPDATE,{"t_stamp_out":datetime.now(),"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1',"type":f'=={nwd["type"]}'},None,False,["queue"])
                         db.execute(dml.statement, cursor, dml.parameters)
                 else:
                     return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
@@ -562,9 +564,6 @@ def GranuladoListInLine(request, format=None):
         return Response({"status": "error", "title": "Erro!"})
     return Response(response)
 
-
-
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 def GranuladoList(request, format=None):
@@ -590,38 +589,71 @@ def GranuladoList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = db.dql(request.data, False)
-    cols = f"""t.*,acs.ofs ->> "$[*].of_cod" ofs"""
+    cols = f"""t.*,acs.ofs ->> "$[*].of_cod" ofs,adiff.avgdiff"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
+            with AVGDIFF AS (
+                select artigo_cod,AVG(TIMESTAMPDIFF(second,in_t,out_t)) avgdiff
+                from (
+                SELECT ll.artigo_cod,MIN(ll.t_stamp) in_t,MAX(ll.t_stamp) out_t
+                FROM lotesgranuladolinha ll
+                WHERE ll.`status`<>0
+                GROUP BY ll.artigo_cod,ll.n_lote,ll.vcr_num
+                ) t
+                where t.in_t<>t.out_t
+                GROUP BY t.artigo_cod
+            )
             select 
                 {c(f'{dql.columns}')}
             from(
             select distinct 
-            t.type_mov,t.artigo_cod,t.n_lote,t.t_stamp,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.`order`,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
+            t.id,t.type_mov,t.artigo_cod,t.n_lote,t.qty_lote,t.vcr_num,t.artigo_des,t.in_t,t.out_t,TIMESTAMPDIFF(second,in_t,out_t) `diff`,t.max_order,t.t_stamp,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
             ,(select GROUP_CONCAT(tld.doser) dosers from lotesdoserslinha tld where tld.loteslinha_id=t.loteslinha_id) dosers
             from(
-            select ld.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ld.t_stamp,ll.qty_lote,ll.vcr_num,ll.artigo_des,
-            MAX(ld.`order`) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
-            ld.`order`,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed
+            select ll.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ll.qty_lote,ll.vcr_num,ll.artigo_des,
+            MIN(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) in_t,
+            MAX(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) out_t,
+            MAX(ld.t_stamp) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
+            ld.t_stamp,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed
             from lotesdoserslinha ld
             JOIN lotesgranuladolinha ll on ll.id=ld.loteslinha_id
             WHERE ld.type_mov in (0,1,2) AND ld.closed=0 AND ld.`status`<>0
             ) t
-            where `order` = max_order
+            where t_stamp = max_order
             {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) t
             join audit_currentsettings acs on acs.id=t.audit_cs_id
+            join AVGDIFF adiff on adiff.artigo_cod=t.artigo_cod
         """
     )
+    sqlCount = f""" 
+           select 
+            count(*)
+            from(
+            select distinct 
+            t.id,t.type_mov,t.artigo_cod,t.n_lote,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.t_stamp,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
+            from(
+            select ll.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ll.qty_lote,ll.vcr_num,ll.artigo_des,
+            ld.t_stamp,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed,
+            MAX(ld.t_stamp) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order
+            from lotesdoserslinha ld
+            JOIN lotesgranuladolinha ll on ll.id=ld.loteslinha_id
+            WHERE ld.type_mov in (0,1,2) AND ld.closed=0 AND ld.`status`<>0
+            ) t
+            where t_stamp = max_order
+            {f.text} {f2["text"]}
+            ) t
+        """
+
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     try:
-        response = db.executeList(sql, connection, parameters)
+        response = db.executeList(sql, connection, parameters,[],None,sqlCount)
     except Exception as error:
-        print(error)
-        return Response({"status": "error", "title": "Erro ao remover lote!"})
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
     return Response(response)
 
 @api_view(['POST'])
@@ -729,7 +761,6 @@ def SaveGranuladoItems(request, format=None):
         print(error)
         return Response({"status": "error", "title": str(error)})
 
-
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -767,8 +798,7 @@ def GranuladoListLookup(request, format=None):
 def UpdateGranulado(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
-    print(filter)
-    print(data)
+
     def checkGranulado(vcr_num, cursor):
         f = Filters({"status": -1,"vcr_num":vcr_num})
         f.where()
@@ -777,11 +807,10 @@ def UpdateGranulado(request, format=None):
         f.value("and")
         response = db.executeSimpleList(lambda: (f"""
             select * from (
-            select *,max(`order`) over () maxorder
+            select *,max(t_stamp) over () maxorder
             from lotesgranuladolinha
             {f.text}
-            )t where `order`=maxorder and type_mov=1 
-            #and exists (select 1 from lotesdoserslinha ldl where ldl.agg_of_id={acs["agg_of_id"]} and ldl.loteslinha_id=t.id)
+            )t where t_stamp=maxorder and type_mov=1
             limit 1
         """), cursor, f.parameters)
         if len(response["rows"])>0:
@@ -814,37 +843,189 @@ def UpdateGranulado(request, format=None):
                 dml = db.dml(TypeDml.INSERT, d,"lotesdoserslinha",None,None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
 
+    def getCurrentSettingsData(data,cursor):
+        f = Filters({"t_stamp":data["t_stamp"]})
+        f.where()
+        f.add(f'acs.`timestamp` <= :t_stamp', True)
+        f.value("and")
+        if data["type_mov"] == 1:      
+            response = db.executeSimpleList(lambda: (f"""
+                with TCURRENTID AS(
+                    SELECT 
+                    case when `status`<>3 THEN (SELECT t.id FROM audit_currentsettings t where t.id>acs.id and t.`status`=3 limit 1) ELSE acs.id END id
+                    FROM audit_currentsettings acs 
+                    {f.text}
+                    order by acs.id desc
+                    limit 1
+                )
+                SELECT acs.agg_of_id,acs.id FROM audit_currentsettings acs
+                JOIN TCURRENTID t ON t.id=acs.id
+            """), cursor, f.parameters)
+        else:
+            response = db.executeSimpleList(lambda: (f"""
+               	SELECT acs.id,acs.agg_of_id
+                FROM audit_currentsettings acs 
+                {f.text}
+                and acs.`status` in (1,3,9)
+                order by acs.id desc
+                limit 1
+            """), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                acs = inProduction({},cursor)
-                gr = checkGranulado(filter["vcr_num"],cursor)
-                if (gr is not None and gr["type_mov"]==1):
-                    id =gr["id"]
-                    del gr["id"]
-                    del gr["t_stamp"]
-                    del gr["group"]
-                    del gr["order"]
-                    del gr["maxorder"]
-                    gr = {key: gr[key] for key in gr if key not in ["id", "t_stamp","group","order","maxorder"]}
-                    gr["type_mov"]=0
-                    gr["qty_reminder"]= filter["qty_reminder"] if "qty_reminder" in filter else 0
-                    gr["t_stamp"]: datetime.now()
-                    gr["user_id"]=request.user.id
-                    dml = db.dml(TypeDml.INSERT, gr,"lotesgranuladolinha",None,None,False)
+                if ("type" in data and data["type"]=="datagrid"):
+                    errors = []
+                    success = []
+                    for v in data["rows"]:
+                        try:
+                            args = (v["vcr_num"],v["type_mov"],v["t_stamp"], v["qty_lote"] if v["type_mov"]==1 else v["qty_reminder"])
+                            cursor.callproc('adjust_granulado_line',args)
+                            if "vcr_num_original" in v and v["vcr_num_original"]!=v["vcr_num"]:
+                                args = (v["vcr_num_original"],v["vcr_num"],v["n_lote"], v["qty_lote"])
+                                cursor.callproc('change_nlote_granulado_line',args)
+                            success.append(f"""O lote {v["n_lote"]} com o movimento {v["vcr_num"]} atualizado com sucesso!""")
+                        except Exception as error:
+                            errors.append(str(error))
+                        
 
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    lastid = cursor.lastrowid
-                    linha_order = lastid*100000000
-                    dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order},"lotesgranuladolinha",{"id":f'=={lastid}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
 
-                    updateDosers({"loteslinha_id":id,"agg_of_id":acs["agg_of_id"],"acs_id":acs["id"],"linha_order":linha_order,"linha_id":lastid},cursor)
-                else:
-                    return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado, já não está em linha ou não existe!"})     
-        return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})
-    except Error:
-        return Response({"status": "error", "title": "Erro ao alterar lote!"})
+
+                        # exists = False
+                        # if "vcr_num_original" in v and v["vcr_num_original"]!=v["vcr_num"]:
+                        #     exists = db.exists("lotesgranuladolinha", {"vcr_num":f"=={v['vcr_num']}"}, cursor).exists
+                        # if not exists:
+                        #     tmov =v["type_mov"]
+                        #     vcr_num = v["vcr_num_original"] if "vcr_num_original" in v else v ["vcr_num"]
+                        #     rs = db.get("id,t_stamp,type_mov","lotesgranuladolinha",{"vcr_num":f"""=={vcr_num}""","closed":"==0"},cursor).rows
+                        #     error_date=False
+                        #     if (len(rs)>1):
+                        #         _tstamp = [d["t_stamp"] for d in rs if d['type_mov'] != tmov]
+                        #         if tmov==0:
+                        #             if _tstamp[0] > datetime.strptime(v["t_stamp"], "%Y-%m-%d %H:%M:%S"):
+                        #                 error_date= True
+                        #         else:
+                        #             if _tstamp[0] < datetime.strptime(v["t_stamp"], "%Y-%m-%d %H:%M:%S"):
+                        #                 error_date= True
+                        #     if not error_date:
+                        #         ids = [str(d['id']) for d in rs if 'id' in d]
+                        #         if len(ids)>0:
+                        #             cs = getCurrentSettingsData(v,cursor)
+                        #             del v['type_mov']
+                        #             if "vcr_num_original" in v:
+                        #                 del v['vcr_num_original']
+                        #             dml = db.dml(TypeDml.UPDATE,{"t_stamp":v["t_stamp"],"agg_of_id":cs["agg_of_id"],"audit_cs_id":cs["id"]},"lotesdoserslinha",{"loteslinha_id":f'in:{",".join(ids)}',"type_mov":f'=={tmov}'},None,False)
+                        #             db.execute(dml.statement, cursor, dml.parameters)
+                        #             dml = db.dml(TypeDml.UPDATE,{"t_stamp":v["t_stamp"],"qty_reminder":v["qty_reminder"]},"lotesgranuladolinha",{"id":f'in:{",".join(ids)}',"type_mov":f'=={tmov}'},None,False)
+                        #             db.execute(dml.statement, cursor, dml.parameters)
+                        #             dml = db.dml(TypeDml.UPDATE,{"n_lote":v["n_lote"]},"lotesdoserslinha",{"loteslinha_id":f'in:{",".join(ids)}'},None,False)
+                        #             db.execute(dml.statement, cursor, dml.parameters)
+                        #             dml = db.dml(TypeDml.UPDATE,{"n_lote":v["n_lote"],"vcr_num":v["vcr_num"],"qty_lote":v["qty_lote"]},"lotesgranuladolinha",{"id":f'in:{",".join(ids)}'},None,False)
+                        #             db.execute(dml.statement, cursor, dml.parameters)
+                        #         else:
+                        #             errors.append(f"""O lote {v["n_lote"]} com o movimento {v["vcr_num"]} não foi atualizado!""")
+                        #         success.append(f"""O lote {v["n_lote"]} com o movimento {v["vcr_num"]} atualizado com sucesso!""")
+                        #     else:
+                        #         errors.append(f"""O lote {v["n_lote"]} com o movimento {v["vcr_num"]} não foi atualizado! Data de saída tem de ser maior que a data de entrada.""")
+                        # else:
+                        #     errors.append(f"""O lote {v["n_lote"]} com o movimento {v["vcr_num"]} já existe!""")
+                    return Response({"status": "multi", "errors":errors, "success":success})
+                if ("type" in data and data["type"]=="out"):
+                    try:
+                        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
+                        cursor.callproc('output_granulado_from_line',args)                        
+                    except Exception as error:
+                        return Response({"status": "error", "title": str(error)})  
+
+
+                    # exists = db.exists("lotesgranuladolinha",{"vcr_num":f'=={filter["vcr_num"]}',"type_mov":"==0"},cursor).exists
+                    # if (not exists):
+                    #     gr={**filter}
+                    #     id = gr["id"]
+                    #     del gr["id"]
+                    #     gr["type_mov"]=0
+                    #     gr["qty_reminder"]= gr["qty_reminder"] if "qty_reminder" in gr else 0
+                    #     gr["user_id"]=request.user.id
+                    #     acs = getCurrentSettingsData(gr,cursor)
+
+                    #     dml = db.dml(TypeDml.UPDATE,{"t_stamp_out":gr["t_stamp"],"qty_out":gr["qty_reminder"]},"lotesgranuladolinha",{"vcr_num":f'=={filter["vcr_num"]}',"type_mov":"==1"},None,False)
+                    #     db.execute(dml.statement, cursor, dml.parameters)
+                        
+                    #     dml = db.dml(TypeDml.INSERT, gr,"lotesgranuladolinha",None,None,False)
+                    #     db.execute(dml.statement, cursor, dml.parameters)
+                    #     lastid = cursor.lastrowid
+                    #     linha_order = lastid*100000000
+                    #     dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order},"lotesgranuladolinha",{"id":f'=={lastid}'},None,False)
+                    #     db.execute(dml.statement, cursor, dml.parameters)
+                    #     updateDosers({"loteslinha_id":id,"agg_of_id":acs["agg_of_id"],"acs_id":acs["id"],"linha_order":linha_order,"linha_id":lastid},cursor)
+                    # else:
+                    #     return Response({"status": "error", "title": "Não é possível dar saída do lote! O lote já deu saída."})                    
+                if ("type" in data and data["type"]=="in"):
+                    try:
+                        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],0)
+                        cursor.callproc('add_granulado_to_line',args)
+                        if (filter["saida_mp"]==1):
+                            args = (filter["t_stamp_out"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
+                            cursor.callproc('output_granulado_from_line',args) 
+                    except Exception as error:
+                        return Response({"status": "error", "title": str(error)})
+                    
+                    #exists = db.exists("lotesgranuladolinha",{"vcr_num":f'=={filter["vcr_num"]}'},cursor).exists
+                    #if (not exists):
+                    #    args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"])
+                    #    cursor.callproc('add_granulado_to_line',args)
+                    #    if (filter["saida_mp"]==1):
+                    #        args = (filter["t_stamp_out"], filter["vcr_num"], filter["qty_reminder"])
+                    #        cursor.callproc('remove_granulado_from_line',args)
+                    #else:
+                    #    return Response({"status": "error", "title": "O lote já deu entrada em linha."})  
+                    #pass
+                if ("type" in data and data["type"]=="close"):
+                    try:
+                        args = (filter["vcr_num"] if "vcr_num" in filter else None, filter["init_data"] if "init_data" in filter else None,filter["end_data"] if "end_data" in filter else None)
+                        print("#CLOSED#########################")
+                        print(args)
+                        #cursor.callproc('close_granulado_line',args)
+                    except Exception as error:
+                        return Response({"status": "error", "title": str(error)})
+                    # if "vcr_num" in filter:
+                    #     print(filter["id"])
+                    #     print("IDDDDDDDDDDDDDD")
+                    #     pass
+                    # if "init_data" in filter and "end_data" in filter:
+                    #     pass
+                # else:                    
+                #     acs = inProduction({},cursor)
+                #     gr = checkGranulado(filter["vcr_num"],cursor)
+                #     if (gr is not None and gr["type_mov"]==1):
+                #         id =gr["id"]
+                #         del gr["id"]
+                #         del gr["t_stamp"]
+                #         del gr["group"]
+                #         del gr["order"]
+                #         del gr["maxorder"]
+                #         gr = {key: gr[key] for key in gr if key not in ["id", "t_stamp","group","order","maxorder"]}
+                #         gr["type_mov"]=0
+                #         gr["qty_reminder"]= filter["qty_reminder"] if "qty_reminder" in filter else 0
+                #         gr["t_stamp"]: datetime.now()
+                #         gr["user_id"]=request.user.id
+                #         dml = db.dml(TypeDml.INSERT, gr,"lotesgranuladolinha",None,None,False)
+
+                #         db.execute(dml.statement, cursor, dml.parameters)
+                #         lastid = cursor.lastrowid
+                #         linha_order = lastid*100000000
+                #         dml = db.dml(TypeDml.UPDATE,{"`order`":linha_order},"lotesgranuladolinha",{"id":f'=={lastid}'},None,False)
+                #         db.execute(dml.statement, cursor, dml.parameters)
+
+                #         updateDosers({"loteslinha_id":id,"agg_of_id":acs["agg_of_id"],"acs_id":acs["id"],"linha_order":linha_order,"linha_id":lastid},cursor)
+                #     else:
+                #         return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado, já não está em linha ou não existe!"})
+        return Response({"status": "success", "title": "Movimento alterado Sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": "Erro ao alterar Registo(s)!"})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -884,15 +1065,59 @@ def DeleteGranulado(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                ln = checkGranulado(filter["vcr_num"],cursor)
-                if (ln==0):
-                   delete(filter["vcr_num"],cursor)
-                else:
-                    return Response({"status": "error", "title": f"Não é possível eliminar o movimento!"})     
-        return Response({"status": "success", "title": "Movimento eliminado com sucesso!", "subTitle":f'{None}'})
-    except Error:
-        return Response({"status": "error", "title": "Erro ao eliminar o movimento!"})
+                args = (filter["vcr_num"],filter["type_mov"])
+                cursor.callproc('delete_granulado_from_line',args)
+                
+                #ln = checkGranulado(filter["vcr_num"],cursor)
+                #if (ln==0):
+                #   delete(filter["vcr_num"],cursor)
+                #else:
+                #    return Response({"status": "error", "title": f"Não é possível eliminar o movimento!"})     
+        return Response({"status": "success", "title": "Movimento(s) eliminado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
+
+def updateLotesdosers_ig(ig_id):
+    connection = connections["default"].cursor()
+    #Get do timestamp e acs_id do ig da bobinagem
+    #Eliminar as linhas lotesdosers_ig onde o ig=[ig_id]
+    #Insert na tabela lotesdosers_ig, com o timestamp do ig atrás atribuído 
+
+
+
+    
+    # sql = lambda p, c, s: (
+    #     f"""
+    #             with INLINE AS(
+    #             select ld.*,t.qty_lote,t.qty_reminder from(
+    #             select 
+    #             LAST_VALUE(id) OVER (PARTITION BY vcr_num ORDER BY t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+    #             lg.*
+    #             from lotesgranuladolinha lg
+    #             )t
+    #             join lotesdoserslinha ld on ld.loteslinha_id=t.id
+    #             where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+    #             ),
+    #             FORMULACAO AS(
+    #             select formulacaov2
+    #             from producao_currentsettings cs
+    #             where status=3
+    #             ),
+    #             FORMULACAO_DOSERS AS(
+    #             SELECT doser,matprima_cod, arranque,cuba,matprima_des
+    #             FROM FORMULACAO F,
+    #             JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+    #             WHERE doser is not null and arranque>0
+    #             )
+    #             SELECT {c(f'{dql.columns}')} 
+    #             FROM FORMULACAO_DOSERS FR
+    #             LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+    #             group by FR.cuba,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,FR.matprima_des
+    #             {s(dql.sort)}
+    #     """
+    # )
+    pass
 
 
 #endregion
@@ -1026,8 +1251,6 @@ def GetMPAlternativas(request, format=None):
     ), conn, {})
     print(response)
     return Response(response)
-
-
 
 #endregion
 

@@ -68,6 +68,8 @@ export const bColors = (estado) => {
         return { color: "#0050b3", fontColor: "#fff" };//"blue";
     } else if (estado === "HOLD") {
         return { color: "#391085", fontColor: "#fff" };//"purple";
+    }else if (estado === "D") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
     }else{
         return { color: "#000", fontColor: "#fff" };
     }

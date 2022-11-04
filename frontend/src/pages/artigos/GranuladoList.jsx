@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
-import Joi from 'joi';
+import Joi, { alternatives } from 'joi';
 import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -17,7 +17,7 @@ import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from 'config';
@@ -26,21 +26,31 @@ import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
-import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
+import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
-import { MovGranuladoColumn } from "../picking/commons"
+import { MovGranuladoColumn } from "../picking/commons";
 
 const focus = (el, h,) => { el?.focus(); };
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
-
+const schemaOut = (options = {}) => {
+    return getSchema({}, options).unknown(true);
+}
+const schemaIn = (options = {}) => {
+    return getSchema({
+        artigo_cod: Joi.any().label("Artigo").required(),
+        n_lote: Joi.any().label("Lote").required(),
+        qty_lote: Joi.number().label("Quantidade do Lote").required(),
+        t_stamp: Joi.any().label("Data de Entrada").required()
+    }, options).unknown(true);
+}
 const title = "Ganulado Movimentos";
 const TitleForm = ({ data, onChange, record, level, form }) => {
     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
@@ -56,7 +66,6 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
     }
     />);
 }
-
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
         <Col xs='content'>
@@ -82,8 +91,13 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     </>
     );
 }
-
 const useStyles = createUseStyles({
+    diffAbove: {
+        backgroundColor: "#ffa39e"
+    },
+    diffBellow: {
+        backgroundColor: "#fffb8f"
+    },
     noOutline: {
         outline: "none !important"
     },
@@ -111,7 +125,6 @@ const useStyles = createUseStyles({
         }
     }
 });
-
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
@@ -123,36 +136,36 @@ const moreFiltersSchema = ({ form }) => [
     { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
     { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
 ];
-
 const OfsColumn = ({ value }) => {
     return (<div>
         {value && value.map(v => <Tag style={{ fontWeight: 600, fontSize: "10px" }} key={`${v}`}>{v}</Tag>)}
     </div>);
 }
-
 const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     const items = [
-        (modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar Registo</span>, key: 'delete', icon: <DeleteFilled style={{ color: "red" }} /> }
+        ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
+        ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0 && props.row?.type_mov == 1) ? [{ label: <span style={{}}>Saída de Linha</span>, key: 'out', icon: <ImArrowLeft size={16} style={{ verticalAlign: "text-top" }} /> }, { type: 'divider' }] : [],
+        (modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar Registo</span>, key: 'delete', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> }
     ];
     return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
 }
-
-
-const loadMateriasPrimasLookup = async (p, value) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/stocklistbuffer/`, filter: { floc: 'BUFFER', fitm: p.row.artigo_cod, flote: `%${value.replaceAll(' ', '%%')}%` }, parameters: { lookup: true } });
+const loadMovimentosLookup = async (p, value) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/stocklistbuffer/`, pagination: { limit: 15 }, filter: { floc: 'BUFFER', fitm: p.row.artigo_cod, flote: `%${value.replaceAll(' ', '%%')}%` }, parameters: { lookup: true } });
     return rows;
 }
-
-
-
-const InputNumberEditor = ({ field, p, ...props }) => {
-    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
+const loadMateriasPrimasLookup = async (value) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, pagination: { limit: 15 }, filter: { fmulti_artigo: `%${value.replaceAll(' ', '%%')}%` }, parameters: {} });
+    return rows;
 }
-const DateTimeEditor = ({ field, p, ...props }) => {
-    return <DatePicker showTime size="small" format={DATETIME_FORMAT} value={moment(p.row[field])} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props}><Input /></DatePicker>
+const InputNumberEditor = ({ field, p, onChange, ...props }) => {
+    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
+}
+const DateTimeEditor = ({ field, p, onChange, ...props }) => {
+    return <DatePicker showTime size="small" format={DATETIME_FORMAT} value={moment(p.row[field])} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props}><Input /></DatePicker>
 }
 const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
     return (<SelectDebounceField
+        autoFocus
         value={{ value: p.row[field], label: p.row[field] }}
         size="small"
         style={{ width: "100%", padding: "3px" }}
@@ -164,13 +177,333 @@ const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
         {...props}
     />)
 }
-
 const optionsRender = d => ({
     label: <div>
         <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} kg</b>]</span></div>
         <div><span>{d["ITMREF_0"]}</span> <span>{d["ITMDES1_0"]}</span></div>
     </div>, value: d["VCRNUM_0"], key: d["VCRNUM_0"], row: d
 });
+const OutContent = ({ record, parentRef, closeParent, loadParentData }) => {
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+
+    const loadData = async ({ signal } = {}) => {
+        console.log(record)
+        form.setFieldsValue({ ...record, t_stamp: moment(), qty_reminder: null });
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async (values) => {
+        submitting.trigger();
+        const v = schemaOut().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        const { errors, warnings, value, ...status } = getStatus(v);
+        if (errors === 0) {
+            try {
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                    closeParent();
+                    Modal.success({ title: "Saída de Lote da linha efetuada!" })
+                } else {
+                    status.formStatus.error.push({ message: response.data.title });
+                    setFormStatus({ ...status.formStatus });
+                }
+            } catch (e) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+            };
+        }
+        submitting.end();
+    }
+
+    const onValuesChange = (changedValues, values) => { }
+
+    return (
+        <Form form={form} name={`f-out`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{}}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-OUT" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaOut} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} gutterWidth={10}>
+                    <Col xs={4}><Field forInput={false} wrapFormItem={true} name="artigo_cod" label={{ enabled: true, text: "Cód. Artigo" }}><Input size="small" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="artigo_des" label={{ enabled: true, text: "Artigo" }}><Input size="small" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={false} wrapFormItem={true} name="n_lote" label={{ enabled: true, text: "Lote" }}><Input size="small" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="vcr_num" label={{ enabled: true, text: "Movimento" }}><Input size="small" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={false} wrapFormItem={true} name="qty_lote" label={{ enabled: true, text: "Quantidade Lote" }}><InputNumber size="small" addonAfter="kg" /></Field></Col>
+                    <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={record?.qty_reminder} /></Field></Col>
+                    <Col><Field wrapFormItem={true} name="t_stamp" label={{ enabled: true, text: "Data Saída" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                </Row>
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button type="primary" disabled={submitting.state} onClick={() => form.submit()}>Registar</Button>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
+}
+const InContent = ({ parentRef, closeParent, loadParentData }) => {
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+    const [saidaMP, setSaidaMP] = useState(0);
+    const [movimento, setMovimento] = useState(0);
+
+    const loadData = async ({ signal } = {}) => {
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async (values) => {
+        submitting.trigger();
+        const v = schemaIn().validate(values, { abortEarly: false, messages: validateMessages, context: { saida_mp: saidaMP } });
+        let { errors, warnings, value, ...status } = getStatus(v);
+        if (saidaMP === 1 && errors === 0 && !values.t_stamp_out) {
+            values.t_stamp_out = moment();
+        }
+        if (saidaMP === 1 && errors === 0 && !values.qty_reminder) {
+            values.qty_reminder = 0;
+        }
+        if (values.t_stamp_out <= values.t_stamp) {
+            errors = 1;
+            status.fieldStatus.t_stamp_out = { status: "error", messages: [{ message: "A data de saída tem de ser maior que a data de entrada." }] };
+        }
+        if (values.qty_lote < values.qty_reminder) {
+            errors = 1;
+            status.fieldStatus.qty_reminder = { status: "error", messages: [{ message: "A quantidade restante tem de ser menor ou igual à quantidade do lote." }] };
+        }
+
+        setFieldStatus({ ...status.fieldStatus });
+        setFormStatus({ ...status.formStatus });
+        if (errors === 0) {
+            try {
+                let vals = {
+                    lote_id: movimento.ROWID,
+                    qty_lote: values.qty_lote,
+                    artigo_des: movimento.ITMDES1_0,
+                    artigo_cod: movimento.ITMREF_0,
+                    type_mov: 1,
+                    t_stamp: moment(values.t_stamp).format(DATETIME_FORMAT),
+                    ...(saidaMP === 1) && { t_stamp_out: moment(values.t_stamp_out).format(DATETIME_FORMAT) },
+                    n_lote: movimento.LOT_0,
+                    status: -1,
+                    vcr_num: movimento.VCRNUM_0,
+                    qty_reminder: values.qty_reminder,
+                    obs: "",
+                    saida_mp: saidaMP
+                }
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...vals }, parameters: { type: "in", status: 0 } });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                    closeParent();
+                    Modal.success({ title: `Entrada${saidaMP === 1 && '/Saída'} em linha efetuada!` })
+                } else {
+                    status.formStatus.error.push({ message: response.data.title });
+                    setFormStatus({ ...status.formStatus });
+                }
+            } catch (e) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+            };
+
+        }
+        // const v = schemaOut().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        // const { errors, warnings, value, ...status } = getStatus(v);
+        // if (errors === 0) {
+        //     try {
+        //         let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+        //         if (response.data.status !== "error") {
+        //             loadParentData();
+        //             closeParent();
+        //             Modal.success({ title: "Saída de Lote da linha efetuada!" })
+        //         } else {
+        //             status.formStatus.error.push({ message: response.data.title });
+        //             setFormStatus({ ...status.formStatus });
+        //         }
+        //     } catch (e) {
+        //         Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        //     };
+        // }
+        submitting.end();
+    }
+
+    const onValuesChange = (changedValues, values) => {
+        if ("artigo_cod" in changedValues) {
+            form.setFieldsValue({ "n_lote": null });
+            form.setFieldsValue({ "qty_lote": null });
+        }
+        if ("n_lote" in changedValues) {
+            //console.log(changedValues)
+            //form.setFieldsValue("n_lote", null);
+        }
+        if ("saida_mp" in changedValues) {
+            setSaidaMP(changedValues.saida_mp);
+        }
+    }
+
+    const onSelectLote = (a, b) => {
+        form.setFieldValue("qty_lote", b.row.QTYPCU_0);
+        setMovimento(b.row);
+    }
+
+    return (
+        <Form form={form} name={`f-in`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{}}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-IN" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaIn} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field wrapFormItem={true} name="artigo_cod" label={{ enabled: true, text: "Cód. Artigo" }}>
+                        <SelectDebounceField
+                            size="small"
+                            style={{ width: "100%" }}
+                            keyField="ITMREF_0"
+                            textField="ITMDES1_0"
+                            showSearch
+                            showArrow
+                            fetchOptions={loadMateriasPrimasLookup}
+                        />
+                    </Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={!form.getFieldValue("artigo_cod") ? false : true} wrapFormItem={true} name="n_lote" label={{ enabled: true, text: "Lote" }}>
+                        <SelectDebounceField
+                            optionsRender={optionsRender}
+                            size="small"
+                            style={{ width: "100%" }}
+                            keyField="LOT_0"
+                            textField="LOT_0"
+                            showSearch
+                            showArrow
+                            onSelect={onSelectLote}
+                            fetchOptions={(v) => loadMovimentosLookup({ row: { artigo_cod: form.getFieldValue("artigo_cod").key } }, v)}
+                        />
+                    </Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field wrapFormItem={true} name="qty_lote" label={{ enabled: true, text: "Quantidade Lote" }}><InputNumber size="small" addonAfter="kg" /></Field></Col>
+                    <Col><Field wrapFormItem={true} name="t_stamp" label={{ enabled: true, text: "Data Entrada" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                </Row>
+                <Row gutterWidth={2} style={{ fontWeight: 700, marginTop: "10px", marginBottom: "1px", /* borderBottom: "solid 1px #bfbfbf", */ background: "#f0f0f0", padding: "1px" }}>
+                    <Col xs="content"><Field wrapFormItem={true} name="saida_mp" label={{ enabled: false, text: "Saída do Lote", pos: "right" }}><CheckboxField /></Field></Col>
+                    <Col xs="content" style={{ alignSelf: "center" }}>Saída do Lote</Col>
+                </Row>
+                {saidaMP === 1 &&
+                    <Row style={{}} gutterWidth={10}>
+                        <Col><Field wrapFormItem={true} name="t_stamp_out" label={{ enabled: true, text: "Data Saída" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                        <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={form.getFieldValue("qty_lote")} /></Field></Col>
+                    </Row>
+                }
+                {/* <Row style={{}} gutterWidth={10}>
+                <Col xs={4}><Field forInput={false} wrapFormItem={true} name="artigo_cod" label={{ enabled: true, text: "Cód. Artigo" }}><Input size="small" /></Field></Col>
+                <Col><Field forInput={false} wrapFormItem={true} name="artigo_des" label={{ enabled: true, text: "Artigo" }}><Input size="small" /></Field></Col>
+            </Row>
+            <Row style={{}} gutterWidth={10}>
+                <Col><Field forInput={false} wrapFormItem={true} name="n_lote" label={{ enabled: true, text: "Lote" }}><Input size="small" /></Field></Col>
+                <Col><Field forInput={false} wrapFormItem={true} name="vcr_num" label={{ enabled: true, text: "Movimento" }}><Input size="small" /></Field></Col>
+            </Row>
+            <Row style={{}} gutterWidth={10}>
+                <Col><Field forInput={false} wrapFormItem={true} name="qty_lote" label={{ enabled: true, text: "Quantidade Lote" }}><InputNumber size="small" addonAfter="kg" /></Field></Col>
+                <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={record?.qty_reminder} /></Field></Col>
+                <Col><Field wrapFormItem={true} name="t_stamp" label={{ enabled: true, text: "Data Saída" }}><DatePicker format={DATETIME_FORMAT} size="small" /></Field></Col>
+            </Row> */}
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button type="primary" disabled={submitting.state} onClick={() => form.submit()}>Registar</Button>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
+}
+const CloseContent = ({ record, parentRef, closeParent, loadParentData }) => {
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+
+    const loadData = async ({ signal } = {}) => {
+        console.log(record)
+
+        form.setFieldsValue({ ...record, in_t: moment(record.in_t), out_t: moment(record.out_t) });
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async (values) => {
+        submitting.trigger();
+        const v = schemaOut().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        const { errors, warnings, value, ...status } = getStatus(v);
+        if (errors === 0) {
+            try {
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { vcr_num:record.vcr_num }, parameters: { type: "close", status: 0 } });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                    closeParent();
+                    Modal.success({ title: "Movimento fechado com sucesso!" })
+                } else {
+                    status.formStatus.error.push({ message: response.data.title });
+                    setFormStatus({ ...status.formStatus });
+                }
+            } catch (e) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+            };
+        }
+        submitting.end();
+    }
+
+    const onValuesChange = (changedValues, values) => { }
+
+    return (
+        <Form form={form} name={`f-out`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{}}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-OUT" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaOut} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} gutterWidth={10}>
+                    <Col xs={4}><Field forInput={false} wrapFormItem={true} name="artigo_cod" label={{ enabled: true, text: "Cód. Artigo" }}><Input size="small" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="artigo_des" label={{ enabled: true, text: "Artigo" }}><Input size="small" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={false} wrapFormItem={true} name="n_lote" label={{ enabled: true, text: "Lote" }}><Input size="small" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="vcr_num" label={{ enabled: true, text: "Movimento" }}><Input size="small" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={false} wrapFormItem={true} name="qty_lote" label={{ enabled: true, text: "Quantidade Lote" }}><InputNumber size="small" addonAfter="kg" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={record?.qty_reminder} /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field forInput={false} wrapFormItem={true} name="in_t" label={{ enabled: true, text: "Data Entrada" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                    <Col><Field forInput={false} wrapFormItem={true} name="out_t" label={{ enabled: true, text: "Data Saída" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                </Row>
+
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button type="primary" disabled={submitting.state} onClick={() => form.submit()}>Registar</Button>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
+}
 
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
@@ -184,10 +517,30 @@ export default ({ setFormTitle, ...props }) => {
     const classes = useStyles();
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
-    const defaultSort = [{ column: "`order`", direction: "DESC" }];
+    const defaultSort = [{ column: "t_stamp", direction: "DESC" }];
     const dataAPI = useDataAPI({ id: "lst-granuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
-    const primaryKeys = ['vcr_num', 'type_mov', 'lote_id'];
+
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+
+        const content = () => {
+            switch (modalParameters.type) {
+                case "in": return <InContent loadParentData={modalParameters.loadData} />;
+                case "out": return <OutContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
+                case "close": return <CloseContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
+            }
+        }
+
+        return (
+            <ResponsiveModal title={modalParameters.title} onCancel={hideModal} width={600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
+
+    const primaryKeys = ['id'];
     const editable = (row, col) => {
         if (modeEdit.datagrid && allowEdit.datagrid && row?.closed === 0) {
             return (col === "qty_reminder" && row?.type_mov === 1) ? false : true;
@@ -199,9 +552,40 @@ export default ({ setFormTitle, ...props }) => {
             return (col === "qty_reminder" && row?.type_mov === 1) ? undefined : classes.edit;
         }
     }
-
+    const formatterClass = (row, col) => {
+        if (col === "diff" && row.diff !== 0) {
+            let percent = (100 * row.diff) / row.avgdiff;
+            if (percent >= 125) {
+                return classes.diffAbove;
+            }
+            if (percent <= 75) {
+                return classes.diffBellow;
+            }
+        }
+    }
     const onLoteChange = (p, v) => {
-        p.onRowChange({ ...p.row, valid: p.row["vcr_num"] !== v.row["VCRNUM_0"] ? 0 : null, vcr_num: v.row["VCRNUM_0"], n_lote: v.row["LOT_0"], qty_lote: v.row["QTYPCU_0"] }, true)
+        const r = { ...p.row, valid: p.row["vcr_num"] !== v.row["VCRNUM_0"] ? 0 : null, vcr_num: v.row["VCRNUM_0"], n_lote: v.row["LOT_0"], qty_lote: v.row["QTYPCU_0"] };
+        if (!("vcr_num_original" in p.row)) {
+            r["vcr_num_original"] = p.row["vcr_num"];
+        }
+        if (p.row.qty_lote === p.row.qty_reminder) {
+            r["qty_reminder"] = v.row["QTYPCU_0"];
+        }
+        p.onRowChange(r, true);
+    }
+    const onQtyLoteChange = (p, v) => {
+        const r = { ...p.row, valid: p.row["qty_lote"] !== v ? 0 : null, qty_lote: v };
+        if (p.row.qty_lote <= p.row.qty_reminder || p.row.type_mov == 1) {
+            r["qty_reminder"] = v;
+        }
+        p.onRowChange(r, true);
+    }
+    const onQtyReminderChange = (p, v) => {
+        const r = { ...p.row, valid: p.row["qty_reminder"] !== v ? 0 : null, qty_reminder: v };
+        if (p.row.qty_lote <= v || p.row.type_mov == 1) {
+            r["qty_reminder"] = p.row.qty_lote;
+        }
+        p.onRowChange(r, true);
     }
 
     const columns = [
@@ -210,13 +594,17 @@ export default ({ setFormTitle, ...props }) => {
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', frozen: true, formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
-        { key: 'artigo_des', name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
-        { key: 'n_lote', width: 310, name: 'Lote', editable: (r) => editable(r, 'n_lote'), cellClass: r => editableClass(r, 'n_lote'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onLoteChange(p, v)} fetchOptions={(v) => loadMateriasPrimasLookup(p, v)} optionsRender={optionsRender} p={p} field="n_lote" />, editorOptions: { editOnClick: true }, formatter: p => <b>{p.row.n_lote}</b> },
-        { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, editable: (r) => editable(r, 'qty_lote'), cellClass: r => editableClass(r, 'qty_lote'), editor: p => <InputNumberEditor p={p} field="qty_lote" min={0} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div> },
-        { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
-        { key: 't_stamp', width: 140, name: 'Data', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data Mov.', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
+        { key: 'n_lote', width: 310, name: 'Lote', editable: (r) => editable(r, 'n_lote'), cellClass: r => editableClass(r, 'n_lote'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onLoteChange(p, v)} fetchOptions={(v) => loadMovimentosLookup(p, v)} optionsRender={optionsRender} p={p} field="n_lote" />, editorOptions: { editOnClick: true }, formatter: p => <b>{p.row.n_lote}</b> },
+        { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, editable: (r) => editable(r, 'qty_lote'), cellClass: r => editableClass(r, 'qty_lote'), editor: p => <InputNumberEditor onChange={onQtyLoteChange} p={p} field="qty_lote" min={0} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div> },
+        { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor onChange={onQtyReminderChange} p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
+        { key: "in_t", width: 140, name: 'Data Entrada', formatter: p => moment(p.row.in_t).format(DATETIME_FORMAT) },
+        { key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && moment(p.row.out_t).format(DATETIME_FORMAT) },
+        { key: "diff", width: 140, name: 'Duração', cellClass: r => formatterClass(r, 'diff'), formatter: p => p.row.diff !== 0 && new Date(p.row.diff * 1000).toISOString().slice(11, 19) },
+        { key: "avgdiff", width: 140, name: 'Duração Média', formatter: p => new Date(p.row.avgdiff * 1000).toISOString().slice(11, 19) },
         { key: 'vcr_num', name: 'Movimento', width: 200, formatter: p => p.row.vcr_num },
-        { key: 'ofs', name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
+        { key: 'ofs', width: 280, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
     ];
 
     useEffect(() => {
@@ -234,7 +622,6 @@ export default ({ setFormTitle, ...props }) => {
             dataAPI.setSort(defaultSort);
             dataAPI.addParameters({}, true, true);
             dataAPI.fetchPost({ signal });
-
             setAllowEdit({ datagrid: permission.allow() });
             setModeEdit({ datagrid: false });
         }
@@ -275,7 +662,7 @@ export default ({ setFormTitle, ...props }) => {
                 </ul>, onOk: async () => {
                     submitting.trigger();
                     try {
-                        let response = await fetchPost({ url: `${API_URL}/deletegranulado/`, filter: { vcr_num: row.vcr_num }, parameters: {} });
+                        let response = await fetchPost({ url: `${API_URL}/deletegranulado/`, filter: { vcr_num: row.vcr_num, type_mov: row.type_mov }, parameters: {} });
                         if (response.data.status !== "error") {
                             dataAPI.fetchPost();
                         } else {
@@ -287,8 +674,16 @@ export default ({ setFormTitle, ...props }) => {
                         submitting.end();
                     };
                 }
-            }); 
-            break;
+            });
+                break;
+            case "out":
+                setModalParameters({ type: item.key, title: "Saída de lote em linha", loadData: () => dataAPI.fetchPost(), record: row });
+                showModal();
+                break;
+            case "close":
+                setModalParameters({ type: item.key, title: "Fechar movimento", loadData: () => dataAPI.fetchPost(), record: row, height: 300 });
+                showModal();
+                break;
         }
     }
     const changeMode = () => {
@@ -297,11 +692,43 @@ export default ({ setFormTitle, ...props }) => {
         }
     }
     const onSave = async (action) => {
-        const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ comp_par, diam }) => ({ comp_par, diam }));
+        const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov }) =>
+            ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
+        );
         submitting.trigger();
-        submitting.end();
+        try {
+            let response = await fetchPost({ url: `${API_URL}/updategranulado/`, parameters: { type: "datagrid", rows } });
+            if (response.data.status == "multi") {
+                Modal.info({
+                    title: "Estado das atualizações",
+                    content: <YScroll style={{ maxHeight: "270px" }}>
+                        {response.data.success.length > 0 && <ul style={{ padding: "0px 0px 5px 20px", background: "#f6ffed", border: "solid 1px #b7eb8f" }}>
+                            {response.data.success.map(v => <li>{v}</li>)}
+                        </ul>
+                        }
+                        {response.data.errors.length > 0 && <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
+                            {response.data.errors.map(v => <li>{v}</li>)}
+                        </ul>
+                        }
+                    </YScroll>
+                })
+                if (response.data.success.length > 0) {
+                    dataAPI.fetchPost();
+                }
+            } else {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+            }
+        } catch (e) {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        } finally {
+            submitting.end();
+        };
     }
     const onAdd = () => {
+        setModalParameters({ height: 380, type: "in", title: "Entrada de lote em linha", loadData: () => dataAPI.fetchPost() });
+        showModal();
+    }
+    const onClose = () => {
     }
 
     return (
@@ -326,6 +753,7 @@ export default ({ setFormTitle, ...props }) => {
                 rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<CheckCircleOutlined />} onClick={onClose}>Fechar Movimentos</Button>}
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<PlusCircleOutlined />} onClick={onAdd}>Nova Entrada</Button>}
                     {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
                     {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}

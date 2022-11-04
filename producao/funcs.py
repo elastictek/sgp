@@ -2,7 +2,26 @@ from producao.models import *
 import datetime
 from django.contrib.sessions.models import Session
 import pyodbc
+from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from django.db import connections, transaction
 
+def applyOFtoBobine(bobine,palete):
+    db = DBSql(connections["default"].alias)
+    if (bobine.ordem_changed==0 or bobine.ordem_changed is None) and palete.ordem_id_original is not None:
+        bobine.ordem_changed=1
+        b_ordem_id = bobine.ordem_id
+        bm_id = bobine.bobinagem_id
+        p_ordem_id = palete.ordem_id_original
+        if p_ordem_id is not None:
+            conn = connections["default"].cursor()
+            if b_ordem_id is not None:
+                b = db.executeSimpleList(lambda: (f"""select pp.agg_of_id_id agg_of_id from producao_bobine pb join planeamento_ordemproducao pp on pp.id=pb.ordem_id where pb.ordem_id={b_ordem_id} and pb.id={bobine.id}"""), conn, {})
+            else:
+                b = db.executeSimpleList(lambda: (f"""select acs.agg_of_id from producao_bobinagem pbm join audit_currentsettings acs on pbm.audit_current_settings_id=acs.id where pbm.id={bm_id}"""), conn, {})
+            p = db.executeSimpleList(lambda: (f"""select pp.agg_of_id_id agg_of_id from producao_palete pl join planeamento_ordemproducao pp on pp.id=pl.ordem_id_original where pl.ordem_id={p_ordem_id} and pl.id = {palete.id}"""), conn, {})
+            if len(b["rows"])>0 and len(p["rows"])>0:
+                if b["rows"][0]["agg_of_id"] == p["rows"][0]["agg_of_id"] and b_ordem_id != p_ordem_id:
+                    bobine.ordem_id=p_ordem_id
 
 def areas(pk):
     bobinagem = Bobinagem.objects.get(pk=pk)

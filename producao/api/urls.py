@@ -7,6 +7,7 @@ from producao.api import materias_primas
 from producao.api import currentsettings
 from producao.api import print
 from producao.api import auth_users
+from producao.api import devolucoes
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -176,6 +177,11 @@ urlpatterns = [
     re_path(r'^updategranulado/$', materias_primas.UpdateGranulado),
     re_path(r'^deletegranulado/$', materias_primas.DeleteGranulado),
     #PICAGEM LOTES
+
+    #DEVOLUCOES
+    re_path(r'^devolucoeslist/$', devolucoes.DevolucoesList),
+
+    #DEVOLUCOES
 
     #MATERIAS-PRIMAS
     #re_path(r'^stocklist/$', views.StockList),

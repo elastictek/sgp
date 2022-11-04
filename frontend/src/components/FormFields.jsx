@@ -321,7 +321,7 @@ export const AutoCompleteField =  React.forwardRef(({ fetchOptions, debounceTime
     );
 });
 
-export const SelectDebounceField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest },ref) => {
+export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull=true, fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest },ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -353,6 +353,12 @@ export const SelectDebounceField = React.forwardRef(({ fetchOptions, debounceTim
         onChange?.(v);
     }
 
+    useEffect(()=>{
+        if (value===null && clearOptionsOnNull===true){
+            setOptions([]);
+        }
+    },[value]);
+
     return (
         <Select
             dropdownMatchSelectWidth={false}
@@ -360,6 +366,7 @@ export const SelectDebounceField = React.forwardRef(({ fetchOptions, debounceTim
             filterOption={false}
             onSearch={debounceFetcher}
             value={value}
+            
             onChange={onSelectChange}
             notFoundContent={fetching ? <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} size="small" /> : null}
             {...rest}

@@ -8,7 +8,7 @@ import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import { API_URL } from "config";
+import { API_URL,DATETIME_FORMAT } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { usePermission } from "utils/usePermission";
 import loadInit from "utils/loadInit";
@@ -804,8 +804,7 @@ export default (props) => {
 
                 setAllowEdit({ ..._allowEdit });
                 setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
-
-                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"] });
+                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"], acs_id:dt["audit_current_settings_id"], ig_id:dt["ig_bobinagem_id"], "timestamp":moment(dt["timestamp"]).format(DATETIME_FORMAT) });
                 if (dt["valid"]===0){
                     let nwl = await loadNWLookup(signal, { cs_status: 3, status: 1, queue: 1 });
                     let ni = nwl.find(x=>x.type==0);

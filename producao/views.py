@@ -43,7 +43,6 @@ from django.db import connections, transaction
 from producao.api.views import addToReciclado
 
 
-
 # class CreatePerfil(LoginRequiredMixin, CreateView):
 #     template_name = 'perfil/perfil_create.html'
 #     form_class = PerfilCreateForm
@@ -6703,6 +6702,7 @@ def palete_picagem_v3(request, pk):
                             bob.posicao_palete = c
                             area_sum += bob.area
                             comp_total += bob.comp
+                            applyOFtoBobine(bob,palete)
                             bob.save()
                             movimento_bobine = MovimentosBobines.objects.create(bobine=bob, palete=palete, timestamp=palete.timestamp, destino=bob.destino)
 

@@ -39,6 +39,7 @@ from django.core.files.storage import FileSystemStorage
 from sistema.settings.appSettings import AppSettings
 import time
 import requests
+from producao.api.materias_primas import updateLotesdosers_ig
 
 
 import psycopg2
@@ -4803,7 +4804,8 @@ def ValidarBobinesList(request, format=None):
             pf.id perfil_id,
             pf.nome perfil_nome,
             acs.cortes->>'$.largura_json' cortes
-            ,data,area,inico,fim,duracao,diam,agg_of_id,tiponwsup,tiponwinf,lotenwinf,lotenwsup,nwinf,nwsup,valid,largura_bruta,comp,comp_par 
+            ,bm.data,area,bm.inico,bm.fim,bm.duracao,bm.diam,acs.agg_of_id,bm.tiponwsup,bm.tiponwinf,bm.lotenwinf,bm.lotenwsup,bm.nwinf,bm.nwsup,bm.valid,bm.largura_bruta,bm.comp,bm.comp_par,
+            bm.`timestamp`,bm.ig_bobinagem_id,bm.audit_current_settings_id
             FROM producao_bobinagem bm 
             LEFT JOIN audit_currentsettings acs on acs.id=bm.audit_current_settings_id
             LEFT JOIN producao_perfil pf on pf.id=bm.perfil_id 
@@ -4813,8 +4815,6 @@ def ValidarBobinesList(request, format=None):
             agg_of_id = r['rows'][0]["agg_of_id"]
             valid = r['rows'][0]["valid"]
             response = {**response,**r['rows'][0]}
-            print("ENTREIEIEIEIEIEIEI")
-            print(request.data['filter']["bobinagem_id"])
             if agg_of_id is not None and valid==0:
                 r = db.executeSimpleList(lambda:(f"""
                     select * from (
@@ -4855,6 +4855,8 @@ def ValidarBobinesList(request, format=None):
                 if len(r['rows'])>0:
                     if r['rows'][0]["type"]==7:
                         response["isba"]=1
+    print("DATAAAAAAAAAAAAAAAAAAA")
+    print(response)
     return Response(response)
 
 
@@ -5029,11 +5031,12 @@ def ValidarBobinagem(request, format=None):
                 
                     print("Relacionar as Entradas dos Lotes nos Doseadores com os Consumos nos Doseadores")
                     dml = db.dml(TypeDml.UPDATE,{}, "lotesdosers_ig", {'id': data["bobinagem"]["id"]},None,False)
+                    #and ldl.group_id=ldig.cuba
                     statement = f"""
                         with LDL as(
                         SELECT 
                         ldig.id,
-                        (select id from (select id,type_mov from lotesdoserslinha ldl where ldl.doser=ldig.doser and ldl.group_id=ldig.cuba and ldl.artigo_cod=ldig.matprima_cod and ldl.t_stamp<=pbm.valid_tstamp order by ldl.t_stamp desc limit 1) t where t.type_mov=1) ldl_id 
+                        (select id from (select id,type_mov from lotesdoserslinha ldl where ldl.doser=ldig.doser and ldl.artigo_cod=ldig.matprima_cod and ldl.t_stamp<=pbm.valid_tstamp order by ldl.t_stamp desc limit 1) t where t.type_mov=1) ldl_id 
                         FROM lotesdosers_ig ldig
                         JOIN producao_bobinagem pbm on ldig.ig_id=pbm.ig_bobinagem_id
                         WHERE pbm.id = %(id)s
@@ -5071,6 +5074,11 @@ def ValidarBobinagem(request, format=None):
                             else:
                                 b[x]=0
                         bobine_values = {**{key: v[key] for key in v if key in columns}, **b} 
+                        if isValid==0:
+                            bobine_values['lotenwsup'] = data["values"]["lotenwsup"]
+                            bobine_values['nwsup'] = data["values"]["nwsup"]
+                            bobine_values['lotenwinf'] = data["values"]["lotenwinf"]
+                            bobine_values['nwinf'] = data["values"]["nwinf"]
                         bobine_values['ff_m_ini'] = bobine_values['ff_pos'][0]['min'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['ff_m_fim'] = bobine_values['ff_pos'][0]['max'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['fc_diam_ini'] = bobine_values['fc_pos'][0]['min'] if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else None

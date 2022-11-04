@@ -23,6 +23,62 @@ INTO "SGP-PROD-SISTEMA"
 OPTIONS (import_default 'true');
 
 
+DROP MATERIALIZED VIEW IF EXISTS public.mv_bobines;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_bobines
+TABLESPACE pg_default
+AS
+ SELECT pb.id,
+    pb.nome,
+    pb.estado,
+    pb.palete_id,
+	pb.comp,
+	pb.comp_actual,
+	pla.largura,
+    pl.nome AS palete_nome
+   FROM "SGP-PROD".producao_bobine pb
+   JOIN "SGP-PROD".producao_largura pla ON pla.id=pb.largura_id 
+   LEFT JOIN "SGP-PROD".producao_palete pl ON pl.id = pb.palete_id
+   
+WITH DATA;
+
+ALTER TABLE IF EXISTS public.mv_bobines
+    OWNER TO postgres;
+
+
+CREATE UNIQUE INDEX "IDX_UQ_MV_BOBINES_ID"
+    ON public.mv_bobines USING btree
+    (id)
+    TABLESPACE pg_default;
+
+DROP MATERIALIZED VIEW IF EXISTS public.mv_consumo_granulado;
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_consumo_granulado
+TABLESPACE pg_default
+AS
+ SELECT consumos_granulado.id,
+    consumos_granulado.cuba,
+    consumos_granulado.doser,
+    consumos_granulado.matprima_cod,
+    consumos_granulado.matprima_des,
+    consumos_granulado.n_lote,
+    consumos_granulado.vcr_num,
+    consumos_granulado.qty_lote,
+    consumos_granulado.qty_consumed,
+    consumos_granulado.shared,
+    consumos_granulado.data_entrada_lote,
+    consumos_granulado.data_saida_lote,
+    consumos_granulado.ig_id,
+    consumos_granulado.audit_cs_id,
+    consumos_granulado.agg_of_id,
+    consumos_granulado.arranque,
+    consumos_granulado.status,
+    consumos_granulado.ofs
+   FROM "SGP-PROD".consumos_granulado
+WITH DATA;
+ALTER TABLE IF EXISTS public.mv_consumo_granulado
+    OWNER TO postgres;
+
+
 DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_list;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_ofabrico_list
@@ -110,8 +166,55 @@ AS
   WINDOW w AS (PARTITION BY t.ofabrico, t.ofabrico_sgp, t.iorder)
 WITH DATA;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE IF EXISTS public.mv_ofabrico_list
     OWNER TO postgres;
+
+
+DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_sage_list;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_ofabrico_sage_list
+TABLESPACE pg_default
+AS
+ SELECT DISTINCT ON (ofh."MFGNUM_0", ofitm."MFGLIN_0") ofh."MFGNUM_0" AS ofabrico,
+    oforder."PRFNUM_0" AS prf,
+    oforder."ORDDAT_0" AS data_encomenda,
+    ofh."ROWID" AS rowid,
+    ofh."MFGTRKFLG_0" AS ofabrico_status,
+    ofh."STRDAT_0" AS start_date,
+    ofh."ENDDAT_0" AS end_date,
+    ofh."EXTQTY_0" AS qty_prevista,
+    ofh."CPLQTY_0" AS qty_realizada,
+    ofitm."ITMREF_0" AS item,
+    itmsales."ITMDES1_0" AS item_nome,
+    ofitm."BOMALT_0" AS bom_alt,
+    ofitm."VCRNUMORI_0" AS iorder
+   FROM "SAGE-PROD"."MFGHEAD" ofh
+     LEFT JOIN "SAGE-PROD"."MFGITM" ofitm ON ofitm."MFGNUM_0"::text = ofh."MFGNUM_0"::text
+     LEFT JOIN "SAGE-PROD"."SORDER" oforder ON oforder."SOHNUM_0"::text = ofitm."VCRNUMORI_0"::text
+     LEFT JOIN "SAGE-PROD"."ITMSALES" itmsales ON itmsales."ITMREF_0"::text = ofitm."ITMREF_0"::text
+WITH DATA;
+
+ALTER TABLE IF EXISTS public.mv_ofabrico_sage_list
+    OWNER TO postgres;
+
+
+
+
+
+
 
 
 DROP MATERIALIZED VIEW IF EXISTS public.mv_ofabrico_list_dev;
@@ -294,4 +397,7 @@ WITH DATA;
 
 ALTER TABLE IF EXISTS public.mv_ofabrico_list_test
     OWNER TO postgres;
+
+
+
 

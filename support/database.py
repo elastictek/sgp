@@ -118,6 +118,13 @@ class BaseSql:
             self.filter = ''
             self.exists = False
     
+    class Get:
+        def __init__(self) -> None:
+            self.statement = ''
+            self.parameters = {}
+            self.filter = ''
+            self.rows = False
+
     class Rows:
         def __init__(self) -> None:
             self.statement = ''
@@ -272,6 +279,8 @@ class PostgresSql(BaseSql):
 
     def dql(self, data, computeColumns=True, encloseColumns=True, defaultSort=[]):
         "Compute query items: sort and pagination"
+        print("PAGINATIONNNNNNNN")
+        print(data)
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
         ret.sort = self._BaseSql__getSort(data,defaultSort)
@@ -391,6 +400,30 @@ class PostgresSql(BaseSql):
             else:
                 connOrCursor.execute(ret.statement, ret.parameters)
                 ret.exists = connOrCursor.fetchone()[0]
+        return ret
+
+    def get(self,columns, table, p={}, connOrCursor=None, encloseColumns=False):
+        if isinstance(p,dict):
+            ret = BaseSql.Get()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {f.text}'
+        else:
+            ret = BaseSql.Get()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {p.text}'
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
         return ret
 
     def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):
@@ -551,6 +584,30 @@ class MySqlSql(BaseSql):
             else:
                 connOrCursor.execute(ret.statement, ret.parameters)
                 ret.exists = connOrCursor.fetchone()[0]
+        return ret
+
+    def get(self,columns, table, p={}, connOrCursor=None, encloseColumns=False):
+        if isinstance(p,dict):
+            ret = BaseSql.Get()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {f.text}'
+        else:
+            ret = BaseSql.Get()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {p.text}'
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
         return ret
 
     def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):
@@ -717,6 +774,30 @@ class SqlServerSql(BaseSql):
             else:
                 connOrCursor.execute(ret.statement, ret.parameters)
                 ret.exists = connOrCursor.fetchone()[0]
+        return ret
+    
+    def get(self,columns, table, p={}, connOrCursor=None, encloseColumns=False):
+        if isinstance(p,dict):
+            ret = BaseSql.Get()
+            f = Filters(p)
+            f.where()
+            f.auto([], [], encloseColumns)
+            ret.filter = f.value('and').text
+            ret.parameters = f.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {f.text}'
+        else:
+            ret = BaseSql.Get()
+            ret.filter = p.text
+            ret.parameters = p.parameters
+            ret.statement = f'SELECT {columns} FROM {table} {p.text}'
+        if connOrCursor is not None:
+            if isinstance(connOrCursor,ConnectionProxy):
+                with connOrCursor.cursor() as cursor:
+                    cursor.execute(ret.statement, ret.parameters)
+                    ret.rows = fetchall(cursor)
+            else:
+                connOrCursor.execute(ret.statement, ret.parameters)
+                ret.rows = fetchall(connOrCursor)
         return ret
 
     def limit(self, table, p={}, limit=1, connOrCursor=None, encloseColumns=True):

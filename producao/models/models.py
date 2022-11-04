@@ -876,6 +876,16 @@ class Bobine(models.Model):
     rugas = models.BooleanField(default=False, verbose_name="Rugas", null=True, blank=True) #ADDED
     tr = models.BooleanField(default=False, verbose_name="Troca Rápida", null=True, blank=True) #ADDED
     ordem_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ordem ID Original") #ADDED
+    ordem_changed = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se a ordem foi alterada após primeira atribuição") #ADDED
+    core = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Core") #ADDED
+    lar = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Core") #ADDED
+    lotenwsup=models.CharField(verbose_name = "Lote Nonwoven Superior", max_length = 200, unique = False, null = True, blank = True,) #ADDED
+    lotenwinf=models.CharField(verbose_name = "Lote Nonwoven Inferior", max_length = 200, unique = False, null = True, blank = True,) #ADDED
+    nwsup=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Consumo Nonwoven Superior", null = True, blank = True) # ADDED
+    nwinf=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Consumo Nonwoven Inferior", null = True, blank = True) #ADDED
+    acs_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Settings applyed ") #ADDED
+    agg_of_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Aggregated OF") #ADDED
+    ignore_audit = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ignore Audit") #ADDED
     def __str__(self):
         return self.nome
 
