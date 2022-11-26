@@ -50,6 +50,7 @@ const ItemEventosProducao = React.lazy(() => import('./ItemEventosProducao'));
 const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
+const ItemEstadoProducao01 = React.lazy(() => import('./ItemEstadoProducao01'));
 import { AppContext } from "../../App";
 
 
@@ -262,6 +263,8 @@ const allItems = {
         { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "eventosproducao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        { i: "dataprod" },
+        { i: "dataprod#estado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp" },
         { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -272,7 +275,7 @@ const allItems = {
         { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+        { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true }
     ]
 }
 
@@ -310,6 +313,11 @@ const toolboxItems = {
             granulado: { description: "Granulado Movimentos", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
             granuladoinline: { description: "Granulado em Linha", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
             reciclado: { description: "Reciclado", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> }
+        }
+    },
+    dataprod: {
+        description: "Dados de Produção", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} />, children: {
+            estado: { description: "Estado da Produção", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> }
         }
     },
     fichaprocesso: {
@@ -979,6 +987,7 @@ export default (props) => {
                                     {v.i === "prod-reports#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemReportReciclado card={{ title: "Reciclado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                     {v.i === "fichaprocesso#specs" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemSpecs card={{ title: "Especificações" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
+                                    {v.i === "dataprod#estado" && <><PinItem color="#fff" background="#237804" value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem color="#fff" background="#237804" closable={v?.closable} onClick={() => onPutItem(v)} /><ItemEstadoProducao01 card={{ title: "Produção Atual" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
                                 </CustomGridItemComponent>
                             );
                         })

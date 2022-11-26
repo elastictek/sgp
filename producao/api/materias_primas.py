@@ -218,11 +218,6 @@ def MateriasPrimasList(request, format=None):
     f.auto()
     f.value("and")
 
-    print("simple")
-    print(f.text)
-    print(f.parameters)
-    print(request.data['filter'])
-
     f2 = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ['ITMREF_0', 'ITMDES1_0'], "table":"mprima"}
     }, False, "and" if f.hasFilters else "and")    
@@ -267,7 +262,7 @@ def MateriasPrimasList(request, format=None):
             SELECT DISTINCT ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
             SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
             LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
-            ST."PCU_0",mprima."ITMDES1_0"
+            ST."PCU_0",mprima."ITMDES1_0",mprima."TSICOD_3"
             --FROM ELASTICTEK.STOCK STK
             FROM ELASTICTEK.STOJOU ST --ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
             JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
@@ -285,8 +280,6 @@ def MateriasPrimasList(request, format=None):
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
     if lookup:
-        print(sql(lambda v:v,lambda v:v,lambda v:v))
-        print(parameters)
         response = dbmssql.executeSimpleList(sql(lambda v:v,lambda v:v,lambda v:v), connection, parameters, [])
     else:
         response = dbmssql.executeList(sql, connection, parameters, [])
@@ -301,24 +294,21 @@ def MateriasPrimasList(request, format=None):
 @permission_classes([IsAuthenticated])
 def NWListLookup(request, format=None):
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        "t_stamp": {"value": lambda v: v.get('t_stamp'), "field": lambda k, v: f'lnw.{k}'},
+    }, True)
     f.where()
+    f.auto()
     #f.add(f'cs.status = :cs_status', lambda v:(v!=None))
+    f.add(f'lnw.n_lote like :n_lote', lambda v:(v!=None))
+    f.add(f'lnw.`type` = :type', lambda v:(v!=None))
+    f.add(f'lnw.closed = :closed', lambda v:(v!=None))
     f.add(f'lnw.status = :status', lambda v:(v!=None))
     f.add(f'lnw.queue = :queue', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
     dql = db.dql(request.data, False)
-    print("lookuop")
-    print(f"""
-                SELECT lnw.* 
-                FROM lotesnwlinha lnw
-                #join producao_currentsettings cs on cs.agg_of_id = lnw.agg_of_id
-                {f.text}
-                {dql.sort} {dql.limit}
-            """)
-    print(parameters)
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
@@ -340,7 +330,9 @@ def NWList(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(lnw.{k})'),
+        **rangeP(f.filterData.get('fdataout'), 't_stamp_out', lambda k, v: f'DATE(lnw.{k})'),
         # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "status": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'lnw.`{k}`'},
         "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lnw.{k}'},
         "fof": {"value": lambda v: v.get('fof')},
         "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'lnw.{k}'},
@@ -383,9 +375,6 @@ def NWList(request, format=None):
            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-    print("-----------------------------------------------------------")
-    print(sql)
-    print(parameters)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters)
@@ -395,9 +384,17 @@ def NWList(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def DeleteNWItem(request, format=None):
+def DeleteNW(request, format=None):
+    data = request.data.get("parameters")
     filter = request.data.get("filter")
-    return Response({"status": "error", "title": "TODO"})
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = (filter["vcr_num"],filter["type_mov"],data["data"]["queue"] if "data" in data and "queue" in data["data"] else 0)
+                cursor.callproc('delete_nw_from_line',args)
+        return Response({"status": "success", "title": "Movimento(s) eliminado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -405,53 +402,59 @@ def DeleteNWItem(request, format=None):
 @permission_classes([IsAuthenticated])
 def SaveNWItems(request, format=None):
     data = request.data.get("parameters")
-
     def saveItems(data,cursor):
-        nws = json.loads(acs["nonwovens"])
-        sorted_rows = sorted([d for d in data["rows"] if "notValid" in d and d['notValid']==1], key=lambda d: d['n'])
-        for idx, item in enumerate(sorted_rows):
-            if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
-                raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-            if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
-                raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
-            dml = db.dml(TypeDml.INSERT, {
-                "lote_id":item["lote_id"], 
-                "qty_lote":item["qty_lote"],
-                "artigo_des":item["artigo_des"],
-                "artigo_cod":item["artigo_cod"], 
-                "type":item["type"], 
-                "t_stamp":item["t_stamp"],
-                "n_lote":item["n_lote"],
-                "status":1,
-                "vcr_num":item["vcr_num"],
-                "largura":item["largura"],
-                "comp":item["comp"],
-                "qty_reminder":item["qty_reminder"],
-                "qty_consumed":item["qty_consumed"],
-                "audit_cs_id":acs["id"],
-                "inuse":0,
-                "queue":f"""(SELECT q FROM (SELECT ifnull(max(queue),0)+1 q FROM sistema.lotesnwlinha where status=1 and type={item["type"]}) t)""",
-                "agg_of_id":acs["agg_of_id"],
-                "user_id":request.user.id}, 
-                "lotesnwlinha",None,None,False,["queue"])
-            dml.statement = f"""
-                {dml.statement}
-                ON DUPLICATE KEY UPDATE 
-                    status = VALUES(status),
-                    user_id = VALUES(user_id)
-            """
-            print(dml.statement)
-            print(dml.parameters)
-            db.execute(dml.statement, cursor, dml.parameters)
+        if "rows" in data:
+            #nws = json.loads(acs["nonwovens"])
+            sorted_rows = sorted([d for d in data["rows"] if "notValid" in d and d['notValid']==1], key=lambda d: d['n'])
+            for idx, item in enumerate(sorted_rows):
+                args = (item["t_stamp"],item["artigo_cod"],item["artigo_des"],item["vcr_num"],item["n_lote"],item["qty_lote"],item["largura"],item["comp"],item["lote_id"],item["type"],0,request.user.id,0)
+                cursor.callproc('add_nw_to_line',args)
+                # if item["type"]==0 and nws["nw_cod_inf"]!=item["artigo_cod"]:
+                #     raise ValueError(f"O artigo de Nonwoven Inferior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+                # if item["type"]==1 and nws["nw_cod_sup"]!=item["artigo_cod"]:
+                #     raise ValueError(f"O artigo de Nonwoven Superior {item['n_lote']} não corresponde ao definido na ordem de fabrico!")
+                # dml = db.dml(TypeDml.INSERT, {
+                #     "lote_id":item["lote_id"], 
+                #     "qty_lote":item["qty_lote"],
+                #     "artigo_des":item["artigo_des"],
+                #     "artigo_cod":item["artigo_cod"], 
+                #     "type":item["type"], 
+                #     "t_stamp":item["t_stamp"],
+                #     "n_lote":item["n_lote"],
+                #     "status":1,
+                #     "vcr_num":item["vcr_num"],
+                #     "largura":item["largura"],
+                #     "comp":item["comp"],
+                #     "qty_reminder":item["qty_reminder"],
+                #     "qty_consumed":item["qty_consumed"],
+                #     "audit_cs_id":acs["id"],
+                #     "inuse":0,
+                #     "queue":f"""(SELECT q FROM (SELECT ifnull(max(queue),0)+1 q FROM sistema.lotesnwlinha where status=1 and type={item["type"]}) t)""",
+                #     "agg_of_id":acs["agg_of_id"],
+                #     "user_id":request.user.id}, 
+                #     "lotesnwlinha",None,None,False,["queue"])
+                # dml.statement = f"""
+                #     {dml.statement}
+                #     ON DUPLICATE KEY UPDATE 
+                #         status = VALUES(status),
+                #         user_id = VALUES(user_id)
+                # """
+                # print(dml.statement)
+                # print(dml.parameters)
+                # db.execute(dml.statement, cursor, dml.parameters)
+        elif "type" in data and data["type"]=="in":
+            args = (data["data"]["t_stamp"],data["data"]["artigo_cod"],data["data"]["artigo_des"],data["data"]["vcr_num"],data["data"]["n_lote"],data["data"]["qty_lote"],int(data["data"]["largura"]),data["data"]["comp"],data["data"]["lote_id"],data["data"]["type"],data["data"]["queue"],request.user.id,0)
+            cursor.callproc('add_nw_to_line',args)
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                acs = inProduction(data,cursor)
-                if acs is None:
-                    return Response({"status": "error", "title": "Não existe nenhuma ordem de fabrico a decorrer!"})
-                else:
-                    saveItems(data,cursor)
-                    return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
+                saveItems(data,cursor)
+                # acs = inProduction(data,cursor)
+                # if acs is None:
+                #     return Response({"status": "error", "title": "Não existe nenhuma ordem de fabrico a decorrer!"})
+                # else:
+                #     saveItems(data,cursor)
+                return Response({"status": "success", "title": "Registos guardados com Sucesso!", "subTitle":f'{None}'})
     except Exception as error:
 
         return Response({"status": "error", "title": str(error)})
@@ -478,32 +481,130 @@ def UpdateNW(request, format=None):
         if len(response["rows"])>0:
             return response["rows"][0]
         return None
-    
+
+    errors = []
+    success = []    
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                nwd = checkNW(filter["id"],cursor)
-                if (nwd is not None):
-                    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwd["id"]}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    if "status" in data and data["status"]==0:
-                        dml = db.dml(TypeDml.UPDATE,{"t_stamp_out":datetime.now(),"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1',"type":f'=={nwd["type"]}'},None,False,["queue"])
-                        db.execute(dml.statement, cursor, dml.parameters)
-                else:
-                    return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})     
-        return Response({"status": "success", "title": "Lote alterado Sucesso!", "subTitle":f'{None}'})
-    except Error:
-        return Response({"status": "error", "title": "Erro ao alterar lote!"})
-
-
-
-
-
-
+                if "type" in data and data["type"]=="out":
+                    args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if filter["qty_reminder"] is not None else 0 ,0)
+                    cursor.callproc('output_nw_from_line',args)
+                    #nwd = checkNW(filter["id"],cursor)
+                    #if (nwd is not None):
+                    #    dml = db.dml(TypeDml.UPDATE,{**data,"user_id":request.user.id},"lotesnwlinha",{"id":f'=={nwd["id"]}'},None,False)
+                    #    db.execute(dml.statement, cursor, dml.parameters)
+                    #    if "status" in data and data["status"]==0:
+                    #        dml = db.dml(TypeDml.UPDATE,{"t_stamp_out":datetime.now(),"queue":"queue=(case when (ifnull(queue,0)-1) < 0 then 1 else (ifnull(queue,1)-1) end)","user_id":request.user.id},"lotesnwlinha",{"status":f'==1',"type":f'=={nwd["type"]}'},None,False,["queue"])
+                    #        db.execute(dml.statement, cursor, dml.parameters)
+                    #else:
+                    #    return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado ou não existe!"})
+                if ("type" in data and data["type"]=="close"):
+                    args = (filter["vcr_num"] if "vcr_num" in filter else None, None,filter["t_stamp_out"] if "t_stamp_out" in filter else None)
+                    cursor.callproc('close_nw_line',args)
+                if ("type" in data and data["type"]=="queue"):
+                    args = (filter["id"] if "id" in filter else None, data["mov"])
+                    cursor.callproc('upadte_nw_queue',args)
+                if ("type" in data and data["type"]=="datagrid"):
+                    for idx,v in enumerate(data["rows"]):
+                        exists = db.exists("lotesnwlinha", {"id":f"=={v['id']}","closed":0}, cursor).exists
+                        if exists==0:
+                            errors.append(f"""O lote de Nonwoven {v["n_lote"]} já se encontra fechado ou não tem movimento de saída!""")
+                        else:
+                            dml = db.dml(TypeDml.UPDATE,{"qty_out":v["qty_out"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                    success.append(f"""Bobinagem {v["nome"]} atualizada com sucesso!""")
+        return Response({"status": "multi", "errors":errors, "success":success})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
 
 #endregion
 
 #region GRANULADO
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def GranuladoBufferLineList(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+
+    f.setParameters({
+       **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'"CREDATTIM_0"::DATE'),
+       "LOT_0": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'"{k}"'},
+       #"fof": {"value": lambda v: v.get('fof')},
+       "VCRNUM_0": {"value": lambda v: v.get('fvcr'), "field": lambda k, v: f'"{k}"'},
+       #"qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+       #"qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+       #"type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"']}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = dbgw.dql(request.data, False)
+    cols = f"""tx."ITMDES1_0",tx."ITMREF_0",tx."LOT_0",tx.QTYPCU_0,tx."PCU_0",tx."VCRNUM_0",tx."CREDATTIM_0",cg.t_stamp,cg.t_stamp_out"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{dql.columns}')}
+            FROM(
+            SELECT
+            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
+            SUM(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM, 
+            --LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
+            ST."QTYPCU_0" QTYPCU_0,
+            ST."PCU_0",mprima."ITMDES1_0"
+            FROM "SAGE-PROD"."STOCK" STK
+            JOIN "SAGE-PROD"."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            WHERE ST."VCRTYP_0" NOT IN (28)
+            and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) 
+            and ST."LOC_0" in ('BUFFER')
+            --AND STK.ITMREF_0='NNWSB0023000056' AND STK.LOT_0='E0120/00741'
+            --AND ST."CREDATTIM_0">=now() - interval '2 month'
+            ) tx
+            LEFT JOIN mv_granuladolinha cg on cg.vcr_num=tx."VCRNUM_0" and cg.artigo_cod=tx."ITMREF_0" and cg.n_lote=tx."LOT_0"
+            where (QTY_SUM > 0) --AND "ITMREF_0"='RVMAX0862000013'
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}            
+        """
+    )
+    sqlCount = f""" 
+            SELECT count(*)
+            FROM(
+            SELECT
+            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
+            SUM(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM, 
+            --LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
+            ST."QTYPCU_0" QTYPCU_0,
+            ST."PCU_0",mprima."ITMDES1_0"
+            FROM "SAGE-PROD"."STOCK" STK
+            JOIN "SAGE-PROD"."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            WHERE ST."VCRTYP_0" NOT IN (28)
+            and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) 
+            and ST."LOC_0" in ('BUFFER')
+            --AND STK.ITMREF_0='NNWSB0023000056' AND STK.LOT_0='E0120/00741'
+            --AND ST."CREDATTIM_0">=now() - interval '2 month'
+            ) tx
+            where (QTY_SUM > 0) --AND "ITMREF_0"='RVMAX0862000013'
+            {f.text} {f2["text"]}
+        """
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    try:
+        response = dbgw.executeList(sql, connection, parameters,[],None,sqlCount)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -572,6 +673,9 @@ def GranuladoList(request, format=None):
 
     f.setParameters({
        **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+       **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+       **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+       "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
        "fof": {"value": lambda v: v.get('fof')},
        "vcr_num": {"value": lambda v: v.get('fvcr')},
@@ -589,16 +693,18 @@ def GranuladoList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = db.dql(request.data, False)
-    cols = f"""t.*,acs.ofs ->> "$[*].of_cod" ofs,adiff.avgdiff"""
+    cols = f"""t.*,acs.ofs ->> "$[*].of_cod" ofs,adiff.avgdiff,adiff.stddiff"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
             with AVGDIFF AS (
-                select artigo_cod,AVG(TIMESTAMPDIFF(second,in_t,out_t)) avgdiff
+                select artigo_cod,
+                AVG(TIMESTAMPDIFF(second,in_t,out_t)) avgdiff,
+                STDDEV(TIMESTAMPDIFF(second,in_t,out_t)) stddiff
                 from (
                 SELECT ll.artigo_cod,MIN(ll.t_stamp) in_t,MAX(ll.t_stamp) out_t
                 FROM lotesgranuladolinha ll
-                WHERE ll.`status`<>0
+                WHERE ll.`status`<>0 and ll.closed=1
                 GROUP BY ll.artigo_cod,ll.n_lote,ll.vcr_num
                 ) t
                 where t.in_t<>t.out_t
@@ -625,7 +731,7 @@ def GranuladoList(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) t
             join audit_currentsettings acs on acs.id=t.audit_cs_id
-            join AVGDIFF adiff on adiff.artigo_cod=t.artigo_cod
+            left join AVGDIFF adiff on adiff.artigo_cod=t.artigo_cod
         """
     )
     sqlCount = f""" 
@@ -633,10 +739,12 @@ def GranuladoList(request, format=None):
             count(*)
             from(
             select distinct 
-            t.id,t.type_mov,t.artigo_cod,t.n_lote,t.qty_lote,t.vcr_num,t.artigo_des,t.max_order,t.t_stamp,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
+            t.id,t.type_mov,t.artigo_cod,t.n_lote,t.qty_lote,t.vcr_num,t.artigo_des,t.in_t,t.out_t,t.max_order,t.t_stamp,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
             from(
             select ll.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ll.qty_lote,ll.vcr_num,ll.artigo_des,
             ld.t_stamp,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed,
+            MIN(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) in_t,
+            MAX(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) out_t,
             MAX(ld.t_stamp) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order
             from lotesdoserslinha ld
             JOIN lotesgranuladolinha ll on ll.id=ld.loteslinha_id
@@ -935,7 +1043,7 @@ def UpdateGranulado(request, format=None):
                     return Response({"status": "multi", "errors":errors, "success":success})
                 if ("type" in data and data["type"]=="out"):
                     try:
-                        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
+                        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,request.user.id, 0)
                         cursor.callproc('output_granulado_from_line',args)                        
                     except Exception as error:
                         return Response({"status": "error", "title": str(error)})  
@@ -965,7 +1073,7 @@ def UpdateGranulado(request, format=None):
                     #     return Response({"status": "error", "title": "Não é possível dar saída do lote! O lote já deu saída."})                    
                 if ("type" in data and data["type"]=="in"):
                     try:
-                        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],0)
+                        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],request.user.id,0)
                         cursor.callproc('add_granulado_to_line',args)
                         if (filter["saida_mp"]==1):
                             args = (filter["t_stamp_out"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
@@ -985,10 +1093,8 @@ def UpdateGranulado(request, format=None):
                     #pass
                 if ("type" in data and data["type"]=="close"):
                     try:
-                        args = (filter["vcr_num"] if "vcr_num" in filter else None, filter["init_data"] if "init_data" in filter else None,filter["end_data"] if "end_data" in filter else None)
-                        print("#CLOSED#########################")
-                        print(args)
-                        #cursor.callproc('close_granulado_line',args)
+                        args = (filter["vcr_num"] if "vcr_num" in filter else None, None,filter["t_stamp_out"] if "t_stamp_out" in filter else None)
+                        cursor.callproc('close_granulado_line',args)
                     except Exception as error:
                         return Response({"status": "error", "title": str(error)})
                     # if "vcr_num" in filter:
@@ -1023,9 +1129,9 @@ def UpdateGranulado(request, format=None):
                 #         updateDosers({"loteslinha_id":id,"agg_of_id":acs["agg_of_id"],"acs_id":acs["id"],"linha_order":linha_order,"linha_id":lastid},cursor)
                 #     else:
                 #         return Response({"status": "error", "title": f"Não é possível alterar o estado do lote!", "subTitle":"O lote está fechado, já não está em linha ou não existe!"})
-        return Response({"status": "success", "title": "Movimento alterado Sucesso!", "subTitle":f'{None}'})
+        return Response({"status": "success", "title": "Movimento(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
-        return Response({"status": "error", "title": "Erro ao alterar Registo(s)!"})
+        return Response({"status": "error", "title": "Erro ao alterar registo(s)!"})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1077,7 +1183,55 @@ def DeleteGranulado(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def ConsumoGranuladoList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
 
+    f.setParameters({
+       **rangeP(f.filterData.get('fdatain'), 't_stamp_in', lambda k, v: f'DATE(t_stamp_in)'),
+       **rangeP(f.filterData.get('fdataout'), 't_stamp_out', lambda k, v: f'DATE(t_stamp_out)'),
+       "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+       "ofid": {"value": lambda v: v.get('fof'), "field": lambda k, v: f'{k}'},
+       "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+       "qty": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['artigo_cod', 'artigo_des']}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""mpg.*, sum(consumo_by_of) over (partition by ordem_id,type_mp,artigo_cod) consumo_of_artigo, sum(n_bobinagens) over (partition by ordem_id,type_mp,artigo_cod) nbob_of_artigo"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+            select * from (
+            select {c(f'{dql.columns}')} from consumos_mp mpg          
+            ) t
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    sqlCount=f"""select count(*) from consumos_mp mpg {f.text} {f2["text"]}"""
+    
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,sqlCount)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+#NÃO SEI O QUE É????
 def updateLotesdosers_ig(ig_id):
     connection = connections["default"].cursor()
     #Get do timestamp e acs_id do ig da bobinagem
@@ -1122,6 +1276,54 @@ def updateLotesdosers_ig(ig_id):
 
 #endregion
 
+#region CONSUMOS
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def UpdateConsumos(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if ("type" in data and data["type"]=="removeconsumos"):
+                    try:
+                        exists = db.exists("consumos_mp",{"DATE(t_stamp_out)":f'=={filter["t_stamp_out"]}'},cursor).exists
+                        if exists==1:
+                            dml = db.dml(TypeDml.DELETE,None,"consumos_mp",{"DATE(t_stamp_out)":f'=={filter["t_stamp_out"]}'},None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                        if "reopen" in filter and filter["reopen"]==1 and "t_stamp_out" in filter:
+                             dml = db.dml(TypeDml.UPDATE,{"closed":0,"t_stamp_closed":None},"lotesgranuladolinha",{"DATE(t_stamp_out)":f'=={filter["t_stamp_out"]}',"closed":1},None,False)
+                             db.execute(dml.statement, cursor, dml.parameters)
+                             dml = db.dml(TypeDml.UPDATE,{"closed":0},"lotesgranuladolinha",{"DATE(t_stamp)":f'=={filter["t_stamp_out"]}',"closed":1,"type_mov":0},None,False)
+                             db.execute(dml.statement, cursor, dml.parameters)
+                             dml = db.dml(TypeDml.UPDATE,{"closed":0,"t_stamp_closed":None},"lotesnwlinha",{"DATE(t_stamp_out)":f'=={filter["t_stamp_out"]}',"closed":1},None,False)
+                             db.execute(dml.statement, cursor, dml.parameters)
+                    except Exception as error:
+                        return Response({"status": "error", "title": str(error)})
+                if ("type" in data and data["type"]=="processconsumos"):
+                    try:
+                        try:
+                            if "granulado" in filter and filter["granulado"]==1:
+                                args = (None, None,filter["t_stamp_out"] if "t_stamp_out" in filter else None)
+                                cursor.callproc('close_granulado_line',args)
+                            if "nonwovens" in filter and filter["nonwovens"]==1:
+                                args = (None, None,filter["t_stamp_out"] if "t_stamp_out" in filter else None)
+                                cursor.callproc('close_nw_line',args)
+                        except Exception as error:
+                            return Response({"status": "error", "title": str(error)})
+                    except Exception as error:
+                        return Response({"status": "error", "title": str(error)})
+        return Response({"status": "success", "title": "Conusmo(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": "Erro ao alterar registo(s)!"})
+
+
+
+#endregion
 
 #region MP ALTERNATIVAS
 
@@ -1254,13 +1456,16 @@ def GetMPAlternativas(request, format=None):
 
 #endregion
 
+
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def MateriasPrimasLookup(request, format=None):
     conn = connections[connGatewayName].cursor()
-    cols = ['"ITMREF_0"','"ITMDES1_0"','"ZFAMILIA_0"','"ZSUBFAMILIA_0"','"STU_0"', '"SAUSTUCOE_0"']
+    cols = ['"ITMREF_0"','"ITMDES1_0"','"ZFAMILIA_0"','"ZSUBFAMILIA_0"','"STU_0"', '"SAUSTUCOE_0"','"TSICOD_3"']
     
     f = Filters(request.data['filter'])
     f.setParameters({}, False)

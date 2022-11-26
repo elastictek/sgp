@@ -27,11 +27,24 @@ dbmssql = DBSql(connections[connMssqlName].alias)
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 
+def getCurrentSettingsId():
+    with connections["default"].cursor() as cursor:
+        return db.executeSimpleList(lambda: (f"""		
+                SELECT acs.id,acs.agg_of_id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                order by acs.id desc
+                limit 1
+            """), cursor, {})['rows']
+
 def executeAlerts():
     group_name = 'broadcast'
     channel_layer = channels.layers.get_channel_layer()
 
-
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
+    dataig_bobinagens = json.dumps(rows[0],default=str)
 
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
@@ -40,6 +53,10 @@ def executeAlerts():
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
     data = json.dumps(rows[0],default=str)
+
+    with connections["default"].cursor() as cursor:
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM ig_linelog_params ORDER BY ID DESC limit 1'), cursor, {})['rows']
+    datalinelog_params = json.dumps(rows[0],default=str)
 
     #with connections["default"].cursor() as cursor:
     #    rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
@@ -54,16 +71,33 @@ def executeAlerts():
          """), cursor, {})['rows']
     dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
 
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f"""		
-                SELECT acs.id 
-                from producao_currentsettings cs
-                join audit_currentsettings acs on cs.id=acs.contextid
-                where cs.status=3
-                order by acs.id desc
-                limit 1
-         """), cursor, {})['rows']
-    dataInProd = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+    rows = getCurrentSettingsId()
+    dataInProd = rows[0] if len(rows)>0 else {}
+
+    if dataInProd:
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f"""
+                    with paletes as(
+                    SELECT
+                    sum(num_bobines_act) npaletes
+                    FROM planeamento_ordemproducao op
+                    join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
+                    where op.agg_of_id_id = {dataInProd["agg_of_id"]}
+                    ),
+                    bobines as(
+                    select 
+                    count(*) nbobines
+                    from producao_bobine pb
+                    where pb.agg_of_id = {dataInProd["agg_of_id"]}
+                    )
+                    select * 
+                    from paletes
+                    cross join bobines
+            """), cursor, {})['rows']
+        dataProductionChanges = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+    else:
+        dataProductionChanges = json.dumps({},default=str)
+    dataInProd = json.dumps(dataInProd,default=str)
 
     #with connections["default"].cursor() as cursor:
     #    rows = db.executeSimpleList(lambda: (f"""		
@@ -100,6 +134,7 @@ def executeAlerts():
             "auditcs":dataAuditCs,
             #"buffer":dataBuffer,
             "inproduction":dataInProd,
+            "datalinelog_params":datalinelog_params,
             #"dosers":dataDosers,
             #"availability":dataLotesAvailability, 
             #"doserssets":dataDosersSets
@@ -110,6 +145,9 @@ def executeAlerts():
                 "hash_auditcs":hashlib.md5(dataAuditCs.encode()).hexdigest(),
                 #"hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
+                "hash_productionchanges":hashlib.md5(dataProductionChanges.encode()).hexdigest(),
+                "hash_linelog_params":hashlib.md5(datalinelog_params.encode()).hexdigest()
+                
                 #"hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
                 #"hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
                 #"hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
@@ -281,6 +319,18 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
+    def estadoProducao(self,data):
+        cs = getCurrentSettingsId()
+        if len(rows)>0:
+            with connections["default"].cursor() as cursor:
+                rows = db.executeSimpleList(lambda: (f"""
+                select distinct count(*) over () total_produzidas, count(*) over (partition by pb.estado) total_por_estado,pb.estado
+                from producao_bobine pb
+                join planeamento_ordemproducao op on op.id=pb.ordem_id
+                where op.agg_of_id_id={cs[0]["agg_of_id"]}"""
+                ), cursor, f.parameters)['rows']
+        else:         
+            self.send(text_data=json.dumps({"data":{},"item":"estadoproducao"},default=str))
 
     commands = {
         'checkreciclado':checkReciclado,
@@ -290,7 +340,8 @@ class RealTimeGeneric(WebsocketConsumer):
         'checklineevents':checkLineEvents,
         'checkbobinagens':checkBobinagens,
         'checkbufferin':checkBufferIn,
-        'checkcurrentsettings':checkCurrentSettings
+        'checkcurrentsettings':checkCurrentSettings,
+        'estadoproducao':estadoProducao
     }
 
     def connect(self):

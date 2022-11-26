@@ -145,7 +145,7 @@ def PrintEtiqueta(request, format=None):
                 dml = db.dml(TypeDml.DELETE, None,'producao_etiquetareciclado',{"reciclado_id":f'=={ data["reciclado"]["id"]}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
                 dta = {
-                    "inicio":data["reciclado"]["timestamp"],"fim":data["reciclado"]["timestamp"],
+                    "inicio":data["reciclado"]["timestamp"],"fim":data["reciclado"]["timestamp_edit"],
                     "lote":data["reciclado"]["lote"],"produto_granulado":data["reciclado"]["produto_granulado"],
                     "peso":data["reciclado"]["peso"],"reciclado_id":data["reciclado"]["id"],
                     "user_id":request.user.id,"impressora":data["impressora"],"num_copias":data["num_copias"], "estado_impressao":1

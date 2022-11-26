@@ -4,31 +4,39 @@ import styled from 'styled-components';
 import Joi from 'joi';
 import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { getSchema } from "utils/schemaValidator";
+import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
+import { includeObjectKeys, excludeObjectKeys } from "utils/object";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag } from "antd";
 const { Title, Text } = Typography;
-import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined } from '@ant-design/icons';
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined, DeleteFilled, PlusCircleOutlined } from '@ant-design/icons';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField, SelectDebounceField, CheckboxField } from 'components/FormFields';
 import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
 import ToolbarTitle from 'components/ToolbarTitle';
 import { TbCircles } from "react-icons/tb";
 import BobinesPopup from './commons/BobinesPopup';
 import { usePermission } from "utils/usePermission";
+import YScroll from 'components/YScroll';
 
 const focus = (el, h,) => { el?.focus(); };
 
 const schema = (options = {}) => {
+    return getSchema({}, options).unknown(true);
+}
+const schemaDelete = (options = {}) => {
+    return getSchema({}, options).unknown(true);
+}
+const schemaCreate = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
@@ -143,15 +151,193 @@ const IFrame = ({ src }) => {
     return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>` }} />;
 }
 
-const ActionContent = ({ dataAPI, hide, onClick, ...props }) => {
+const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     const items = [
-        /* { label: 'Eliminar Entrada', key: 'delete', icon: <DeleteOutlined /> } */
+        //...(modeEdit && props.row?.valid === 0 && props.row?.rowvalid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
+        //...(modeEdit && props.row?.closed === 0 && props.row?.rowvalid !== 0 && props.row?.status == 1) ? [{ label: <span style={{}}>Saída de linha</span>, key: 'out', icon: <ImArrowLeft size={16} style={{ verticalAlign: "text-top" }} /> }, { type: 'divider' }] : [],
+        //(modeEdit && props.row?.closed === 0 && props.row?.rowvalid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar movimento de entrada</span>, key: 'deletein', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> },
+        (modeEdit && props.row?.valid === 1 && props.row?.rowvalid !== 0) && { label: <span style={{ fontWeight: 700 }}>Apagar Bobinagem</span>, key: 'delete', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> }
     ];
     return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
 }
 
-const InputNumberEditor = ({ field, p, ...props }) => {
-    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
+const InputNumberEditor = ({ field, p, onChange, ...props }) => {
+    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} onChange={onChange ? (v) => onChange(p, v, field) : (e) => p.onRowChange({ ...p.row, rowvalid: p.row[field] !== e ? 0 : null, [field]: e }, true)} ref={focus} {...props} />
+}
+
+const loadNwLotesLookup = async (p, value) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, pagination: { limit: 15 }, filter: { closed: 0, t_stamp: `<=${moment(p.row.timestamp).format(DATETIME_FORMAT)}`, type: p.row.type, n_lote: getFilterValue(value, 'any') }, sort: [{ column: 't_stamp', direction: 'DESC' }], parameters: { lookup: true } });
+    return rows;
+}
+const optionsRender = d => ({
+    label: <div>
+        <div><span><b>{d["n_lote"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["t_stamp"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["qty_lote"]} m<sup>2</sup></b>]</span></div>
+        <div><span>{d["artigo_cod"]}</span> <span>{d["artigo_des"]}</span></div>
+    </div>, value: d["id"], key: d["id"], row: d
+});
+const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
+    return (<SelectDebounceField
+        autoFocus
+        value={{ value: p.row[field], label: p.row[field] }}
+        size="small"
+        style={{ width: "100%", padding: "3px" }}
+        keyField={keyField ? keyField : field}
+        textField={textField ? textField : field}
+        showSearch
+        showArrow
+        ref={focus}
+        {...props}
+    />)
+}
+
+const DeleteContent = ({ record, parentRef, closeParent, loadParentData }) => {
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+
+    const loadData = async ({ signal } = {}) => {
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async (values) => {
+        submitting.trigger();
+        const v = schemaDelete().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        let { errors, warnings, value, ...status } = getStatus({});
+        //setFieldStatus({ ...status.fieldStatus });
+        //setFormStatus({ ...status.formStatus });
+        if (errors === 0) {
+            try {
+                let response = await fetchPost({ url: `${API_URL}/deletebobinagem/`, filter: {}, parameters: { ig_bobinagem: values?.ig_bobinagem, id: record?.id } });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                    closeParent();
+                    Modal.success({ title: `Bobinagem eliminada com sucesso!` })
+                } else {
+                    status.formStatus.error.push({ message: response.data.title });
+                    setFormStatus({ ...status.formStatus });
+                }
+            } catch (e) {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+            };
+        }
+        submitting.end();
+    }
+
+    const onValuesChange = (changedValues, values) => {
+    }
+
+    return (
+        <Form form={form} name={`f-del`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{}}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-DEL" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaDelete} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} gutterWidth={10}>
+                    <Col xs="content"><Field forInput={true} wrapFormItem={true} name="ig_bobinagem" label={{ enabled: true, text: "Remover Dados de Máquina?", style: { paddingTop: "5px", paddingBottom: "0px", paddingLeft: "0px" } }}><CheckboxField /></Field></Col>
+                </Row>
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button type="primary" disabled={submitting.state} onClick={() => form.submit()}>Apagar Bobinagem</Button>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
+}
+
+const ActionCreate = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
+    const items = [
+        { label: <span style={{ fontWeight: 700 }}>Criar Bobinagem</span>, key: 'create', icon: <PlusCircleOutlined style={{ fontSize: "16px", color: "green" }} /> }
+    ];
+    return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
+}
+const CreateContent = ({ parentRef, closeParent, loadParentData }) => {
+    const dataAPI = useDataAPI({ id: "missedLLL", payload: { url: `${API_URL}/missedlineloglist/`, parameters: {}, pagination: { enabled: false }, filter: {}, sort: [] } });
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+    const primaryKeys = ['id'];
+    const columns = [
+        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => moment(props.row.inicio_ts).format(DATETIME_FORMAT) },
+        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => moment(props.row.fim_ts).format(DATETIME_FORMAT) },
+        { key: 'diametro', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diametro} mm</div> },
+        { key: 'metros', name: 'Comprimento', width: 110, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros} m</div> },
+        { key: 'nw_inf', name: 'NW Inferior', formatter: p => <div style={{ textAlign: "right" }}>{p.row.nw_inf} m</div> },
+        { key: 'nw_sup', name: 'NW Superior', formatter: p => <div style={{ textAlign: "right" }}>{p.row.nw_sup} m</div> }
+    ];
+
+    const loadData = async ({ signal } = {}) => {
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async (v, r) => {
+        Modal.confirm({
+            title: <div>Criar Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Tem a certeza que deseja criar a bobinagem com data de <b>{moment(r.t_stamp).format(DATETIME_FORMAT)}</b>?</li></ul>,
+            onOk: async () => {
+                submitting.trigger();
+                try {
+                    let response = await fetchPost({ url: `${API_URL}/createbobinagem/`, filter: {}, parameters: { ig_bobinagem: r?.id } });
+                    if (response.data.status !== "error") {
+                        dataAPI.fetchPost();
+                    } else {
+                        Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+                    }
+                } catch (e) {
+                    Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+                } finally {
+                    submitting.end();
+                };
+            }
+        });
+    }
+
+    const onValuesChange = (changedValues, values) => {
+    }
+
+    return (
+        <Form form={form} name={`f-del`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{}}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-DEL" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaCreate} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} nogutter>
+                    <Col>
+                        <YScroll>
+                            <Table
+                                actionColumn={<ActionCreate dataAPI={dataAPI} onClick={onFinish} />}
+                                frozenActionColumn
+                                loadOnInit={true}
+                                columns={columns}
+                                dataAPI={dataAPI}
+                                toolbar={false}
+                                search={false}
+                                moreFilters={false}
+                                rowSelection={false}
+                                primaryKeys={primaryKeys}
+                                editable={false}
+                            />
+                        </YScroll>
+                    </Col>
+                </Row>
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
 }
 
 
@@ -160,10 +346,16 @@ export default (props) => {
     const location = useLocation();
     const classes = useStyles();
 
+
     const permission = usePermission({ allowed: { producao: 200 } });
     const [allowEdit, setAllowEdit] = useState({ datagrid: false });
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
 
+
+    /* const permission = usePermission({ allowed: { producao: 200 } });
+    const [allowEdit, setAllowEdit] = useState({ datagrid: false });
+    const [modeEdit, setModeEdit] = useState({ datagrid: false });
+ */
     const [formFilter] = Form.useForm();
     const submitting = useSubmitting(true);
     const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
@@ -172,18 +364,92 @@ export default (props) => {
     const defaultSort = [{ column: 'nome', direction: 'DESC' }];
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
-    ), [modalParameters]);
-    const [showBobinesModal, hideBobinesModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideBobinesModal} width={320} height={500}><BobinesPopup record={{ ...modalParameters }} /></ResponsiveModal>
-    ), [modalParameters]);
+    // const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
+    //     <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
+    // ), [modalParameters]);
+    // const [showBobinesModal, hideBobinesModal] = useModal(({ in: open, onExited }) => (
+    //     <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideBobinesModal} width={320} height={500}><BobinesPopup record={{ ...modalParameters }} /></ResponsiveModal>
+    // ), [modalParameters]);
 
-    const editable = (row) => {
-        return (modeEdit.datagrid && allowEdit.datagrid && row?.valid===1);
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+
+        const content = () => {
+            switch (modalParameters.type) {
+                case "bobines": return <BobinesPopup record={{ ...modalParameters }} />
+                case "details": return <IFrame src={modalParameters.src} />;
+                case "delete": return <DeleteContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
+                case "create": return <CreateContent loadParentData={modalParameters.loadData} />;
+            }
+        }
+
+        return (
+            <ResponsiveModal title={modalParameters.title} onCancel={hideModal} width={modalParameters.width ? modalParameters.width : 600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
+
+    /*const editable = (row) => {
+        return (modeEdit.datagrid && allowEdit.datagrid && row?.valid === 1);
     }
-    const editableClass = (row)=>{
-        return (modeEdit.datagrid && row?.valid===1) && classes.edit;
+    const editableClass = (row) => {
+        return (modeEdit.datagrid && row?.valid === 1) && classes.edit;
+    }*/
+
+
+    const editable = (row, col) => {
+        if (modeEdit.datagrid && allowEdit.datagrid && row?.valid === 1) {
+            if (moment().diff(row.timestamp, 'days') > 3) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    const editableClass = (row, col) => {
+        if (modeEdit.datagrid && allowEdit.datagrid && row?.valid === 1) {
+            return (moment().diff(row.timestamp, 'days') < 3) ? classes.edit : undefined;
+        }
+    }
+    const formatterClass = (row, col) => {
+        /* if (col === "type_mov" && row.closed === 1) {
+            return classes.closed;
+        }
+        if (col === "diff" && row.diff !== 0) {
+            let percent = (100 * row.diff) / row.avgdiff;
+            if (percent >= 125) {
+                return classes.diffAbove;
+            }
+            if (percent <= 75) {
+                return classes.diffBellow;
+            }
+        } */
+    }
+    const onChange = (p, v, field, key) => {
+        const _value = (key === null || key === undefined) ? v : v.row[key];
+        const r = { ...p.row, values_changed: Array.isArray(p.row?.values_changed) ? p.row?.values_changed : [] };
+        r[field] = _value;
+        if (field === 'lotenwinf') {
+            r["tiponwinf"] = v.row["artigo_des"];
+        }
+        if (field === 'lotenwsup') {
+            r["tiponwsup"] = v.row["artigo_des"];
+        }
+        if (!(`${field}_original` in p.row)) {
+            r[`${field}_original`] = p.row[field];
+        }
+        if (r[`${field}_original`] != _value) {
+            if (r["values_changed"].indexOf(field) === -1) { r["values_changed"].push(field); }
+        } else {
+            r["values_changed"] = r["values_changed"].filter(el => el != field);
+        }
+        if (r["values_changed"].length === 0) {
+            r["rowvalid"] = 1;
+        } else {
+            r["rowvalid"] = 0;
+        }
+        p.onRowChange(r, true);
     }
 
     const columns = [
@@ -194,12 +460,12 @@ export default (props) => {
         { key: 'duracao', name: 'Duração', width: 90 },
         { key: 'core', name: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> },
         { key: 'comp', name: 'Comprimento', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
-        { key: 'comp_par', name: 'Comp. Emenda', width: 100, editable:editable, cellClass:editableClass, editor: p => <InputNumberEditor p={p} field="comp_par" min={0} max={p.row.comp} addonAfter="m" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_par} m</div> },
+        { key: 'comp_par', name: 'Comp. Emenda', width: 100, editable: editable, cellClass: editableClass, editor: p => <InputNumberEditor p={p} field="comp_par" min={0} max={p.row.comp} addonAfter="m" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_par} m</div> },
         //{ key: 'comp_cli', name: 'Comp. Cliente', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_cli} m</div> },
+        { key: 'diam', name: 'Diâmetro', width: 100, editable: (r) => editable(r, 'diam'), cellClass: r => editableClass(r, 'diam'), editor: p => <InputNumberEditor p={p} field="diam" min={0} max={1500} addonAfter="mm" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
         { key: 'largura', name: 'Largura', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura} mm</div> },
-        { key: 'largura_bruta', name: 'Largura Bruta', width: 100, editable:editable, cellClass:editableClass, editor: p => <InputNumberEditor p={p} field="largura_bruta" min={p.row.largura} addonAfter="mm" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura_bruta} mm</div> },
         { key: 'area', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
-        { key: 'diam', name: 'Diâmetro', width: 100, editable:editable, cellClass:editableClass, editor: p => <InputNumberEditor p={p} field="diam" min={0} addonAfter="mm" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
+        { key: 'largura_bruta', name: 'Largura Bruta', width: 100, editable: editable, cellClass: editableClass, editor: p => <InputNumberEditor p={p} field="largura_bruta" min={p.row.largura} addonAfter="mm" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura_bruta} mm</div> },
         { key: 'nwinf', name: 'Nw Inf.', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
         { key: 'nwsup', name: 'Nw Sup.', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> },
         ...formFilter.getFieldValue('typelist') === "A" ? [{ key: 'bobines', minWidth: 750, width: 750, name: <ColumnBobines n={28} />, sortable: false, formatter: p => <Bobines onClick={onBobineClick} b={JSON.parse(p.row.bobines)} bm={p.row}/*  setShow={setShowValidar} */ /> }] : [],
@@ -224,24 +490,22 @@ export default (props) => {
             { key: 'C6', name: 'C6 kg', width: 55, sortable: false }
         ] : [],
         ...formFilter.getFieldValue('typelist') === "C" ? [
-            { key: 'ofs', name: 'Ordens de Fabrico', width: 480, sortable: false, formatter: (p) => <Ofs /* rowIdx={i} */ r={p.row} /* setShow={setShowValidar} */ /> },
-            { key: 'tiponwinf', name: 'Tipo NW Inferior', width: 300, sortable: true },
-            { key: 'tiponwsup', name: 'Tipo NW Superior', width: 300, sortable: true },
-            { key: 'lotenwinf', name: 'Lote NW Inferior', width: 150, sortable: true },
-            { key: 'lotenwsup', name: 'Lote NW Superior', width: 150, sortable: true }
-
-        ] : []
+            { key: 'ofs', name: 'Ordens de Fabrico', width: 480, sortable: false, formatter: (p) => <Ofs /* rowIdx={i} */ r={p.row} /* setShow={setShowValidar} */ /> }
+        ] : [],
+        ...[{ key: 'tiponwinf', name: 'Tipo NW Inferior', width: 300, sortable: true },
+        { key: 'tiponwsup', name: 'Tipo NW Superior', width: 300, sortable: true },
+        { key: 'lotenwinf', name: 'Lote NW Inferior', width: 150, sortable: true, editable: (r) => editable(r, 'lotenwinf'), cellClass: r => editableClass(r, 'lotenwinf'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onChange(p, v, 'lotenwinf', 'n_lote')} fetchOptions={(v) => loadNwLotesLookup(p, v)} optionsRender={optionsRender} p={p} field="lotenwinf" />, editorOptions: { editOnClick: true } },
+        { key: 'lotenwsup', name: 'Lote NW Superior', width: 150, sortable: true, editable: (r) => editable(r, 'lotenwsup'), cellClass: r => editableClass(r, 'lotenwsup'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onChange(p, v, 'lotenwsup', 'n_lote')} fetchOptions={(v) => loadNwLotesLookup(p, v)} optionsRender={optionsRender} p={p} field="lotenwsup" />, editorOptions: { editOnClick: true } }]
     ];
 
 
     const onBobinesPopup = (row) => {
-        console.log(row)
-        setModalParameters({ title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
-        showBobinesModal();
+        setModalParameters({ type: 'bobines', title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        showModal();
     }
 
     const onBobineClick = (v) => {
-        setModalParameters({ src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
+        setModalParameters({ type: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
         showModal();
     }
 
@@ -307,7 +571,12 @@ export default (props) => {
         }
     };
     const onAction = (item, row) => {
-        console.log(item, row);
+        switch (item.key) {
+            case "delete":
+                setModalParameters({ type: item.key, width: 300, height: 100, title: <div>Apagar Bobinagem <b>{row.nome}</b></div>, loadData: () => dataAPI.fetchPost(), record: row });
+                showModal();
+                break;
+        }
     }
     const changeMode = () => {
         if (allowEdit.datagrid) {
@@ -316,9 +585,41 @@ export default (props) => {
     }
 
     const onSave = async (action) => {
-        const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ comp_par, diam }) => ({ comp_par, diam }));
+        let rows = dataAPI.getData().rows.filter(v => v?.rowvalid === 0).map((values) => includeObjectKeys(values, ['id', 'timestamp', 'nome', 'comp_par', 'comp', 'largura', 'diam', 'largura_bruta', 'lotenwinf', 'lotenwsup', 'tiponwinf', 'tiponwsup', '%_original', 'values_changed']));
+        rows = rows.map(obj => ({ ...obj, timestamp: moment(obj.timestamp).format(DATETIME_FORMAT) }));
         submitting.trigger();
-        submitting.end();
+        try {
+            let response = await fetchPost({ url: `${API_URL}/updatebobinagem/`, parameters: { rows } });
+            if (response.data.status == "multi") {
+                Modal.info({
+                    title: "Estado das atualizações",
+                    content: <YScroll style={{ maxHeight: "270px" }}>
+                        {response.data.success.length > 0 && <ul style={{ padding: "0px 0px 5px 20px", background: "#f6ffed", border: "solid 1px #b7eb8f" }}>
+                            {response.data.success.map(v => <li>{v}</li>)}
+                        </ul>
+                        }
+                        {response.data.errors.length > 0 && <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
+                            {response.data.errors.map(v => <li>{v}</li>)}
+                        </ul>
+                        }
+                    </YScroll>
+                })
+                if (response.data.success.length > 0) {
+                    dataAPI.fetchPost();
+                }
+            } else {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+            }
+        } catch (e) {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        } finally {
+            submitting.end();
+        };
+    }
+
+    const onCreate = async () => {
+        setModalParameters({ type: "create", width: 800, height: 400, title: <div>Criar Bobinagem</div>, loadData: () => dataAPI.fetchPost() });
+        showModal();
     }
 
     return (
@@ -327,7 +628,7 @@ export default (props) => {
             <Table
                 loading={submitting.state}
                 reportTitle="Bobinagens"
-                actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} />}
+                actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
                 frozenActionColumn={true}
                 loadOnInit={false}
                 columns={columns}
@@ -340,12 +641,13 @@ export default (props) => {
                 editable={true}
                 clearSort={true}
                 rowHeight={formFilter.getFieldValue('typelist') === "C" ? 44 : 28}
-                rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
+                rowClass={(row) => (row?.rowvalid === 0 ? classes.notValid : undefined)}
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<Space>
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                     {modeEdit.datagrid && <Button type="primary" disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onCreate}>Criar Bobinagem</Button>}
                     {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                 </Space>}
                 //content={<PickHolder/>}

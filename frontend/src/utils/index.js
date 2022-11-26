@@ -189,3 +189,14 @@ export const deepEqual = (object1, object2) => {
 export const isObject = (object) => {
     return object != null && typeof object === 'object';
 }
+
+export const secondstoDay = (n) => {
+    let day = parseInt(n / (24 * 3600));
+    n = n % (24 * 3600);
+    let hour = parseInt(n / 3600);
+    n %= 3600;
+    let minutes = n / 60;
+    n %= 60;
+    let seconds = n;
+    return ((day > 0) ? day + "d " : '') + ((hour > 0) ? hour + "h " : '') + ((minutes.toFixed() > 0) ? minutes.toFixed() + "m" : '');
+}

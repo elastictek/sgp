@@ -619,7 +619,6 @@ class MySqlSql(BaseSql):
             ret.filter = f.value('and').text
             ret.parameters = f.parameters
             ret.statement = f'select * from {table} {f.text} limit {limit}'
-            print(ret.statement)
         else:
             ret = BaseSql.Rows()
             ret.filter = p.text

@@ -87,16 +87,22 @@ export const MovGranuladoColumn = ({ value }) => {
     </div>);
 }
 
-export const QueueNwColumn = ({ value, status }) => {
+export const MovNwColumn = ({ value }) => {
+    return (<div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+            {value===0 && <><ImArrowLeft color='red' /><span style={{marginRight:"5px"}}>S</span></>}<ImArrowRight color='green' /><span>E</span>
+    </div>);
+}
+
+export const QueueNwColumn = ({ value, status, style={} }) => {
 
     const getValue = () => {
         if (status === 0) {
             return <div />;
         }
         switch (value) {
-            case 1: return <Tag style={{ width: "100%", color:"#000" }} color="#87d068">Em uso</Tag>;
-            case 2: return <Tag style={{ width: "100%",color:"#000" }} color="#fff566">Em espera</Tag>
-            default: return <Tag style={{ width: "100%",color:"#000" }} color="#2db7f5">Em preparação</Tag>
+            case 1: return <Tag style={{ width: "100%", color:"#000", ...style }} color="#87d068">Em uso</Tag>;
+            case 2: return <Tag style={{ width: "100%",color:"#000", ...style }} color="#fff566">Em espera</Tag>
+            default: return <Tag style={{ width: "100%",color:"#000", ...style }} color="#2db7f5">Em preparação</Tag>
         }
     }
 

@@ -46,8 +46,12 @@ const PickReciclado = lazy(() => import('./picking/PickReciclado'));
 const PickNWList = lazy(() => import('./picking/PickNWList'));
 const PickGranuladoList = lazy(() => import('./picking/PickGranuladoList'));
 const GranuladoList = lazy(() => import('./artigos/GranuladoList'));
+const NwList = lazy(() => import('./artigos/NwList'));
 const MPAlternativas = lazy(() => import('./artigos/MPAlternativas'));
 const DevolucoesList = lazy(() => import('./devolucoes/DevolucoesList'));
+const GranuladoBufferLineList = lazy(() => import('./artigos/GranuladoBufferLineList'));
+const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
+
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 
@@ -64,6 +68,7 @@ export const AppContext = React.createContext({});
 
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
+
 
 
 
@@ -135,6 +140,10 @@ const RenderRouter = () => {
                 { path: "picking/pickgranuladolist", element: <Suspense fallback={<Spin />}><PickGranuladoList /></Suspense> },
                 { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
+                
+                { path: "artigos/nwlist", element: <Suspense fallback={<Spin />}><NwList /></Suspense> },
+                { path: "artigos/consumoslist", element: <Suspense fallback={<Spin />}><ConsumosList /></Suspense> },
+                { path: "artigos/granuladobufferlinelist", element: <Suspense fallback={<Spin />}><GranuladoBufferLineList /></Suspense> },
                 { path: "artigos/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
@@ -228,10 +237,14 @@ const App2 = () => {
     });
     const [auth, setAuth] = useState();
 
-    useEffect(() => {}, [
+    useEffect(() => {
+        console.log("lasjson----------->",lastJsonMessage)
+    }, [
         lastJsonMessage?.hash.hash_igbobinagens,
         lastJsonMessage?.hash.hash_bobinagens,
         lastJsonMessage?.hash.hash_auditcs,
+        lastJsonMessage?.hash.hash_productionchanges,
+        lastJsonMessage?.hash.hash_linelog_params,
         //lastJsonMessage?.hash.hash_buffer,
         //lastJsonMessage?.hash.hash_dosers,
         //lastJsonMessage?.hash.hash_doserssets,

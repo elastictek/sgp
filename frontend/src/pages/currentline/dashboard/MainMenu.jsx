@@ -98,8 +98,11 @@ export default ({ dark = false }) => {
             </Panel>
             {permission.allow({ planeamento: 300 }, []) &&
                 <Panel header={<b>Matérias Primas</b>} key="6">
+                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/consumoslist', {})}>Consumos de Matérias Primas</Button>
                     <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpalternativas', {})}>Matérias Primas Alternativas</Button>
+                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladobufferlinelist', {})}>Granulado Movimentos Buffer&#8594;Linha</Button>
                     <Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladolist', {})}>Granulado Movimentos em Linha</Button>
+                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/nwlist', {})}>Nonwovens Movimentos em Linha</Button>
                     <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpbufferlist', {})}>Localização de Matéria Primas (SAGE)</Button>
                     <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpmovimentoslist', {})}>Matéria Primas Movimentos (SAGE)</Button>
                 </Panel>
@@ -119,9 +122,10 @@ export default ({ dark = false }) => {
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`, 'Pesagem')}>Pesagem</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`, 'Stock')}>Stock</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/export_bobines_originais/`, 'Exportar')}>Exportar</Button>
-                {permission.allow({ planeamento: 300 }, []) &&
+                {permission.allow({ planeamento: 300 }, []) && <>
                     <Button size='small' type="link" onClick={() => navigate('/app/devolucoes/devolucoeslist', {})}>Devoluções de Produto Acabado</Button>
-                }
+                    <Button size='small' type="link" onClick={() => navigate('/app/expedicoes/timearmazem', {})}>Relatório de Expedições Mensal</Button>
+                </>}
             </Panel>
         </StyledCollapse>
 

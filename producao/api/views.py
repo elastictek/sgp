@@ -4855,8 +4855,6 @@ def ValidarBobinesList(request, format=None):
                 if len(r['rows'])>0:
                     if r['rows'][0]["type"]==7:
                         response["isba"]=1
-    print("DATAAAAAAAAAAAAAAAAAAA")
-    print(response)
     return Response(response)
 
 
@@ -4903,6 +4901,21 @@ def addToReciclado(data,produto_id):
 @permission_classes([IsAuthenticated])
 def ValidarBobinagem(request, format=None):
     data = request.data['parameters']
+    #try:
+    #      with transaction.atomic():
+    #         with connections["default"].cursor() as cursor:
+    #             #v=None
+    #             args = (data["bobinagem"]["id"],json.dumps(data["values"], ensure_ascii=False),600,None,request.user.id,0)
+    #             cursor.callproc('validate_bobinagem',args)
+    #             result = cursor.fetchone()
+    #             print("return")
+    #             print(result)
+    #             #cursor.execute('SELECT @_validate_bobinagem_3')
+    #             #result = cursor.fetchone()
+    # except Exception as error:
+    #     return Response({"status": "error", "title": str(error)})
+
+    # return Response({"status": "error", "title": 'TESTE'})
 
     def checkIfIsValid(data, cursor):
         exists = 1
@@ -4993,67 +5006,73 @@ def ValidarBobinagem(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
 
-                isValid = checkIfIsValid(data,cursor)
-                if isValid==0:
+                args = (data["bobinagem"]["id"],json.dumps(data["values"], ensure_ascii=False),600,None,request.user.id,0)
+                cursor.callproc('validate_bobinagem',args)
+                result_proc = cursor.fetchone()
+                if result_proc is None or result_proc[0] != 1:
+                    return Response({"status": "success", "id": None, "title": f"A Bobinagem {data['bobinagem']['nome']} validada/classificada com sucesso!", "subTitle": ''})
 
-                    gri = checkGranulado("in",data,cursor)
-                    gro = checkGranulado("out",data,cursor)
-                    if gri is not None or gro is not None:
-                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem!","rowsi":gri,"rowso":gro})
+                # isValid = checkIfIsValid(data,cursor)
+                # if isValid==0:
+
+                #     gri = checkGranulado("in",data,cursor)
+                #     gro = checkGranulado("out",data,cursor)
+                #     if gri is not None or gro is not None:
+                #         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem!","rowsi":gri,"rowso":gro})
                     
-                    nwi = checkNw(data,0,data["values"]["lotenwinf"],data["values"]["nwinf"],cursor)
-                    nws = checkNw(data,1,data["values"]["lotenwsup"],data["values"]["nwsup"],cursor)
+                #     nwi = checkNw(data,0,data["values"]["lotenwinf"],data["values"]["nwinf"],cursor)
+                #     nws = checkNw(data,1,data["values"]["lotenwsup"],data["values"]["nwsup"],cursor)
                     
-                    if nwi is None or nws is None:
-                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
+                #     if nwi is None or nws is None:
+                #         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferior/Superior não existem!"})
 
-                    if float(nwi["qty_reminder"])<-32400:
-                        print("REMINDER")
-                        print(float(nwi["qty_reminder"]))
-                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
-                    if float(nws["qty_reminder"])<-32400:
-                        print("REMINDER")
-                        print(float(nws["qty_reminder"]))
-                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
+                #     if float(nwi["qty_reminder"])<-32400:
+                #         print("REMINDER")
+                #         print(float(nwi["qty_reminder"]))
+                #         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Inferiror Insuficiente"})
+                #     if float(nws["qty_reminder"])<-32400:
+                #         print("REMINDER")
+                #         print(float(nws["qty_reminder"]))
+                #         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Nonwoven Superior Insuficiente"})
 
-                    #Adicionar apara ao reciclado
-                    qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
-                    reciclado_status = addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, data["produto_id"] if "produto_id" in data else None )
-                    if reciclado_status == False:
-                        return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Não foi possível adicionar a apara no reciclado."})
-                    #############################
+                #     #Adicionar apara ao reciclado
+                #     qtd_apara = ((data["values"]["largura_bruta"] - data["values"]["lar_util"])/1000) * data["values"]["comp"]
+                #     reciclado_status = addToReciclado({"qtd":qtd_apara,"source":"bobinagem","timestamp":datetime.now(),"lote":data["bobinagem"]["nome"],"unit":"m2","user_id":request.user.id}, data["produto_id"] if "produto_id" in data else None )
+                #     if reciclado_status == False:
+                #         return Response({"status": "error", "title": f"Erro ao Validar/Classificar a Bobinagem {data['bobinagem']['nome']}! Não foi possível adicionar a apara no reciclado."})
+                #     #############################
                 
 
-                    print("Atualizar a bobinagem")
-                    bobinagem_values = {key: data["values"][key] for key in data["values"] if key in ['largura_bruta','comp_par','lotenwinf','lotenwsup',]}
-                    dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1,"valid_tstamp":datetime.now()}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
-                    db.execute(dml.statement, cursor, dml.parameters)
+                #     print("Atualizar a bobinagem")
+                #     bobinagem_values = {key: data["values"][key] for key in data["values"] if key in ['largura_bruta','comp_par','lotenwinf','lotenwsup',]}
+                #     dml = db.dml(TypeDml.UPDATE, {**bobinagem_values, "valid": 1,"valid_tstamp":datetime.now()}, "producao_bobinagem", {'id': f'=={data["bobinagem"]["id"]}',"valid":0}, None, False)
+                #     db.execute(dml.statement, cursor, dml.parameters)
                 
-                    print("Relacionar as Entradas dos Lotes nos Doseadores com os Consumos nos Doseadores")
-                    dml = db.dml(TypeDml.UPDATE,{}, "lotesdosers_ig", {'id': data["bobinagem"]["id"]},None,False)
-                    #and ldl.group_id=ldig.cuba
-                    statement = f"""
-                        with LDL as(
-                        SELECT 
-                        ldig.id,
-                        (select id from (select id,type_mov from lotesdoserslinha ldl where ldl.doser=ldig.doser and ldl.artigo_cod=ldig.matprima_cod and ldl.t_stamp<=pbm.valid_tstamp order by ldl.t_stamp desc limit 1) t where t.type_mov=1) ldl_id 
-                        FROM lotesdosers_ig ldig
-                        JOIN producao_bobinagem pbm on ldig.ig_id=pbm.ig_bobinagem_id
-                        WHERE pbm.id = %(id)s
-                        )
-                        update lotesdosers_ig lig
-                        join LDL on LDL.id=lig.id
-                        set lig.ldl_id=LDL.ldl_id
-                        where lig.`status`=0
-                    """
-                    db.execute(statement, cursor, dml.parameters)
+                #     print("Relacionar as Entradas dos Lotes nos Doseadores com os Consumos nos Doseadores")
+                #     dml = db.dml(TypeDml.UPDATE,{}, "lotesdosers_ig", {'id': data["bobinagem"]["id"]},None,False)
+                #     #and ldl.group_id=ldig.cuba
+                #     statement = f"""
+                #         with LDL as(
+                #         SELECT 
+                #         ldig.id,
+                #         (select id from (select id,type_mov from lotesdoserslinha ldl where ldl.doser=ldig.doser and ldl.artigo_cod=ldig.matprima_cod and ldl.t_stamp<=pbm.valid_tstamp order by ldl.t_stamp desc limit 1) t where t.type_mov=1) ldl_id 
+                #         FROM lotesdosers_ig ldig
+                #         JOIN producao_bobinagem pbm on ldig.ig_id=pbm.ig_bobinagem_id
+                #         WHERE pbm.id = %(id)s
+                #         )
+                #         update lotesdosers_ig lig
+                #         join LDL on LDL.id=lig.id
+                #         set lig.ldl_id=LDL.ldl_id
+                #         where lig.`status`=0
+                #     """
+                #     db.execute(statement, cursor, dml.parameters)
 
 
-                    print("Atualizar nw")
-                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nwi["qty_consumed"],"qty_reminder":nwi["qty_reminder"]},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nws["qty_consumed"],"qty_reminder":nws["qty_reminder"]},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
+                #     print("Atualizar nw")
+                #     #dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nwi["qty_consumed"],"qty_reminder":nwi["qty_reminder"]},"lotesnwlinha",{"id":f'=={nwi["id"]}'},None,False)
+                #     #db.execute(dml.statement, cursor, dml.parameters)
+                #     #dml = db.dml(TypeDml.UPDATE,{"qty_consumed":nws["qty_consumed"],"qty_reminder":nws["qty_reminder"]},"lotesnwlinha",{"id":f'=={nws["id"]}'},None,False)
+                #     #db.execute(dml.statement, cursor, dml.parameters)
 
                 columns = ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'rugas_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs']
                 columns_defeitos = ['con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'nok', 'rugas', 'tr',
@@ -5074,11 +5093,11 @@ def ValidarBobinagem(request, format=None):
                             else:
                                 b[x]=0
                         bobine_values = {**{key: v[key] for key in v if key in columns}, **b} 
-                        if isValid==0:
-                            bobine_values['lotenwsup'] = data["values"]["lotenwsup"]
-                            bobine_values['nwsup'] = data["values"]["nwsup"]
-                            bobine_values['lotenwinf'] = data["values"]["lotenwinf"]
-                            bobine_values['nwinf'] = data["values"]["nwinf"]
+                        # if isValid==0:
+                        #     bobine_values['lotenwsup'] = data["values"]["lotenwsup"]
+                        #     bobine_values['nwsup'] = data["values"]["nwsup"]
+                        #     bobine_values['lotenwinf'] = data["values"]["lotenwinf"]
+                        #     bobine_values['nwinf'] = data["values"]["nwinf"]
                         bobine_values['ff_m_ini'] = bobine_values['ff_pos'][0]['min'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['ff_m_fim'] = bobine_values['ff_pos'][0]['max'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
                         bobine_values['fc_diam_ini'] = bobine_values['fc_pos'][0]['min'] if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else None

@@ -8,6 +8,7 @@ from producao.api import currentsettings
 from producao.api import print
 from producao.api import auth_users
 from producao.api import devolucoes
+from producao.api import bobinagens
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -131,14 +132,22 @@ urlpatterns = [
     re_path(r'^validarbobinagem/$', views.ValidarBobinagem),
     re_path(r'^fixsimulatorlist/$', views.FixSimulatorList),
     re_path(r'^bobineslist/$', views.BobinesList),
+
+    re_path(r'^updatebobinagem/$', bobinagens.UpdateBobinagem),
+    re_path(r'^deletebobinagem/$', bobinagens.DeleteBobinagem),
+    re_path(r'^missedlineloglist/$', bobinagens.MissedLineLogList),
+    re_path(r'^createbobinagem/$',bobinagens.CreateBobinagem),
+    
+    
     
     #BOBINAGENS
 
     #PICAGEM LOTES
     
+    
     re_path(r'^nwlistlookup/$', materias_primas.NWListLookup),
     re_path(r'^nwlist/$', materias_primas.NWList),
-    re_path(r'^deletenwitem/$', materias_primas.DeleteNWItem),
+    re_path(r'^deletenw/$', materias_primas.DeleteNW),
     re_path(r'^savenwitems/$', materias_primas.SaveNWItems),
     re_path(r'^updatenw/$', materias_primas.UpdateNW),
     re_path(r'^listmpalternativas/$', materias_primas.ListMPAlternativas),
@@ -147,6 +156,7 @@ urlpatterns = [
     re_path(r'^materiasprimaslookup/$', materias_primas.MateriasPrimasLookup),
     re_path(r'^listmpgroupslookup/$', materias_primas.ListMPGroupsLookup),
     re_path(r'^getmpalternativas/$', materias_primas.GetMPAlternativas),
+    
     
     
     
@@ -170,12 +180,16 @@ urlpatterns = [
     re_path(r'^getconsumosbobinagenslookup/$', views.GetConsumosBobinagensLookup),
     
     
+    
+    re_path(r'^consumogranuladolist/$', materias_primas.ConsumoGranuladoList),
+    re_path(r'^granuladobufferlinelist/$', materias_primas.GranuladoBufferLineList),
     re_path(r'^granuladolistinline/$', materias_primas.GranuladoListInLine),
     re_path(r'^granuladolist/$', materias_primas.GranuladoList),
     re_path(r'^savegranuladoitems/$', materias_primas.SaveGranuladoItems),
     re_path(r'^granuladolistlookup/$', materias_primas.GranuladoListLookup),
     re_path(r'^updategranulado/$', materias_primas.UpdateGranulado),
     re_path(r'^deletegranulado/$', materias_primas.DeleteGranulado),
+    re_path(r'^updateconsumos/$', materias_primas.UpdateConsumos),
     #PICAGEM LOTES
 
     #DEVOLUCOES
@@ -209,7 +223,7 @@ urlpatterns = [
     re_path(r'^ofabricotimelinelist',views.OFabricoTimeLineList),
     re_path(r'^lineloglist/$',views.LineLogList),
     #re_path(r'^stockloglist/$',views.StockLogList),
-    re_path(r'^createbobinagem/$',views.CreateBobinagem),
+    #re_path(r'^createbobinagem/$',views.CreateBobinagem),
     re_path(r'^bobinesoriginaislist/$',views.BobinesOriginaisList),
     re_path(r'^expedicoestempolist/$',views.ExpedicoesTempoList),
     

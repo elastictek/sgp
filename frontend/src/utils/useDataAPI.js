@@ -330,7 +330,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         })();
     }
 
-    const getPostRequest = ({ url }) => {
+    const getPostRequest = ({ url }={}) => {
         return { url: (url) ? url : dataState.url, ...getPayload() };
     }
 

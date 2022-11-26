@@ -366,161 +366,175 @@ def UpdateCurrentSettings(request, format=None):
     f.add(f'id = :csid', True)
     f.value("and")
     if data['type'].startswith('formulacao'):
-        ok=1
-        for v in data['formulacao']['items']:
-            if "doseador_A" in v:
-                pass
-            elif  "doseador_B" in v or "doseador_C" in v:
-                pass
-            elif "doseador" in v:
-                pass
-            else:
-                ok=0
-                break
-        data["formulacao"]["valid"] = ok
-        dosers = []
-        for v in data["formulacao"]["items"]:
-            if "doseador_A" in v:
-                dosers.append({
-                    "nome":v["doseador_A"],
-                    "grupo":v["cuba_A"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-            if "doseador_B" in v:
-                dosers.append({
-                    "nome":v["doseador_B"],
-                    "grupo":v["cuba_BC"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-            if "doseador_C" in v:
-                dosers.append({
-                    "nome":v["doseador_C"],
-                    "grupo":v["cuba_BC"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-                })
-            if "doseador" in v:
-                dosers.append({
-                    "nome":v["doseador"],
-                    "grupo":v["cuba"],
-                    "matprima_cod": v["matprima_cod"],
-                    "matprima_des": v["matprima_des"]
-            })
-        dta = {
-            "dosers":json.dumps(dosers, ensure_ascii=False),
-            "formulacaov2":json.dumps(data['formulacao'], ensure_ascii=False),
-            "type_op":data['type']
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        # ok=1
+        # for v in data['formulacao']['items']:
+        #     if "doseador_A" in v:
+        #         pass
+        #     elif  "doseador_B" in v or "doseador_C" in v:
+        #         pass
+        #     elif "doseador" in v:
+        #         pass
+        #     else:
+        #         ok=0
+        #         break
+        # data["formulacao"]["valid"] = ok
+        # dosers = []
+        # for v in data["formulacao"]["items"]:
+        #     if "doseador_A" in v:
+        #         dosers.append({
+        #             "nome":v["doseador_A"],
+        #             "grupo":v["cuba_A"],
+        #             "matprima_cod": v["matprima_cod"],
+        #             "matprima_des": v["matprima_des"]
+        #         })
+        #     if "doseador_B" in v:
+        #         dosers.append({
+        #             "nome":v["doseador_B"],
+        #             "grupo":v["cuba_BC"],
+        #             "matprima_cod": v["matprima_cod"],
+        #             "matprima_des": v["matprima_des"]
+        #         })
+        #     if "doseador_C" in v:
+        #         dosers.append({
+        #             "nome":v["doseador_C"],
+        #             "grupo":v["cuba_BC"],
+        #             "matprima_cod": v["matprima_cod"],
+        #             "matprima_des": v["matprima_des"]
+        #         })
+        #     if "doseador" in v:
+        #         dosers.append({
+        #             "nome":v["doseador"],
+        #             "grupo":v["cuba"],
+        #             "matprima_cod": v["matprima_cod"],
+        #             "matprima_des": v["matprima_des"]
+        #     })
+        # dta = {
+        #     "dosers":json.dumps(dosers, ensure_ascii=False),
+        #     "formulacaov2":json.dumps(data['formulacao'], ensure_ascii=False),
+        #     "type_op":data['type']
+        # }
+        # dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data['formulacao']),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
     if data['type'] == 'gamaoperatoria':
-        items = []
-        itms = collections.OrderedDict(sorted(data["gamaoperatoria"].items()))
-        for i in range(data["gamaoperatoria"]['nitems']):            
-            key = itms[f'key-{i}']
-            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
-            items.append({
-                "item_des":itms[f'des-{i}'], 
-                "item_values":values, 
-                "tolerancia":itms[f'tolerancia-{i}'],
-                "gamaoperatoria_id":data["gamaoperatoria"]['id'],
-                "item_key":key,
-                "item_nvalues":len(values)
-            })
-        dta = {
-            "gamaoperatoria" : json.dumps({ 
-                'id': data["gamaoperatoria"]['id'],
-                'produto_id': data["gamaoperatoria"]["produto_id"],
-                'designacao': data["gamaoperatoria"]["designacao"],
-                'versao': data["gamaoperatoria"]["versao"],
-                "created_date": data["gamaoperatoria"]["created_date"],
-                "updated_date": data["gamaoperatoria"]["updated_date"],
-                "items":items
-            }, ensure_ascii=False),
-            "type_op":"gamaoperatoria"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        # items = []
+        # itms = collections.OrderedDict(sorted(data["gamaoperatoria"].items()))
+        # for i in range(data["gamaoperatoria"]['nitems']):            
+        #     key = itms[f'key-{i}']
+        #     values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+        #     items.append({
+        #         "item_des":itms[f'des-{i}'], 
+        #         "item_values":values, 
+        #         "tolerancia":itms[f'tolerancia-{i}'],
+        #         "gamaoperatoria_id":data["gamaoperatoria"]['id'],
+        #         "item_key":key,
+        #         "item_nvalues":len(values)
+        #     })
+        # dta = {
+        #     "gamaoperatoria" : json.dumps({ 
+        #         'id': data["gamaoperatoria"]['id'],
+        #         'produto_id': data["gamaoperatoria"]["produto_id"],
+        #         'designacao': data["gamaoperatoria"]["designacao"],
+        #         'versao': data["gamaoperatoria"]["versao"],
+        #         "created_date": data["gamaoperatoria"]["created_date"],
+        #         "updated_date": data["gamaoperatoria"]["updated_date"],
+        #         "items":items
+        #     }, ensure_ascii=False),
+        #     "type_op":"gamaoperatoria"
+        # }
+        # #dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        # print("GAMA OPERATORIA ---> ALTERAR")
+        # print(json.dumps(data['gamaoperatoria']))
+        # print(dta)
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data['gamaoperatoria']),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
     if data['type'] == 'specs':
-        items = []
-        itms = collections.OrderedDict(sorted(data["specs"].items()))
-        for i in range(data["specs"]['nitems']):            
-            key = itms[f'key-{i}']
-            values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
-            items.append({
-                "item_des":itms[f'des-{i}'], 
-                "item_values":json.dumps(values),
-                "artigospecs_id":data["specs"]['id'],
-                "item_key":key,
-                "item_nvalues":len(values)
-            })
-        dta = {
-            "artigospecs":json.dumps({ 
-                'id': data["specs"]['id'],
-                'produto_id': data["specs"]["produto_id"],
-                'designacao': data["specs"]["designacao"],
-                'versao': data["specs"]["versao"],
-                'cliente_cod': data["specs"]["cliente_cod"],
-                'cliente_nome': data["specs"]["cliente_nome"],
-                "created_date": data["specs"]["created_date"],
-                "updated_date": data["specs"]["updated_date"],
-                "items":items
-            }, ensure_ascii=False),
-            "type_op":"specs"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        # items = []
+        # itms = collections.OrderedDict(sorted(data["specs"].items()))
+        # for i in range(data["specs"]['nitems']):            
+        #     key = itms[f'key-{i}']
+        #     values = [ v for k,v in itms.items() if k.startswith(f'v{key}-')]
+        #     items.append({
+        #         "item_des":itms[f'des-{i}'], 
+        #         "item_values":json.dumps(values),
+        #         "artigospecs_id":data["specs"]['id'],
+        #         "item_key":key,
+        #         "item_nvalues":len(values)
+        #     })
+        # dta = {
+        #     "artigospecs":json.dumps({ 
+        #         'id': data["specs"]['id'],
+        #         'produto_id': data["specs"]["produto_id"],
+        #         'designacao': data["specs"]["designacao"],
+        #         'versao': data["specs"]["versao"],
+        #         'cliente_cod': data["specs"]["cliente_cod"],
+        #         'cliente_nome': data["specs"]["cliente_nome"],
+        #         "created_date": data["specs"]["created_date"],
+        #         "updated_date": data["specs"]["updated_date"],
+        #         "items":items
+        #     }, ensure_ascii=False),
+        #     "type_op":"specs"
+        # }
+        #dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data['specs']),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #pass
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
     if data['type'] == 'cortes':
-        dml = db.dml(TypeDml.UPDATE,{"cortes_id":data["cortes"]["cortes_id"],"cortesordem_id":data["cortes"]["cortesordem_id"]},"producao_currentsettings",f,None,False)
-        dml.statement = f"""        
-                update 
-                producao_currentsettings pcs
-                JOIN (
-                select 
-                %(csid)s csid,
-                (select 
-                JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
-                ) cortes
-                FROM producao_cortes pc
-                where pc.id=%(cortes_id)s) cortes,
-                (select 
-                JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
-                pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
-                ) cortesordem
-                FROM producao_cortesordem pco
-                WHERE pco.id=%(cortesordem_id)s) cortesordem
-                ) tbl
-                on tbl.csid=pcs.id
-                set
-                pcs.cortes = tbl.cortes,
-                pcs.cortesordem = tbl.cortesordem,
-                pcs.type_op = 'cortes'     
-        """
+        # dml = db.dml(TypeDml.UPDATE,{"cortes_id":data["cortes"]["cortes_id"],"cortesordem_id":data["cortes"]["cortesordem_id"]},"producao_currentsettings",f,None,False)
+        # dml.statement = f"""        
+        #         update 
+        #         producao_currentsettings pcs
+        #         JOIN (
+        #         select 
+        #         %(csid)s csid,
+        #         (select 
+        #         JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
+        #         ) cortes
+        #         FROM producao_cortes pc
+        #         where pc.id=%(cortes_id)s) cortes,
+        #         (select 
+        #         JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
+        #         pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
+        #         ) cortesordem
+        #         FROM producao_cortesordem pco
+        #         WHERE pco.id=%(cortesordem_id)s) cortesordem
+        #         ) tbl
+        #         on tbl.csid=pcs.id
+        #         set
+        #         pcs.cortes = tbl.cortes,
+        #         pcs.cortesordem = tbl.cortesordem,
+        #         pcs.type_op = 'cortes'     
+        # """
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data['cortes']),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Definições Atuais', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
     if data['type'] == 'settings':
         try:
+            print("SETTTTTTTTTTTTTTTIIINNGGGGS")
+            print(json.dumps(data))
             with connections["default"].cursor() as cursor:
                 emendas = json.loads(cs["emendas"])
                 for idx,x in enumerate(emendas):
@@ -554,62 +568,66 @@ def UpdateCurrentSettings(request, format=None):
                             "tipo_emenda":tipoemendas[str(data["tipo_emenda"])],
                         }
                         ofabrico_cod = data["ofabrico_cod"]
-                        dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                        dml = db.dml(TypeDml.UPDATE,{
-                            "emendas":json.dumps(emendas,ensure_ascii=False),
-                            "cores":json.dumps(cores,ensure_ascii=False),
-                            "limites":json.dumps(limites,ensure_ascii=False),
-                            "ofs":json.dumps(ofs,ensure_ascii=False),
-                            "sentido_enrolamento":sentido_enrolamento,
-                            "amostragem":amostragem,
-                            "type_op":"settings_of_change"
-                            },"producao_currentsettings",{"id":f'=={request.data["filter"]["csid"]}'},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
+                        # dml = db.dml(TypeDml.UPDATE,dataop,"planeamento_ordemproducao",{"id":f"=={ofabrico_cod}"},None,False)
+                        # db.execute(dml.statement, cursor, dml.parameters)
+                        # dml = db.dml(TypeDml.UPDATE,{
+                        #     "emendas":json.dumps(emendas,ensure_ascii=False),
+                        #     "cores":json.dumps(cores,ensure_ascii=False),
+                        #     "limites":json.dumps(limites,ensure_ascii=False),
+                        #     "ofs":json.dumps(ofs,ensure_ascii=False),
+                        #     "sentido_enrolamento":sentido_enrolamento,
+                        #     "amostragem":amostragem,
+                        #     "type_op":"settings_of_change"
+                        #     },"producao_currentsettings",{"id":f'=={request.data["filter"]["csid"]}'},None,False)
+                        # db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "id":None, "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})
         except Exception as error:
             return Response({"status": "error", "id":None, "title": f'Definições Atuais', "subTitle":str(error)})
     if data['type'] == 'paletizacao':
-        paletizacoes = json.loads(cs["paletizacao"])
+        #paletizacoes = json.loads(cs["paletizacao"])
         #ofs = json.loads(cs["ofs"])
-        _paletizacao=data["paletizacao"]["paletizacao"]
-        for idx,x in enumerate(paletizacoes):
-            if x["of_id"]==data["paletizacao"]["of_id"]:
-                data["paletizacao"]["paletizacao"]=json.dumps(_paletizacao,ensure_ascii=False)
-                paletizacoes[idx]= data["paletizacao"]
-        # for idx,x in enumerate(ofs):
-        #     if x["of_id"]==data["paletizacao"]["of_id"]:
-        #         cp = computeLinearMeters(data) #talvez não seja necessário
-        #         cpp = compPaletizacao(cp,_paletizacao) #talvez não seja necessário
-        #         p={}
-        #         if (len(cp.keys())>0):
-        #             p['qty_encomenda'] = cp['qty_encomenda'],
-        #             p['linear_meters'] = cp["linear_meters"],
-        #             p['n_voltas'] = cp["n_voltas"],
-        #             p['sqm_bobine'] = cp["sqm_bobine"]
-        #             p['n_paletes'] = json.dumps(cpp,ensure_ascii=False)
-        #         ofs[idx] = {**ofs[idx],**p}
-        dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        #_paletizacao=data["paletizacao"]["paletizacao"]
+        #for idx,x in enumerate(paletizacoes):
+        #    if x["of_id"]==data["paletizacao"]["of_id"]:
+        #        data["paletizacao"]["paletizacao"]=json.dumps(_paletizacao,ensure_ascii=False)
+        #        paletizacoes[idx]= data["paletizacao"]
+        ## for idx,x in enumerate(ofs):
+        ##     if x["of_id"]==data["paletizacao"]["of_id"]:
+        ##         cp = computeLinearMeters(data) #talvez não seja necessário
+        ##         cpp = compPaletizacao(cp,_paletizacao) #talvez não seja necessário
+        ##         p={}
+        ##         if (len(cp.keys())>0):
+        ##             p['qty_encomenda'] = cp['qty_encomenda'],
+        ##             p['linear_meters'] = cp["linear_meters"],
+        ##             p['n_voltas'] = cp["n_voltas"],
+        ##             p['sqm_bobine'] = cp["sqm_bobine"]
+        ##             p['n_paletes'] = json.dumps(cpp,ensure_ascii=False)
+        ##         ofs[idx] = {**ofs[idx],**p}
+        ##dta={"paletizacao":json.dumps(paletizacoes,ensure_ascii=False),"type_op":"paletizacao"}
+        ##dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data["paletizacao"],ensure_ascii=False),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Paletização Atual Atualizada com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Paletização Atual', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
     if data['type'] == 'nonwovens':
-        dta = {
-            "nonwovens" : json.dumps({**data["nonwovens"]}, ensure_ascii=False),
-            "type_op":"nonwovens"
-        }
-        dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
+        #dta = {
+        #    "nonwovens" : json.dumps({**data["nonwovens"]}, ensure_ascii=False),
+        #    "type_op":"nonwovens"
+        #}
+        #dml = db.dml(TypeDml.UPDATE,dta,"producao_currentsettings",f,None,False)
         try:
             with connections["default"].cursor() as cursor:
-                db.execute(dml.statement, cursor, dml.parameters)
+                args = (request.data['filter']["csid"],json.dumps(data["nonwovens"],ensure_ascii=False),data['type'],request.user.id,0)
+                cursor.callproc('update_currentsettings',args)
+                #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Nonwovens Atualizados com Sucesso', "subTitle":f""})
         except Exception as error:
-            return Response({"status": "error", "id":request.data['filter']['csid'], "title": f'Alteração de Nonwovens', "subTitle":str(error)})
+            return Response({"status": "error", "id":request.data['filter']['csid'], "title": str(error), "subTitle":str(error)})
 
         
 @api_view(['POST'])
