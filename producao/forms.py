@@ -594,6 +594,7 @@ class BobineEditForm(ModelForm):
                 ('Colunex Portuguesa - Indústria e Distribuição Sistemas Descanso, SA', 'Colunex Portuguesa - Indústria e Distribuição Sistemas Descanso, SA'),
                 ('Confecções Capricho Ltda.', 'Confecções Capricho Ltda.'),
                 ('DIATEC S.r.l', 'DIATEC S.r.l'),
+                ('Violeta d.o.o.', 'Violeta d.o.o.'),
                 ('Drylock Technologies Ltd', 'Drylock Technologies Ltd'),
                 ('Drylock Technologies SL', 'Drylock Technologies SL'),
                 ('Drylock Technologies sro', 'Drylock Technologies sro'),

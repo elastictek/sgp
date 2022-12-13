@@ -42,6 +42,9 @@ def executeAlerts():
     group_name = 'broadcast'
     channel_layer = channels.layers.get_channel_layer()
 
+    rows = getCurrentSettingsId()
+    dataInProd = rows[0] if len(rows)>0 else {}
+
     with connections["default"].cursor() as cursor:
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
     dataig_bobinagens = json.dumps(rows[0],default=str)
@@ -54,10 +57,19 @@ def executeAlerts():
         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
     data = json.dumps(rows[0],default=str)
 
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT * FROM ig_linelog_params ORDER BY ID DESC limit 1'), cursor, {})['rows']
-    datalinelog_params = json.dumps(rows[0],default=str)
-
+    if dataInProd:
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f"""
+            SELECT avg(line_speed) over () avg_line_speed, 
+            STDDEV(line_speed) over () stdev_line_speed,
+            MIN(line_speed) over () min_line_speed,
+            MAX(line_speed) over () max_line_speed,
+            ig.* 
+            FROM ig_linelog_params ig where agg_of_id={dataInProd["agg_of_id"]} ORDER BY ID DESC limit 1"""
+            ), cursor, {})['rows']
+        datalinelog_params = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+    else:
+        datalinelog_params=json.dumps({})
     #with connections["default"].cursor() as cursor:
     #    rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
     #dataDosersSets = json.dumps(rows[0],default=str)
@@ -70,9 +82,6 @@ def executeAlerts():
                 limit 1
          """), cursor, {})['rows']
     dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
-
-    rows = getCurrentSettingsId()
-    dataInProd = rows[0] if len(rows)>0 else {}
 
     if dataInProd:
         with connections["default"].cursor() as cursor:
@@ -94,9 +103,9 @@ def executeAlerts():
                     from paletes
                     cross join bobines
             """), cursor, {})['rows']
-        dataProductionChanges = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+        dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
     else:
-        dataProductionChanges = json.dumps({},default=str)
+        dataEstadoProducao = json.dumps({},default=str)
     dataInProd = json.dumps(dataInProd,default=str)
 
     #with connections["default"].cursor() as cursor:
@@ -145,7 +154,7 @@ def executeAlerts():
                 "hash_auditcs":hashlib.md5(dataAuditCs.encode()).hexdigest(),
                 #"hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
-                "hash_productionchanges":hashlib.md5(dataProductionChanges.encode()).hexdigest(),
+                "hash_estadoproducao":hashlib.md5(dataEstadoProducao.encode()).hexdigest(),
                 "hash_linelog_params":hashlib.md5(datalinelog_params.encode()).hexdigest()
                 
                 #"hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
@@ -319,19 +328,6 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
-    def estadoProducao(self,data):
-        cs = getCurrentSettingsId()
-        if len(rows)>0:
-            with connections["default"].cursor() as cursor:
-                rows = db.executeSimpleList(lambda: (f"""
-                select distinct count(*) over () total_produzidas, count(*) over (partition by pb.estado) total_por_estado,pb.estado
-                from producao_bobine pb
-                join planeamento_ordemproducao op on op.id=pb.ordem_id
-                where op.agg_of_id_id={cs[0]["agg_of_id"]}"""
-                ), cursor, f.parameters)['rows']
-        else:         
-            self.send(text_data=json.dumps({"data":{},"item":"estadoproducao"},default=str))
-
     commands = {
         'checkreciclado':checkReciclado,
         'checkgranulado':checkGranulado,
@@ -340,8 +336,7 @@ class RealTimeGeneric(WebsocketConsumer):
         'checklineevents':checkLineEvents,
         'checkbobinagens':checkBobinagens,
         'checkbufferin':checkBufferIn,
-        'checkcurrentsettings':checkCurrentSettings,
-        'estadoproducao':estadoProducao
+        'checkcurrentsettings':checkCurrentSettings
     }
 
     def connect(self):

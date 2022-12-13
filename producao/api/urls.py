@@ -137,6 +137,8 @@ urlpatterns = [
     re_path(r'^deletebobinagem/$', bobinagens.DeleteBobinagem),
     re_path(r'^missedlineloglist/$', bobinagens.MissedLineLogList),
     re_path(r'^createbobinagem/$',bobinagens.CreateBobinagem),
+    re_path(r'^bobinesbyaggbystatuslist/$',bobinagens.BobinesByAggByStatusList),
+    
     
     
     
@@ -210,6 +212,8 @@ urlpatterns = [
     #MATERIAS-PRIMAS
 
     #CURRENTSETTINGS
+    re_path(r'^stockcutoptimizer/$', currentsettings.StockCutOptimizer),
+    re_path(r'^estadoproducao/$', currentsettings.EstadoProducao),
     re_path(r'^eventosproducao/$', currentsettings.EventosProducao),
     re_path(r'^auditcurrentsettingsget/$', currentsettings.AuditCurrentSettingsGet),
     re_path(r'^currentsettingsget/$', currentsettings.CurrentSettingsGet),

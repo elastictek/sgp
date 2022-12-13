@@ -253,7 +253,7 @@ const allItems = {
         { i: "c", x: 6, y: 0, w: 2, h: 2, disabled: true },
         { i: "d", x: 8, y: 0, w: 2, h: 2, disabled: true },
         { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
-        { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true },
+        { i: "cortes", x: 0, y: 0, w: 6, h: 7, minH: 4, closable: true },
         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
         { i: "nonwovens", x: 0, y: 0, w: 4, h: 5, minH: 5, closable: true },
         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
@@ -908,6 +908,7 @@ export default (props) => {
                     }, {});
                     setCurrentSettings({
                         id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status, agg_of_id: raw[0].agg_of_id,
+                        was_in_production:raw[0].was_in_production,
                         quantity,
                         planificacao: {
                             start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),

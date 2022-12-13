@@ -14,12 +14,16 @@ import { ConditionalWrapper } from 'components/conditionalWrapper';
 import { Button, Spin, Input, Form, InputNumber, Skeleton, Space } from "antd";
 import { LoadingOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
+import { useSubmitting } from "utils";
 import FormCortesUpsert from './FormCortesUpsert';
+import { useNavigate, useLocation } from "react-router-dom";
 import { useImmer } from "use-immer";
 import Modalv4 from "components/Modalv4";
 /* import { OFabricoContext } from './FormOFabricoValidar'; */
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
+import { json } from "utils/object";
+import FormEtapasCortes from './FormEtapasCortes';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -70,6 +74,7 @@ const colors = [
 
 export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wrapForm = true, forInput = true }) => {
     const [form] = Form.useForm();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [resultMessage, setResultMessage] = useState({ status: "none" });
     const [showForm, setShowForm] = useState({ show: false });
@@ -79,20 +84,44 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
     const [changedValues, setChangedValues] = useState();
     const [isTouched, setIsTouched] = useState(false);
 
+
     const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
-        <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
-            <FormCortesUpsert record={modalParameters} parentReload={loadData} />
-            {/* <FormCortes forInput={modalParameters.forInput} record={modalParameters} /> */}
-        </ResponsiveModal>
-    ), [modalParameters]);
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+
+        const content = () => {
+            switch (modalParameters.type) {
+                case "cortes": return <FormCortesUpsert record={modalParameters} parentReload={loadData} />
+                case "trocacortes": return <FormEtapasCortes loadParentData={modalParameters.loadData} record={modalParameters.record} forInput={modalParameters.forInput} />;
+            }
+        }
+
+        return (
+            <ResponsiveModal type={modalParameters?.modal === "drawer" ? "drawer" : "modal"} title={modalParameters.title} onCancel={hideModal} width={modalParameters.width ? modalParameters.width : 600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
+
+
+
+
+
+
+    // const [modalParameters, setModalParameters] = useState({});
+    // const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
+    //     <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
+    //         <FormCortesUpsert record={modalParameters} parentReload={loadData} />
+    //         {/* <FormCortes forInput={modalParameters.forInput} record={modalParameters} /> */}
+    //     </ResponsiveModal>
+    // ), [modalParameters]);
 
     const onShowForm = (newForm = false) => {
         if (newForm) {
-            setModalParameters(prev => ({ ...prev, ...form.getFieldsValue(["cortes", "cortes_id"]) }));
+            setModalParameters(prev => ({ ...prev, type: "cortes", ...form.getFieldsValue(["cortes", "cortes_id"]) }));
             //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]) } }));
         } else {
-            setModalParameters(prev => ({ ...prev, ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() }));
+            setModalParameters(prev => ({ ...prev, type: "cortes", ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() }));
             //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(["cortes", "cortes_id"]), cortesOrdem: cortesOrdem() } }));
         }
         showModal();
@@ -124,7 +153,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             setLoading(true);
         }
         (async () => {
-            console.log("UUUUUUUUUUUUUUUUUUUUUUUUUUU-", record)
             const { cortes, cortesordem, ofs } = record;
             const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, token }) : [{ ...cortesordem }];
             const _larguras = JSON.parse(cortes.largura_json);
@@ -231,6 +259,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
          setFormStatus(status); */
     }
 
+    const onTrocaCortes = async () => {
+        navigate("/app/planeamento/etapascortes", { state: { record, tstamp: Date.now() }, replace: true });
+        //setModalParameters({ type: 'trocacortes', modal: "drawer", width: "700px", height: "300px", title: <div>Plano de Cortes</div>, loadData, record, forInput });
+        //showModal();
+    }
 
 
     const onClose = (reload = false) => {
@@ -288,7 +321,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                 {form.getFieldValue("cortes_id") && <Toolbar
                                     style={{ width: "100%" }}
                                     left={<div>{larguraUtil && <>Largura Útil [ <b>{larguraUtil}mm</b> ]</>}</div>}
-                                    right={forInput && <Button onClick={clearCortes}>Refazer Cortes</Button>}
+                                    right={forInput && <Space><Button onClick={onTrocaCortes}>Plano de Cortes</Button><Button onClick={clearCortes}>Refazer Cortes</Button></Space>}
                                 />
                                 }
                             </FieldSet>
@@ -310,7 +343,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
                                                     {fields.map((field, index) => (
                                                         <FieldSet key={field.key} field={{ wide: [8, 8] }}>
                                                             <Field forInput={false} name={[field.name, `item_lar`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                            <Field forInput={!isCortesTouched()} name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={1} max={24} /></Field>
+                                                            <Field forInput={!isCortesTouched()} name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={0} max={24} /></Field>
                                                         </FieldSet>
                                                     ))}
                                                 </>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
-import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber,TimePicker } from "antd";
+import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber, TimePicker } from "antd";
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
@@ -52,6 +52,12 @@ export const TitleForm = ({ title, subTitle, toogleMaximize, toogleFullScreen, s
     );
 }
 
+export const InputNumberField = styled(InputNumber)`
+    input{
+        text-align:right;
+    }
+`;
+
 
 Number.prototype.pad = function (size) {
     var sign = Math.sign(this) === -1 ? '-' : '';
@@ -79,7 +85,7 @@ const StyledHRuleTitle = styled('div').withConfig({
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    background:#f3f3f3;
+    /*background:#f3f3f3;*/
 
     .title{
         font-weight: 700;
@@ -109,12 +115,12 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                 bodyStyle={{ paddingBottom: 80 }}
                 footer={
                     <div style={{ textAlign: 'right' }}>
-                        <Button onClick={() => {form.resetFields();dataAPI.addFilters({},true);}} style={{ marginRight: 8 }}>Limpar</Button>
-                        <Button onClick={() => onFinish("filter",form.getFieldsValue(true))} type="primary">Aplicar</Button>
+                        <Button onClick={() => { form.resetFields(); dataAPI.addFilters({}, true); }} style={{ marginRight: 8 }}>Limpar</Button>
+                        <Button onClick={() => onFinish("filter", form.getFieldsValue(true))} type="primary">Aplicar</Button>
                     </div>
                 }
             >
-                <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter",form.getFieldsValue(true)); } }}>
+                <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }}>
                     {schema.map((line, ridx) => (
                         <Row key={`rf-${ridx}`} gutter={16}>
                             {Object.keys(line).map((col, cidx) => {
@@ -162,21 +168,15 @@ font-weight: 500;
 font-size: 10px;
 `;
 
-export const HorizontalRule = ({ margin = false, title, description, props }) => {
-    const parentProps = useContext(ParentContext);
-    const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
+export const HorizontalRule = ({ marginTop="15px", marginBottom="5px", padding="2px", title, description, ...props }) => {
+    //const parentProps = useContext(ParentContext);
+    //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
     /* const classes = useFieldStyles(myProps); */
-    const { refMainAlertContainer } = parentProps;
+    //const { refMainAlertContainer } = parentProps;
     return (
-        <StyledField className={classNames("field", { "padding": !myProps?.margin })} {...myProps}>
-            <ConditionalWrapper
-                condition={myProps?.margin}
-                wrapper={children => <div className={classNames("margin", "padding", myProps?.className)}>{children}</div>}
-            >
-                {title && <StyledHRuleTitle><div className="title">{title}</div><div className="description">{description}</div></StyledHRuleTitle>}
-                <StyledHorizontalRule />
-            </ConditionalWrapper>
-        </StyledField>
+        <>
+            {title && <StyledHRuleTitle style={{padding,marginTop}}><div className="title">{title}</div><div className="description">{description}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{marginBottom}}/>
+        </>
     );
 }
 
@@ -274,7 +274,7 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
     );
 };
 
-export const AutoCompleteField =  React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }, ref) => {
+export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }, ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -321,7 +321,7 @@ export const AutoCompleteField =  React.forwardRef(({ fetchOptions, debounceTime
     );
 });
 
-export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull=true, fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest },ref) => {
+export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull = true, fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, ...rest }, ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -353,11 +353,11 @@ export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull=true, 
         onChange?.(v);
     }
 
-    useEffect(()=>{
-        if (value===null && clearOptionsOnNull===true){
+    useEffect(() => {
+        if (value === null && clearOptionsOnNull === true) {
             setOptions([]);
         }
-    },[value]);
+    }, [value]);
 
     return (
         <Select
@@ -366,7 +366,7 @@ export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull=true, 
             filterOption={false}
             onSearch={debounceFetcher}
             value={value}
-            
+
             onChange={onSelectChange}
             notFoundContent={fetching ? <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} size="small" /> : null}
             {...rest}
@@ -380,10 +380,10 @@ export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
 
-    useEffect(()=>{
-/*         console.log("sssssssssssssss")
-        console.log(options,rest) */
-    },[])
+    useEffect(() => {
+        /*         console.log("sssssssssssssss")
+                console.log(options,rest) */
+    }, [])
 
 
     const onChange = (v, option) => {
@@ -581,7 +581,7 @@ const FieldRowBottom = styled('div').withConfig({
  * 
  * @returns 
  */
-export const Field = ({ children, forInput = null, forViewBorder = true, forViewBackground=true, wrapFormItem = null, alert, ...props }) => {
+export const Field = ({ children, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, ...props }) => {
     const ctx = useContext(Context);
     const _forInput = forInput === null ? ctx?.forInput : forInput;
     const _wrapFormItem = wrapFormItem === null ? ctx?.wrapFormItem : wrapFormItem;
@@ -798,7 +798,7 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
     const validator = async (r, v) => {
-        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema({keys:[name[name.length - 1], ...includeKeyRules], wrapArray:false}) : schema({keys:[name, ...includeKeyRules], wrapArray:false}));
+        const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema({ keys: [name[name.length - 1], ...includeKeyRules], wrapArray: false }) : schema({ keys: [name, ...includeKeyRules], wrapArray: false }));
         (async () => {
             try {
                 const { value, warning } = await _rule.validateAsync({ ...allValues, [(Array.isArray(name)) ? name[name.length - 1] : name]: v }, { abortEarly: false, warnings: true, messages: validateMessages });
@@ -836,8 +836,9 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             //console.log("FIELD-> INPUT");
             type = 'any';
         } else if (children.type === InputNumber) {
-            //console.log("FIELD-> INPUTNUMBER");
-            type = 'any';
+            type = 'InputNumber';
+        } else if (children.type === InputNumberField) {
+            type = 'InputNumber';
         } else if (children.type === CheckboxField) {
             //console.log("FIELD-> CHECKBOXFIELD");
             type = 'CheckboxField';
@@ -856,15 +857,15 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
         }
     }
 
-    const height = () =>{
-        if (!children?.props?.size){
+    const height = () => {
+        if (!children?.props?.size) {
             return "28px";
-        }else if (children?.props?.size==="small"){
+        } else if (children?.props?.size === "small") {
             return "22px";
-        }else if(children?.props?.size==="default"){
+        } else if (children?.props?.size === "default") {
             return "28px";
-        }else if (children?.props?.size==="large"){
-            return"32px";
+        } else if (children?.props?.size === "large") {
+            return "32px";
         }
     }
 
@@ -877,7 +878,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                     const { value, onDoubleClick } = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },display:"flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
                             return (
                                 <CheckboxField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
@@ -896,11 +897,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             <div style={{ padding: "2px", border: "dashed 1px #d9d9d9" }}>{text}</div>
             ) */
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {
@@ -912,19 +913,28 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems:"center", minHeight: height(), whiteSpace: "nowrap", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
+                                <div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(), whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
                             )
+                        case 'InputNumber':
+                            if ("addonAfter" in children.props || "addonBefore" in children.props) {
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: height(), display: "flex", flexDirection: "row", alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                    {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
+                                    <div style={{ flex: 1 }}>{value}</div>
+                                    {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
+                                </div>)
+                            }
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", minHeight: height(), alignItems: "center", justifyContent:"end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         default:
 
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
-                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" },minHeight: height(), display: "flex", flexDirection: "row", alignItems:"center", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, minHeight: height(), display: "flex", flexDirection: "row", alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                     <div style={{ flex: 1 }}>{value}</div>
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
 
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display:"flex", minHeight: height(), alignItems:"center", ...forViewBackground && {background:"#f0f0f0"}, ...(style && style)}} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", minHeight: height(), alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                     }
 
                 })()}
@@ -1243,9 +1253,9 @@ export const Container = ({ loading = false, schema, children, id, wrapForm = fa
     if (!id) { throw new Error(`Container key is Required!`) }
     const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
     const updateFieldStatus = (field, status) => {
-        const {...fs} = fieldStatus;
+        const { ...fs } = fieldStatus;
         delete fs[field];
-        setFieldStatus(prev => ({ ...fs, ...(status !== null && Object.keys(status).length>0) && { [field]: status } }))
+        setFieldStatus(prev => ({ ...fs, ...(status !== null && Object.keys(status).length > 0) && { [field]: status } }))
     };
     const clearFieldStatus = () => { setFieldStatus({}); }
     const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert, label };

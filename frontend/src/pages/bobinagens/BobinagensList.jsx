@@ -461,7 +461,7 @@ export default (props) => {
         { key: 'core', name: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> },
         { key: 'comp', name: 'Comprimento', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
         { key: 'comp_par', name: 'Comp. Emenda', width: 100, editable: editable, cellClass: editableClass, editor: p => <InputNumberEditor p={p} field="comp_par" min={0} max={p.row.comp} addonAfter="m" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_par} m</div> },
-        //{ key: 'comp_cli', name: 'Comp. Cliente', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_cli} m</div> },
+        { key: 'comp_cli', name: 'Comp. Cliente', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_cli} m</div> },
         { key: 'diam', name: 'Diâmetro', width: 100, editable: (r) => editable(r, 'diam'), cellClass: r => editableClass(r, 'diam'), editor: p => <InputNumberEditor p={p} field="diam" min={0} max={1500} addonAfter="mm" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
         { key: 'largura', name: 'Largura', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura} mm</div> },
         { key: 'area', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },

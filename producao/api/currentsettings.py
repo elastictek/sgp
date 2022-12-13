@@ -18,6 +18,10 @@ import mimetypes
 from datetime import datetime, timedelta
 # import cups
 import os, tempfile
+from collections import Counter
+from producao.api.stock_cutter_1d import StockCutter1D
+
+
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -170,6 +174,120 @@ def export(sql, db_parameters, parameters,conn_name):
             return resp
 
 
+def getCurrentSettingsId():
+    with connections["default"].cursor() as cursor:
+        return db.executeSimpleList(lambda: (f"""		
+                SELECT acs.id,acs.agg_of_id 
+                from producao_currentsettings cs
+                join audit_currentsettings acs on cs.id=acs.contextid
+                where cs.status=3
+                order by acs.id desc
+                limit 1
+            """), cursor, {})['rows']
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def EstadoProducao(request, format=None):
+    if "agg_of_id" in request.data['filter']:
+        print(request.data['filter']["agg_of_id"])
+        cs=[]
+        cs.append({"agg_of_id":request.data['filter']["agg_of_id"]})
+    else:    
+        cs = getCurrentSettingsId()
+    response={}
+    if len(cs)>0:
+        response["agg_of_id"]=cs[0]["agg_of_id"]
+        with connections["default"].cursor() as cursor:
+            rows = db.executeSimpleList(lambda: (f"""
+            select distinct count(*) over () total_produzidas, count(*) over (partition by pb.estado) total_por_estado,pb.estado
+            from producao_bobine pb
+            join planeamento_ordemproducao op on op.id=pb.ordem_id
+            where op.agg_of_id_id={cs[0]["agg_of_id"]}"""
+            ), cursor, {})['rows']
+            if len(rows)>0:
+                response["bobines_produzidas"]=rows
+            rows = db.executeSimpleList(lambda: (f"""
+                select count(*) num_bobines 
+                from producao_bobine pb
+                join producao_palete pl on pb.palete_id=pl.id
+                join planeamento_ordemproducao op on pl.ordem_id=op.id
+                where op.agg_of_id_id={cs[0]["agg_of_id"]} and pb.estado='G'
+            """
+            ), cursor, {})['rows']
+            if len(rows)>0:
+                response["bobines_good"]=rows
+            rows = db.executeSimpleList(lambda: (f"""
+                with CNT_PALETES AS(
+                    select *,sum(num_paletes_produzidas) over() num_paletes_produzidas_total from (
+                    SELECT op.id, count(*) num_paletes_produzidas
+                    FROM planeamento_ordemproducao op
+                    left join producao_palete pl on pl.ordem_id=op.id
+                    where op.agg_of_id_id={cs[0]["agg_of_id"]} and pl.num_bobines_act=pl.num_bobines
+                    group by op.id
+                    ) t
+                )
+                select
+                of_id,of_cod,artigo_des,artigo_produto,cliente_nome,artigo_lar,
+                cortes,cortesordem,
+                t.num_paletes_a_produzir,
+                sum(num_paletes_a_produzir) over () num_paletes_a_produzir_total,
+                t.bobines_por_palete,
+                t.num_bobines_a_produzir,
+                sum(num_bobines_a_produzir) over () num_bobines_a_produzir_total,
+                t.num_paletes_produzidas,
+                max(t.num_paletes_produzidas_total) over() num_paletes_produzidas_total,
+                num_paletes_stock_in,
+                sum(num_paletes_stock_in) over () num_paletes_stock_total,
+                t.num_paletes_produzidas + num_paletes_stock_in num_paletes,
+                sum(t.num_paletes_produzidas + num_paletes_stock_in) over() num_paletes_total
+                from (
+                SELECT
+                DISTINCT
+                replace(replace(replace(replace(cs.cortes->'$.largura_json','\\"','"'),'\\[','['),'"{{','{{'),'}}"','}}') cortes,
+                replace(replace(replace(replace(cs.cortesordem->'$.largura_ordem','\\"','"'),'\\[','['),'"{{','{{'),'}}"','}}') cortesordem,
+                ofd.of_id,ofd.of_cod,ofd.artigo_des,ofd.artigo_produto,ofd.cliente_nome,ofd.artigo_lar,
+                op.num_paletes_total num_paletes_a_produzir,
+                op.num_paletes_total*op.bobines_por_palete num_bobines_a_produzir,
+                op.num_paletes_stock_in,
+                op.bobines_por_palete,
+                IFNULL(CP.num_paletes_produzidas,0) num_paletes_produzidas,
+                IFNULL(CP.num_paletes_produzidas_total,0) num_paletes_produzidas_total
+                FROM planeamento_ordemproducao op
+                JOIN producao_currentsettings cs on cs.agg_of_id=op.agg_of_id_id
+                LEFT JOIN CNT_PALETES CP on CP.id=op.id
+                left join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
+                left join JSON_TABLE(cs.ofs,'$[*]' COLUMNS(of_id INT PATH '$.of_id',of_cod VARCHAR(30) PATH '$.of_cod',artigo_des VARCHAR(100) PATH '$.artigo_des',cliente_nome VARCHAR(200) PATH '$.cliente_nome',artigo_produto VARCHAR(100) PATH '$.artigo_produto',artigo_lar INT PATH '$.artigo_lar' )) ofd on ofd.of_id=op.id
+                where op.agg_of_id_id={cs[0]["agg_of_id"]}
+                ) t                
+                """
+            ), cursor, {})['rows']
+            if len(rows)>0:
+                response["paletes_bobines"]=rows
+            rows = db.executeSimpleList(lambda: (f"""
+                        select 
+                        round(avg(TIME_TO_SEC(pbm.duracao)/60) over ()) average, 
+                        round(stddev(TIME_TO_SEC(pbm.duracao)/60) over ()) stddev,
+                        round(min(TIME_TO_SEC(pbm.duracao)/60) over() ) min,
+                        round(max(TIME_TO_SEC(pbm.duracao)/60) over() ) max,
+                        round(TIME_TO_SEC(pbm.duracao)/60) last_bobinagem
+                        from producao_bobinagem pbm
+                        where pbm.id in (    
+                            select 
+                            distinct bobinagem_id
+                            from producao_bobine pb
+                            join planeamento_ordemproducao op on op.id=pb.ordem_id
+                            where op.agg_of_id_id={cs[0]["agg_of_id"]} and pb.estado in ('G','HOLD')
+                        )
+                        order by `timestamp` desc
+                        limit 1
+            """
+            ), cursor, {})['rows']
+            if len(rows)>0:
+                response["average_bobinagens"]=rows[0]
+    print(response)
+    return Response(response)
 
 
 @api_view(['POST'])
@@ -254,7 +372,8 @@ def CurrentSettingsGet(request, format=None):
     cols = ['''
         `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,`status`,`observacoes`,
         `start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,
-        `type_op`,`dosers`,`created`,`limites`,`ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` `formulacao`
+        `type_op`,`dosers`,`created`,`limites`,`ofs_ordem`,`end_date`,`start_date`,`ignore_audit`,`formulacaov2` `formulacao`,
+        IFNULL((select 1 from audit_currentsettings acs where acs.contextid=cs.id and acs.`status` in (3) limit 1),0) was_in_production
     ''']
     f = Filters(request.data['filter'])
     f.setParameters({
@@ -274,11 +393,19 @@ def CurrentSettingsGet(request, format=None):
             f"""
                 select 
                 {dql.columns}
-                from producao_currentsettings
+                from producao_currentsettings cs
                 {f.text}
                 {dql.sort}
             """
         ), cursor, parameters)
+        print(f"""
+                select 
+                {dql.columns}
+                from producao_currentsettings
+                {f.text}
+                {dql.sort}
+            """)
+        print(parameters)
         return Response(response)
 
 @api_view(['POST'])
@@ -729,5 +856,32 @@ def ChangeCurrSettingsStatus(request, format=None):
     return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
 
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def StockCutOptimizer(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        if "child_rolls" not in data or "parent_rolls" not in data:
+            raise Exception("Erro nos parametros de entrada!")
+        child_rolls =  data["child_rolls"]   #[[324, 120],[88, 150],[33, 75]]
+        parent_rolls = data["parent_rolls"] #[[10, 2100]] # 10 doesn't matter, itls not used at the moment
+        max_cutters = data["max_cutters"]
+        consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=True, max_cutters=max_cutters)
+        rolls = []
+        rolls={}
+        for idx, roll in enumerate(consumed_big_rolls):
+            hsh = hashlib.md5(json.dumps(roll[1], sort_keys=True).encode()).hexdigest()[ 0 : 16 ]
+            if hsh in rolls:
+                rolls[hsh]["n"]+=1
+            else:
+                rolls[hsh]={"cuts":roll[1],"cuts_count":dict(Counter(roll[1]).items()),"n":1,"largura_util":sum(roll[1])}        
+        return Response(list(rolls.values()))
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({"status": "error", "title": f'Erro Genérico', "subTitle":""})
 
 

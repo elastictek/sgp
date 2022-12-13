@@ -225,6 +225,7 @@ export default ({ record, card, parentReload }) => {
                                 <>
                                     <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(3)}>Iniciar Produção</Button>
                                     <VerticalSpace height="5px" />
+                                    {record.was_in_production ===1 && <Button block size="large" style={{ background: "#40a9ff", color: "#000", fontWeight: 700 }} onClick={() => changeStatus(9)}>Finalizar Produção</Button>}
                                     {/* <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(0)}>Refazer Planeamento</Button> */}
                                 </>
                             }

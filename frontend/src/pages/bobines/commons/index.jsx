@@ -53,6 +53,26 @@ const StyledStatus = styled.div`
     }
 `;
 
+const StyledStatusProducao = styled.div`
+    border:solid 1px #000;
+    background-color:${props => props.color};
+    color:${props => props.fontColor};
+    border-radius:3px;
+    margin-right:2px;
+    text-align:center;
+    width:35px;
+    line-height:12px;
+    font-size:8px;
+    cursor:pointer;
+    padding:"2px";
+    &:hover {
+        border-color: #d9d9d9;
+    }
+    .n{
+        font-size:11px;
+    }
+`;
+
 export const bColors = (estado) => {
     if (estado === "G") {
         return { color: "#237804", fontColor: "#fff" };//"green";
@@ -81,6 +101,12 @@ export const Status = ({b}) =>{
     };
     return(
         <StyledStatus onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b><div className='lar'>{b.largura}</div></StyledStatus>
+    );
+}
+
+export const StatusBobineProducao = ({b,onClick}) =>{
+    return(
+        <StyledStatusProducao onClick={onClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b><div className='n'>{b.total_por_estado}</div></StyledStatusProducao>
     );
 }
 

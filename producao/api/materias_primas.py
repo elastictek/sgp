@@ -504,7 +504,7 @@ def UpdateNW(request, format=None):
                     cursor.callproc('close_nw_line',args)
                 if ("type" in data and data["type"]=="queue"):
                     args = (filter["id"] if "id" in filter else None, data["mov"])
-                    cursor.callproc('upadte_nw_queue',args)
+                    cursor.callproc('update_nw_queue',args)
                 if ("type" in data and data["type"]=="datagrid"):
                     for idx,v in enumerate(data["rows"]):
                         exists = db.exists("lotesnwlinha", {"id":f"=={v['id']}","closed":0}, cursor).exists
@@ -1044,7 +1044,9 @@ def UpdateGranulado(request, format=None):
                 if ("type" in data and data["type"]=="out"):
                     try:
                         args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,request.user.id, 0)
-                        cursor.callproc('output_granulado_from_line',args)                        
+                        print("OUTPUUUUUUUUUUUUUUTTTTTTTTTT")
+                        print(args)
+                        cursor.callproc('output_granulado_from_line',args)
                     except Exception as error:
                         return Response({"status": "error", "title": str(error)})  
 
@@ -1074,6 +1076,8 @@ def UpdateGranulado(request, format=None):
                 if ("type" in data and data["type"]=="in"):
                     try:
                         args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],request.user.id,0)
+                        print("ADDDDDDDDDDDDDDD")
+                        print(args)
                         cursor.callproc('add_granulado_to_line',args)
                         if (filter["saida_mp"]==1):
                             args = (filter["t_stamp_out"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
@@ -1465,7 +1469,7 @@ def GetMPAlternativas(request, format=None):
 @permission_classes([IsAuthenticated])
 def MateriasPrimasLookup(request, format=None):
     conn = connections[connGatewayName].cursor()
-    cols = ['"ITMREF_0"','"ITMDES1_0"','"ZFAMILIA_0"','"ZSUBFAMILIA_0"','"STU_0"', '"SAUSTUCOE_0"','"TSICOD_3"']
+    cols = ['mprima."ITMREF_0"','mprima."ITMDES1_0"','mprima."ZFAMILIA_0"','mprima."ZSUBFAMILIA_0"','mprima."STU_0"', 'mprima."SAUSTUCOE_0"','mprima."TSICOD_3"']
     
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
@@ -1477,6 +1481,7 @@ def MateriasPrimasLookup(request, format=None):
     }, False, "and" if f.hasFilters else "where" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
+    qty = None if "qty" not in request.data['parameters'] else request.data['parameters']['qty']
     type = None if "type" not in request.data['parameters'] else request.data['parameters']['type']
     cfilter = ""
     if type=='nonwovens':
@@ -1496,16 +1501,39 @@ def MateriasPrimasLookup(request, format=None):
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
     sageAlias = dbgw.dbAlias.get("sage")
-    dql.columns = encloseColumn(cols,False)
+    if qty is None:
+        dql.columns = encloseColumn(cols,False)
+        response = dbgw.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from {sageAlias}."ITMMASTER" mprima
+                {f.text} {f2["text"]} {cfilter}
+                {dql.sort}
+                {dql.limit}
+            """
+        ), conn, parameters)
+    else:
+        cols.append('ST."QTYPCU_0"')
+        dql.columns = encloseColumn(cols,False)
+        response = dbgw.executeSimpleList(lambda: (
+            f"""                
+                select
+                {dql.columns}
+                from {sageAlias}."ITMMASTER" mprima
+                join (
+                SELECT "ITMREF_0","QTYPCU_0" FROM (
+                SELECT "ITMREF_0","QTYPCU_0","ROWID", MAX("ROWID") OVER (PARTITION BY ST."ITMREF_0") MX FROM {sageAlias}."STOJOU" ST 
+                WHERE "VCRTYP_0"=6 AND "QTYPCU_0">0 ORDER BY "CREDATTIM_0"
+                ) tt where tt."ROWID"=MX
+                ) ST on mprima."ITMREF_0"=ST."ITMREF_0"
+                {f.text} {f2["text"]} {cfilter}
+                {dql.sort}
+                {dql.limit}
+            """
+        ), conn, parameters)
 
-    response = dbgw.executeSimpleList(lambda: (
-        f"""
-            select 
-            {dql.columns}
-            from {sageAlias}."ITMMASTER" mprima
-            {f.text} {f2["text"]} {cfilter}
-            {dql.sort}
-            {dql.limit}
-        """
-    ), conn, parameters)
+
+
+
     return Response(response)

@@ -236,10 +236,17 @@ def UpdateBobinagem(request, format=None):
                             if exists==0:
                                 errors.append(f"""Na bobinagem {v["nome"]} O lote de Nonwoven Superior já se encontra fechado!""")
                     if (len(errors)==0):
-                            dml = db.dml(TypeDml.UPDATE,{"comp_par":v["comp_par"],"diam":v["diam"],"largura_bruta":v["largura_bruta"],"lotenwinf":v["lotenwinf"],"lotenwsup":v["lotenwsup"],"tiponwinf":v["tiponwinf"],"tiponwsup":v["tiponwsup"]},"producao_bobinagem",{"id":f'=={v["id"]}'},None,False)
+                            comp_cli = round(v["comp"] if (v["comp_par"]==0 or (v["comp"] - v["comp_par"])<=(v["comp_par"]*0.05)) else v["comp_par"]*1.05,2)
+                            desper = round(0 if (v["comp_par"]==0 or (v["comp"] - v["comp_par"])<=(v["comp_par"]*0.05)) else ((v["comp"] - (v["comp_par"]*1.05))/1000)*v["largura"],2)
+                            dml = db.dml(TypeDml.UPDATE,{"comp_cli":comp_cli,"desper":desper,"comp_par":v["comp_par"],"diam":v["diam"],"largura_bruta":v["largura_bruta"],"lotenwinf":v["lotenwinf"],"lotenwsup":v["lotenwsup"],"tiponwinf":v["tiponwinf"],"tiponwsup":v["tiponwsup"]},"producao_bobinagem",{"id":f'=={v["id"]}'},None,False)
                             db.execute(dml.statement, cursor, dml.parameters)
                             dml = db.dml(TypeDml.UPDATE,{"diam":v["diam"],"lotenwinf":v["lotenwinf"],"lotenwsup":v["lotenwsup"]},"producao_bobine",{"bobinagem_id":f'=={v["id"]}'},None,False)
                             db.execute(dml.statement, cursor, dml.parameters)
+                            
+                            if desper>0:
+                                dml = db.dml(TypeDml.UPDATE,{"comp_total":comp_cli},"producao_etiquetaretrabalho",{"bobinagem_id":f'=={v["id"]}'},None,False)
+                                db.execute(dml.statement, cursor, dml.parameters)
+                            
                             success.append(f"""Bobinagem {v["nome"]} atualizada com sucesso!""")
         return Response({"status": "multi", "errors":errors, "success":success})
     except Error as error:
@@ -306,3 +313,40 @@ def MissedLineLogList(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def BobinesByAggByStatusList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'pb.estado = :estado', True)
+    f.add(f'op.agg_of_id_id = :agg_of_id', True)
+    f.value("and")
+    parameters = {**f.parameters}
+
+    dql = db.dql(request.data, False)
+    sql = lambda p, c, s: (
+        f"""
+        select pb.id,pb.nome,pb.palete_id,pl.nome palete_nome
+        from producao_bobine pb
+        left join producao_palete pl on pl.id=pb.palete_id
+        join planeamento_ordemproducao op on op.id=pb.ordem_id
+        {f.text}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeSimpleList(sql(lambda v:v,lambda v:v,lambda v:v), connection, parameters, [])
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+

@@ -2838,23 +2838,28 @@ def EmendasLookup(request, format=None):
 @permission_classes([IsAuthenticated])
 def CortesOrdemLookup(request, format=None):
     #conn = connections[connGatewayName].cursor()
-    #print(f"request--->{request.data['filter']}")
-    cols = ['*']
+    cols = ['co.*']
     f = Filters(request.data['filter'])
-    f.setParameters({}, False)
+    f.setParameters({
+        "cortes": {"value": lambda v: hashlib.md5(json.dumps(json.loads(v.get('cortes'))).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None},
+    }, False)
     f.where()
-    f.add(f'co.cortes_id = :cortes_id', True)
+    f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
+    f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
     dql = db.dql(request.data, False)
     dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
+        print(parameters)
+        print(f.text)
         response = db.executeSimpleList(lambda: (
             f"""
                 select 
                 {dql.columns}
                 from producao_cortesordem co
+                join producao_cortes c on c.id=co.cortes_id
                 {f.text}
                 {dql.sort}
             """

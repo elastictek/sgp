@@ -44,9 +44,7 @@ const Generator = (id, seed) => {
       throw Error('seed must <= now');
     }
     const gen = Generator(id, seed);
-    console.log(gen)
     gen.id = id;
     gen.seed = seed;
-    console.log("aaaaaaaaaaaaaa")
     return gen;
   };

@@ -51,6 +51,7 @@ const MPAlternativas = lazy(() => import('./artigos/MPAlternativas'));
 const DevolucoesList = lazy(() => import('./devolucoes/DevolucoesList'));
 const GranuladoBufferLineList = lazy(() => import('./artigos/GranuladoBufferLineList'));
 const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
+const FormEtapasCortes = lazy(() => import('./currentline/FormEtapasCortes'));
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -140,13 +141,14 @@ const RenderRouter = () => {
                 { path: "picking/pickgranuladolist", element: <Suspense fallback={<Spin />}><PickGranuladoList /></Suspense> },
                 { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
-                
+
                 { path: "artigos/nwlist", element: <Suspense fallback={<Spin />}><NwList /></Suspense> },
                 { path: "artigos/consumoslist", element: <Suspense fallback={<Spin />}><ConsumosList /></Suspense> },
                 { path: "artigos/granuladobufferlinelist", element: <Suspense fallback={<Spin />}><GranuladoBufferLineList /></Suspense> },
                 { path: "artigos/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
+                { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
@@ -235,22 +237,32 @@ const App2 = () => {
         reconnectInterval: 5000,
         reconnectAttempts: 500
     });
+    const [estadoProducao, setEstadoProducao] = useState({});
     const [auth, setAuth] = useState();
 
+    /*     useEffect(() => {
+            console.log("lasjson----------->",lastJsonMessage)
+        }, [
+            lastJsonMessage?.hash.hash_igbobinagens,
+            lastJsonMessage?.hash.hash_bobinagens,
+            lastJsonMessage?.hash.hash_auditcs,
+            lastJsonMessage?.hash.hash_linelog_params,
+            //lastJsonMessage?.hash.hash_buffer,
+            //lastJsonMessage?.hash.hash_dosers,
+            //lastJsonMessage?.hash.hash_doserssets,
+            lastJsonMessage?.hash.hash_inproduction,
+            //lastJsonMessage?.hash.hash_lotes_availability
+        ]); */
+
+
     useEffect(() => {
-        console.log("lasjson----------->",lastJsonMessage)
-    }, [
-        lastJsonMessage?.hash.hash_igbobinagens,
-        lastJsonMessage?.hash.hash_bobinagens,
-        lastJsonMessage?.hash.hash_auditcs,
-        lastJsonMessage?.hash.hash_productionchanges,
-        lastJsonMessage?.hash.hash_linelog_params,
-        //lastJsonMessage?.hash.hash_buffer,
-        //lastJsonMessage?.hash.hash_dosers,
-        //lastJsonMessage?.hash.hash_doserssets,
-        lastJsonMessage?.hash.hash_inproduction,
-        //lastJsonMessage?.hash.hash_lotes_availability
-    ]);
+        console.log(lastJsonMessage)
+        const controller = new AbortController();
+        const interval = (async () => {
+            setEstadoProducao(await fetchPost({ url: `${API_URL}/estadoproducao/`, pagination: { enabled: false }, filter: {}, signal: controller.signal }));
+        })();
+        return (() => { controller.abort(); (interval) && clearInterval(interval); });
+    }, [lastJsonMessage?.hash.hash_estadoproducao]);
 
     const loadData = async ({ signal }) => {
         const response = await loadAuthUser({}, signal);
@@ -270,7 +282,7 @@ const App2 = () => {
     return (
         <BrowserRouter>
             <MediaContext.Provider value={width}>
-                <AppContext.Provider value={{ auth }}>
+                <AppContext.Provider value={{ auth, estadoProducao }}>
                     <SocketContext.Provider value={lastJsonMessage}>
                         <ModalProvider>
                             {auth?.isAuthenticated && <RenderRouter />}
