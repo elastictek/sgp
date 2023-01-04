@@ -9,6 +9,7 @@ from producao.api import print
 from producao.api import auth_users
 from producao.api import devolucoes
 from producao.api import bobinagens
+from producao.api import paletes
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -249,6 +250,14 @@ urlpatterns = [
     re_path(r'^loadlayout/$', views.LoadLayout),
     
     #LAYOUTS
+
+    #PALETES
+    re_path(r'^paletes/paletessql/$',paletes.PaletesSql),
+    re_path(r'^paletes/stockavailablelist/$',paletes.StockAvailableList),
+    re_path(r'^paletes/paletesstocklist/$',paletes.PaletesStockList),
+    re_path(r'^paletes/allowedofchanges/$',paletes.AllowedOFChanges),
+    
+    #END PALETES
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

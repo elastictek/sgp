@@ -266,7 +266,7 @@ class ArtigoNonwovens(models.Model):
         unique_together = (('produto_id', 'designacao'))
 
 class Formulacao(models.Model):
-    designacao = models.CharField(verbose_name="Designação", max_length=50,null=True)
+    designacao = models.CharField(verbose_name="Designação", max_length=80,null=True)
     versao = models.SmallIntegerField(verbose_name="Versão", default=1)
     #artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)
     produto = models.ForeignKey('producao.Produtos',on_delete=models.PROTECT,verbose_name="Id Produto") #ADDED - ID PRODUTO
@@ -300,7 +300,7 @@ class FormulacaoMateriasPrimas(models.Model):
     extrusora = models.CharField(verbose_name="Extrusora", max_length=2, default='A')
 
 class GamaOperatoria(models.Model):
-    designacao = models.CharField(verbose_name="Designação", max_length=50,null=True)
+    designacao = models.CharField(verbose_name="Designação", max_length=80,null=True)
     versao = models.SmallIntegerField(verbose_name="Versão", default=1)
     produto = models.ForeignKey('producao.Produtos',on_delete=models.PROTECT,verbose_name="Id Produto") #ADDED - ID PRODUTO
     #artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)

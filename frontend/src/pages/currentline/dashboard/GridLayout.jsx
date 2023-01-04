@@ -22,6 +22,7 @@ import { MdOutlineApps, MdOutlineMenu, MdOutlineReceipt } from 'react-icons/md';
 import { BsChevronCompactLeft, BsChevronCompactRight, BsDot } from 'react-icons/bs';
 import { GoPrimitiveDot } from 'react-icons/go';
 import { TbPinnedOff, TbPin } from 'react-icons/tb';
+import { breakpoints, cols, baseBreakpoint, staticBreakpoints } from "utils/useMedia";
 import { usePermission } from "utils/usePermission";
 import useWebSocket from 'react-use-websocket';
 
@@ -45,13 +46,14 @@ const ItemOrdensFabrico = React.lazy(() => import('./ItemOrdensFabrico'));
 const ItemOperations = React.lazy(() => import('./ItemOperations'));
 const ItemPickingNW = React.lazy(() => import('./ItemPickingNW'));
 const ItemGranuladoList = React.lazy(() => import('./ItemGranuladoList'));
+const ItemStockAvailable = React.lazy(() => import('./ItemStockAvailable'));
 const ItemLineLogList = React.lazy(() => import('./ItemLineLogList'));
 const ItemEventosProducao = React.lazy(() => import('./ItemEventosProducao'));
 const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
 const ItemEstadoProducao01 = React.lazy(() => import('./ItemEstadoProducao01'));
-import { AppContext } from "../../App";
+import { AppContext, MediaContext } from "../../App";
 
 
 const useStyles = createUseStyles({
@@ -235,71 +237,71 @@ const saveToLS = (key, value, user) => {
 }
 
 const originalDashboards = [
-    { id: "tpl-01", description: "Produção", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "tpl-02", description: "Planeamento", oneElement: false, ofs: { visible: true, static: false, allowChange: false } },
-    { id: "tpl-03", description: "Matérias Prima", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-01", description: "Dashboard 1", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-02", description: "Dashboard 2", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-03", description: "Dashboard 3", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-04", description: "Dashboard 4", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-05", description: "Dashboard 5", oneElement: false, ofs: { visible: false, static: false, allowChange: true } },
-    { id: "ly-06", description: "Dashboard 6", oneElement: false, ofs: { visible: false, static: false, allowChange: true } }
+    { id: "tpl-01", description: "Produção", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "tpl-02", description: "Planeamento", oneElement: false, ofs: { visible: true, fixed: false, allowChange: false } },
+    { id: "tpl-03", description: "Matérias Prima", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-01", description: "Dashboard 1", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-02", description: "Dashboard 2", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-03", description: "Dashboard 3", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-04", description: "Dashboard 4", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-05", description: "Dashboard 5", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } },
+    { id: "ly-06", description: "Dashboard 6", oneElement: false, ofs: { visible: false, fixed: false, allowChange: true } }
 ];
 
-const allItems = {
-    lg: [
-        { i: "a", x: 0, y: 0, w: 2, h: 2/* , static: true */, disabled: true },
-        { i: "b", x: 2, y: 0, w: 4, h: 2, minW: 2, maxW: 4, disabled: true },
-        { i: "c", x: 6, y: 0, w: 2, h: 2, disabled: true },
-        { i: "d", x: 8, y: 0, w: 2, h: 2, disabled: true },
-        { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
-        { i: "cortes", x: 0, y: 0, w: 6, h: 7, minH: 4, closable: true },
-        { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "nonwovens", x: 0, y: 0, w: 4, h: 5, minH: 5, closable: true },
-        { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
-        { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true },
-        { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
-        { i: "ordemfabrico", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "eventosproducao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "dataprod" },
-        { i: "dataprod#estado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "mp" },
-        { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "prod-reports" },
-        { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
-        { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-        { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true }
+const templates = {
+    "default": [], //mandatory
+    "tpl-01": [
+        /*  { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, fixed: false, closable: true },
+         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
+         { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true }, */
+        { i: "operations", x: 0, y: 0, w: 3, h: 4, minH: 4, maxW: 4, fixed: true }
+    ],
+    "tpl-02": [
+        /* { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true } */
     ]
 }
 
-const templates = {
-    lg: {
-        "default": [],
-        "tpl-01": [
-            /*  { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, static: false, closable: true },
-             { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
-             { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
-             { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true }, */
-            { i: "operations", x: 0, y: 0, w: 3, h: 4, minH: 4, maxW: 4, static: true }
-        ],
-        "tpl-02": [
-            /* { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true } */
-        ]
-    }
-}
+const baseItems = [
+    { i: "a", x: 0, y: 0, w: 2, h: 2/* , static: true */, disabled: true },
+    { i: "b", x: 2, y: 0, w: 4, h: 2, minW: 2, maxW: 4, disabled: true },
+    { i: "c", x: 6, y: 0, w: 2, h: 2, disabled: true },
+    { i: "d", x: 8, y: 0, w: 2, h: 2, disabled: true },
+    { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
+    { i: "cortes", x: 0, y: 0, w: 7, h: 7, minH: 4, closable: true },
+    { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, minW: 4, closable: true },
+    { i: "nonwovens", x: 0, y: 0, w: 4, h: 5, minH: 5, closable: true, pinnable: false },
+    { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
+    { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true },
+    { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
+    { i: "ordemfabrico", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "eventosproducao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "stockavailable", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
+    //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "dataprod" },
+    { i: "dataprod#estado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "mp" },
+    { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "prod-reports" },
+    { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+    { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true }
+];
+
+
 
 const toolboxItems = {
     cortes: { description: "Cortes", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     formulacao: { description: "Formulação", icon: <MdOutlineReceipt style={{ fontSize: '18px', color: '#08c' }} /> },
     nonwovens: { description: "Nonwovens", icon: <MdOutlineReceipt style={{ fontSize: '18px', color: '#08c' }} /> },
     bobinagens: { description: "Bobinagens", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
+    stockavailable: { description: "Stock Disponível", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     actions: { description: "Menu", icon: <MdOutlineMenu style={{ fontSize: '18px', color: '#08c' }} /> },
     ordemfabrico: { description: "Ordens Fabrico", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
     operations: { description: "Ações", icon: <MdOutlineApps style={{ fontSize: '18px', color: '#08c' }} /> },
@@ -333,8 +335,122 @@ const toolboxItems = {
     }
 }
 
+// const allItems = {
+//     lg: [
+//         { i: "a", x: 0, y: 0, w: 2, h: 2/* , static: true */, disabled: true },
+//         { i: "b", x: 2, y: 0, w: 4, h: 2, minW: 2, maxW: 4, disabled: true },
+//         { i: "c", x: 6, y: 0, w: 2, h: 2, disabled: true },
+//         { i: "d", x: 8, y: 0, w: 2, h: 2, disabled: true },
+//         { i: "e", x: 0, y: 8, w: 4, h: 4, maxW: 12, disabled: true },
+//         { i: "cortes", x: 0, y: 0, w: 6, h: 7, minH: 4, closable: true },
+//         { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "nonwovens", x: 0, y: 0, w: 4, h: 5, minH: 5, closable: true },
+//         { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
+//         { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true },
+//         { i: "operations", x: 0, y: 0, w: 2, h: 4, minH: 4, maxW: 8, closable: true },
+//         { i: "ordemfabrico", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "linelog", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "eventosproducao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "dataprod" },
+//         { i: "dataprod#estado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "mp" },
+//         { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "mp#reciclado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "mp#nonwovens", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "mp#granulado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "prod-reports" },
+//         { i: "prod-reports#reciclado", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
+//         { i: "fichaprocesso", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "fichaprocesso#gamaoperatoria", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//         { i: "fichaprocesso#specs", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true }
+//     ]
+// };
 
-const ToolboxItem = ({ currentBreakpoint, item, onTakeItem }) => {
+const itemsSize = (breakpoint) => {
+    const availableCols = cols[breakpoint];
+    const baseColumns = cols[baseBreakpoint];
+    let _static = staticBreakpoints.includes(breakpoint);
+    return {
+        current: breakpoint,
+        [baseBreakpoint]: baseItems.map(v => {
+            const _base = { ...v };
+            let w = (availableCols <= v.w) ? availableCols : baseColumns * (1 / (availableCols / v.w));
+            let minW = ("minW" in v) ? v.minW : v.w;
+            minW = (availableCols < v.minW) ? availableCols : v.minW;
+            minW = (w < minW) ? w : minW;
+            let maxW = ("maxW" in v) ? v.maxW : v.w;
+             maxW = (w > v.maxW) ? w : v.maxW;
+            const _pinnable = ("pinnable" in v) ? v.pinnable : true;
+            return { ...v, base: _base, w, ...(minW) && { minW }, ...(maxW) && { maxW }, pin: _pinnable, ...(_static) && { static: _static, pin: false } };
+        })
+    };
+}
+
+//ATENTION!! lg breakpoint is mandatory
+// const templates = {
+//     lg: {
+//         "default": [], //mandatory
+//         "tpl-01": [
+//             /*  { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, static: false, closable: true },
+//              { i: "formulacao", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+//              { i: "bobinagens", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
+//              { i: "actions", x: 0, y: 0, w: 2, h: 8, minH: 4, closable: true }, */
+//             { i: "operations", x: 0, y: 0, w: 3, h: 4, minH: 4, maxW: 4, static: true }
+//         ],
+//         "tpl-02": [
+//             /* { i: "cortes", x: 0, y: 0, w: 6, h: 6, minH: 4, closable: true } */
+//         ]
+//     }
+// }
+
+// const templateSizes = (breakpoint, dashboard) => {
+//     const availableCols = cols[breakpoint];
+//     const baseColumns = cols["lg"];
+//     const _breakpoint = (breakpoint in templates) ? breakpoint : 'lg';
+//     if (!(_breakpoint in templates)) {
+//         return [];
+//     }
+//     const _dashboard = (dashboard in templates[_breakpoint]) ? dashboard : 'default';
+//     return templates[_breakpoint][_dashboard].map(v => {
+//         const w = (availableCols <= v.w) ? availableCols : baseColumns * (1 / (availableCols / v.w));
+//         let minW = null;
+//         if (minW in v) {
+//             minW = (availableCols < v.minW) ? availableCols : v.minW;
+//             minW = (w < minW) ? w : minW;
+//         }
+//         let maxW = null;
+//         if (maxW in v) {
+//             maxW = (w > v.maxW) ? w : v.maxW;
+//         }
+//         return { ...v, w, ...(minW) && { minW }, ...(maxW) && { maxW } };
+//     });
+// }
+
+const templateSizes = (breakpoint, dashboard) => {
+    const availableCols = cols[breakpoint];
+    const baseColumns = cols[baseBreakpoint];
+    const _dashboard = (dashboard in templates) ? dashboard : 'default';
+    let _static = staticBreakpoints.includes(breakpoint);
+    return templates[_dashboard].map(v => {
+        const w = (availableCols <= v.w) ? availableCols : baseColumns * (1 / (availableCols / v.w));
+        let minW = null;
+        if (minW in v) {
+            minW = (availableCols < v.minW) ? availableCols : v.minW;
+            minW = (w < minW) ? w : minW;
+        }
+        let maxW = null;
+        if (maxW in v) {
+            maxW = (w > v.maxW) ? w : v.maxW;
+        }
+        return { ...v, w, ...(minW) && { minW }, ...(maxW) && { maxW }, ...(_static) && { static: _static, pin: false } };
+    });
+}
+
+
+
+/* const ToolboxItem = ({ allItems, currentBreakpoint, item, onTakeItem }) => {
     const classes = useStyles();
     const toolItem = toolboxItems[item.i];
 
@@ -346,7 +462,63 @@ const ToolboxItem = ({ currentBreakpoint, item, onTakeItem }) => {
 
     const itemsClick = (i) => {
         const key = i.key;
-        const _item = allItems[currentBreakpoint].find(v => v.i == key);
+        const _item = allItems[allItems.current].find(v => v.i == key);
+        onTakeItem(_item);
+    }
+
+    return (
+        <>
+            {item.i in toolboxItems &&
+                <>
+                    {toolItem?.children ?
+                        <Popover
+                            open={clickDropdown}
+                            onOpenChange={handleDropdownClick}
+                            title={<div style={{ fontWeight: 700 }}>{toolItem.description}</div>}
+                            trigger={["click"]}
+                            content={
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+
+                                    <Menu onClick={(v) => itemsClick(v)} items={Object.keys(toolItem.children).map((x) => {
+                                        return (
+                                            { style: { display: "flex", alignItems: "center" }, label: <Text style={{}}>{toolItem.children[x].description}</Text>, icon: toolItem.children[x].icon, key: `${item.i}#${x}` }
+                                        );
+                                    })}></Menu>
+                                </div>
+                            }
+                        >
+                            <div className={classes.toolboxDropdownItem}>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                    <div>{toolItem?.icon && toolItem.icon}</div>
+                                    <div>{toolItem?.description ? toolItem.description : item.i}</div>
+                                </div>
+                                <CaretDownOutlined />
+                            </div>
+                        </Popover>
+                        :
+                        <div className={classes.toolboxItem} onClick={() => onTakeItem(item)}>
+                            <div>{toolItem?.icon && toolItem.icon}</div>
+                            <div>{toolItem?.description ? toolItem.description : item.i}</div>
+                        </div>}
+                </>
+            }
+        </>
+    );
+} */
+
+const ToolboxItem = ({ allItems, currentBreakpoint, item, onTakeItem }) => {
+    const classes = useStyles();
+    const toolItem = toolboxItems[item.i];
+
+    const [clickDropdown, setClickDropdown] = useState(false);
+
+    const handleDropdownClick = (visible) => {
+        setClickDropdown(visible);
+    }
+
+    const itemsClick = (i) => {
+        const key = i.key;
+        const _item = allItems[baseBreakpoint].find(v => v.i == key);
         onTakeItem(_item);
     }
 
@@ -558,9 +730,9 @@ const CloseItem = ({ value, ...props }) => {
 }
 
 const Pin = styled(Button).withConfig({
-    shouldForwardProp: (prop) => !['pinnable'].includes(prop)
+    shouldForwardProp: (prop) => ![].includes(prop)
 })`
-${({ pinnable, color, background }) => pinnable && `
+${({ pinnable, color, background }) => `
     position: absolute;
     right: 6px; 
     top: 22px; 
@@ -572,13 +744,24 @@ ${({ pinnable, color, background }) => pinnable && `
 `}
 `;
 
-const PinItem = ({ value, ...props }) => {
+const PinItem = ({ value, pinnable, ...props }) => {
     return (<>
-        <Pin type={value.static && "primary"} size="small" {...props} icon={<TbPin />} />
+        {pinnable && <Pin type={value.static && "primary"} size="small" {...props} icon={<TbPin />} />}
     </>);
 }
 
+const prepareLayouts = (layouts, breakpoint) => {
+    let _static = staticBreakpoints.includes(breakpoint);
+    return {
+        [baseBreakpoint]: (Array.isArray(layouts) ? layouts : layouts[baseBreakpoint]).map(v => {
+            const _pinnable = ("pinnable" in v) ? v.pinnable : true;
+            return { ...v, ...("created" in v && v.created !== breakpoint) && { ...v.base, created: breakpoint }, static: v?.fixed, pin: _pinnable, ...(_static) && { static: _static, pin: false } };
+        })
+    };
+}
+
 export default (props) => {
+    const media = useContext(MediaContext);
     const classes = useStyles();
     const navigate = useNavigate();
     const location = useLocation();
@@ -596,7 +779,7 @@ export default (props) => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [rightDrawerVisible, setRightDrawerVisible] = useState(false);
     const permission = usePermission();
-
+    const [allItems, setAllItems] = useState({ current: false });
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
         onOpen: () => console.log(`Connected to Web Socket`),
         queryParams: { /* 'token': '123456' */ },
@@ -605,20 +788,11 @@ export default (props) => {
         reconnectInterval: 5000,
         reconnectAttempts: 500
     });
-
-    /*     const loadData = async ({ signal, aggId } = {}) => {
-            const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
-            request();
-            const ok = dataAPI.fetchPost();
-            return (ok) ? setInterval(request, 30000) : null;
-        } */
-
     const loadInterval = async () => {
         const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
         request();
         return setInterval(request, 30000);
     }
-
     useEffect(() => {
         //const controller = new AbortController();
         const interval = loadInterval();
@@ -626,25 +800,200 @@ export default (props) => {
     }, []);
 
     useEffect(() => {
-        if (lastJsonMessage) {
+        //Every time breakpoint changes updates allItems
+        if (media?.breakpoint && lastJsonMessage) {
             const controller = new AbortController();
             loadData({ aggId: props?.aggId, signal: controller.signal });
             return (() => { controller.abort(); });
         }
-    }, [lastJsonMessage?.hash, location]);
+    }, [media?.breakpoint, lastJsonMessage?.hash, location]);
+
+    const loadData = (data = {}, type = "init") => {
+        const { signal } = data;
+        const { aggId } = loadInit({}, {}, data, location?.state, [...Object.keys(location?.state || {}), ...Object.keys(data || {})]);
+        //let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
+        switch (type) {
+            default:
+                (async () => {
+                    //Se no local Storage não existir nenhum layout do user, faz o load da base de dados
+                    if (data?.loadLayout != false && !getFromLS("exists", null, permission.auth.user)) {
+                        try {
+                            let response = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: permission.auth.user }, parameters: {} });
+                            if (response.data.status !== "error" && response.data.rows.length > 0) {
+                                saveToLS("saveall", response.data.rows[0].layout, permission.auth.user);
+                            } else {
+                                let defaultt = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: "default" }, parameters: {} });
+                                if (defaultt.data.status !== "error" && defaultt.data.rows.length > 0) {
+                                    saveToLS("saveall", defaultt.data.rows[0].layout, permission.auth.user);
+                                }
+                            }
+                        } catch (e) { };
+                    }
+
+                    setDashboards(getFromLS("dashboards", null, permission.auth.user) || originalDashboards);
+                    setPreventCollisions(getFromLS("preventCollisions", null, permission.auth.user) || false);
+                    setOverlap(getFromLS("overlap", null, permission.auth.user) || false);
+                    setAllItems(itemsSize(media.breakpoint));
+                    setCurrentBreakpoint(media.breakpoint);
+                    changeCurrentDashboard();
+
+                    let raw = await loadCurrentSettings(aggId, signal);
+                    if (raw.length === 0) {
+                        setCurrentSettings({});
+                        return;
+                    }
+                    const formulacao = JSON.parse(raw[0].formulacao);
+                    const gamaoperatoria = JSON.parse(raw[0].gamaoperatoria);
+                    const nonwovens = JSON.parse(raw[0].nonwovens);
+                    const artigospecs = JSON.parse(raw[0].artigospecs);
+                    const cortes = JSON.parse(raw[0].cortes);
+                    const cortesordem = JSON.parse(raw[0].cortesordem);
+                    const cores = JSON.parse(raw[0].cores);
+                    const emendas = JSON.parse(raw[0].emendas);
+                    const paletesstock = JSON.parse(raw[0].paletesstock);
+                    const ofs = JSON.parse(raw[0].ofs);
+                    const paletizacao = JSON.parse(raw[0].paletizacao);
+                    const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
+
+                    const quantity = ofs.reduce((basket, ofitem) => {
+                        basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
+                        basket["linear_meters"] = (!basket?.linear_meters) ? ofitem.linear_meters : basket.linear_meters + ofitem.linear_meters;
+                        basket["n_paletes"] = (!basket?.n_paletes) ? ofitem.n_paletes_total : basket.n_paletes + ofitem.n_paletes_total;
+                        return basket;
+                    }, {});
+                    setCurrentSettings({
+                        id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status, agg_of_id: raw[0].agg_of_id,
+                        was_in_production: raw[0].was_in_production,
+                        quantity,
+                        planificacao: {
+                            start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),
+                            end_prev_date: dayjs(raw[0].end_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'), horas_previstas_producao: raw[0].horas_previstas_producao
+                        },
+                        produto: { produto_id: raw[0].produto_id, produto_cod: raw[0].produto_cod, gsm: raw[0].gsm },
+                        sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria, paletesstock,
+                        nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status, lotes
+                    });
 
 
 
+                })();
+                break;
+        }
+    }
+    const changeCurrentDashboard = (key) => {
+        let _current = key;
+        if (!_current) {
+            if (getFromLS("currentDashboard", null, permission.auth.user) !== null) {
+                _current = getFromLS("currentDashboard", null, permission.auth.user);
+            } else {
+                _current = originalDashboards[0].id;
+                saveToLS("currentDashboard", _current, permission.auth.user);
+            }
+        } else {
+            saveToLS("currentDashboard", _current, permission.auth.user);
+        }
+        setCurrentDashboard(_current);
+    }
+
+    useEffect(() => {
+        if (currentDashboard && allItems.current) {
+            let _layouts;
+            let _toolbox;
+            _layouts = getFromLS("layouts", currentDashboard, permission.auth.user);
+            _toolbox = getFromLS("toolbox", currentDashboard, permission.auth.user);
+            if (!_layouts || !_toolbox) {
+                _layouts = templateSizes(currentBreakpoint, currentDashboard);
+                _toolbox = { [baseBreakpoint]: allItems[baseBreakpoint].filter(v => !v?.disabled && !_layouts.some(x => x.i === v.i)) };
+                //_layouts = { [currentBreakpoint]: templateSizes(currentBreakpoint, currentDashboard) };
+                //_toolbox = { [currentBreakpoint]: allItems[currentBreakpoint].filter(v => !v?.disabled && !_layouts[currentBreakpoint].some(x => x.i === v.i)) };
+            }
+            //_layouts = (_layouts === null) ? { [currentBreakpoint]: [] } : _layouts;
+            _layouts = (_layouts === null) ? { [baseBreakpoint]: [] } : { [baseBreakpoint]: _layouts };
+            const db = dashboards.find(v => v.id === currentDashboard);
+            setShowOfs(prev => ({ ...prev, ...db["ofs"] }));
+            setLayouts(prepareLayouts(_layouts, allItems.current));
+            //setToolbox((_toolbox === null) ? { [currentBreakpoint]: allItems[currentBreakpoint].filter(v => !v?.disabled && !_layouts[currentBreakpoint].some(x => x.i === v.i)) } : _toolbox);
+            setToolbox((_toolbox === null) ? { [baseBreakpoint]: allItems[baseBreakpoint].filter(v => !v?.disabled && !_layouts[baseBreakpoint].some(x => x.i === v.i)) } : _toolbox);
+        }
+    }, [currentDashboard, allItems.current]);
+
+
+    const onLayoutChange = async (layout, eventlayouts) => {
+        const _layouts = eventlayouts[baseBreakpoint].map(v => {
+            let itm;
+            itm = layouts[baseBreakpoint].find(x => x.i === v.i);
+            if (!itm) {
+                itm = templateSizes(currentBreakpoint, currentDashboard).find(x => x.i === v.i);
+            } else if (!itm) {
+                allItems[baseBreakpoint].find(x => x.i === v.i);
+            }
+            if (itm) { v.closable = itm?.closable; }
+            v.static = (v?.static === true) ? true : (v?.fixed === true) ? true : false;
+            v.fixed = (itm && "fixed" in itm) ? itm.fixed : false;
+            v.pinnable = (itm && "pinnable" in itm) ? itm.pinnable : true;
+            if (itm && "created" in itm) {
+                v.created = itm.created;
+            }
+            if (itm && "base" in itm) {
+                if (currentBreakpoint === baseBreakpoint) {
+                    const { base, created, ...rest } = v;
+                    v.base = rest;
+                } else {
+                    v.base = itm.base;
+                }
+            }
+            return v;
+        });
+        saveToLS("layouts", _layouts, permission.auth.user);
+        saveToLS("toolbox", toolbox, permission.auth.user);
+        setLayouts(prepareLayouts(_layouts, allItems.current));
+    }
 
 
 
+    const onTakeItem = (item) => {
+        const _item = { ...item, created: currentBreakpoint };
+        if (!layouts[baseBreakpoint].some(v => v.i == _item.i)) {
+            const db = dashboards.find(v => v.id === currentDashboard);
+            let _layouts;
+            /*             let _saveLayouts; */
+            let _toolbox;
+            if (db.oneElement === true) {
+                _layouts = { ...layouts, [baseBreakpoint]: [_item] };
+                _toolbox = { ...toolbox, [baseBreakpoint]: [...allItems[baseBreakpoint].filter(v => !v?.disabled && v.i !== _item.i)] };
+            } else {
+                _layouts = { ...layouts, [baseBreakpoint]: [...layouts[baseBreakpoint] || [], _item] };
+                /*                 if (baseBreakpoint !== allItems.current) {
+                                    _saveLayouts = { ...layouts, [baseBreakpoint]: [...layouts[baseBreakpoint] || [], baseItems.find(v => v.i === item.i)] };
+                                } */
+                _toolbox = { ...toolbox, [baseBreakpoint]: [...(toolbox[baseBreakpoint] || []).filter(({ i }) => i !== _item.i)] };
+            }
+            setLayouts(prepareLayouts(_layouts, allItems.current));
+            setToolbox(_toolbox);
+            if (layouts[baseBreakpoint].length === 0) {
+                //saveToLS("layouts", _saveLayouts ? _saveLayouts : _layouts, permission.auth.user);
+                saveToLS("layouts", _layouts, permission.auth.user);
+                saveToLS("toolbox", _toolbox, permission.auth.user);
+            }
+        }
+    };
 
-
-    /*     useEffect(() => {
-            const controller = new AbortController();
-            loadData({ aggId: props?.aggId, signal: controller.signal });
-            return (() => controller.abort());
-        }, [location]); */
+    const onPutItem = (item) => {
+        if (!item?.closable) {
+            return;
+        }
+        setToolbox(prev => ({
+            ...prev,
+            [baseBreakpoint]: [
+                ...prev[baseBreakpoint] || [],
+                item
+            ]
+        }));
+        setLayouts(prev => ({
+            ...prev,
+            ...prepareLayouts((prev[baseBreakpoint] || []).filter(({ i }) => i !== item.i), allItems.current)
+        }));
+    }
 
     const hideSettings = () => {
         setClickSettings(false);
@@ -708,129 +1057,22 @@ export default (props) => {
         }
         hideSettings();
     }
-
-    const onTakeItem = (item) => {
-        if (!layouts[currentBreakpoint].some(v => v.i == item.i)) {
-            const db = dashboards.find(v => v.id === currentDashboard);
-            let _layouts;
-            let _toolbox;
-            if (db.oneElement === true) {
-                _layouts = { ...layouts, [currentBreakpoint]: [item] };
-                _toolbox = { ...toolbox, [currentBreakpoint]: [...allItems[currentBreakpoint].filter(v => !v?.disabled && v.i !== item.i)] };
-            } else {
-                _layouts = { ...layouts, [currentBreakpoint]: [...layouts[currentBreakpoint] || [], item] };
-                _toolbox = { ...toolbox, [currentBreakpoint]: [...(toolbox[currentBreakpoint] || []).filter(({ i }) => i !== item.i)] };
-            }
-            setLayouts(_layouts);
-            setToolbox(_toolbox);
-            if (layouts[currentBreakpoint].length === 0) {
-                saveToLS("layouts", _layouts, permission.auth.user);
-                saveToLS("toolbox", _toolbox, permission.auth.user);
-            }
-        }
-    };
-
-    const onPutItem = (item) => {
-        if (!item?.closable) {
-            return;
-        }
-        setToolbox(prev => ({
-            ...prev,
-            [currentBreakpoint]: [
-                ...prev[currentBreakpoint] || [],
-                item
-            ]
-        }));
-        setLayouts(prev => ({
-            ...prev,
-            [currentBreakpoint]: [
-                ...(prev[currentBreakpoint] || []).filter(({ i }) => i !== item.i)
-            ]
-        }));
-    }
-
     const onPinItem = (item) => {
-
-        setLayouts(prev => ({
-            ...prev,
-            [currentBreakpoint]: [
-                ...(prev[currentBreakpoint] || []).filter(({ i }) => i !== item.i),
-                { ...item, static: !item.static }
-
-            ]
-        }));
-
-        console.log(item);
-    }
-
-    const changeCurrentDashboard = (key) => {
-        let _current = key;
-        if (!_current) {
-            if (getFromLS("currentDashboard", null, permission.auth.user) !== null) {
-                _current = getFromLS("currentDashboard", null, permission.auth.user);
-            } else {
-                _current = originalDashboards[0].id;
-                saveToLS("currentDashboard", _current, permission.auth.user);
-            }
-        } else {
-            saveToLS("currentDashboard", _current, permission.auth.user);
-        }
-        setCurrentDashboard(_current);
-    }
-
-    useEffect(() => {
-        if (dashboards) {
-            saveToLS("dashboards", dashboards, permission.auth.user);
-        }
-    }, [dashboards]);
-
-    useEffect(() => {
-        if (currentDashboard) {
-            let _breakpoint = (currentBreakpoint) ? currentBreakpoint : "lg"
-            let _layouts;
-            let _toolbox;
-            _layouts = getFromLS("layouts", currentDashboard, permission.auth.user);
-            _toolbox = getFromLS("toolbox", currentDashboard, permission.auth.user);
-            if (layouts === null || _toolbox === null) {
-                _layouts = { [_breakpoint]: (templates[_breakpoint][currentDashboard]) ? templates[_breakpoint][currentDashboard] : templates[_breakpoint]["default"] };
-                _toolbox = { [_breakpoint]: allItems[_breakpoint].filter(v => !v?.disabled && !_layouts[_breakpoint].some(x => x.i === v.i)) };
-            }
-            _layouts = (_layouts === null) ? { [_breakpoint]: [] } : _layouts;
-            const db = dashboards.find(v => v.id === currentDashboard);
-            setShowOfs(prev => ({ ...prev, ...db["ofs"] }));
-            setLayouts(_layouts);
-            setToolbox((_toolbox === null) ? { [_breakpoint]: allItems[_breakpoint].filter(v => !v?.disabled && !_layouts[_breakpoint].some(x => x.i === v.i)) } : _toolbox);
-        }
-    }, [currentDashboard]);
-
-
-    const onLayoutChange = async (layout, layouts) => {
-        layouts[currentBreakpoint].map(v => {
-            let itm;
-            if (templates[currentBreakpoint][currentDashboard]) {
-                itm = templates[currentBreakpoint][currentDashboard].find(x => x.i === v.i);
-            }
-            if (!itm) {
-                itm = allItems[currentBreakpoint].find(x => x.i === v.i);
-            }
-            if (itm) { v.closable = itm?.closable; }
-            return v;
+        const _layouts = (layouts[baseBreakpoint] || []).map(v => {
+            return (v.i === item.i ? { ...v, static: !v.static, fixed: !v.static } : v);
         });
-        saveToLS("layouts", layouts, permission.auth.user);
-        saveToLS("toolbox", toolbox, permission.auth.user);
-        setLayouts(layouts);
+        setLayouts(prepareLayouts(_layouts, allItems.current));
     }
 
     const resetLayout = (_currentDashboard) => {
         if (_currentDashboard) {
-            let _breakpoint = (currentBreakpoint) ? currentBreakpoint : "lg"
-            let _layouts = { [_breakpoint]: (templates[_breakpoint][_currentDashboard]) ? templates[_breakpoint][_currentDashboard] : templates[_breakpoint]["default"] };
-            let _toolbox = { [_breakpoint]: allItems[_breakpoint].filter(v => !v?.disabled && !_layouts[_breakpoint].some(x => x.i === v.i)) };
-            _layouts = (_layouts === null) ? { [_breakpoint]: [] } : _layouts;
+            let _layouts = { [baseBreakpoint]: templateSizes(currentBreakpoint, _currentDashboard) };
+            let _toolbox = { [baseBreakpoint]: allItems[baseBreakpoint].filter(v => !v?.disabled && !_layouts[baseBreakpoint].some(x => x.i === v.i)) };
+            _layouts = (_layouts === null) ? { [baseBreakpoint]: [] } : _layouts;
             const db = dashboards.find(v => v.id === _currentDashboard);
             setShowOfs(prev => ({ ...prev, ...db["ofs"] }));
-            setLayouts(_layouts);
-            setToolbox((_toolbox === null) ? { [_breakpoint]: allItems[_breakpoint].filter(v => !v?.disabled && !_layouts[_breakpoint].some(x => x.i === v.i)) } : _toolbox);
+            setLayouts(prepareLayouts(_layouts, allItems.current));
+            setToolbox((_toolbox === null) ? { [baseBreakpoint]: allItems[baseBreakpoint].filter(v => !v?.disabled && !_layouts[baseBreakpoint].some(x => x.i === v.i)) } : _toolbox);
         } else {
             saveToLS("clearall", null, permission.auth.user);
             loadData({ loadLayout: false });
@@ -843,6 +1085,7 @@ export default (props) => {
         const _toolbox = { ...toolbox };
         const oe = db?.oneElement === true ? false : true;
         const _dashboards = dashboards.map(v => v.id === currentDashboard ? { ...v, oneElement: oe } : v);
+        //TODO Review ????
         for (let k of Object.keys(_layouts)) {
             if (oe && _layouts[k].length > 1) {
                 _layouts[k] = [_layouts[k][0]];
@@ -850,76 +1093,10 @@ export default (props) => {
                 _toolbox[k] = allItems[cb].filter(v => !v?.disabled && !_layouts[k].some(x => x.i === v.i));
             }
         }
+        //TODO Review End ????
         setDashboards(_dashboards);
-        console.log("---", _dashboards)
-        setLayouts(_layouts);
+        setLayouts(prepareLayouts(_layouts, allItems.current));
         setToolbox(_toolbox);
-    }
-
-    const loadData = (data = {}, type = "init") => {
-        console.log("data loaded-gridlayout")
-        const { signal } = data;
-        const { aggId } = loadInit({}, {}, data, location?.state, [...Object.keys(location?.state || {}), ...Object.keys(data || {})]);
-        //let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
-        switch (type) {
-            default:
-                (async () => {
-                    let raw = await loadCurrentSettings(aggId, signal);
-                    if (raw.length == 0) {
-                        setCurrentSettings({});
-                    }
-                    setCurrentBreakpoint("lg");
-                    if (data?.loadLayout != false && !getFromLS("exists", null, permission.auth.user)) {
-                        try {
-                            let response = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: permission.auth.user }, parameters: {} });
-                            if (response.data.status !== "error" && response.data.rows.length > 0) {
-                                saveToLS("saveall", response.data.rows[0].layout, permission.auth.user);
-                            } else {
-                                let defaultt = await fetchPost({ url: `${API_URL}/loadlayout/`, filter: { user: "default" }, parameters: {} });
-                                if (defaultt.data.status !== "error" && defaultt.data.rows.length > 0) {
-                                    saveToLS("saveall", defaultt.data.rows[0].layout, permission.auth.user);
-                                }
-                            }
-                        } catch (e) { };
-                    }
-                    setDashboards(getFromLS("dashboards", null, permission.auth.user) || originalDashboards);
-                    setPreventCollisions(getFromLS("preventCollisions", null, permission.auth.user) || false);
-                    setOverlap(getFromLS("overlap", null, permission.auth.user) || false);
-                    changeCurrentDashboard();
-                    if (!raw[0]) { return; }
-                    const formulacao = JSON.parse(raw[0].formulacao);
-                    const gamaoperatoria = JSON.parse(raw[0].gamaoperatoria);
-                    const nonwovens = JSON.parse(raw[0].nonwovens);
-                    const artigospecs = JSON.parse(raw[0].artigospecs);
-                    const cortes = JSON.parse(raw[0].cortes);
-                    const cortesordem = JSON.parse(raw[0].cortesordem);
-                    const cores = JSON.parse(raw[0].cores);
-                    const emendas = JSON.parse(raw[0].emendas);
-                    const paletesstock = JSON.parse(raw[0].paletesstock);
-                    const ofs = JSON.parse(raw[0].ofs);
-                    const paletizacao = JSON.parse(raw[0].paletizacao);
-                    const lotes = raw[0]?.lotes ? JSON.parse(raw[0].lotes) : [];
-
-                    const quantity = ofs.reduce((basket, ofitem) => {
-                        basket["square_meters"] = (!basket?.square_meters) ? ofitem.qty_encomenda : basket.square_meters + ofitem.qty_encomenda;
-                        basket["linear_meters"] = (!basket?.linear_meters) ? ofitem.linear_meters : basket.linear_meters + ofitem.linear_meters;
-                        basket["n_paletes"] = (!basket?.n_paletes) ? ofitem.n_paletes_total : basket.n_paletes + ofitem.n_paletes_total;
-                        return basket;
-                    }, {});
-                    setCurrentSettings({
-                        id: raw[0].id, user_id: raw[0].user_id, status: raw[0].status, agg_of_id: raw[0].agg_of_id,
-                        was_in_production:raw[0].was_in_production,
-                        quantity,
-                        planificacao: {
-                            start_prev_date: dayjs(raw[0].start_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'),
-                            end_prev_date: dayjs(raw[0].end_prev_date, 'YYYY-MM-DD HH:mm').format('YYYY-MM-DD HH:mm'), horas_previstas_producao: raw[0].horas_previstas_producao
-                        },
-                        produto: { produto_id: raw[0].produto_id, produto_cod: raw[0].produto_cod, gsm: raw[0].gsm },
-                        sentido_enrolamento: raw[0].sentido_enrolamento, observacoes: raw[0].observacoes, formulacao, gamaoperatoria, paletesstock,
-                        nonwovens, artigospecs, cortes, cortesordem, cores, emendas, ofs, paletizacao, status: raw[0].status, lotes
-                    });
-                })();
-        }
     }
 
     const onShowDrawer = () => {
@@ -949,57 +1126,55 @@ export default (props) => {
                 >
                     <MainMenu dark />
                 </StyledDrawer>
-                <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[currentBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<ButtonSettings dashboards={dashboards} currentDashboard={currentDashboard} onClick={setRightDrawerVisible} />} items={(toolbox[currentBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
-                    {(toolbox[currentBreakpoint] || []).map(item => <ToolboxItem currentBreakpoint={currentBreakpoint} itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}
+                <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[baseBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<ButtonSettings dashboards={dashboards} currentDashboard={currentDashboard} onClick={setRightDrawerVisible} />} items={(toolbox[baseBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
+                    {(toolbox[baseBreakpoint] || []).map(item => <ToolboxItem allItems={allItems} currentBreakpoint={currentBreakpoint} itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}
                 </ScrollMenu>
-                <Suspense fallback={<></>}>
-                    <ResponsiveReactGridLayout
-                        className="layout"
-                        layouts={layouts}
-                        compactType="horizontal"
-                        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                        rowHeight={35}
-                        preventCollision={preventCollisions}
-                        allowOverlap={overlap}
-                        measureBeforeMount={false}
-                        onBreakpointChange={(v) => { setCbp(v); console.log("-", v === "lg", "------nnnnn------------cbp") }}
-                        //transformScale={0.8}
-                        onLayoutChange={onLayoutChange}
-                    >
-                        {layouts[currentBreakpoint].filter(v => !v?.disabled && !v.i.startsWith('agg-')).map(v => {
-                            return (
-                                <CustomGridItemComponent key={v.i}>
-                                    {v.i === "nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemNonwovens card={{ title: "Nonwovens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "formulacao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "bobinagens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "actions" && <><PinItem value={v} onClick={() => onPinItem(v)} color="#fff" background="#2a3142" pinnable={true} /><CloseItem closable={v?.closable} color="#fff" background="#2a3142" onClick={() => onPutItem(v)} /><ItemActions card={{ title: "Menu" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemReciclado card={{ title: "Reciclado Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemPickingNW card={{ title: "Nonwovens Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#granulado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoList card={{ title: "Granulado Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "ordemfabrico" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemOrdensFabrico card={{ title: "Ordens de Fabrico" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "linelog" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemLineLogList card={{ title: "Eventos da Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "eventosproducao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemEventosProducao card={{ title: "Eventos Produção" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "nav" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemNav card={{ title: "Estado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#local" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemMPLocal card={{ title: "Matérias Primas" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "mp#granuladoinline" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGranuladoInLine card={{ title: "Granulado em Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "operations" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemOperations card={{ title: "Ações" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "prod-reports#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemReportReciclado card={{ title: "Reciclado" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "fichaprocesso#specs" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><ItemSpecs card={{ title: "Especificações" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                    {v.i === "dataprod#estado" && <><PinItem color="#fff" background="#237804" value={v} onClick={() => onPinItem(v)} pinnable={true} /><CloseItem color="#fff" background="#237804" closable={v?.closable} onClick={() => onPutItem(v)} /><ItemEstadoProducao01 card={{ title: "Produção Atual" }} record={{ ...currentSettings }} parentReload={loadData} /></>}
-                                </CustomGridItemComponent>
-                            );
-                        })
-                        }
-                        {(Object.keys(currentSettings).length > 0 && showOfs.visible) && currentSettings.ofs.map((ofItem, idx) => {
-                            return (<div key={`agg-${ofItem.of_id}-${idx}`} data-grid={{ x: 0, y: 0, w: 2, h: 6, minW: 2, maxW: 3, minH: 5, static: showOfs.static }}><ItemAgg record={{ ...currentSettings }} ofItem={ofItem} parentReload={loadData} /></div>)
-                        })}
-                    </ResponsiveReactGridLayout>
-                </Suspense>
-            </>
-            }
+                <ResponsiveReactGridLayout
+                    className="layout"
+                    layouts={layouts}
+                    compactType="horizontal"
+                    breakpoints={breakpoints}
+                    cols={cols}
+                    rowHeight={35}
+                    preventCollision={preventCollisions}
+                    allowOverlap={overlap}
+                    measureBeforeMount={false}
+                    //onBreakpointChange={(v) => { setCbp(v); console.log("-", v === "lg", "------nnnnn------------cbp") }}
+                    //transformScale={0.8}
+                    onLayoutChange={onLayoutChange}
+                >
+                    {layouts[baseBreakpoint].filter(v => !v?.disabled && !v.i.startsWith('agg-')).map(v => {
+                        return (
+                            <CustomGridItemComponent key={v.i}>
+                                {v.i === "nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemNonwovens card={{ title: "Nonwovens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "formulacao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "stockavailable" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemStockAvailable card={{ title: "Stock Disponível" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "bobinagens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "actions" && <><PinItem value={v} onClick={() => onPinItem(v)} color="#fff" background="#2a3142" pinnable={v.pin} /><CloseItem closable={v?.closable} color="#fff" background="#2a3142" onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemActions card={{ title: "Menu" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "mp#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemReciclado card={{ title: "Reciclado Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "mp#nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemPickingNW card={{ title: "Nonwovens Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "mp#granulado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemGranuladoList card={{ title: "Granulado Movimentos - Lotes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "ordemfabrico" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemOrdensFabrico card={{ title: "Ordens de Fabrico" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "linelog" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemLineLogList card={{ title: "Eventos da Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "eventosproducao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemEventosProducao card={{ title: "Eventos Produção" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "nav" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemNav card={{ title: "Estado" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "mp#local" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemMPLocal card={{ title: "Matérias Primas" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "mp#granuladoinline" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemGranuladoInLine card={{ title: "Granulado em Linha" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "operations" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemOperations card={{ title: "Ações" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "prod-reports#reciclado" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemReportReciclado card={{ title: "Reciclado" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "fichaprocesso#specs" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemSpecs card={{ title: "Especificações" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "dataprod#estado" && <><PinItem color="#fff" background="#237804" value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem color="#fff" background="#237804" closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemEstadoProducao01 card={{ title: "Produção Atual" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                            </CustomGridItemComponent>
+                        );
+                    })
+                    }
+                    {(Object.keys(currentSettings).length > 0 && showOfs.visible) && currentSettings.ofs.map((ofItem, idx) => {
+                        return (<div key={`agg-${ofItem.of_id}-${idx}`} data-grid={{ x: 0, y: 0, w: 2, h: 6, minW: 2, maxW: 3, minH: 5, static: showOfs.static }}><Suspense fallback={<></>}><ItemAgg record={{ ...currentSettings }} ofItem={ofItem} parentReload={loadData} /></Suspense></div>)
+                    })}
+                </ResponsiveReactGridLayout>
+            </>}
         </div >
     );
 }

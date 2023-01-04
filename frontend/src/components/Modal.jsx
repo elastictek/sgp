@@ -13,11 +13,11 @@ const TitleModal = ({ title, eTitle }) => {
         if (title) {
             return title;
         }
-        return (eTitle === null || eTitle.title === '') ? null : eTitle.title;
+        return (eTitle === null || eTitle.title === '') ? '' : eTitle.title;
     }
 
     return (
-        <div><b style={{ textTransform: "capitalize" }}></b>{getTitle()}</div>
+        <div><b style={{ textTransform: "capitalize" }}>{getTitle()}</b></div>
     );
 }
 
@@ -103,6 +103,7 @@ export default ({ type = "modal", responsive = true, width = 800, height = 300, 
                     cancelText="Cancelar"
                     width={size.width}
                     onClose={onCancel}
+                    push={true}
                     {...(footer && { footer: footerButtons() })}
                     //bodyStyle={{ height: size.height }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}

@@ -52,6 +52,7 @@ const DevolucoesList = lazy(() => import('./devolucoes/DevolucoesList'));
 const GranuladoBufferLineList = lazy(() => import('./artigos/GranuladoBufferLineList'));
 const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
 const FormEtapasCortes = lazy(() => import('./currentline/FormEtapasCortes'));
+const PaletesList = lazy(() => import('./paletes/PaletesList'));
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -149,6 +150,8 @@ const RenderRouter = () => {
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },
+
+                { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

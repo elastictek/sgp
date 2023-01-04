@@ -248,6 +248,16 @@ class RealTimeOfs(WebsocketConsumer):
 
 class RealTimeGeneric(WebsocketConsumer):
 
+    def checkStockAvailable(self, data):
+        connection = connections["default"].cursor()
+        rows = dbgw.executeSimpleList(lambda:(f"""		
+            SELECT id
+            FROM produto_stock_disponivel
+            order by t_stamp_edit desc
+        """),connection,{})['rows']
+        hsh = json.dumps(rows,default=str)
+        self.send(text_data=json.dumps({"rows":rows,"item":"stockavailable","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
+
     def checkReciclado(self, data):
         print("GETTING RECICLADO")
         connection = connections["default"].cursor()
@@ -331,6 +341,7 @@ class RealTimeGeneric(WebsocketConsumer):
     commands = {
         'checkreciclado':checkReciclado,
         'checkgranulado':checkGranulado,
+        'checkstockavailable':checkStockAvailable,
         'checknw':checkNW,
         'checkcores':checkCores,
         'checklineevents':checkLineEvents,

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
+import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
 import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -26,15 +27,20 @@ import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField,Selector } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission } from "utils/usePermission";
 import { Status } from './commons';
+import { TbCircles } from "react-icons/tb";
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { MovGranuladoColumn } from "../picking/commons";
+import { Bobines } from '../bobinagens/commons';
+import BobinesListA1 from '../bobines/BobinesListA1';
+import Palete from './Palete';
+import { MediaContext } from "../App";
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -57,7 +63,7 @@ const schemaIn = (options = {}) => {
         t_stamp: Joi.any().label("Data de Entrada").required()
     }, options).unknown(true);
 }
-const title = "Ganulado Movimentos";
+const title = "Paletes";
 const TitleForm = ({ data, onChange, record, level, form }) => {
     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
@@ -310,7 +316,7 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
                     artigo_des: movimento.ITMDES1_0,
                     artigo_cod: movimento.ITMREF_0,
                     type_mov: 1,
-                    group_id:values?.cuba?.key,
+                    group_id: values?.cuba?.key,
                     t_stamp: moment(values.t_stamp).format(DATETIME_FORMAT),
                     ...(saidaMP === 1) && { t_stamp_out: moment(values.t_stamp_out).format(DATETIME_FORMAT) },
                     n_lote: movimento.LOT_0,
@@ -604,7 +610,33 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
+const Largura = ({ id, artigos, nome, onClick }) => {
+    return (<>
+        {[...new Set(artigos.map(item => item.lar))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick("lar", id, nome, { lar: v })} key={`${id}_${v}`}>{v}</Tag>)}
+    </>);
+}
+
+const Core = ({ id, artigos, nome, onClick }) => {
+    return (<>
+        {[...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
+    </>);
+}
+
+const EstadoBobines = ({ id, artigos, nome, onClick }) => {
+    return (<>
+        <Bobines id={id} onClick={(v) => onClick("estado", id, nome, v)} b={uniqWith(allPass(map(eqProps)(['lar', 'estado'])))(artigos).map(v => ({ estado: v.estado, lar: v.lar }))} />
+    </>);
+}
+
+const OF = ({ id, ofid, of_des }) => {
+    return (
+        <>{ofid ? <Tag style={{ fontWeight: 600 }}>{ofid}</Tag> : of_des}</>
+    );
+}
+
+
 export default ({ setFormTitle, ...props }) => {
+    const media = useContext(MediaContext);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -616,24 +648,22 @@ export default ({ setFormTitle, ...props }) => {
     const classes = useStyles();
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
-    const defaultSort = [{ column: "t_stamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ id: "lst-granuladolist", payload: { url: `${API_URL}/granuladolist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const defaultParameters = { method: "PaletesList" };
+    const defaultSort = [{ column: "timestamp", direction: "DESC" }];
+    const dataAPI = useDataAPI({ id: "lst-paletes", payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
-            switch (modalParameters.type) {
-                case "in": return <InContent loadParentData={modalParameters.loadData} />;
-                case "out": return <OutContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
-                case "close": return <CloseContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
-                case "closedate": return <CloseDateContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
+            switch (modalParameters.content) {
+                case "bobineslist": return <Palete tab="bobineslist" loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
         return (
-            <ResponsiveModal title={modalParameters.title} onCancel={hideModal} width={modalParameters.width ? modalParameters.width : 600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
+            <ResponsiveModal type={modalParameters?.type} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -692,23 +722,50 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const columns = [
+        { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
+        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickBobinesList("all", p.row.id, p.row.nome)} /> },
+        { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+        { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
+        { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
+        { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
+        { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
+        { key: 'area_real', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
+        { key: 'comp_real', name: 'Comp.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
+        { key: 'peso_bruto', name: 'Peso B.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
+        { key: 'peso_liquido', name: 'Peso .L', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
+        { key: 'diam_min', name: 'Diam. Min.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
+        { key: 'diam_max', name: 'Diam. Máx.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
+        { key: 'diam_avg', name: 'Diam. Médio.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
+        { key: 'destino', name: 'Destino', width: 200, formatter: p => p.row.destino },
+        { key: 'cliente_nome', name: 'Cliente', width: 200, formatter: p => p.row.cliente_nome },
+        { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid} of_des={p.row.ordem_original} /> },
+        { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
+        { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
+        { key: 'stock_qtypcu', name: 'Qtd. Stock', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
+        { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
+        { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
+        { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
+        { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
+        { key: 'mes', name: 'Mês', width: 60, formatter: p => p.row.mes },
+        { key: 'ano', name: 'Ano', width: 60, formatter: p => p.row.ano },
+
         //{ key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
-        { key: 'type_mov', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'type_mov'), formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
-        { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
-        { key: 'dosers', width: 90, name: 'Doseadores', frozen: true, formatter: p => p.row.dosers },
-        { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
-        { key: 't_stamp', width: 140, name: 'Data Mov.', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
-        { key: 'n_lote', width: 310, name: 'Lote', editable: (r) => editable(r, 'n_lote'), cellClass: r => editableClass(r, 'n_lote'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onLoteChange(p, v)} fetchOptions={(v) => loadMovimentosLookup(p, v)} optionsRender={optionsRender} p={p} field="n_lote" />, editorOptions: { editOnClick: true }, formatter: p => <b>{p.row.n_lote}</b> },
-        { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, editable: (r) => editable(r, 'qty_lote'), cellClass: r => editableClass(r, 'qty_lote'), editor: p => <InputNumberEditor onChange={onQtyLoteChange} p={p} field="qty_lote" min={0} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div> },
-        { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor onChange={onQtyReminderChange} p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
-        { key: "in_t", width: 140, name: 'Data Entrada', formatter: p => moment(p.row.in_t).format(DATETIME_FORMAT) },
-        { key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && moment(p.row.out_t).format(DATETIME_FORMAT) },
-        { key: "diff", width: 140, name: 'Duração', cellClass: r => formatterClass(r, 'diff'), formatter: p => p.row.diff !== 0 && secondstoDay(p.row.diff) },
-        { key: "avgdiff", width: 140, name: 'Duração Média', formatter: p => secondstoDay(p.row.avgdiff) },
-        { key: "stddiff", width: 140, name: 'Desvio Padrão', formatter: p => secondstoDay(p.row.stddiff) },
-        { key: 'vcr_num', name: 'Movimento', width: 200, formatter: p => p.row.vcr_num },
-        { key: 'ofs', width: 280, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
+        // { key: 'type_mov', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'type_mov'), formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
+        // { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
+        // { key: 'dosers', width: 90, name: 'Doseadores', frozen: true, formatter: p => p.row.dosers },
+        // { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
+        // { key: 't_stamp', width: 140, name: 'Data Mov.', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        // { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
+        // { key: 'n_lote', width: 310, name: 'Lote', editable: (r) => editable(r, 'n_lote'), cellClass: r => editableClass(r, 'n_lote'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onLoteChange(p, v)} fetchOptions={(v) => loadMovimentosLookup(p, v)} optionsRender={optionsRender} p={p} field="n_lote" />, editorOptions: { editOnClick: true }, formatter: p => <b>{p.row.n_lote}</b> },
+        // { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, editable: (r) => editable(r, 'qty_lote'), cellClass: r => editableClass(r, 'qty_lote'), editor: p => <InputNumberEditor onChange={onQtyLoteChange} p={p} field="qty_lote" min={0} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div> },
+        // { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor onChange={onQtyReminderChange} p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
+        // { key: "in_t", width: 140, name: 'Data Entrada', formatter: p => moment(p.row.in_t).format(DATETIME_FORMAT) },
+        // { key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && moment(p.row.out_t).format(DATETIME_FORMAT) },
+        // { key: "diff", width: 140, name: 'Duração', cellClass: r => formatterClass(r, 'diff'), formatter: p => p.row.diff !== 0 && secondstoDay(p.row.diff) },
+        // { key: "avgdiff", width: 140, name: 'Duração Média', formatter: p => secondstoDay(p.row.avgdiff) },
+        // { key: "stddiff", width: 140, name: 'Desvio Padrão', formatter: p => secondstoDay(p.row.stddiff) },
+        // { key: 'vcr_num', name: 'Movimento', width: 200, formatter: p => p.row.vcr_num },
+        // { key: 'ofs', width: 280, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> }
     ];
 
     useEffect(() => {
@@ -720,11 +777,11 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata', 'fdatain', 'fdataout'], initFilters);
+            let { filterValues, fieldValues } = fixRangeDates([], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
             dataAPI.setSort(defaultSort);
-            dataAPI.addParameters({}, true, true);
+            dataAPI.addParameters(defaultParameters, true, true);
             dataAPI.fetchPost({ signal });
             setAllowEdit({ datagrid: permission.allow() });
             setModeEdit({ datagrid: false });
@@ -838,6 +895,13 @@ export default ({ setFormTitle, ...props }) => {
         setModalParameters({ height: 220, width: 450, type: "closedate", title: "Fechar Movimentos por data de saída", loadData: () => dataAPI.fetchPost() });
         showModal();
     }
+
+    const onClickBobinesList = (type, id, nome, values) => {
+        setModalParameters({ content: "bobineslist", type: "drawer", width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete_id: id, nome, ...values } });
+        showModal();
+    }
+
+
 
     return (
         <>

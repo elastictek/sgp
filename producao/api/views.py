@@ -4775,7 +4775,11 @@ def ValidarBobinesList(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({})
     f.where()
-    f.add("bobinagem_id = :bobinagem_id",True)
+    f.add("bobinagem_id = :bobinagem_id",lambda v:(v!=None))
+    f.add("palete_id = :palete_id",lambda v:(v!=None))
+    f.add("lar = :lar",lambda v:(v!=None))
+    f.add("estado = :estado",lambda v:(v!=None))
+    f.add("core = :core",lambda v:(v!=None))
     f.value()
     
     parameters = {**f.parameters}

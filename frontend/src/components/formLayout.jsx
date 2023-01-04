@@ -51,6 +51,9 @@ export const WrapperForm = props => {
     // // setWidth({ width: 100, unit: "%", maxWidth: 100, maxUnit: "%", device: "mobile", orientation });
     // console.log("drawer-----",ctx);
     const { type = 'modal', visible = false, setVisible, children, title, mode = "normal", width, height = '70vh', ...rest } = props;
+    
+    
+
     const [widthMode, setWidthMode] = useState();
 
     useEffect(() => {

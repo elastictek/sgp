@@ -135,7 +135,7 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
 
 const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content }) => {
     return (
-        <Form form={form} name={`f-ltf`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange} onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
+        <Form form={form} name={`f-ltf`} onFinish={(values) => {onFinish("filter", values);}}  onValuesChange={onValuesChange} onKeyDown={(e) => {e.stopPropagation(); if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
 
             <FormContainer id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true} fluid>
                 <Row style={{ justifyContent: "end" }} gutterWidth={2}>
@@ -147,14 +147,14 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     )
 }
 
-const CheckboxFormatter = forwardRef(
-    function CheckboxFormatter({ disabled, onChange, ...props }, ref) {
+//const CheckboxFormatter = forwardRef(
+    function checkboxFormatter({ disabled, onChange, ...props }, ref) {
         function handleChange(e) {
             onChange(e.target.checked, (e.nativeEvent).shiftKey);
         }
         return <Checkbox ref={ref} {...props} onChange={handleChange} />;
     }
-);
+//);
 
 export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
@@ -354,7 +354,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
                 rowKeyGetter={(primaryKeys && primaryKeys.length > 0) && rowKeyGetter}
                 onRowsChange={dataAPI.setRows}
                 //onPaste={handlePaste}
-                renderers={{ rowRenderer: GridRow, checkboxFormatter: CheckboxFormatter, noRowsFallback: <Empty style={{ gridColumn: '1/-1' }} image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span>Sem dados</span>} /> }}
+                renderers={{ rowRenderer: GridRow, checkboxFormatter: checkboxFormatter, noRowsFallback: <Empty style={{ gridColumn: '1/-1' }} image={Empty.PRESENTED_IMAGE_SIMPLE} description={<span>Sem dados</span>} /> }}
                 {...props}
             />
             <Container fluid style={{ background: "#f8f9fa", padding: "0px" }}>

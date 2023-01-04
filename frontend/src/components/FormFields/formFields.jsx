@@ -3,18 +3,18 @@ import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplet
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
-import { ConditionalWrapper } from './conditionalWrapper';
-import Portal from "./portal";
-import YScroll from "./YScroll";
-import PointingAlert from "./pointingAlert";
+import { ConditionalWrapper } from '../conditionalWrapper';
+import Portal from "../portal";
+import YScroll from "../YScroll";
+import PointingAlert from "../pointingAlert";
 import { debounce } from "utils";
 import { validate } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
 import { AiOutlineFullscreen } from "react-icons/ai";
-import RangeDate from "./RangeDate";
-import RangeTime from "./RangeTime";
+import RangeDate from "../RangeDate";
+import RangeTime from "../RangeTime";
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 import { Container as MainContainer } from 'react-grid-system';
 
@@ -168,14 +168,14 @@ font-weight: 500;
 font-size: 10px;
 `;
 
-export const HorizontalRule = ({ marginTop="15px", marginBottom="5px", padding="2px", title, description, ...props }) => {
+export const HorizontalRule = ({ marginTop = "15px", marginBottom = "5px", padding = "2px", title, description, ...props }) => {
     //const parentProps = useContext(ParentContext);
     //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
     /* const classes = useFieldStyles(myProps); */
     //const { refMainAlertContainer } = parentProps;
     return (
         <>
-            {title && <StyledHRuleTitle style={{padding,marginTop}}><div className="title">{title}</div><div className="description">{description}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{marginBottom}}/>
+            {title && <StyledHRuleTitle style={{ padding, marginTop }}><div className="title">{title}</div><div className="description">{description}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
         </>
     );
 }
@@ -797,6 +797,11 @@ export const validateForm = (rules, messages) => {
 const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
+    
+    const getChildren = () =>{
+        return React.cloneElement(children, { ...children.props, name: nameId ? nameId : name });
+    }
+    
     const validator = async (r, v) => {
         const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema({ keys: [name[name.length - 1], ...includeKeyRules], wrapArray: false }) : schema({ keys: [name, ...includeKeyRules], wrapArray: false }));
         (async () => {
@@ -813,10 +818,10 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
             <ConditionalWrapper
                 condition={wrapFormItem}
                 wrapper={children => <Form.Item className={classes.noStyle} rules={[{ validator: validator }]} validateTrigger={["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
-                    {children}
+                    {getChildren()}
                 </Form.Item>}
             >
-                {children}
+                 {getChildren()}
             </ConditionalWrapper>
         </>
     );
@@ -923,7 +928,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                     {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
                                 </div>)
                             }
-                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", minHeight: height(), alignItems: "center", justifyContent:"end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ padding: "2px", ...forViewBorder && { border: "dashed 1px #d9d9d9" }, display: "flex", minHeight: height(), alignItems: "center", justifyContent: "end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         default:
 
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {

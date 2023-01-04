@@ -513,7 +513,7 @@ def UpdateNW(request, format=None):
                         else:
                             dml = db.dml(TypeDml.UPDATE,{"qty_out":v["qty_out"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
                             db.execute(dml.statement, cursor, dml.parameters)
-                    success.append(f"""Bobinagem {v["nome"]} atualizada com sucesso!""")
+                    success.append(f"""Registos atualizados com sucesso!""")
         return Response({"status": "multi", "errors":errors, "success":success})
     except Error as error:
         return Response({"status": "error", "title": str(error)})
@@ -1075,13 +1075,14 @@ def UpdateGranulado(request, format=None):
                     #     return Response({"status": "error", "title": "Não é possível dar saída do lote! O lote já deu saída."})                    
                 if ("type" in data and data["type"]=="in"):
                     try:
-                        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],request.user.id,0)
+                        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter else None,request.user.id,0)
                         print("ADDDDDDDDDDDDDDD")
                         print(args)
-                        cursor.callproc('add_granulado_to_line',args)
+                        print(filter)
+                        #cursor.callproc('add_granulado_to_line',args)
                         if (filter["saida_mp"]==1):
                             args = (filter["t_stamp_out"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0, 0)
-                            cursor.callproc('output_granulado_from_line',args) 
+                            #cursor.callproc('output_granulado_from_line',args) 
                     except Exception as error:
                         return Response({"status": "error", "title": str(error)})
                     

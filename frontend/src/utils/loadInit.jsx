@@ -3,7 +3,6 @@ import moment from 'moment';
 
 export default (init, store = {}, props = {}, state = {}, fields) => {
     let df = { ...init };
-    console.log(state, store)
     for (let v of fields) {
         if (store?.tstamp && state?.tstamp) {
             if (store.tstamp > state.tstamp) {

@@ -14,12 +14,12 @@ const getLocalStorage = (id, useStorage) => {
 export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     const [isLoading, setIsLoading] = useState(false);
     const [dataState, setDataState] = useState({
-        pagination: payload?.pagination,
-        filter: payload?.filter,
-        sort: payload?.sort,
-        parameters: payload?.parameters,
+        pagination: payload?.pagination || { enabled: false, pageSize: 10 },
+        filter: payload?.filter || {},
+        sort: payload?.sort || [],
+        parameters: payload?.parameters || {},
         data: (payload?.data) ? payload.data : {},
-        url: payload.url,
+        url: payload?.url,
         ...getLocalStorage(id, useStorage)
     });
 
@@ -187,9 +187,7 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
     }
 
     const getPagination = (fromState = false) => {
-
         if (fromState) {
-            //console.log("return true pagination--------->",dataState.pagination)
             return { ...dataState.pagination };
         } else {
             return { ..._pagination };
@@ -305,32 +303,32 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
         return { ...dataState.data };
     }
 
-    const _fetchPost = ({ url, token, signal, rowFn, fromSate=false } = {}) => {
+    const _fetchPost = ({ url, token, signal, rowFn, fromSate = false } = {}) => {
         let _url = (url) ? url : dataState.url;
         const payload = { ...getPayload(fromSate), tstamp: Date.now() };
         setIsLoading(true);
         return (async () => {
-            let ok=true;
+            let ok = true;
             if (id && useStorage) {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
             try {
-                const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? {signal} : {cancelToken: token}) })).data;
-                if (rowFn){
+                const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? { signal } : { cancelToken: token }) })).data;
+                if (rowFn) {
                     setData(await rowFn(dt), payload);
-                }else{
+                } else {
                     setData(dt, payload);
                 }
             } catch (e) {
                 Modal.error({ content: e.message });
-                ok=false;
+                ok = false;
             }
             setIsLoading(false);
             return ok;
         })();
     }
 
-    const getPostRequest = ({ url }={}) => {
+    const getPostRequest = ({ url } = {}) => {
         return { url: (url) ? url : dataState.url, ...getPayload() };
     }
 

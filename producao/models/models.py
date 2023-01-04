@@ -665,6 +665,15 @@ class Palete(models.Model):
     add = models.BooleanField(default=False, verbose_name="Adicionar Palete")
     ordem_original_stock = models.BooleanField(default=False, verbose_name="Ordem original Stock")
     ordem_id_original = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ordem ID Original") #ADDED
+    ignore_audit = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ignore Audit") #ADDED
+    nbobines_real = models.IntegerField(verbose_name="Bobines total", null=True) #ADDED
+    area_real = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Área palete") #ADDED
+    comp_real = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Comprimento palete") #ADDED
+    diam_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Diametro Minimo palete") #ADDED
+    diam_max = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Diametro Maximo palete") #ADDED
+    diam_avg = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Diametro AVG palete") #ADDED
+    disabled = models.BooleanField(default=False, verbose_name="Indica se a Palete existe!") #ADDED
+    artigo = models.JSONField(blank=True, null=True) #ADDED
     def __str__(self):
         return self.nome
 

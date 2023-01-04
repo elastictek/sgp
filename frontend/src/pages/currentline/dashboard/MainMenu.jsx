@@ -110,6 +110,7 @@ export default ({ dark = false }) => {
             <Panel header={<b>Linha de Produção</b>} key="3">
                 <Button size='small' type="link" onClick={() => navigate('/app/bobinagens/reellings', {})}>Bobinagens</Button>
                 <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/paletelist/`, 'Paletes')}>Paletes</Button>
+                <Button size='small' type="link" onClick={() => navigate('/app/paletes/paleteslist', {})}>Paletes</Button>
                 <Button size='small' type="link" onClick={() => navigate('/app/logslist/lineloglist', {})}>Eventos da Linha</Button>
             </Panel>
             <Panel header={<b>Retrabalho</b>} key="4">
