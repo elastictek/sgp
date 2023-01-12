@@ -15,7 +15,7 @@ import { useDataAPI } from "utils/useDataAPI";
 import YScroll from "components/YScroll";
 import { Button, Select, Typography, Card, Collapse, Space, Form } from "antd";
 const { Option } = Select;
-import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, UnorderedListOutlined , CheckOutlined,SyncOutlined, MoreOutlined,FilePdfTwoTone,EllipsisOutlined   } from '@ant-design/icons';
+import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, UnorderedListOutlined, CheckOutlined, SyncOutlined, MoreOutlined, FilePdfTwoTone, EllipsisOutlined } from '@ant-design/icons';
 import { BiWindowOpen } from 'react-icons/bi';
 import ResponsiveModal from 'components/Modal';
 import Reports, { downloadReport } from "components/DownloadReports";
@@ -45,7 +45,7 @@ const SelectOrdensFabrico = ({ onView, onChangeContent, dataAPI }) => {
     const navigate = useNavigate();
     return (
         <Space>
-            <Button type="link" onClick={(e) => { e.stopPropagation(); navigate("/app", { state: { tstamp: Date.now() } , replace:true }); }} disabled={dataAPI.isLoading()}>A decorrer...</Button>
+            <Button type="link" onClick={(e) => { e.stopPropagation(); navigate("/app", { state: { tstamp: Date.now() }, replace: true }); }} disabled={dataAPI.isLoading()}>A decorrer...</Button>
             {/* <Select defaultValue={noValue(dataAPI.getFilter(true)?.valid, "0")} style={{ width: 90 }} onChange={(v) => onChangeContent(v, "valid")} dropdownMatchSelectWidth={false} disabled={dataAPI.isLoading()}>
                 <Option value="0">Por validar</Option>
                 <Option value="1">Validadas</Option>
@@ -65,8 +65,8 @@ const SelectOrdensFabrico = ({ onView, onChangeContent, dataAPI }) => {
 const ColumnEstado = ({ p, setShow }) => {
     const { status, temp_ofabrico } = p.row;
 
-    const onClick = (forInput=false) =>{
-        setShow(prev => ({ ...prev, show: !prev.show, record:p.row, forInput }));
+    const onClick = (forInput = false) => {
+        setShow(prev => ({ ...prev, show: !prev.show, record: p.row, forInput }));
     }
 
     return (
@@ -75,16 +75,16 @@ const ColumnEstado = ({ p, setShow }) => {
                 <TagButton style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
             </>}
             {((status == 1 || !status) && temp_ofabrico) && <>
-                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning" onClick={()=>onClick(true)}>Em Elaboração</TagButton>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning" onClick={() => onClick(true)}>Em Elaboração</TagButton>
             </>}
             {(status == 2 && temp_ofabrico) && <>
-                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange" onClick={()=>onClick()}>Na Produção</TagButton>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange" onClick={() => onClick()}>Na Produção</TagButton>
             </>}
             {status == 3 && <>
-                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success" onClick={()=>onClick()}>Em Produção</TagButton>
+                <TagButton style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success" onClick={() => onClick()}>Em Produção</TagButton>
             </>}
             {status == 9 && <>
-                <TagButton style={{ width: "110px", textAlign: "center" }} color="error" onClick={()=>onClick()}>Finalizada</TagButton>
+                <TagButton style={{ width: "110px", textAlign: "center" }} color="error" onClick={() => onClick()}>Finalizada</TagButton>
             </>}
         </div>
     );
@@ -105,10 +105,10 @@ const Action = ({ r, dataAPI }) => {
             ...data,
             "conn-name": "MYSQL-SGP",
             "data": {
-                agg_of_id:r.temp_ofabrico_agg
+                agg_of_id: r.temp_ofabrico_agg
             }
         };
-        console.log("$#$#$#$#row-",dataexport)
+        console.log("$#$#$#$#row-", dataexport)
 
         downloadReport({ dataAPI, url: `${API_URL}/exportfile/`, type, dataexport, limit, orientation, isDirty });
     }
@@ -130,19 +130,19 @@ export default ({ record, card, parentReload }) => {
     const classes = useStyles();
     const [show, setShow] = useState({ show: false });
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 120 }, filter: {fofstatus:'IN(2,3)'}, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
+    const dataAPI = useDataAPI({ id: "dashb-ofabricolist", payload: { url: `${API_URL}/ofabricolist/`, parameters: {}, pagination: { enabled: false, limit: 120 }, filter: { fofstatus: 'IN(2,3)' }, sort: [{ column: 'ofabrico', direction: 'DESC' }] } });
     const primaryKeys = ['ofabrico', 'item', 'iorder'];
     const columns = [
-        { key: 'options', frozen:true,name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Action r={p.row} dataAPI={dataAPI} /> },
-        { key: 'ofabrico',width:120, frozen:true, name: 'Ordem Fabrico', formatter: p => <Button type="link" size="small" onClick={() => onOfClick(p.row)}>{p.row.ofabrico}</Button> },
-        { key: 'prf', frozen:true, width:120, name: 'Prf' },
-        { key: 'iorder',width:120, name: 'Encomenda' },
-        { key: 'cod',width:120, name: 'Agg' },
-        { key: 'estado',width:140, name: 'Estado', formatter: p => <ColumnEstado p={p} setShow={setShow}/> },
+        { key: 'options', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Action r={p.row} dataAPI={dataAPI} /> },
+        { key: 'ofabrico', width: 120, frozen: true, name: 'Ordem Fabrico', formatter: p => <Button type="link" size="small" onClick={() => onOfClick(p.row)}>{p.row.ofabrico}</Button> },
+        { key: 'prf', frozen: true, width: 120, name: 'Prf' },
+        { key: 'iorder', width: 120, name: 'Encomenda' },
+        { key: 'cod', width: 120, name: 'Agg' },
+        { key: 'estado', sortable: false, width: 140, name: 'Estado', formatter: p => <ColumnEstado p={p} setShow={setShow} /> },
         { key: 'item_nome', name: 'Artigo' },
         { key: 'cliente_nome', name: 'Cliente' },
-        { key: 'start_date',width:100, name: 'Início Previsto' },
-        { key: 'end_date',width:100, name: 'Fim Previsto' }
+        { key: 'start_date', width: 100, name: 'Início Previsto' },
+        { key: 'end_date', width: 100, name: 'Fim Previsto' }
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
@@ -155,8 +155,8 @@ export default ({ record, card, parentReload }) => {
         //if (row?.valid === 1) {
         //    window.location.href = `/producao/bobinagem/${row.id}/`;
         //} else {
-            console.log(row)
-            navigate("/app", { state: { aggId:row.temp_ofabrico_agg, tstamp: Date.now() } , replace:true });
+        console.log(row)
+        navigate("/app", { state: { aggId: row.temp_ofabrico_agg, tstamp: Date.now() }, replace: true });
         //}
     }
     const onFilterFinish = (type, values) => { console.log("vvvv", values) };
@@ -171,13 +171,13 @@ export default ({ record, card, parentReload }) => {
         dataAPI.fetchPost();
     }
 
-/*     useEffect(()=>{
-        console.log("entrei ofsssssssssssssssssssssssssss")
-    },[record]) */
+    /*     useEffect(()=>{
+            console.log("entrei ofsssssssssssssssssssssssssss")
+        },[record]) */
 
     return (
         <>
-            <Suspense fallback={<></>}><Drawer showWrapper={show} setShowWrapper={setShow} parentReload={dataAPI.fetchPost}><FormOFabricoValidar forInput={show.forInput}/></Drawer></Suspense>
+            <Suspense fallback={<></>}><Drawer showWrapper={show} setShowWrapper={setShow} parentReload={dataAPI.fetchPost}><FormOFabricoValidar forInput={show.forInput} /></Drawer></Suspense>
             <Card
                 hoverable
                 headStyle={{ padding: "0px 32px 0px 12px" }}

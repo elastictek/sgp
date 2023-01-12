@@ -35,7 +35,7 @@ const Filters = ({ filters }) => {
     </>)
 }
 
-const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, closeSelf, toolbar=true }) => {
+const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, closeSelf, toolbar = true,rowHeight=24 }) => {
     const [visible, setVisible] = useState({ drawer: { open: false } });
     const dataAPI = useDataAPI(params);
     const submitting = useSubmitting(true);
@@ -50,7 +50,7 @@ const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, clos
         return (() => controller.abort());
     }, []);
     const loadData = ({ init = false, signal }) => {
-        if (init) {            
+        if (init) {
             if (!params?.payload?.data) {
                 //const { ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, {}, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
                 //let { filterValues, fieldValues } = fixRangeDates([], initFilters);
@@ -101,6 +101,7 @@ const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, clos
             headerStyle={`background-color:#f0f0f0;font-size:10px;`}
             loadOnInit={false}
             columns={columns}
+            rowHeight={rowHeight}
             dataAPI={dataAPI}
             toolbar={toolbar}
             search={true}
@@ -124,7 +125,17 @@ const StyledSearch = styled(Search)`
     }
 `;
 
-export default React.forwardRef(({ data, type="modal", keyField, /* valueField, */ textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params,toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, ...rest }, ref) => {
+const ForView = ({ forViewBorder, minHeight, forViewBackground, style, onDoubleClick, value }) => {
+
+
+    return (
+        <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight, whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>
+    );
+
+}
+
+export default React.forwardRef(({ data, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, ...rest }, ref) => {
+    const [internalValue, setInternalValue] = useState();
     const [modalParameters, setModalParameters] = useState({});
     const ctx = useContext(Context);
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -138,6 +149,30 @@ export default React.forwardRef(({ data, type="modal", keyField, /* valueField, 
         );
     }, [modalParameters]);
 
+
+
+
+    useEffect(() => {
+        let _value = null;
+        if (typeof value === "object") {
+            _value = value;
+        } else if (Array.isArray(params?.payload?.data?.rows)) {
+            _value = params.payload.data.rows.find(v => {
+                if (Array.isArray(keyField) && v[keyField[0]] === value) {
+                    return v;
+                } else {
+                    if (v[keyField] === value) {
+                        return v;
+                    }
+                }
+
+            })
+        }
+
+        setInternalValue(_value);
+    }, [value]);
+
+
     const onSelectRow = (row) => {
         if ("name" in rest) {
             ctx.updateFieldStatus(rest.name, {});
@@ -149,14 +184,17 @@ export default React.forwardRef(({ data, type="modal", keyField, /* valueField, 
     }
 
     const onPopup = () => {
-        console.log(ctx, rest)
-        setModalParameters({ params, title, filters, moreFilters, columns, onSelect: onSelectRow, toolbar, type })
+        setModalParameters({ params, title, filters, moreFilters, columns, onSelect: onSelectRow, toolbar,rowHeight, type })
         showModal();
     }
 
     return (
         <div>
-            <StyledSearch value={(value && textField in value) && value[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} readOnly/>
+            {
+                forView ?
+                    <ForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} {...rest} /> :
+                    customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup }) : <StyledSearch value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} onClick={onPopup} readOnly />
+            }
             <div style={{ fontSize: "11px" }}>{((value && typeof detailText === 'function')) && detailText(value)}</div>
         </div>
     );

@@ -118,6 +118,7 @@ export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%",
             let npaletes = 0;
             const cintas = isValue(data.cintas, undefined, 0);
             const ncintas = isValue(data.ncintas, undefined, 0);
+            console.log("sssssssssssssssssschemaaaaaaaaaaaaaaaaaa",data)
             for (let v of data.paletizacao) {
                 switch (v.item_id) {
                     case 1:
@@ -148,7 +149,7 @@ export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%",
             setTotalHeight(compute(els));
             setElements(els.reverse());
         }
-    }, [changedValues, items]);
+    }, [changedValues, JSON.stringify(items)]);
     return (
         <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : totalHeight + 50} viewBox={viewBox ? viewBox : `0 0 480 ${totalHeight + 50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
             {isValue((items) ? items.filmeestiravel_exterior : form.getFieldValue("filmeestiravel_exterior"), undefined, 0) === 1 && <g transform={`translate(${x - 100},${0})`}>

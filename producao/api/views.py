@@ -4757,7 +4757,7 @@ def BobinesList(request, format=None):
             left join producao_palete pp on pp.id=pb.palete_id
             left join producao_carga pc on pp.carga_id=pc.id
                 {f.text}
-                {s(dql.sort)} {p(dql.paging)}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     if ("export" in request.data["parameters"]):
@@ -4794,7 +4794,7 @@ def ValidarBobinesList(request, format=None):
         FROM producao_bobine pb
         join producao_largura pl on pb.largura_id=pl.id
         {f.text}
-        {s(dql.sort)} {p(dql.paging)}            
+        {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}            
         """
     )
     if ("export" in request.data["parameters"]):

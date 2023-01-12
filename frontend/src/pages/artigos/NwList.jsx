@@ -677,7 +677,6 @@ const ModalQueueEditor = ({ p, onChange, ...props }) => {
                     </Row>
                 </FormContainer>
             </Form>
-
         </Modal>
     );
 }

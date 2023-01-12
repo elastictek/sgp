@@ -31,19 +31,68 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 import { MediaContext } from "../App";
 import FormPalete from './FormPalete';
+import BobinesListA1 from '../bobines/BobinesListA1';
+import BobinesDestinosList from '../bobines/BobinesDestinosList';
+import PaletesHistoryList from './PaletesHistoryList';
+import FormPaletizacao from './FormPaletizacao';
+import { FaWeightHanging } from 'react-icons/fa';
 
 
 export const Context = React.createContext({});
 
+
+export const LeftToolbar = ({ form, dataAPI, permission }) => {
+    return (<>
+        {/* <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={() => navigate(-1)}></Button> */}
+    </>);
+}
+
+export const RightToolbar = ({ form, dataAPI, permission }) => {
+    return (
+        <Space>
+            <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button>
+            <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
+            <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button>
+        </Space>
+    );
+}
+
+// const ToolbarTable = ({ form, dataAPI, typeListField, validField, typeField }) => {
+//     const navigate = useNavigate();
+
+//     const onChange = (v, field) => {
+//         /* if (field === "typelist") {
+//             navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
+//         } else {
+//             form.submit();
+//         } */
+
+//     }
+
+//     const leftContent = (<>
+//         {/* <Button title='Retroceder' type="link" icon={<LeftOutlined />} onClick={() => navigate(-1)}></Button> */}
+//     </>);
+
+//     const rightContent = (
+//         <Space>
+//             <Button title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Imprimir</Button>
+//             <Button onClick={() => { }}>Refazer Palete</Button>
+//         </Space>
+//     );
+//     return (
+//         <Toolbar left={leftContent} right={rightContent} />
+//     );
+// }
+
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
-    const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });//Se tem permissões para alterar (Edit)
-    const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false }); //Se tem permissões para alternar entre Mode Edit e View
+    const permission = usePermission({ allowed: { producao: 100, planeamento: 100, logistica: 100, qualidade: 100 } });//Permissões Iniciais
+    const [allowEdit, setAllowEdit] = useState({});//Se tem permissões para alterar (Edit)
+    const [modeEdit, setModeEdit] = useState({}); //Se tem permissões para alternar entre Mode Edit e View
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
@@ -53,6 +102,7 @@ export default (props) => {
     const dataAPI = useDataAPI({ /* id: "id", */ payload: { url: `${API_URL}/api_to_call/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: defaultSort } });
     const submitting = useSubmitting(true);
     const primaryKeys = [];
+    const [activeTab, setActiveTab] = useState();
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
@@ -62,28 +112,34 @@ export default (props) => {
             }
         }
         return (
-            <ResponsiveModal type={modalParameters?.type} title={modalParameters.title} onCancel={hideModal} width={modalParameters?.width} height={modalParameters?.height} footer="ref" yScroll>
+            <ResponsiveModal type={modalParameters?.type} push={modalParameters?.push} title={modalParameters.title} onCancel={hideModal} width={modalParameters?.width} height={modalParameters?.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
     }, [modalParameters]);
 
     useEffect(() => {
-        props.setFormTitle({ title: `Palete ${props?.parameters?.nome}` }); //Set main Title
+        props.setFormTitle({ title: `Palete ${props?.parameters?.palete?.nome}` }); //Set main Title
         const controller = new AbortController();
         loadData({ signal: controller.signal });
         return (() => controller.abort());
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-
-        console.log(props)
+        const _allowEdit = {
+            formPalete: permission.allow({ producao: 100 }),
+            formPaletizacao: permission.allow({ planeamento: 100, producao: 300 }),
+            bobinesDefeitos: permission.allow({ qualidade: 100, producao: 300 })
+        };
+        setAllowEdit({ ..._allowEdit });
+        setModeEdit({});
         /*if (!permission.allow()) {
             Modal.error({ content: "Não tem permissões!" });
             return;
         } */
-
-        const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(props?.parameters ? props?.parameters : {})]);
+        const {palete,..._parameters} = props?.parameters || {};
+        const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+        setActiveTab(props?.tab);
         console.log("####", initFilters)
         /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
@@ -99,27 +155,50 @@ export default (props) => {
 
     }
 
+    const onTabChange = (k) => {
+        //Guarda a tab selecionada no parent, por forma a abrir sempre no último selecionado.
+        if (props?.setTab) { props.setTab(k); }
+        setActiveTab(k);
+    }
+    const changeMode = (key) => {
+        setModeEdit(prev => ({ ...prev, [key]: (modeEdit[key]) ? false : allowEdit[key] }));
+    }
 
     return (
         <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
 
 
-            <Tabs type="card" dark={1} defaultActiveKey="1" /* activeKey={activeTab} onChange={(k) => setActiveTab(k)} */
+
+            <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
                 items={[
                     {
                         label: `Informação`,
                         key: '1',
-                        children: <FormPalete />,
+                        children: <FormPalete {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                    },
+                    {
+                        label: `Embalamento`,
+                        key: '2',
+                        children: <FormPaletizacao {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
                     },
                     {
                         label: `Bobines`,
-                        key: '2',
-                        children: `Bobines`,
+                        key: '3',
+                        children: <BobinesListA1 {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                    }, {
+                        label: `Bobines Defeitos`,
+                        key: '4',
+                        children: <BobinesListA1 {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                    },
+                    {
+                        label: `Bobines Destinos`,
+                        key: '5',
+                        children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Histórico`,
-                        key: '3',
-                        children: `Histórico`,
+                        key: '6',
+                        children: <PaletesHistoryList {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
                     },
                 ]}
 

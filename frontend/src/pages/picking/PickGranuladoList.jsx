@@ -20,7 +20,7 @@ const { Title } = Typography;
 import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, JUSTIFICATION_OUT } from 'config';
 import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
@@ -405,6 +405,17 @@ const OutContent = ({ parentRef, closeParent, loadParentData }) => {
                     </Field>
                     </Col>
                 </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col><Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }}>
+                        <SelectField size="small" keyField="value" textField="value" data={
+                            [{ value: "" },
+                            { value: "NÃO CONFORME" },
+                            { value: "TROCA DE PRODUÇÃO" },
+                            { value: "TROCA DE MATÉRIA PRIMA" }
+                            ]} />
+                    </Field>
+                    </Col>
+                </Row>
             </FormContainer>
             {parentRef && <Portal elId={parentRef.current}>
                 <Space>
@@ -562,7 +573,7 @@ export default ({ setFormTitle, ...props }) => {
                         setLastValue(prev => ({ ...prev, error: "O Lote/Doseadores não estão conforme a formulação!", picked: false }));
                         return;
                     }
-                    
+
                     console.log("after 2 checks! ", da);
                     checkAbastecimento();
                     /*                     if (lastValue.row.artigo_cod in formulacao) {

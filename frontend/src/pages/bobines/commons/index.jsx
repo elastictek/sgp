@@ -38,6 +38,7 @@ const StyledStatus = styled.div`
     border:dashed 1px #000;
     background-color:${props => props.color};
     color:${props => props.fontColor};
+    height:${props => props.height};
     border-radius:3px;
     margin-right:1px;
     text-align:center;
@@ -45,6 +46,9 @@ const StyledStatus = styled.div`
     line-height:12px;
     font-size:8px;
     cursor:pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     &:hover {
         border-color: #d9d9d9;
     }
@@ -95,12 +99,14 @@ export const bColors = (estado) => {
     }
 }
 
-export const Status = ({b}) =>{
+export const Status = ({b,onClick,height="26px"}) =>{
     const handleClick = () => {
-       
+       if (onClick){
+        onClick();
+       }
     };
     return(
-        <StyledStatus onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b><div className='lar'>{b.largura}</div></StyledStatus>
+        <StyledStatus height={height} onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b>{b?.largura && <div className='lar'>{b.largura}</div>}</StyledStatus>
     );
 }
 

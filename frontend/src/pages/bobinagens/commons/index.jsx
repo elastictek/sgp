@@ -169,13 +169,13 @@ export const bColors = (estado) => {
     }
 }
 
-export const Bobines = ({ id, b, bm, setShow, onClick }) => {
+export const Bobines = ({ id, b, bm, setShow, onClick, align="start" }) => {
     const handleClick = () => {
         //setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "row", lineHeight:"12px" }}>
+        <div style={{ display: "flex", flexDirection: "row", lineHeight:"12px", justifyContent:align }}>
             {b.map((v, i) => {
                 return (<StyledBobine onClick={()=>onClick(v)} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}

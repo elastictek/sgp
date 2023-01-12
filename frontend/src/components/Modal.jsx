@@ -17,18 +17,18 @@ const TitleModal = ({ title, eTitle }) => {
     }
 
     return (
-        <div><b style={{ textTransform: "capitalize" }}>{getTitle()}</b></div>
+        <div><span style={{ textTransform: "capitalize", fontWeight:900,fontSize:"18px" }}>{getTitle()}</span></div>
     );
 }
 
 
 
-export default ({ type = "modal", responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", push=true, responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
     const footerRef = useRef();
-
+    
     useLayoutEffect(() => {
         if (responsive) {
             const _size = size;
@@ -103,7 +103,7 @@ export default ({ type = "modal", responsive = true, width = 800, height = 300, 
                     cancelText="Cancelar"
                     width={size.width}
                     onClose={onCancel}
-                    push={true}
+                    push={push}
                     {...(footer && { footer: footerButtons() })}
                     //bodyStyle={{ height: size.height }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}

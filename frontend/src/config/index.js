@@ -15,6 +15,7 @@ export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 //APP DATA
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
+export const JUSTIFICATION_OUT = [{ value: "" },{ value: "NÃO CONFORME" },{ value: "TROCA DE PRODUÇÃO" },{ value: "TROCA DE MATÉRIA PRIMA" }];
 //DOSERS
 export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES
@@ -109,5 +110,5 @@ export const BOBINE_DEFEITOS = [
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' },{value:'mpalete',label:"Marcas de Palete"}
 ];

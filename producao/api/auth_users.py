@@ -55,7 +55,8 @@ def authUser(user):
     for idx, v in enumerate(groups):
         key = ""
         grp = v.split("#")
-        if grp == "admin":
+        print(grp)
+        if grp == ["admin"]:
             isAdmin=True
         elif len(grp)==2:
             key=grp[0]
@@ -74,7 +75,7 @@ def authUser(user):
         else:
             items[key] = int(permission_value)
     
-    print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    #print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     #isAdmin=False
    
     turno = {"enabled":False}

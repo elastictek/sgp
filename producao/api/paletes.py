@@ -259,7 +259,6 @@ def PaletesList(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
-
 def PaletesLookup(request, format=None):
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
@@ -285,13 +284,14 @@ def PaletesLookup(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = dbgw.dql(request.data, False)
-    cols = f"""*"""
+    cols = f"""sgppl.*,mv."SDHNUM_0",mv."BPCNAM_0",mv."EECICT_0",mv."IPTDAT_0" """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  
             select
                 {f'{dql.columns}'}
             FROM mv_paletes sgppl
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             {f.text} {f2["text"]}
             {dql.sort} {dql.limit}
         """
@@ -300,6 +300,90 @@ def PaletesLookup(request, format=None):
         return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     try:
         response = dbgw.executeSimpleList(sql, connection, parameters)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def PaletesHistoryList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+        "id": {"value": lambda v: f"=={v.get('palete_id')}", "field": lambda k, v: f'{k}'},
+    #    "fof": {"value": lambda v: v.get('fof')},
+    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""t.*,pc.nome cliente_nome,po1.ofid ofid_original,po2.ofid ofid"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select
+                {c(f'{dql.columns}')}
+            FROM (
+
+                select * from audit_producao_palete pp {f.text}
+                union
+                select null,null,null,pp.* from producao_palete pp {f.text}
+
+            ) t
+            LEFT JOIN producao_carga pcarga ON pcarga.id = t.carga_id
+            LEFT JOIN producao_cliente pc ON pc.id = t.cliente_id
+            LEFT JOIN planeamento_ordemproducao po1 ON po1.id = t.ordem_id_original
+            LEFT JOIN planeamento_ordemproducao po2 ON po2.id = t.ordem_id
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def PaletizacaoLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({"id": {"value": lambda v: v.get('palete_id')}}, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    parameters={**f.parameters}
+    dql = db.dql(request.data, False)
+    cols = f"""pp.paletizacao"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (
+        f"""  
+            select
+                {f'{dql.columns}'}
+            FROM producao_palete pp
+            {f.text}
+            {dql.sort} {dql.limit}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

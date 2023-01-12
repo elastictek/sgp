@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
 import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -15,9 +14,10 @@ import { useDataAPI } from "utils/useDataAPI";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Drawer } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
+import { json } from "utils/object";
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
@@ -30,14 +30,14 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 import { Status } from './commons';
 import { TbCircles } from "react-icons/tb";
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
-import { MovGranuladoColumn } from "../picking/commons";
-import { Bobines } from '../bobinagens/commons';
+import { Core, EstadoBobines, Largura } from "./commons";
+
 import BobinesListA1 from '../bobines/BobinesListA1';
 import Palete from './Palete';
 import { MediaContext } from "../App";
@@ -610,23 +610,7 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-const Largura = ({ id, artigos, nome, onClick }) => {
-    return (<>
-        {[...new Set(artigos.map(item => item.lar))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick("lar", id, nome, { lar: v })} key={`${id}_${v}`}>{v}</Tag>)}
-    </>);
-}
 
-const Core = ({ id, artigos, nome, onClick }) => {
-    return (<>
-        {[...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
-    </>);
-}
-
-const EstadoBobines = ({ id, artigos, nome, onClick }) => {
-    return (<>
-        <Bobines id={id} onClick={(v) => onClick("estado", id, nome, v)} b={uniqWith(allPass(map(eqProps)(['lar', 'estado'])))(artigos).map(v => ({ estado: v.estado, lar: v.lar }))} />
-    </>);
-}
 
 const OF = ({ id, ofid, of_des }) => {
     return (
@@ -634,14 +618,12 @@ const OF = ({ id, ofid, of_des }) => {
     );
 }
 
-
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ allowed: { producao: 300, planeamento: 300 } });
-    const [allowEdit, setAllowEdit] = useState({ datagrid: false });
+    const permission = usePermission({});
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
 
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -652,18 +634,19 @@ export default ({ setFormTitle, ...props }) => {
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
     const dataAPI = useDataAPI({ id: "lst-paletes", payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
+    const [lastTab, setLastTab] = useState('1');
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
             switch (modalParameters.content) {
-                case "bobineslist": return <Palete tab="bobineslist" loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
         return (
-            <ResponsiveModal type={modalParameters?.type} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -672,63 +655,64 @@ export default ({ setFormTitle, ...props }) => {
 
     const primaryKeys = ['id'];
     const editable = (row, col) => {
-        if (modeEdit.datagrid && allowEdit.datagrid && row?.closed === 0) {
-            return (col === "qty_reminder" && row?.type_mov === 1) ? false : true;
+        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
+            return (col === "destino") ? true : false;
         }
         return false;
     }
     const editableClass = (row, col) => {
-        if (modeEdit.datagrid && allowEdit.datagrid && row?.closed === 0) {
-            return (col === "qty_reminder" && row?.type_mov === 1) ? undefined : classes.edit;
+        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
+            return (col === "destino") ? classes.edit : undefined;
         }
     }
-    const formatterClass = (row, col) => {
-        if (col === "type_mov" && row.closed === 1) {
-            return classes.closed;
-        }
-        if (col === "diff" && row.diff !== 0) {
-            let percent = (100 * row.diff) / row.avgdiff;
-            if (percent >= 125) {
-                return classes.diffAbove;
-            }
-            if (percent <= 75) {
-                return classes.diffBellow;
-            }
-        }
-    }
-    const onLoteChange = (p, v) => {
-        const r = { ...p.row, valid: p.row["vcr_num"] !== v.row["VCRNUM_0"] ? 0 : null, vcr_num: v.row["VCRNUM_0"], n_lote: v.row["LOT_0"], qty_lote: v.row["QTYPCU_0"] };
-        if (!("vcr_num_original" in p.row)) {
-            r["vcr_num_original"] = p.row["vcr_num"];
-        }
-        if (p.row.qty_lote === p.row.qty_reminder) {
-            r["qty_reminder"] = v.row["QTYPCU_0"];
-        }
-        p.onRowChange(r, true);
-    }
-    const onQtyLoteChange = (p, v) => {
-        const r = { ...p.row, valid: p.row["qty_lote"] !== v ? 0 : null, qty_lote: v };
-        if (p.row.qty_lote <= p.row.qty_reminder || p.row.type_mov == 1) {
-            r["qty_reminder"] = v;
-        }
-        p.onRowChange(r, true);
-    }
-    const onQtyReminderChange = (p, v) => {
-        const r = { ...p.row, valid: p.row["qty_reminder"] !== v ? 0 : null, qty_reminder: v };
-        if (p.row.qty_lote <= v || p.row.type_mov == 1) {
-            r["qty_reminder"] = p.row.qty_lote;
-        }
-        p.onRowChange(r, true);
-    }
+
+    // const formatterClass = (row, col) => {
+    //     if (col === "type_mov" && row.closed === 1) {
+    //         return classes.closed;
+    //     }
+    //     if (col === "diff" && row.diff !== 0) {
+    //         let percent = (100 * row.diff) / row.avgdiff;
+    //         if (percent >= 125) {
+    //             return classes.diffAbove;
+    //         }
+    //         if (percent <= 75) {
+    //             return classes.diffBellow;
+    //         }
+    //     }
+    // }
+    // const onLoteChange = (p, v) => {
+    //     const r = { ...p.row, valid: p.row["vcr_num"] !== v.row["VCRNUM_0"] ? 0 : null, vcr_num: v.row["VCRNUM_0"], n_lote: v.row["LOT_0"], qty_lote: v.row["QTYPCU_0"] };
+    //     if (!("vcr_num_original" in p.row)) {
+    //         r["vcr_num_original"] = p.row["vcr_num"];
+    //     }
+    //     if (p.row.qty_lote === p.row.qty_reminder) {
+    //         r["qty_reminder"] = v.row["QTYPCU_0"];
+    //     }
+    //     p.onRowChange(r, true);
+    // }
+    // const onQtyLoteChange = (p, v) => {
+    //     const r = { ...p.row, valid: p.row["qty_lote"] !== v ? 0 : null, qty_lote: v };
+    //     if (p.row.qty_lote <= p.row.qty_reminder || p.row.type_mov == 1) {
+    //         r["qty_reminder"] = v;
+    //     }
+    //     p.onRowChange(r, true);
+    // }
+    // const onQtyReminderChange = (p, v) => {
+    //     const r = { ...p.row, valid: p.row["qty_reminder"] !== v ? 0 : null, qty_reminder: v };
+    //     if (p.row.qty_lote <= v || p.row.type_mov == 1) {
+    //         r["qty_reminder"] = p.row.qty_lote;
+    //     }
+    //     p.onRowChange(r, true);
+    // }
 
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
-        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickBobinesList("all", p.row.id, p.row.nome)} /> },
+        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button ref={focus} icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} /> },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
-        { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
-        { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
-        { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={p.row.artigo} onClick={onClickBobinesList} /> },
+        { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
+        { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
+        { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'area_real', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
         { key: 'comp_real', name: 'Comp.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
         { key: 'peso_bruto', name: 'Peso B.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
@@ -736,7 +720,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'diam_min', name: 'Diam. Min.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
         { key: 'diam_max', name: 'Diam. Máx.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
         { key: 'diam_avg', name: 'Diam. Médio.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
-        { key: 'destino', name: 'Destino', width: 200, formatter: p => p.row.destino },
+        { key: 'destino', name: 'Destino', width: 200, /* editable: (r) => editable(r, 'destino'), cellClass: r => editableClass(r, 'destino'), editor: p => <DestinoEditor p={p} column="destino" onChange={()=>{}} />, editorOptions: { editOnClick: true }, */  formatter: p => p.row.destino },
         { key: 'cliente_nome', name: 'Cliente', width: 200, formatter: p => p.row.cliente_nome },
         { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid} of_des={p.row.ordem_original} /> },
         { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
@@ -783,8 +767,6 @@ export default ({ setFormTitle, ...props }) => {
             dataAPI.setSort(defaultSort);
             dataAPI.addParameters(defaultParameters, true, true);
             dataAPI.fetchPost({ signal });
-            setAllowEdit({ datagrid: permission.allow() });
-            setModeEdit({ datagrid: false });
         }
         submitting.end();
     }
@@ -850,9 +832,7 @@ export default ({ setFormTitle, ...props }) => {
         }
     }
     const changeMode = () => {
-        if (allowEdit.datagrid) {
-            setModeEdit({ datagrid: (modeEdit.datagrid) ? false : allowEdit.datagrid });
-        }
+        setModeEdit({ datagrid: (modeEdit.datagrid) ? false : true });
     }
     const onSave = async (action) => {
         const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov }) =>
@@ -896,12 +876,10 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
 
-    const onClickBobinesList = (type, id, nome, values) => {
-        setModalParameters({ content: "bobineslist", type: "drawer", width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete_id: id, nome, ...values } });
+    const onClickDetails = (type, row) => {
+        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete:row, palete_id: row.id } });
         showModal();
     }
-
-
 
     return (
         <>
@@ -924,11 +902,18 @@ export default ({ setFormTitle, ...props }) => {
                 rowHeight={28}
                 rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
-                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={changeMode}>Criar Palete</Button></Permissions>
+                    {/* <Permissions permissions={permission} action="editList">
+                        {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                        {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                        {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+                    </Permissions> */}
+
+                    {/* {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<CheckCircleOutlined />} onClick={onClose}>Fechar Movimentos</Button>}
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<PlusCircleOutlined />} onClick={onAdd}>Nova Entrada</Button>}
                     {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
-                    {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                    {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                 </Space>}
                 toolbarFilters={{
                     form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,

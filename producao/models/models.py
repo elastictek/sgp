@@ -674,6 +674,8 @@ class Palete(models.Model):
     diam_avg = models.DecimalField(max_digits=10, decimal_places=2, null=True, verbose_name="Diametro AVG palete") #ADDED
     disabled = models.BooleanField(default=False, verbose_name="Indica se a Palete existe!") #ADDED
     artigo = models.JSONField(blank=True, null=True) #ADDED
+    paletizacao = models.JSONField(blank=True, null=True) #ADDED
+    destinos = models.JSONField(blank=True, null=True) #ADDED
     def __str__(self):
         return self.nome
 

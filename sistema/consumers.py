@@ -440,7 +440,7 @@ class LotesPickConsumer(WebsocketConsumer):
                 ST."PCU_0" unit,mprima."ITMDES1_0" artigo_des
                 FROM {sageAlias}."STOJOU" ST
                 JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-                where ST."LOT_0" = '{lote}' and mprima."ITMREF_0" like 'N%%' AND ST."LOC_0" in ('BUFFER') AND ST."CREDATTIM_0">= now() - INTERVAL '4 DAYS'
+                where ST."LOT_0" = '{lote}' and mprima."ITMREF_0" like 'N%%' AND ST."LOC_0" in ('BUFFER') AND ST."CREDATTIM_0">= now() - INTERVAL '5 DAYS'
             ) t
             where (QTY_SUM > 0) 
         """),conngw,{})["rows"]

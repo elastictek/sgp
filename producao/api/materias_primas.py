@@ -990,7 +990,7 @@ def UpdateGranulado(request, format=None):
                     success = []
                     for v in data["rows"]:
                         try:
-                            args = (v["vcr_num"],v["type_mov"],v["t_stamp"], v["qty_lote"] if v["type_mov"]==1 else v["qty_reminder"])
+                            args = (v["vcr_num"],v["type_mov"],v["t_stamp"], v["qty_lote"] if v["type_mov"]==1 else v["qty_reminder"],v["obs"])
                             cursor.callproc('adjust_granulado_line',args)
                             if "vcr_num_original" in v and v["vcr_num_original"]!=v["vcr_num"]:
                                 args = (v["vcr_num_original"],v["vcr_num"],v["n_lote"], v["qty_lote"])
@@ -1043,9 +1043,10 @@ def UpdateGranulado(request, format=None):
                     return Response({"status": "multi", "errors":errors, "success":success})
                 if ("type" in data and data["type"]=="out"):
                     try:
-                        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,request.user.id, 0)
+                        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
                         print("OUTPUUUUUUUUUUUUUUTTTTTTTTTT")
                         print(args)
+                        print(filter)
                         cursor.callproc('output_granulado_from_line',args)
                     except Exception as error:
                         return Response({"status": "error", "title": str(error)})  

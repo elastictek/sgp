@@ -29,7 +29,7 @@ const StyledToolbar = styled.div`
 
     ${(props) => {
         return (!props?.clean) ? `
-            padding: .2rem;
+            padding:5px;
             margin-bottom: .2rem!important;
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -38,7 +38,7 @@ const StyledToolbar = styled.div`
             padding-top: 1px;
             padding-bottom: 1px;
             padding-left: 1px;
-            padding-right: 1px;
+            padding-right: 1px;            
         `
     }};
 

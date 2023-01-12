@@ -1,13 +1,39 @@
 
 import React, { useEffect, useState, useCallback, useRef, Suspense, useContext, useLayoutEffect } from 'react';
-import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Modal } from "antd";
-import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
+import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
+/* import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Modal } from "antd"; */
+/* import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined, PrinterOutlined } from '@ant-design/icons';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import TextArea from 'antd/lib/input/TextArea';
+import TextArea from 'antd/lib/input/TextArea'; */
+
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert } from "antd";
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+
+import { Bobines } from '../../bobinagens/commons';
+
+export const Largura = ({ id, artigos, nome, onClick }) => {
+    return (<>
+        {Array.isArray(artigos) && [...new Set(artigos.map(item => item.lar))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("lar", id, nome, { lar: v })} key={`${id}_${v}`}>{v}</Tag>)}
+    </>);
+}
+
+export const Core = ({ id, artigos, nome, onClick }) => {
+    return (<>
+        {Array.isArray(artigos) && [...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
+    </>);
+}
+
+export const EstadoBobines = ({ id, artigos, nome, onClick, align }) => {
+    return (<>
+        {Array.isArray(artigos) && <Bobines align={align} id={id} onClick={(v) => onClick && onClick("estado", id, nome, v)} b={uniqWith(allPass(map(eqProps)(['lar', 'estado'])))(artigos).map(v => ({ estado: v.estado, lar: v.lar }))} />}
+    </>);
+}
 
 
+
+/* 
 
 export const Quantity = ({ v, u }) => {
     const getUnit = () => {
@@ -88,4 +114,4 @@ export const FormPrint = ({ v, parentRef, closeParent }) => {
             </Row>
         </Container>
     </>);
-}
+} */

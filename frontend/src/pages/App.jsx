@@ -259,17 +259,19 @@ const App2 = () => {
 
 
     useEffect(() => {
-        console.log(lastJsonMessage)
         const controller = new AbortController();
-        const interval = (async () => {
+        const interval = null;
+        (async () => {
+            console.log("oiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
             setEstadoProducao(await fetchPost({ url: `${API_URL}/estadoproducao/`, pagination: { enabled: false }, filter: {}, signal: controller.signal }));
         })();
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [lastJsonMessage?.hash.hash_estadoproducao]);
+    }, [lastJsonMessage?.hash?.hash_estadoproducao]);
+
 
     const loadData = async ({ signal }) => {
         const response = await loadAuthUser({}, signal);
-        setAuth(response.data);
+        setAuth(response?.data);
         //setAuth({ ...response.data, isAdmin: false, permissions: { producao: 200 } });
         submitting.end();
     }
@@ -293,7 +295,6 @@ const App2 = () => {
                     </SocketContext.Provider>
                 </AppContext.Provider>
             </MediaContext.Provider>
-
         </BrowserRouter>
     );
 }

@@ -157,7 +157,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
             const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, token }) : [{ ...cortesordem }];
             const _larguras = JSON.parse(cortes.largura_json);
             let _cortes = Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos: ofs.filter(v => v.artigo_lar == key).map((item) => ({ color: item.color, artigo_id: item.artigo_id, artigo_cod: item.artigo_cod, artigo_des: item.artigo_des, cliente_cod: item.cliente_cod, cliente_nome: item.cliente_nome, of_id: item.of_id, of_cod: item.of_cod })) }));
-            //Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos:[...new Map(ofs.filter(v=>v.artigo_lar==key).map((item) => [item["artigo_id"], {artigo_id:item.artigo_id,artigo_cod:item.artigo_cod,artigo_des:item.artigo_des,cliente_cod:item.cliente_cod,cliente_nome:item.cliente_nome,of_id:item.of_id,of_cod:item.of_cod}])).values()] }));
+            
+            //            Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos:[...new Map(ofs.filter(v=>v.artigo_lar==key).map((item) => [item["artigo_id"], {artigo_id:item.artigo_id,artigo_cod:item.artigo_cod,artigo_des:item.artigo_des,cliente_cod:item.cliente_cod,cliente_nome:item.cliente_nome,of_id:item.of_id,of_cod:item.of_cod}])).values()] }));
             form.setFieldsValue({ cortes: _cortes, cortes_id: cortes.id, cortesordem_id: cortesordem.id });
             (setFormTitle) && setFormTitle({ title: `Cortes` });
             setLarguraUtil(calculateLarguraUtil({ larguras: JSON.parse(cortes.largura_json) }));

@@ -381,7 +381,7 @@ const itemsSize = (breakpoint) => {
             minW = (availableCols < v.minW) ? availableCols : v.minW;
             minW = (w < minW) ? w : minW;
             let maxW = ("maxW" in v) ? v.maxW : v.w;
-             maxW = (w > v.maxW) ? w : v.maxW;
+            maxW = (w > v.maxW) ? w : v.maxW;
             const _pinnable = ("pinnable" in v) ? v.pinnable : true;
             return { ...v, base: _base, w, ...(minW) && { minW }, ...(maxW) && { maxW }, pin: _pinnable, ...(_static) && { static: _static, pin: false } };
         })
@@ -753,7 +753,7 @@ const PinItem = ({ value, pinnable, ...props }) => {
 const prepareLayouts = (layouts, breakpoint) => {
     let _static = staticBreakpoints.includes(breakpoint);
     return {
-        [baseBreakpoint]: (Array.isArray(layouts) ? layouts : layouts[baseBreakpoint]).map(v => {
+        [baseBreakpoint]: (Array.isArray(layouts) ? layouts : (Array.isArray(layouts[baseBreakpoint])) ? layouts[baseBreakpoint] : layouts[baseBreakpoint][baseBreakpoint]).map(v => {
             const _pinnable = ("pinnable" in v) ? v.pinnable : true;
             return { ...v, ...("created" in v && v.created !== breakpoint) && { ...v.base, created: breakpoint }, static: v?.fixed, pin: _pinnable, ...(_static) && { static: _static, pin: false } };
         })

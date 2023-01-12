@@ -99,7 +99,10 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
     }
 
     const calculateLarguraUtil = useCallback((cortes) => {
-        const v = cortes.reduce((accumulator, current) => accumulator + (current.item_ncortes * current.item_lar), 0);
+        const v = cortes.reduce((accumulator, current) => accumulator + current.item_ncortes ? (current.item_ncortes * current.item_lar) : 0, 0);
+        if (v === 0) {
+            return "";
+        }
         return v;
     });
 
@@ -116,7 +119,12 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                     setLoading(true);
                 }
                 (async () => {
-                    const _cortes = await loadArtigosAggLookup({ agg_id, token });
+                    const _cortesL = await loadArtigosAggLookup({ agg_id, token });
+                    let _cortes = _cortesL.filter((a, i) => _cortesL.findIndex((s) => a.item_lar === s.item_lar) === i)
+                    //const _larguras = JSON.parse(_cortes.largura_json);
+                    //let _cortes = Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos: ofs.filter(v => v.artigo_lar == key).map((item) => ({ color: item.color, artigo_id: item.artigo_id, artigo_cod: item.artigo_cod, artigo_des: item.artigo_des, cliente_cod: item.cliente_cod, cliente_nome: item.cliente_nome, of_id: item.of_id, of_cod: item.of_cod })) }));
+                    //let _cortes = _larguras.map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos: ofs.filter(v => v.artigo_lar == key).map((item) => ({ color: item.color, artigo_id: item.artigo_id, artigo_cod: item.artigo_cod, artigo_des: item.artigo_des, cliente_cod: item.cliente_cod, cliente_nome: item.cliente_nome, of_id: item.of_id, of_cod: item.of_cod })) }));
+
                     if (_cortes.length > 0) {
                         for (let [i, v] of _cortes.entries()) {
                             const _larguras = JSON.parse(v.largura_json);
@@ -225,7 +233,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
                                             {fields.map((field, index) => (
                                                 <FieldSet key={field.key} field={{ wide: [8, 8] }}>
                                                     <Field forInput={false} name={[field.name, `item_lar`]} label={{ enabled: false }}><Input disabled={true} size="small" /></Field>
-                                                    <Field name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={1} max={24} /></Field>
+                                                    <Field name={[field.name, `item_ncortes`]} label={{ enabled: false }}><InputNumber size="small" min={0} max={24} /></Field>
                                                 </FieldSet>
                                             ))}
                                         </>

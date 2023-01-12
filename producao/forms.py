@@ -122,7 +122,9 @@ class PaleteCreateForm(ModelForm):
                   'num_bobines', 'largura_bobines', 'core_bobines']
 
     def __init__(self, *args, **kwargs):
-        palete = Palete.objects.filter(estado='G', data_pal__year='2022').latest('num')
+        today = datetime.date.today()
+        palete = Palete.objects.filter(estado='G', data_pal__year=f'{today.year}').latest('num')
+        #palete = Palete.objects.filter(estado='G', data_pal__year='2022').latest('num')
         num_bobines = palete.num_bobines
         largura_bobines = palete.largura_bobines
         core_bobines = palete.core_bobines
@@ -187,8 +189,9 @@ class PaleteRetrabalhoForm(ModelForm):
         fields = ['num', 'data_pal', 'num_bobines', 'perfil_embalamento']
 
     def __init__(self, *args, **kwargs):
-        palete = Palete.objects.filter(
-            estado='DM', data_pal__year='2022').latest('num')
+        today = datetime.date.today()
+        palete = Palete.objects.filter(estado='DM', data_pal__year=f'{today.year}').latest('num')
+        #palete = Palete.objects.filter(estado='DM', data_pal__year='2022').latest('num')
         num = palete.num
         super(PaleteRetrabalhoForm, self).__init__(*args, **kwargs)
 

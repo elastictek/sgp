@@ -25,13 +25,14 @@ import { Field, Container as FormContainer, FilterDrawer } from 'components/Form
 
 const Table = styled(DataGrid).withConfig({
     shouldForwardProp: (prop) =>
-        !['height', 'pagination', 'minHeight'].includes(prop)
+        !['height', 'pagination', 'minHeight','userSelect'].includes(prop)
 })`
     block-size:${props => {
         const h = props?.height ? props.height : "100%";
         const p = props.paginationPos === 'both' ? "90px" : "45px";
         return props?.pagination ? `calc(${h} - ${p})` : h;
     }};
+    user-select:${({ userSelect }) => (userSelect) ? 'text' : "none"};
     min-height:${({ minHeight }) => (minHeight) ? minHeight : "180px"};
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
@@ -156,7 +157,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     }
 //);
 
-export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
@@ -349,6 +350,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, headerSty
                 pagination={dataAPI.getPagination(true).enabled}
                 paginationPos={paginationPos}
                 height="100%"
+                userSelect={userSelect}
                 columns={columns}
                 onCopy={handleCopy}
                 rowKeyGetter={(primaryKeys && primaryKeys.length > 0) && rowKeyGetter}
