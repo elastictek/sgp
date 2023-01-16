@@ -4668,12 +4668,15 @@ def BobinesList(request, format=None):
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
         **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
-        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        "flote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'pb.nome'},
+        "fbobinagwm": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.nome'},
         "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
         "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
         "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'pb.{k}'},
         "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
-        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'}, 
+        "comp_actual": {"value": lambda v: v.get('fcompactual'), "field": lambda k, v: f'pb.{k}'},
         "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
         "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
     }, True)
@@ -4712,10 +4715,9 @@ def BobinesList(request, format=None):
         f = Filters(data)
         fP = {}
         if name in data:
-            dt = [o['value'] for o in data[name]]
-        
+            dt = [o['value'] for o in data[name]]       
             value = 'in:' + ','.join(f"{w}" for w in dt)
-            fP['estado'] = {"key": field, "value": value, "field": lambda k, v: f'tpb.{k}'}
+            fP['estado'] = {"key": field, "value": value, "field": lambda k, v: f'pb.{k}'}
         f.setParameters({**fP}, True)
         f.auto()
         f.where(False, "and")
@@ -4745,19 +4747,20 @@ def BobinesList(request, format=None):
     parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pb.id,pb.nome"""
+    cols = f"""pb.*,pbm.id bobinagem_id,pbm.nome bobinagem_nome,pbm.nwinf,pbm.lotenwinf,pbm.tiponwinf,pbm.nwsup,pbm.lotenwsup,pbm.tiponwsup, pp.id palete_id,pp.nome palete_nome,po.ofid, po.agg_of_id_id"""
     dql.columns=encloseColumn(cols,False)
 
     sql = lambda p, c, s: (
         f""" 
            select {c(f'{dql.columns}')} 
             from producao_bobine pb
-            left join producao_bobinagem pbm on pbm.id=pb.bobinagem_id
+            join producao_bobinagem pbm on pbm.id=pb.bobinagem_id
             left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
             left join producao_palete pp on pp.id=pb.palete_id
             left join producao_carga pc on pp.carga_id=pc.id
-                {f.text}
-                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+            left join planeamento_ordemproducao po on po.id=pb.ordem_id 
+            {f.text} {festados.text}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     if ("export" in request.data["parameters"]):
@@ -4773,10 +4776,13 @@ def BobinesList(request, format=None):
 def ValidarBobinesList(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
-    f.setParameters({})
+    f.setParameters({
+        "comp_actual": {"value": lambda v: v.get('fcompactual'), "field": lambda k, v: f'{k}'},
+        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'{k}'},
+    })
     f.where()
+    f.auto([],["comp_actual","palete_id"])
     f.add("bobinagem_id = :bobinagem_id",lambda v:(v!=None))
-    f.add("palete_id = :palete_id",lambda v:(v!=None))
     f.add("lar = :lar",lambda v:(v!=None))
     f.add("estado = :estado",lambda v:(v!=None))
     f.add("core = :core",lambda v:(v!=None))
@@ -4800,6 +4806,10 @@ def ValidarBobinesList(request, format=None):
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [],None)
+    
+    print(response)
+    print("-------------------")
+    
     if len(response['rows'])>0:
         response["isba"]=0
         response["troca_nw"]=0

@@ -25,7 +25,8 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectMultiField } from 'components/FormFields';
-import { Status, FormPrint } from "./commons";
+import FormPrint from "../commons/FormPrint";
+import { Status } from "./commons";
 import YScroll from 'components/YScroll';
 import ToolbarTitle from 'components/ToolbarTitle';
 

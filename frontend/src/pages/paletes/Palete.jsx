@@ -34,8 +34,9 @@ import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { MediaContext } from "../App";
 import FormPalete from './FormPalete';
-import BobinesListA1 from '../bobines/BobinesListA1';
+import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
 import BobinesDestinosList from '../bobines/BobinesDestinosList';
+import BobinesPropriedadesList from '../bobines/BobinesPropriedadesList';
 import PaletesHistoryList from './PaletesHistoryList';
 import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
@@ -58,6 +59,12 @@ export const RightToolbar = ({ form, dataAPI, permission }) => {
             <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button>
         </Space>
     );
+}
+
+export const BtnEtiquetasBobines = () => {
+return(
+    <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas das bobines">Etiquetas</Button>
+);
 }
 
 // const ToolbarTable = ({ form, dataAPI, typeListField, validField, typeField }) => {
@@ -184,11 +191,11 @@ export default (props) => {
                     {
                         label: `Bobines`,
                         key: '3',
-                        children: <BobinesListA1 {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                        children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
                     }, {
                         label: `Bobines Defeitos`,
                         key: '4',
-                        children: <BobinesListA1 {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                        children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Bobines Destinos`,

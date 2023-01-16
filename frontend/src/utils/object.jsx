@@ -1,9 +1,12 @@
-export const json = (obj) => {
+export const json = (obj,ret) => {
     try {
         let json = JSON.parse(obj);
+        if (!json && ret){
+            return ret;
+        }
         return json;
     } catch (e) {
-        return obj;
+        return (!obj && ret) ? ret : obj;
     }
 }
 
@@ -53,3 +56,6 @@ export const filterObjectKeys = (value = {}, except = []) => {
     //let exclude = new Set(except);
     return Object.fromEntries(Object.entries(value).filter(e => !_exclude(e[0])));
 }
+
+
+export const orderObjectKeys = o => Object.keys(json(o)).sort().reduce((r, k) => (r[k] = o[k], r), {});

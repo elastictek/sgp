@@ -35,9 +35,10 @@ import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { MovGranuladoColumn } from "../picking/commons";
+import {DateTimeEditor,InputNumberEditor,ModalObsEditor,SelectDebounceEditor} from 'components/tableEditors';
 
 
-const focus = (el, h,) => { el?.focus(); };
+
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
@@ -168,26 +169,7 @@ const loadMateriasPrimasLookup = async (value) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimaslookup/`, pagination: { limit: 15 }, filter: { fmulti_artigo: `%${value.replaceAll(' ', '%%')}%` }, parameters: {} });
     return rows;
 }
-const InputNumberEditor = ({ field, p, onChange, ...props }) => {
-    return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
-}
-const DateTimeEditor = ({ field, p, onChange, ...props }) => {
-    return <DatePicker showTime size="small" format={DATETIME_FORMAT} value={moment(p.row[field])} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props}><Input /></DatePicker>
-}
-const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
-    return (<SelectDebounceField
-        autoFocus
-        value={{ value: p.row[field], label: p.row[field] }}
-        size="small"
-        style={{ width: "100%", padding: "3px" }}
-        keyField={keyField ? keyField : field}
-        textField={textField ? textField : field}
-        showSearch
-        showArrow
-        ref={focus}
-        {...props}
-    />)
-}
+
 const optionsRender = d => ({
     label: <div>
         <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} kg</b>]</span></div>
@@ -510,7 +492,7 @@ const CloseContent = ({ record, parentRef, closeParent, loadParentData }) => {
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
-                    Modal.success({ title: "Movimento fechado com sucesso!" })
+                    Modal.success({ title: "Movimento fechado com sucesso!" });
                 } else {
                     status.formStatus.error.push({ message: response.data.title });
                     setFormStatus({ ...status.formStatus });
@@ -617,30 +599,6 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-const ModalObsEditor = ({ p, column, title, forInput, ...props }) => {
-    const [visible, setVisible] = useState(true);
-    const [value, setvalue] = useState(p.row[column]);
-
-    const onConfirm = (e) => {
-        if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
-            p.onRowChange({ ...p.row, valid: p.row[column] !== value ? 0 : null, [column]: value }, true);
-            p.onClose(true);
-        }
-    }
-    const onCancel = () => {
-        p.onClose();
-        setVisible(false);
-
-    };
-
-    return (
-        <Drawer push={false} title={title} open={visible} destroyOnClose onClose={onCancel}
-            extra={<Space>{forInput && <><Button onClick={onCancel}>Cancelar</Button><Button onClick={onConfirm} type="primary">Registar</Button></>}</Space>}>
-            <TextArea disabled={!forInput} autoFocus value={value} onChange={(e) => setvalue(e.target.value)} onKeyDown={e => (e.key === 'Enter') && e.stopPropagation()} {...props} />
-        </Drawer>
-    );
-}
-
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -728,7 +686,7 @@ export default ({ setFormTitle, ...props }) => {
         p.onRowChange(r, true);
     }
 
-   const columns = [
+    const columns = [
         //{ key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         { key: 'type_mov', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'type_mov'), formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
@@ -746,7 +704,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: "stddiff", width: 140, name: 'Desvio Padrão', formatter: p => secondstoDay(p.row.stddiff) },
         { key: 'vcr_num', name: 'Movimento', width: 200, formatter: p => p.row.vcr_num },
         { key: 'ofs', width: 280, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> },
-        { key: 'obs', width: 100, name: 'Observações', editable: editable, cellClass: r => editableClass(r, 'obs'), editor(p) { return <ModalObsEditor forInput={editable} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true, commitOnOutsideClick: false } },
+        { key: 'obs', width: 100, name: 'Observações', editable: true, cellClass: r => editableClass(r, 'obs'), editor(p) { return <ModalObsEditor forInput={editable(p.row, 'obs')} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true, commitOnOutsideClick: false }, formatter:p=>p.row.obs },
         //editor(p) { return <ModalObsEditor forInput={false} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }
     ];
 
@@ -837,14 +795,11 @@ export default ({ setFormTitle, ...props }) => {
         }
     }
     const onSave = async (action) => {
-        const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov }) =>
-            ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
+        const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov, obs }) =>
+            ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov, obs })
         );
-        //submitting.trigger();
+        submitting.trigger();
         try {
-
-            console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaa--->", rows);
-            return;
             let response = await fetchPost({ url: `${API_URL}/updategranulado/`, parameters: { type: "datagrid", rows } });
             if (response.data.status == "multi") {
                 Modal.info({

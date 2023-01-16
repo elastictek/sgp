@@ -9,6 +9,7 @@ from producao.api import print
 from producao.api import auth_users
 from producao.api import devolucoes
 from producao.api import bobinagens
+from producao.api import bobines
 from producao.api import paletes
 from producao.api import app_permissions
 from producao.models.models_api import CurrentSettings
@@ -261,6 +262,7 @@ urlpatterns = [
     #END PALETES
 
     re_path(r'^permissions/sql/$',app_permissions.Sql),
+    re_path(r'^bobines/sql/$',bobines.Sql),
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

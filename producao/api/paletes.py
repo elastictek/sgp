@@ -506,3 +506,66 @@ def AllowedOFChanges(request, format=None):
             """
         ), cursor, parameters)
         return Response(response)
+
+
+def UpdateDestinos(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    def checkPalete01(id, cursor):
+        f = Filters({"id":id})
+        f.where()
+        f.add(f'id = :id', True)
+        f.add(f'carga_id is null',True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""select id from producao_palete {f.text} limit 1"""), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+    def checkPalete02(id, cursor):
+        connection = connections[connGatewayName].cursor()
+        f = Filters({"id":id})
+        f.where()
+        f.add(f'id = :id', True)
+        f.value("and")
+        response = dbgw.executeSimpleList(lambda: (f"""
+        SELECT sgppl.id
+        FROM mv_paletes sgppl
+        LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+        {f.text} and sgppl.nbobines_real>0 and disabled=0 and mv."SDHNUM_0" is null
+        """), connection, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                chk01 = checkPalete01(filter["palete_id"],cursor)
+                chk02 = checkPalete02(filter["palete_id"],cursor)
+                if chk01 is None or chk02 is None:
+                    return Response({"status": "error", "title": f"Não é possível alterar destinos na palete! A palete já tem carga associada ou é palete final."})
+                ids_d = ','.join(str(x) for x in data["rowsDestinos"])
+                ids_o = ','.join(str(x) for x in data["rowsObs"])                    
+
+                # dml = db.dml(TypeDml.UPDATE,{
+                #     "destinos":data["values"]["destinos"],
+                #     #"destino":data["values"]["destinoTxt"]
+                #     }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
+                # db.execute(dml.statement, cursor, dml.parameters)
+
+                # dml = db.dml(TypeDml.UPDATE,{"obs":data["values"]["obs"]},"producao_bobine",{"id":f'in:{ids_o}'},None,False)
+                # db.execute(dml.statement, cursor, dml.parameters)
+
+                # dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)
+                # statement = dml.statement.replace('SET',
+                # f'''SET 
+                # destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
+                # #destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]}),
+                # ignore_audit=1 '''
+                # ,1)
+                # db.execute(statement, cursor, dml.parameters)
+
+        return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})

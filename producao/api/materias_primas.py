@@ -715,13 +715,13 @@ def GranuladoList(request, format=None):
             from(
             select distinct 
             t.id,t.type_mov,t.artigo_cod,t.n_lote,t.qty_lote,t.vcr_num,t.artigo_des,t.in_t,t.out_t,TIMESTAMPDIFF(second,in_t,out_t) `diff`,t.max_order,t.t_stamp,t.group_id,t.loteslinha_id,t.agg_of_id,t.audit_cs_id,t.qty_reminder,t.closed
-            ,(select GROUP_CONCAT(tld.doser) dosers from lotesdoserslinha tld where tld.loteslinha_id=t.loteslinha_id) dosers
+            ,(select GROUP_CONCAT(tld.doser) dosers from lotesdoserslinha tld where tld.loteslinha_id=t.loteslinha_id) dosers,t.obs
             from(
             select ll.id,ld.type_mov,ld.artigo_cod,ld.n_lote,ll.qty_lote,ll.vcr_num,ll.artigo_des,
             MIN(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) in_t,
             MAX(ll.t_stamp) OVER (PARTITION BY ll.artigo_cod,ll.n_lote,ll.vcr_num) out_t,
             MAX(ld.t_stamp) OVER (PARTITION BY ld.artigo_cod,ld.n_lote,ld.loteslinha_id) max_order,
-            ld.t_stamp,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed
+            ld.t_stamp,ld.group_id,ld.loteslinha_id, ld.agg_of_id, ld.audit_cs_id,ll.qty_reminder,ll.closed,ll.obs
             from lotesdoserslinha ld
             JOIN lotesgranuladolinha ll on ll.id=ld.loteslinha_id
             WHERE ld.type_mov in (0,1,2) AND ld.closed=0 AND ld.`status`<>0

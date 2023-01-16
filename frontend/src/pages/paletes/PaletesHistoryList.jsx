@@ -37,8 +37,6 @@ import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { Core, EstadoBobines, Largura } from "./commons";
-
-import BobinesListA1 from '../bobines/BobinesListA1';
 import Palete from './Palete';
 import { MediaContext } from "../App";
 import { tree } from 'd3';

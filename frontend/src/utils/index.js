@@ -69,7 +69,8 @@ export const getFilterForceRangeValues = (data) => {
 
 //type = any | start | end | exact
 export const getFilterValue = (v, type = 'exact') => {
-    const val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
+    let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
+    val = (val===undefined || val===null) ? val : `${val}`;
     if (val !== '' && val !== undefined) {
         const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
         const matches = val.toString().match(re);

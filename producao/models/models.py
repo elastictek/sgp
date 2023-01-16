@@ -897,6 +897,7 @@ class Bobine(models.Model):
     acs_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Settings applyed ") #ADDED
     agg_of_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Aggregated OF") #ADDED
     ignore_audit = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ignore Audit") #ADDED
+    destinos = models.JSONField(blank=True, null=True) #ADDED
     def __str__(self):
         return self.nome
 

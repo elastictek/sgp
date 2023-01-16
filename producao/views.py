@@ -389,6 +389,7 @@ def create_palete(request):
                 ordem = OrdemProducao.objects.get(pk=instance.ordem.pk)
                 instance.ordem_original = ordem.op
                 instance.ordem_id_original = ordem.pk
+                
                 try:
                     encomenda = Encomenda.objects.get(pk=ordem.enc.pk)
                     num_paletes_ordem = Palete.objects.filter(ordem=instance.ordem).count()

@@ -104,7 +104,7 @@ export const ARTIGOS_SPECS = [
 ];
 
 //BOBINES
-export const BOBINE_ESTADOS = [{ value: 'G' }, { value: 'DM' }, { value: 'R' }, { value: 'BA' }, { value: 'LAB' }, { value: 'IND' }, { value: 'HOLD' }, { value: 'SC' }];
+export const BOBINE_ESTADOS = [{ value: 'G',label:"GOOD" }, { value: 'DM',label:"DM" }, { value: 'R',label:"REJEITADO" }, { value: 'BA',label:"BA" }, { value: 'LAB',label:"LAB" }, { value: 'IND',label:"INDUSTRIALIZAÇÃO" }, { value: 'HOLD',label:"HOLD" }, { value: 'SC' }];
 export const BOBINE_DEFEITOS = [
     { value: 'troca_nw', label: 'Troca NW' }, { value: 'con', label: 'Cónico' }, { value: 'descen', label: 'Descentrada' }, { value: 'presa', label: 'Presa' },
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },

@@ -30,6 +30,7 @@ import YScroll from 'components/YScroll';
 import ToolbarTitle from 'components/ToolbarTitle';
 import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
 import FormPrint from '../commons/FormPrint';
+import OF from '../commons/OF';
 
 const title = "";
 
@@ -86,31 +87,20 @@ export default (props) => {
 
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'posicao_palete', sortable: false, name: 'Pos. Palete', width: 90, formatter: p => p.row.posicao_palete },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
-        {
-            key: 'destino', width: 200, editable: true,
-            headerRenderer: p => <CheckColumn id="destino" name="Destino" onChange={onCheckChange} defaultChecked={checkData?.destino} forInput={editable(p.row, 'destino')} />,
-            cellClass: r => editableClass(r, 'destino'),
-            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} p={p} palete={props?.parameters?.palete} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
-            editorOptions: { editOnClick: true, commitOnOutsideClick: false },
-            formatter: p => p.row.destino
-        },
-
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => row.l_real },
-        { key: 'fc_pos', sortable: false, width: 85, name: "Falha Corte", formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'ff_pos', sortable: false, width: 85, name: "Falha de Filme", formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'buracos_pos', sortable: false, width: 85, name: "Buracos", formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'furos_pos', sortable: false, width: 85, name: "Furos", formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'rugas_pos', sortable: false, width: 85, name: "Rugas", formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
-        { key: 'defeitos', sortable: false, width: 250, name: "Outros Defeitos", formatter: (p) => <FieldDefeitos p={p} /> },
-        { key: 'prop_obs', sortable: false, name: "Propriedades Observações", formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>, editor(p) { return <ModalObsEditor forInput={false} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true } },
-        {
-            key: 'obs', sortable: false,
-            headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'destino')} />,
-            formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>, editor: (p) => { return <ModalObsEditor forInput={false} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
-            editorOptions: { editOnClick: true },
-        },
+        { key: 'comp_actual', sortable: false, name: 'Comp. Atual', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+        { key: 'comp', sortable: false, name: 'Comp. Original', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
+        { key: 'area', sortable: false, name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
+        { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
+        { key: 'core', sortable: false, name: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core} ''</div> },
+        { key: 'nwinf', name: 'Nw Inf.', width: 100, formatter: p => p.row?.nwinf && <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
+        { key: 'nwsup', name: 'Nw Sup.', width: 100, formatter: p => p.row?.nwsup && <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> },
+        { key: 'tiponwinf', name: 'Tipo NW Inferior', width: 300, sortable: true },
+        { key: 'tiponwsup', name: 'Tipo NW Superior', width: 300, sortable: true },
+        { key: 'lotenwinf', name: 'Lote NW Inferior', width: 150, sortable: true },
+        { key: 'lotenwsup', name: 'Lote NW Superior', width: 150, sortable: true },
+        { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
     ];
 
 
@@ -229,7 +219,7 @@ export default (props) => {
                 loading={submitting.state}
                 actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
                 frozenActionColumn
-                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}` }`}
+                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}`}`}
                 loadOnInit={false}
                 columns={columns}
                 dataAPI={dataAPI}
@@ -246,8 +236,8 @@ export default (props) => {
                 leftToolbar={<Space>
                     <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
                     <Permissions permissions={props?.permission} action="editList">
-                        {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                        {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                        {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
+                        {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
                     </Permissions>
 

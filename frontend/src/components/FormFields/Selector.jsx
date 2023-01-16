@@ -122,6 +122,9 @@ const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, clos
 const StyledSearch = styled(Search)`
     button{
         vertical-align:0px !important;
+    },
+    input{
+        cursor:pointer;
     }
 `;
 

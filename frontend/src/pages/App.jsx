@@ -53,6 +53,7 @@ const GranuladoBufferLineList = lazy(() => import('./artigos/GranuladoBufferLine
 const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
 const FormEtapasCortes = lazy(() => import('./currentline/FormEtapasCortes'));
 const PaletesList = lazy(() => import('./paletes/PaletesList'));
+const BasePick = lazy(() => import('./picking/BasePick'));
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -152,6 +153,8 @@ const RenderRouter = () => {
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },
 
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
+
+                { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

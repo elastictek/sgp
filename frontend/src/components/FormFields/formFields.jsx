@@ -410,7 +410,7 @@ const _filterOptions = (arr1, arr2) => {
     return res;
 }
 
-export const SelectMultiField = ({ value, data, options, onChange, ...rest }) => {
+export const SelectMultiField = ({ value, data, options, keyField='value', textField='label', onChange, ...rest }) => {
     const [selectedItems, setSelectedItems] = useState(value || []);
 
     const onItemsChange = (v) => {
@@ -422,8 +422,8 @@ export const SelectMultiField = ({ value, data, options, onChange, ...rest }) =>
         <Select labelInValue mode="multiple" value={value} {...rest} onChange={onItemsChange}>
 
             {_filterOptions(data ? data : options, selectedItems).map(item => (
-                <Select.Option key={item.value} value={item.value}>
-                    {item.label}
+                <Select.Option key={item[keyField]} value={item[keyField]}>
+                    {item[textField]}
                 </Select.Option>
             ))}
 
@@ -629,7 +629,7 @@ const InnerField = ({ children, alert, ...props }) => {
                         color={tooltipColor}
                     >
                         <div>
-                            <FormItemWrapper nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem} includeKeyRules={includeKeyRules}>{children}</FormItemWrapper>
+                            <FormItemWrapper validator={props?.validator} validateTrigger={props?.validateTrigger} nameId={nameId} name={name} shouldUpdate={shouldUpdate} forInput={forInput} rule={rule} allValues={allValues} wrapFormItem={wrapFormItem} includeKeyRules={includeKeyRules}>{children}</FormItemWrapper>
                         </div>
                     </Tooltip>
                 </FieldCenter>
@@ -795,7 +795,7 @@ export const validateForm = (rules, messages) => {
     };
 }
 
-const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
+const FormItemWrapper = ({ children, validator, validateTrigger, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
     const classes = useStyles();
     const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
 
@@ -803,7 +803,7 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
         return React.cloneElement(children, { ...children.props, name: nameId ? nameId : name });
     }
 
-    const validator = async (r, v) => {
+    const defaultValidator = async (r, v) => {
         const _rule = (rule) ? rule : ((Array.isArray(name)) ? schema({ keys: [name[name.length - 1], ...includeKeyRules], wrapArray: false }) : schema({ keys: [name, ...includeKeyRules], wrapArray: false }));
         (async () => {
             try {
@@ -818,7 +818,7 @@ const FormItemWrapper = ({ children, wrapFormItem = false, name, nameId, shouldU
         <>
             <ConditionalWrapper
                 condition={wrapFormItem}
-                wrapper={children => <Form.Item className={classes.noStyle} rules={[{ validator: validator }]} validateTrigger={["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
+                wrapper={children => <Form.Item  className={classes.noStyle} rules={[{ validator: validator ? validator : defaultValidator }]} validateTrigger={validateTrigger ? validateTrigger : ["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
                     {getChildren()}
                 </Form.Item>}
             >
@@ -1260,7 +1260,7 @@ export const Label = ({ ...props }) => {
 
 
 export const Container = ({ loading = false, schema, children, id, wrapForm = false, form, initialValues, onFinish, label, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
-    if (!id) { throw new Error(`Container key is Required!`) }
+    if (!id) { throw new Error(`Container (id) is Required!`) }
     const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
     const updateFieldStatus = (field, status) => {
         const { ...fs } = fieldStatus;

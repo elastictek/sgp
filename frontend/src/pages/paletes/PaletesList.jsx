@@ -37,10 +37,9 @@ import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { Core, EstadoBobines, Largura } from "./commons";
-
-import BobinesListA1 from '../bobines/BobinesListA1';
 import Palete from './Palete';
 import { MediaContext } from "../App";
+import OF from '../commons/OF';
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -80,7 +79,7 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
 }
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
-        <Col xs='content'>
+        {/* <Col xs='content'>
             <Field name="fartigo" label={{ enabled: true, text: "Artigo", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -99,7 +98,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
             <Field name="fdataout" label={{ enabled: true, text: "Data Saída", pos: "top", padding: "0px" }}>
                 <RangeDateField size='small' allowClear />
             </Field>
-        </Col>
+        </Col> */}
     </>
     );
 }
@@ -610,14 +609,6 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-
-
-const OF = ({ id, ofid, of_des }) => {
-    return (
-        <>{ofid ? <Tag style={{ fontWeight: 600 }}>{ofid}</Tag> : of_des}</>
-    );
-}
-
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
@@ -631,7 +622,7 @@ export default ({ setFormTitle, ...props }) => {
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
     const defaultParameters = { method: "PaletesList" };
-    const defaultSort = [{ column: "timestamp", direction: "DESC" }];
+    const defaultSort = [{ column: "sgppl.timestamp", direction: "DESC" }];
     const dataAPI = useDataAPI({ id: "lst-paletes", payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTab, setLastTab] = useState('1');
@@ -707,7 +698,7 @@ export default ({ setFormTitle, ...props }) => {
 
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
-        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button ref={focus} icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} /> },
+        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} /> },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
         { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
@@ -778,15 +769,15 @@ export default ({ setFormTitle, ...props }) => {
                 const vals = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
                 const _values = {
                     ...vals,
-                    fartigo: getFilterValue(vals?.fartigo, 'any'),
-                    flote: getFilterValue(vals?.flote, 'any'),
-                    fvcr: getFilterValue(vals?.fvcr, 'any'),
-                    fdata: getFilterRangeValues(vals["fdata"]?.formatted),
-                    fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
-                    fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
+                    // fartigo: getFilterValue(vals?.fartigo, 'any'),
+                    // flote: getFilterValue(vals?.flote, 'any'),
+                    // fvcr: getFilterValue(vals?.fvcr, 'any'),
+                    // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
+                    // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
+                    // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
                 dataAPI.addFilters(_values, true);
-                dataAPI.addParameters({});
+                //dataAPI.addParameters(defaultParameters);
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -877,7 +868,7 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onClickDetails = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete:row, palete_id: row.id } });
+        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete:row, palete_id: row.id, palete_nome: row.nome } });
         showModal();
     }
 
