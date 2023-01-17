@@ -21,13 +21,13 @@ import { json } from "utils/object";
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS,BOBINE_ESTADOS } from 'config';
 import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -79,12 +79,32 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
 }
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
-        {/* <Col xs='content'>
-            <Field name="fartigo" label={{ enabled: true, text: "Artigo", pos: "top", padding: "0px" }}>
+        <Col xs='content'>
+            <Field name="flote" label={{ enabled: true, text: "Lote", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
         </Col>
+        <Col width={70}>
+            <Field name="fnbobinesreal" label={{ enabled: true, text: "Nº Bobines", pos: "top", padding: "0px" }}>
+                <Input size='small' allowClear />
+            </Field>
+        </Col>
+        <Col width={70}>
+            <Field name="flargura" label={{ enabled: true, text: "Largura", pos: "top", padding: "0px" }}>
+                <Input size='small' allowClear />
+            </Field>
+        </Col>
+        <Col width={150}>
+            <Field name="festados" label={{ enabled: true, text: "Estados", pos: "top", padding: "0px" }}>
+                <SelectMultiField size="small" keyField='value' textField='value' data={BOBINE_ESTADOS} />
+            </Field>
+        </Col>
         <Col xs='content'>
+            <Field name="fbobine" label={{ enabled: true, text: "Bobine(s)", pos: "top", padding: "0px" }}>
+                <Input size='small' allowClear />
+            </Field>
+        </Col>
+        {/*<Col xs='content'>
             <Field name="flote" label={{ enabled: true, text: "Lote", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -622,7 +642,7 @@ export default ({ setFormTitle, ...props }) => {
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
     const defaultParameters = { method: "PaletesList" };
-    const defaultSort = [{ column: "sgppl.timestamp", direction: "DESC" }];
+    const defaultSort = [{ column: "timestamp", direction: "DESC" }];
     const dataAPI = useDataAPI({ id: "lst-paletes", payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTab, setLastTab] = useState('1');
@@ -770,14 +790,15 @@ export default ({ setFormTitle, ...props }) => {
                 const _values = {
                     ...vals,
                     // fartigo: getFilterValue(vals?.fartigo, 'any'),
-                    // flote: getFilterValue(vals?.flote, 'any'),
+                    flote: getFilterValue(vals?.flote, 'any'),
+                    fbobine: getFilterValue(vals?.fbobine, 'any'),
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
                     // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
                 dataAPI.addFilters(_values, true);
-                //dataAPI.addParameters(defaultParameters);
+                dataAPI.addParameters(defaultParameters);
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;

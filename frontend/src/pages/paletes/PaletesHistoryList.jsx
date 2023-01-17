@@ -30,7 +30,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 import { Status } from './commons';
 import { TbCircles } from "react-icons/tb";
 import { GoArrowUp } from 'react-icons/go';

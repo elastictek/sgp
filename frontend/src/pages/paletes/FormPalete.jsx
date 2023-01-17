@@ -31,7 +31,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 import { MediaContext } from "../App";
 import { Context } from './Palete';
 import { Core, EstadoBobines, Largura } from "./commons";
@@ -81,7 +81,6 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const ctx = useContext(Context);
     //const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
     //const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });//Se tem permissões para alterar (Edit)
     //const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false }); //Se tem permissões para alternar entre Mode Edit e View
@@ -110,7 +109,7 @@ export default (props) => {
             return;
         } */
 
-        const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters, ...ctx?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters, ...ctx?.parameters })]);
+        const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
         const formValues = await loadPaleteLookup(initFilters.palete_id);
         form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0) {

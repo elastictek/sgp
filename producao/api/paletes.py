@@ -212,7 +212,9 @@ def PaletesList(request, format=None):
     #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
     #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
     #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
-    #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+        "nome": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'sgppl.{k}'},
+        "nbobines_real": {"value": lambda v: Filters.getNumeric(v.get('fnbobinesreal')), "field": lambda k, v: f'sgppl.{k}'},
+        "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"j->>'{k}'"},
     #    "fof": {"value": lambda v: v.get('fof')},
     #    "vcr_num": {"value": lambda v: v.get('fvcr')},
     #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
@@ -226,12 +228,33 @@ def PaletesList(request, format=None):
     f2 = filterMulti(request.data['filter'], {
         # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
     }, False, "and" if f.hasFilters else "and" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
 
+    def filterMultiSelectJson(data,name,field,alias):
+        f = Filters(data)
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]       
+            value = 'in:' + ','.join(f"{w}" for w in dt)
+            fP['estado'] = {"key": field, "value": value, "field": lambda k, v: f"{alias}->>'{k}'"}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value()
+        return f
+    festados = filterMultiSelectJson(request.data['filter'],'festados','estado','j')
+
+    fbobine = Filters(request.data['filter'])
+    fbobine.setParameters({"bobinenome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'nome'}}, True)
+    fbobine.where()
+    fbobine.auto()
+    fbobine.value()
+    fbobine.text = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and {fbobine.text.lstrip("where (").rstrip(")")})""" if fbobine.hasFilters else ""
+
+    parameters = {**f.parameters, **f2['parameters'], **festados.parameters, **fbobine.parameters}
     dql = dbgw.dql(request.data, False)
-    cols = f"""mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
+    cols = f"""distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
                 mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
-                sgppl.id,sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
+                sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
                 sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
                 sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
                 sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
@@ -241,12 +264,13 @@ def PaletesList(request, format=None):
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""  
-            select
-                {c(f'{dql.columns}')}
+            select * from ( select {c(f'{dql.columns}')}
             FROM mv_paletes sgppl
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            cross join lateral json_array_elements ( sgppl.artigo ) as j
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
-            {f.text} {f2["text"]}
+            {f.text} {f2["text"]} {festados.text} {fbobine.text}
+            ) t
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )

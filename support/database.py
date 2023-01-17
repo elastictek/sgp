@@ -947,10 +947,20 @@ class Filters:
 
         return self
 
+    def getNumeric(value):
+        if value is None: return None
+        pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
+        result = re.match(pattern, str(value), re.IGNORECASE)
+        if not result:
+            return f"=={value}"
+        else:
+            return value
+
 def FiltersParser(data, fields={}, encloseColumns=True):
     filters, parameters = [], {}
     pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
     for key, f in data.items():
+
         if f == None:
             continue
         result = re.match(pattern, str(f), re.IGNORECASE)

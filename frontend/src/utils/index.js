@@ -86,6 +86,7 @@ export const getFilterValue = (v, type = 'exact') => {
                 case '>': return `>${val.replaceAll('==', '')}`;
                 case '<=': return `<=${val.replaceAll('==', '')}`;
                 case '>=': return `>=${val.replaceAll('==', '')}`;
+                case 'exact': return `${val}`;
                 default: return `==${val.replaceAll('==', '').replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
             }
         }

@@ -51,12 +51,12 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
     </>);
 }
 
-export const RightToolbar = ({ form, dataAPI, permission }) => {
+export const RightToolbar = ({ form, dataAPI, permission, edit }) => {
     return (
         <Space>
             <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button>
-            <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
-            <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button>
+            <Button disabled={!edit || !permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
+            <Button disabled={!edit || !permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button>
         </Space>
     );
 }
@@ -97,9 +97,10 @@ return(
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const permission = usePermission({ allowed: { producao: 100, planeamento: 100, logistica: 100, qualidade: 100 } });//Permissões Iniciais
-    const [allowEdit, setAllowEdit] = useState({});//Se tem permissões para alterar (Edit)
-    const [modeEdit, setModeEdit] = useState({}); //Se tem permissões para alternar entre Mode Edit e View
+    
+    const permission = usePermission({});//Permissões Iniciais
+    const [modeEdit, setModeEdit] = useState({});
+
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
@@ -133,13 +134,13 @@ export default (props) => {
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        const _allowEdit = {
-            formPalete: permission.allow({ producao: 100 }),
-            formPaletizacao: permission.allow({ planeamento: 100, producao: 300 }),
-            bobinesDefeitos: permission.allow({ qualidade: 100, producao: 300 })
-        };
-        setAllowEdit({ ..._allowEdit });
-        setModeEdit({});
+        // const _allowEdit = {
+        //     formPalete: permission.allow({ producao: 100 }),
+        //     formPaletizacao: permission.allow({ planeamento: 100, producao: 300 }),
+        //     bobinesDefeitos: permission.allow({ qualidade: 100, producao: 300 })
+        // };
+        // setAllowEdit({ ..._allowEdit });
+        // setModeEdit({});
         /*if (!permission.allow()) {
             Modal.error({ content: "Não tem permissões!" });
             return;
@@ -172,7 +173,7 @@ export default (props) => {
     }
 
     return (
-        <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
+        // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
 
 
 
@@ -181,12 +182,12 @@ export default (props) => {
                     {
                         label: `Informação`,
                         key: '1',
-                        children: <FormPalete {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                        children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Embalamento`,
                         key: '2',
-                        children: <FormPaletizacao {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                        children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Bobines`,
@@ -205,12 +206,12 @@ export default (props) => {
                     {
                         label: `Histórico`,
                         key: '6',
-                        children: <PaletesHistoryList {...{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit, changeMode }} />,
+                        children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
                     },
                 ]}
 
             />
-        </Context.Provider>
+        // </Context.Provider>
     )
 
 }
