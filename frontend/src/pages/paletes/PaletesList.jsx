@@ -21,7 +21,7 @@ import { json } from "utils/object";
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS,BOBINE_ESTADOS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, BOBINE_ESTADOS } from 'config';
 import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
@@ -89,34 +89,19 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
                 <Input size='small' allowClear />
             </Field>
         </Col>
-        <Col width={70}>
+{/*         <Col width={70}>
             <Field name="flargura" label={{ enabled: true, text: "Largura", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
-        </Col>
+        </Col> */}
         <Col width={150}>
             <Field name="festados" label={{ enabled: true, text: "Estados", pos: "top", padding: "0px" }}>
                 <SelectMultiField size="small" keyField='value' textField='value' data={BOBINE_ESTADOS} />
             </Field>
         </Col>
-        <Col xs='content'>
+{/*         <Col xs='content'>
             <Field name="fbobine" label={{ enabled: true, text: "Bobine(s)", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
-            </Field>
-        </Col>
-        {/*<Col xs='content'>
-            <Field name="flote" label={{ enabled: true, text: "Lote", pos: "top", padding: "0px" }}>
-                <Input size='small' allowClear />
-            </Field>
-        </Col>
-        <Col xs='content'>
-            <Field name="ftype_mov" label={{ enabled: true, text: "Mov.", pos: "top", padding: "0px" }}>
-                <Select size='small' options={[{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }]} allowClear style={{ width: "100px" }} />
-            </Field>
-        </Col>
-        <Col xs='content'>
-            <Field name="fdataout" label={{ enabled: true, text: "Data Saída", pos: "top", padding: "0px" }}>
-                <RangeDateField size='small' allowClear />
             </Field>
         </Col> */}
     </>
@@ -162,15 +147,29 @@ const useStyles = createUseStyles({
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
-    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
-    { fvcr: { label: "Cód. Movimento", field: { type: 'input', size: 'small' } } },
-    { fdata: { label: "Data Movimento", field: { type: "rangedate", size: 'small' } } },
-    { fdatain: { label: "Data Entrada", field: { type: "rangedate", size: 'small' } } },
-    { fdataout: { label: "Data Saída", field: { type: "rangedate", size: 'small' } } },
-    { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
-    { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
+    { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 },fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
+    { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
+    { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' } } },
+    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } }},
+    { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
+    { fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 6 }, fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 6 } },
+    { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fdiam_min: { label: "Diâmetro (Min)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_max: { label: "Diâmetro (Max)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_avg: { label: "Diâmetro (Médio)", field: { type: 'input', size: 'small' }, span: 8 } },
+    { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
+    {
+        fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] }, span: 6 },
+        fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] }, span: 6 },
+        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
+    },
+    { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } }},
+    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } }},
+
+
+    // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
+    // { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
+    // { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
 ];
 const OfsColumn = ({ value }) => {
     return (<div>
@@ -783,6 +782,7 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onFilterFinish = (type, values) => {
+        console.log("RRRRRRRRRRRRRRRRRRRR", values);
         switch (type) {
             case "filter":
                 //remove empty values
@@ -791,7 +791,14 @@ export default ({ setFormTitle, ...props }) => {
                     ...vals,
                     // fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
+                    fsdh: getFilterValue(vals?.fsdh, 'any'),
+                    fclienteexp: getFilterValue(vals?.fclienteexp, 'any'),
+                    fartigoexp: getFilterValue(vals?.fartigoexp, 'any'),
+                    fartigo: getFilterValue(vals?.fartigo, 'any'),
+                    fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
+                    fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched === 1 ? '!isnull' : 'isnull',
+                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga === 1 ? '!isnull' : 'isnull'
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
                     // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
@@ -889,7 +896,7 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onClickDetails = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete:row, palete_id: row.id, palete_nome: row.nome } });
+        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
         showModal();
     }
 

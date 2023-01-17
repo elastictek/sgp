@@ -208,13 +208,34 @@ def PaletesList(request, format=None):
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({
-    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+        **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
     #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
     #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
     #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
-        "nome": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'sgppl.{k}'},
+        "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
         "nbobines_real": {"value": lambda v: Filters.getNumeric(v.get('fnbobinesreal')), "field": lambda k, v: f'sgppl.{k}'},
         "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"j->>'{k}'"},
+        "area_real": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'sgppl.{k}'},
+        "comp_real": {"value": lambda v: Filters.getNumeric(v.get('fcomp')), "field": lambda k, v: f'sgppl.{k}'},
+        "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
+        "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
+        "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
+        "diam_avg": {"value": lambda v: Filters.getNumeric(v.get('fdiam_avg')), "field": lambda k, v: f'sgppl.{k}'},
+        "diam_max": {"value": lambda v: Filters.getNumeric(v.get('fdiam_max')), "field": lambda k, v: f'sgppl.{k}'},
+        "diam_min": {"value": lambda v: Filters.getNumeric(v.get('fdiam_min')), "field": lambda k, v: f'sgppl.{k}'},
+        "destino": {"value": lambda v: v.get('fdestinoold').lower() if v.get('fdestinoold') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+        "peso_bruto": {"value": lambda v: Filters.getNumeric(v.get('fpeso_bruto')), "field": lambda k, v: f'sgppl.{k}'},
+        "peso_liquido": {"value": lambda v: Filters.getNumeric(v.get('fpeso_liquido')), "field": lambda k, v: f'sgppl.{k}'},
+        "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
+        "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
+        "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
+        "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+        "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+       
+
+
+       #mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0"
+
     #    "fof": {"value": lambda v: v.get('fof')},
     #    "vcr_num": {"value": lambda v: v.get('fvcr')},
     #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
@@ -225,8 +246,9 @@ def PaletesList(request, format=None):
     f.auto()
     f.value()
 
-    f2 = filterMulti(request.data['filter'], {
-        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    fartigo = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ["'cod'", "'des'"], "table": 'j->>'},
+        'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
     }, False, "and" if f.hasFilters else "and" ,False)
 
     def filterMultiSelectJson(data,name,field,alias):
@@ -250,7 +272,9 @@ def PaletesList(request, format=None):
     fbobine.value()
     fbobine.text = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and {fbobine.text.lstrip("where (").rstrip(")")})""" if fbobine.hasFilters else ""
 
-    parameters = {**f.parameters, **f2['parameters'], **festados.parameters, **fbobine.parameters}
+
+
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobine.parameters}
     dql = dbgw.dql(request.data, False)
     cols = f"""distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
                 mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
@@ -269,7 +293,7 @@ def PaletesList(request, format=None):
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             cross join lateral json_array_elements ( sgppl.artigo ) as j
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
-            {f.text} {f2["text"]} {festados.text} {fbobine.text}
+            {f.text} {fartigo["text"]} {festados.text} {fbobine.text}
             ) t
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
