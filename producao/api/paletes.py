@@ -265,16 +265,22 @@ def PaletesList(request, format=None):
         return f
     festados = filterMultiSelectJson(request.data['filter'],'festados','estado','j')
 
-    fbobine = Filters(request.data['filter'])
-    fbobine.setParameters({"bobinenome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'nome'}}, True)
-    fbobine.where()
-    fbobine.auto()
-    fbobine.value()
-    fbobine.text = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and {fbobine.text.lstrip("where (").rstrip(")")})""" if fbobine.hasFilters else ""
+
+    fbobinemulti = filterMulti(request.data['filter'], {
+        'flotenw': {"keys": ['lotenwinf', 'lotenwsup'], "table": 'mb.'},
+        'ftiponw': {"keys": ['tiponwinf', 'tiponwsup'], "table": 'mb.'},
+        'fbobine': {"keys": ['nome'], "table": 'mb.'},
+    }, False, "and" if f.hasFilters else "and" ,False)
+    # fbobine = Filters(request.data['filter'])
+    # fbobine.setParameters({"bobinenome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'nome'}}, True)
+    # fbobine.where()
+    # fbobine.auto()
+    # fbobine.value()
+    fbobinemulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
 
 
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobine.parameters}
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"]}
     dql = dbgw.dql(request.data, False)
     cols = f"""distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
                 mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
@@ -293,7 +299,7 @@ def PaletesList(request, format=None):
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             cross join lateral json_array_elements ( sgppl.artigo ) as j
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
-            {f.text} {fartigo["text"]} {festados.text} {fbobine.text}
+            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]}
             ) t
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """

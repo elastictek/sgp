@@ -202,6 +202,11 @@ export default (props) => {
                         label: `Bobines Destinos`,
                         key: '5',
                         children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
+                    },,
+                    {
+                        label: `MP Granulado (Lotes)`,
+                        key: '6',
+                        children: <PaletesMPGranulado {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Histórico`,
