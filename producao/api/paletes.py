@@ -276,7 +276,7 @@ def PaletesList(request, format=None):
     # fbobine.where()
     # fbobine.auto()
     # fbobine.value()
-    fbobinemulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
+    fbobinemulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
 
     fartigompmulti = filterMulti(request.data['filter'], {
         'fartigo_mp': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'},
@@ -287,7 +287,7 @@ def PaletesList(request, format=None):
     # fbobine.where()
     # fbobine.auto()
     # fbobine.value()
-    fartigompmulti["text"] = f""" and exists (select 1 from mv_bobines mb join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
+    fartigompmulti["text"] = f""" and exists (select 1 from mv_bobines mb join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
     #fartigompmulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}))""" if fartigompmulti["hasFilters"] else ""
 
 
