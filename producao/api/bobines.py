@@ -267,5 +267,42 @@ def UpdateDefeitos(request, format=None):
     print("oiiiiiiiiiii")
 
 
+def BobinesGranuladoMPList(request,format=None):
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'mb.{k}'},
+        "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'mb.{k}'},
+        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'mcg.{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = dbgw.dql(request.data, False)
+    cols = f"""distinct mb.id,mb.nome,mb.posicao_palete,mb.estado,mcg.matprima_cod,mcg.matprima_des, mcg.n_lote, mcg.shared,mcg.data_entrada_lote ,mcg.data_saida_lote """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select {c(f'{dql.columns}')}
+            from mv_bobines mb 
+            join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+    try:
+        response = dbgw.executeList(sql, connection, parameters,[],None,None)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 

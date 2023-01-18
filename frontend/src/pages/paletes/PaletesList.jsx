@@ -167,7 +167,9 @@ const moreFiltersSchema = ({ form }) => [
     { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } }},
     { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } }},
     { flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' } }},
-    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } }}
+    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } }},
+    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' } }},
+    { flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' } }},
 
 
     // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -785,7 +787,6 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onFilterFinish = (type, values) => {
-        console.log("RRRRRRRRRRRRRRRRRRRR", values);
         switch (type) {
             case "filter":
                 //remove empty values
@@ -803,6 +804,8 @@ export default ({ setFormTitle, ...props }) => {
                     fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
+                    fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
+                    flote_mp: getFilterValue(vals?.flote_mp, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched === 1 ? '!isnull' : 'isnull',
                     fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga === 1 ? '!isnull' : 'isnull'
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),

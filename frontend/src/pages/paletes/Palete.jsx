@@ -38,7 +38,7 @@ import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
 import BobinesDestinosList from '../bobines/BobinesDestinosList';
 import BobinesPropriedadesList from '../bobines/BobinesPropriedadesList';
 import PaletesHistoryList from './PaletesHistoryList';
-import PaletesMPGranulado from './PaletesMPGranulado';
+import BobinesMPGranuladoList from '../bobines/BobinesMPGranuladoList';
 import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
 
@@ -207,7 +207,7 @@ export default (props) => {
                     {
                         label: `MP Granulado (Lotes)`,
                         key: '6',
-                        children: <PaletesMPGranulado {...{ parameters: props?.parameters, permission }} />,
+                        children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Histórico`,

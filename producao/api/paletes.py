@@ -266,7 +266,6 @@ def PaletesList(request, format=None):
         return f
     festados = filterMultiSelectJson(request.data['filter'],'festados','estado','j')
 
-
     fbobinemulti = filterMulti(request.data['filter'], {
         'flotenw': {"keys": ['lotenwinf', 'lotenwsup'], "table": 'mb.'},
         'ftiponw': {"keys": ['tiponwinf', 'tiponwsup'], "table": 'mb.'},
@@ -279,9 +278,21 @@ def PaletesList(request, format=None):
     # fbobine.value()
     fbobinemulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
 
+    fartigompmulti = filterMulti(request.data['filter'], {
+        'fartigo_mp': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'},
+        'flote_mp': {"keys": ['n_lote'], "table": 'mcg.'},
+    }, False, "and" if f.hasFilters else "and" ,False)
+    # fbobine = Filters(request.data['filter'])
+    # fbobine.setParameters({"bobinenome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'nome'}}, True)
+    # fbobine.where()
+    # fbobine.auto()
+    # fbobine.value()
+    fartigompmulti["text"] = f""" and exists (select 1 from mv_bobines mb join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
+    #fartigompmulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}))""" if fartigompmulti["hasFilters"] else ""
 
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"]}
+
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"]}
     dql = dbgw.dql(request.data, False)
     cols = f"""distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
                 mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
@@ -300,7 +311,7 @@ def PaletesList(request, format=None):
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             cross join lateral json_array_elements ( sgppl.artigo ) as j
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
-            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]}
+            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]}
             ) t
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
@@ -443,6 +454,8 @@ def PaletizacaoLookup(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
 
 
 def StockAvailableList(request, format=None):
@@ -603,23 +616,23 @@ def UpdateDestinos(request, format=None):
                 ids_d = ','.join(str(x) for x in data["rowsDestinos"])
                 ids_o = ','.join(str(x) for x in data["rowsObs"])                    
 
-                # dml = db.dml(TypeDml.UPDATE,{
-                #     "destinos":data["values"]["destinos"],
-                #     #"destino":data["values"]["destinoTxt"]
-                #     }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
-                # db.execute(dml.statement, cursor, dml.parameters)
+                dml = db.dml(TypeDml.UPDATE,{
+                    "destinos":data["values"]["destinos"],
+                    "destino":data["values"]["destinoTxt"]
+                    }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
 
-                # dml = db.dml(TypeDml.UPDATE,{"obs":data["values"]["obs"]},"producao_bobine",{"id":f'in:{ids_o}'},None,False)
-                # db.execute(dml.statement, cursor, dml.parameters)
+                dml = db.dml(TypeDml.UPDATE,{"obs":data["values"]["obs"]},"producao_bobine",{"id":f'in:{ids_o}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
 
-                # dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)
-                # statement = dml.statement.replace('SET',
-                # f'''SET 
-                # destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
-                # #destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]}),
-                # ignore_audit=1 '''
-                # ,1)
-                # db.execute(statement, cursor, dml.parameters)
+                dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)
+                statement = dml.statement.replace('SET',
+                f'''SET 
+                destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
+                destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]}),
+                ignore_audit=1 '''
+                ,1)
+                db.execute(statement, cursor, dml.parameters)
 
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Error as error:
