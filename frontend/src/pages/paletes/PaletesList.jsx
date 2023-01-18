@@ -162,6 +162,7 @@ const moreFiltersSchema = ({ form }) => [
         fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] }, span: 6 },
         feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
     },
+    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } }},
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
     { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } }},
     { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } }},
@@ -799,6 +800,7 @@ export default ({ setFormTitle, ...props }) => {
                     fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flotenw: getFilterValue(vals?.flotenw, 'any'),
                     ftiponw: getFilterValue(vals?.ftiponw, 'any'),
+                    fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched === 1 ? '!isnull' : 'isnull',

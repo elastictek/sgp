@@ -38,6 +38,7 @@ import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
 import BobinesDestinosList from '../bobines/BobinesDestinosList';
 import BobinesPropriedadesList from '../bobines/BobinesPropriedadesList';
 import PaletesHistoryList from './PaletesHistoryList';
+import PaletesMPGranulado from './PaletesMPGranulado';
 import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
 
@@ -210,7 +211,7 @@ export default (props) => {
                     },
                     {
                         label: `Histórico`,
-                        key: '6',
+                        key: '7',
                         children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
                     },
                 ]}
