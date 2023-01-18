@@ -98,14 +98,14 @@ export const bColors = (estado) => {
     }
 }
 
-export const Status = ({ b, onClick, height = "26px" }) => {
+export const Status = ({ b, onClick, height = "26px",column="estado",larguraColumn="largura" }) => {
     const handleClick = () => {
         if (onClick) {
             onClick();
         }
     };
     return (
-        <StyledStatus height={height} onClick={handleClick} color={bColors(b.estado).color} fontColor={bColors(b.estado).fontColor} key={`bob-${b.id}`}><b>{b.estado === 'HOLD' ? 'HLD' : b.estado}</b>{b?.largura && <div className='lar'>{b.largura}</div>}</StyledStatus>
+        <StyledStatus height={height} onClick={handleClick} color={bColors(b[column]).color} fontColor={bColors(b[column]).fontColor} key={`bob-${b.id}`}><b>{b[column] === 'HOLD' ? 'HLD' : b[column]}</b>{b[larguraColumn] && <div className='lar'>{b[larguraColumn]}</div>}</StyledStatus>
     );
 }
 

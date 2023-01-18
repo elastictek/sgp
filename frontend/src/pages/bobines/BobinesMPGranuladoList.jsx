@@ -111,7 +111,7 @@ export default (props) => {
     const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
     const defaultSort = [{ column: 'pb.nome', direction: 'ASC' }];
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
-    const primaryKeys = ['id', 'matprima_cod', 'n_lote'];
+    const primaryKeys = ['id', 'artigo_cod', 'n_lote'];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
@@ -150,9 +150,9 @@ export default (props) => {
         { key: 'artigo_cod', name: 'Cód. Matéria Prima', width: 150, sortable: true },
         { key: 'artigo_des', name: 'Matéria Prima', sortable: true },
         { key: 'n_lote', name: 'Lote', width: 220, sortable: true },
-        { key: 't_stamp', width: 130, name: 'Data Entrada', formatter: p => moment(p.row.t_stamp).isValid() && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 't_stamp_out', width: 130, name: 'Data Saída', formatter: p => moment(p.row.t_stamp_out).isValid() && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
-        { key: 't_stamp_close', width: 130, name: 'Data Fecho', formatter: p => moment(p.row.t_stamp_close).isValid() && moment(p.row.t_stamp_close).format(DATETIME_FORMAT) }
+        { key: 't_stamp', width: 130, name: 'Data Entrada', formatter: p => p.row.t_stamp && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 130, name: 'Data Saída', formatter: p => p.row.t_stamp_out && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
+        { key: 't_stamp_close', width: 130, name: 'Data Fecho', formatter: p => p.row.t_stamp_close && moment(p.row.t_stamp_close).format(DATETIME_FORMAT) }
     ];
 
     const loadData = async ({ signal } = {}) => {

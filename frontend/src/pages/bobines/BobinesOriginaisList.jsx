@@ -1,348 +1,330 @@
-import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, lazy } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
-import styled from 'styled-components';
-import dayjs from 'dayjs';
+import styled, { css } from 'styled-components';
+import classNames from "classnames";
 import Joi from 'joi';
-import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
+import moment from 'moment';
+import { useImmer } from 'use-immer';
+import { fetch, fetchPost } from "utils/fetch";
+import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
+import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
+import { useSubmitting } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
-import { getSchema } from "utils/schemaValidator";
-import { getFilterRangeValues, getFilterValue, isValue, noValue } from 'utils';
-import uuIdInt from "utils/uuIdInt";
-import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, TitleForm, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, RangeTimeField, FilterDrawer, CheckboxField, SwitchField, SelectMultiField } from "components/formLayout";
-import Drawer from "components/Drawer";
-import Table, { setColumns } from "components/table";
-import Toolbar from "components/toolbar";
+import { usePermission, Permissions } from "utils/usePermission";
+import loadInit, { fixRangeDates } from "utils/loadInit";
+import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
-import ResponsiveModal from "components/ResponsiveModal";
-import MoreFilters from 'assets/morefilters.svg';
-import { Outlet, useNavigate } from "react-router-dom";
-import YScroll from "components/YScroll";
-
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge } from "antd";
-import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
-
-import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SwapRightOutlined, CheckSquareTwoTone, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
-const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
-const { Title,Text } = Typography;
-import { SocketContext, MediaContext } from '../App';
+import IconButton from "components/iconButton";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Typography, Modal, Checkbox, Tag, Badge, Alert, DatePicker, TimePicker, Divider, Drawer, Select, Menu } from "antd";
 const { TextArea } = Input;
+import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined, PrinterOutlined, LockOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons';
+import { CgCloseO } from 'react-icons/cg';
+import Table from 'components/TableV2';
+import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
+import { useModal } from "react-modal-hook";
+import ResponsiveModal from 'components/Modal';
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectMultiField, Selector, Label, SwitchField } from 'components/FormFields';
+import { Status, toolbarFilters, postProcess, processFilters } from "./commons";
+import YScroll from 'components/YScroll';
+import ToolbarTitle from 'components/ToolbarTitle';
+import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
+import FormPrint from '../commons/FormPrint';
+import OF from '../commons/OF';
 
+const title = "";
 
-const mainTitle = 'Rastreabilidade de Bobines (Originais)';
+const useStyles = createUseStyles({
+    l1: {
+        backgroundColor: "#fffbe6"
+    },
+    l2: {
+        backgroundColor: "#fff1b8"
+    },
+    l3: {
+        backgroundColor: "#ffe58f"
+    },
+    l4: {
+        backgroundColor: "#ffd666"
+    },
+    l5: {
+        backgroundColor: "#ffc53d"
+    }
+});
 
-const useStyles = createUseStyles({});
-
-const schema = (keys, excludeKeys) => {
-    return getSchema({}, keys, excludeKeys).unknown(true);
+const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
+    const items = [];
+    return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
 }
 
-const filterRules = (keys) => { return getSchema({}, keys).unknown(true); }
-
-const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
-
-const ToolbarTable = ({ form, dataAPI }) => {
+export default (props) => {
+    const submitting = useSubmitting(true);
     const navigate = useNavigate();
+    const location = useLocation();
+    const classes = useEditorStyles();
+    const clsLevel = useStyles();
+    const [formFilter] = Form.useForm();
+    const permission = usePermission({});
+    const [modeEdit, setModeEdit] = useState({ datagrid: false });
+    const [parameters, setParameters] = useState();
+    const [checkData, setCheckData] = useImmer({ destino: false });
+    const defaultParameters = {method:"BobinesOriginaisList"};
+    const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
+    const defaultSort = [/* { column: 'posicao_palete', direction: 'ASC' } */];
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
+    const primaryKeys = ['rowid'];
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
-    const onChange = (v) => {
-        form.submit();
+        const content = () => {
+            switch (modalParameters.content) {
+                case "print": return <FormPrint v={{ ...modalParameters }} />;
+            }
+        }
+
+        return (
+            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
+
+    const editable = (row, col) => {
+        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            return (col === "destino") ? true : false;
+        }
+        return false;
+    }
+    const editableClass = (row, col) => {
+        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            return (col === "destino") ? classes.edit : undefined;
+        }
     }
 
-    const leftContent = (
-        <>
-            {/* <button onClick={() => navigate(-1)}>go back</button> */}
-            {/* <Button type="primary" size="small" disabled={flyoutStatus.visible ? true : false} onClick={() => setFlyoutStatus(prev => ({ ...prev, visible: !prer.visible }))}>Flyout</Button> */}
-        </>
-    );
+    const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
 
-    const rightContent = (
-        <Space>
-            <div style={{ display: "flex", flexDirection: "row", whiteSpace: "nowrap" }}>
+    const cellClass = (row,k) => {
+        if (k===1){
+            return clsLevel.l1;
+        }else if (k===2){
+            return clsLevel.l2;
+        }else if (k===3){
+            return clsLevel.l3;
+        }else if (k===4){
+            return clsLevel.l4;
+        }else if (k===5){
+            return clsLevel.l5;
+        }
+        return undefined;
+    }
 
-            </div>
-            <div style={{ display: "flex", flexDirection: "row", alignItems: "center", whiteSpace: "nowrap" }}>
-                {/* <Form form={form} initialValues={{ typelist: [] }}>
-                    <Form.Item name="typelist" noStyle>
-                        {typeListField({ onChange, typeList })}
-                    </Form.Item>
-                </Form> */}
-            </div>
-        </Space>
-    );
-    return (
-        <Toolbar left={leftContent} right={rightContent} />
-    );
-}
 
-const BobinesFilterField = ()=>{
-    return(
-        <TextArea rows={4} placeholder="Lista de Bobines" maxLength={20000} allowClear/>
-    );
-}
-const BobinagensFilterField = ()=>{
-    return(
-        <TextArea rows={4} placeholder="Lista de Bobinagens" maxLength={20000} allowClear />
-    );
-}
-const PaletesFilterField = ()=>{
-    return(
-        <TextArea rows={4} placeholder="Lista de Paletes" maxLength={20000} allowClear/>
-    );
-}
+    const columns = [
+        { key: 'root', sortable: false, name: 'Raíz', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.root}</Button> },
+        { key: 'bobine0', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.bobine0}</Button> },
+        { key: 'nretrabalhos', name: 'Retrabalhos', width: 100, formatter: p => p.row.nretrabalhos },
+        { key: 'comp0', sortable: false, name: 'Comprimento', width: 100, formatter: p =>p.row?.comp0 && <div style={{ textAlign: "right" }}>{p.row.comp0} m</div> },
+        { key: 'largura0', sortable: false, name: 'Largura', width: 90, formatter: p => p.row?.largura0 && <div style={{ textAlign: "right" }}>{p.row.largura0} mm</div> },
+        { key: 'palete0', sortable: false, name: 'Palete', width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete0}</Button> },
+        { key: 'estado0', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado0' larguraColumn='largura0' b={p.row} /></div> },
 
-const filterSchema = ({ }) => [
-    { fbobines: { label: "Bobines", field: BobinesFilterField } },
-    { fbobinagens: { label: "Bobinagens", field: BobinagensFilterField } },
-    { fpaletes: { label: "Paletes", field: PaletesFilterField } },
-    { fbobinedate: { label: "Data Bobine", field: { type: "rangedate", size: 'small' } } }
-    /* { fdate: { label: "Data Início/Fim", field: { type: "rangedate", size: 'small' } } },
-    { ftime: { label: "Hora Início/Fim", field: { type: "rangetime", size: 'small' } } },
-    { fhasbobinagem: { label: "Relação", field: HasBobinagemField } },
-    { fevento: { label: "Evento", field: EventField } } */
-];
+        { key: 'original_lvl1', sortable: false, name: 'L1 Bobine', cellClass:(row)=>cellClass(row,1), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl1}</Button> },
+        { key: 'comp1_original', sortable: false, name: 'L1 Comp. Orig.', cellClass:(row)=>cellClass(row,1), width: 100, formatter: p =>p.row?.comp1_original && <div style={{ textAlign: "right" }}>{p.row.comp1_original} m</div> },
+        { key: 'comp1_atual', sortable: false, name: 'L1 Comp. Atual', cellClass:(row)=>cellClass(row,1), width: 100, formatter: p =>p.row?.comp1_atual && <div style={{ textAlign: "right" }}>{p.row.comp1_atual} m</div> },
+        { key: 'metros_cons', sortable: false, name: 'L1 Metros Consumidos', cellClass:(row)=>cellClass(row,1), width: 100, formatter: p =>p.row?.metros_cons && <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
+        { key: 'largura1', sortable: false, name: 'L1 Largura', cellClass:(row)=>cellClass(row,1), width: 90, formatter: p => p.row?.largura1 && <div style={{ textAlign: "right" }}>{p.row.largura1} mm</div> },
+        { key: 'palete1', sortable: false, name: 'L1 Palete', cellClass:(row)=>cellClass(row,1), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete1}</Button> },
+        { key: 'estado1', sortable: false, name: 'L1 Estado', cellClass:(row)=>cellClass(row,1), minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado1' larguraColumn='largura1' b={p.row} /></div> },
 
-const GlobalSearch = ({ form, dataAPI, columns, setShowFilter, showFilter } = {}) => {
-    const [changed, setChanged] = useState(false);
-    const onFinish = (type, values) => {
+        { key: 'original_lvl2', sortable: false, name: 'L2 Bobine', cellClass:(row)=>cellClass(row,2), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl2}</Button> },
+        { key: 'comp2_original', sortable: false, name: 'L2 Comp.', cellClass:(row)=>cellClass(row,2), width: 100, formatter: p =>p.row?.comp2_original && <div style={{ textAlign: "right" }}>{p.row.comp2_original} m</div> },
+        { key: 'comp2_atual', sortable: false, name: 'L2 Comp. Atual', cellClass:(row)=>cellClass(row,2), width: 100, formatter: p =>p.row?.comp2_atual && <div style={{ textAlign: "right" }}>{p.row.comp2_atual} m</div> },
+        { key: 'metros_cons_lvl1', sortable: false, name: 'L2 Metros Consumidos', cellClass:(row)=>cellClass(row,2), width: 100, formatter: p =>p.row?.metros_cons_lvl1 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl1} m</div> },
+        { key: 'largura2', sortable: false, name: 'L2 Largura', cellClass:(row)=>cellClass(row,2), width: 90, formatter: p => p.row?.largura2 && <div style={{ textAlign: "right" }}>{p.row.largura2} mm</div> },
+        { key: 'palete2', sortable: false, name: 'L2 Palete', cellClass:(row)=>cellClass(row,2), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete2}</Button> },
+        { key: 'estado2', sortable: false, name: 'L2 Estado', cellClass:(row)=>cellClass(row,2), minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado2' larguraColumn='largura2' b={p.row} /></div> },
+
+        { key: 'original_lvl3', sortable: false, name: 'L3 Bobine', cellClass:(row)=>cellClass(row,3), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl3}</Button> },
+        { key: 'comp3_original', sortable: false, name: 'L3 Comp.', cellClass:(row)=>cellClass(row,3), width: 100, formatter: p =>p.row?.comp3_original && <div style={{ textAlign: "right" }}>{p.row.comp3_original} m</div> },
+        { key: 'comp3_atual', sortable: false, name: 'L3 Comp. Atual', cellClass:(row)=>cellClass(row,3), width: 100, formatter: p =>p.row?.comp3_atual && <div style={{ textAlign: "right" }}>{p.row.comp3_atual} m</div> },
+        { key: 'metros_cons_lvl2', sortable: false, name: 'L3 Metros Consumidos', cellClass:(row)=>cellClass(row,3), width: 100, formatter: p =>p.row?.metros_cons_lvl2 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl2} m</div> },
+        { key: 'largura3', sortable: false, name: 'L3 Largura', cellClass:(row)=>cellClass(row,3), width: 90, formatter: p => p.row?.largura3 && <div style={{ textAlign: "right" }}>{p.row.largura3} mm</div> },
+        { key: 'palete3', sortable: false, name: 'L3 Palete', cellClass:(row)=>cellClass(row,3), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete3}</Button> },
+        { key: 'estado3', sortable: false, name: 'L3 Estado', cellClass:(row)=>cellClass(row,3), minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado3' larguraColumn='largura3' b={p.row} /></div> },
+
+        { key: 'original_lvl4', sortable: false, name: 'L4 Bobine', cellClass:(row)=>cellClass(row,4), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl4}</Button> },
+        { key: 'comp4_original', sortable: false, name: 'L4 Comp.', cellClass:(row)=>cellClass(row,4), width: 100, formatter: p =>p.row?.comp4_original && <div style={{ textAlign: "right" }}>{p.row.comp4_original} m</div> },
+        { key: 'comp4_atual', sortable: false, name: 'L4 Comp. Atual', cellClass:(row)=>cellClass(row,4), width: 100, formatter: p =>p.row?.comp4_atual && <div style={{ textAlign: "right" }}>{p.row.comp4_atual} m</div> },
+        { key: 'metros_cons_lvl3', sortable: false, name: 'L4 Metros Consumidos', cellClass:(row)=>cellClass(row,4), width: 100, formatter: p =>p.row?.metros_cons_lvl3 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl3} m</div> },
+        { key: 'largura4', sortable: false, name: 'L4 Largura', cellClass:(row)=>cellClass(row,4), width: 90, formatter: p => p.row?.largura4 && <div style={{ textAlign: "right" }}>{p.row.largura4} mm</div> },
+        { key: 'palete4', sortable: false, name: 'L4 Palete', cellClass:(row)=>cellClass(row,4), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete4}</Button> },
+        { key: 'estado4', sortable: false, name: 'L4 Estado', cellClass:(row)=>cellClass(row,4), minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado4' larguraColumn='largura4' b={p.row} /></div> },
+
+        { key: 'original_lvl5', sortable: false, name: 'L5 Bobine', cellClass:(row)=>cellClass(row,5), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl5}</Button> },
+        { key: 'comp5_original', sortable: false, name: 'L5 Comp.', cellClass:(row)=>cellClass(row,5), width: 100, formatter: p =>p.row?.comp5_original && <div style={{ textAlign: "right" }}>{p.row.comp5_original} m</div> },
+        { key: 'comp5_atual', sortable: false, name: 'L5 Comp. Atual', cellClass:(row)=>cellClass(row,5), width: 100, formatter: p =>p.row?.comp5_atual && <div style={{ textAlign: "right" }}>{p.row.comp5_atual} m</div> },
+        { key: 'metros_cons_lvl4', sortable: false, name: 'L5 Metros Consumidos', cellClass:(row)=>cellClass(row,5), width: 100, formatter: p =>p.row?.metros_cons_lvl4 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl4} m</div> },
+        { key: 'largura5', sortable: false, name: 'L5 Largura', cellClass:(row)=>cellClass(row,5), width: 90, formatter: p => p.row?.largura5 && <div style={{ textAlign: "right" }}>{p.row.largura5} mm</div> },
+        { key: 'palete5', sortable: false, name: 'L5 Palete', cellClass:(row)=>cellClass(row,5), width: 130, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete5}</Button> },
+        { key: 'estado5', sortable: false, name: 'L5 Estado', cellClass:(row)=>cellClass(row,5), minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado5' larguraColumn='largura5' b={p.row} /></div> },
+
+
+        // { key: 'posicao_palete', sortable: false, name: 'Pos. Palete', width: 90, formatter: p => p.row.posicao_palete },
+        // { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
+        // { key: 'comp_actual', sortable: false, name: 'Comp. Atual', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+        // { key: 'comp', sortable: false, name: 'Comp. Original', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
+        // { key: 'area', sortable: false, name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
+        // { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
+        // { key: 'core', sortable: false, name: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core} ''</div> },
+        // { key: 'nwinf', name: 'Nw Inf.', width: 100, formatter: p => p.row?.nwinf && <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
+        // { key: 'nwsup', name: 'Nw Sup.', width: 100, formatter: p => p.row?.nwsup && <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> },
+        // { key: 'tiponwinf', name: 'Tipo NW Inferior', width: 300, sortable: true },
+        // { key: 'tiponwsup', name: 'Tipo NW Superior', width: 300, sortable: true },
+        // { key: 'lotenwinf', name: 'Lote NW Inferior', width: 150, sortable: true },
+        // { key: 'lotenwsup', name: 'Lote NW Superior', width: 150, sortable: true },
+        // { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
+    ];
+
+
+    const onDestinoConfirm = async (p, destinos, destinoTxt, obs) => {
+        const ids = dataAPI.getData().rows.map(v => v.id);
+        const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
+        const rowsObs = (checkData?.obs) ? ids : [p.row.id];
+        const values = { destinos, destinoTxt, obs };
+        const palete_id = p.row.palete_id;
+
+        try {
+            let response = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, parameters: { method: "UpdateDestinos", ids, rowsDestinos, rowsObs, values }, filter: { palete_id } });
+            if (response.data.status !== "error") {
+                p.onClose(true);
+                loadData();
+            } else {
+                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+            }
+        } catch (e) {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        } finally { };
+    }
+
+    const loadData = async ({ signal } = {}) => {
+        const { palete, bobinagem, ..._parameters } = props?.parameters || {};
+        let { palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+
+        setParameters({
+            palete: {
+                id: palete_id,
+                nome: palete_nome
+            },
+            bobinagem: {
+                id: bobinagem_id,
+                nome: bobinagem_nome
+            }
+        })
+
+        let { filterValues, fieldValues } = fixRangeDates([], initFilters);
+        formFilter.setFieldsValue({ ...fieldValues });
+        palete_id = getFilterValue(palete_id, '==')
+        bobinagem_id = getFilterValue(bobinagem_id, '==')
+        setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, false);
+        dataAPI.setSort(defaultSort);
+        dataAPI.addParameters(defaultParameters, true, false);
+        dataAPI.fetchPost({signal});
+        submitting.end();
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+
+    }, []);
+
+    const onBobineClick = (row) => {
+        setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
+        showModal();
+    }
+
+    const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
-                (!changed) && setChanged(true);
-                const { typelist, ...vals } = values;
-                const _values = {
-                    ...vals,
-                    fbobinedate: getFilterRangeValues(values["fbobinedate"]?.formatted)
-                };
-                dataAPI.addFilters(_values);
-                dataAPI.addParameters({ typelist })
+                //remove empty values
+                const _values = processFilters(type, values, defaultFilters);
+                dataAPI.addFilters(_values, true);
+                dataAPI.addParameters(defaultParameters);
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
         }
+
+
+
+        // const festados = formFilter.getFieldsValue(true).festados?.map(v => v.key);
+        // if (festados){
+        //     console.log("aaaaaaaaa", dataAPI.getData().rows.filter(v => festados.includes(v.estado)), festados)
+        // }
     };
+    const onFilterChange = (changedValues, values) => { };
 
-    const onValuesChange = (type, changedValues, allValues) => {
-        switch (type) {
-            case "filter":
-                form.setFieldsValue(allValues);
-                break;
-        }
+    const onRowsChange = (rows, changedRows) => {
+        const column = changedRows.column.key;
+        const indexRow = changedRows.indexes[0];
+
+        //dataAPI.setRows(rows);
     }
 
-    const downloadFile = (data, filename, mime, bom) => {
-        var blobData = (typeof bom !== 'undefined') ? [bom, data] : [data]
-        var blob = new Blob(blobData, { type: mime || 'application/octet-stream' });
-        if (typeof window.navigator.msSaveBlob !== 'undefined') {
-            // IE workaround for "HTML7007: One or more blob URLs were
-            // revoked by closing the blob for which they were created.
-            // These URLs will no longer resolve as the data backing
-            // the URL has been freed."
-            window.navigator.msSaveBlob(blob, filename);
-        }
-        else {
-            var blobURL = (window.URL && window.URL.createObjectURL) ? window.URL.createObjectURL(blob) : window.webkitURL.createObjectURL(blob);
-            var tempLink = document.createElement('a');
-            tempLink.style.display = 'none';
-            tempLink.href = blobURL;
-            tempLink.setAttribute('download', filename);
-
-            // Safari thinks _blank anchor are pop ups. We only want to set _blank
-            // target if the browser does not support the HTML5 download attribute.
-            // This allows you to download files in desktop safari if pop up blocking
-            // is enabled.
-            if (typeof tempLink.download === 'undefined') {
-                tempLink.setAttribute('target', '_blank');
-            }
-
-            document.body.appendChild(tempLink);
-            tempLink.click();
-
-            // Fixes "webkit blob resource error 1"
-            setTimeout(function () {
-                document.body.removeChild(tempLink);
-                window.URL.revokeObjectURL(blobURL);
-            }, 200);
-        }
+    const onPrint = () => {
+        const palete = parameters.palete?.id ? parameters?.palete : null;
+        const bobinagem = parameters.bobinagem?.id ? parameters?.bobinagem : null;
+        const _title = palete ? `Etiquetas Bobines - Palete ${palete?.nome} ` : `Etiquetas Bobines - Bobinagem ${bobinagem?.nome} `;
+        setModalParameters({ content: "print", palete, bobinagem, title: _title, width: 500, height: 280 });
+        showModal();
     }
 
-    const menu = (
-        <Menu onClick={(v) => exportFile(v)}>
-            <Menu.Item key="pdf" icon={<FilePdfTwoTone twoToneColor="red" />}>Pdf</Menu.Item>
-            <Menu.Item key="excel" icon={<FileExcelTwoTone twoToneColor="#52c41a" />}>Excel</Menu.Item>
-            <Menu.Item key="word" icon={<FileWordTwoTone />}>Word</Menu.Item>
-        </Menu>
-    );
-
-    const exportFile = async (type) => {
-        const requestData = dataAPI.getPostRequest();
-
-        requestData.parameters = {
-            ...requestData.parameters,
-            "config": "default",
-            "orientation": "landscape",
-            "template": "TEMPLATES-LIST/LIST-A4-${orientation}",
-            "title": mainTitle,
-            "export": type.key,
-            cols: columns
-        }
-        const response = await fetchPostBlob(requestData);
-        switch (type.key) {
-            case "pdf":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.pdf`);
-                break;
-            case "excel":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.xlsx`);
-                break;
-            case "word":
-                downloadFile(response.data, `list-${new Date().toJSON().slice(0, 10)}.docx`);
-                break;
-        }
+    const changeMode = () => {
+        setModeEdit({ datagrid: (modeEdit.datagrid) ? false : true });
     }
 
+    const onAction = (item, row) => {
+    }
+
+    const onSave = async (action) => {
+
+    }
+
+    
     return (
         <>
+            {/* <TitleForm data={dataAPI.getAllFilter()} bobinagem={bobinagem} onChange={onFilterChange} /> */}
+            <Table
+                loading={submitting.state}
+                actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
+                frozenActionColumn
+                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}`}`}
+                loadOnInit={false}
+                columns={columns}
+                dataAPI={dataAPI}
+                toolbar={true}
+                search={true}
+                moreFilters={true}
+                rowSelection={false}
+                primaryKeys={primaryKeys}
+                editable={true}
+                clearSort={false}
+                rowHeight={28}
+                onRowsChange={onRowsChange}
+                toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
+                leftToolbar={<Space>
+                    <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
+                    <Permissions permissions={props?.permission} action="editList">
+                        {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
+                        {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
+                        {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
+                    </Permissions>
 
-            <FilterDrawer schema={filterSchema({ form })} filterRules={filterRules()} form={form} width={350} setShowFilter={setShowFilter} showFilter={showFilter} />
-            <Form form={form} name={`fps`} onFinish={(values) => onFinish("filter", values)} onValuesChange={onValuesChange}>
-                <FormLayout
-                    id="LAY-BOBINAGENS"
-                    layout="horizontal"
-                    style={{ width: "700px", padding: "0px"/* , minWidth: "700px" */ }}
-                    schema={schema}
-                    field={{ guides: false, wide: [4, 4, 1.5, 1.5], style: { marginLeft: "2px", alignSelf: "end" } }}
-                    fieldSet={{ guides: false, wide: 16, margin: false, layout: "horizontal", overflow: false }}
-                >
-                     <Field name="fbobinedate" required={false} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Data Bobine", pos: "top" }}>
-                        <RangeDateField size='small' />
-                    </Field>
-                    <FieldItem label={{ enabled: false }}>
-                        <ButtonGroup size='small' style={{ marginLeft: "5px" }}>
-                            <Button style={{ padding: "0px 3px" }} onClick={() => form.submit()}><SearchOutlined /></Button>
-                            <Button style={{ padding: "0px 3px" }}><MoreFilters style={{ fontSize: "16px", marginTop: "2px" }} onClick={() => setShowFilter(prev => !prev)} /></Button>
-                        </ButtonGroup>
-                    </FieldItem>
-                    <FieldItem label={{ enabled: false }}><Dropdown overlay={menu}>
-                        <Button size="small" icon={<FileFilled />}><DownOutlined /></Button>
-                    </Dropdown>
-                    </FieldItem>
-                </FormLayout>
-            </Form>
+                </Space>}
+            />
         </>
     );
-}
-
-
-
-const Quantity = ({ v, unit = "kg" }) => {
-    return (<div style={{ display: "flex", flexDirection: "row" }}>{v && <><div style={{ width: "60px" }}>{parseFloat(v).toFixed(2)}</div><div>{unit}</div></>}</div>);
-
-}
-
-const Teste = ({ r, v }) => {
-    return (<div>{v}</div>);
-}
-
-export default () => {
-    const classes = useStyles()
-    const [loading, setLoading] = useState(false);
-    const [selectedRows, setSelectedRows] = useState([]);
-    const [showFilter, setShowFilter] = useState(false);
-    const [showValidar, setShowValidar] = useState({ show: false, data: {} });
-    const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({
-        payload: { url: `${API_URL}/bobinesoriginaislist/`, parameters: {}, pagination: { enabled: false, page: 1, pageSize: 15 }, filter: {}, sort: [] }
-    });
-    const elFilterTags = document.getElementById('filter-tags');
-    const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
-
-    useEffect(() => {
-        const cancelFetch = cancelToken();
-        dataAPI.first();
-        dataAPI.fetchPost({ token: cancelFetch });
-        return (() => cancelFetch.cancel());
-    }, []);
-
-    const selectionRowKey = (record) => {
-        return `bo-${record.rowid}`;
-    }
-
-    const columns = setColumns(
-        {
-            dataAPI,
-            data: dataAPI.getData().rows,
-            uuid: "bobinesoriginaislist",
-            include: {
-                ...((common) => (
-                    {
-                        nome: { title: "Palete", fixed: "left", width: 80, render: (v, r) => v, ...common },
-                        bobine: { title: "Bobine", fixed: "left", width: 120, render: (v, r) => <b>{v}</b>, ...common },
-                        largura0: { title: "Lar.", width: 80, render: (v, r) => v, ...common },
-                        comp0: { title: "Comp.", width: 80, render: (v, r) => v, ...common },
-                        original_lvl1: { title: "Nível 1", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
-                        largura1: { title: "Lar. N1", width: 80, render: (v, r) => v, ...common },
-                        comp1_original: { title: "Comp. N1", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        comp1_atual: { title: "C. Atual N1", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        metros_cons: { title: "M. Cons. N1", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl2: { title: "Nível 2", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
-                        largura2: { title: "Lar. N2", width: 80, render: (v, r) => v, ...common },
-                        comp2_original: { title: "Comp. N2", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        comp2_atual: { title: "C. Atual N2", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        metros_cons_lvl1: { title: "M. Cons. N2", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl3: { title: "Nível 3", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
-                        largura3: { title: "Lar. N3", width: 80, render: (v, r) => v, ...common },
-                        comp3_original: { title: "Comp. N3", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        comp3_atual: { title: "C. Atual N3", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        metros_cons_lvl2: { title: "M. Cons. N3", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl4: { title: "Nível 4", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
-                        largura4: { title: "Lar. N4", width: 80, render: (v, r) => v, ...common },
-                        comp4_original: { title: "Comp. N4", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        comp4_atual: { title: "C. Atual N4", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        metros_cons_lvl3: { title: "M. Cons. N4", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        original_lvl5: { title: "Nível 5", width: 120, render: (v, r) => <Text style={{color:"blue"}}>{v}</Text>, ...common },
-                        largura5: { title: "Lar. N5", width: 80, render: (v, r) => v, ...common },
-                        comp5_original: { title: "Comp. N5", width: 80, render: (v, r) => v !== 0 && v, ...common },
-                        comp5_atual: { title: "C. Atual N5", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        metros_cons_lvl4: { title: "M. Cons. N5", width: 100, render: (v, r) => v !== 0 && v, ...common },
-                        root: { title: "Raíz", width: 120, render: (v, r) => v, ...common },
-                        nretrabalhos: { title: "Nº Níveis", width: 60, render: (v, r) => v, ...common },
-                        emenda: { title: "Emenda", ellipsis: true, width: 560, render: (v, r) => v, ...common },
-                        emenda_lvl1: { title: "Emenda Nível 1", ellipsis: true, width: 460, render: (v, r) => v, ...common },
-                        emenda_lvl2: { title: "Emenda Nível 2", ellipsis: true, width: 360, render: (v, r) => v, ...common },
-                        emenda_lvl3: { title: "Emenda Nível 3", ellipsis: true, width: 360, render: (v, r) => v, ...common },
-                        emenda_lvl4: { title: "Emenda Nível 4", ellipsis: true, width: 360, render: (v, r) => v, ...common },
-                    }
-                ))({ idx: 1, optional: false })
-            },
-            exclude: []
-        }
-    );
-
-    return (
-        <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ top: "50%", left: "50%", position: "absolute" }} >
-                <ToolbarTable form={formFilter} dataAPI={dataAPI} />
-                {/* {elFilterTags && <Portal elId={elFilterTags}>
-                    <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />
-                </Portal>} */}
-                <Table
-                    title={<Title level={4}>{mainTitle}</Title>}
-                    columnChooser={false}
-                    reload
-                    rowHover
-                    stripRows
-                    darkHeader
-                    size="small"
-                    toolbar={<GlobalSearch columns={columns?.report} form={formFilter} dataAPI={dataAPI} setShowFilter={setShowFilter} showFilter={showFilter} />}
-                    selection={{ enabled: false, rowKey: record => selectionRowKey(record), onSelection: setSelectedRows, multiple: false, selectedRows, setSelectedRows }}
-                    paginationProps={{ pageSizeOptions: [10, 15, 20, 30] }}
-                    dataAPI={dataAPI}
-                    columns={columns}
-                    onFetch={dataAPI.fetchPost}
-                    scroll={{ x: (SCREENSIZE_OPTIMIZED.width - 20), y: '70vh', scrollToFirstRowOnChange: true }}
-                //scroll={{ x: '100%', y: "75vh", scrollToFirstRowOnChange: true }}
-                />
-            </Spin>
-        </>
-    )
 }

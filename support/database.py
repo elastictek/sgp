@@ -279,8 +279,6 @@ class PostgresSql(BaseSql):
 
     def dql(self, data, computeColumns=True, encloseColumns=True, defaultSort=[]):
         "Compute query items: sort and pagination"
-        print("PAGINATIONNNNNNNN")
-        print(data)
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
         ret.sort = self._BaseSql__getSort(data,defaultSort)

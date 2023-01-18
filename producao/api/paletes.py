@@ -247,9 +247,6 @@ def PaletesList(request, format=None):
     f.auto()
     f.value()
 
-    print("filterrrrrr")
-    print(f.text)
-
     fartigo = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ["'cod'", "'des'"], "table": 'j->>'},
         'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
@@ -632,8 +629,8 @@ def UpdateDestinos(request, format=None):
                 statement = dml.statement.replace('SET',
                 f'''SET 
                 destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
-                destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]}),
-                ignore_audit=1 '''
+                destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]})
+                '''
                 ,1)
                 db.execute(statement, cursor, dml.parameters)
 

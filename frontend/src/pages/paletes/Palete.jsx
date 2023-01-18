@@ -39,6 +39,7 @@ import BobinesDestinosList from '../bobines/BobinesDestinosList';
 import BobinesPropriedadesList from '../bobines/BobinesPropriedadesList';
 import PaletesHistoryList from './PaletesHistoryList';
 import BobinesMPGranuladoList from '../bobines/BobinesMPGranuladoList';
+import BobinesOriginaisList from '../bobines/BobinesOriginaisList';
 import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
 
@@ -206,15 +207,19 @@ export default (props) => {
                         label: `Bobines Destinos`,
                         key: '5',
                         children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
-                    },,
+                    },
                     {
                         label: `MP Granulado (Lotes)`,
                         key: '6',
                         children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
+                    },{
+                        label: `Bobines Originais`,
+                        key: '7',
+                        children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
                     },
                     {
                         label: `Histórico`,
-                        key: '7',
+                        key: '8',
                         children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
                     },
                 ]}
