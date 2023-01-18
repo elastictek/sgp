@@ -247,6 +247,9 @@ def PaletesList(request, format=None):
     f.auto()
     f.value()
 
+    print("filterrrrrr")
+    print(f.text)
+
     fartigo = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ["'cod'", "'des'"], "table": 'j->>'},
         'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
@@ -617,7 +620,7 @@ def UpdateDestinos(request, format=None):
                 ids_o = ','.join(str(x) for x in data["rowsObs"])                    
 
                 dml = db.dml(TypeDml.UPDATE,{
-                    "destinos":data["values"]["destinos"],
+                    "destinos":json.dumps(data["values"]["destinos"]),
                     "destino":data["values"]["destinoTxt"]
                     }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)

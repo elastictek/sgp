@@ -109,7 +109,7 @@ export default (props) => {
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = { method: "BobinesGranuladoMPList" };
     const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
-    const defaultSort = [{ column: 'mb.nome', direction: 'ASC' }];
+    const defaultSort = [{ column: 'pb.nome', direction: 'ASC' }];
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
     const primaryKeys = ['id', 'matprima_cod', 'n_lote'];
     const [modalParameters, setModalParameters] = useState({});
@@ -147,12 +147,12 @@ export default (props) => {
         { key: 'nome', sortable: true, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
         { key: 'posicao_palete', sortable: false, name: 'Pos. Palete', width: 90, formatter: p => p.row.posicao_palete },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
-        { key: 'matprima_cod', name: 'Cód. Matéria Prima', width: 150, sortable: true },
-        { key: 'matprima_des', name: 'Matéria Prima', sortable: true },
+        { key: 'artigo_cod', name: 'Cód. Matéria Prima', width: 150, sortable: true },
+        { key: 'artigo_des', name: 'Matéria Prima', sortable: true },
         { key: 'n_lote', name: 'Lote', width: 220, sortable: true },
-        { key: 'shared', name: 'Partilhado', width: 60, sortable: true },
-        { key: 'data_entrada_lote', width: 130, name: 'Data Entrada', formatter: p => moment(p.row.data_entrada_lote).isValid() && moment(p.row.data_entrada_lote).format(DATETIME_FORMAT) },
-        { key: 'data_saida_lote', width: 130, name: 'Data Saída', formatter: p => moment(p.row.data_saida_lote).isValid() && moment(p.row.data_saida_lote).format(DATETIME_FORMAT) }
+        { key: 't_stamp', width: 130, name: 'Data Entrada', formatter: p => moment(p.row.t_stamp).isValid() && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 130, name: 'Data Saída', formatter: p => moment(p.row.t_stamp_out).isValid() && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
+        { key: 't_stamp_close', width: 130, name: 'Data Fecho', formatter: p => moment(p.row.t_stamp_close).isValid() && moment(p.row.t_stamp_close).format(DATETIME_FORMAT) }
     ];
 
     const loadData = async ({ signal } = {}) => {

@@ -158,8 +158,8 @@ const moreFiltersSchema = ({ form }) => [
     { fdiam_min: { label: "Diâmetro (Min)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_max: { label: "Diâmetro (Max)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_avg: { label: "Diâmetro (Médio)", field: { type: 'input', size: 'small' }, span: 8 } },
     { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
     {
-        fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] }, span: 6 },
-        fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: 1, label: "Sim" }, { value: 0, label: "Não" }] }, span: 6 },
+        fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
+        fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
         feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
     },
     { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } }},
@@ -806,8 +806,8 @@ export default ({ setFormTitle, ...props }) => {
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
-                    fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched === 1 ? '!isnull' : 'isnull',
-                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga === 1 ? '!isnull' : 'isnull'
+                    fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
+                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
                     // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),

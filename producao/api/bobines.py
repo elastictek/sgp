@@ -268,38 +268,40 @@ def UpdateDefeitos(request, format=None):
 
 
 def BobinesGranuladoMPList(request,format=None):
-    connection = connections[connGatewayName].cursor()
+    connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({
-        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'mb.{k}'},
-        "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'mb.{k}'},
-        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'mcg.{k}'}
+        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'pb.{k}'},
+        "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'pb.{k}'},
+        "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lgl.{k}'}
     }, True)
     f.where()
     f.auto()
     f.value()
 
     f2 = filterMulti(request.data['filter'], {
-        'fartigo': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'}
+        'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 'lgl.'}
     }, False, "and" if f.hasFilters else "where" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
-    dql = dbgw.dql(request.data, False)
-    cols = f"""distinct mb.id,mb.nome,mb.posicao_palete,mb.estado,mcg.matprima_cod,mcg.matprima_des, mcg.n_lote, mcg.shared,mcg.data_entrada_lote ,mcg.data_saida_lote """
+    dql = db.dql(request.data, False)
+    cols = f"""distinct pb.id bobine_id, pb.nome,pb.estado,pb.posicao_palete, lgl.artigo_cod ,lgl.artigo_des, lgl.n_lote ,lgl.t_stamp ,lgl.t_stamp_out ,lgl.t_stamp_closed """
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""  
-            select {c(f'{dql.columns}')}
-            from mv_bobines mb 
-            join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id
+            SELECT {c(f'{dql.columns}')}
+            FROM producao_bobine pb 
+            JOIN sistema.lotesdosers_ig ldi on pb.ig_id=ldi.ig_id and ldi.arranque>0
+            JOIN lotesdoserslinha ldl ON ldl.id=ldi.ldl_id
+            JOIN lotesgranuladolinha lgl ON lgl.id=ldl.loteslinha_id and lgl.type_mov=1
             {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     try:
-        response = dbgw.executeList(sql, connection, parameters,[],None,None)
+        response = db.executeList(sql, connection, parameters,[],None,None)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

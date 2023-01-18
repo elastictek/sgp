@@ -61,6 +61,7 @@ const ToolbarTable = ({ form, modeEdit, permission, submitting, changeMode, dirt
     }
 
     const edit = () => {
+        console.log(props)
         if (!props?.parameters?.palete?.SDHNUM_0 && !props?.parameters?.palete?.carga_id) {
             return true;
         } else {
@@ -71,7 +72,7 @@ const ToolbarTable = ({ form, modeEdit, permission, submitting, changeMode, dirt
     const leftContent = (<>
         <Space>
             {modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={() => changeMode('formPaletizacao')} />}
-            {/* {!modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<EditOutlined />} onClick={() => changeMode('formPaletizacao')}>Editar</Button>} */}
+            {!modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<EditOutlined />} onClick={() => changeMode('formPaletizacao')}>Editar</Button>}
             {(modeEdit?.formPaletizacao && dirty) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
         </Space>
         <LeftToolbar />
