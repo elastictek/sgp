@@ -275,13 +275,13 @@ def BobinesGranuladoMPList(request,format=None):
         "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'pb.{k}'},
         "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lgl.{k}'}
     }, True)
-    f.where()
+    f.where(False,"and")
     f.auto()
     f.value()
 
     f2 = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 'lgl.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
+    }, False, "and" if f.hasFilters else "and" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = db.dql(request.data, False)
@@ -294,7 +294,7 @@ def BobinesGranuladoMPList(request,format=None):
             JOIN sistema.lotesdosers_ig ldi on pb.ig_id=ldi.ig_id and ldi.arranque>0
             JOIN lotesdoserslinha ldl ON ldl.id=ldi.ldl_id
             JOIN lotesgranuladolinha lgl ON lgl.id=ldl.loteslinha_id and lgl.type_mov=1
-            {f.text} {f2["text"]}
+            where pb.comp_actual>0 and pb.recycle=0 {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
@@ -315,7 +315,7 @@ def BobinesOriginaisList(request,format=None):
         "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'ppb.{k}'},
         "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'ppb.{k}'}
     }, True)
-    f.where()
+    f.where(False,"and")
     f.auto()
     f.value()
 
@@ -335,6 +335,7 @@ def BobinesOriginaisList(request,format=None):
             original_lvl4, comp4 comp4_original, (comp4 - metros_lvl3) comp4_atual, metros_lvl3 metros_cons_lvl3,largura4,estado4,plt4.nome palete4,
             original_lvl5, comp5 comp5_original, (comp5 - metros_lvl4) comp5_atual, metros_lvl4 metros_cons_lvl4,largura5,estado5,plt5.nome palete5,
             b1,b2,b3,b4,b5,
+            plt.id palete_id0, plt1.id palete_id1, plt2.id palete_id2, plt3.id palete_id3, plt4.id palete_id4, plt5.id palete_id5,
             #nextl1,nextl2,nextl3,nextl4,nextl5,
             #N1,N2,N3,N4,N5,
             nretrabalhos

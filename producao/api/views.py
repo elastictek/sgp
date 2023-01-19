@@ -4682,7 +4682,7 @@ def BobinesList(request, format=None):
         "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
         "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
     }, True)
-    f.where()
+    f.where(False,"and")
     f.auto()
     f.value()
     
@@ -4760,8 +4760,8 @@ def BobinesList(request, format=None):
             left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
             left join producao_palete pp on pp.id=pb.palete_id
             left join producao_carga pc on pp.carga_id=pc.id
-            left join planeamento_ordemproducao po on po.id=pb.ordem_id 
-            {f.text} {festados.text}
+            left join planeamento_ordemproducao po on po.id=pb.ordem_id
+            where comp_actual>0 and recycle=0 {f.text} {festados.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )

@@ -335,6 +335,7 @@ def PaletesLookup(request, format=None):
     #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
     #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
     "id": {"value": lambda v: v.get('palete_id')},
+    "nbobines_real": {"value": lambda v: '>0'},
     #    "vcr_num": {"value": lambda v: v.get('fvcr')},
     #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
     #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
@@ -628,7 +629,12 @@ def UpdateDestinos(request, format=None):
                 dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)
                 statement = dml.statement.replace('SET',
                 f'''SET 
-                destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
+                destinos = (
+                    select json_object('destinos',destinos,'estado',estado,'regranular',regranular) from(
+                    SELECT JSON_ARRAYAGG(json_object('cliente',cliente,'largura',largura,'obs',obs)) destinos,estado,regranular FROM (
+                    SELECT distinct t.cliente,t.largura,t.obs, destinos->'$.estado' estado,destinos->'$.regranular' regranular from producao_bobine pb, JSON_TABLE(destinos,'$.destinos[*]' COLUMNS (cliente JSON PATH '$.cliente', largura INT PATH '$.largura', obs TEXT PATH '$.obs')) t where palete_id = {filter["palete_id"]}
+                    ) t group by estado,regranular) t limit 1
+                ),
                 destino = (
                     select GROUP_CONCAT(distinct cliente->>'$.BPCNAM_0',' ',largura ORDER BY cliente->>'$.BPCNAM_0',t.largura SEPARATOR ' // ') FROM (
 	                SELECT distinct t.cliente,t.largura	from producao_bobine pb, JSON_TABLE(destinos,'$.destinos[*]' COLUMNS (cliente JSON PATH '$.cliente', largura INT PATH '$.largura')) t where palete_id = {filter["palete_id"]}
@@ -636,6 +642,11 @@ def UpdateDestinos(request, format=None):
                 )
                 '''
                 ,1)
+
+                print("dml.statement")
+                print(statement)
+                print("dml.statement")
+
                 db.execute(statement, cursor, dml.parameters)
 
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})

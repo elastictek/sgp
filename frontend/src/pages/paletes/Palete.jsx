@@ -14,7 +14,7 @@ import { useDataAPI } from "utils/useDataAPI";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Empty } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -54,9 +54,9 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
 }
 
 export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
-    useEffect(()=>{
-        console.log("-------------------------------->",props,)
-    },[]);
+    useEffect(() => {
+        console.log("-------------------------------->", props,)
+    }, []);
     return (
         <Space>
             <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button>
@@ -67,9 +67,9 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
 }
 
 export const BtnEtiquetasBobines = () => {
-return(
-    <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas das bobines">Etiquetas</Button>
-);
+    return (
+        <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas das bobines">Etiquetas</Button>
+    );
 }
 
 // const ToolbarTable = ({ form, dataAPI, typeListField, validField, typeField }) => {
@@ -99,10 +99,15 @@ return(
 //     );
 // }
 
+const loadPaleteLookup = async (palete_id) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, pagination: { limit: 1 }, filter: { palete_id: `==${palete_id}` }, parameters: { method: "PaletesLookup" } });
+    return rows;
+}
+
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     const permission = usePermission({});//Permissões Iniciais
     const [modeEdit, setModeEdit] = useState({});
 
@@ -116,6 +121,7 @@ export default (props) => {
     const submitting = useSubmitting(true);
     const primaryKeys = [];
     const [activeTab, setActiveTab] = useState();
+    const [paleteExists, setPaleteExists] = useState(false);
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
@@ -150,10 +156,15 @@ export default (props) => {
             Modal.error({ content: "Não tem permissões!" });
             return;
         } */
-        const {palete,..._parameters} = props?.parameters || {};
+        const { palete, ..._parameters } = props?.parameters || {};
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+        const formValues = await loadPaleteLookup(initFilters.palete_id);
+        if (formValues.length > 0 && formValues[0]?.artigo) {
+            setPaleteExists(true);
+        }
         setActiveTab(props?.tab);
         console.log("####", initFilters)
+        submitting.end();
         /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         dataAPI.addFilters({ ...filterValues }, true, false);
@@ -180,51 +191,53 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
 
+        <>
+            {paleteExists &&
+                <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                    items={[
+                        {
+                            label: `Informação`,
+                            key: '1',
+                            children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
+                        },
+                        {
+                            label: `Embalamento`,
+                            key: '2',
+                            children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
+                        },
+                        {
+                            label: `Bobines`,
+                            key: '3',
+                            children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
+                        }, {
+                            label: `Bobines Defeitos`,
+                            key: '4',
+                            children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
+                        },
+                        {
+                            label: `Bobines Destinos`,
+                            key: '5',
+                            children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
+                        },
+                        {
+                            label: `MP Granulado (Lotes)`,
+                            key: '6',
+                            children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
+                        }, {
+                            label: `Bobines Originais`,
+                            key: '7',
+                            children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
+                        },
+                        {
+                            label: `Histórico`,
+                            key: '8',
+                            children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
+                        },
+                    ]}
 
-
-            <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                items={[
-                    {
-                        label: `Informação`,
-                        key: '1',
-                        children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
-                    },
-                    {
-                        label: `Embalamento`,
-                        key: '2',
-                        children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
-                    },
-                    {
-                        label: `Bobines`,
-                        key: '3',
-                        children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
-                    }, {
-                        label: `Bobines Defeitos`,
-                        key: '4',
-                        children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
-                    },
-                    {
-                        label: `Bobines Destinos`,
-                        key: '5',
-                        children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
-                    },
-                    {
-                        label: `MP Granulado (Lotes)`,
-                        key: '6',
-                        children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
-                    },{
-                        label: `Bobines Originais`,
-                        key: '7',
-                        children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
-                    },
-                    {
-                        label: `Histórico`,
-                        key: '8',
-                        children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
-                    },
-                ]}
-
-            />
+                />}
+            {(!paleteExists && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
+        </>
         // </Context.Provider>
     )
 

@@ -145,7 +145,6 @@ export default (props) => {
     const primaryKeys = ['rowid'];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
         const content = () => {
             switch (modalParameters.content) {
                 case "print": return <FormPrint v={{ ...modalParameters }} />;
@@ -207,7 +206,7 @@ export default (props) => {
         { key: 'nretrabalhos', name: 'Retrabalhos', width: 100, formatter: p => p.row.nretrabalhos },
         { key: 'comp0', sortable: false, name: 'Comprimento', width: 100, formatter: p => p.row?.comp0 && <div style={{ textAlign: "right" }}>{p.row.comp0} m</div> },
         { key: 'largura0', sortable: false, name: 'Largura', width: 90, formatter: p => p.row?.largura0 && <div style={{ textAlign: "right" }}>{p.row.largura0} mm</div> },
-        { key: 'palete0', sortable: false, name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete0}</Button> },
+        { key: 'palete0', sortable: false, name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 0)}>{p.row.palete0}</Button> },
         { key: 'estado0', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => p.row.estado0 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado0' larguraColumn='largura0' b={p.row} /></div> },
 
         { key: 'original_lvl1', sortable: false, name: 'L1 Bobine', cellClass: (row) => cellClass(row, 1, 's'), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl1}</Button> },
@@ -215,7 +214,7 @@ export default (props) => {
         { key: 'comp1_atual', sortable: false, name: 'L1 Comp. Atual', cellClass: (row) => cellClass(row, 1), width: 100, formatter: p => p.row?.comp1_atual && <div style={{ textAlign: "right" }}>{p.row.comp1_atual} m</div> },
         { key: 'metros_cons', sortable: false, name: 'L1 Metros Consumidos', cellClass: (row) => cellClass(row, 1), width: 100, formatter: p => p.row?.metros_cons && <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
         { key: 'largura1', sortable: false, name: 'L1 Largura', cellClass: (row) => cellClass(row, 1), width: 90, formatter: p => p.row?.largura1 && <div style={{ textAlign: "right" }}>{p.row.largura1} mm</div> },
-        { key: 'palete1', sortable: false, name: 'L1 Palete', cellClass: (row) => cellClass(row, 1), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete1}</Button> },
+        { key: 'palete1', sortable: false, name: 'L1 Palete', cellClass: (row) => cellClass(row, 1), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 1)}>{p.row.palete1}</Button> },
         { key: 'estado1', sortable: false, name: 'L1 Estado', cellClass: (row) => cellClass(row, 1, 'e'), minWidth: 85, width: 85, formatter: (p) => p.row.estado1 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado1' larguraColumn='largura1' b={p.row} /></div> },
 
         { key: 'original_lvl2', sortable: false, name: 'L2 Bobine', cellClass: (row) => cellClass(row, 2), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl2}</Button> },
@@ -223,7 +222,7 @@ export default (props) => {
         { key: 'comp2_atual', sortable: false, name: 'L2 Comp. Atual', cellClass: (row) => cellClass(row, 2), width: 100, formatter: p => p.row?.comp2_atual && <div style={{ textAlign: "right" }}>{p.row.comp2_atual} m</div> },
         { key: 'metros_cons_lvl1', sortable: false, name: 'L2 Metros Consumidos', cellClass: (row) => cellClass(row, 2), width: 100, formatter: p => p.row?.metros_cons_lvl1 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl1} m</div> },
         { key: 'largura2', sortable: false, name: 'L2 Largura', cellClass: (row) => cellClass(row, 2), width: 90, formatter: p => p.row?.largura2 && <div style={{ textAlign: "right" }}>{p.row.largura2} mm</div> },
-        { key: 'palete2', sortable: false, name: 'L2 Palete', cellClass: (row) => cellClass(row, 2), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete2}</Button> },
+        { key: 'palete2', sortable: false, name: 'L2 Palete', cellClass: (row) => cellClass(row, 2), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 2)}>{p.row.palete2}</Button> },
         { key: 'estado2', sortable: false, name: 'L2 Estado', cellClass: (row) => cellClass(row, 2, 'e'), minWidth: 85, width: 85, formatter: (p) => p.row.estado2 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado2' larguraColumn='largura2' b={p.row} /></div> },
 
         { key: 'original_lvl3', sortable: false, name: 'L3 Bobine', cellClass: (row) => cellClass(row, 3), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl3}</Button> },
@@ -231,7 +230,7 @@ export default (props) => {
         { key: 'comp3_atual', sortable: false, name: 'L3 Comp. Atual', cellClass: (row) => cellClass(row, 3), width: 100, formatter: p => p.row?.comp3_atual && <div style={{ textAlign: "right" }}>{p.row.comp3_atual} m</div> },
         { key: 'metros_cons_lvl2', sortable: false, name: 'L3 Metros Consumidos', cellClass: (row) => cellClass(row, 3), width: 100, formatter: p => p.row?.metros_cons_lvl2 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl2} m</div> },
         { key: 'largura3', sortable: false, name: 'L3 Largura', cellClass: (row) => cellClass(row, 3), width: 90, formatter: p => p.row?.largura3 && <div style={{ textAlign: "right" }}>{p.row.largura3} mm</div> },
-        { key: 'palete3', sortable: false, name: 'L3 Palete', cellClass: (row) => cellClass(row, 3), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete3}</Button> },
+        { key: 'palete3', sortable: false, name: 'L3 Palete', cellClass: (row) => cellClass(row, 3), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 3)}>{p.row.palete3}</Button> },
         { key: 'estado3', sortable: false, name: 'L3 Estado', cellClass: (row) => cellClass(row, 3, 'e'), minWidth: 85, width: 85, formatter: (p) => p.row.estado3 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado3' larguraColumn='largura3' b={p.row} /></div> },
 
         { key: 'original_lvl4', sortable: false, name: 'L4 Bobine', cellClass: (row) => cellClass(row, 4), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl4}</Button> },
@@ -239,7 +238,7 @@ export default (props) => {
         { key: 'comp4_atual', sortable: false, name: 'L4 Comp. Atual', cellClass: (row) => cellClass(row, 4), width: 100, formatter: p => p.row?.comp4_atual && <div style={{ textAlign: "right" }}>{p.row.comp4_atual} m</div> },
         { key: 'metros_cons_lvl3', sortable: false, name: 'L4 Metros Consumidos', cellClass: (row) => cellClass(row, 4), width: 100, formatter: p => p.row?.metros_cons_lvl3 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl3} m</div> },
         { key: 'largura4', sortable: false, name: 'L4 Largura', cellClass: (row) => cellClass(row, 4), width: 90, formatter: p => p.row?.largura4 && <div style={{ textAlign: "right" }}>{p.row.largura4} mm</div> },
-        { key: 'palete4', sortable: false, name: 'L4 Palete', cellClass: (row) => cellClass(row, 4), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete4}</Button> },
+        { key: 'palete4', sortable: false, name: 'L4 Palete', cellClass: (row) => cellClass(row, 4), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 4)}>{p.row.palete4}</Button> },
         { key: 'estado4', sortable: false, name: 'L4 Estado', cellClass: (row) => cellClass(row, 4, 'e'), minWidth: 85, width: 85, formatter: (p) => p.row.estado4 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado4' larguraColumn='largura4' b={p.row} /></div> },
 
         { key: 'original_lvl5', sortable: false, name: 'L5 Bobine', cellClass: (row) => cellClass(row, 5), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.original_lvl5}</Button> },
@@ -247,7 +246,7 @@ export default (props) => {
         { key: 'comp5_atual', sortable: false, name: 'L5 Comp. Atual', cellClass: (row) => cellClass(row, 5), width: 100, formatter: p => p.row?.comp5_atual && <div style={{ textAlign: "right" }}>{p.row.comp5_atual} m</div> },
         { key: 'metros_cons_lvl4', sortable: false, name: 'L5 Metros Consumidos', cellClass: (row) => cellClass(row, 5), width: 100, formatter: p => p.row?.metros_cons_lvl4 && <div style={{ textAlign: "right" }}>{p.row.metros_cons_lvl4} m</div> },
         { key: 'largura5', sortable: false, name: 'L5 Largura', cellClass: (row) => cellClass(row, 5), width: 90, formatter: p => p.row?.largura5 && <div style={{ textAlign: "right" }}>{p.row.largura5} mm</div> },
-        { key: 'palete5', sortable: false, name: 'L5 Palete', cellClass: (row) => cellClass(row, 5), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.palete5}</Button> },
+        { key: 'palete5', sortable: false, name: 'L5 Palete', cellClass: (row) => cellClass(row, 5), width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 5)}>{p.row.palete5}</Button> },
         { key: 'estado5', sortable: false, name: 'L5 Estado', cellClass: (row) => cellClass(row, 5, 'e'), minWidth: 85, width: 85, formatter: (p) => p.row.estado5 && <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status column='estado5' larguraColumn='largura5' b={p.row} /></div> },
 
 
@@ -327,8 +326,9 @@ export default (props) => {
         showModal();
     }
 
-    const onPaleteClick = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
+    const onPaleteClick = (row, level) => {
+        console.log("ROWWWW", { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] });
+        setModalParameters({ content: "palete", /* tab: lastTab, setLastTab */ type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] } });
         showModal();
     }
 
