@@ -287,7 +287,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
             let destinoTxt = "";
             if (!isLegacy) {
                 const destinos = values.destinos.filter((a, i) => values.destinos.findIndex((s) => JSON.stringify(a) === JSON.stringify(s)) === i);
-                destinos.hash = await sha1(JSON.stringify(destinos));
+                //destinos.hash = await sha1(JSON.stringify(destinos));
                 destinoTxt = "";
                 destinos.forEach(v => {
                     destinoTxt = `${destinoTxt} ${destinoTxt && "//"} ${v.cliente.BPCNAM_0} ${v.largura}`;

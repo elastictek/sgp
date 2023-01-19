@@ -31,6 +31,7 @@ import ToolbarTitle from 'components/ToolbarTitle';
 import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
 import FormPrint from '../commons/FormPrint';
 import OF from '../commons/OF';
+import Palete from '../paletes/Palete';
 
 const title = "";
 
@@ -148,6 +149,7 @@ export default (props) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "print": return <FormPrint v={{ ...modalParameters }} />;
+                case "palete": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
@@ -325,6 +327,11 @@ export default (props) => {
         showModal();
     }
 
+    const onPaleteClick = (type, row) => {
+        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
+        showModal();
+    }
+
     const onFilterFinish = (type, values) => {
         switch (type) {
             case "filter":
@@ -379,7 +386,7 @@ export default (props) => {
                 loading={submitting.state}
                 actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
                 frozenActionColumn
-                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}`}`}
+                reportTitle={parameters && `Bobines Originais da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}`}`}
                 loadOnInit={false}
                 columns={columns}
                 dataAPI={dataAPI}
