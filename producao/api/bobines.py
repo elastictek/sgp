@@ -323,7 +323,7 @@ def BobinesOriginaisList(request,format=None):
         #'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 'lgl.'}
     }, False, "and" if f.hasFilters else "where" ,False)
     parameters = {**f.parameters}
-    print("######################################################################zzzzzzzzzzzzzzzzzzzzzzzzzzzz")
+ 
     dql = db.dql(request.data, False)
     cols = f"""
             row_number() over() rowid,
