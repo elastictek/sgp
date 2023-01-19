@@ -629,7 +629,11 @@ def UpdateDestinos(request, format=None):
                 statement = dml.statement.replace('SET',
                 f'''SET 
                 destinos = (SELECT JSON_ARRAYAGG(destinos) FROM (select distinct destinos from producao_bobine pb where palete_id = {filter["palete_id"]}) t), 
-                destino = (select GROUP_CONCAT(DISTINCT destino ORDER BY pb.nome SEPARATOR ' // ') from producao_bobine pb where palete_id = {filter["palete_id"]})
+                destino = (
+                    select GROUP_CONCAT(distinct cliente->>'$.BPCNAM_0',' ',largura ORDER BY cliente->>'$.BPCNAM_0',t.largura SEPARATOR ' // ') FROM (
+	                SELECT distinct t.cliente,t.largura	from producao_bobine pb, JSON_TABLE(destinos,'$.destinos[*]' COLUMNS (cliente JSON PATH '$.cliente', largura INT PATH '$.largura')) t where palete_id = {filter["palete_id"]}
+                    ) t
+                )
                 '''
                 ,1)
                 db.execute(statement, cursor, dml.parameters)
