@@ -138,9 +138,9 @@ export const ModalRangeEditor = ({ p, type, column, title, forInput, valid, unit
             setFormStatus({ ...status.formStatus });
             if (errors === 0) {
                 const _value1 = json(value).map(({ min, max, unit, type }) => (orderObjectKeys({ min, max, unit, type })));
-                const _value2 = json(p.row[column],null);
+                const _value2 = json(p.row[column], null);
                 const notValid = JSON.stringify(_value1) !== JSON.stringify(_value2 ? _value2.map(v => orderObjectKeys(v)) : _value2) ? 1 : 0;
-                p.onRowChange({ ...p.row, [column]: _value1, notValid:(p.row?.notValid ? p.row?.notValid : notValid) }, true);
+                p.onRowChange({ ...p.row, [column]: _value1, notValid: (p.row?.notValid ? p.row?.notValid : notValid) }, true);
                 p.onClose(true);
                 setVisible(false);
             }
@@ -284,7 +284,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
     const onFinish = async (e) => {
         if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
             submitting.trigger();
-            let { obs,prop_obs, destino, ...values } = form.getFieldsValue(true);
+            let { obs, prop_obs, destino, ...values } = form.getFieldsValue(true);
             let destinoTxt = "";
             if (!isLegacy) {
                 const destinos = values.destinos.filter((a, i) => values.destinos.findIndex((s) => JSON.stringify(a) === JSON.stringify(s)) === i);
@@ -509,6 +509,146 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
     );
 }
 
+
+export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props }) => {
+    const classes = useEditorStyles();
+    const [visible, setVisible] = useState(true);
+    const [value, setvalue] = useState();
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(false);
+    const schemaEditor = (options = {}) => { return getSchema({}, options).unknown(true); }
+    const oldEstadoRef = React.useRef({ value: p.row.estado });
+    const [isLegacy, setIsLegacy] = useState(null);
+
+    useEffect(() => {
+        const d = json(p.row.destinos);
+        const _isLegacy = ((!p.row.destinos && p.row.destino) || !Array.isArray(d)) ? true : false;
+        console.log(".......", d, _isLegacy)
+        // form.setFieldsValue({
+        //     estado: d?.estado ? d.estado : { value: p.row.estado },
+        //     destinos: d?.destinos ? json(d.destinos) : [],
+        //     obs: p.row.obs,
+        //     prop_obs: p.row.prop_obs,
+        //     regranular: d?.regranular ? d.regranular : 0,
+        //     ...(_isLegacy) && { destino: p.row.destino }
+        // });
+        setIsLegacy(_isLegacy);
+    }, []);
+
+    const onFinish = async (e) => { }
+
+    const onValuesChange = (changedValues, values) => { };
+    const onCancel = () => {
+        p.onClose();
+        setVisible(false);
+    };
+
+    return (
+        <>
+
+            <Drawer maskClosable={!forInput}
+                title={<div>Destinos <span style={{ fontWeight: 900 }}>{p.row.nome}</span></div>} open={visible} destroyOnClose onClose={onCancel} width="550px"
+                extra={<Space>{forInput && <><Button disabled={submitting.state} onClick={onCancel}>Cancelar</Button><Button disabled={submitting.state} onClick={onFinish} type="primary">Registar</Button></>}</Space>}
+            >
+                <YScroll>
+                    <Form name={`f-paldestinos`} initialValues={{}}>
+                        {isLegacy === true && <Row>
+                            <Col>
+                                <Field forInput={false} wrapFormItem={false} label={{ enabled: false }}>
+                                    <TextArea value={p.row.destino.replace(/\/\//g, "\n").replaceAll("^\s+|\h+$", "")} autoSize={{ minRows: 2, maxRows: 16 }} style={{ width: "100%", whiteSpace: "pre" }} />
+                                </Field>
+                            </Col>
+                        </Row>}
+                        {isLegacy === false && json(p.row.destinos).map((v, i) => <Row key={`d-${i}`}>
+                            <Col>
+
+                                <Row style={{ marginBottom: "2px" }} gutterWidth={5}>
+
+
+                                    <Col width={120}>
+                                        <Field wrapFormItem={false} forInput={false} name="regranular" label={{ enabled: false, text: "Regranular" }}>
+                                            <SwitchField value={v.regranular} checkedChildren="Regranular" unCheckedChildren="Regranular" />
+                                        </Field>
+                                    </Col>
+                                    <Col></Col>
+                                    <Col width={50}><Field forInput={false} wrapFormItem={false} name="estado" label={{ enabled: false, text: "Estado" }}>
+                                        <Selector
+                                            value={v.estado}
+                                            size="small"
+                                            toolbar={false}
+                                            title="Estados"
+                                            popupWidth={130}
+                                            params={{ payload: { data: { rows: BOBINE_ESTADOS }, pagination: { limit: 20 } } }}
+                                            keyField={["value"]}
+                                            textField="value"
+                                            rowHeight={28}
+                                            columns={[
+                                                { key: 'value', name: 'Estado', formatter: p => <Status b={{ estado: p.row.value }} /> }
+                                            ]}
+                                            customSearch={<CustomEstadoSearch />}
+                                        />
+                                    </Field></Col>
+                                </Row>
+                                {v.destinos.length > 0 &&
+                                    <Row nogutter>
+                                        <Col width={30} style={{ fontWeight: 700, fontSize: "15px" }}></Col>
+                                        <Col><Label text="Cliente" /></Col>
+                                        <Col width={100}><Label text="Largura" /></Col>
+                                        <Col width={30}></Col>
+                                    </Row>
+                                }
+                                {v.destinos.map((x, j) =>
+                                    <Row key={`dd-${i}-${j}`} nogutter style={{ padding: "10px", marginBottom: "10px", borderRadius: "3px", border: "1px solid rgba(5, 5, 5,0.1)" }}>
+                                        <Col width={30} style={{ display: "flex", flexDirection: "column", alignItems: "center", fontWeight: 700, fontSize: "15px" }}><div>{j + 1}</div></Col>
+                                        <Col>
+                                            <Row gutterWidth={1}>
+                                                <Col>
+                                                    <Field wrapFormItem={false} forViewBackground={false} label={{ enabled: false, text: "Cliente" }}>
+                                                        <Selector
+                                                            forInput={false}
+                                                            value={x.cliente}
+                                                            size="small"
+                                                            title="Clientes"
+                                                            params={{ payload: { url: `${API_URL}/sellcustomerslookup/`, parameters: {}, pagination: { enabled: true, limit: 15 }, filter: {}, sort: [] } }}
+                                                            keyField={["BPCNUM_0"]}
+                                                            textField="BPCNAM_0"
+                                                            detailText={r => r?.ITMDES1_0}
+                                                            style={{ fontWeight: 700 }}
+                                                            columns={[
+                                                                { key: 'BPCNUM_0', name: 'Cód', width: 160 },
+                                                                { key: 'BPCNAM_0', name: 'Nome' }
+                                                            ]}
+                                                            filters={{ fmulti_customer: { type: "any", width: 150, text: "Cliente" } }}
+                                                            moreFilters={{}}
+                                                        />
+                                                    </Field>
+                                                </Col>
+                                                <Col width={100}><Field wrapFormItem={false} forInput={false} forViewBackground={false} label={{ enabled: false, text: "Largura" }}><InputNumber value={x.largura} size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>mm</b>} min={10} max={500} /></Field></Col>
+                                            </Row>
+                                            <Row>
+                                                <Col>
+                                                    <Field wrapFormItem={false} forViewBackground={false} label={{ enabled: false }}>
+                                                        <TextArea value={x.obs} onKeyDown={(e) => (e.key == 'Enter') && e.stopPropagation()} autoSize={{ minRows: 1, maxRows: 3 }} style={{ width: "100%" }} />
+                                                    </Field>
+                                                </Col>
+                                            </Row>
+                                        </Col>
+                                        <Col width={30}></Col>
+                                    </Row>
+                                )}
+
+                            </Col>
+                        </Row>)}
+                    </Form>
+                </YScroll>
+            </Drawer>
+
+        </>
+    );
+}
+
 export const FieldEstadoEditor = ({ p, forInput, column = "estado" }) => {
     const onChange = (v) => {
         console.log("ch--", p.row, v)
@@ -526,10 +666,10 @@ export const FieldEstadoEditor = ({ p, forInput, column = "estado" }) => {
 }
 export const FieldDefeitosEditor = ({ p, column = "defeitos" }) => {
     const onChange = (v) => {
-        const _value1 = json(v,[]).map(x => orderObjectKeys(x));
-        const _value2 = json(p.row[column],null);
+        const _value1 = json(v, []).map(x => orderObjectKeys(x));
+        const _value2 = json(p.row[column], null);
         const notValid = JSON.stringify(_value1) !== JSON.stringify(_value2 ? _value2.map(v => orderObjectKeys(v)) : _value2) ? 1 : 0;
-        p.onRowChange({ ...p.row, [column]: _value1, notValid:(p.row?.notValid ? p.row?.notValid : notValid) }, true);
+        p.onRowChange({ ...p.row, [column]: _value1, notValid: (p.row?.notValid ? p.row?.notValid : notValid) }, true);
     };
     return (
         <SelectMultiField autoFocus defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.defeitos} /* ref={focus}  */ onChange={onChange} allowClear size="small" data={BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc')} />

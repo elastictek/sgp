@@ -605,7 +605,7 @@ export const Field = ({ children, forInput = null, forViewBorder = true, forView
 
 const InnerField = ({ children, alert, ...props }) => {
     /* const classes = useFieldStyles(props); */
-    const { fieldStatus } = useContext(Context);
+    const { fieldStatus={} } = useContext(Context);
     const { name, alias, label, required, guides, forInput = true, wrapFormItem = false, rule, allValues, shouldUpdate, layout, includeKeyRules, addons } = props;
     const refs = {
         top: useRef(),
@@ -1010,10 +1010,10 @@ const AlertField = ({ fieldStatus, nameId, refs, alert }) => {
     React.useEffect(() => { setDomReady(true); }, []);
 
     const getRef = () => {
-        if (alert.pos in refs) {
-            return refs[alert.pos].current;
-        } else if (alert.pos !== "none") {
-            return alert.pos;
+        if (alert?.pos in refs) {
+            return refs[alert?.pos]?.current;
+        } else if (alert?.pos !== "none") {
+            return alert?.pos;
         }
         return null;
     }

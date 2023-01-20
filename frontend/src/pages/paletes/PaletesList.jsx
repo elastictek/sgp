@@ -40,6 +40,7 @@ import { Core, EstadoBobines, Largura } from "./commons";
 import Palete from './Palete';
 import { MediaContext } from "../App";
 import OF from '../commons/OF';
+import { DestinoPaleteEditor } from 'components/tableEditors';
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -147,29 +148,36 @@ const useStyles = createUseStyles({
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
-    { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
+    { flote: { label: "Lote Palete", field: { type: 'input', size: 'small' } } },
     { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
-    { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
-    { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' } } },
+    { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' }, span: 14 }, festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS }, span: 10 } },
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
-    { fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 6 }, fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 6 } },
-    { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fdiam_min: { label: "Diâmetro (Min)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_max: { label: "Diâmetro (Max)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_avg: { label: "Diâmetro (Médio)", field: { type: 'input', size: 'small' }, span: 8 } },
+    {
+        farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
+        fcomp: { label: "Comp. Total", field: { type: 'input', size: 'small' }, span: 5 },
+        fdiam_min: { label: "Diâm. (Min)", field: { type: 'input', size: 'small' }, span: 5 },
+        fdiam_max: { label: "Diâm. (Max)", field: { type: 'input', size: 'small' }, span: 5 },
+        fdiam_avg: { label: "Diâm. (Médio)", field: { type: 'input', size: 'small' }, span: 5 }
+    },
     { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fof: { label: "Ordem Fabrico", field: { type: 'input', size: 'small' } } },
     {
         fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
         fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
-        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
+        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 4 },
+        fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 4 },
+        fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 4 }
     },
     { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
     { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } } },
+    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
+    { fdestino_lar: { label: "Destino Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_estado: { label: "Destino Estado", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_reg: { label: " Destino Regranular", field: { type: 'input', size: 'small' }, span: 8 } },
     { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } } },
-    { flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' } } },
-    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } } },
-    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' } } },
-    { flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' } } },
+    { ftiponw: { label: "Nonwoven Artigo", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 }, flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 } },
+
 
 
     // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -634,7 +642,7 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
 }
 
 
-export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = false, height, footer = "ref", yScroll = true, children })=> {
+export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = false, height, footer = "ref", yScroll = true, children }) => {
     const [visible, setVisible] = useState(true);
 
     const onCancel = () => {
@@ -648,6 +656,16 @@ export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = f
         </ResponsiveModal>
     );
 };
+
+
+const modoExpedicao = (v) => {
+    switch(v){
+        case "1":return "CONTAINER";
+        case "3":return "TRUCK";
+        case "4":return "AIR";
+        default:return "";
+    }
+}
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
@@ -753,9 +771,19 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'diam_min', name: 'Diam. Min.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
         { key: 'diam_max', name: 'Diam. Máx.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
         { key: 'diam_avg', name: 'Diam. Médio.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
-        { key: 'destino', name: 'Destino', width: 200, /* editable: (r) => editable(r, 'destino'), cellClass: r => editableClass(r, 'destino'), editor: p => <DestinoEditor p={p} column="destino" onChange={()=>{}} />, editorOptions: { editOnClick: true }, */  formatter: p => p.row.destino },
+        {
+            key: 'destino', name: 'Destino', width: 200,
+            editor: p => <DestinoPaleteEditor forInput={false} p={p} />,
+            editable: true,
+            editorOptions: { editOnClick: true },
+            formatter: p => p.row.destino
+        },
         { key: 'cliente_nome', name: 'Cliente', width: 200, formatter: p => p.row.cliente_nome },
         { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid} of_des={p.row.ordem_original} /> },
+        { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
+        { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
+        { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && moment(p.row.data_encomenda).format(DATETIME_FORMAT) },
+        { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
         { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
         { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
         { key: 'stock_qtypcu', name: 'Qtd. Stock', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
@@ -763,8 +791,13 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
         { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
         { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
+        { key: 'modo_exp', name: 'Modo Expedição', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
+        { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
+        { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
         { key: 'mes', name: 'Mês', width: 60, formatter: p => p.row.mes },
         { key: 'ano', name: 'Ano', width: 60, formatter: p => p.row.ano },
+
+
 
         //{ key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         // { key: 'type_mov', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'type_mov'), formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
@@ -822,6 +855,7 @@ export default ({ setFormTitle, ...props }) => {
                     fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
+                    fdestino: getFilterValue(vals?.fdestino, 'any'),
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
@@ -964,7 +998,7 @@ export default ({ setFormTitle, ...props }) => {
                 toolbarFilters={{
                     form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,
                     filters: <ToolbarFilters dataAPI={dataAPI} />,
-                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
+                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 500, mask: true }
                 }}
             />
         </>

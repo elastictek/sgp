@@ -278,6 +278,24 @@ def PaletesList(request, format=None):
     # fbobine.value()
     fbobinemulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
 
+
+    fbobinedestinos = Filters(request.data['filter'])
+    fbobinedestinos.setParameters({
+        "destino_cli": {"value": lambda v: v.get('fdestino').lower() if v.get('fdestino') is not None else None, "field": lambda k, v: f"lower(d->'cliente'->>'BPCNAM_0')"},
+        "destino_lar": {"value": lambda v: Filters.getNumeric(v.get('fdestino_lar')), "field": lambda k, v: f"(d->>'largura')::int"},
+        "destino_reg": {"value": lambda v: Filters.getNumeric(v.get('fdestino_reg')), "field": lambda k, v: f"(mb.destinos->>'regranular')::int"},
+        "destino_estado": {"value": lambda v: Filters.getNumeric(v.get('fdestino_estado')), "field": lambda k, v: f"mb.destinos->'estado'->>'value'"}
+    }, True)
+    fbobinedestinos.where(False,"and")
+    fbobinedestinos.auto()
+    fbobinedestinos.value()
+    fbobinedestinos.text = f"""and exists (
+        SELECT 1
+        FROM mv_bobines mb, json_array_elements((mb.destinos::json->>'destinos')::json) d
+        WHERE mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 and mb.destinos is not null {fbobinedestinos.text}
+        limit 1
+    )""" if fbobinedestinos.hasFilters else ""
+
     fartigompmulti = filterMulti(request.data['filter'], {
         'fartigo_mp': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'},
         'flote_mp': {"keys": ['n_lote'], "table": 'mcg.'},
@@ -292,7 +310,7 @@ def PaletesList(request, format=None):
 
 
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"]}
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
     dql = dbgw.dql(request.data, False)
     cols = f"""*"""
     dql.columns=encloseColumn(cols,False)
@@ -307,13 +325,14 @@ def PaletesList(request, format=None):
                 sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
                 sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
                 sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
-                sgppl.cliente_nome,sgppl.artigo
-
+                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,
+                mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
             FROM mv_paletes sgppl
+            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             cross join lateral json_array_elements ( sgppl.artigo ) as j
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
-            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]}
+            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             ) t
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
