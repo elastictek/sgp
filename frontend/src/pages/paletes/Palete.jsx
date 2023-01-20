@@ -138,6 +138,7 @@ export default (props) => {
     }, [modalParameters]);
 
     useEffect(() => {
+        
         props.setFormTitle({ title: `Palete ${props?.parameters?.palete?.nome}` }); //Set main Title
         const controller = new AbortController();
         loadData({ signal: controller.signal });

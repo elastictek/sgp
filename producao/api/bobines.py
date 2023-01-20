@@ -435,7 +435,7 @@ def BobinesOriginaisList(request,format=None):
             /**/
              WHERE (pb0.nome in (
              
-                select ppb.nome from producao_bobine ppb {f.text} 
+                select ppb.nome from producao_bobine ppb where ppb.recycle=0 and comp_actual>0 {f.text} 
 
              
              ) )

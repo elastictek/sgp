@@ -328,7 +328,7 @@ export default (props) => {
 
     const onPaleteClick = (row, level) => {
         console.log("ROWWWW", { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] });
-        setModalParameters({ content: "palete", /* tab: lastTab, setLastTab */ type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] } });
+        setModalParameters({ content: "palete", /* tab: lastTab, setLastTab */ type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] } });
         showModal();
     }
 
