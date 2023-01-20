@@ -274,6 +274,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
             estado: d?.estado ? d.estado : { value: p.row.estado },
             destinos: d?.destinos ? json(d.destinos) : [],
             obs: p.row.obs,
+            prop_obs: p.row.prop_obs,
             regranular: d?.regranular ? d.regranular : 0,
             ...(_isLegacy) && { destino: p.row.destino }
         });
@@ -283,7 +284,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
     const onFinish = async (e) => {
         if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
             submitting.trigger();
-            let { obs, destino, ...values } = form.getFieldsValue(true);
+            let { obs,prop_obs, destino, ...values } = form.getFieldsValue(true);
             let destinoTxt = "";
             if (!isLegacy) {
                 const destinos = values.destinos.filter((a, i) => values.destinos.findIndex((s) => JSON.stringify(a) === JSON.stringify(s)) === i);
@@ -298,7 +299,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                 destinoTxt = destino;
                 values = null;
             }
-            await onConfirm(p, values, destinoTxt, obs, props.loadData);
+            await onConfirm(p, values, destinoTxt, obs, prop_obs, props.loadData);
             submitting.end();
         }
     }
@@ -365,6 +366,13 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                                             </Field>
                                         </Col>
                                     </Row>
+                                    <Row style={{ marginBottom: "15px" }} gutterWidth={1}>
+                                        <Col>
+                                            <Field wrapFormItem={true} name="prop_obs" label={{ enabled: true, text: "Propriedades Observações" }}>
+                                                <TextArea onKeyDown={(e) => (e.key == 'Enter') && e.stopPropagation()} autoSize={{ minRows: 2, maxRows: 16 }} style={{ width: "100%" }} />
+                                            </Field>
+                                        </Col>
+                                    </Row>
                                 </>
                             }
                             {!isLegacy &&
@@ -398,6 +406,13 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                                     <Row style={{ marginBottom: "15px" }} gutterWidth={1}>
                                         <Col>
                                             <Field wrapFormItem={true} name="obs" label={{ enabled: true, text: "Observações" }}>
+                                                <TextArea onKeyDown={(e) => (e.key == 'Enter') && e.stopPropagation()} autoSize={{ minRows: 2, maxRows: 16 }} style={{ width: "100%" }} />
+                                            </Field>
+                                        </Col>
+                                    </Row>
+                                    <Row style={{ marginBottom: "15px" }} gutterWidth={1}>
+                                        <Col>
+                                            <Field wrapFormItem={true} name="prop_obs" label={{ enabled: true, text: "Propriedades Observações" }}>
                                                 <TextArea onKeyDown={(e) => (e.key == 'Enter') && e.stopPropagation()} autoSize={{ minRows: 2, maxRows: 16 }} style={{ width: "100%" }} />
                                             </Field>
                                         </Col>

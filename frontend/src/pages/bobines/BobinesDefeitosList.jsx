@@ -175,6 +175,7 @@ export default (props) => {
             editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true },
             width: 250, formatter: (p) => <FieldDefeitos p={p} />,
             cellClass: r => editableClass(r, 'generic'),
+            editable:modeEdit.datagrid
         },
         {
             key: 'prop_obs', sortable: false,

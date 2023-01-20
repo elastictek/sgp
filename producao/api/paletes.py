@@ -615,7 +615,8 @@ def UpdateDestinos(request, format=None):
                 if chk01 is None or chk02 is None:
                     return Response({"status": "error", "title": f"Não é possível alterar destinos na palete! A palete já tem carga associada ou é palete final."})
                 ids_d = ','.join(str(x) for x in data["rowsDestinos"])
-                ids_o = ','.join(str(x) for x in data["rowsObs"])                    
+                ids_o = ','.join(str(x) for x in data["rowsObs"]) 
+                ids_po = ','.join(str(x) for x in data["rowsPropObs"])                    
 
                 dml = db.dml(TypeDml.UPDATE,{
                     "destinos":json.dumps(data["values"]["destinos"]),
@@ -624,6 +625,8 @@ def UpdateDestinos(request, format=None):
                 db.execute(dml.statement, cursor, dml.parameters)
 
                 dml = db.dml(TypeDml.UPDATE,{"obs":data["values"]["obs"]},"producao_bobine",{"id":f'in:{ids_o}'},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                dml = db.dml(TypeDml.UPDATE,{"prop_obs":data["values"]["prop_obs"]},"producao_bobine",{"id":f'in:{ids_po}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
 
                 dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)

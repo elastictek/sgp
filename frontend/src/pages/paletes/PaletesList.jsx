@@ -89,7 +89,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
                 <Input size='small' allowClear />
             </Field>
         </Col>
-{/*         <Col width={70}>
+        {/*         <Col width={70}>
             <Field name="flargura" label={{ enabled: true, text: "Largura", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -99,7 +99,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
                 <SelectMultiField size="small" keyField='value' textField='value' data={BOBINE_ESTADOS} />
             </Field>
         </Col>
-{/*         <Col xs='content'>
+        {/*         <Col xs='content'>
             <Field name="fbobine" label={{ enabled: true, text: "Bobine(s)", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -148,10 +148,10 @@ const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
-    { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 },fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
+    { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
     { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
     { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' } } },
-    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } }},
+    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
     { fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 6 }, fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 6 } },
     { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -162,14 +162,14 @@ const moreFiltersSchema = ({ form }) => [
         fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
         feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
     },
-    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } }},
+    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } }},
-    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } }},
-    { flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' } }},
-    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } }},
-    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' } }},
-    { flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' } }},
+    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } } },
+    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } } },
+    { flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' } } },
+    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } } },
+    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' } } },
+    { flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' } } },
 
 
     // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -633,6 +633,22 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
+
+export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = false, height, footer = "ref", yScroll = true, children })=> {
+    const [visible, setVisible] = useState(true);
+
+    const onCancel = () => {
+        p.onClose();
+        setVisible(false);
+    };
+
+    return (
+        <ResponsiveModal title={title} type={type} push={push} onCancel={onCancel} width={width} height={height} footer={footer} yScroll={yScroll}>
+            {children}
+        </ResponsiveModal>
+    );
+};
+
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
@@ -722,7 +738,9 @@ export default ({ setFormTitle, ...props }) => {
 
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
-        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} /> },
+        {
+            key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
+        },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
         { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },

@@ -104,7 +104,9 @@ export default (props) => {
         { key: 'rugas_pos', sortable: false, width: 85, name: "Rugas", formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
         { key: 'defeitos', sortable: false, width: 250, name: "Outros Defeitos", formatter: (p) => <FieldDefeitos p={p} /> },
-        { key: 'prop_obs', sortable: false, name: "Propriedades Observações", formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>, editor(p) { return <ModalObsEditor forInput={false} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true } },
+        { key: 'prop_obs', sortable: false, 
+            headerRenderer: p => <CheckColumn id="obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p.row, 'destino')} />,
+            formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>, editor(p) { return <ModalObsEditor forInput={false} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true } },
         {
             key: 'obs', sortable: false,
             headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'destino')} />,
@@ -114,15 +116,16 @@ export default (props) => {
     ];
 
 
-    const onDestinoConfirm = async (p, destinos, destinoTxt, obs) => {
+    const onDestinoConfirm = async (p, destinos, destinoTxt, obs,prop_obs) => {
         const ids = dataAPI.getData().rows.map(v => v.id);
         const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
         const rowsObs = (checkData?.obs) ? ids : [p.row.id];
-        const values = { destinos, destinoTxt, obs };
+        const rowsPropObs = (checkData?.prop_obs) ? ids : [p.row.id];
+        const values = { destinos, destinoTxt, obs, prop_obs };
         const palete_id = p.row.palete_id;
 
         try {
-            let response = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, parameters: { method: "UpdateDestinos", ids, rowsDestinos, rowsObs, values }, filter: { palete_id } });
+            let response = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, parameters: { method: "UpdateDestinos", ids, rowsDestinos, rowsObs,rowsPropObs, values }, filter: { palete_id } });
             if (response.data.status !== "error") {
                 p.onClose(true);
                 loadData();
