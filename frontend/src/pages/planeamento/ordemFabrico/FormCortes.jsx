@@ -99,7 +99,7 @@ export default ({ /* form, guides, schema,  */changedValues }) => {
     }
 
     const calculateLarguraUtil = useCallback((cortes) => {
-        const v = cortes.reduce((accumulator, current) => accumulator + current.item_ncortes ? (current.item_ncortes * current.item_lar) : 0, 0);
+        const v = cortes.reduce((accumulator, current) => accumulator + (current?.item_ncortes ? (current.item_ncortes * current.item_lar) : 0), 0);
         if (v === 0) {
             return "";
         }

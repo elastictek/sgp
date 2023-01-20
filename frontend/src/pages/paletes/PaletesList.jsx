@@ -162,6 +162,7 @@ const moreFiltersSchema = ({ form }) => [
     },
     { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
     { fof: { label: "Ordem Fabrico", field: { type: 'input', size: 'small' } } },
+    { fprf: { label: "PRF", field: { type: 'input', size: 'small' }, span: 12 }, forder: { label: "Encomenda", field: { type: 'input', size: 'small' }, span: 12 } },
     {
         fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
         fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
@@ -171,7 +172,7 @@ const moreFiltersSchema = ({ form }) => [
     },
     { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } } },
+    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula: { label: "Matrícula", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula_reboque: { label: "Mat.Reboque", field: { type: 'input', size: 'small' }, span: 8 } },
     { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
     { fdestino_lar: { label: "Destino Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_estado: { label: "Destino Estado", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_reg: { label: " Destino Regranular", field: { type: 'input', size: 'small' }, span: 8 } },
     { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } } },
@@ -659,11 +660,11 @@ export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = f
 
 
 const modoExpedicao = (v) => {
-    switch(v){
-        case "1":return "CONTAINER";
-        case "3":return "TRUCK";
-        case "4":return "AIR";
-        default:return "";
+    switch (v) {
+        case "1": return "CONTAINER";
+        case "3": return "TRUCK";
+        case "4": return "AIR";
+        default: return "";
     }
 }
 
@@ -855,6 +856,10 @@ export default ({ setFormTitle, ...props }) => {
                     fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
+                    fmatricula:getFilterValue(vals?.fmatricula, 'any'),
+                    fmatricula_reboque:getFilterValue(vals?.fmatricula_reboque, 'any'),
+                    fprf: getFilterValue(vals?.fprf, 'any'),
+                    forder: getFilterValue(vals?.forder, 'any'),
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
