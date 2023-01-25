@@ -11,6 +11,7 @@ from producao.api import devolucoes
 from producao.api import bobinagens
 from producao.api import bobines
 from producao.api import paletes
+from producao.api import ordens_fabrico
 from producao.api import app_permissions
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
@@ -263,6 +264,7 @@ urlpatterns = [
 
     re_path(r'^permissions/sql/$',app_permissions.Sql),
     re_path(r'^bobines/sql/$',bobines.Sql),
+    re_path(r'^ordensfabrico/sql/$',ordens_fabrico.Sql),
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

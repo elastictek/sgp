@@ -144,9 +144,9 @@ export default (props) => {
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, false);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
-        dataAPI.addParameters(defaultParameters, true, false);
+        dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({
             signal, rowFn: (dt) => postProcess(dt, submitting)
         });

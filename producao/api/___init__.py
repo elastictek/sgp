@@ -6,7 +6,9 @@ from devolucoes import *
 from bobinagens import *
 from bobines import *
 from paletes import *
+from ordens_fabrico import *
 from app_permissions import *
+from exports import *
 from print import *
 from producao.api.urls import *
 

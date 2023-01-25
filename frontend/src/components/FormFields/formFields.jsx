@@ -8,7 +8,7 @@ import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
 import { debounce } from "utils";
-import { validate } from "utils/schemaValidator";
+import { validate,getSchema, pick, getStatus } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
@@ -18,6 +18,7 @@ import RangeTime from "../RangeTime";
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 import { Container as MainContainer } from 'react-grid-system';
 import Selector from './Selector';
+
 
 export const Context = createContext({});
 
@@ -410,7 +411,7 @@ const _filterOptions = (arr1, arr2) => {
     return res;
 }
 
-export const SelectMultiField = ({ value, data, options, keyField='value', textField='label', onChange, ...rest }) => {
+export const SelectMultiField = ({ value, data, options, keyField = 'value', textField = 'label', onChange, ...rest }) => {
     const [selectedItems, setSelectedItems] = useState(value || []);
 
     const onItemsChange = (v) => {
@@ -605,7 +606,7 @@ export const Field = ({ children, forInput = null, forViewBorder = true, forView
 
 const InnerField = ({ children, alert, ...props }) => {
     /* const classes = useFieldStyles(props); */
-    const { fieldStatus={} } = useContext(Context);
+    const { fieldStatus = {} } = useContext(Context);
     const { name, alias, label, required, guides, forInput = true, wrapFormItem = false, rule, allValues, shouldUpdate, layout, includeKeyRules, addons } = props;
     const refs = {
         top: useRef(),
@@ -818,7 +819,7 @@ const FormItemWrapper = ({ children, validator, validateTrigger, wrapFormItem = 
         <>
             <ConditionalWrapper
                 condition={wrapFormItem}
-                wrapper={children => <Form.Item  className={classes.noStyle} rules={[{ validator: validator ? validator : defaultValidator }]} validateTrigger={validateTrigger ? validateTrigger : ["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
+                wrapper={children => <Form.Item className={classes.noStyle} rules={[{ validator: validator ? validator : defaultValidator }]} validateTrigger={validateTrigger ? validateTrigger : ["onBlur"]} validateStatus={fieldStatus[nameId]?.status} shouldUpdate={shouldUpdate} {...(nameId && { name: nameId })}>
                     {getChildren()}
                 </Form.Item>}
             >
@@ -896,7 +897,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 <SwitchField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
                             );
                         case 'Selector':
-                            return(<Selector forView={true} minHeight={height(children?.props?.size)} {...{children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style}} {...rest}/>);
+                            return (<Selector forView={true} minHeight={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
                         case 'SelectDebounceField':
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
@@ -1267,8 +1268,13 @@ export const Container = ({ loading = false, schema, children, id, wrapForm = fa
         delete fs[field];
         setFieldStatus(prev => ({ ...fs, ...(status !== null && Object.keys(status).length > 0) && { [field]: status } }))
     };
+
+    const fSchema = (options = {}) => {
+        return getSchema({}, options).unknown(true);
+    }
+
     const clearFieldStatus = () => { setFieldStatus({}); }
-    const dataContext = { schema: (schema ? schema : {}), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert, label };
+    const dataContext = { schema: (schema ? schema : fSchema), form, wrapForm, wrapFormItem, forInput, containerId: id, fieldStatus, updateFieldStatus, clearFieldStatus, alert, label };
     useEffect(() => {
         if (_fieldStatus && !_setFieldStatus) {
             setFieldStatus(_fieldStatus);

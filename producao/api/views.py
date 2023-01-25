@@ -40,6 +40,7 @@ from sistema.settings.appSettings import AppSettings
 import time
 import requests
 from producao.api.materias_primas import updateLotesdosers_ig
+from producao.api.exports import export
 
 
 import psycopg2
@@ -195,37 +196,37 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
 
 #Ordens de Fabrico
 
-def export(sql, db_parameters, parameters,conn_name):
-    if ("export" in parameters and parameters["export"] is not None):
-        dbparams={}
-        for key, value in db_parameters.items():
-            if f"%({key})s" not in sql: 
-                continue
-            dbparams[key] = value
-            sql = sql.replace(f"%({key})s",f":{key}")
-        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        req = {
+# def export(sql, db_parameters, parameters,conn_name):
+#     if ("export" in parameters and parameters["export"] is not None):
+#         dbparams={}
+#         for key, value in db_parameters.items():
+#             if f"%({key})s" not in sql: 
+#                 continue
+#             dbparams[key] = value
+#             sql = sql.replace(f"%({key})s",f":{key}")
+#         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+#         req = {
             
-            "conn-name":conn_name,
-            "sql":sql,
-            "hash":hash,
-            "data":dbparams,
-            **parameters
-        }
-        wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+#             "conn-name":conn_name,
+#             "sql":sql,
+#             "hash":hash,
+#             "data":dbparams,
+#             **parameters
+#         }
+#         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+#         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
-        if (fstream.status_code==200):
-            resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-            if (parameters["export"] == "pdf"):
-                resp['Content-Disposition'] = "inline; filename=list.pdf"
-            elif (parameters["export"] == "excel"):
-                resp['Content-Disposition'] = "inline; filename=list.xlsx"
-            elif (parameters["export"] == "word"):
-                resp['Content-Disposition'] = "inline; filename=list.docx"
-            if (parameters["export"] == "csv"):
-                resp['Content-Disposition'] = "inline; filename=list.csv"
-            return resp
+#         if (fstream.status_code==200):
+#             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+#             if (parameters["export"] == "pdf"):
+#                 resp['Content-Disposition'] = "inline; filename=list.pdf"
+#             elif (parameters["export"] == "excel"):
+#                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
+#             elif (parameters["export"] == "word"):
+#                 resp['Content-Disposition'] = "inline; filename=list.docx"
+#             if (parameters["export"] == "csv"):
+#                 resp['Content-Disposition'] = "inline; filename=list.csv"
+#             return resp
 
 
 @api_view(['POST'])
@@ -350,7 +351,9 @@ def OFabricoList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
 
     #print(sql(lambda v:v,lambda v:v))
     print(sql)
@@ -801,7 +804,9 @@ def StockListBuffer(request, format=None):
     )
     print(sql)
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
     response = dbgw.executeList(sql, connection, parameters, [])
     return Response(response)
 
@@ -1169,7 +1174,9 @@ def ExpedicoesTempoList(request, format=None):
         prm["cols"]["avg_mesano"] = {"width": 50, "title": "Avg. Mês."}
         prm["cols"]["min_mesano"] = {"width": 50, "title": "Min. Mês."}
         prm["cols"]["max_mesano"] = {"width": 50, "title": "Max. Mês."}
-        return export(sql(lambda v:'limit 5000',lambda v:v,lambda v:v), db_parameters=parameters, parameters=prm,conn_name=AppSettings.reportConn["gw"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=prm,conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
     response = dbgw.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -1338,7 +1345,9 @@ def BobinesOriginaisList(request, format=None):
     print(sql())
     print(parameters)
     if ("export" in request.data["parameters"]):
-        return export(sql(), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     if fs:
         response = db.executeSimpleList(sql, connection, parameters, [])
     else:
@@ -1385,7 +1394,9 @@ def OFabricoTimeLineList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
 
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
@@ -1460,7 +1471,9 @@ def LineLogList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
@@ -1533,7 +1546,9 @@ def ConsumptionNeedLogList(request, format=None):
     """)
 
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
     response = dbgw.executeList(sql, connection, parameters, [])
     return Response(response)
 
@@ -4443,6 +4458,8 @@ def BobinagensList(request, format=None):
     if ("export" in request.data["parameters"]):
         for x in range(0, 30):
             request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
         tmpsql = sql(lambda v:'',lambda v:v,lambda v:v)
         if typeList=='A':
             tmpsql = f"""SELECT t.*,
@@ -4466,11 +4483,7 @@ def BobinagensList(request, format=None):
                 from (
                 {tmpsql} 
                 ) t"""
-        print("exppppppppppppppxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    print("#################")    
-    print(sql)
-    print("#################")
+        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -4627,7 +4640,9 @@ def ValidarBobinagensList(request, format=None):
     if ("export" in request.data["parameters"]):
         for x in range(0, 30):
             request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
-        tmpsql = sql(lambda v:'',lambda v:v,lambda v:v)
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        tmpsql = sql(lambda v:v,lambda v:v,lambda v:v)
         if typeList=='A':
             tmpsql = f"""SELECT t.*,
                 concat(t.bobines->>'$[0].estado','\\n',t.bobines->>'$[0].lar') as '1',concat(t.bobines->>'$[1].estado','\\n',t.bobines->>'$[1].lar') as '2',
@@ -4650,10 +4665,7 @@ def ValidarBobinagensList(request, format=None):
                 from (
                 {tmpsql} 
                 ) t"""
-        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    print("#################")    
-    print(sql)
-    print("#################")
+        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
@@ -4766,7 +4778,11 @@ def BobinesList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        print("ssssssssssssssssssssssss")
+        print(sql(lambda v:v,lambda v:v,lambda v:v))
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters)
     return Response(response)
 
@@ -4806,7 +4822,9 @@ def ValidarBobinesList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters, [],None)
     
     print(response)
@@ -5028,6 +5046,8 @@ def ValidarBobinagem(request, format=None):
             with connections["default"].cursor() as cursor:
 
                 args = (data["bobinagem"]["id"],json.dumps(data["values"], ensure_ascii=False),600,None,request.user.id,0)
+                print("validating")
+                print(data["values"])
                 cursor.callproc('validate_bobinagem',args)
                 result_proc = cursor.fetchone()
                 if result_proc is None or result_proc[0] != 1:
@@ -5227,7 +5247,9 @@ def FixSimulatorList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters, [],None)
     return Response(response)
 
@@ -5331,7 +5353,9 @@ def RecicladoList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters)
     return Response(response)
 
@@ -5376,7 +5400,9 @@ def RecicladoLotesList(request, format=None):
         """
     )
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     response = db.executeList(sql, connection, parameters)
     return Response(response)
 

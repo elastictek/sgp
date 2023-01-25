@@ -52,12 +52,16 @@ def authUser(user):
     groups = user.groups.all().values_list('name',flat=True)
     items = {}
     isAdmin=False
-    for idx, v in enumerate(groups):
+    grps = list(groups)
+    grps.append("all#100")
+    print("AUTH - GROUPS")
+    print(grps)
+    for idx, v in enumerate(grps):
         key = ""
         grp = v.split("#")
-        print(grp)
         if grp == ["admin"]:
             isAdmin=True
+            continue
         elif len(grp)==2:
             key=grp[0]
             permission_value=grp[1]
@@ -77,13 +81,12 @@ def authUser(user):
     
     #print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     #isAdmin=False
-   
     turno = {"enabled":False}
     if hasattr(user, 'turno'):
         turno["dep"] = user.turno.dep
         turno["turno"] = user.turno.turno
         turno["enabled"] = True
-    return {"turno":turno,"groups":groups,"items":items,"isAdmin":isAdmin}
+    return {"turno":turno,"groups":grps,"items":items,"isAdmin":isAdmin}
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

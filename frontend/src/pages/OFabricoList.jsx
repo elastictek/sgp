@@ -20,12 +20,11 @@ import AlertMessages from "components/alertMessages";
 import ColumnSettings from "components/columnSettings";
 import Reports, { downloadReport } from "components/DownloadReports";
 import TagButton from "components/TagButton";
-import ResponsiveModal from 'components/ResponsiveModal';
+import ResponsiveModalx from 'components/ResponsiveModal';
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
-import { useModal } from "react-modal-hook";
 import ResponsiveModalv2 from 'components/Modal';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
@@ -43,6 +42,10 @@ import { useForm } from 'antd/lib/form/Form';
 const { Title } = Typography;
 import ToolbarTitle from 'components/ToolbarTitle';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+import { useModal } from "react-modal-hook";
+import ResponsiveModal from 'components/Modal';
+import FormValidar from './planeamento/forms/FormValidar';
+
 
 const title = "Ordens de Fabrico";
 const TitleForm = ({ data, form, ordemFabricoStatusField }) => {
@@ -421,7 +424,7 @@ const IFrame = ({src})=> {
 }
 
 
-const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions, allow }) => {
+const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuActions, setShowMenuActions, allow, onValidar }) => {
     const { status, temp_ofabrico, ofabrico_sgp } = record;
     const modal = useModalv4();
     const [action, setAction] = useState();
@@ -462,7 +465,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico && !ofabrico_sgp) && <>
                 {allow ?
-                <TagButton onClick={() => onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+                <TagButton onClick={/*() => onValidar(record)*/onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
                 : <Tag style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">A Validar</Tag>
                 }
             </>}
@@ -551,7 +554,7 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
     };
 
     return (
-        <ResponsiveModal
+        <ResponsiveModalx
             title={<TitleMenuActions aggCod={aggCod} />}
             visible={showMenuActions.show}
             centered
@@ -567,7 +570,7 @@ const MenuActions = ({ showMenuActions, setShowMenuActions }) => {
             <YScroll>
                 <Suspense fallback={<></>}><FormMenuActions aggId={aggId} /></Suspense>
             </YScroll>
-        </ResponsiveModal>
+        </ResponsiveModalx>
     );
 };
 
@@ -713,6 +716,26 @@ export default () => {
     const [showMenuActions, setShowMenuActions] = useState({ show: false, data: {} });
     const permission = usePermission({ allowed: { planeamento:200 } });
 
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+
+        const content = () => {
+            switch (modalParameters.content) {
+                case "validar": return <FormValidar loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+            }
+        }
+
+        return (
+            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} extra="ref" footer="none" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
+
+
+
+
     useEffect(() => {
         const cancelFetch = cancelToken();
         //dataAPI.first();
@@ -769,6 +792,11 @@ export default () => {
         }
     }
 
+    const onValidar = (values) => {
+        setModalParameters({ content: "validar", type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: { ...values } });
+        showModal();
+    }
+
     const columns = setColumns(
         {
             dataAPI,
@@ -783,7 +811,7 @@ export default () => {
                         iorder: { title: "Encomenda(s)", width: 130, ...common },
                         cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", sort:false, width: 125, render: (v, r) => <ColumnEstado allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        estado: { title: "", sort:false, width: 125, render: (v, r) => <ColumnEstado onValidar={onValidar} allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },

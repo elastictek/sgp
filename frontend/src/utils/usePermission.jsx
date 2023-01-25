@@ -11,14 +11,15 @@ import { AppContext } from '../pages/App';
  * example.1  <Permissions permissions={permission} action="teste"><SampleObject/></Permissions>
  * O atributo permission é o objeto iniciado por -> const permission = usePermission({});
  */
-export const Permissions = ({ permissions, action = null, item = null, forInput = null, onPlace = null, children }) => {
+export const Permissions = ({ permissions, action = null, item = null, forInput = null, onPlace = null, clone, children, ...props }) => {
     return (
         <ConditionalWrapper
             condition={!permissions.isOk({ action, item, forInput, onPlace })}
             wrapper={children => <></>}
         >
 
-            {children}
+            {!clone && children}
+            {clone && React.cloneElement(children,{...children.props,...props})}
 
         </ConditionalWrapper>
     );
@@ -47,8 +48,9 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
     }, []);
 
     const loadData = async ({ signal } = {}) => {
+        console.log("isAdmin is commented, uncomment")
+        console.log("Permissions Location/Name:",name ? name : loc.pathname, " module:", module)
         const _perm = await loadPermissions({ name: name ? name : loc.pathname, module });
-        console.log("useefffeeeeee")
         setPermissions(json(_perm?.permissions));
     }
 
@@ -65,19 +67,18 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
             return false;
         }
         if (auth.isAdmin) {
-            return true;
+            //return true;
         }
-
         if (!permissions) {
             return false;
         }
-
         let min = null;
         let value = -1;
         //console.log("isOKKKKKK")
         //console.log(action,item)
         //console.log(permissions)
         //console.log(json(permissions)[action])
+        console.log("ITEM PERMISSIONS - ",item,action,permissions,auth)
         let p = (onPlace) ? json(onPlace) : (item) ? permissions[item][action] : permissions[action];
         if (!p){
             p = (item) ? ((permissions[item]["default"]) ? permissions[item]["default"] : permissions["default"]) : permissions["default"];
@@ -96,9 +97,6 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
             return true;
         }
         return false;
-
-
-
     }
 
 

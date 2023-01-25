@@ -23,11 +23,12 @@ const TitleModal = ({ title, eTitle }) => {
 
 
 
-export default ({ type = "modal", push = true, responsive = true, width = 800, height = 300, children, footer, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
     const footerRef = useRef();
+    const extraRef = useRef();
 
     useLayoutEffect(() => {
         if (responsive) {
@@ -55,6 +56,15 @@ export default ({ type = "modal", push = true, responsive = true, width = 800, h
             return null;
         } else {
             return footer;
+        }
+    }
+    const extraButtons = () => {
+        if (extra === "ref") {
+            return <div ref={extraRef} style={{ textAlign: 'right' }}></div>;
+        } else if (extra === "none") {
+            return null;
+        } else {
+            return extra;
         }
     }
 
@@ -105,12 +115,13 @@ export default ({ type = "modal", push = true, responsive = true, width = 800, h
                     onClose={onCancel}
                     push={push}
                     {...(footer && { footer: footerButtons() })}
+                    {...(extra && { extra: extraButtons() })}
                     //bodyStyle={{ height: size.height }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
-                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}</Suspense>}
-                    {(children && !lazy) && React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}
+                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef,extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}</Suspense>}
+                    {(children && !lazy) && React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef,extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}
                 </Drawer>
             }
         </>

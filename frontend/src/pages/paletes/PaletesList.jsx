@@ -38,6 +38,7 @@ import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { Core, EstadoBobines, Largura } from "./commons";
 import Palete from './Palete';
+import FormCreatePalete from './FormCreatePalete';
 import { MediaContext } from "../App";
 import OF from '../commons/OF';
 import { DestinoPaleteEditor } from 'components/tableEditors';
@@ -692,11 +693,12 @@ export default ({ setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
         return (
-            <ResponsiveModal type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -765,13 +767,13 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
-        { key: 'area_real', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
-        { key: 'comp_real', name: 'Comp.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
-        { key: 'peso_bruto', name: 'Peso B.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
-        { key: 'peso_liquido', name: 'Peso .L', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
-        { key: 'diam_min', name: 'Diam. Min.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
-        { key: 'diam_max', name: 'Diam. Máx.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
-        { key: 'diam_avg', name: 'Diam. Médio.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
+        { key: 'area_real', name: 'Área',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
+        { key: 'comp_real', name: 'Comp.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
+        { key: 'peso_bruto', name: 'Peso B.',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
+        { key: 'peso_liquido', name: 'Peso .L',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
+        { key: 'diam_min', name: 'Diam. Min.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
+        { key: 'diam_max', name: 'Diam. Máx.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
+        { key: 'diam_avg', name: 'Diam. Médio.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
         {
             key: 'destino', name: 'Destino', width: 200,
             editor: p => <DestinoPaleteEditor forInput={false} p={p} />,
@@ -787,16 +789,16 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
         { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
         { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
-        { key: 'stock_qtypcu', name: 'Qtd. Stock', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
+        { key: 'stock_qtypcu', name: 'Qtd. Stock',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
         { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
         { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
         { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
         { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
-        { key: 'modo_exp', name: 'Modo Expedição', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
+        { key: 'modo_exp', name: 'Modo Expedição',reportFormat:'0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
         { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
         { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
-        { key: 'mes', name: 'Mês', width: 60, formatter: p => p.row.mes },
-        { key: 'ano', name: 'Ano', width: 60, formatter: p => p.row.ano },
+        { key: 'mes', name: 'Mês',reportFormat:'0', width: 60, formatter: p => p.row.mes },
+        { key: 'ano', name: 'Ano',reportFormat:'0', width: 60, formatter: p => p.row.ano },
 
 
 
@@ -828,7 +830,7 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
-            let { filterValues, fieldValues } = fixRangeDates([], initFilters);
+            let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
             dataAPI.setSort(defaultSort);
@@ -864,9 +866,9 @@ export default ({ setFormTitle, ...props }) => {
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
-                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga
+                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga,
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
-                    // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
+                    fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
@@ -966,6 +968,11 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
 
+    const onCreatePalete = () => {
+        setModalParameters({ content: "createpalete",type: "drawer", title:"Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
+        showModal();
+    }
+
     return (
         <>
             {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
@@ -987,7 +994,7 @@ export default ({ setFormTitle, ...props }) => {
                 rowHeight={28}
                 rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
-                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={changeMode}>Criar Palete</Button></Permissions>
+                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions>
                     {/* <Permissions permissions={permission} action="editList">
                         {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                         {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}

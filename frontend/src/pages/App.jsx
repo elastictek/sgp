@@ -274,6 +274,7 @@ const App2 = () => {
 
     const loadData = async ({ signal }) => {
         const response = await loadAuthUser({}, signal);
+        console.log("AUTH:", response?.data)
         setAuth(response?.data);
         //setAuth({ ...response.data, isAdmin: false, permissions: { producao: 200 } });
         submitting.end();

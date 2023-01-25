@@ -556,9 +556,9 @@ export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props
                     <Form name={`f-paldestinos`} initialValues={{}}>
                         {isLegacy === true && <Row>
                             <Col>
-                                <Field forInput={false} wrapFormItem={false} label={{ enabled: false }}>
+                                {p.row?.destino && <Field forInput={false} wrapFormItem={false} label={{ enabled: false }}>
                                     <TextArea value={p.row.destino.replace(/\/\//g, "\n").replaceAll("^\s+|\h+$", "")} autoSize={{ minRows: 2, maxRows: 16 }} style={{ width: "100%", whiteSpace: "pre" }} />
-                                </Field>
+                                </Field>}
                             </Col>
                         </Row>}
                         {isLegacy === false && json(p.row.destinos).map((v, i) => <Row key={`d-${i}`}>
@@ -568,9 +568,9 @@ export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props
 
 
                                     <Col width={120}>
-                                        <Field wrapFormItem={false} forInput={false} name="regranular" label={{ enabled: false, text: "Regranular" }}>
+                                        {v.regranular === 1 && <Field wrapFormItem={false} forInput={false} name="regranular" label={{ enabled: false, text: "Regranular" }}>
                                             <SwitchField value={v.regranular} checkedChildren="Regranular" unCheckedChildren="Regranular" />
-                                        </Field>
+                                        </Field>}
                                     </Col>
                                     <Col></Col>
                                     <Col width={50}><Field forInput={false} wrapFormItem={false} name="estado" label={{ enabled: false, text: "Estado" }}>
@@ -605,7 +605,7 @@ export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props
                                         <Col>
                                             <Row gutterWidth={1}>
                                                 <Col>
-                                                    <Field wrapFormItem={false} forViewBackground={false} label={{ enabled: false, text: "Cliente" }}>
+                                                    <Field wrapFormItem={false} label={{ enabled: false, text: "Cliente" }}>
                                                         <Selector
                                                             forInput={false}
                                                             value={x.cliente}
@@ -625,13 +625,13 @@ export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props
                                                         />
                                                     </Field>
                                                 </Col>
-                                                <Col width={100}><Field wrapFormItem={false} forInput={false} forViewBackground={false} label={{ enabled: false, text: "Largura" }}><InputNumber value={x.largura} size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>mm</b>} min={10} max={500} /></Field></Col>
+                                                <Col width={100}><Field wrapFormItem={false} forInput={false} label={{ enabled: false, text: "Largura" }}><InputNumber value={x.largura} size="small" style={{ width: "100%", textAlign: "right" }} controls={false} addonAfter={<b>mm</b>} min={10} max={500} /></Field></Col>
                                             </Row>
                                             <Row>
                                                 <Col>
-                                                    <Field wrapFormItem={false} forViewBackground={false} label={{ enabled: false }}>
+                                                    {x.obs && <Field wrapFormItem={false} label={{ enabled: false }}>
                                                         <TextArea value={x.obs} onKeyDown={(e) => (e.key == 'Enter') && e.stopPropagation()} autoSize={{ minRows: 1, maxRows: 3 }} style={{ width: "100%" }} />
-                                                    </Field>
+                                                    </Field>}
                                                 </Col>
                                             </Row>
                                         </Col>

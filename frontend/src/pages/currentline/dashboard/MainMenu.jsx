@@ -12,7 +12,7 @@ import { Button, Select, Typography, Card, Collapse, Space } from "antd";
 const { Panel } = Collapse;
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import ResponsiveModal from 'components/Modal';
-import { usePermission } from "utils/usePermission";
+import { usePermission, Permissions } from "utils/usePermission";
 
 const StyledCollapse = styled(Collapse)`
     .ant-collapse-content-box{
@@ -56,7 +56,7 @@ const IFrame = ({ src }) => {
 
 export default ({ dark = false }) => {
     const navigate = useNavigate();
-    const permission = usePermission();
+    const permission = usePermission({ name: "mainmenu" });
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
         <ResponsiveModal footer="ref" onCancel={hideModal} width={800} height={400}>
@@ -83,51 +83,59 @@ export default ({ dark = false }) => {
     return (
 
         <StyledCollapse defaultActiveKey={selectedItems} ghost={true} expandIconPosition="end" onChange={onMenuChange}>
-            <Panel header={<b>Picagem de Material</b>} key="1">
-                <Button size='small' type="link" onClick={() => navigate('/app/picking/recicladolist', {})}>Reciclado (Granulado)</Button>
-                <Button size='small' type="link" onClick={() => navigate('/app/picking/picknwlist', {})}>Linha de Produção - Nonwoven</Button>
-                {/*                 <Button size='small' type="link">Linha de Produção - Cores</Button> */}
-                {/*                 <Button size='small' type="link" onClick={() => navigate('/app/picking/pickgranuladolist', {})}>Linha de Produção - Granulado</Button> */}
-            </Panel>
-            <Panel header={<b>Planeamento</b>} key="2">
-                <Button size='small' type="link" onClick={() => navigate('/app/ofabricolist', {})}>Ordens de Fabrico</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame('/producao/perfil/list/', 'Perfis de Bobinagem')}>Perfis de Bobinagem</Button>
-                {/*                 <Button size='small' type="link" onClick={() => { }}>Formulação</Button>
+            <Permissions permissions={permission} item="pick" key="1" clone>
+                <Panel header={<b>Picagem de Material</b>} key="1">
+                    <Permissions permissions={permission} item="pick" action="A"><Button size='small' type="link" onClick={() => navigate('/app/picking/recicladolist', {})} title="A">Reciclado (Granulado)</Button></Permissions>
+                    <Permissions permissions={permission} item="pick" action="B"><Button size='small' type="link" onClick={() => navigate('/app/picking/picknwlist', {})} title="B">Linha de Produção - Nonwoven</Button></Permissions>
+                    {/*                 <Button size='small' type="link">Linha de Produção - Cores</Button> */}
+                    {/*                 <Button size='small' type="link" onClick={() => navigate('/app/picking/pickgranuladolist', {})}>Linha de Produção - Granulado</Button> */}
+                </Panel>
+            </Permissions>
+            <Permissions permissions={permission} item="planeamento" key="2" clone>
+                <Panel header={<b>Planeamento</b>} key="2">
+                    <Permissions permissions={permission} item="planeamento" action="A"><Button size='small' type="link" onClick={() => navigate('/app/ofabricolist', {})} title="A">Ordens de Fabrico</Button></Permissions>
+                    <Permissions permissions={permission} item="planeamento" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame('/producao/perfil/list/', 'Perfis de Bobinagem')} title="B">Perfis de Bobinagem</Button></Permissions>
+                    {/*                 <Button size='small' type="link" onClick={() => { }}>Formulação</Button>
                 <Button size='small' type="link" onClick={() => { }}>Gama Operatória</Button>
                 <Button size='small' type="link" onClick={() => { }}>Especificações</Button> */}
-            </Panel>
-            {permission.allow({ planeamento: 300 }, []) &&
-                <Panel header={<b>Matérias Primas</b>} key="6">
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/consumoslist', {})}>Consumos de Matérias Primas</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpalternativas', {})}>Matérias Primas Alternativas</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladobufferlinelist', {})}>Granulado Movimentos Buffer&#8594;Linha</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladolist', {})}>Granulado Movimentos em Linha</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/nwlist', {})}>Nonwovens Movimentos em Linha</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpbufferlist', {})}>Localização de Matéria Primas (SAGE)</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/artigos/mpmovimentoslist', {})}>Matéria Primas Movimentos (SAGE)</Button>
                 </Panel>
-            }
-            <Panel header={<b>Linha de Produção</b>} key="3">
-                <Button size='small' type="link" onClick={() => navigate('/app/bobinagens/reellings', {})}>Bobinagens</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/paletelist/`, 'Paletes')}>Paletes</Button>
-                <Button size='small' type="link" onClick={() => navigate('/app/paletes/paleteslist', {})}>Paletes</Button>
-                <Button size='small' type="link" onClick={() => navigate('/app/logslist/lineloglist', {})}>Eventos da Linha</Button>
-            </Panel>
-            <Panel header={<b>Retrabalho</b>} key="4">
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/planeamento/ordemdeproducao/list-retrabalho/`, 'Ordens de Retrabalho')}>Ordens de Retrabalho</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/retrabalho/`, 'Bobinagens de Retrabalho')}>Bobinagens de Retrabalho</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/retrabalho/`, 'Paletes de Retrabalho')}>Paletes de Retrabalho</Button>
-            </Panel>
-            <Panel header={<b>Armazém</b>} key="5">
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`, 'Cargas')}>Cargas</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`, 'Pesagem')}>Pesagem</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`, 'Stock')}>Stock</Button>
-                <Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/export_bobines_originais/`, 'Exportar')}>Exportar</Button>
-                {permission.allow({ planeamento: 300 }, []) && <>
-                    <Button size='small' type="link" onClick={() => navigate('/app/devolucoes/devolucoeslist', {})}>Devoluções de Produto Acabado</Button>
-                    <Button size='small' type="link" onClick={() => navigate('/app/expedicoes/timearmazem', {})}>Relatório de Expedições Mensal</Button>
-                </>}
-            </Panel>
+            </Permissions>
+            <Permissions permissions={permission} item="materiasprimas" key="6" clone>
+                <Panel header={<b>Matérias Primas</b>} key="6">
+                <Permissions permissions={permission} item="materiasprimas" action="A"><Button size='small' type="link" onClick={() => navigate('/app/artigos/consumoslist', {})} title="A">Consumos de Matérias Primas</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="B"><Button size='small' type="link" onClick={() => navigate('/app/artigos/mpalternativas', {})} title="B">Matérias Primas Alternativas</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="C"><Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladobufferlinelist', {})} title="C">Granulado Movimentos Buffer&#8594;Linha</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="D"><Button size='small' type="link" onClick={() => navigate('/app/artigos/granuladolist', {})} title="D">Granulado Movimentos em Linha</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="E"><Button size='small' type="link" onClick={() => navigate('/app/artigos/nwlist', {})} title="E">Nonwovens Movimentos em Linha</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="F"><Button size='small' type="link" onClick={() => navigate('/app/artigos/mpbufferlist', {})} title="F">Localização de Matéria Primas (SAGE)</Button></Permissions>
+                <Permissions permissions={permission} item="materiasprimas" action="G"><Button size='small' type="link" onClick={() => navigate('/app/artigos/mpmovimentoslist', {})} title="G">Matéria Primas Movimentos (SAGE)</Button></Permissions>
+                </Panel>
+            </Permissions>
+            <Permissions permissions={permission} item="linhaproducao" key="3" clone>
+                <Panel header={<b>Linha de Produção</b>} key="3">
+                <Permissions permissions={permission} item="linhaproducao" action="A"><Button size='small' type="link" onClick={() => navigate('/app/bobinagens/reellings', {})} title="A">Bobinagens</Button></Permissions>
+                <Permissions permissions={permission} item="linhaproducao" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/paletelist/`, 'Paletes')} title="B">Paletes</Button></Permissions>
+                <Permissions permissions={permission} item="linhaproducao" action="C"><Button size='small' type="link" onClick={() => navigate('/app/paletes/paleteslist', {})} title="C">Paletes</Button></Permissions>
+                <Permissions permissions={permission} item="linhaproducao" action="D"><Button size='small' type="link" onClick={() => navigate('/app/logslist/lineloglist', {})} title="D">Eventos da Linha</Button></Permissions>
+                </Panel>
+            </Permissions>
+            <Permissions permissions={permission} item="retrabalho" key="4" clone>
+                <Panel header={<b>Retrabalho</b>} key="4">
+                <Permissions permissions={permission} item="retrabalho" action="A"><Button size='small' type="link" onClick={() => onClickItemFrame(`/planeamento/ordemdeproducao/list-retrabalho/`, 'Ordens de Retrabalho')} title="A">Ordens de Retrabalho</Button></Permissions>
+                <Permissions permissions={permission} item="retrabalho" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/retrabalho/`, 'Bobinagens de Retrabalho')} title="B">Bobinagens de Retrabalho</Button></Permissions>
+                <Permissions permissions={permission} item="retrabalho" action="C"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/retrabalho/`, 'Paletes de Retrabalho')} title="C">Paletes de Retrabalho</Button></Permissions>
+                </Panel>
+            </Permissions>
+            <Permissions permissions={permission} item="armazem" key="5" clone>
+                <Panel header={<b>Armazém</b>} key="5">
+                <Permissions permissions={permission} item="armazem" action="A"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`, 'Cargas')} title="A">Cargas</Button></Permissions>
+                <Permissions permissions={permission} item="armazem" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`, 'Pesagem')} title="B">Pesagem</Button></Permissions>
+                <Permissions permissions={permission} item="armazem" action="C"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`, 'Stock')} title="C">Stock</Button></Permissions>
+                <Permissions permissions={permission} item="armazem" action="D"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/export_bobines_originais/`, 'Exportar')} title="D">Exportar</Button></Permissions>
+                <Permissions permissions={permission} item="armazem" action="E"><Button size='small' type="link" onClick={() => navigate('/app/devolucoes/devolucoeslist', {})} title="A">Devoluções de Produto Acabado</Button></Permissions>
+                <Permissions permissions={permission} item="armazem" action="F"><Button size='small' type="link" onClick={() => navigate('/app/expedicoes/timearmazem', {})} title="B">Relatório de Expedições Mensal</Button></Permissions>
+                </Panel>
+            </Permissions>
         </StyledCollapse>
 
     );
