@@ -33,6 +33,13 @@ import FormPrint from '../commons/FormPrint';
 
 const title = "";
 
+const useStyles = createUseStyles({
+    hasObs: {
+        backgroundColor: "#fffb8f"
+    }
+});
+
+
 const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     const items = [];
     return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
@@ -43,6 +50,7 @@ export default (props) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useEditorStyles();
+    const cls = useStyles();
     const [formFilter] = Form.useForm();
     const permission = usePermission({});
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
@@ -79,6 +87,10 @@ export default (props) => {
     const editableClass = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
             return (col === "destino") ? classes.edit : undefined;
+        }else{
+            if (col === "destino" && row.destinos_has_obs>0) {
+                return cls.hasObs;
+            }
         }
     }
 
