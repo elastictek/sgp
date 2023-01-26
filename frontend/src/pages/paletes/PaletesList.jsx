@@ -109,7 +109,11 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     </>
     );
 }
+
 const useStyles = createUseStyles({
+    hasObs: {
+        backgroundColor: "#fffb8f"
+    },
     diffAbove: {
         backgroundColor: "#ffa39e"
     },
@@ -713,8 +717,8 @@ export default ({ setFormTitle, ...props }) => {
         return false;
     }
     const editableClass = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
-            return (col === "destino") ? classes.edit : undefined;
+        if (col === "destino" && row.destinos_has_obs>0) {
+            return classes.hasObs;
         }
     }
 
@@ -778,6 +782,7 @@ export default ({ setFormTitle, ...props }) => {
         {
             key: 'destino', name: 'Destino', width: 200,
             editor: p => <DestinoPaleteEditor forInput={false} p={p} />,
+            cellClass: r => editableClass(r, 'destino'),
             editable: true,
             editorOptions: { editOnClick: true },
             formatter: p => p.row.destino

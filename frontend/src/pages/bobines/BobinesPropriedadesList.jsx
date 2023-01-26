@@ -82,6 +82,7 @@ export default (props) => {
             return (col === "destino") ? classes.edit : undefined;
         }
     }
+    
 
     const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
 

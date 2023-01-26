@@ -302,7 +302,7 @@ def PaletesList(request, format=None):
                 sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
                 sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
                 sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
-                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,
+                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,
                 mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
             FROM mv_paletes sgppl
             LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
