@@ -633,6 +633,7 @@ def UpdateDestinos(request, format=None):
                 ids_po = ','.join(str(x) for x in data["rowsPropObs"])                    
 
                 dml = db.dml(TypeDml.UPDATE,{
+                    "estado":data["values"].get("destinos").get("estado").get("value"),
                     "destinos":json.dumps(data["values"]["destinos"]),
                     "destino":data["values"]["destinoTxt"],
                     "destinos_has_obs":destinos_has_obs
