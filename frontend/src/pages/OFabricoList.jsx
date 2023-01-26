@@ -465,7 +465,7 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
         <div style={{ display: "flex", flexDirection: "row" }}>
             {((status == 0 || !status) && !temp_ofabrico && !ofabrico_sgp) && <>
                 {allow ?
-                <TagButton onClick={/*() => onValidar(record)*/onShowConfirm('validar')} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+                <TagButton onClick={() => onValidar(record)/*onShowConfirm('validar')*/} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
                 : <Tag style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">A Validar</Tag>
                 }
             </>}

@@ -676,6 +676,7 @@ class Palete(models.Model):
     artigo = models.JSONField(blank=True, null=True) #ADDED
     paletizacao = models.JSONField(blank=True, null=True) #ADDED
     destinos = models.JSONField(blank=True, null=True) #ADDED
+    nbobines_emendas = models.IntegerField(verbose_name="Bobines Com emendas", null=True) #ADDED
     def __str__(self):
         return self.nome
 

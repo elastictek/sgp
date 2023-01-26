@@ -2717,9 +2717,13 @@ def encomenda_detail(request, pk):
 
 @login_required
 def carga_list(request):
-    carga_list = Carga.objects.filter(estado='I').order_by('-data')
+    carga_list = Carga.objects.raw(f"""
+    SELECT pc.*,(select round((sum(nbobines_emendas)/sum(nbobines_real))*100,2) from producao_palete pl where pl.carga_id=pc.id) nbobines_emendas 
+    FROM producao_carga pc
+    where estado = %s order by data desc
+    """,['I'])
+    #carga_list = Carga.objects.filter(estado='I').order_by('-data')
     template_name = 'carga/carga_list.html'
-
     for carga in carga_list:
         num_paletes = Palete.objects.filter(carga=carga).count()
         if carga.num_paletes_actual != num_paletes:
@@ -2729,9 +2733,12 @@ def carga_list(request):
     query = ""
     if request.GET:
         query = request.GET.get('q', '')
-        # print(query)
-        carga_list = Carga.objects.filter(
-            carga__icontains=query, estado='I').order_by('-data',)
+        carga_list = Carga.objects.raw(f"""
+        SELECT pc.*,(select round((sum(nbobines_emendas)/sum(nbobines_real))*100,2) from producao_palete pl where pl.carga_id=pc.id) nbobines_emendas 
+        FROM producao_carga pc
+        where estado = %s { f"and carga like '%%{query}%%'" } order by data desc
+        """,['I'])
+        #carga_list = Carga.objects.filter(carga__icontains=query, estado='I').order_by('-data',)
 
     paginator = Paginator(carga_list, 12)
     page = request.GET.get('page')
@@ -2753,15 +2760,22 @@ def carga_list(request):
 
 @login_required
 def carga_list_completa(request):
-    carga_list = Carga.objects.filter(estado='C').order_by('-data')
+    carga_list = Carga.objects.raw(f"""
+    SELECT pc.*,(select round((sum(nbobines_emendas)/sum(nbobines_real))*100,2) from producao_palete pl where pl.carga_id=pc.id) nbobines_emendas 
+    FROM producao_carga pc
+    where estado = %s order by data desc
+    """,['C'])
     template_name = 'carga/carga_list_complete.html'
 
     query = ""
     if request.GET:
         query = request.GET.get('q', '')
         # print(query)
-        carga_list = Carga.objects.filter(
-            carga__icontains=query, estado='C').order_by('-data',)
+        carga_list = Carga.objects.raw(f"""
+        SELECT pc.*,(select round((sum(nbobines_emendas)/sum(nbobines_real))*100,2) from producao_palete pl where pl.carga_id=pc.id) nbobines_emendas 
+        FROM producao_carga pc
+        where estado = %s { f"and carga like '%%{query}%%'" } order by data desc
+        """,['C'])
 
     paginator = Paginator(carga_list, 12)
     page = request.GET.get('page')

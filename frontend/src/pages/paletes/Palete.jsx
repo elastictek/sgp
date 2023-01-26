@@ -138,7 +138,7 @@ export default (props) => {
     }, [modalParameters]);
 
     useEffect(() => {
-        
+
         props.setFormTitle({ title: `Palete ${props?.parameters?.palete?.nome}` }); //Set main Title
         const controller = new AbortController();
         loadData({ signal: controller.signal });
@@ -191,54 +191,55 @@ export default (props) => {
 
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
+        <div style={{ height: "calc(100vh - 50px)" }}>
+            <YScroll>
+                {paleteExists &&
+                    <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                        items={[
+                            {
+                                label: `Informação`,
+                                key: '1',
+                                children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
+                            },
+                            {
+                                label: `Embalamento`,
+                                key: '2',
+                                children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
+                            },
+                            {
+                                label: `Bobines`,
+                                key: '3',
+                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
+                            }, {
+                                label: `Bobines Defeitos`,
+                                key: '4',
+                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
+                            },
+                            {
+                                label: `Bobines Destinos`,
+                                key: '5',
+                                children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
+                            },
+                            {
+                                label: `MP Granulado (Lotes)`,
+                                key: '6',
+                                children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
+                            }, {
+                                label: `Bobines Originais`,
+                                key: '7',
+                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
+                            },
+                            {
+                                label: `Histórico`,
+                                key: '8',
+                                children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
+                            },
+                        ]}
 
-        <>
-            {paleteExists &&
-                <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                    items={[
-                        {
-                            label: `Informação`,
-                            key: '1',
-                            children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
-                        },
-                        {
-                            label: `Embalamento`,
-                            key: '2',
-                            children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
-                        },
-                        {
-                            label: `Bobines`,
-                            key: '3',
-                            children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
-                        }, {
-                            label: `Bobines Defeitos`,
-                            key: '4',
-                            children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
-                        },
-                        {
-                            label: `Bobines Destinos`,
-                            key: '5',
-                            children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
-                        },
-                        {
-                            label: `MP Granulado (Lotes)`,
-                            key: '6',
-                            children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
-                        }, {
-                            label: `Bobines Originais`,
-                            key: '7',
-                            children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
-                        },
-                        {
-                            label: `Histórico`,
-                            key: '8',
-                            children: <PaletesHistoryList {...{ parameters: props?.parameters, permission }} />,
-                        },
-                    ]}
-
-                />}
-            {(!paleteExists && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
-        </>
+                    />}
+                {(!paleteExists && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
+            </YScroll>
+        </div>
         // </Context.Provider>
     )
 

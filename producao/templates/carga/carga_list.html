@@ -33,6 +33,7 @@
                     <th scope="col">Tipo</th>
                     <th scope="col">Data</th>
                     <th scope="col">Nº de Paletes</th>
+                    <th scope="col">Bobines C/Emenda</th>
                     <th scope="col">M<sup>2</sup></th>
                     <th scope="col">Data prevista de expedição</th>
                     <th scope="col">Data e Hora de expedição</sup></th>
@@ -50,6 +51,7 @@
                 <td>{{ ca.tipo }}</td>
                 <td>{{ ca.data|date:"d-n-Y" }}</td>
                 <td>{{ ca.num_paletes_actual }} / {{ ca.num_paletes }}</td>
+                <td>{{ ca.nbobines_emendas }}%</td>
                 <td>{{ ca.sqm }}</td>
                 <td>{{ ca.data_prevista|date:"d-n-Y" }}</td>
                 {% if ca.data_expedicao == None %}

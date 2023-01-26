@@ -18,10 +18,10 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined,InfoCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS,THICKNESS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, THICKNESS, GTIN } from 'config';
 import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useStyles } from 'components/commons/styleHooks';
@@ -49,16 +49,24 @@ const TitleForm = ({ ofabrico }) => {
 
 const schema = (options = {}) => {
     return getSchema({
-        /* xxxx: Joi.any().label("xxxxx").required()*/
+        produto_cod: Joi.string().label("Designação do Produto").required(),
+        artigo_formu: Joi.string().label("Fórmula").required(),
+        artigo_nw1: Joi.string().label("Nonwoven 1").required(),
+        typeofabrico: Joi.number().integer().min(0).max(2).label("Tipo Ordem de Fabrico").required(),
+        artigo_width: Joi.number().integer().min(1).max(5000).label("Largura").required(),
+        artigo_diam: Joi.number().integer().min(1).max(5000).label("Diâmetro").required(),
+        artigo_core: Joi.number().integer().valid(3, 6).label("Core").required(),
+        artigo_gram: Joi.number().integer().min(1).max(1000).label("Gramagem").required(),
+        artigo_thickness: Joi.number().integer().min(0).max(5000).label("Espessura").required()
     }, options).unknown(true);
 }
 
-const loadPaleteLookup = async (palete_id) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, pagination: { limit: 1 }, filter: { palete_id: `==${palete_id}` }, parameters: { method: "PaletesLookup" } });
-    return rows;
+const loadClienteExists = async (cliente_cod) => {
+    const { data: { exists } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { limit: 1 }, filter: { cliente_cod }, parameters: { method: "ClienteExists" } });
+    return exists;
 }
 
-export default ({ parameters, extraRef, closeSelf, ...props }) => {
+export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     //const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
@@ -76,6 +84,7 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
     const dataAPIArtigos = useDataAPI({ /* id: "id", */ payload: { parameters: {}, pagination: { enabled: false }, filter: {}, sort: [] } });
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "ordemfabrico" });
+    const [clienteExists, setClienteExists] = useState(false);
     const primaryKeys = [];
 
     useEffect(() => {
@@ -87,21 +96,23 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
     const loadData = async ({ signal } = {}) => {
         props?.setTitle({ title: `Validar Ordem de Fabrico ${parameters?.ofabrico}` });
         console.log(parameters)
+        const _exists = await loadClienteExists(parameters?.cliente_cod);
+        setClienteExists(_exists);
 
-
-        //if (!parameters?.produto_id && !parameters?.ofabrico) {
-            let artigo = { 
-                artigo_thickness: THICKNESS, 
-                produto_cod: parameters?.item_nome.substring(0, parameters?.item_nome.lastIndexOf(' L')), 
-                artigo_gtin: null, 
-                artigo_core: null, 
-                artigo_formu: null, 
-                artigo_nw1: null, 
-                artigo_nw2: null, 
-                artigo_width: null, 
-                artigo_diam: null, 
-                artigo_gram: null };
-            const designacao = parameters?.item_nome.split(' ').reverse();
+        if (!parameters?.produto_id && parameters?.ofabrico) {
+            let artigo = {
+                artigo_thickness: THICKNESS,
+                produto_cod: parameters?.item_nome?.substring(0, parameters?.item_nome.lastIndexOf(' L')),
+                artigo_gtin: null,
+                artigo_core: null,
+                artigo_formu: null,
+                artigo_nw1: null,
+                artigo_nw2: null,
+                artigo_width: null,
+                artigo_diam: null,
+                artigo_gram: null
+            };
+            const designacao = parameters?.item_nome?.split(' ').reverse();
             for (let v of designacao) {
                 if (v.includes("''") || v.includes("'")) {
                     artigo["artigo_core"] = v.replaceAll("'", "");
@@ -128,53 +139,106 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
                     continue;
                 }
             }
-            setFormStatus({});
             form.setFieldsValue({ ...artigo });
-        //}
-
-
-
-
-        console.log("xxxxx", permission.isOk({ item: "validar" }))
-        // const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
-        // const formValues = await loadPaleteLookup(initFilters.palete_id);
-        // console.log("loaddddddPALETEEEEELISTdddddddddd",formValues)
-        // form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
-        // if (formValues.length > 0 && formValues[0]?.artigo) {
-        //     dataAPIArtigos.setRows(formValues[0].artigo);
-        // }
+        }
         submitting.end();
     }
 
     const onFinish = async (type = 'validar') => {
         const values = form.getFieldsValue(true);
         submitting.trigger();
-        const v = schema().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
-        let { errors, warnings, value, ...status } = getStatus(v);
-        /* if (values.XXXX < values.YYYY) {
-            errors = 1;
-            status.fieldStatus.ZZZZZ = { status: "error", messages: [{ message: "Error description." }] };
-        } */
-        setFieldStatus({ ...status.fieldStatus });
-        setFormStatus({ ...status.formStatus });
-        if (errors === 0) {
-            // try {
-            //     let vals = {
+        try {
+            if (type === 'ignorar' && parameters?.ofabrico) {
+                //ignorar
+                //response = await onAction(data, 'ignorar');
+            } else {
+                
+                const vals = {
+                    values, ofabrico_cod: parameters?.ofabrico, ofabrico_id: parameters?.ofabrico_id, artigo_cod: parameters?.item,
+                    cliente_cod: parameters?.cliente_cod, cliente_nome: parameters?.cliente_nome, 
+                    produto_id: parameters?.produto_id, artigo_id: parameters?.item_id, 
+                    
+                    main_gtin: GTIN, method: "Validar"
+                };
 
-            //     }
-            //     let response = await fetchPost({ url: `${API_URL}/api_to_call/`, filter: { ...vals }, parameters: {} });
-            //     if (response.data.status !== "error") {
-            //         loadParentData();
-            //         closeParent();
-            //         Modal.success({ title: `Sucesso...` })
-            //     } else {
-            //         status.formStatus.error.push({ message: response.data.title });
-            //         setFormStatus({ ...status.formStatus });
-            //     }
-            // } catch (e) {
-            //     Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-            // };
+
+                if (!parameters?.produto_id && parameters?.ofabrico) {
+                    const v = schema().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+                    let { errors, warnings, value, ...status } = getStatus(v);
+                    if (!clienteExists && !values?.cliente_abv){
+                        errors++;
+                        status.fieldStatus.cliente_abv = { status: "error", messages: [{ message: "A sigla do cliente é obrigatória! A sigla não está definida." }] };
+                    }
+                    setFieldStatus({ ...status.fieldStatus });
+                    setFormStatus({ ...status.formStatus });
+    
+                    if (errors === 0) {
+                        console.log(values, '   ', parameters)
+                        let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: vals });
+                        if (response.data.status !== "error") {
+                            //loadParentData();
+                            //closeSelf();
+                            //Modal.success({ title: `Ordem de Fabrico validada com sucesso!` })
+                        } else {
+                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title});
+                            status.formStatus.error.push({ message: response.data.title });
+                            setFormStatus({ ...status.formStatus });
+                        }
+                        //validar sem artigo/produto criado
+                        //response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
+                    }
+                } else {
+                    console.log("on finish 2")
+                    const v = schema({ keys: ["typeofabrico"] }).validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+                    let { errors, warnings, value, ...status } = getStatus(v);
+                    if (!clienteExists && !values?.cliente_abv){
+                        errors++;
+                        status.fieldStatus.cliente_abv = { status: "error", messages: [{ message: "A sigla do cliente é obrigatória! A sigla não está definida." }] };
+                    }
+                    setFieldStatus({ ...status.fieldStatus });
+                    setFormStatus({ ...status.formStatus });
+                    console.log("Onfinish 2", errors)
+                    if (errors === 0) {
+                        //validar com artigo/produto já existente
+                        console.log(values, '   ', parameters)
+                        let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: vals});
+                        if (response.data.status !== "error") {
+                            //loadParentData();
+                            //closeSelf();
+                            //Modal.success({ title: `Ordem de Fabrico validada com sucesso!` })
+                        } else {
+                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title});
+                            status.formStatus.error.push({ message: response.data.title });
+                            setFormStatus({ ...status.formStatus });
+                        }
+                        //validar sem artigo/produto criado
+                        //response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
+                    }
+                }
+
+
+            }
+        } catch (e) {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
         }
+
+        // try {
+        //     let vals = {
+
+        //     }
+        //     let response = await fetchPost({ url: `${API_URL}/api_to_call/`, filter: { ...vals }, parameters: {} });
+        //     if (response.data.status !== "error") {
+        //         loadParentData();
+        //         closeParent();
+        //         Modal.success({ title: `Sucesso...` })
+        //     } else {
+        //         status.formStatus.error.push({ message: response.data.title });
+        //         setFormStatus({ ...status.formStatus });
+        //     }
+        // } catch (e) {
+        //     Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        // };
+        //}
         submitting.end();
     }
 
@@ -187,9 +251,8 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
 
     return (
         <YScroll>
-
             <FormContainer id="LAY-VAL" fluid forInput={permission.isOk({ item: "validar" })} loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} alert={{ tooltip: true, pos: "none" }}>
-                {!parameters?.produto_id && <><Row>
+                {parameters?.produto_id && <><Row>
                     <Col>
                         <ul>
                             <li>Produto <b>{parameters?.produto_cod}</b></li>
@@ -202,15 +265,20 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
                 </Row>
                     <Row>
                         <Col width={200}>
-                            <Field name="typeof" label={{ enabled: true, text: "Tipo de Ordem de Fabrico" }}>
+                            <Field name="typeofabrico" label={{ enabled: true, text: "Tipo de Ordem de Fabrico" }}>
                                 <SelectField size="small" keyField="value" textField="label" data={
                                     [{ value: 0, label: "Linha" },
                                     { value: 1, label: "Retrabalho" },
                                     { value: 2, label: "Reembalamento" }]} />
                             </Field>
                         </Col>
+                        {!clienteExists &&
+                            <Col width={100}>
+                                <Field name="cliente_abv" label={{ enabled: true, text: "Cliente Sigla" }}><Input maxLength={3} size="small" /></Field>
+                            </Col>
+                        }
                     </Row></>}
-                {parameters?.produto_id && <>
+                {!parameters?.produto_id && <>
                     <Row>
                         <Col>
                             <ul>
@@ -225,16 +293,21 @@ export default ({ parameters, extraRef, closeSelf, ...props }) => {
                     </Row>
                     <Row style={{}} gutterWidth={10}>
                         <Col width={200}>
-                            <Field name="typeof" label={{ enabled: true, text: "Tipo de Ordem de Fabrico" }}>
+                            <Field name="typeofabrico" label={{ enabled: true, text: "Tipo de Ordem de Fabrico" }}>
                                 <SelectField size="small" keyField="value" textField="label" data={
                                     [{ value: 0, label: "Linha" },
                                     { value: 1, label: "Retrabalho" },
                                     { value: 2, label: "Reembalamento" }]} />
                             </Field>
                         </Col>
+                        {!clienteExists &&
+                            <Col width={100}>
+                                <Field name="cliente_abv" label={{ enabled: true, text: "Cliente Sigla" }}><Input maxLength={3} size="small" /></Field>
+                            </Col>
+                        }
                     </Row>
                     <Row style={{}} gutterWidth={10}>
-                        <Col width={650}><Field name="produto_cod" label={{ enabled: true, text:"Produto" }}><Input placeholder="Designação do Produto" size="small" /></Field></Col>
+                        <Col width={650}><Field name="produto_cod" label={{ enabled: true, text: "Produto" }}><Input placeholder="Designação do Produto" size="small" /></Field></Col>
                     </Row>
                     <Row style={{}} gutterWidth={10}>
                         <Col width={200}><Field required={false} label={{ text: <Tooltip title="O código Gtin se deixado em branco será calculado automáticamente" color="blue"><div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "3px" }}>Gtin<InfoCircleOutlined style={{ color: "#096dd9" }} /></div></Tooltip> }} name="artigo_gtin"><Input size="small" /></Field></Col>
