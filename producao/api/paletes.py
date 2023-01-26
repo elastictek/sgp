@@ -617,6 +617,10 @@ def UpdateDestinos(request, format=None):
             return response["rows"][0]
         return None
 
+    destinos_has_obs = 0
+    for v in data["values"]["destinos"]["destinos"]:
+        if v["obs"]:
+            destinos_has_obs += 1
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -630,7 +634,8 @@ def UpdateDestinos(request, format=None):
 
                 dml = db.dml(TypeDml.UPDATE,{
                     "destinos":json.dumps(data["values"]["destinos"]),
-                    "destino":data["values"]["destinoTxt"]
+                    "destino":data["values"]["destinoTxt"],
+                    "destinos_has_obs":destinos_has_obs
                     }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
 

@@ -900,6 +900,7 @@ class Bobine(models.Model):
     ignore_audit = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ignore Audit") #ADDED
     destinos = models.JSONField(blank=True, null=True) #ADDED
     ig_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="ig_id") #ADDED
+    destinos_has_obs = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se os destinos têm observações") #ADDED
     def __str__(self):
         return self.nome
 
