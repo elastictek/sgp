@@ -150,69 +150,69 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
         try {
             if (type === 'ignorar' && parameters?.ofabrico) {
                 //ignorar
-                //response = await onAction(data, 'ignorar');
+                let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: { method: "Ignorar", ofabrico_cod: parameters?.ofabrico } });
+                if (response.data.status !== "error") {
+                    loadParentData();
+                    closeSelf();
+                } else {
+                    Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title });
+                }
             } else {
-                
+
                 const vals = {
-                    values, ofabrico_cod: parameters?.ofabrico, ofabrico_id: parameters?.ofabrico_id, artigo_cod: parameters?.item,
-                    cliente_cod: parameters?.cliente_cod, cliente_nome: parameters?.cliente_nome, 
-                    produto_id: parameters?.produto_id, artigo_id: parameters?.item_id, 
-                    
+                    values: {
+                        artigo_diam: parameters?.item_diam, artigo_thickness: parameters?.item_thickness,
+                        artigo_core: parameters?.item_core, artigo_width: parameters?.item_width,
+                        qty_item: parameters?.qty_item, ...values
+                    }, iorder: parameters?.iorder, prf: parameters?.prf, ofabrico_cod: parameters?.ofabrico, ofabrico_id: parameters?.ofabrico_id, artigo_cod: parameters?.item,
+                    cliente_cod: parameters?.cliente_cod, cliente_nome: parameters?.cliente_nome, produto_id: parameters?.produto_id, artigo_id: parameters?.item_id,
+                    start_date: moment(parameters?.start_date).format(DATETIME_FORMAT), end_date: moment(parameters?.start_date).format(DATETIME_FORMAT),
                     main_gtin: GTIN, method: "Validar"
                 };
-
 
                 if (!parameters?.produto_id && parameters?.ofabrico) {
                     const v = schema().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
                     let { errors, warnings, value, ...status } = getStatus(v);
-                    if (!clienteExists && !values?.cliente_abv){
+                    if (!clienteExists && !values?.cliente_abv) {
                         errors++;
                         status.fieldStatus.cliente_abv = { status: "error", messages: [{ message: "A sigla do cliente é obrigatória! A sigla não está definida." }] };
                     }
                     setFieldStatus({ ...status.fieldStatus });
                     setFormStatus({ ...status.formStatus });
-    
+
                     if (errors === 0) {
-                        console.log(values, '   ', parameters)
+
                         let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: vals });
                         if (response.data.status !== "error") {
-                            //loadParentData();
-                            //closeSelf();
-                            //Modal.success({ title: `Ordem de Fabrico validada com sucesso!` })
+                            loadParentData();
+                            closeSelf();
                         } else {
-                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title});
+                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title });
                             status.formStatus.error.push({ message: response.data.title });
                             setFormStatus({ ...status.formStatus });
                         }
-                        //validar sem artigo/produto criado
-                        //response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
                     }
                 } else {
-                    console.log("on finish 2")
                     const v = schema({ keys: ["typeofabrico"] }).validate(values, { abortEarly: false, messages: validateMessages, context: {} });
                     let { errors, warnings, value, ...status } = getStatus(v);
-                    if (!clienteExists && !values?.cliente_abv){
+                    if (!clienteExists && !values?.cliente_abv) {
                         errors++;
                         status.fieldStatus.cliente_abv = { status: "error", messages: [{ message: "A sigla do cliente é obrigatória! A sigla não está definida." }] };
                     }
                     setFieldStatus({ ...status.fieldStatus });
                     setFormStatus({ ...status.formStatus });
-                    console.log("Onfinish 2", errors)
                     if (errors === 0) {
                         //validar com artigo/produto já existente
                         console.log(values, '   ', parameters)
-                        let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: vals});
+                        let response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: vals });
                         if (response.data.status !== "error") {
-                            //loadParentData();
-                            //closeSelf();
-                            //Modal.success({ title: `Ordem de Fabrico validada com sucesso!` })
+                            loadParentData();
+                            closeSelf();
                         } else {
-                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title});
+                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.title });
                             status.formStatus.error.push({ message: response.data.title });
                             setFormStatus({ ...status.formStatus });
                         }
-                        //validar sem artigo/produto criado
-                        //response = await onAction(data, action, { ...values, artigo_nome: item_nome, main_gtin: GTIN });
                     }
                 }
 

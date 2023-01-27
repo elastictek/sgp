@@ -525,7 +525,6 @@ export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props
     useEffect(() => {
         const d = json(p.row.destinos);
         const _isLegacy = ((!p.row.destinos && p.row.destino) || !Array.isArray(d)) ? true : false;
-        console.log(".......", d, _isLegacy)
         // form.setFieldsValue({
         //     estado: d?.estado ? d.estado : { value: p.row.estado },
         //     destinos: d?.destinos ? json(d.destinos) : [],

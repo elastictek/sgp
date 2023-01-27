@@ -205,6 +205,7 @@ def ClienteExists(request, format=None):
     exists = db.exists("producao_cliente", f, cursor).exists
     return Response({"exists":exists})
 
+#region INTERNAL METHODS
 
 def checkAgg(ofabrico_id,ofabrico_cod,cursor):
     if ofabrico_id is None:
@@ -255,54 +256,6 @@ def computeLinearMeters(data):
         }
     return None
 
-def computePaletizacao(cp,data,cursor):
-    paletizacao = None
-    if paletizacao is None:
-        if "paletizacao_id" in data and data["paletizacao_id"] is not None:
-            rows = db.executeSimpleList(lambda: (f"""
-                select  pp.npaletes,ppd.* 
-                from producao_paletizacao pp
-                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-                where pp.id={data['paletizacao_id']}
-            """), cursor, {})['rows']
-            if len(rows)>0:
-                paletizacao=rows
-        else:
-            computed = {}
-            if ("ofabrico_id" not in data):
-                return computed
-            rows = db.executeSimpleList(lambda: (f"""
-                select pp.npaletes, ppd.* 
-                from producao_tempordemfabrico tof
-                left join producao_paletizacao pp on pp.id=tof.paletizacao_id
-                left join producao_paletizacaodetails ppd on pp.id=ppd.paletizacao_id and ppd.item_id=2
-                where tof.id='{data['ofabrico_id']}'
-            """), cursor, {})['rows']
-            if len(rows)>0:
-                paletizacao=rows
-    sqm_paletes_total = 0
-    nitems = 0
-    items = []
-    computed = {}
-    if paletizacao is not None:
-        for pitem in paletizacao:
-            if pitem["id"] is not None:
-                nitems += 1
-                items.append({
-                    "id":pitem["id"],
-                    "num_bobines":pitem["item_numbobines"],
-                    "sqm_palete":cp["sqm_bobine"]*pitem["item_numbobines"]
-                })
-                sqm_paletes_total += (cp["sqm_bobine"]*pitem["item_numbobines"])
-        if nitems>0:
-            computed["total"] = {
-                "sqm_paletes_total":sqm_paletes_total,
-                "sqm_contentor":sqm_paletes_total*paletizacao[0]["npaletes"],
-                "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
-            }
-            computed["items"] = items
-    return computed
-
 def addProduto(produto_cod,cursor):
         if produto_cod is not None:       
             f = Filters({"produto_cod": produto_cod.lower().strip() })
@@ -313,10 +266,8 @@ def addProduto(produto_cod,cursor):
             if len(produtoId)>0:
                 return produtoId[0]['id']
             dml = db.dml(TypeDml.INSERT, {"produto_cod":produto_cod.strip()}, "producao_produtos",None,None,False)
-            print(dml.statement)
-            print(dml.parameters)
-            #db.execute(dml.statement, cursor, dml.parameters)
-            #return cursor.lastrowid
+            db.execute(dml.statement, cursor, dml.parameters)
+            return cursor.lastrowid
         return None
 
 def addArtigo(data,main_gtin,produto_id,cursor):
@@ -345,7 +296,7 @@ def addArtigo(data,main_gtin,produto_id,cursor):
             dml = None
             if len(artigoId)>0:
                 dml = db.dml(TypeDml.UPDATE, dta, "producao_artigo",{"id":artigoId[0]["id"]},None,None)
-                #db.execute(dml.statement, cursor, dml.parameters)
+                db.execute(dml.statement, cursor, dml.parameters)
                 return artigoId[0]["id"]
             else:
                 if data.get("artigo_gtin"):
@@ -353,8 +304,8 @@ def addArtigo(data,main_gtin,produto_id,cursor):
                 else:
                     dta["gtin"] = computeGtin(cursor,main_gtin)
                 dml = db.dml(TypeDml.INSERT, dta, "producao_artigo",None,None)
-                #db.execute(dml.statement, cursor, dml.parameters)
-                #return cursor.lastrowid
+                db.execute(dml.statement, cursor, dml.parameters)
+                return cursor.lastrowid
         else:
             return None
 
@@ -388,12 +339,12 @@ def getAgg(ofabrico_id, artigo_cod, cursor):
     rows = db.executeSimpleList(lambda: (f'SELECT agg_of_id,agg_ofid_original FROM producao_tempordemfabrico {f.text}'), cursor, f.parameters)['rows']
     return rows[0] if len(rows)>0 else None
 
-def addTempAggOrdemFabrico(data, ids, cursor):
+def addTempAggOrdemFabrico(start_date,end_date, ids, cursor):
     dta = {
         'status': 0,
-        'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if data.get("start_prev_date") is None else data.get("start_prev_date")
+        'start_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if start_date is None else start_date,
+        'end_prev_date':datetime.now().strftime("%Y-%m-%d %H:%M:%S") if end_date is None else end_date
     }
-
     if ids is None:
         dml = db.dml(TypeDml.INSERT, dta, "producao_tempaggordemfabrico",None,None,False)
         tags = []
@@ -410,68 +361,28 @@ def addTempAggOrdemFabrico(data, ids, cursor):
         return cursor.lastrowid
     return None
 
-def addTempOrdemFabrico(data,aggid,produto_id, cp, cpp, cursor):
+def addTempOrdemFabrico(data,agg_id,typeofabrico,artigo_id,produto_id, cp, cursor):
     dta = {
         'aggregated':0,
-        'agg_of_id': aggid,
-        'agg_ofid_original': aggid,
-        'of_id': data['ofabrico_cod'],
-        'order_cod': data['iorder'],
-        'prf_cod':data['prf'],
-        'item_cod': data['item'],
-        'item_id': data['item_id'],
-        'produto_id': data['produto_id'] if produto_id is None else produto_id
-    }        
-    onDuplicate = ""
-    # if "formulacao_id" in data:
-    #     dta["formulacao_id"] = data["formulacao_id"]
-    #     onDuplicate+=",formulacao_id=VALUES(formulacao_id)"
-    # if "gamaoperatoria_id" in data:
-    #     dta["gamaoperatoria_id"] = data["gamaoperatoria_id"]
-    #     onDuplicate+=",gamaoperatoria_id=VALUES(gamaoperatoria_id)"
-    # if "artigospecs_id" in data:
-    #     dta["artigospecs_id"] = data["artigospecs_id"]
-    #     onDuplicate+=",artigospecs_id=VALUES(artigospecs_id)"
-    if "cliente_cod" in data and data["cliente_cod"] is not None:
-        dta["cliente_cod"]=data["cliente_cod"]
-        dta["cliente_nome"]=data["cliente_nome"]
-        onDuplicate+=",cliente_cod=VALUES(cliente_cod)"
-        onDuplicate+=",cliente_nome=VALUES(cliente_nome)"                
-            
-    if "paletizacao_id" in data:
-        dta["paletizacao_id"] = data["paletizacao_id"]
-        onDuplicate+=",paletizacao_id=VALUES(paletizacao_id)"
-    # if "nonwovens_id" in data:
-    #     dta["nonwovens_id"] = data["nonwovens_id"]
-    #     onDuplicate+=",nonwovens_id=VALUES(nonwovens_id)"
-    artigo = data["artigo"] if "artigo" in data else data
-    if artigo is not None:
-        dta['qty_encomenda'] = cp['qty_encomenda'],
-        dta['linear_meters'] = cp["linear_meters"],
-        dta['n_voltas'] = cp["n_voltas"],
-        dta['sqm_bobine'] = cp["sqm_bobine"]
-        dta['n_paletes'] = json.dumps(cpp)
-        onDuplicate+=",qty_encomenda=VALUES(qty_encomenda)"
-        onDuplicate+=",linear_meters=VALUES(linear_meters)"
-        onDuplicate+=",sqm_bobine=VALUES(sqm_bobine)"
-        onDuplicate+=",qty_encomenda=VALUES(qty_encomenda)"
-        onDuplicate+=",n_voltas=VALUES(n_voltas)"
-        onDuplicate+=",n_paletes=VALUES(n_paletes)"
-
+        'agg_of_id': agg_id,
+        'agg_ofid_original': agg_id,
+        'of_id': data.get('ofabrico_cod'),
+        'order_cod': data.get('iorder'),
+        'prf_cod':data.get('prf'),
+        'item_cod': data.get('artigo_cod'),
+        'item_id': artigo_id,
+        'produto_id': produto_id,
+        'typeofabrico':typeofabrico,
+        'qty_encomenda': cp.get('qty_encomenda'),
+        'linear_meters': cp.get("linear_meters"),
+        'n_voltas': cp.get("n_voltas"),
+        'sqm_bobine': cp.get("sqm_bobine")
+    }
+    if cliente_id is not None:
+        dta["cliente_cod"]=data.get("cliente_cod")
+        dta["cliente_nome"]=data.get("cliente_nome")
     dml = db.dml(TypeDml.INSERT, dta, "producao_tempordemfabrico",None,None,False)
-    dml.statement = f"""
-        {dml.statement}
-        ON DUPLICATE KEY UPDATE 
-            id = LAST_INSERT_ID(id),
-            of_id=VALUES(of_id),
-            agg_of_id=VALUES(agg_of_id),
-            order_cod=VALUES(order_cod),
-            prf_cod=VALUES(prf_cod),
-            produto_id=VALUES(produto_id),
-            item_cod=VALUES(item_cod),
-            item_id=VALUES(item_id)
-            {onDuplicate}
-    """
+    dml.statement = f"""{dml.statement} ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"""
     db.execute(dml.statement, cursor, dml.parameters)
     return cursor.lastrowid
 
@@ -527,113 +438,107 @@ def addArtigoCliente(artigo_id,cliente_id,user_id,cursor):
         dml = db.dml(TypeDml.INSERT, dta, "producao_artigocliente",None,None)
         db.execute(dml.statement, cursor, dml.parameters)
 
-def addEcomenda(data,cursor):
-    return
+def getEncomendaSage(cod):
+    cols = []
+    f = Filters({"cod": cod})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'"enc"."SOHNUM_0" = :cod', True)
+    f.value("and")
+    sageAlias = dbgw.dbAlias.get("sage")
+    with connections[connGatewayName].cursor() as cursor:
+        rows = dbgw.executeSimpleList(lambda: (
+          f'''            
+            SELECT 
+            tbl.*,
+            round(sqm/5400)+1 as num_paletes
+            FROM
+            (
+            SELECT 
+            DISTINCT ON ("enc"."SOHNUM_0") "enc"."SOHNUM_0" ,"enc"."PRFNUM_0","enc"."ORDDAT_0","enc"."DEMDLVDAT_0", "enc"."SHIDAT_0", "enclin"."EXTDLVDAT_0",
+            SUM("enclin"."QTY_0") OVER w as sqm
+            FROM {sageAlias}."SORDER" as enc
+            JOIN {sageAlias}."SORDERQ" as enclin on enc."SOHNUM_0" = enclin."SOHNUM_0" 
+            JOIN {sageAlias}."ITMMASTER" as itm on enclin."ITMREF_0" = itm."ITMREF_0"  
+            {f.text}
+            WINDOW w AS (PARTITION BY "enc"."SOHNUM_0")
+            ) tbl            
+            '''
+        ), cursor, f.parameters)['rows']
+        return rows[0] if len(rows)>0 else None 
 
+def addEncomenda(order_cod,cliente_id,user_id,cursor):
+    row = getEncomendaSage(order_cod)
+    if row is not None:
+        dta={
+            "timestamp": datetime.now(),
+            "data":datetime.now(),
+            "eef":row["SOHNUM_0"],
+            "prf":row["PRFNUM_0"],
+            "sqm":row["sqm"],
+            "estado":'A',
+            "num_cargas":0,
+            "num_cargas_actual":0,
+            "num_paletes":row["num_paletes"],
+            "num_paletes_actual":0,
+            "data_encomenda":row["ORDDAT_0"],
+            "data_expedicao":row["SHIDAT_0"],
+            "data_prevista_expedicao":row["EXTDLVDAT_0"],
+            "data_solicitada":row["DEMDLVDAT_0"],
+            "prazo":0,
+            "user_id":user_id,
+            "cliente_id":cliente_id
+        }
+        dml = db.dml(TypeDml.INSERT, dta, "producao_encomenda")
+        dml.statement = f"{dml.statement} ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(`id`)"
+        db.execute(dml.statement, cursor, dml.parameters)
+        return cursor.lastrowid
 
-
-
+#endregion
 
 def Validar(request, format=None):
     connection = connections["default"].cursor()
     data = request.data['parameters']
     values = data['values']
-    f = Filters(request.data['filter'])
-    print("VALIDADARRRRRRRRR")
-    print(data)
-    # def checkBobines(ids, cursor):
-    #     response = db.executeSimpleList(lambda: (f"""        
-    #         select count(*) cnt
-    #         from producao_bobine pb
-    #         left join producao_palete pp on pp.id=pb.palete_id 
-    #         where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
-    #     """), cursor, {})
-    #     if len(response["rows"])>0:
-    #         return response["rows"][0]["cnt"]
-    #     return None
-
-    # def checkExpedicaoSage(ids,cursor):
-    #     connection = connections[connGatewayName].cursor()
-    #     response = dbgw.executeSimpleList(lambda: (f"""
-    #             select count(*) cnt
-    #             from mv_bobines pb
-    #             left join mv_paletes pp on pp.id=pb.palete_id
-    #             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
-    #             where pb.id in ({ids}) and mv."SDHNUM_0" is not null
-    #     """), connection, {})
-    #     if len(response["rows"])>0:
-    #         return response["rows"][0]["cnt"]
-    #     return None
-
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 aggStatus = checkAgg(data.get("ofabrico_id"),data.get("ofabrico_cod"),cursor) #ofabrico_cod or ofabrico_id
                 if (aggStatus["status"]=="error"):
                     return Response(aggStatus)
-                #cp = computeLinearMeters(data)
-                #cpp = computePaletizacao(cp,data,cursor)
+                cp = computeLinearMeters({"artigo":values})
                 produto_id = data.get("produto_id") if data.get("produto_id") is not None else addProduto(values.get("produto_cod"),cursor)
+                if (produto_id is None):
+                    raise Exception("O Produto não existe/não se encontra registado!")
                 artigo_id = data.get("artigo_id") if data.get("artigo_id") is not None else addArtigo({**values, "artigo_cod":data.get("artigo_cod")}, data.get('main_gtin'), produto_id,cursor)
                 cliente_id = addCliente({"cliente_cod":data.get("cliente_cod"),"cliente_nome":data.get("cliente_nome"),**values},cursor)
                 if (artigo_id is None):
-                    raise Exception("O artigo não existe!")
-                if (cliente_id is None):
-                    raise Exception("O cliente não existe!")
-                addArtigoCliente(artigo_id,cliente_id,request.user.id,cursor)
+                    raise Exception("O artigo não existe/não se encontra registado!")
+                if (cliente_id is not None):
+                    addArtigoCliente(artigo_id,cliente_id,request.user.id,cursor)
+                    order_id = addEncomenda(data.get("iorder"),cliente_id,request.user.id,cursor)
                 ids = getAgg(data.get("ofabrico_id"),data.get("artigo_cod"),cursor)
-
-                print("############VALIDAR###############")
-                print(ids)
-                print({**values, "artigo_cod":data.get("artigo_cod")})
-
-                #
-                #aggid = addTempAggOrdemFabrico(data,ids,cursor)
-                #id = addTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
-                #sgpForProduction(data,aggid,request.user,cursor)
-                
-                # ids = ','.join(str(x["id"]) for x in data["rows"])                
-                # chk01 = checkBobines(ids,cursor)
-                # if chk01 > 0:
-                #     return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Comprimento actual, se entrou em reciclado, ou se está numa carga... )"})
-                # chk02 = checkExpedicaoSage(ids,cursor)
-                # if chk02 > 0:
-                #     return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique se já existe expedição."})
-
-                # columns = defeitosCols["columns"]
-                # columns_defeitos = defeitosCols["columns_defeitos"]
-                # for v in data['rows']:
-                #     b={}
-                #     for x in columns_defeitos:
-                #         if "defeitos" in v:
-                #             if len(v["defeitos"])==0:
-                #                 b[x]=0
-                #             else:
-                #                 for y in v["defeitos"]:
-                #                     if ("key" in y and y["key"]==x) or ("value" in y and y["value"]==x):
-                #                         b[x] = 1
-                #                     elif x not in b:
-                #                         b[x]=0
-                #         else:
-                #             b[x]=0
-                #     bobine_values = {**{key: v[key] for key in v if key in columns}, **b} 
-                #     bobine_values['ff_m_ini'] = bobine_values['ff_pos'][0]['min'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
-                #     bobine_values['ff_m_fim'] = bobine_values['ff_pos'][0]['max'] if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else None
-                #     bobine_values['fc_diam_ini'] = bobine_values['fc_pos'][0]['min'] if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else None
-                #     bobine_values['fc_diam_fim'] = bobine_values['fc_pos'][0]['max'] if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else None
-                #     bobine_values['fc_pos'] = json.dumps(bobine_values['fc_pos'], ensure_ascii=False) if bobine_values['fc_pos'] is not None else None
-                #     bobine_values['ff_pos'] = json.dumps(bobine_values['ff_pos'], ensure_ascii=False) if bobine_values['ff_pos'] is not None else None
-                #     bobine_values['furos_pos'] = json.dumps(bobine_values['furos_pos'], ensure_ascii=False) if bobine_values['furos_pos'] is not None else None
-                #     bobine_values['buracos_pos'] = json.dumps(bobine_values['buracos_pos'], ensure_ascii=False) if bobine_values['buracos_pos'] is not None else None
-                #     bobine_values['rugas_pos'] = json.dumps(bobine_values['rugas_pos'], ensure_ascii=False) if bobine_values['rugas_pos'] is not None else None
-                #     bobine_values["ff"] = 1 if bobine_values['ff_pos'] is not None and len(bobine_values['ff_pos'])>0 else 0
-                #     bobine_values["fc"] = 1 if bobine_values['fc_pos'] is not None and len(bobine_values['fc_pos'])>0 else 0
-                #     bobine_values["furos"] = 1 if bobine_values['furos_pos'] is not None and len(bobine_values['furos_pos'])>0 else 0
-                #     bobine_values["buraco"] = 1 if bobine_values['buracos_pos'] is not None and len(bobine_values['buracos_pos'])>0 else 0
-                #     bobine_values["rugas"] = 1 if bobine_values['rugas_pos'] is not None and len(bobine_values['rugas_pos'])>0 else 0
-                #     dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
-                #     db.execute(dml.statement, cursor, dml.parameters)
-        return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
+                agg_id = addTempAggOrdemFabrico(data.get("start_date"),data.get("end_date"),ids,cursor)
+                if (agg_id is None):
+                    raise Exception("A ordem de fabrico não foi registada!")
+                id = addTempOrdemFabrico(data,agg_id,values.get('typeofabrico'),cliente_id,produto_id,cp,cursor)
+        return Response({"status": "success", "success":f"""Ordem de fabrico validada com sucesso!"""})
     except Exception as error:
         print(error)
         return Response({"status": "error", "title": str(error)})
+
+def Ignorar(request, format=None):
+    connection = connections["default"].cursor()
+    data = request.data['parameters']
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                dml = db.dml(TypeDml.INSERT, {"cod":data.get("ofabrico_cod"),"ignorar":1}, "producao_ordemfabricodetails",None,None,False)
+                dml.statement = f"""{dml.statement} ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"""
+                db.execute(dml.statement, cursor, dml.parameters)
+                return cursor.lastrowid
+                return Response({"status": "success", "success":f"""Ordem de fabrico ignorada com sucesso!"""})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+
