@@ -96,7 +96,7 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
     const loadData = async ({ signal } = {}) => {
         props?.setTitle({ title: `Validar Ordem de Fabrico ${parameters?.ofabrico}` });
         console.log(parameters)
-        const _exists = await loadClienteExists(parameters?.cliente_cod);
+        const _exists = !parameters?.cliente_cod ? true : await loadClienteExists(parameters?.cliente_cod);
         setClienteExists(_exists);
 
         if (!parameters?.produto_id && parameters?.ofabrico) {

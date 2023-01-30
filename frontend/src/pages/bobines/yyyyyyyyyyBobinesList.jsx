@@ -36,12 +36,9 @@ import { TbCircles } from "react-icons/tb";
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
-import { Core, EstadoBobines, Largura } from "./commons";
-import Palete from './Palete';
-import FormCreatePalete from './FormCreatePalete';
+//import { Core, EstadoBobines, Largura } from "./commons";
 import { MediaContext } from "../App";
 import OF from '../commons/OF';
-import { DestinoPaleteEditor } from 'components/tableEditors';
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -91,7 +88,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
                 <Input size='small' allowClear />
             </Field>
         </Col>
-        {/*         <Col width={70}>
+{/*         <Col width={70}>
             <Field name="flargura" label={{ enabled: true, text: "Largura", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -101,7 +98,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
                 <SelectMultiField size="small" keyField='value' textField='value' data={BOBINE_ESTADOS} />
             </Field>
         </Col>
-        {/*         <Col xs='content'>
+{/*         <Col xs='content'>
             <Field name="fbobine" label={{ enabled: true, text: "Bobine(s)", pos: "top", padding: "0px" }}>
                 <Input size='small' allowClear />
             </Field>
@@ -109,11 +106,7 @@ const ToolbarFilters = ({ dataAPI, ...props }) => {
     </>
     );
 }
-
 const useStyles = createUseStyles({
-    hasObs: {
-        backgroundColor: "#fffb8f"
-    },
     diffAbove: {
         backgroundColor: "#ffa39e"
     },
@@ -153,37 +146,29 @@ const useStyles = createUseStyles({
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
-    { flote: { label: "Lote Palete", field: { type: 'input', size: 'small' } } },
-    { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
-    { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' }, span: 14 }, festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS }, span: 10 } },
-    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
+    { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
+    { fnbobinesreal: { label: "Nº Bobines", field: { type: 'input', size: 'small' }, span: 8 }, flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 8 },fdisabled: { label: 'Ativo', field: { type: 'select', size: 'small', options: [{ value: null, label: " " }, { value: 0, label: "Sim" }, { value: 1, label: "Não" }] }, span: 8 } },
+    { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS } } },
+    { fbobine: { label: "Bobine(s)", field: { type: 'input', size: 'small' } } },
+    { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } }},
     { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
-    {
-        farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
-        fcomp: { label: "Comp. Total", field: { type: 'input', size: 'small' }, span: 5 },
-        fdiam_min: { label: "Diâm. (Min)", field: { type: 'input', size: 'small' }, span: 5 },
-        fdiam_max: { label: "Diâm. (Max)", field: { type: 'input', size: 'small' }, span: 5 },
-        fdiam_avg: { label: "Diâm. (Médio)", field: { type: 'input', size: 'small' }, span: 5 }
-    },
+    { fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 6 }, fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 6 } },
+    { farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 12 }, fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fdiam_min: { label: "Diâmetro (Min)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_max: { label: "Diâmetro (Max)", field: { type: 'input', size: 'small' }, span: 8 }, fdiam_avg: { label: "Diâmetro (Médio)", field: { type: 'input', size: 'small' }, span: 8 } },
     { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fof: { label: "Ordem Fabrico", field: { type: 'input', size: 'small' } } },
-    { fprf: { label: "PRF", field: { type: 'input', size: 'small' }, span: 12 }, forder: { label: "Encomenda", field: { type: 'input', size: 'small' }, span: 12 } },
     {
         fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
         fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
-        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 4 },
-        fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 4 },
-        fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 4 }
+        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 6 }
     },
-    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
+    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } }},
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula: { label: "Matrícula", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula_reboque: { label: "Mat.Reboque", field: { type: 'input', size: 'small' }, span: 8 } },
-    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
-    { fdestino_lar: { label: "Destino Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_estado: { label: "Destino Estado", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_reg: { label: " Destino Regranular", field: { type: 'input', size: 'small' }, span: 8 } },
-    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } } },
-    { ftiponw: { label: "Nonwoven Artigo", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 }, flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 } },
-
+    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' } }},
+    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } }},
+    { flotenw: { label: "Lote Nonwoven", field: { type: 'input', size: 'small' } }},
+    { ftiponw: { label: "Nononwoven Artigo", field: { type: 'input', size: 'small' } }},
+    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' } }},
+    { flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' } }},
 
 
     // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -647,32 +632,6 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-
-export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = false, height, footer = "ref", yScroll = true, children }) => {
-    const [visible, setVisible] = useState(true);
-
-    const onCancel = () => {
-        p.onClose();
-        setVisible(false);
-    };
-
-    return (
-        <ResponsiveModal title={title} type={type} push={push} onCancel={onCancel} width={width} height={height} footer={footer} yScroll={yScroll}>
-            {children}
-        </ResponsiveModal>
-    );
-};
-
-
-const modoExpedicao = (v) => {
-    switch (v) {
-        case "1": return "CONTAINER";
-        case "3": return "TRUCK";
-        case "4": return "AIR";
-        default: return "";
-    }
-}
-
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
@@ -696,13 +655,12 @@ export default ({ setFormTitle, ...props }) => {
 
         const content = () => {
             switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "details": return <div>sssssssss</div>; {/* <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />; */}
             }
         }
 
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -717,8 +675,8 @@ export default ({ setFormTitle, ...props }) => {
         return false;
     }
     const editableClass = (row, col) => {
-        if (col === "destino" && row.destinos_has_obs>0) {
-            return classes.hasObs;
+        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
+            return (col === "destino") ? classes.edit : undefined;
         }
     }
 
@@ -763,50 +721,31 @@ export default ({ setFormTitle, ...props }) => {
 
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
-        {
-            key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
-        },
+        { key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} /> },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
-        { key: 'nbobines_emendas', name: 'Bobines C/Emendas',reportFormat:'0', width: 60, formatter: p => p.row.nbobines_emendas },
-        { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
-        { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
-        { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
-        { key: 'area_real', name: 'Área',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
-        { key: 'comp_real', name: 'Comp.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
-        { key: 'peso_bruto', name: 'Peso B.',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
-        { key: 'peso_liquido', name: 'Peso .L',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
-        { key: 'diam_min', name: 'Diam. Min.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
-        { key: 'diam_max', name: 'Diam. Máx.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
-        { key: 'diam_avg', name: 'Diam. Médio.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
-        {
-            key: 'destino', name: 'Destino', width: 200,
-            editor: p => <DestinoPaleteEditor forInput={false} p={p} />,
-            cellClass: r => editableClass(r, 'destino'),
-            editable: true,
-            editorOptions: { editOnClick: true },
-            formatter: p => p.row.destino
-        },
+       /*  { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
+        { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> }, */
+        /* { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> }, */
+        { key: 'area_real', name: 'Área', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
+        { key: 'comp_real', name: 'Comp.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
+        { key: 'peso_bruto', name: 'Peso B.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
+        { key: 'peso_liquido', name: 'Peso .L', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
+        { key: 'diam_min', name: 'Diam. Min.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
+        { key: 'diam_max', name: 'Diam. Máx.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
+        { key: 'diam_avg', name: 'Diam. Médio.', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
+        { key: 'destino', name: 'Destino', width: 200, /* editable: (r) => editable(r, 'destino'), cellClass: r => editableClass(r, 'destino'), editor: p => <DestinoEditor p={p} column="destino" onChange={()=>{}} />, editorOptions: { editOnClick: true }, */  formatter: p => p.row.destino },
         { key: 'cliente_nome', name: 'Cliente', width: 200, formatter: p => p.row.cliente_nome },
         { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid} of_des={p.row.ordem_original} /> },
-        { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
-        { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
-        { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && moment(p.row.data_encomenda).format(DATETIME_FORMAT) },
-        { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
         { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
         { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
-        { key: 'stock_qtypcu', name: 'Qtd. Stock',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
+        { key: 'stock_qtypcu', name: 'Qtd. Stock', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
         { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
         { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
         { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
         { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
-        { key: 'modo_exp', name: 'Modo Expedição',reportFormat:'0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
-        { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
-        { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
-        { key: 'mes', name: 'Mês',reportFormat:'0', width: 60, formatter: p => p.row.mes },
-        { key: 'ano', name: 'Ano',reportFormat:'0', width: 60, formatter: p => p.row.ano },
-
-
+        { key: 'mes', name: 'Mês', width: 60, formatter: p => p.row.mes },
+        { key: 'ano', name: 'Ano', width: 60, formatter: p => p.row.ano },
 
         //{ key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         // { key: 'type_mov', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'type_mov'), formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
@@ -836,7 +775,7 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
+            let { filterValues, fieldValues } = fixRangeDates([], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
             dataAPI.setSort(defaultSort);
@@ -864,17 +803,12 @@ export default ({ setFormTitle, ...props }) => {
                     fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
-                    fmatricula:getFilterValue(vals?.fmatricula, 'any'),
-                    fmatricula_reboque:getFilterValue(vals?.fmatricula_reboque, 'any'),
-                    fprf: getFilterValue(vals?.fprf, 'any'),
-                    forder: getFilterValue(vals?.forder, 'any'),
-                    fdestino: getFilterValue(vals?.fdestino, 'any'),
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
-                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga,
+                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
-                    fdata: getFilterRangeValues(vals["fdata"]?.formatted),
+                    // fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
@@ -970,12 +904,7 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onClickDetails = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
-        showModal();
-    }
-
-    const onCreatePalete = () => {
-        setModalParameters({ content: "createpalete",type: "drawer", title:"Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
+        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>{title}</div>, loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
         showModal();
     }
 
@@ -1000,7 +929,7 @@ export default ({ setFormTitle, ...props }) => {
                 rowHeight={28}
                 rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
-                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions>
+                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={changeMode}>Criar Palete</Button></Permissions>
                     {/* <Permissions permissions={permission} action="editList">
                         {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                         {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
@@ -1016,7 +945,7 @@ export default ({ setFormTitle, ...props }) => {
                 toolbarFilters={{
                     form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,
                     filters: <ToolbarFilters dataAPI={dataAPI} />,
-                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 500, mask: true }
+                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
                 }}
             />
         </>

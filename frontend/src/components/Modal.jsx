@@ -23,7 +23,7 @@ const TitleModal = ({ title, eTitle }) => {
 
 
 
-export default ({ type = "modal", push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -51,7 +51,7 @@ export default ({ type = "modal", push = true, responsive = true, width = 800, h
 
     const footerButtons = () => {
         if (footer === "ref") {
-            return <div ref={footerRef} style={{ textAlign: 'right' }}></div>;
+            return <div {...{...id && {id}}} ref={footerRef} style={{ textAlign: 'right' }}></div>;
         } else if (footer === "none") {
             return null;
         } else {

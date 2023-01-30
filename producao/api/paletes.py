@@ -294,7 +294,6 @@ def PaletesList(request, format=None):
     sql = lambda p, c, s: (
         f"""  
             select {c(f'{dql.columns}')} from ( select 
-
                 distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
                 mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
                 sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
@@ -307,7 +306,7 @@ def PaletesList(request, format=None):
             FROM mv_paletes sgppl
             LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
-            {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] else ""}
+            {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] or festados.hasFilters else ""}
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
             {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             ) t

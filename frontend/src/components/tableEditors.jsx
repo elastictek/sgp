@@ -467,7 +467,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                                                                                             { key: 'BPCNUM_0', name: 'Cód', width: 160 },
                                                                                             { key: 'BPCNAM_0', name: 'Nome' }
                                                                                         ]}
-                                                                                        filters={{ fmulti_customer: { type: "any", width: 150, text: "Cliente" } }}
+                                                                                        filters={{ fmulti_customer: { type: "any", width: 150, text: "Cliente", autoFocus:true } }}
                                                                                         moreFilters={{}}
                                                                                     />
                                                                                 </Field>

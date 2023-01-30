@@ -8,7 +8,7 @@ import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
 import { debounce } from "utils";
-import { validate,getSchema, pick, getStatus } from "utils/schemaValidator";
+import { validate, getSchema, pick, getStatus } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
@@ -21,6 +21,7 @@ import Selector from './Selector';
 
 
 export const Context = createContext({});
+export const SubContext = createContext({});
 
 const useStyles = createUseStyles({
     noStyle: {
@@ -585,7 +586,8 @@ const FieldRowBottom = styled('div').withConfig({
  */
 export const Field = ({ children, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, ...props }) => {
     const ctx = useContext(Context);
-    const _forInput = forInput === null ? ctx?.forInput : forInput;
+    const subCtx = useContext(SubContext);
+    const _forInput = forInput === null ? (("forInput" in subCtx && subCtx?.forInput !== null) ? subCtx.forInput : ctx?.forInput) : forInput;
     const _wrapFormItem = wrapFormItem === null ? ctx?.wrapFormItem : wrapFormItem;
     const getAlert = () => alert ? alert : ctx.alert;
     return (
@@ -798,7 +800,9 @@ export const validateForm = (rules, messages) => {
 
 const FormItemWrapper = ({ children, validator, validateTrigger, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
     const classes = useStyles();
-    const { schema, fieldStatus, updateFieldStatus } = useContext(Context);
+    const { schema:sch, fieldStatus, updateFieldStatus } = useContext(Context);
+    const { schema:subsch } = useContext(SubContext);
+    const schema = (subsch) ? subsch : sch;
 
     const getChildren = () => {
         return React.cloneElement(children, { ...children.props, name: nameId ? nameId : name });
@@ -1294,6 +1298,17 @@ export const Container = ({ loading = false, schema, children, id, wrapForm = fa
     );
 }
 
+
+export const SubContainer = ({ loading = false, children, forInput = true, schema, ...props }) => {
+    const dataContext = { forInput, schema };
+    return (
+        <Spin spinning={loading} indicator={<></>}>
+            <SubContext.Provider value={dataContext}>
+                <MainContainer {...props}>{children}</MainContainer>
+            </SubContext.Provider>
+        </Spin>
+    );
+}
 
 
 

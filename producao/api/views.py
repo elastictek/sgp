@@ -4236,6 +4236,7 @@ def TempAggOFabricoLookup(request, format=None):
                 {f.text}
                 ) t
             """),cursor,f.parameters)
+            print("EEEEEEEEEEEEEEE1")
         else:
             f = Filters(request.data['filter'])
             f.setParameters({}, False)
@@ -4261,6 +4262,7 @@ def TempAggOFabricoLookup(request, format=None):
                     {group}
                 """
             ), cursor, parameters)
+            print("EEEEEEEEEEEEEEE2")
         # response = db.executeSimpleList(lambda: (
         #     f"""
         #         select 

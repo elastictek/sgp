@@ -78,7 +78,6 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
         //console.log(action,item)
         //console.log(permissions)
         //console.log(json(permissions)[action])
-        console.log("ITEM PERMISSIONS - ",item,action,permissions,auth)
         let p = (onPlace) ? json(onPlace) : (item) ? permissions[item][action] : permissions[action];
         if (!p){
             p = (item) ? ((permissions[item]["default"]) ? permissions[item]["default"] : permissions["default"]) : permissions["default"];

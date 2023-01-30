@@ -24,11 +24,17 @@ const schema = (options = {}) => {
 }
 
 const Filters = ({ filters }) => {
+    const autoFocusRef = useRef(null);
+    useEffect(() => {
+        if (autoFocusRef.current) {
+            autoFocusRef.current.focus();
+        }
+      }, []);
     return (<>
         {Object.keys(filters).map(k => {
             return (
                 <Col key={k} xs='content'><Field name={k} label={{ enabled: true, text: filters[k]?.text, pos: "top", padding: "0px" }}>
-                    <Input size='small' allowClear width={filters[k]?.width ? filters[k]?.width : 100} />
+                    <Input size='small' allowClear width={filters[k]?.width ? filters[k]?.width : 100} ref={filters[k]?.autoFocus && autoFocusRef} />
                 </Field></Col>
             );
         })}

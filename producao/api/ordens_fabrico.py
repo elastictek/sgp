@@ -205,6 +205,59 @@ def ClienteExists(request, format=None):
     exists = db.exists("producao_cliente", f, cursor).exists
     return Response({"exists":exists})
 
+def TempOrdemFabricoGet(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'tof.id = :temp_ofabrico',lambda v:(v!=None))
+    f.add(f'tof.agg_of_id = :agg_of_id',lambda v:(v!=None))
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {}, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""tof.*,tagg.*, tof.id id, tagg.id aggid,
+                pa.cod artigo_cod,
+                pa.id artigo_id,pa.des artigo_des, pa.nw1 artigo_nw1, pa.nw2 artigo_nw2,pa.lar artigo_width,
+                pa.formu artigo_formula,pa.diam_ref artigo_diam, pa.core artigo_core,
+                pa.gsm artigo_gram, pa.gtin artigo_gtin, pa.thickness artigo_thickness,
+                CASE WHEN pac.produto is not null and pac.produto<>'' THEN pac.produto ELSE prod.produto_cod END produto_cod,
+                CASE WHEN pac.produto is not null and pac.produto<>'' THEN pac.produto ELSE prod.produto_cod END produto_alt,
+                pc.id cliente_id,
+                (select JSON_ARRAYAGG(JSON_OBJECT('id',pd.id,'item_id',pd.item_id,'item_des',pd.item_des,'item_order',pd.item_order,'item_numbobines',item_numbobines,
+                'item_paletesize',item_paletesize,'paletizacao_id',paletizacao_id)) x from producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
+                ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas
+            """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (
+        f"""  
+            select {f'{dql.columns}'}
+            from producao_tempordemfabrico tof
+            join producao_tempaggordemfabrico tagg on tof.agg_of_id = tagg.id
+            join producao_artigo pa on pa.cod=tof.item_cod
+            JOIN producao_produtos prod on pa.produto_id=prod.id
+            left join producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+            left join producao_cliente pc on pc.cod=tof.cliente_cod
+            left join producao_artigocliente pac on pac.artigo_id=pa.id and pac.cliente_id=pc.id
+            {f.text} {f2["text"]}
+            {dql.sort} {dql.limit}
+        """
+    )
+    print(sql)
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
 #region INTERNAL METHODS
 
 def checkAgg(ofabrico_id,ofabrico_cod,cursor):
@@ -541,4 +594,18 @@ def Ignorar(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
+def SaveProdutoAlt(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")    
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if data.get("produto_alt"):
+                    dml = db.dml(TypeDml.UPDATE, {"produto":data.get("produto_alt")}, "producao_artigocliente", {'artigo_id': f'=={filter.get("artigo_id")}','cliente_id': f'=={filter.get("cliente_id")}'}, None, False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível alterar a designação do Produto no artigo!"})
+        return Response({"status": "success", "id": None, "title": f"A designação do Produto foi alterada com Sucesso!", "subTitle": ''})
+    except Error:
+        return Response({"status": "error", "title": f"Erro ao Alterar a Designação do Produto no Artigo!"})
 
