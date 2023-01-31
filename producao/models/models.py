@@ -545,6 +545,8 @@ class Bobinagem(models.Model):
     ig_bobinagem_id=models.IntegerField(verbose_name = "IG_BOBINAGEM", null = True, blank = True, default = 0) #ADDED
     largura_bruta=models.DecimalField(max_digits = 10, decimal_places = 2, verbose_name = "Largura Bruta", default = 0, null = True, blank = True) #ADDED
     valid_tstamp = models.DateTimeField(verbose_name="Data Validação", null=True, blank=True) #ADDED
+    vcr_num_inf=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr inf") #ADDED
+    vcr_num_sup=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr sup") #ADDED
     def __str__(self):
         return self.nome
 
@@ -902,6 +904,8 @@ class Bobine(models.Model):
     destinos = models.JSONField(blank=True, null=True) #ADDED
     ig_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="ig_id") #ADDED
     destinos_has_obs = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se os destinos têm observações") #ADDED
+    vcr_num_inf=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr inf") #ADDED
+    vcr_num_sup=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr sup") #ADDED
     def __str__(self):
         return self.nome
 

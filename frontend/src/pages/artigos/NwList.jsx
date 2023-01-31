@@ -143,6 +143,7 @@ const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { valu
 const moreFiltersSchema = ({ form }) => [
     { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
+    { fof: { label: "Ordem de Fabrico", field: { type: 'input', size: 'small' } } },
     { fvcr: { label: "Cód. Movimento", field: { type: 'input', size: 'small' } } },
     { fdata: { label: "Data Movimento", field: { type: "rangedate", size: 'small' } } },
     { fdataout: { label: "Data Saída", field: { type: "rangedate", size: 'small' } } },
@@ -838,6 +839,7 @@ export default ({ setFormTitle, ...props }) => {
                     fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
                     fvcr: getFilterValue(vals?.fvcr, 'any'),
+                    fof: getFilterValue(vals?.fof, 'any'),
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
                     fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };

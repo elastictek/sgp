@@ -65,7 +65,7 @@ const schemaIn = (options = {}) => {
     }, options).unknown(true);
 }
 const title = "Bobines";
-const TitleForm = ({ data, onChange, record, level, form }) => {
+const TitleForm = ({ values, onChange }) => {
     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
         <Col>
@@ -77,6 +77,11 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
         </Col>
     </>
     }
+        right={<Col xs="content" style={{padding:"5px"}}>
+            <SelectField value={values?.type} onChange={(v)=>onChange(v,"type")} size="small" keyField="value" textField="label"
+                data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }]} />
+        </Col>
+        }
     />);
 }
 const ToolbarFilters = ({ dataAPI, ...props }) => {
@@ -153,7 +158,10 @@ const moreFiltersSchema = ({ form }) => [
         farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
         fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 5 },
     },
-    // { fof: { label: "Ordem Fabrico", field: { type: 'input', size: 'small' } } },
+    { fof: { label: "Ordem Fabrico Original", field: { type: 'input', size: 'small' }, span: 12 }, fpof: { label: "Ordem Fabrico Palete", field: { type: 'input', size: 'small' }, span: 12 } },
+    { ftiponwinf: { label: "Nonwoven Artigo Inf.", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven Inf.", field: { type: 'input', size: 'small' }, span: 12 } },
+    { ftiponwsup: { label: "Nonwoven Artigo Sup.", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven Sup.", field: { type: 'input', size: 'small' }, span: 12 } },
+    // 
     // { fprf: { label: "PRF", field: { type: 'input', size: 'small' }, span: 12 }, forder: { label: "Encomenda", field: { type: 'input', size: 'small' }, span: 12 } },
     // {
     //     fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
@@ -177,11 +185,6 @@ const moreFiltersSchema = ({ form }) => [
     // { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
     // { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
 ];
-const OfsColumn = ({ value }) => {
-    return (<div>
-        {value && value.map(v => <Tag style={{ fontWeight: 600, fontSize: "10px" }} key={`${v}`}>{v}</Tag>)}
-    </div>);
-}
 const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     const items = [
         ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
@@ -235,6 +238,7 @@ export default ({ setFormTitle, ...props }) => {
     const submitting = useSubmitting(true);
     const [lastTabPalete, setLastTabPalete] = useState('1');
     const [lastTabBobine, setLastTabBobine] = useState('1');
+    const [titleValues,setTitleValues] = useState();
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -243,8 +247,8 @@ export default ({ setFormTitle, ...props }) => {
             switch (modalParameters.content) {
                 case "palete": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTabPalete} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 case "bobine": return <Bobine tab={modalParameters.tab} setTab={modalParameters.setLastTabBobine} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            //     case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            //     case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                //     case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                //     case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
@@ -264,7 +268,7 @@ export default ({ setFormTitle, ...props }) => {
         return false;
     }
     const editableClass = (row, col) => {
-        if (col === "destino" && row.destinos_has_obs>0) {
+        if (col === "destino" && row.destinos_has_obs > 0) {
             return classes.hasObs;
         }
     }
@@ -324,13 +328,13 @@ export default ({ setFormTitle, ...props }) => {
         //     key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
         // },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
-        { key: 'estado', name: 'Estado', width: 90, formatter: p => <Status b={{lar:p.row.lar,estado:p.row.estado}} larguraColumn="lar" /> },
-        { key: 'area', name: 'Área',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
-        { key: 'comp_actual', name: 'Comp.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
-        { key: 'metros_cons', name: 'Metros Cons.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
+        { key: 'estado', name: 'Estado', width: 70, formatter: p => <Status b={{ lar: p.row.lar, estado: p.row.estado }} larguraColumn="lar" /> },
+        { key: 'area', name: 'Área', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
+        { key: 'comp_actual', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+        { key: 'metros_cons', name: 'Metros Cons.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
         { key: 'lar', name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
         { key: 'diam', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
-        { key: 'core', name: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> },
+        { key: 'core', name: 'Core', width: 60, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> },
         { key: 'palete_nome', name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row)}>{p.row.palete_nome}</Button> },
         {
             key: 'destino', name: 'Destino', width: 200,
@@ -340,9 +344,14 @@ export default ({ setFormTitle, ...props }) => {
             editorOptions: { editOnClick: true },
             formatter: p => p.row.destino
         },
-
-
-
+        { key: 'ofid', name: 'OF Original', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
+        { key: 'palete_ofid', name: 'OF Palete', width: 130, formatter: p => <OF id={p.row.palete_ordem_id} ofid={p.row.palete_ofid} /> },
+        { key: 'tiponwinf', name: 'NW Inf.', width: 150, formatter: p => p.row.tiponwinf },
+        { key: 'lotenwinf', name: 'Lote NW Inf.', width: 130, formatter: p => p.row.lotenwinf },
+        { key: 'nwinf', name: 'NW Inf. Metros', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
+        { key: 'tiponwsup', name: 'NW Sup.', width: 150, formatter: p => p.row.tiponwsup },
+        { key: 'lotenwsup', name: 'Lote NW Sup.', width: 130, formatter: p => p.row.lotenwsup },
+        { key: 'nwsup', name: 'NW Sup. Metros', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> },
 
 
 
@@ -356,9 +365,9 @@ export default ({ setFormTitle, ...props }) => {
         // { key: 'diam_min', name: 'Diam. Min.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
         // { key: 'diam_max', name: 'Diam. Máx.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
         // { key: 'diam_avg', name: 'Diam. Médio.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
-       
+
         // { key: 'cliente_nome', name: 'Cliente', width: 200, formatter: p => p.row.cliente_nome },
-        // { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid} of_des={p.row.ordem_original} /> },
+        // 
         // { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
         // { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
         // { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && moment(p.row.data_encomenda).format(DATETIME_FORMAT) },
@@ -427,8 +436,13 @@ export default ({ setFormTitle, ...props }) => {
                     flote: getFilterValue(vals?.flote, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
                     fpalete: getFilterValue(vals?.fpalete, 'any'),
+                    fof: getFilterValue(vals?.fof, 'any'),
+                    fpof: getFilterValue(vals?.fpof, 'any'),
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
-
+                    flotenwinf: getFilterValue(vals?.flotenwinf, 'any'),
+                    ftiponwinf: getFilterValue(vals?.ftiponwinf, 'any'),
+                    flotenwsup: getFilterValue(vals?.flotenwsup, 'any'),
+                    ftiponwsup: getFilterValue(vals?.ftiponwsup, 'any'),
 
 
 
@@ -441,7 +455,7 @@ export default ({ setFormTitle, ...props }) => {
                     // ftiponw: getFilterValue(vals?.ftiponw, 'any'),
                     // fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     // fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
-                    
+
                     // fmatricula:getFilterValue(vals?.fmatricula, 'any'),
                     // fmatricula_reboque:getFilterValue(vals?.fmatricula_reboque, 'any'),
                     // fprf: getFilterValue(vals?.fprf, 'any'),
@@ -452,7 +466,7 @@ export default ({ setFormTitle, ...props }) => {
                     // fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
                     // fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga,
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
-                    
+
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
@@ -553,13 +567,19 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onCreatePalete = () => {
-        setModalParameters({ content: "createpalete",type: "drawer", title:"Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
+        setModalParameters({ content: "createpalete", type: "drawer", title: "Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
         showModal();
+    }
+
+    const onTitleChange = (value,source) => {
+        switch(source){
+            case "type":setTitleValues(prev=>({...prev,type:value}));break;
+        }
     }
 
     return (
         <>
-            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} values={titleValues} onChange={onTitleChange} level={location?.state?.level} />}
             <Table
                 loading={submitting.state}
                 actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
@@ -576,7 +596,7 @@ export default ({ setFormTitle, ...props }) => {
                 editable={true}
                 clearSort={false}
                 rowHeight={28}
-                rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
+                //rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
                     <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions>
                     {/* <Permissions permissions={permission} action="editList">
