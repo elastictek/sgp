@@ -58,7 +58,7 @@ export default (props) => {
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = {};
     const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
-    const defaultSort = [{ column: 'nome', direction: 'ASC' }];
+    const defaultSort = [{ column: 'posicao_palete', direction: 'ASC' }];
     const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
