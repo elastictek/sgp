@@ -26,7 +26,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectMultiField, Selector, Label, SwitchField } from 'components/FormFields';
-import { Status, toolbarFilters, postProcess, processFilters } from "./commons";
+import { Status, toolbarFilters, postProcess, processFilters, saveBobinesDefeitos } from "./commons";
 import YScroll from 'components/YScroll';
 import ToolbarTitle from 'components/ToolbarTitle';
 import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
@@ -84,7 +84,7 @@ export default (props) => {
     const defaultParameters = {};
     const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
     const defaultSort = [{ column: 'nome', direction: 'ASC' }];
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -218,9 +218,7 @@ export default (props) => {
         dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
-        dataAPI.fetchPost({
-            signal, rowFn: (dt) => postProcess(dt, submitting)
-        });
+        dataAPI.fetchPost({signal});
 
     }
 
@@ -300,123 +298,7 @@ export default (props) => {
     }
 
     const onSave = async (action) => {
-        console.log("saving")
-        submitting.trigger();
-        //const values = form.getFieldsValue(true);
-        //const v = schemaRegister().validate(values, { abortEarly: false, messages: validateMessages, context: { new_lote: dataAPI.getData().new_nw_lotes } });
-        //const { errors, warnings, value, ...status } = getStatus({});
-        //setFieldStatus({ ...status.fieldStatus });
-        //setFormStatus({ ...status.formStatus });
-        const status = { error: [] };
-        const rows = dataAPI.getData().rows;
-        for (let [i, r] of rows.entries()) {
-
-            if (r?.notValid) {
-                r.defeitos = (r?.defeitos ? r.defeitos : []);
-                const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.rugas_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
-                const estado = r.estado;
-                // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
-                //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
-                // }
-                // if ((estado === "HOLD")/*  && !permission.allow() */) {
-                //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
-                // }
-                if ((estado === "R" || estado === "DM") && !hasDefeitos) {
-                    status.error.push({ message: <span><b>{r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
-                }
-                if (r.defeitos.some(x => x.key === "fmp") && !r.obs?.length > 0) {
-                    status.error.push({ message: <span><b>{r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
-                }
-                if (r.defeitos.some(x => x.key === "esp") && !r.prop_obs?.length > 0) {
-                    status.error.push({ message: <span><b>{r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
-                }
-                if (r.defeitos.some(x => x.key === "prop") && !r.prop_obs?.length > 0) {
-                    status.error.push({ message: <span><b>{r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
-                }
-            }
-            if (status.error.length > 0) {
-                Modal.error({
-                    title: "Erros",
-                    content: <YScroll style={{ maxHeight: "270px" }}>
-                        <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
-                            {status.error.map((v, i) => <li key={`err-${i}`}>{v.message}</li>)}
-                        </ul>
-                    </YScroll>
-                })
-                submitting.end();
-                return;
-            }
-
-            rows[i]["prop"] = (r.prop_obs?.length > 0) ? 1 : 0;
-            rows[i]["fc"] = (r.fc_pos?.length > 0) ? 1 : 0;
-            rows[i]["ff"] = (r.ff_pos?.length > 0) ? 1 : 0;
-            rows[i]["furos"] = (r.furos_pos?.length > 0) ? 1 : 0;
-            rows[i]["buraco"] = (r.buracos_pos?.length > 0) ? 1 : 0;
-            rows[i]["rugas"] = (r.rugas_pos?.length > 0) ? 1 : 0;
-
-        }
-
-        try {
-            let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateDefeitos", rows: rows.filter(v => v?.notValid === 1), ...parameters }, filter: {} });
-            if (response.data.status !== "error") {
-                Modal.success({ title: "Registos alterados com sucesso!" })
-                //loadData();
-            } else {
-                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
-            }
-        } catch (e) {
-            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-            submitting.end();
-        };
-
-
-        console.log("aaaaaaaaaaaa", rows);
-
-        //     if (bobinagem.nome.startsWith("20") && bobinagem.id >= 107127) {
-        //         if (!values?.largura_bruta || values?.largura_bruta < values.lar_util) {
-        //             status.formStatus.error.push({ message: <span>A<b>Largura Bruta</b> tem de ser preenchida ou maior que a Largura Útil!</span> });
-        //         }
-        //     }
-
-        //     if (bobinagem.valid == 0) {
-        //         console.log("list nw", nwList);
-        //         console.log(values.lotenwsup, "--", values.lotenwinf);
-        //         console.log(values.nwsup, "--", values.nwinf);
-        //         const lns = nwList.find(v => v.n_lote === values.lotenwsup && v.type === 1);
-        //         const lni = nwList.find(v => v.n_lote === values.lotenwinf && v.type === 0);
-
-        //         if (!lns || !lni) {
-        //             status.formStatus.error.push({ message: <span>Não foram encontrados lotes de Nonwoven em linha!</span> });
-        //         } else {
-        //             let vs = lns.qty_reminder - convertToM2(values.nwsup, lns.largura);
-        //             let vi = lni.qty_reminder - convertToM2(values.nwinf, lni.largura);
-        //             //if (vs<(-100)){
-        //             //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Superior de Nonwoven é insuficiente!</span> });
-        //             //}else if (vi<-100){
-        //             //    status.formStatus.error.push({ message: <span>A quantidade Existente no lote Inferior de Nonwoven é insuficiente!</span> });
-        //             //}
-        //         }
-        //     }
-        //     if (status.formStatus.error.length === 0) {
-        //         try {
-        //             const { data: { rows: granulado } } = await fetchPost({ url: `${API_URL}/recicladolookup/`, pagination: { enabled: false, limit: 1 }, filter: { status: 0 }, sort: [{ column: "timestamp", direction: "desc" }] });
-        //             if (granulado.length === 0 && bobinagem.valid == 0) {
-        //                 setModalParameters({ setFormStatus, submitting, status, data: { bobines: rows, values, bobinagem }, loadData });
-        //                 showNewLoteModal();
-        //             } else {
-        //                 await validarSubmit(status, { bobines: rows, values, bobinagem }, setFormStatus, submitting, loadData);
-        //             }
-        //         } catch (e) {
-        //             Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-        //             submitting.end();
-        //         };
-
-        //         console.log("row ok", rows, values);
-        //     } else {
-        //         setFormStatus({ ...status.formStatus });
-        //         submitting.end();
-        //     }
-        submitting.end();
+        await saveBobinesDefeitos(dataAPI.getData().rows,submitting,parameters,loadData);       
     }
 
     const onFilterFinish = (type, values) => {
@@ -427,7 +309,7 @@ export default (props) => {
                 dataAPI.addFilters(_values, true);
                 dataAPI.addParameters({});
                 dataAPI.first();
-                dataAPI.fetchPost({ rowFn: (dt) => postProcess(dt, submitting) });
+                dataAPI.fetchPost();
                 break;
         }
 

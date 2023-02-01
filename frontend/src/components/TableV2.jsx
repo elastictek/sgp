@@ -157,7 +157,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     }
 //);
 
-export default ({ dataAPI, loadOnInit = false, loading, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
@@ -247,9 +247,13 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, userSelec
         }));
     }
 
-    const onPageChange = (page) => {
+    const onPaging = (page) => {
         dataAPI.currentPage(page, true);
-        dataAPI.fetchPost();
+        if (typeof onPageChange === "function"){
+            onPageChange();
+        }else{
+            dataAPI.fetchPost();
+        }
     }
 
     /*     const selectCell = useMemo(() => {
@@ -329,7 +333,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, userSelec
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}
-                                onPageChange={onPageChange}
+                                onPageChange={onPaging}
                                 isLoading={dataAPI.isLoading()}
                             />}
                         </div>
@@ -372,7 +376,7 @@ export default ({ dataAPI, loadOnInit = false, loading, columns: cols, userSelec
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}
-                                onPageChange={onPageChange}
+                                onPageChange={onPaging}
                                 isLoading={dataAPI.isLoading()}
                             />}
                         </div>

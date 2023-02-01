@@ -59,7 +59,7 @@ export default (props) => {
     const defaultParameters = {};
     const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
     const defaultSort = [{ column: 'nome', direction: 'ASC' }];
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -172,9 +172,7 @@ export default (props) => {
         dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
-        dataAPI.fetchPost({
-            signal, rowFn: (dt) => postProcess(dt, submitting)
-        });
+        dataAPI.fetchPost({signal});
 
     }
 
@@ -198,7 +196,7 @@ export default (props) => {
                 dataAPI.addFilters(_values, true);
                 dataAPI.addParameters({});
                 dataAPI.first();
-                dataAPI.fetchPost({ rowFn: (dt) => postProcess(dt, submitting) });
+                dataAPI.fetchPost();
                 break;
         }
 

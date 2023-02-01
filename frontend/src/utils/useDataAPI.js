@@ -11,7 +11,7 @@ const getLocalStorage = (id, useStorage) => {
 }
 
 
-export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
+export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
     const [isLoading, setIsLoading] = useState(false);
     const [dataState, setDataState] = useState({
         pagination: payload?.pagination || { enabled: false, pageSize: 10 },
@@ -314,9 +314,11 @@ export const useDataAPI = ({ payload, id, useStorage = true } = {}) => {
             }
             try {
                 const dt = (await fetchPost({ url: _url, ...payload, ...((signal) ? { signal } : { cancelToken: token }) })).data;
-                if (rowFn) {
+                if (typeof rowFn === "function") {
                     setData(await rowFn(dt), payload);
-                } else {
+                } else if (typeof fnPostProcess === "function") {
+                    setData(await fnPostProcess(dt), payload);
+                }else{
                     setData(dt, payload);
                 }
             } catch (e) {

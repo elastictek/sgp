@@ -448,43 +448,53 @@ def BobinesList(request, format=None):
         "area": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'mb.{k}'},
         "comp_actual": {"value": lambda v: Filters.getNumeric(v.get('fcomp')), "field": lambda k, v: f'mb.{k}'},
         "destino": {"value": lambda v: v.get('fdestinoold').lower() if v.get('fdestinoold') is not None else None, "field": lambda k, v: f'lower(mb.{k})'},
-
-
-
-        
-        
-        
-        
-        # "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
-        
-        
-        
-        # "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
-        # "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
-        # "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
-        
-        
-        # "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
-        # "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
-        # "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
-        # "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
-        # "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
-       
-        # "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
-        # "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
-        # "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
-        # "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'}
-
-
-
+        "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+        "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+        "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
+        "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
+        "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
+        "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+        "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+        "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+        "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
+        "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
+        "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
+        "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+        "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
     }, True)
     f.where(False,"and")
     f.auto()
     f.value()
 
+    def filterDefeitosMultiSelect(data,name,relname):
+        f = Filters(data)
+        frel = "and"
+        value = "==1"
+        if relname in data:
+            if data[relname]=="ou":
+                frel = "or"
+            if data[relname]=="!ou":
+                frel = "or"
+                value = "!==1"
+            if data[relname]=="!e":
+                frel = "and"
+                value = "!==1"
+        
+        fP = {}
+        if name in data:
+            dt = [o['value'] for o in data[name]]
+            for v in dt:
+                fP[v] = {"key": v, "value": value, "field": lambda k, v: f'mb.{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, "and")
+        f.value(frel)
+        return f
+    fdefeitos = filterDefeitosMultiSelect(request.data['filter'],'fdefeitos','freldefeitos')
+
     fartigo = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ["'cod'", "'des'"], "table": 'ma.'},
-        #'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
+        'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
     }, False, "and" if f.hasFilters else "and" ,False)
 
     def filterMultiSelectJson(data,name,field,alias):
@@ -511,17 +521,17 @@ def BobinesList(request, format=None):
 
     fbobinedestinos = Filters(request.data['filter'])
     fbobinedestinos.setParameters({
-        #"destino_cli": {"value": lambda v: v.get('fdestino').lower() if v.get('fdestino') is not None else None, "field": lambda k, v: f"lower(d->'cliente'->>'BPCNAM_0')"},
-        #"destino_lar": {"value": lambda v: Filters.getNumeric(v.get('fdestino_lar')), "field": lambda k, v: f"(d->>'largura')::int"},
-        #"destino_reg": {"value": lambda v: Filters.getNumeric(v.get('fdestino_reg')), "field": lambda k, v: f"(mb.destinos->>'regranular')::int"},
-        #"destino_estado": {"value": lambda v: Filters.getNumeric(v.get('fdestino_estado')), "field": lambda k, v: f"mb.destinos->'estado'->>'value'"}
+        "destino_cli": {"value": lambda v: v.get('fdestino').lower() if v.get('fdestino') is not None else None, "field": lambda k, v: f"lower(d->'cliente'->>'BPCNAM_0')"},
+        "destino_lar": {"value": lambda v: Filters.getNumeric(v.get('fdestino_lar')), "field": lambda k, v: f"(d->>'largura')::int"},
+        "destino_reg": {"value": lambda v: Filters.getNumeric(v.get('fdestino_reg')), "field": lambda k, v: f"(mb.destinos->>'regranular')::int"},
+        "destino_estado": {"value": lambda v: Filters.getNumeric(v.get('fdestino_estado')), "field": lambda k, v: f"mb.destinos->'estado'->>'value'"}
     }, True)
     fbobinedestinos.where(False,"and")
     fbobinedestinos.auto()
     fbobinedestinos.value()
     fbobinedestinos.text = f"""and exists (
         SELECT 1
-        FROM mv_bobines mb, json_array_elements((mb.destinos::json->>'destinos')::json) d
+        FROM json_array_elements((mb.destinos::json->>'destinos')::json) d
         WHERE mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 and mb.destinos is not null {fbobinedestinos.text}
         limit 1
     )""" if fbobinedestinos.hasFilters else ""
@@ -540,7 +550,7 @@ def BobinesList(request, format=None):
 
 
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fdefeitos.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
     dql = dbgw.dql(request.data, False)
     cols = f"""
         mb.*,(mb.comp-mb.comp_actual) metros_cons,
@@ -549,10 +559,10 @@ def BobinesList(request, format=None):
         mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
         sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
         sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
-        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
+        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
         sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
         sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
-        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,
+        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
         mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
     """
     dql.columns=encloseColumn(cols,False)
@@ -566,7 +576,7 @@ def BobinesList(request, format=None):
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] or festados.hasFilters else ""}
             WHERE mb.comp_actual > 0 and recycle = 0
-            {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
+            {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )

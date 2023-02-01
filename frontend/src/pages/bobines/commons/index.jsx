@@ -7,7 +7,7 @@ import { fetch, fetchPost, cancelToken, fetchPostBlob } from "utils/fetch";
 import { useDataAPI } from "utils/useDataAPI";
 import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
-
+import { json } from "utils/object";
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
@@ -115,6 +115,70 @@ export const StatusBobineProducao = ({ b, onClick }) => {
     );
 }
 
+export const saveBobinesDefeitos = async (rows,submitting,parameters,loadData) =>{
+    submitting.trigger();
+    const status = { error: [] };
+    for (let [i, r] of rows.entries()) {
+
+        if (r?.notValid) {
+            r.defeitos = (r?.defeitos ? r.defeitos : []);
+            const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.rugas_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
+            const estado = r.estado;
+            // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
+            //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
+            // }
+            // if ((estado === "HOLD")/*  && !permission.allow() */) {
+            //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
+            // }
+            if ((estado === "R" || estado === "DM") && !hasDefeitos) {
+                status.error.push({ message: <span><b>{r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
+            }
+            if (r.defeitos.some(x => x.key === "fmp") && !r.obs?.length > 0) {
+                status.error.push({ message: <span><b>{r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
+            }
+            if (r.defeitos.some(x => x.key === "esp") && !r.prop_obs?.length > 0) {
+                status.error.push({ message: <span><b>{r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+            }
+            if (r.defeitos.some(x => x.key === "prop") && !r.prop_obs?.length > 0) {
+                status.error.push({ message: <span><b>{r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
+            }
+        }
+        if (status.error.length > 0) {
+            Modal.error({
+                title: "Erros",
+                content: <YScroll style={{ maxHeight: "270px" }}>
+                    <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
+                        {status.error.map((v, i) => <li key={`err-${i}`}>{v.message}</li>)}
+                    </ul>
+                </YScroll>
+            })
+            submitting.end();
+            return;
+        }
+
+        rows[i]["prop"] = (r.prop_obs?.length > 0) ? 1 : 0;
+        rows[i]["fc"] = (r.fc_pos?.length > 0) ? 1 : 0;
+        rows[i]["ff"] = (r.ff_pos?.length > 0) ? 1 : 0;
+        rows[i]["furos"] = (r.furos_pos?.length > 0) ? 1 : 0;
+        rows[i]["buraco"] = (r.buracos_pos?.length > 0) ? 1 : 0;
+        rows[i]["rugas"] = (r.rugas_pos?.length > 0) ? 1 : 0;
+    }
+
+    try {
+        let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateDefeitos", rows: rows.filter(v => v?.notValid === 1), ...parameters }, filter: {} });
+        if (response.data.status !== "error") {
+            //Modal.success({ title: "Registos alterados com sucesso!" })
+            loadData();
+        } else {
+            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+        }
+    } catch (e) {
+        Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+    };
+    submitting.end();
+
+
+}
 
 
 export const postProcess = async (dt, submitting) => {
@@ -126,11 +190,11 @@ export const postProcess = async (dt, submitting) => {
         }
         dt.rows[i]["defeitos"] = defeitos;
         dt.rows[i]["estado_original"] = dt.rows[i]["estado"];
-        dt.rows[i]["fc_pos"] = JSON.parse(dt.rows[i]["fc_pos"]);
-        dt.rows[i]["ff_pos"] = JSON.parse(dt.rows[i]["ff_pos"]);
-        dt.rows[i]["furos_pos"] = JSON.parse(dt.rows[i]["furos_pos"]);
-        dt.rows[i]["buracos_pos"] = JSON.parse(dt.rows[i]["buracos_pos"]);
-        dt.rows[i]["rugas_pos"] = JSON.parse(dt.rows[i]["rugas_pos"]);
+        dt.rows[i]["fc_pos"] = json(dt.rows[i]["fc_pos"]);
+        dt.rows[i]["ff_pos"] = json(dt.rows[i]["ff_pos"]);
+        dt.rows[i]["furos_pos"] = json(dt.rows[i]["furos_pos"]);
+        dt.rows[i]["buracos_pos"] = json(dt.rows[i]["buracos_pos"]);
+        dt.rows[i]["rugas_pos"] = json(dt.rows[i]["rugas_pos"]);
         dt.rows[i]["estado"] = dt.rows[i]["estado"];
     }
     submitting.end();
