@@ -148,8 +148,8 @@ const moreFiltersSchema = ({ form }) => [
         fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 5 },
     },
     { fof: { label: "Ordem Fabrico Original", field: { type: 'input', size: 'small' }, span: 12 }, fpof: { label: "Ordem Fabrico Palete", field: { type: 'input', size: 'small' }, span: 12 } },
-    { ftiponwinf: { label: "Nonwoven Artigo Inf.", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven Inf.", field: { type: 'input', size: 'small' }, span: 12 } },
-    { ftiponwsup: { label: "Nonwoven Artigo Sup.", field: { type: 'input', size: 'small' }, span: 12 }, flotenw: { label: "Lote Nonwoven Sup.", field: { type: 'input', size: 'small' }, span: 12 } },
+    { ftiponwinf: { label: "Nonwoven Artigo Inf.", field: { type: 'input', size: 'small' }, span: 12 }, flotenwinf: { label: "Lote Nonwoven Inf.", field: { type: 'input', size: 'small' }, span: 12 } },
+    { ftiponwsup: { label: "Nonwoven Artigo Sup.", field: { type: 'input', size: 'small' }, span: 12 }, flotenwsup: { label: "Lote Nonwoven Sup.", field: { type: 'input', size: 'small' }, span: 12 } },
     {
         freldefeitos: { label: " ", field: TipoRelation, span: 4 },
         fdefeitos: { label: 'Defeitos', field: { type: 'selectmulti', size: 'small', options: BOBINE_DEFEITOS }, span: 20 }

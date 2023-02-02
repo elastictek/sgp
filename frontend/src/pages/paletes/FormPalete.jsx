@@ -111,8 +111,7 @@ export default (props) => {
 
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
         const formValues = await loadPaleteLookup(initFilters.palete_id);
-        console.log("loaddddddPALETEEEEELISTdddddddddd",formValues)
-        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
+          form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0 && formValues[0]?.artigo) {
             dataAPIArtigos.setRows(formValues[0].artigo);
         }

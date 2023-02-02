@@ -192,7 +192,7 @@ export default (props) => {
 
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
-        <div style={{ height: "calc(100vh - 50px)" }}>
+        <div style={{ height: "calc(100vh - 120px)" }}>
             <YScroll>
                 {bobineExists &&
                     <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
@@ -200,7 +200,7 @@ export default (props) => {
                             {
                                 label: `Informação`,
                                 key: '1',
-                                children: <FormBobine {...{ parameters: props?.parameters, permission, values }} />,
+                                children: <FormBobine {...{ parameters: props?.parameters, permission }} />,
                             },
                             {
                                 label: `Embalamento`,

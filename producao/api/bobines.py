@@ -601,8 +601,9 @@ def BobinesLookup(request, format=None):
     #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
     #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
     #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-    "id": {"value": lambda v: v.get('bobine_id'), "field": lambda k, v: f'pb.{k}'},
-    "comp_actual": {"value": lambda v: '>0', "field": lambda k, v: f'pb.{k}'},
+    "id": {"value": lambda v: v.get('bobine_id'), "field": lambda k, v: f'mb.{k}'},
+    "comp_actual": {"value": lambda v: '>0', "field": lambda k, v: f'mb.{k}'},
+    "recycle": {"value": lambda v: '==0', "field": lambda k, v: f'mb.{k}'},
     #    "vcr_num": {"value": lambda v: v.get('fvcr')},
     #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
     #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
@@ -618,16 +619,29 @@ def BobinesLookup(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = dbgw.dql(request.data, False)
-    cols = f"""pb.*,pa.cod artigo_cod,pa.des artigo_des,(pb.comp-pb.comp_actual) metros_cons,  mpl.nome mp_nome,mv."SDHNUM_0",mv."BPCNAM_0",mv."EECICT_0",mv."IPTDAT_0" """
+    cols = f"""
+    mb.*,(mb.comp-mb.comp_actual) metros_cons,
+        mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0"
+        ,mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
+        mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
+        sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
+        sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
+        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
+        sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
+        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
+        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+        mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
+    """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  
             select
                 {f'{dql.columns}'}
-            FROM mv_bobines pb
-            left join mv_artigos pa on pa.id=pb.artigo_id
-            LEFT JOIN mv_paletes mpl on mpl.id=pb.id
-            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = mpl.nome
+            from mv_bobines mb
+            LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
+            LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
+            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             {f.text} {f2["text"]}
             {dql.sort} {dql.limit}
         """
