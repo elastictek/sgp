@@ -789,7 +789,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'status', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'status'), formatter: p => <MovNwColumn value={p.row.status} /> },
         { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
         { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 't_stamp_inuse', width: 140, name: 'Data Entrada', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_inuse', width: 140, name: 'Data Entrada', formatter: p => p.row?.t_stamp_inuse && moment(p.row.t_stamp_inuse).format(DATETIME_FORMAT) },
         { key: 't_stamp_out', width: 140, name: 'Data Saída', formatter: p => (p.row?.t_stamp_out && p.row.status == 0) && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
         { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
         { key: 'n_lote', width: 310, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
