@@ -28,7 +28,7 @@ import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule,SwitchField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";

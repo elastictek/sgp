@@ -145,6 +145,7 @@ const moreFiltersSchema = ({ form }) => [
     { flote: { label: "Lote", field: { type: 'input', size: 'small' } } },
     { fof: { label: "Ordem de Fabrico", field: { type: 'input', size: 'small' } } },
     { fvcr: { label: "Cód. Movimento", field: { type: 'input', size: 'small' } } },
+    { fdata_inuse: { label: "Data Entrada", field: { type: "rangedate", size: 'small' } } },
     { fdata: { label: "Data Movimento", field: { type: "rangedate", size: 'small' } } },
     { fdataout: { label: "Data Saída", field: { type: "rangedate", size: 'small' } } },
     { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -818,7 +819,7 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata', 'fdataout'], initFilters);
+            let { filterValues, fieldValues } = fixRangeDates(['fdata', 'fdataout','fdata_inuse'], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
             dataAPI.setSort(defaultSort);
@@ -842,6 +843,7 @@ export default ({ setFormTitle, ...props }) => {
                     fvcr: getFilterValue(vals?.fvcr, 'any'),
                     fof: getFilterValue(vals?.fof, 'any'),
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
+                    fdata_inuse: getFilterRangeValues(vals["fdata_inuse"]?.formatted),
                     fdataout: getFilterRangeValues(vals["fdataout"]?.formatted),
                 };
                 dataAPI.addFilters(_values, true);

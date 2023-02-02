@@ -331,6 +331,7 @@ def NWList(request, format=None):
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(lnw.{k})'),
         **rangeP(f.filterData.get('fdataout'), 't_stamp_out', lambda k, v: f'DATE(lnw.{k})'),
+        **rangeP(f.filterData.get('fdata_inuse'), 't_stamp_inuse', lambda k, v: f'DATE(lnw.{k})'),
         # **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
         "status": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'lnw.`{k}`'},
         "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lnw.{k}'},
