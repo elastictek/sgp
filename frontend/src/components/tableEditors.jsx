@@ -72,6 +72,23 @@ export const useEditorStyles = createUseStyles({
 
 const focus = (el, h,) => { el?.focus(); };
 
+
+export const FieldSelectEditor = ({ p, forInput, column, data,children }) => {
+    const onChange = (v) => {
+        p.onRowChange({ ...p.row, [column]: v, notValid: v !== p.row[column] ? 1 : 0 }, true)
+    };
+    return (
+        <>
+            {forInput ?
+                <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.estado} ref={focus} onChange={onChange} size="small" keyField="value" textField="label" data={data} />
+                :
+                <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>{children}</div>
+            }
+        </>
+    );
+}
+
+
 export const CheckColumn = ({ id, name, onChange, defaultChecked = false, forInput, valid }) => {
     const ref = useRef();
     const onCheckChange = (e) => {
@@ -203,6 +220,10 @@ export const ModalRangeEditor = ({ p, type, column, title, forInput, valid, unit
     );
 }
 
+export const SwitchEditor = ({ column, p, onChange, ...props }) => {
+    return <SwitchField style={{}} autoFocus value={p.row[column]} onChange={onChange ? v => onChange(p.row, v,p) : (e) => p.onRowChange({ ...p.row, notValid: p.row[column] !== e ? 1 : 0, valid: p.row[column] !== e ? 0 : null, [column]: e }, true)} {...props} />
+};
+
 export const InputNumberEditor = ({ field, p, onChange, ...props }) => {
     return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props} />
 }
@@ -255,7 +276,7 @@ export const CustomEstadoSearch = ({ value, onClick, ...props }) => {
     );
 }
 
-export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) => {
+export const DestinoEditor = ({ p, onChange, forInput, forInputTroca, onConfirm, ...props }) => {
     const classes = useEditorStyles();
     const [visible, setVisible] = useState(true);
     const [value, setvalue] = useState();
@@ -284,7 +305,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
     const onFinish = async (e) => {
         if (e.type === "click" || (e.type === "keydown" && e.key === 'Enter')) {
             submitting.trigger();
-            let { obs, prop_obs, destino, ...values } = form.getFieldsValue(true);
+            let { obs, prop_obs, destino, troca_etiqueta, ...values } = form.getFieldsValue(true);
             let destinoTxt = "";
             if (!isLegacy) {
                 const destinos = values.destinos.filter((a, i) => values.destinos.findIndex((s) => JSON.stringify(a) === JSON.stringify(s)) === i);
@@ -299,7 +320,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                 destinoTxt = destino;
                 values = null;
             }
-            await onConfirm(p, values, destinoTxt, obs, prop_obs, props.loadData);
+            await onConfirm(p, values, destinoTxt, obs, prop_obs,troca_etiqueta, props.loadData);
             submitting.end();
         }
     }
@@ -344,12 +365,17 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
 
             <Drawer maskClosable={!forInput}
                 title={<div>Destinos <span style={{ fontWeight: 900 }}>{p.row.nome}</span></div>} open={visible} destroyOnClose onClose={onCancel} width="550px"
-                extra={<Space>{forInput && <><Button disabled={submitting.state} onClick={onCancel}>Cancelar</Button><Button disabled={submitting.state} onClick={onFinish} type="primary">Registar</Button></>}</Space>}
+                extra={<Space>{(forInput || forInputTroca) && <><Button disabled={submitting.state} onClick={onCancel}>Cancelar</Button><Button disabled={submitting.state} onClick={onFinish} type="primary">Registar</Button></>}</Space>}
             >
                 <YScroll>
                     <Form form={form} name={`f-destinos`} onValuesChange={onValuesChange} initialValues={{}}>
                         <AlertsContainer /* id="el-external" */ mask /* fieldStatus={fieldStatus} */ formStatus={formStatus} portal={false} />
                         <FormContainer id="FRM-Destinos" fluid forInput={forInput} loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} style={{ marginTop: "5px", padding: "0px" }} schema={schemaRange} wrapFormItem={true} alert={{ tooltip: true, pos: "none" }}>
+                            <Col width={120}>
+                                <Field wrapFormItem={true} forInput={forInputTroca} name="troca_etiqueta" label={{ enabled: false, text: "Trocar Etiqueta" }}>
+                                    <SwitchField checkedChildren="Trocar Etiqueta" unCheckedChildren="Trocar Etiqueta" />
+                                </Field>
+                            </Col>
                             {(isLegacy) &&
                                 <>
                                     <Row style={{ marginBottom: "15px" }} gutterWidth={1}>
@@ -467,7 +493,7 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
                                                                                             { key: 'BPCNUM_0', name: 'Cód', width: 160 },
                                                                                             { key: 'BPCNAM_0', name: 'Nome' }
                                                                                         ]}
-                                                                                        filters={{ fmulti_customer: { type: "any", width: 150, text: "Cliente", autoFocus:true } }}
+                                                                                        filters={{ fmulti_customer: { type: "any", width: 150, text: "Cliente", autoFocus: true } }}
                                                                                         moreFilters={{}}
                                                                                     />
                                                                                 </Field>
@@ -508,7 +534,6 @@ export const DestinoEditor = ({ p, onChange, forInput, onConfirm, ...props }) =>
         </>
     );
 }
-
 
 export const DestinoPaleteEditor = ({ p, onChange, forInput, onConfirm, ...props }) => {
     const classes = useEditorStyles();

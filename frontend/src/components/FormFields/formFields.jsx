@@ -141,6 +141,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                                     autocomplete: <AutoCompleteField allowClear {...field} />,
                                                     rangedate: <RangeDateField allowClear {...field} />,
                                                     rangetime: <RangeTimeField allowClear {...field} />,
+                                                    inputnumber: <InputNumber allowClear {...field} />,
                                                     selectmulti: <SelectMultiField allowClear {...field} />,
                                                     select: <SelectField allowClear {...field} />,
                                                     checkbox: <CheckboxField {...field}>{labelChk}</CheckboxField>
@@ -171,14 +172,14 @@ font-weight: 500;
 font-size: 10px;
 `;
 
-export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, ...props }) => {
+export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description,right, ...props }) => {
     //const parentProps = useContext(ParentContext);
     //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
     /* const classes = useFieldStyles(myProps); */
     //const { refMainAlertContainer } = parentProps;
     return (
         <>
-            {title && <StyledHRuleTitle style={{ padding, marginTop }}><div className="title">{title}</div><div className="description">{description}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
+            {title && <StyledHRuleTitle style={{ padding, marginTop,display:"flex",justifyContent:"space-between" }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
         </>
     );
 }
@@ -198,7 +199,7 @@ export const VerticalSpace = ({ margin = "0px", height = "12px", props }) => {
 }
 
 
-export const SwitchField = ({ onChange, value, checkedValue = 1, uncheckedValue = 0, ...rest }) => {
+export const SwitchField = React.forwardRef(({ onChange, value, checkedValue = 1, uncheckedValue = 0, ...rest }, ref) => {
     const parseToBool = (v) => {
         return (v === checkedValue) ? true : false;
     }
@@ -213,13 +214,14 @@ export const SwitchField = ({ onChange, value, checkedValue = 1, uncheckedValue 
     return (
         <div>
             <Switch
+                ref={ref}
                 checked={parseToBool(value)}
                 onChange={onSwitch}
                 {...rest}
             />
         </div>
     );
-};
+});
 
 export const RangeTimeField = ({ onChange, value, format = TIME_FORMAT, ...rest }) => {
     const onRangeTimeChange = (field, v) => {
@@ -800,8 +802,8 @@ export const validateForm = (rules, messages) => {
 
 const FormItemWrapper = ({ children, validator, validateTrigger, wrapFormItem = false, name, nameId, shouldUpdate, rule, allValues = {}, includeKeyRules = [] }) => {
     const classes = useStyles();
-    const { schema:sch, fieldStatus, updateFieldStatus } = useContext(Context);
-    const { schema:subsch } = useContext(SubContext);
+    const { schema: sch, fieldStatus, updateFieldStatus } = useContext(Context);
+    const { schema: subsch } = useContext(SubContext);
     const schema = (subsch) ? subsch : sch;
 
     const getChildren = () => {
@@ -1170,7 +1172,7 @@ const StyledLabel = styled('div').withConfig({
     shouldForwardProp: (prop) =>
         ['className', 'style', 'children'].includes(prop)
 })`
-            ${({ width, align = "start", vAlign = "start", padding = "5px" }) => css`
+            ${({ width, align = "start", vAlign = "start", padding = "1px" }) => css`
             display: flex;
             flex-direction: row;
             align-items: ${vAlign};
@@ -1252,7 +1254,7 @@ export const Label = ({ ...props }) => {
     const { pos = "top", text = "", enabled = true, colon = true, required = false, className, style, container = {}, nameId } = props;
     const { width = ((pos === "left" || pos === "right") && "100px") } = props;
     return (
-        <StyledLabel {...props} width={width} ellipsis={false} overflow={true}>
+        <StyledLabel {...props} width={width} ellipsis={false} overflow={true} style={style}>
             <label htmlFor={nameId} title={text}>
                 {text}
             </label>

@@ -172,12 +172,17 @@ def export(sql, db_parameters, parameters,conn_name):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def Sql(request, format=None):
-    if "parameters" in request.data and "method" in request.data["parameters"]:
-        method=request.data["parameters"]["method"]
-        func = globals()[method]
-        response = func(request, format)
-        return response
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
     return Response({})
+    
 
 
 def OrdensFabricoOpen(request, format=None):
@@ -252,10 +257,11 @@ def TempOrdemFabricoGet(request, format=None):
         return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
         response = db.executeSimpleList(sql, connection, parameters)
-    except Exception as error:
+    except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
 
 
 #region INTERNAL METHODS
@@ -576,7 +582,7 @@ def Validar(request, format=None):
                     raise Exception("A ordem de fabrico não foi registada!")
                 id = addTempOrdemFabrico(data,agg_id,values.get('typeofabrico'),cliente_id,produto_id,cp,cursor)
         return Response({"status": "success", "success":f"""Ordem de fabrico validada com sucesso!"""})
-    except Exception as error:
+    except Error as error:
         print(error)
         return Response({"status": "error", "title": str(error)})
 
@@ -591,7 +597,7 @@ def Ignorar(request, format=None):
                 db.execute(dml.statement, cursor, dml.parameters)
                 return cursor.lastrowid
                 return Response({"status": "success", "success":f"""Ordem de fabrico ignorada com sucesso!"""})
-    except Exception as error:
+    except Error as error:
         return Response({"status": "error", "title": str(error)})
 
 def SaveProdutoAlt(request, format=None):
@@ -609,3 +615,407 @@ def SaveProdutoAlt(request, format=None):
     except Error:
         return Response({"status": "error", "title": f"Erro ao Alterar a Designação do Produto no Artigo!"})
 
+
+#region CHECKLISTS
+
+
+def _checkArtigoCliente(artigo_id,cliente_cod, cursor):
+        f = Filters({"cliente_cod":cliente_cod,"artigo_id":artigo_id})
+        f.where(False,"and")
+        f.add(f'pc.cod = :cliente_cod', True)
+        f.add(f'pac.artigo_id = :artigo_id', True)
+        f.value()
+        response = db.executeSimpleList(lambda: (f"""        
+            select count(*) cnt
+            from producao_artigocliente pac
+            join producao_cliente pc on pc.id=pac.cliente_id
+            {f.text}        
+        """), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]["cnt"]
+        return None
+def _checkTaskItems(id, cursor):
+        f = Filters({"id":id})
+        f.where()
+        f.add(f'(checklist_task_id = :id)', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""select count(*) cnt from ofabrico_checklist_items {f.text}"""), cursor, f.parameters)
+        return response["rows"][0].get("cnt")
+def _checkListStatus(id, cursor):
+    f = Filters({"id":id})
+    f.where()
+    f.add(f'(tsk.id = :id)', True)
+    f.value("and")
+    response = db.executeSimpleList(lambda: (f"""select lst.status 
+    from ofabrico_checklist lst
+    join ofabrico_checklist_tasks tsk on lst.id=tsk.checklist_id
+    {f.text}"""), cursor, f.parameters)
+    return response["rows"][0].get("status")
+def _checkTasks(id, cursor):
+    f = Filters({"id":id})
+    f.where()
+    f.add(f'(checklist_id = :id)', True)
+    f.value("and")
+    response = db.executeSimpleList(lambda: (f"""select count(*) cnt from ofabrico_checklist_tasks {f.text}"""), cursor, f.parameters)
+    return response["rows"][0].get("cnt")
+
+def AvailableAggLookup(request,format):
+    connection = connections["default"].cursor()
+    
+    if "idSelector" in request.data['filter']:
+        f = Filters(request.data['filter'])
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'tagg.id = :idSelector', True)
+        f.value()
+        try:
+            response = db.executeSimpleList(lambda: (f"""
+                select tagg.id,tagg.cod,pc.status
+                FROM producao_tempaggordemfabrico tagg
+                LEFT JOIN producao_currentsettings pc on pc.agg_of_id=tagg.id
+                {f.text}
+            """), connection, f.parameters)
+        except Error as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
+
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where(False,"and")
+    f.value("or")
+
+    f2 = filterMulti(request.data['filter'], {}, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (f"""
+
+        SELECT {f'{dql.columns}'} FROM (
+            select tagg.id,tof.id ofid,tagg.cod,pc.status, tof.of_id,tof.order_cod,tof.prf_cod,tof.cliente_nome,tof.item_cod,prod.produto_cod 
+            from producao_tempordemfabrico tof
+            join producao_tempaggordemfabrico tagg on tof.agg_of_id = tagg.id
+            join producao_artigo pa on pa.cod=tof.item_cod
+            JOIN producao_produtos prod on pa.produto_id=prod.id
+            JOIN producao_currentsettings pc on pc.agg_of_id =tagg.id
+            WHERE pc.status not in (9)
+            union
+            select tagg.id,tof.id ofid,tagg.cod,0 status, tof.of_id,tof.order_cod,tof.prf_cod,tof.cliente_nome,tof.item_cod,prod.produto_cod
+            from producao_tempordemfabrico tof
+            join producao_tempaggordemfabrico tagg on tof.agg_of_id = tagg.id
+            join producao_artigo pa on pa.cod=tof.item_cod
+            JOIN producao_produtos prod on pa.produto_id=prod.id
+            WHERE tagg.status = 0 and not exists (select 1 from producao_ordemfabricodetails po where po.cod=tof.of_id)
+        ) t
+        {dql.sort} {dql.limit}
+    """)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def CheckLists(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'] if "filter" in request.data else {})
+
+    f.setParameters({
+        "nome": {"value": lambda v: v.get('fnome').upper() if v.get('fnome') else None, "field": lambda k, v: f'chk.{k}'},
+        "status": {"value": lambda v: v.get('fstatus'), "field": lambda k, v: f'chk.{k}'},
+        "obs": {"value": lambda v: v.get('fobs').upper() if v.get('fobs') else None, "field": lambda k, v: f'lower(chk.{k})'},
+        "cod": {"value": lambda v: v.get('fagg').upper() if v.get('fagg') else None, "field": lambda k, v: f'tagg.{k}'},
+        **rangeP(f.filterData.get('fdata'), '`timestamp`', lambda k, v: f'DATE(`timestamp`)')
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'] if "filter" in request.data else {}, {}, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""chk.*,tagg.cod agg_cod"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+            select {c(f'{dql.columns}')} 
+            from ofabrico_checklist chk
+            join producao_tempaggordemfabrico tagg on chk.agg_of_id=tagg.id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def ChecklistLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({"id": {"value": lambda v: v.get('checklist_id'), "field": lambda k, v: f'{k}'}}, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    ftasks = Filters(request.data['filter'])
+    ftasks.setParameters({"checklist_id": {"value": lambda v: v.get('checklist_id'), "field": lambda k, v: f'{k}'}}, True)
+    ftasks.where()
+    ftasks.auto()
+    ftasks.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (f"""select {f'{dql.columns}'} from ofabrico_checklist {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
+    sqltasks = lambda: (f"""select {f'{dql.columns}'} from ofabrico_checklist_tasks {ftasks.text} {dql.sort}""")
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
+        responseTasks = db.executeSimpleList(sqltasks, connection, ftasks.parameters)
+        response["tasks"] = responseTasks
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def newChecklist(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")   
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                dml = db.dml(TypeDml.INSERT, {
+                    'nome':f"""(select n from (select CONCAT('CHK-',DATE_FORMAT(NOW(), "%%Y%%m%%d"),'-', LPAD(IFNULL(max(num),0)+1,4,'0')) n from ofabrico_checklist where DATE(`timestamp`)=DATE(NOW())) t)""",
+                    '`timestamp`':f"NOW()",
+                    "user_id":request.user.id,
+                    "obs":data.get("obs"),
+                    "status":data.get("status"),
+                    "agg_of_id":data.get("agg").get("id"),
+                    'num':f"(select n from (select IFNULL(max(num),0)+1 n from ofabrico_checklist where DATE(`timestamp`)=DATE(NOW())) t)"
+                }, "ofabrico_checklist", None, None, False,["nome","`timestamp`","num"])
+                db.execute(dml.statement, cursor, dml.parameters)
+                lastid = cursor.lastrowid
+        return Response({"status": "success", "id": lastid, "title": f"Checklist criada com sucesso!", "subTitle": ''})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+def updateChecklist(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")   
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                dml = db.dml(TypeDml.UPDATE, {
+                    "obs":data.get("obs"),
+                    "status":data.get("status")
+                }, "ofabrico_checklist", {"id":f"""=={data.get("id")}"""}, None, False,[])
+                db.execute(dml.statement, cursor, dml.parameters)
+                lastid = cursor.lastrowid
+        return Response({"status": "success", "id": lastid, "title": f"Checklist alterada com sucesso!", "subTitle": ''})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+def newTaskTrocaEtiquetas(request,format=None):
+    cod="TRE"
+    _type=1
+    data = request.data.get("parameters").get("values").get("parameters")
+    other_data = request.data.get("parameters").get("values")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                chk01 = _checkArtigoCliente(data.get("artigo").get("id"),data.get("cliente").get("BPCNUM_0"),cursor)
+                if datetime.strptime(data.get("data_imputacao"), '%Y-%m-%d').date()>datetime.today().date():
+                    return Response({"status": "error", "title": f"A data de imputação não pode ser maior que a data atual!"})                
+                if chk01 == 0:
+                    return Response({"status": "error", "title": f"O artigo e cliente não estão associados!"})
+                dml = db.dml(TypeDml.INSERT, {
+                    "parameters":json.dumps(data, ensure_ascii=False),
+                    "checklist_id":other_data.get("checklist_id"),
+                    "runtype":other_data.get("runtype"),
+                    "appliesto":other_data.get("appliesto"),
+                    "mode":other_data.get("mode"),
+                    "`timestamp`":datetime.today(),
+                    "status":other_data.get("status"),
+                    "subtype":other_data.get("subtype") if other_data.get("subtype") is not None else "1",
+                    "type":_type,
+                    "user_id":request.user.id,
+                    "nome":f"""(SELECT CONCAT('TRE-',YEAR(CURRENT_DATE()),LPAD(MONTH(CURRENT_DATE()),2,'0'),LPAD(DAY(CURRENT_DATE()),2,'0'),'-',LPAD(n,3,'0')) FROM (SELECT COUNT(*)+1 n FROM ofabrico_checklist_tasks oct where oct.type=1 and YEAR(`timestamp`)=YEAR(CURRENT_DATE())) t)"""
+                }, "ofabrico_checklist_tasks", None, None, False,["nome"])
+                print(dml.statement)
+                print(dml.parameters)
+                db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "id":None, "title": f"Tarefa criada com sucesso!", "subTitle": ''})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+def updateTaskTrocaEtiquetas(request,format=None):
+    data = request.data.get("parameters").get("values").get("parameters")
+    other_data = request.data.get("parameters").get("values")
+    filter = request.data.get("filter")
+    if filter.get("id") is None:
+        return Response({"status": "error", "title": f"O id da tarefa não é válido!"})
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                chk = _checkTaskItems(filter.get("id"),cursor)
+                if chk > 0:
+                    return Response({"status": "error", "title": f"A tarefa já tem items associados!"})
+                chk = _checkListStatus(filter.get("id"),cursor)
+                if chk == 9:
+                    return Response({"status": "error", "title": f"A Lista de tarefas já se encontra finalizada!"})
+                if datetime.strptime(data.get("data_imputacao"), '%Y-%m-%d').date()>datetime.today().date():
+                    return Response({"status": "error", "title": f"A data de imputação não pode ser maior que a data atual!"})
+                chk = _checkArtigoCliente(data.get("artigo").get("id"),data.get("cliente").get("BPCNUM_0"),cursor)                    
+                if chk == 0:
+                    return Response({"status": "error", "title": f"O artigo e cliente não estão associados!"})
+                dml = db.dml(TypeDml.UPDATE, {
+                    "parameters":json.dumps(data, ensure_ascii=False),
+                    "runtype":other_data.get("runtype"),
+                    "appliesto":other_data.get("appliesto"),
+                    "mode":other_data.get("mode"),
+                    "status":other_data.get("status"),
+                    "subtype":other_data.get("subtype") if other_data.get("subtype") is not None else "1",
+                    "user_id":request.user.id,
+                }, "ofabrico_checklist_tasks", {"id":f"""=={filter.get("id")}"""}, None, False,[])
+                db.execute(dml.statement, cursor, dml.parameters)
+        return Response({"status": "success", "id":None, "title": f"Tarefa alterada com sucesso!", "subTitle": ''})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+def TasksAvailableLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where(False,"and")
+    f.add(f"""(ct.`type` = :type1 and ct.parameters->'$.artigo.lar'= :lar and CAST(ct.parameters->'$.artigo.core' AS UNSIGNED) = :core)""", True)
+    #f.add(f"""(ct.`type` = :type1 and ct.parameters->'$.artigo.cod'<> :artigo_cod and ct.parameters->'$.artigo.lar'= :lar and CAST(ct.parameters->'$.artigo.core' AS UNSIGNED) = :core)""", True)
+    f.value("or")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (f"""
+        SELECT {f'{dql.columns}'} 
+        FROM ofabrico_checklist cl
+        JOIN ofabrico_checklist_tasks ct on cl.id=ct.checklist_id
+        where cl.`status`=1 and
+        not exists(
+            select 1 
+            from ofabrico_checklist_items t_oci  
+            join ofabrico_checklist_tasks t_ct on t_oci.checklist_task_id=t_ct.id
+            where t_oci.bobine_id={request.data['filter'].get("bobine_id")} and t_ct.type=%(type1)s
+        )
+        {f.text} {f2["text"]} {dql.sort} {dql.limit}
+    """)
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def ChecklistItemsLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({"checklist_id": {"value": lambda v: v.get('checklist_id'), "field": lambda k, v: f'oci.{k}'}}, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""oci.*,oct.type,oct.subtype,oct.agg_of_id,oct.of_id,oct.parameters"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""select {c(f'{dql.columns}')} 
+        from ofabrico_checklist_items oci
+        join ofabrico_checklist_tasks oct on oct.id=oci.checklist_task_id        
+        {f.text} {f2["text"]} {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}"""
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def DeleteTask(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    def delete(id,cursor):
+        dml = db.dml(TypeDml.DELETE,None,"ofabrico_checklist_tasks",{"id":f'=={id}',"status":f'!==9'},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                chk = _checkListStatus(filter.get("id"),cursor)
+                if chk == 9:
+                    return Response({"status": "error", "title": f"A Lista de tarefas já se encontra finalizada!"})
+                exists = _checkTaskItems(filter.get("id"),cursor)
+                if exists==0:
+                    delete(filter.get("id"),cursor)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível eliminar a tarefa!"})     
+        return Response({"status": "success", "title": "Tarefa eliminada com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def DeleteChecklist(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    def delete(id,cursor):
+        dml = db.dml(TypeDml.DELETE,None,"ofabrico_checklist",{"id":f'=={id}',"status":f'!==9'},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                exists = _checkTasks(filter.get("id"),cursor)
+                if exists==0:
+                    delete(filter.get("id"),cursor)
+                else:
+                    return Response({"status": "error", "title": f"Não é possível eliminar a lista!"})     
+        return Response({"status": "success", "title": "Lista eliminada com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+#endregion

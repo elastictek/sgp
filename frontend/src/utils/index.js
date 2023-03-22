@@ -68,7 +68,7 @@ export const getFilterForceRangeValues = (data) => {
 }
 
 //type = any | start | end | exact
-export const getFilterValue = (v, type = 'exact') => {
+export const getFilterValue = (v, type = 'exact',caseLetter=false) => {
     let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
     val = (val===undefined || val===null) ? val : `${val}`;
     if (val !== '' && val !== undefined) {
@@ -79,8 +79,8 @@ export const getFilterValue = (v, type = 'exact') => {
         } else {
             switch (type) {
                 case 'any': return `%${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
-                case 'start': return `${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
-                case 'end': return `%${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}`;
+                case 'start': return `${val.replaceAll('%%', ' ').replaceAll(' ', '%%')}%`;
+                case 'end': return `%${val.replaceAll('%%', ' ').replaceAll(' ', '%%')}`;
                 case '==': return `==${val.replaceAll('==', '')}`;
                 case '<': return `<${val.replaceAll('==', '')}`;
                 case '>': return `>${val.replaceAll('==', '')}`;

@@ -906,6 +906,8 @@ class Bobine(models.Model):
     destinos_has_obs = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se os destinos têm observações") #ADDED
     vcr_num_inf=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr inf") #ADDED
     vcr_num_sup=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr sup") #ADDED
+    troca_etiqueta = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Troca de Etiqueta") #ADDED 0/1/2
+    timestamp = models.DateTimeField(blank=True, null=True) #ADDED
     def __str__(self):
         return self.nome
 
@@ -961,7 +963,8 @@ class Emenda(models.Model):
     num_emenda = models.IntegerField(verbose_name="Bobine nº", null=True, blank=True, default=0)
     emenda = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Emenda metros", null=True, blank=True, default=0)
     metros = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Metros gastos", blank=True, default=0)
-
+    bobinagem_original_id = models.IntegerField(verbose_name="Bobinagem Original em caso de clone", null=True, blank=True) #ADDED
+    troca_etiqueta = models.BooleanField(verbose_name="Indica se foi troca de eqiqueta", null=True, blank=True, default=False) #ADDED
     def __str__(self):
         return 'Emenda nº %s da bobinagem %s' % (self.num_emenda, self.bobinagem)
 

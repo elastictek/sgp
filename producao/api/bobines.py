@@ -435,14 +435,23 @@ def BobinesOriginaisList(request,format=None):
 
 
 def BobinesList(request, format=None):
-    connection = connections[connGatewayName].cursor()
+    type_list = request.data.get("filter").get("type") if request.data.get("filter").get("type") is not None else 'A'
+    connection = connections[connGatewayName].cursor() if type_list=='C' else connections["default"].cursor()
     f = Filters(request.data['filter'])
+    # print("###SORRRRRRRTTTTTTTTTTTTTTTTTT###")
+    
+    
+    # for d in request.data.get("sort"):
+    #     d.update((k, f"pbm.{v}") for k, v in d.items() if v == "timestamp")
+    # print(request.data)
+
+    
     f.setParameters({
-        **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(mb.timestamp)'),
-        "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower(mb.{k})'},
-        "palete_nome": {"value": lambda v: v.get('fpalete').lower() if v.get('fpalete') is not None else None, "field": lambda k, v: f'lower(sgppl.nome)'},
-        "ofid": {"value": lambda v: v.get('fof').lower() if v.get('fof') is not None else None, "field": lambda k, v: f'lower(mb.ofid)'},
-        "pofid": {"value": lambda v: v.get('fpof').lower() if v.get('fpof') is not None else None, "field": lambda k, v: f'lower(sgppl.ofid)'},
+        **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'mb.timestamp'),
+        "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'mb.{k}'},
+        "palete_nome": {"value": lambda v: v.get('fpalete').upper() if v.get('fpalete') is not None else None, "field": lambda k, v: f'sgppl.nome'},
+        "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'mb.ofid'},
+        "pofid": {"value": lambda v: v.get('fpof').upper() if v.get('fpof') is not None else None, "field": lambda k, v: f'sgppl.ofid'},
         "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"mb.{k}"},
         "core": {"value": lambda v: Filters.getNumeric(v.get('fcore')), "field": lambda k, v: f"mb.{k}"},
         "area": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'mb.{k}'},
@@ -451,16 +460,18 @@ def BobinesList(request, format=None):
         "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
         "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
         "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
-        "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
-        "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
-        "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
-        "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+        **({
+            "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
+            "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
+            "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+            "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+            "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
+            "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+            "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+            "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'}        
+        } if type_list =='C' else {}),
         "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
-        "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
-        "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
-        "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
-        "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
-        "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+        "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'}        
     }, True)
     f.where(False,"and")
     f.auto()
@@ -492,10 +503,7 @@ def BobinesList(request, format=None):
         return f
     fdefeitos = filterDefeitosMultiSelect(request.data['filter'],'fdefeitos','freldefeitos')
 
-    fartigo = filterMulti(request.data['filter'], {
-        'fartigo': {"keys": ["'cod'", "'des'"], "table": 'ma.'},
-        'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'},
-    }, False, "and" if f.hasFilters else "and" ,False)
+    
 
     def filterMultiSelectJson(data,name,field,alias):
         f = Filters(data)
@@ -548,48 +556,100 @@ def BobinesList(request, format=None):
     fartigompmulti["text"] = f""" and exists (select 1 from mv_bobines mb join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
     #fartigompmulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}))""" if fartigompmulti["hasFilters"] else ""
 
+    fartigo = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ["cod"], "table": 'mva.'},
+        'fartigodes': {"keys": ["des"], "table": 'mva.'},
+        **({'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'}} if type_list =='C' else {})
+    }, False, "and" if f.hasFilters else "and" ,False)
 
+    if type_list=='C':
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fdefeitos.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
-    dql = dbgw.dql(request.data, False)
-    cols = f"""
-        mb.*,(mb.comp-mb.comp_actual) metros_cons,
-        mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0"
-        ,mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
-        mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
-        sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
-        sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
-        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
-        sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
-        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
-        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
-        mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
-    """
-    dql.columns=encloseColumn(cols,False)
-    sql = lambda p, c, s: (
-        f"""  
-            select {c(f'{dql.columns}')}
-            from mv_bobines mb
-            LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
-            LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
-            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
-            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
-            {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] or festados.hasFilters else ""}
-            WHERE mb.comp_actual > 0 and recycle = 0
-            {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fdefeitos.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
+        dql = dbgw.dql(request.data, False)
+        cols = f"""
+            mb.*,(mb.comp-mb.comp_actual) metros_cons,
+            mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0"
+            ,mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
+            mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
+            sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
+            sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
+            sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
+            sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
+            sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
+            sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp,mva.cod artigo_cod
         """
-    )
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
-        dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
-    try:
-        response = dbgw.executeList(sql, connection, parameters,[],None,None)
-    except Exception as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response(response)
+        dql.columns=encloseColumn(cols,False)
+        sql = lambda p, c, s: (
+            f"""  
+                select {c(f'{dql.columns}')}
+                from mv_bobines mb
+                LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
+                LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+                {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] else ""}
+                WHERE mb.comp_actual > 0 and mb.recycle = 0
+                {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+            """
+        )
+        if ("export" in request.data["parameters"]):
+            dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+            dql.paging=""
+            return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+        try:
+            response = dbgw.executeList(sql, connection, parameters,[],None,None)
+        
+        except Exception as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
+    
+    else:
+        parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fdefeitos.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
+        dql = db.dql(request.data, False)
+        cols = f"""
+            mb.*,(mb.comp-mb.comp_actual) metros_cons,
+            sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total
+            ,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id
+            ,sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original
+            ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
+            ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
+            po1.ofid ofid_original, po2.ofid palete_ofid, 
+            sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            mva.cod artigo_cod
+        """
+        dql.columns=encloseColumn(cols,False)
+        sql = lambda p, c, s: (
+            f"""  
+                select {c(f'{dql.columns}')}
+                FROM producao_bobine mb
+                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+                WHERE mb.comp_actual > 0 and mb.recycle = 0
+                {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+            """
+        )
+        if ("export" in request.data["parameters"]):
+            dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+            dql.paging=""
+            return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        try:
+            print("oiooioioioioioi")
+            print(f"select {dql.currentPage*dql.pageSize+1}")
+            response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}")
+
+        except Exception as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
 
 
 def BobinesLookup(request, format=None):
@@ -630,7 +690,7 @@ def BobinesLookup(request, format=None):
         sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
         sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
         sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
-        mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
+        mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp,mva.cod artigo_cod
     """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
@@ -656,3 +716,38 @@ def BobinesLookup(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
+def TrocaEtiqueta(request, format=None):  
+    data = request.data['parameters']
+    parameters=json.loads(data.get("parameters"))
+    filter = request.data['filter']
+    
+    def checkExpedicaoSage(ids,cursor):
+        connection = connections[connGatewayName].cursor()
+        response = dbgw.executeSimpleList(lambda: (f"""
+                select count(*) cnt
+                from mv_bobines pb
+                left join mv_paletes pp on pp.id=pb.palete_id
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
+                where pb.id in ({ids}) and mv."SDHNUM_0" is not null
+        """), connection, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]["cnt"]
+        return None
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                chk01 = checkExpedicaoSage(filter.get("bobine_id"),cursor)
+                if chk01 > 0:
+                    return Response({"status": "error", "title": f"Não é possível executar a tarefa. Verifique se já existe expedição."})
+                args = (filter.get("bobine_id"),parameters.get("artigo").get("cod"),parameters.get("cliente").get("BPCNUM_0"),parameters.get("data_imputacao"),parameters.get("obs"),request.user.id,data.get("id"),data.get("subtype"))
+                print(args)
+                cursor.callproc('troca_etiqueta',args)
+        return Response({"status": "success", "success":f"""Tarefa executada com sucesso!"""})
+    except Exception as error:
+        print(error)
+        return Response({"status": "error", "title": str(error)})
+
+

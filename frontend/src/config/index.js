@@ -1,5 +1,6 @@
 import React from 'react';
 export const ROOT_URL = "http://localhost:8000";
+export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
 export const API_URL = "/api";
@@ -9,9 +10,11 @@ export const DADOSBASE_URL = `${API_URL}/dadosbase`;
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 export const TIME_FORMAT = 'HH:mm';
+export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
+
 
 //APP DATA
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
@@ -32,7 +35,7 @@ export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fi
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
-export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }];
+export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }, { key: 6, value: "Cantoneira Cartão Branco" }, { key: 7, value: "Etiqueta Cut Here" }];
 export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
 export const CONTENTORES_OPTIONS = [
     { label: <b>Camião</b>, value: 'Camião' },
@@ -110,5 +113,5 @@ export const BOBINE_DEFEITOS = [
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' },{value:'mpalete',label:"Marcas de Palete"}
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' },{ value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' },{value:'mpalete',label:"Marcas de Palete"}
 ];

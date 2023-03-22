@@ -30,24 +30,68 @@ export default (init, store = {}, props = {}, state = {}, fields) => {
     return df;
 }
 
+
+
 export const fixRangeDates = (fields, values = {}) => {
     const _fieldValues = { ...values };
     const _filterValues = { ...values }
-    for (let v of fields) {
-        if ((v in _fieldValues) && (Array.isArray(_fieldValues[v]))) {
-            let _fval = { formatted: {} };
-            let _flval = {};
-            for (let [i, x] of _fieldValues[v].entries()) {
-                if (x) {
-                    let f = (i === 0) ? "startValue" : "endValue";
-                    _fval[f] = moment(x.replace("=", '').replace("<", "").replace(">", ""));
-                    _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
-                    _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
+    if (!fields) {
+        for (let v in values) {
+            if ((Array.isArray(_fieldValues[v]))) {
+                let _fval = { formatted: {} };
+                let _flval = {};
+                for (let [i, x] of _fieldValues[v].entries()) {
+                    if (x) {
+                        let f = (i === 0) ? "startValue" : "endValue";
+                        _fval[f] = dayjs(x.replace("=", '').replace("<", "").replace(">", ""));
+                        _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
+                        _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
+                    }
                 }
+                _filterValues[v] = getFilterRangeValues(_flval);
+                _fieldValues[v] = _fval;
             }
-            _filterValues[v] = getFilterRangeValues(_flval);
-            _fieldValues[v] = _fval;
+        }
+    } else {
+        for (let v of fields) {
+            if ((v in _fieldValues) && (Array.isArray(_fieldValues[v]))) {
+                let _fval = { formatted: {} };
+                let _flval = {};
+                for (let [i, x] of _fieldValues[v].entries()) {
+                    if (x) {
+                        let f = (i === 0) ? "startValue" : "endValue";
+                        _fval[f] = dayjs(x.replace("=", '').replace("<", "").replace(">", ""));
+                        _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
+                        _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
+                    }
+                }
+                _filterValues[v] = getFilterRangeValues(_flval);
+                _fieldValues[v] = _fval;
+            }
         }
     }
     return { fieldValues: _fieldValues, filterValues: _filterValues };
 }
+
+
+// export const fixRangeDates = (fields, values = {}) => {
+//     const _fieldValues = { ...values };
+//     const _filterValues = { ...values }
+//     for (let v of fields) {
+//         if ((v in _fieldValues) && (Array.isArray(_fieldValues[v]))) {
+//             let _fval = { formatted: {} };
+//             let _flval = {};
+//             for (let [i, x] of _fieldValues[v].entries()) {
+//                 if (x) {
+//                     let f = (i === 0) ? "startValue" : "endValue";
+//                     _fval[f] = moment(x.replace("=", '').replace("<", "").replace(">", ""));
+//                     _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
+//                     _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
+//                 }
+//             }
+//             _filterValues[v] = getFilterRangeValues(_flval);
+//             _fieldValues[v] = _fval;
+//         }
+//     }
+//     return { fieldValues: _fieldValues, filterValues: _filterValues };
+// }

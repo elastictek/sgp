@@ -2,10 +2,10 @@ import React, { useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import { Button, InputNumber } from 'antd';
-import { LeftOutlined, RightOutlined, EllipsisOutlined,DoubleRightOutlined,DoubleLeftOutlined, VerticalLeftOutlined, VerticalRightOutlined } from '@ant-design/icons';
+import { LeftOutlined, RightOutlined, EllipsisOutlined, DoubleRightOutlined, DoubleLeftOutlined, VerticalLeftOutlined, VerticalRightOutlined } from '@ant-design/icons';
 import classnames from 'classnames';
 import { debounce } from "utils";
-import {BsBoxArrowInUpRight} from 'react-icons/bs';
+import { BsBoxArrowInUpRight } from 'react-icons/bs';
 
 export const DOTS = '...';
 
@@ -108,7 +108,6 @@ export const usePagination = ({
 }) => {
     const paginationRange = useMemo(() => {
         const totalPageCount = Math.ceil(totalCount / pageSize);
-        console.log("aaaaaaaaaaa--page",totalCount,pageSize)
 
         // Pages count is determined as siblingCount + firstPage + lastPage + currentPage + 2*DOTS
         const totalPageNumbers = siblingCount + 5;
@@ -185,6 +184,7 @@ const Pagination = props => {
         pageSize,
         isLoading,
         debounceTimeout = 1000,
+        maxPage = true,
         className
     } = props;
 
@@ -197,11 +197,11 @@ const Pagination = props => {
 
 
     const debounceEvent = React.useMemo(() => {
-         const goto = (v) => {
+        const goto = (v) => {
             onGoto(v);
         }
         return debounce(goto, debounceTimeout);
-    }, [onGoto,isLoading,onPageChange,debounceTimeout]);
+    }, [onGoto, isLoading, onPageChange, debounceTimeout]);
 
 
     // If there are less than 2 times in pagination range we shall not render the component
@@ -210,48 +210,48 @@ const Pagination = props => {
     }
 
     const onFirst = () => {
-        if (isLoading){
+        if (isLoading) {
             return;
         }
         onPageChange(1);
     };
 
     const onLast = () => {
-        if (isLoading){
+        if (isLoading) {
             return;
         }
         onPageChange(lastPage);
     };
 
     const onNext = () => {
-        if (isLoading){
+        if (isLoading) {
             return;
         }
         onPageChange(currentPage + 1);
     };
 
     const onPrevious = () => {
-        if (isLoading){
+        if (isLoading) {
             return;
         }
         onPageChange(currentPage - 1);
     };
 
     const onGoto = (v) => {
-       
-        if (isLoading){
+
+        if (isLoading) {
             return;
         }
         onPageChange(v);
     }
 
     const onDots = (i) => {
-        if (isLoading){
+        if (isLoading) {
             return;
         }
-        if (i===1){
+        if (i === 1) {
             onPageChange(currentPage + 5);
-        }else{
+        } else {
             onPageChange(currentPage - 5);
         }
     }
@@ -259,13 +259,13 @@ const Pagination = props => {
     let lastPage = paginationRange[paginationRange.length - 1];
     return (
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end" }}>
-            <BoldInputNumber prefix={<BsBoxArrowInUpRight/>} size="small" title='Ir Para' value={currentPage} onChange={debounceEvent} min={1} max={lastPage} controls={false} />
+            <BoldInputNumber prefix={<BsBoxArrowInUpRight />} size="small" title='Ir Para' value={currentPage} onChange={debounceEvent} min={1} {...maxPage && { max: lastPage }} controls={false} />
             <Button style={{ margin: "2px" }} icon={<LeftOutlined />} onClick={onPrevious} size="small" disabled={currentPage === 1} />
             {paginationRange.map(pageNumber => {
                 // If the pageItem is a DOT, render the DOTS unicode character
                 if (pageNumber === DOTS) {
                     _dots++;
-                    return <Button style={{ margin: "2px" }} key={`dots-${_dots}`} icon={<EllipsisOutlined />} size="small" onClick={()=>onDots(_dots)} />;
+                    return <Button style={{ margin: "2px" }} key={`dots-${_dots}`} icon={<EllipsisOutlined />} size="small" onClick={() => onDots(_dots)} />;
                 }
                 return (
                     <Button key={`nv-${pageNumber}`} style={{ margin: "2px", ...currentPage === pageNumber && { borderColor: "#1890ff", color: "#1890ff" } }} size="small" onClick={() => onPageChange(pageNumber)}>{pageNumber}</Button>

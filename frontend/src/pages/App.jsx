@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Spin, Input, Modal } from 'antd';
+import { Spin, Input, Modal, notification } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
 import 'antd/dist/antd.compact.less';
@@ -16,6 +16,8 @@ import { useSubmitting } from "utils";
 import YScroll from "components/YScroll";
 import { fetch, fetchPost } from "utils/fetch";
 import { API_URL, ROOT_URL } from "config";
+import { openNotification } from 'components/openNotification';
+
 /* import 'react-data-grid/lib/styles.css'; */
 
 
@@ -54,27 +56,18 @@ const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
 const FormEtapasCortes = lazy(() => import('./currentline/FormEtapasCortes'));
 const PaletesList = lazy(() => import('./paletes/PaletesList'));
 const BasePick = lazy(() => import('./picking/BasePick'));
+const CheckLists = lazy(() => import('./ordensfabrico/CheckLists'));
+const ArtigosCompativeis = lazy(() => import('./artigos/ArtigosCompativeis'));
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
-
-
-
-
-
-
-
+export const LayoutContext = React.createContext({});
 export const MediaContext = React.createContext({});
 export const SocketContext = React.createContext({});
 export const AppContext = React.createContext({});
 
-
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
-
-
-
-
 
 
 const loadAuthUser = async ({ }, signal) => {
@@ -108,7 +101,9 @@ const WrapperRouteComponent = ({ titleId, auth, ...props }) => {
 
 const MainLayout = () => {
     const location = useLocation();
-    return (<>{(location.pathname === "/app" || location.pathname === "/app/") && <GridLayout />}<Outlet /></>);
+    return (<>
+        {(location.pathname === "/app" || location.pathname === "/app/") && <GridLayout />}<Outlet />
+    </>);
 }
 
 const RenderRouter = () => {
@@ -143,12 +138,15 @@ const RenderRouter = () => {
                 { path: "picking/pickgranuladolist", element: <Suspense fallback={<Spin />}><PickGranuladoList /></Suspense> },
                 { path: "picking/picknwlist", element: <Suspense fallback={<Spin />}><PickNWList /></Suspense> },
 
+                { path: "ofabrico/checklists", element: <Suspense fallback={<Spin />}><CheckLists /></Suspense> },
 
                 { path: "artigos/nwlist", element: <Suspense fallback={<Spin />}><NwList /></Suspense> },
                 { path: "artigos/consumoslist", element: <Suspense fallback={<Spin />}><ConsumosList /></Suspense> },
                 { path: "artigos/granuladobufferlinelist", element: <Suspense fallback={<Spin />}><GranuladoBufferLineList /></Suspense> },
                 { path: "artigos/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
+                { path: "artigos/artigoscompativeis", element: <Suspense fallback={<Spin />}><ArtigosCompativeis /></Suspense> },
+                
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },
 
@@ -192,6 +190,7 @@ const App = () => {
     ]);
 
 
+
     useEffect(() => {
         //sendJsonMessage({ cmd: 'initAlerts' });
     }, []);
@@ -226,7 +225,6 @@ const App = () => {
                     </SocketContext.Provider>
                 </AppContext.Provider>
             </MediaContext.Provider>
-
         </BrowserRouter>
     );
 }
@@ -234,6 +232,7 @@ const App = () => {
 
 const App2 = () => {
     const [width] = useMedia();
+    const [api, contextHolder] = notification.useNotification();
     const submitting = useSubmitting(true);
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
         onOpen: () => console.log(`Connected to Web Socket`),
@@ -265,7 +264,6 @@ const App2 = () => {
         const controller = new AbortController();
         const interval = null;
         (async () => {
-            console.log("oiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
             setEstadoProducao(await fetchPost({ url: `${API_URL}/estadoproducao/`, pagination: { enabled: false }, filter: {}, signal: controller.signal }));
         })();
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
@@ -291,7 +289,8 @@ const App2 = () => {
     return (
         <BrowserRouter>
             <MediaContext.Provider value={width}>
-                <AppContext.Provider value={{ auth, estadoProducao }}>
+                <AppContext.Provider value={{ auth, estadoProducao, openNotification: openNotification(api) }}>
+                    {contextHolder}
                     <SocketContext.Provider value={lastJsonMessage}>
                         <ModalProvider>
                             {auth?.isAuthenticated && <RenderRouter />}

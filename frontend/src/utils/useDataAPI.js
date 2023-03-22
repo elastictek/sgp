@@ -30,6 +30,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     var _pagination = payload?.pagination;
     var _parameters = payload?.parameters;
 
+    const setId = (_id,_useStorage=true) => {
+        setDataState(prev=>({...prev,...getLocalStorage(_id, _useStorage)}));
+    }
+
     const addAction = (type) => {
         if (!action.current.includes(type))
             action.current.push(type);
@@ -381,6 +385,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         addRow,
         deleteRow,
         setData,
+        setId,
         hasData: () => (dataState.data.rows !== undefined),
         setSort,
         addSort,

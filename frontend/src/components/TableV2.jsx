@@ -70,7 +70,6 @@ const Table = styled(DataGrid).withConfig({
             font-size:12px;`
     }
     }
-
     .rdg-row{
         ${({ rowStyle }) => (rowStyle) ? css`${rowStyle}` : css`
             font-size:12px;`
@@ -157,7 +156,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     }
 //);
 
-export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, maxPage=true, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
@@ -221,9 +220,9 @@ export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: co
                 {
                     key: 'action', name: '', frozen: frozenActionColumn, minWidth: 40, width: 40, sortable: false, resizable: false,
                     formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
-                }, ...cols]);
+                }, ...cols.filter(v=>!v?.hidden===true)]);
         } else {
-            setColumns([...rowSelection ? [SelectColumn] : [], ...cols]);
+            setColumns([...rowSelection ? [SelectColumn] : [], ...cols.filter(v=>!v?.hidden===true)]);
         }
     }, [dataAPI.getTimeStamp(),cols]);
 
@@ -330,6 +329,7 @@ export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: co
                     <Col xs='content'>
                         <div style={{ display: "flex", flexDirection: "row" }}>
                             {(dataAPI.getPagination(true).enabled && paginationPos !== 'bottom') && <Pagination
+                                maxPage={maxPage}
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}
@@ -373,6 +373,7 @@ export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: co
                     <Col xs='content'>
                         <div style={{ display: "flex", flexDirection: "row" }}>
                             {(dataAPI.getPagination(true).enabled && paginationPos !== 'top') && <Pagination
+                                maxPage={maxPage}
                                 currentPage={dataAPI.getPagination(true).page}
                                 totalCount={dataAPI?.hasData() ? dataAPI.getData().total : 0}
                                 pageSize={dataAPI.getPageSize(true)}

@@ -11,6 +11,7 @@ import Toolbar from "components/toolbar";
 import GridLayout, { Responsive, WidthProvider } from "react-grid-layout";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { ScrollMenu, VisibilityContext } from 'react-horizontal-scrolling-menu';
+import './commons/react-horizontal-scrolling-menu.css';
 import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer, message, Checkbox } from "antd";
 const { Text, Title } = Typography;
 import { SyncOutlined, SettingOutlined, MenuOutlined, AppstoreOutlined, LogoutOutlined, ProjectOutlined, SaveOutlined, ClearOutlined, PushpinOutlined, CaretDownOutlined } from '@ant-design/icons';

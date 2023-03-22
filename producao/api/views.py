@@ -3226,7 +3226,10 @@ def computeProductionHours(aggid,cursor):
         width = usable_width/1000
         goal_time = 0.9
         goal_quality = 0.9
-        hours = (((qty/(speed*width))/goal_time)/goal_quality)/60  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
+        if width==0:
+            hours=0
+        else:
+            hours = (((qty/(speed*width))/goal_time)/goal_quality)/60  #"{:.0f}H:{:.0f}m".format(*divmod(((qty/(speed*width))/goal_time)/goal_quality, 60))
         end_prev_date = start_prev_date + timedelta(hours=hours)
         return {"hours":math.ceil(hours),"end_prev_date":end_prev_date}    
     return {"hours":0,"end_prev_date":None}
@@ -3751,7 +3754,7 @@ def computePaletizacao(cp,data,cursor):
             computed["total"] = {
                 "sqm_paletes_total":sqm_paletes_total,
                 "sqm_contentor":sqm_paletes_total*paletizacao[0]["npaletes"],
-                "n_paletes":(cp["qty_encomenda"]/sqm_paletes_total)*nitems
+                "n_paletes":0 if sqm_paletes_total==0 else (cp["qty_encomenda"]/sqm_paletes_total)*nitems
             }
             computed["items"] = items
     return computed
@@ -4219,6 +4222,52 @@ def TempAggOFabricoLookup(request, format=None):
             f.add(f'tof.agg_of_id <= :agg_id',lambda v:(v!=None)) 
             f.value("and")
             response = dbgw.executeSimpleList(lambda:(f"""
+            
+                with tof AS(
+                select tof.id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,
+                tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id,tof.emendas_id,tof.agg_of_id from
+                {sgpAlias}.producao_tempordemfabrico tof
+                where 
+                not exists (select 1 from {sgpAlias}.planeamento_ordemproducao po where po.draft_ordem_id=tof.id )
+                )
+                select json_agg(t) v from (
+                SELECT
+                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id,
+                (select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
+                ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
+                (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
+                (select row_to_json(_) from (select pe.*) as _) emendas,
+                (select row_to_json(_) from (select pa.*) as _) artigo
+                from tof
+                join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id and tofa.status = 0
+                left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+                left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
+                left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
+                {f.text}
+                ) t
+            
+            """),cursor,f.parameters)
+            # response = dbgw.executeSimpleList(lambda:(f"""
+            #     select json_agg(t) v from (
+            #     SELECT
+            #     tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
+            #     ,(select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
+            #     ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
+            #     (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
+            #     (select row_to_json(_) from (select pe.*) as _) emendas,
+            #     (select row_to_json(_) from (select pa.*) as _) artigo
+            #     FROM {mv_ofabrico_list} oflist
+            #     join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
+            #     join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+            #     left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+            #     left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
+            #     left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
+            #     {f.text}
+            #     ) t
+            # """),cursor,f.parameters)
+            print("EEEEEEEEEEEEEEE1")
+            print(
+                f"""
                 select json_agg(t) v from (
                 SELECT
                 tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
@@ -4235,8 +4284,9 @@ def TempAggOFabricoLookup(request, format=None):
                 left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
                 {f.text}
                 ) t
-            """),cursor,f.parameters)
-            print("EEEEEEEEEEEEEEE1")
+                """
+            )
+            print(f.parameters)
         else:
             f = Filters(request.data['filter'])
             f.setParameters({}, False)
@@ -4247,6 +4297,7 @@ def TempAggOFabricoLookup(request, format=None):
             f1.where(False,"and" if f.hasFilters else False)
             f1.add(f'tof.agg_of_id = :agg_id',lambda v:(v!=None))
             f1.add(f'(tof.produto_id = :produto_id and tof.aggregated=0)',lambda v:(v!=None))
+            f1.add(f'(exists ( select 1 from {sgpAlias}.group_artigos tga where tga.artigo_id=tof.item_id and tga.group=gart.group ))',True)
             f1.value("or")
             filter = f"""{f.text}{f1.text}"""
             parameters = {**f.parameters,**f1.parameters}
@@ -4257,12 +4308,24 @@ def TempAggOFabricoLookup(request, format=None):
                     FROM {mv_ofabrico_list} oflist
                     join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
                     join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+                    left join {sgpAlias}.group_artigos gart on gart.artigo_id=tof.item_id
                     {filter}
                     {dql.sort}
                     {group}
                 """
             ), cursor, parameters)
-            print("EEEEEEEEEEEEEEE2")
+            print(f"""
+                    select 
+                    {dql.columns}
+                    FROM {mv_ofabrico_list} oflist
+                    join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
+                    join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+                    left join {sgpAlias}.group_artigos gart on gart.artigo_id=tof.item_id
+                    {filter}
+                    {dql.sort}
+                    {group}
+                """)
+            print(parameters)
         # response = db.executeSimpleList(lambda: (
         #     f"""
         #         select 

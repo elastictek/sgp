@@ -95,6 +95,8 @@ export default ({ dark = false }) => {
                 <Panel header={<b>Planeamento</b>} key="2">
                     <Permissions permissions={permission} item="planeamento" action="A"><Button size='small' type="link" onClick={() => navigate('/app/ofabricolist', {})} title="A">Ordens de Fabrico</Button></Permissions>
                     <Permissions permissions={permission} item="planeamento" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame('/producao/perfil/list/', 'Perfis de Bobinagem')} title="B">Perfis de Bobinagem</Button></Permissions>
+                    <Permissions permissions={permission} item="planeamento" action="C"><Button size='small' type="link" onClick={() => navigate('/app/ofabrico/checklists', {})} title="C">CheckLists</Button></Permissions>
+                    <Permissions permissions={permission} item="planeamento" action="D"><Button size='small' type="link" onClick={() => navigate('/app/artigos/artigoscompativeis', {})} title="D">Artigos Compatíveis</Button></Permissions>
                     {/*                 <Button size='small' type="link" onClick={() => { }}>Formulação</Button>
                 <Button size='small' type="link" onClick={() => { }}>Gama Operatória</Button>
                 <Button size='small' type="link" onClick={() => { }}>Especificações</Button> */}

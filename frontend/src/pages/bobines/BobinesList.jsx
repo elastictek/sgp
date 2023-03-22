@@ -15,11 +15,11 @@ import { useDataAPI } from "utils/useDataAPI";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Drawer } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Drawer, Checkbox } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json } from "utils/object";
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, BOBINE_ESTADOS, BOBINE_DEFEITOS } from 'config';
@@ -28,7 +28,7 @@ import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, SwitchField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -39,10 +39,11 @@ import { ImArrowLeft } from 'react-icons/im';
 // import FormCreatePalete from './FormCreatePalete';
 import { MediaContext } from "../App";
 import OF from '../commons/OF';
-import { Status, toolbarFilters, postProcess, processFilters, saveBobinesDefeitos } from "./commons";
-import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
+import { Status, toolbarFilters, postProcess, processFilters, saveBobinesDefeitos, saveTrocaEtiqueta } from "./commons";
+import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos, SwitchEditor } from 'components/tableEditors';
 import Palete from '../paletes/Palete';
 import Bobine from './Bobine';
+import BobinesTasks from './BobinesTasks';
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -68,7 +69,7 @@ const TitleForm = ({ data, onChange }) => {
     }
         right={<Col xs="content" style={{ padding: "5px" }}>
             <SelectField value={data?.type} onChange={(v) => onChange(v, "type")} size="small" keyField="value" textField="label"
-                data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }]} />
+                data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }, { value: "C", label: "Dados de Expedição" }]} />
         </Col>
         }
     />);
@@ -141,7 +142,7 @@ const moreFiltersSchema = ({ form }) => [
     { fpalete: { label: "Palete", field: { type: 'input', size: 'small' } } },
     { flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 4 }, fcore: { label: "Core", field: { type: 'input', size: 'small' }, span: 4 } },
     { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS }, span: 10 } },
-    // { fartigo: { label: "Artigo", field: { type: 'input', size: 'small' } } },
+    { fartigo: { label: "Artigo Cod.", field: { type: 'input', size: 'small' }, span:12 },fartigodes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span:12 } },
     { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
     {
         farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
@@ -176,11 +177,14 @@ const moreFiltersSchema = ({ form }) => [
     // { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
     // { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
 ];
+
+
+
 const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     const items = [
-        ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
-        ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0 && props.row?.type_mov == 1) ? [{ label: <span style={{}}>Saída de Linha</span>, key: 'out', icon: <ImArrowLeft size={16} style={{ verticalAlign: "text-top" }} /> }, { type: 'divider' }] : [],
-        (modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar Registo</span>, key: 'delete', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> }
+        // ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
+        // ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0 && props.row?.type_mov == 1) ? [{ label: <span style={{}}>Saída de Linha</span>, key: 'out', icon: <ImArrowLeft size={16} style={{ verticalAlign: "text-top" }} /> }, { type: 'divider' }] : [],
+        // (modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar Registo</span>, key: 'delete', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> }
     ];
     return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
 }
@@ -269,6 +273,7 @@ export default ({ setFormTitle, ...props }) => {
             switch (modalParameters.content) {
                 case "palete": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTabPalete} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 case "bobine": return <Bobine tab={modalParameters.tab} setTab={modalParameters.setLastTabBobine} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "tasks": return <BobinesTasks loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 //     case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 //     case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
@@ -286,19 +291,25 @@ export default ({ setFormTitle, ...props }) => {
 
     const editable = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "generic") {return true};
+            if (col === "generic") { return true };
+        }
+        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
+            if (col === "trocaEtiquetas") { return true; }
         }
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestinos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "destino") {return true};
+            if (col === "destino") { return true };
         }
         return false;
     }
     const editableClass = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "generic"){ return classes.edit };
+            if (col === "generic") { return classes.edit };
         }
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestinos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "destino"){ return classes.edit };
+            if (col === "destino") { return classes.edit };
+        }
+        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
+            if (col === "trocaEtiquetas") { return classes.edit };
         }
         if (col === "destino" && row?.destinos_has_obs > 0) {
             return classes.hasObs;
@@ -318,13 +329,29 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
 
+    const onClickRetrabalho = (row) => {
+        setModalParameters({ content: "retrabalho", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome }, bobine_id: row.id, bobine_nome: row.nome } });
+        showModal();
+    }
+
+    const onClickTasks = (row) => {
+        setModalParameters({ content: "tasks", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome, artigo_cod: row.artigo_cod }, bobine_id: row.id, bobine_nome: row.nome, artigo_cod: row.artigo_cod } });
+        showModal();
+    }
+
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
-        // {
-        //     key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
-        // },
+        ...dataAPI.getAllFilter()?.type !== "C" ? [{
+            key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<SettingOutlined />} size="small" onClick={() => onClickTasks(p.row)} />,
+        }] : [],
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
-        { key: 'estado', name: 'Estado', width: 70, formatter: p => <Status b={{ lar: p.row.lar, estado: p.row.estado }} larguraColumn="lar" /> },
+        {
+            key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, name: 'Estado',
+            editor: p => <FieldEstadoEditor forInput={editable(p.row, 'generic')} p={p} />,
+            formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={{ lar: p.row.lar, estado: p.row.estado }} larguraColumn="lar" /></div>,
+            editorOptions: { editOnClick: true },
+            cellClass: r => editableClass(r, 'generic')
+        },
         ...dataAPI.getAllFilter()?.type === "A" ? [
             { key: 'area', name: 'Área', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
             { key: 'comp_actual', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
@@ -333,16 +360,27 @@ export default ({ setFormTitle, ...props }) => {
             { key: 'diam', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
             { key: 'core', name: 'Core', width: 60, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> }
         ] : [],
+
+        ...dataAPI.getAllFilter()?.type === "C" ? [
+            { key: 'area', name: 'Área', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
+            { key: 'comp_actual', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+            { key: 'metros_cons', name: 'Metros Cons.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
+            { key: 'lar', name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
+            { key: 'diam', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
+            { key: 'core', name: 'Core', width: 60, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> }
+        ] : [],
+
+
         { key: 'palete_nome', name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row)}>{p.row.palete_nome}</Button> },
         {
             key: 'destino', name: 'Destino', width: 200,
-            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} p={p} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
+            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} forInputTroca={editable(p.row, 'trocaEtiquetas')} p={p} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
             cellClass: r => editableClass(r, 'destino'),
             editable: true,
             editorOptions: { editOnClick: true, commitOnOutsideClick: false },
             formatter: p => p.row.destino
         },
-        ...dataAPI.getAllFilter()?.type === "A" ? [
+        ...(dataAPI.getAllFilter()?.type === "A" || dataAPI.getAllFilter()?.type === "C") ? [
             { key: 'ofid', name: 'OF Original', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
             { key: 'palete_ofid', name: 'OF Palete', width: 130, formatter: p => <OF id={p.row.palete_ordem_id} ofid={p.row.palete_ofid} /> },
             { key: 'tiponwinf', name: 'NW Inf.', width: 150, formatter: p => p.row.tiponwinf },
@@ -352,8 +390,24 @@ export default ({ setFormTitle, ...props }) => {
             { key: 'lotenwsup', name: 'Lote NW Sup.', width: 130, formatter: p => p.row.lotenwsup },
             { key: 'nwsup', name: 'NW Sup. Metros', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> }
         ] : [],
-
-
+        ...(dataAPI.getAllFilter()?.type === "C") ? [
+            { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
+            { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
+            { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && moment(p.row.data_encomenda).format(DATETIME_FORMAT) },
+            { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
+            { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
+            { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
+            { key: 'stock_qtypcu', name: 'Qtd. Stock', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
+            { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
+            { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
+            { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
+            { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
+            { key: 'modo_exp', name: 'Modo Expedição', reportFormat: '0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
+            { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
+            { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
+            { key: 'mes', name: 'Mês', reportFormat: '0', width: 60, formatter: p => p.row.mes },
+            { key: 'ano', name: 'Ano', reportFormat: '0', width: 60, formatter: p => p.row.ano }
+        ] : [],
 
         ...dataAPI.getAllFilter()?.type === "B" ? [
             {
@@ -430,7 +484,7 @@ export default ({ setFormTitle, ...props }) => {
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
     }, []);
 
-    const loadData = async ({ init = false, signal } = {}) => {
+    const loadData = async ({ init = false, signal, type } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
             let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
@@ -439,21 +493,28 @@ export default ({ setFormTitle, ...props }) => {
             dataAPI.setSort(defaultSort);
             dataAPI.addParameters(defaultParameters, true, true);
             dataAPI.fetchPost({ signal });
-        }else{
+        } else {
             dataAPI.fetchPost({ signal });
         }
         submitting.end();
     }
 
-    const onDestinoConfirm = async (p, destinos, destinoTxt, obs,prop_obs) => {
+    const onDestinoConfirm = async (p, destinos, destinoTxt, obs, prop_obs, troca_etiqueta) => {
         const ids = dataAPI.getData().rows.map(v => v.id);
         const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
         const rowsObs = (checkData?.obs) ? ids : [p.row.id];
         const rowsPropObs = (checkData?.prop_obs) ? ids : [p.row.id];
-        const values = { destinos, destinoTxt, obs, prop_obs };
+        const values = { destinos, destinoTxt, obs, prop_obs, troca_etiqueta };
         const palete_id = p.row.palete_id;
+
         try {
-            let response = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, parameters: { method: "UpdateDestinos", ids, rowsDestinos, rowsObs,rowsPropObs, values }, filter: { palete_id } });
+            let response = await fetchPost({
+                url: `${API_URL}/paletes/paletessql/`, parameters: {
+                    method: "UpdateDestinos", ids, rowsDestinos, rowsObs, rowsPropObs, values,
+                    troca: permission.isOk({ action: "trocaEtiquetas" }),
+                    destinos: permission.isOk({ action: "changeDestinos" })
+                }, filter: { palete_id }
+            });
             if (response.data.status !== "error") {
                 p.onClose(true);
                 loadData();
@@ -473,31 +534,32 @@ export default ({ setFormTitle, ...props }) => {
                 const _values = {
                     ...vals,
                     // fartigo: getFilterValue(vals?.fartigo, 'any'),
-                    flote: getFilterValue(vals?.flote, 'any'),
-                    fbobine: getFilterValue(vals?.fbobine, 'any'),
-                    fpalete: getFilterValue(vals?.fpalete, 'any'),
-                    fof: getFilterValue(vals?.fof, 'any'),
-                    fpof: getFilterValue(vals?.fpof, 'any'),
+                    flote: getFilterValue(vals?.flote, 'start'),
+                    fbobine: getFilterValue(vals?.fbobine, 'start'),
+                    fpalete: getFilterValue(vals?.fpalete, 'start'),
+                    fof: getFilterValue(vals?.fof, 'start'),
+                    fpof: getFilterValue(vals?.fpof, 'start'),
                     fdata: getFilterRangeValues(vals["fdata"]?.formatted),
-                    flotenwinf: getFilterValue(vals?.flotenwinf, 'any'),
-                    ftiponwinf: getFilterValue(vals?.ftiponwinf, 'any'),
-                    flotenwsup: getFilterValue(vals?.flotenwsup, 'any'),
-                    ftiponwsup: getFilterValue(vals?.ftiponwsup, 'any'),
-                    fprf: getFilterValue(vals?.fprf, 'any'),
-                    forder: getFilterValue(vals?.forder, 'any'),
+                    flotenwinf: getFilterValue(vals?.flotenwinf, 'start'),
+                    ftiponwinf: getFilterValue(vals?.ftiponwinf, 'start'),
+                    flotenwsup: getFilterValue(vals?.flotenwsup, 'start'),
+                    ftiponwsup: getFilterValue(vals?.ftiponwsup, 'start'),
+                    fprf: getFilterValue(vals?.fprf, 'start'),
+                    forder: getFilterValue(vals?.forder, 'start'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
                     fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga,
-                    fcarganome: getFilterValue(vals?.fcarganome, 'any'),
-                    fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
-                    fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
-                    fdestino: getFilterValue(vals?.fdestino, 'any'),
-                    flote_mp: getFilterValue(vals?.flote_mp, 'any'),
-                    fmatricula: getFilterValue(vals?.fmatricula, 'any'),
-                    fmatricula_reboque: getFilterValue(vals?.fmatricula_reboque, 'any'),
-                    fsdh: getFilterValue(vals?.fsdh, 'any'),
-                    fclienteexp: getFilterValue(vals?.fclienteexp, 'any'),
-                    fartigoexp: getFilterValue(vals?.fartigoexp, 'any'),
-                    fartigo: getFilterValue(vals?.fartigo, 'any'),
+                    fcarganome: getFilterValue(vals?.fcarganome, 'start'),
+                    fdestinoold: getFilterValue(vals?.fdestinoold, 'start'),
+                    fartigo_mp: getFilterValue(vals?.fartigo_mp, 'start'),
+                    fdestino: getFilterValue(vals?.fdestino, 'start'),
+                    flote_mp: getFilterValue(vals?.flote_mp, 'start'),
+                    fmatricula: getFilterValue(vals?.fmatricula, 'start'),
+                    fmatricula_reboque: getFilterValue(vals?.fmatricula_reboque, 'start'),
+                    fsdh: getFilterValue(vals?.fsdh, 'start'),
+                    fclienteexp: getFilterValue(vals?.fclienteexp, 'start'),
+                    fartigoexp: getFilterValue(vals?.fartigoexp, 'start'),
+                    fartigo: getFilterValue(vals?.fartigo, 'start'),
+                    fartigodes: getFilterValue(vals?.fartigodes, 'start'),
                     // fvcr: getFilterValue(vals?.fvcr, 'any'),
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted)
@@ -552,17 +614,23 @@ export default ({ setFormTitle, ...props }) => {
         setModeEdit({ datagrid: (modeEdit.datagrid) ? false : true });
     }
     const onSave = async (action) => {
-        await saveBobinesDefeitos(dataAPI.getData().rows,submitting,parameters,loadData);
+        await saveBobinesDefeitos(dataAPI.getData().rows, submitting, parameters, loadData);
+    }
+    const onSaveTrocaEtiqueta = async (r, v) => {
+        await saveTrocaEtiqueta(r, v, submitting, parameters, loadData);
     }
 
-    const onTitleChange = (value, source) => {
+
+    const onTitleChange = async (value, source) => {
         switch (source) {
             case "type":
-                const vals = Object.fromEntries(Object.entries({ ...defaultFilters, ...formFilter.getFieldsValue(true) }).filter(([_, v]) => v !== null && v !== ''));
-                const _values = { ...vals, type: value };
-                dataAPI.addParameters({ ...defaultParameters, ...dataAPI.getParameters() });
-                dataAPI.addFilters(_values, true);
-                dataAPI.fetchPost();
+                dataAPI.addFilters({ type: value }, false);
+                await loadData({ init: true, type: value });
+                //const vals = Object.fromEntries(Object.entries({ ...defaultFilters, ...formFilter.getFieldsValue(true) }).filter(([_, v]) => v !== null && v !== ''));
+                //    const _values = { ...vals, type: value };
+                //    dataAPI.addParameters({ ...defaultParameters, ...dataAPI.getParameters() });
+                //    dataAPI.addFilters(_values, true);
+                //    dataAPI.fetchPost();
                 break;
         }
     }
@@ -581,16 +649,17 @@ export default ({ setFormTitle, ...props }) => {
                 toolbar={true}
                 search={true}
                 moreFilters={true}
+                maxPage={false}
                 rowSelection={false}
                 primaryKeys={primaryKeys}
                 editable={true}
                 clearSort={false}
                 rowHeight={28}
                 onPageChange={() => dataAPI.fetchPost()}
-                //rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
+                rowClass={(row) => (row?.notValid === 1 ? classes.notValid : undefined)}
                 leftToolbar={
                     <Space>
-                        <Permissions permissions={permission} action="editList">
+                        <Permissions permissions={permission} action="editList" {...dataAPI.getAllFilter()?.type === "C" && { forInput: false }}>
                             {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                             {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                             {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}

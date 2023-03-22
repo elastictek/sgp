@@ -11,15 +11,15 @@ import { AppContext } from '../pages/App';
  * example.1  <Permissions permissions={permission} action="teste"><SampleObject/></Permissions>
  * O atributo permission é o objeto iniciado por -> const permission = usePermission({});
  */
-export const Permissions = ({ permissions, action = null, item = null, forInput = null, onPlace = null, clone, children, ...props }) => {
+export const Permissions = ({ permissions, action = null, item = null, forInput = null, onPlace = null, clone, children, log, ...props }) => {
     return (
         <ConditionalWrapper
-            condition={!permissions.isOk({ action, item, forInput, onPlace })}
+            condition={!permissions.isOk({ action, item, forInput, onPlace, log })}
             wrapper={children => <></>}
         >
 
             {!clone && children}
-            {clone && React.cloneElement(children,{...children.props,...props})}
+            {clone && React.cloneElement(children, { ...children.props, ...props })}
 
         </ConditionalWrapper>
     );
@@ -33,7 +33,7 @@ const loadPermissions = async ({ name, module }) => {
     return {};
 }
 
-export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
+export const usePermission = ({ allowed = {}, name, module = 'main', item: globalItem } = {}) => {
     const [permissions, setPermissions] = useState();
     const { auth } = useContext(AppContext);
     const userKeys = Object.keys(auth.permissions);
@@ -48,16 +48,22 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        console.log("isAdmin is commented, uncomment")
-        console.log("Permissions Location/Name:",name ? name : loc.pathname, " module:", module)
-        const _perm = await loadPermissions({ name: name ? name : loc.pathname, module });
+        console.log("isAdmin is commented, uncomment!!!!!")
+        console.log("Permissions Location/Name:", name ? name : loc.pathname.replace(/\:$/, ''), " module:", module)
+        const _perm = await loadPermissions({ name: name ? name : loc.pathname.replace(/\:$/, ''), module });
         setPermissions(json(_perm?.permissions));
     }
 
-    const isOk = ({ action = null, item = null, forInput = null, onPlace = null }) => {
+    const isOk = ({ action = null, item = null, forInput = null, onPlace = null, log = null }) => {
         //onPlace - indica as permissões mínimas para ter acesso, sobrepõe-se às "permissions" definidas em app_permissions 
         //example.1 {createRecord: {rolename: 200}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200
         //example.2 {formA: { createRecord: {rolename: 200}}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200 on item ("formA")
+        if (!item && globalItem) {
+            item = globalItem;
+        }
+        if (!item && permissions) {
+            item = Object.keys(permissions)[0];
+        }
         if (Array.isArray(forInput)) {
             if (forInput.includes(false)) {
                 return false;
@@ -75,14 +81,14 @@ export const usePermission = ({ allowed = {}, name, module = 'main' } = {}) => {
         let min = null;
         let value = -1;
         //console.log("isOKKKKKK")
-        //console.log(action,item)
+        //console.log(log, action, item)
         //console.log(permissions)
         //console.log(json(permissions)[action])
-        let p = (onPlace) ? json(onPlace) : (item) ? permissions[item][action] : permissions[action];
-        if (!p){
-            p = (item) ? ((permissions[item]["default"]) ? permissions[item]["default"] : permissions["default"]) : permissions["default"];
+        let p = (onPlace) ? json(onPlace) : (item) ? (permissions[item] ? permissions[item][action] : null) : permissions[action];
+        if (!p) {
+            p = (item) ? (permissions[item] ? ((permissions[item]["default"]) ? permissions[item]["default"] : permissions["default"]) : null) : permissions["default"];
         }
-        if (!p){
+        if (!p) {
             return false;
         }
         const pKeys = Object.keys(p);

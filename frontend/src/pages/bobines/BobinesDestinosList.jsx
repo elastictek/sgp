@@ -80,13 +80,18 @@ export default (props) => {
 
     const editable = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            return (col === "destino") ? true : false;
+            if (col === "destino"){return true;}
+        }
+        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            if (col === "trocaEtiquetas"){return true;}
         }
         return false;
     }
     const editableClass = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            return (col === "destino") ? classes.edit : undefined;
+            if (col === "destino"){return classes.edit;}
+        }else if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            if (col === "trocaEtiquetas"){return classes.edit;}
         }else{
             if (col === "destino" && row.destinos_has_obs>0) {
                 return cls.hasObs;
@@ -99,11 +104,12 @@ export default (props) => {
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
+        { key: 'troca_etiqueta', name: 'Troca Etiqueta', reportFormat: '0', width: 90, formatter: p => <div style={{}}><Checkbox checked={p.row.troca_etiqueta} disabled/></div> },
         {
             key: 'destino', width: 200, editable: true,
             headerRenderer: p => <CheckColumn id="destino" name="Destino" onChange={onCheckChange} defaultChecked={checkData?.destino} forInput={editable(p.row, 'destino')} />,
             cellClass: r => editableClass(r, 'destino'),
-            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} p={p} palete={props?.parameters?.palete} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
+            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} forInputTroca={editable(p.row, 'trocaEtitquetas')} p={p} palete={props?.parameters?.palete} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
             editorOptions: { editOnClick: true, commitOnOutsideClick: false },
             formatter: p => p.row.destino
         },
@@ -128,16 +134,22 @@ export default (props) => {
     ];
 
 
-    const onDestinoConfirm = async (p, destinos, destinoTxt, obs,prop_obs) => {
+    const onDestinoConfirm = async (p, destinos, destinoTxt, obs, prop_obs,troca_etiqueta) => {
         const ids = dataAPI.getData().rows.map(v => v.id);
         const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
         const rowsObs = (checkData?.obs) ? ids : [p.row.id];
         const rowsPropObs = (checkData?.prop_obs) ? ids : [p.row.id];
-        const values = { destinos, destinoTxt, obs, prop_obs };
+        const values = { destinos, destinoTxt, obs, prop_obs, ...permission.isOk({action: "trocaEtiquetas"}) && {troca_etiqueta} };
         const palete_id = p.row.palete_id;
 
         try {
-            let response = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, parameters: { method: "UpdateDestinos", ids, rowsDestinos, rowsObs,rowsPropObs, values }, filter: { palete_id } });
+            let response = await fetchPost({
+                url: `${API_URL}/paletes/paletessql/`, parameters: {
+                    method: "UpdateDestinos", ids, rowsDestinos, rowsObs, rowsPropObs, values, 
+                    troca: permission.isOk({ action: "trocaEtiquetas" }),
+                    destinos:permission.isOk({action: "changeDestinos"})
+                }, filter: { palete_id }
+            });
             if (response.data.status !== "error") {
                 p.onClose(true);
                 loadData();

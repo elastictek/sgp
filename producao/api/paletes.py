@@ -626,11 +626,11 @@ def UpdateDestinos(request, format=None):
                 chk01 = checkPalete01(filter["palete_id"],cursor)
                 chk02 = checkPalete02(filter["palete_id"],cursor)
                 if chk01 is None or chk02 is None:
-                    return Response({"status": "error", "title": f"Não é possível alterar destinos na palete! A palete já tem carga associada ou é palete final."})
+                    return Response({"status": "error", "title": f"Não é possível alterar destinos! A palete já tem carga associada ou é palete final."})
                 ids_d = ','.join(str(x) for x in data["rowsDestinos"])
                 ids_o = ','.join(str(x) for x in data["rowsObs"]) 
                 ids_po = ','.join(str(x) for x in data["rowsPropObs"])                    
-
+ 
                 dml = db.dml(TypeDml.UPDATE,{
                     "estado":data["values"].get("destinos").get("estado").get("value"),
                     "destinos":json.dumps(data["values"]["destinos"]),

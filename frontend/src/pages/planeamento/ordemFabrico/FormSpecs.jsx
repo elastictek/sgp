@@ -78,6 +78,7 @@ export default ({ /* id, record, form, guides, schema, */ changedValues = {} }) 
             case "lookup":
                 setLoading(true);
                 (async () => {
+                    console.log("CTX-------------->>>>",ctx);
                     setArtigosSpecs(await loadArtigosSpecsLookup({ produto_id: ctx.produto_id, token }));
                     setLoading(false);
                 })();
@@ -89,6 +90,7 @@ export default ({ /* id, record, form, guides, schema, */ changedValues = {} }) 
                 (async () => {
                     let _artigosspecs = artigosSpecs;
                     if (ctx.produto_id) {
+                        console.log("CTX-------------->>>>",ctx);
                         _artigosspecs = await loadArtigosSpecsLookup({ produto_id: ctx.produto_id, token });
                         setArtigosSpecs(_artigosspecs);
                     }

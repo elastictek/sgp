@@ -9,7 +9,7 @@ import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
 import YScroll from "../YScroll";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField } from 'components/FormFields';
@@ -18,6 +18,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 
 
 import { Context } from "./formFields";
+import { ClearOutlined, SearchOutlined,CloseCircleFilled, CloseCircleOutlined } from '@ant-design/icons';
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -29,7 +30,7 @@ const Filters = ({ filters }) => {
         if (autoFocusRef.current) {
             autoFocusRef.current.focus();
         }
-      }, []);
+    }, []);
     return (<>
         {Object.keys(filters).map(k => {
             return (
@@ -41,7 +42,7 @@ const Filters = ({ filters }) => {
     </>)
 }
 
-const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, closeSelf, toolbar = true,rowHeight=24 }) => {
+const Popup = ({ params, columns, filters, moreFilters, onSelect, closeSelf, toolbar = true, rowHeight = 24 }) => {
     const [visible, setVisible] = useState({ drawer: { open: false } });
     const dataAPI = useDataAPI(params);
     const submitting = useSubmitting(true);
@@ -49,7 +50,6 @@ const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, clos
     const defaultParameters = {};
     const defaultFilters = {};
     const defaultSort = [];
-    const primaryKeys = keyField;
     useEffect(() => {
         const controller = new AbortController();
         loadData({ init: true, signal: controller.signal });
@@ -113,7 +113,6 @@ const Popup = ({ params, keyField, columns, filters, moreFilters, onSelect, clos
             search={true}
             moreFilters={false}
             rowSelection={false}
-            primaryKeys={primaryKeys}
             editable={false}
             toolbarFilters={{
                 filters: <Filters filters={filters} />,
@@ -143,9 +142,11 @@ const ForView = ({ forViewBorder, minHeight, forViewBackground, style, onDoubleC
 
 }
 
-export default React.forwardRef(({ data, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, ...rest }, ref) => {
+export default React.forwardRef(({ data, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear,...rest }, ref) => {
+    const dataAPI = useDataAPI(params);
     const [internalValue, setInternalValue] = useState();
     const [modalParameters, setModalParameters] = useState({});
+    const [loaded, setLoaded] = useState(false);
     const ctx = useContext(Context);
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
@@ -158,14 +159,14 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
         );
     }, [modalParameters]);
 
-
-
-
-    useEffect(() => {
+    const loadData = async () => {
         let _value = null;
         if (typeof value === "object") {
             _value = value;
+            setLoaded(true);
+            setInternalValue(_value);
         } else if (Array.isArray(params?.payload?.data?.rows)) {
+            setLoaded(true);
             _value = params.payload.data.rows.find(v => {
                 if (Array.isArray(keyField) && v[keyField[0]] === value) {
                     return v;
@@ -176,10 +177,25 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
                 }
 
             })
+            setInternalValue(_value);
+        } else if (load && value && !loaded) {
+            setLoaded(true);
+            dataAPI.addFilters({ idSelector: value }, false);
+            const _data = await dataAPI.fetchPost();
+            if (_data?.rows && _data.rows.length > 0) {
+                _value = _data.rows[0];
+            } else {
+                _value = null;
+            }
+            setInternalValue(_value);
         }
+    }
 
-        setInternalValue(_value);
+    useEffect(() => {
+        loadData();
     }, [value]);
+
+
 
 
     const onSelectRow = (row) => {
@@ -193,8 +209,16 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
     }
 
     const onPopup = () => {
-        setModalParameters({ params, title, filters, moreFilters, columns, onSelect: onSelectRow, toolbar,rowHeight, type })
+        setModalParameters({ params, title, filters, moreFilters, columns, onSelect: onSelectRow, toolbar, rowHeight, type })
         showModal();
+    }
+
+    const clear = () => {
+        if (onClear){
+            onClear();
+        }
+        onChange(null);
+        setInternalValue(null);
     }
 
     return (
@@ -202,7 +226,9 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
             {
                 forView ?
                     <ForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} {...rest} /> :
-                    customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup }) : <StyledSearch value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} onClick={onPopup} readOnly />
+                    customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup }) :
+                        <Input value={(internalValue && textField in internalValue) && internalValue[textField]} style={{ cursor: "pointer" }} size={size} ref={ref} {...rest} onClick={onPopup} readOnly {...(allowClear && internalValue) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }} addonAfter={<SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
+                //<StyledSearch allowClear={allowClear} value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} onClick={onPopup} readOnly />
             }
             <div style={{ fontSize: "11px" }}>{((value && typeof detailText === 'function')) && detailText(value)}</div>
         </div>
