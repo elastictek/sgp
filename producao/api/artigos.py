@@ -235,7 +235,6 @@ def ArtigosCompativeisGroupsLookup(request, format=None):
     return Response(response)
 
 def ListArtigosCompativeis(request, format=None):
-    print("Server Request")
     connection = connections["default"].cursor()    
     f = Filters({**request.data['filter']})
     f.setParameters({
@@ -268,16 +267,90 @@ def ListArtigosCompativeis(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
     )
-    print(f"""
-            SELECT {cols} 
-            FROM group_artigos ga
-            JOIN producao_artigo pa ON pa.id=ga.artigo_id
-            JOIN producao_produtos pp ON pp.id=pa.produto_id
-            {f.text} {f2["text"]}
-            {dql.sort} {dql.paging}
-        """)
-    print(parameters)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
+
+def UpdateArtigosCompativeis(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if "rows" in data:
+                    for idx, item in enumerate(data.get("rows")):
+                        if item.get("group") is None:
+                            dml = db.dml(TypeDml.DELETE,None,"group_artigos",{"artigo_id":f'=={item.get("artigo_id")}'},None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                        else:
+                            item["`group`"] = item.get("group")
+                            del item["group"]
+                            dml = db.dml(TypeDml.INSERT, {**item, "t_stamp":datetime.now(),"user_id":request.user.id}, "group_artigos",None,None,False)
+                            dml.statement = f"""
+                                {dml.statement}
+                                ON DUPLICATE KEY UPDATE 
+                                    artigo_id=VALUES(artigo_id),
+                                    `group`=VALUES(`group`),
+                                    t_stamp=VALUES(t_stamp),
+                                    user_id=VALUES(user_id)
+                                """
+                            db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
+
+def ListVolumeProduzidoArtigos(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        # "group": {"value": lambda v: v.get('fgroup'), "field": lambda k, v: f'ga.{k}'},
+        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
+        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
+        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
+        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
+        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+    dql = db.dql(request.data, False,False)
+
+    cols = f"""pb.artigo_id,pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area"""
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} 
+            from producao_bobine pb 
+            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id 
+            join producao_artigo pa on pa.id=pb.artigo_id
+            left join producao_produtos pp on pp.id=pa.produto_id
+            where pb.ig_id is not null AND pb2.data between '2023-02-01' and '2023-02-28'
+            {f.text} {f2["text"]}
+            group by artigo_id
+                        {s(dql.sort)}
+            {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    print(f"""
+            SELECT {f'{cols}'} 
+            from producao_bobine pb 
+            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id 
+            join producao_artigo pa on pa.id=pb.artigo_id
+            left join producao_produtos pp on pp.id=pa.produto_id
+            where pb.ig_id is not null AND DATE(pb2.`timestamp`) between '2023-02-01' and '2023-02-28'
+            {f.text} {f2["text"]}
+            group by artigo_id
+                        {dql.sort}
+            {dql.paging}
+        """)
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
+

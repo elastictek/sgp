@@ -184,14 +184,21 @@ export default ({ setFormTitle, ...props }) => {
 
 
 
-  const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
+  const columnClass = (cellProps) => {
+    const { value, rowActive, rowIndex, data, name } = cellProps;
     if (modeEdit.datagrid && ["group"].includes(name)) {
       return tableCls.edit;
     }
     // if (["group"].includes(name)){
     //   return tableCls.error;
     // }
+
   };
+
+
+
+
+
 
   const columns = [
     ...(true) ? [{ name: 'pa.id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.id}</div> }] : [],

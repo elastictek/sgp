@@ -34,7 +34,7 @@ import { usePermission, Permissions } from "utils/usePermission";
 // import { isPrivate, LeftUserItem } from './commons';
 import { BsFillEraserFill } from 'react-icons/bs';
 
-const title = "Artigos Compatíveis";
+const title = "Volume Produzido - Artigos";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
   return (<ToolbarTitle id={auth?.user} description={title} title={<>
     <Col>
@@ -146,8 +146,8 @@ export default ({ setFormTitle, ...props }) => {
   const tableCls = useTableStyles();
   const [formFilter] = Form.useForm();
   const defaultFilters = {};
-  const defaultParameters = { method: "ListArtigosCompativeis" };
-  const defaultSort = [{ column: "pa.id", direction: "ASC" }];
+  const defaultParameters = { method: "ListVolumeProduzidoArtigos" };
+  const defaultSort = [{ column: "pb.artigo_id", direction: "ASC" }];
   const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/artigos/sql/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
   const submitting = useSubmitting(true);
 
@@ -172,68 +172,21 @@ export default ({ setFormTitle, ...props }) => {
     } */
     return false;
   }
-  // const editClass = (cellProps, { data }) => {
-  //   if (cellProps.name.startsWith("ss_")) {
-  //     if (ty?.trim() === 'in') {
-  //       cellProps.style.background = "#91caff";
-  //     } else if (ty?.trim() === 'out') {
-  //       cellProps.style.background = "#e6f4ff";
-  //     }
-  //   }
-  // }
 
-
-
-  const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
+  const columnClass = (cellProps) => {
+    const { value, rowActive, rowIndex, data, name } = cellProps;
     if (modeEdit.datagrid && ["group"].includes(name)) {
       return tableCls.edit;
     }
-    // if (["group"].includes(name)){
-    //   return tableCls.error;
-    // }
   };
 
   const columns = [
-    ...(true) ? [{ name: 'pa.id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.id}</div> }] : [],
-    ...(true) ? [{ name: 'cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
-    ...(true) ? [{ name: 'des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
-    ...(true) ? [{ name: 'group', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, editable: modeEdit.datagrid, renderEditor: (props) => <FieldGroupEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.group}</div> }] : [],
-    ...(true) ? [{ name: 'gtin', header: 'gtin', userSelect: true, defaultLocked: false, width: 150, render: (p) => <div style={{}}>{p.data?.gtin}</div> }] : [],
-    ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.core}''</div> }] : [],
-    ...(true) ? [{ name: 'lar', header: 'Largura', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.lar}mm</div> }] : [],
-    ...(true) ? [{ name: 'gsm', header: 'gsm', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.gsm}g/m2</div> }] : [],
-    ...(true) ? [{ name: 'produto_cod', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto_cod}</div> }] : [],
-    // ...(true) ? [{ name: 'num', header: 'N', userSelect: true, defaultLocked: true, frozen: true, width: 70, render: (p) => <div style={{ fontWeight: 900 }}>{p.data?.num}</div> }] : [],
-    // { name: 'dts', width: 100, header: 'Data', userSelect: true, frozen: true, render: p => dayjs(p.data.dts).format(DATE_FORMAT) },
-    // ...(true) ? [{ name: 'baction', header: '', minWidth: 45, maxWidth: 45, render: p => <Button icon={<EditOutlined />} size="small" onClick={() => onFix(p.data)} /> }] : [],
-    // ...(true) ? [{ name: 'SRN_0', header: 'Nome', userSelect: true, defaultFlex: 1, minWidth: 350, render: p => <div style={{ fontWeight: 700 }}>{`${p.data.SRN_0} ${p.data.NAM_0}`}</div> }] : [],
-    // { name: 'nt', header: 'Picagens', userSelect: true, width: 80, render: p => p.data.nt },
-    // //{ name: 'ty_01', header: '', userSelect: true, hidden: true, reportTitle: "es_01", minWidth: 35, width: 35, render: p => p.data.ty_01?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_01', width: 130, userSelect: true, header: 'P01', render: p => p.data.ss_01 && dayjs(p.data.ss_01).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_01) },
-    // //{ name: 'ty_02', header: '', userSelect: true, hidden: true, reportTitle: "es_02", minWidth: 35, width: 35, render: p => p.data.ty_02?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_02', width: 130, userSelect: true, header: 'P02', render: p => p.data.ss_02 && dayjs(p.data.ss_02).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_02) },
-    // //{ name: 'ty_03', header: '', userSelect: true, hidden: true, reportTitle: "es_03", minWidth: 35, width: 35, render: p => p.data.ty_03?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_03', width: 130, userSelect: true, header: 'P03', render: p => p.data.ss_03 && dayjs(p.data.ss_03).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_03) },
-    // //{ name: 'ty_04', header: '', userSelect: true, hidden: true, reportTitle: "es_04", minWidth: 35, width: 35, render: p => p.data.ty_04?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_04', width: 130, userSelect: true, header: 'P04', render: p => p.data.ss_04 && dayjs(p.data.ss_04).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_04) },
-    // //{ name: 'ty_05', header: '', userSelect: true, hidden: true, reportTitle: "es_05", minWidth: 35, width: 35, render: p => p.data.ty_05?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_05', width: 130, userSelect: true, header: 'P05', render: p => p.data.ss_05 && dayjs(p.data.ss_05).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_05) },
-    // //{ name: 'ty_06', header: '', userSelect: true, hidden: true, reportTitle: "es_06", minWidth: 35, width: 35, render: p => p.data.ty_06?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_06', width: 130, userSelect: true, header: 'P06', render: p => p.data.ss_06 && dayjs(p.data.ss_06).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_06) },
-    // //{ name: 'ty_07', header: '', userSelect: true, hidden: true, reportTitle: "es_07", minWidth: 35, width: 35, render: p => p.data.ty_07?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_07', width: 130, userSelect: true, header: 'P07', render: p => p.data.ss_07 && dayjs(p.data.ss_07).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_07) },
-    // //{ name: 'ty_08', header: '', userSelect: true, hidden: true, reportTitle: "es_08", minWidth: 35, width: 35, render: p => p.data.ty_08?.trim() === 'in' ? "E" : "S" },
-    // { name: 'ss_08', width: 130, userSelect: true, header: 'P08', render: p => p.data.ss_08 && dayjs(p.data.ss_08).format(DATETIME_FORMAT), onRender: (props, obj) => editableClass(props, obj, obj.data.ty_08) },
-    // ...(true) ? [{
-    //   name: 'pic', sortable: false,
-    //   minWidth: 45, width: 45,
-    //   header: "",
-    //   render: p => <Button icon={<CameraOutlined />} size="small" onClick={() => onRegistosVisuais(p)} />
-    // }] : [],
-    // /*     { name: 'name', header: 'Name', minWidth: 50, defaultFlex: 2 },
-    //     { name: 'age', header: 'Age', maxWidth: 1000, defaultFlex: 1 }, */
+    ...(true) ? [{ name: 'pb.artigo_id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.artigo_id}</div> }] : [],
+    ...(true) ? [{ name: 'pa.cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
+    ...(true) ? [{ name: 'pa.des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
+    ...(true) ? [{ name: 'produto', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto}</div> }] : [],
+    ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.area}m2</div> }] : []
   ];
-
 
   useEffect(() => {
     const controller = new AbortController();
@@ -261,9 +214,9 @@ export default ({ setFormTitle, ...props }) => {
         const vals = dataAPI.removeEmpty({ ...defaultFilters, ...values });
         const _values = {
           ...vals,
-          fgroup: getFilterValue(vals?.fgroup, 'any'),
-          fcod: getFilterValue(vals?.fcod, 'any'),
-          fdes: getFilterValue(vals?.fdes, 'any'),
+          //fgroup: getFilterValue(vals?.fgroup, 'any'),
+          //fcod: getFilterValue(vals?.fcod, 'any'),
+          //fdes: getFilterValue(vals?.fdes, 'any'),
           //f1: getFilterValue(vals?.f1, 'any'),
           //f2: getFilterRangeValues(vals?.f2?.formatted)
         };
@@ -293,15 +246,14 @@ export default ({ setFormTitle, ...props }) => {
   const onSave = async (mode) => {
     const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
     submitting.trigger();
-    let response=null;
     try {
-      response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
-      if (response.data.status !== "error") {
-        dataAPI.update(true);
-        openNotification(response.data.status, 'top', "Notificação", response.data.title);
-      } else {
-        openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
-      }
+      // let response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
+      // if (response.data.status !== "error") {
+      //   openNotification(response.data.status, 'top', "Notificação", response.data.title);
+      //   changeMode();
+      // } else {
+      //   openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+      // }
     } catch (e) {
       openNotification(response.data.status, 'top', "Notificação", e.message, null);
     } finally {
@@ -313,16 +265,13 @@ export default ({ setFormTitle, ...props }) => {
     <>
       {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
       <Table
+        idProperty="artigo_id"
         loadOnInit={true}
         pagination="remote"
         defaultLimit={20}
         columns={columns}
         dataAPI={dataAPI}
-        editable={{
-          enabled: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
-          onSave: () => onSave("update"),
-          editKey: "datagrid", setModeEdit, modeEdit, onEditComplete
-        }}
+        editable={{enabled: false}}
         //enableFiltering={false} //Column Filter...
         //defaultFilterValue={defaultFilterValue}
         moreFilters={true}

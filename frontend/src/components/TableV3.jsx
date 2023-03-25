@@ -12,7 +12,7 @@ import sizeMe from 'react-sizeme';
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
 import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox, Empty, Tag, Badge } from "antd";
-import Icon, { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined, ReloadOutlined, EllipsisOutlined, FilterOutlined, SettingOutlined, SearchOutlined, FileFilled } from '@ant-design/icons';
+import Icon, { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined, ReloadOutlined, EllipsisOutlined, FilterOutlined, SettingOutlined, SearchOutlined, FileFilled, RollbackOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
 import ResultMessage from 'components/resultMessage';
@@ -47,6 +47,12 @@ const Table = styled(ReactDataGrid)`
 `;
 
 export const useTableStyles = createUseStyles({
+    error: {
+        background: "#ff4d4f52"
+    },
+    rowNotValid: {
+        background: "#ffe7ba !important"
+    },
     edit: {
         position: "relative",
         '&:before': {
@@ -97,7 +103,15 @@ const Action = ({ dataAPI, content, ...props }) => {
     )
 }
 
-const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports,modeEdit }) => {
+const editMode = (obj = {}) => {
+    const { editKey = "datagrid", modeEdit } = obj;
+    if (modeEdit) {
+        return modeEdit[editKey];
+    }
+    return false;
+}
+
+const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
         console.log(e.target)
@@ -188,7 +202,7 @@ const ResponsiveItem = ({ id, containerProps, children, maxHeight = 24, colWidth
     );
 }
 
-const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content,modeEdit }) => {
+const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content, modeEdit }) => {
     const countFilters = Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length;
     return (
         <Form style={{}} form={form} name={`f-ltf`} onFinish={(values) => { onFinish("filter", values); }} onValuesChange={onValuesChange} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
@@ -301,7 +315,31 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
     );
 }
 
-export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editComplete, ...props }) => {
+const EditControls = ({ editable = {}, dataAPI }) => {
+    const { enabled = false, editKey = "datagrid", modeEdit, onSave, setModeEdit } = editable;
+    const changeMode = () => {
+        if (editMode(editable)) {
+            dataAPI.setAction("cancel", true);
+            dataAPI.update(true);
+        } else {
+            dataAPI.setAction("edit", true);
+            dataAPI.update(true);
+        }
+        setModeEdit({ [editKey]: (modeEdit[editKey]) ? false : true });
+    }
+    return (<>
+        {enabled &&
+            <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
+                {!editMode(editable) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                {(editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
+                {(editMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >Guardar</Button>}
+            </Space>}
+    </>
+    )
+}
+
+export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName,idProperty="id", ...props }) => {
+    const classes = useTableStyles();
     const gridStyle = { minHeight: '100%', fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [isSettingsDirty, setSettingsIsDirty] = useState(false);
@@ -309,30 +347,68 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
     /* const [initLoaded, setInitLoaded] = useState(false); //Indica se a datagrid já fez o load inicial */
     const [gridRef, setGridRef] = useState(null);
     const action = useRef(null);
+    const initialized = useRef(false);
+
+
+    const rowClass = ({ data }) => {
+        if (data?.rowvalid === 0) {
+            return classes.rowNotValid;
+        }
+        if (typeof rowClassName === "function") {
+            return rowClassName({ data });
+        }
+    }
 
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
         let dt = { data: [], count: 0 };
-        if (modeEdit || ["editcomplete"].includes(action?.current)) {
-            dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
-            action.current = null;
+        if (!dataAPI.updated()) {
             return dt;
         }
-        if (["page", "pagesize"].includes(action?.current)) {
-            dataAPI.pageSize(limit);
-            dataAPI.currentPage((skip / limit) + 1);
+        if (initialized.current && (dataAPI.getActions().includes("cancel"))) {
+            dataAPI.clearActions();
+            const _v = await dataAPI.fetchPost();
+            dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+        } else if (editMode(editable) && ["editcomplete"].includes(action?.current)) {
+            dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
+        } else if (initialized.current && (dataAPI.getActions().includes("edit"))) {
+            dataAPI.clearActions();
+            dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
+            //const _v = await dataAPI.fetchPost();
+            //dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+        } else if (initialized.current && (dataAPI.getActions().includes("filter"))) {
+            dataAPI.clearActions();
+            const _v = await dataAPI.fetchPost();
+            dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+        }
+        else if (["page", "pagesize"].includes(action?.current)) {
+            //dataAPI.pageSize(limit);
+            //dataAPI.currentPage((skip / limit) + 1);
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         } else if (["sort"].includes(action?.current)) {
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
-        } else {
+        } else if (loadOnInit && !initialized.current) {
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+            initialized.current = true;
+        } else if (initialized.current) {
+            const _v = await dataAPI.fetchPost();
+            dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+            //dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         }
         action.current = null;
         return dt;
-    }, [dataAPI.updated()]);
-    const renderPaginationToolbar = //useCallback(
+    } , [dataAPI.updated(true)]);
+
+
+    useEffect(() => {
+        if (loadOnInit) {
+            dataAPI.update();
+        }
+    }, []);
+
+    const renderPaginationToolbar = useCallback(
         (paginationProps) => {
             const removeFilter = (k) => {
                 const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
@@ -360,19 +436,14 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
                     >
                         <FilterTags dataAPI={dataAPI} removeFilter={removeFilter} />
                     </ResponsiveItem>
-
-
-
-
-
                     {/* <ResponsiveItem maxHeight={24} id="pag" button={<Button size="small">Filtros</Button>} containerProps={{ xs: 2, md: 6 }} n={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}><FilterTags dataAPI={dataAPI} removeFilter={removeFilter} /></ResponsiveItem> */}
-                    <Col xs={10} md={6}><PaginationToolbar {...paginationProps} {...paginationI18n} bordered={false} /></Col>
+                    <Col xs={10} md={6}><PaginationToolbar {...paginationProps} skip={dataAPI.getSkip()} {...paginationI18n} bordered={false} /></Col>
                 </Row>
             </Container>
-        }//, [dataAPI.getTimeStamp()])
+        }, [/* dataAPI.getSkip(false) */])
 
     const onKeyDown = (event) => {
-        if (modeEdit) {
+        if (editMode(editable)) {
             return
         }
         const grid = gridRef.current
@@ -407,32 +478,36 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
         if (rowIndex < 0 || rowIndex === rowCount) {
             return
         }
-
         grid.setActiveCell([rowIndex, colIndex])
     }
     const onSkipChange = (skip) => {
-        action.current = "page";
-        dataAPI.currentPage(skip / dataAPI.getPageSize(), true);
+        if (action.current !== "editcomplete") {
+            action.current = "page";
+            dataAPI.currentPage((skip / dataAPI.getPageSize()) + 1);
+        }
     }
     const onLimitChange = (limit) => {
+        console.log("limit")
         action.current = "pagesize";
         dataAPI.pageSize(limit, true);
     }
     const onSortChange = (sortInfo) => {
+        console.log("sort")
+        onSkipChange(dataAPI.getSkip(true)); //It's necessary, because every time we trigger the onSortChange event, also, the event onSkipChange is triggered too, in first place. This replace the original skip position.
         action.current = "sort";
         dataAPI.setSort(Array.isArray(sortInfo) ? sortInfo : [sortInfo], [], true);
     }
     const onFilterValueChange = (filterValue) => {
+        console.log("filter")
         action.current = "filter";
-        console.log("filter", filterValue);
     }
     const onEditComplete = (v) => {
+        onSkipChange(dataAPI.getSkip(true));
         action.current = "editcomplete";
-        editComplete(v);
+        if (typeof editable?.onEditComplete === "function") {
+            editable?.onEditComplete(v);
+        }
     }
-
-
-
     const hideSettings = () => {
         setClickSettings(false);
     }
@@ -452,7 +527,6 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
     }
 
     return (<>
-        {/*         <Form form={formFilter} style={{ height: "80%" }}> */}
         {(moreFilters && toolbarFilters?.moreFilters) &&
             <FilterDrawer
                 setShowFilter={setShowMoreFilters} showFilter={showMoreFilters} dataAPI={dataAPI}
@@ -468,11 +542,17 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
             <Row align='start' wrap="nowrap" gutterWidth={15}>
                 {title && <Col xs="content">
                     <Row><Col>{title}</Col></Row>
-                    <Row><Col>{leftToolbar && leftToolbar}</Col></Row>
+                    <Row><Col>
+                        <EditControls dataAPI={dataAPI} editable={editable} />
+                        {leftToolbar && leftToolbar}
+                    </Col></Row>
                 </Col>
                 }
-                {!title && <Col xs="content" style={{ alignSelf: "end" }}>{leftToolbar && leftToolbar}</Col>}
-                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={modeEdit}/>}</Col>
+                {!title && <Col xs="content" style={{ alignSelf: "end" }}>
+                    <EditControls dataAPI={dataAPI} editable={editable} />
+                    {leftToolbar && leftToolbar}
+                </Col>}
+                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} />}</Col>
                 {/* {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end", marginBottom: "4px" }}><Badge count={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length} size="small"><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge></Col>} */}
                 {settings && <Col xs="content" style={{ alignSelf: "end", marginBottom: "4px" }}>
 
@@ -481,7 +561,7 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
                         onOpenChange={handleSettingsClick}
                         placement="bottomRight" title="Opções"
                         content={
-                            <ContentSettings modeEdit={modeEdit} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
+                            <ContentSettings modeEdit={editMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                 dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} /* setPageSize={updatePageSize} */ reportTitle={reportTitle}
                                 moreFilters={moreFilters} reports={reports} clearSort={clearSort}
                             />
@@ -496,12 +576,12 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
 
         <div style={{ height: `calc(100vh - ${offsetHeight})` }}>
             <Table
+                idProperty={idProperty}
                 i18n={i18n}
                 renderPaginationToolbar={renderPaginationToolbar}
                 filterRowHeight={40}
                 headerHeight={headerHeight}
                 handle={setGridRef}
-                idProperty="id"
                 columns={columns}
                 rowHeight={rowHeight}
                 dataSource={dataSource}
@@ -512,17 +592,17 @@ export default ({ dataAPI, columns, modeEdit = false, loadOnInit = false, onPage
                 onLimitChange={onLimitChange}
                 onSortInfoChange={onSortChange}
                 onEditComplete={onEditComplete}
+                rowClassName={rowClass}
                 /* filterValue={[{ ...dataAPI.getFilter(true) }]} */
                 onFilterValueChange={onFilterValueChange}
-                limit={dataAPI.getPageSize(true)}
-                sortInfo={dataAPI.getSort(true)}
+                limit={dataAPI.getPageSize()}
+                sortInfo={dataAPI.getSort()}
                 enableFiltering={false}
                 {...props}
-                {...modeEdit && {pagination:false}}
-                {...modeEdit && {sortable:false}}
+                {...editMode(editable) && { pagination: false }}
+                {...editMode(editable) && { sortable: false }}
             />
         </div>
-        {/*         </Form> */}
     </>
     );
 }

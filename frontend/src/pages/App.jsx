@@ -58,6 +58,7 @@ const PaletesList = lazy(() => import('./paletes/PaletesList'));
 const BasePick = lazy(() => import('./picking/BasePick'));
 const CheckLists = lazy(() => import('./ordensfabrico/CheckLists'));
 const ArtigosCompativeis = lazy(() => import('./artigos/ArtigosCompativeis'));
+const ArtigosProducao = lazy(() => import('./artigos/ArtigosProducao'));
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -146,6 +147,7 @@ const RenderRouter = () => {
                 { path: "artigos/granuladolist", element: <Suspense fallback={<Spin />}><GranuladoList /></Suspense> },
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
                 { path: "artigos/artigoscompativeis", element: <Suspense fallback={<Spin />}><ArtigosCompativeis /></Suspense> },
+				{ path: "artigos/artigosproducao", element: <Suspense fallback={<Spin />}><ArtigosProducao /></Suspense> },
                 
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },

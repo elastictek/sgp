@@ -29,6 +29,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         ...getLocalStorage(id, useStorage)
     });
     const ref = useRef({
+        initLoaded: payload?.initLoaded || false,
+        update: null,
         pagination: payload?.pagination ? { ...payload.pagination } : { enabled: false, pageSize: 10 },
         filter: payload?.filter ? { ...payload.filter } : {},
         defaultSort: payload?.sort || [],
@@ -84,9 +86,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             });
         }
     }
-    const currentPage = (page = 1, updateStateData = false) => {
+    const currentPage = (page = 0, updateStateData = false) => {
         addAction('nav');
-        ref.current.pagination = { ...ref.current.pagination, page: ((page <= 1) ? 1 : page) };
+        ref.current.pagination = { ...ref.current.pagination, page: ((page <= 0) ? 0 : page) };
         if (updateStateData) {
             updateState(draft => {
                 draft.pagination = ref.current.pagination;
@@ -237,6 +239,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return ref.current;
         }
     }
+    const getSkip = (fromState = false) => {
+        if (fromState) {
+            return (state.pagination.page - 1) * state.pagination.pageSize;
+        } else {
+            return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
+        }
+    };
     const getPagination = (fromState = false) => {
         if (fromState) {
             return { ...state.pagination };
@@ -270,9 +279,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== null && v !== '' && v !== undefined));
     }
 
-    const update = (payload = {}) => {
+    const update = (keepAction = false, payload = {}) => {
+        ref.current.updated = Date.now();
         updateState(draft => {
-            draft.updated = Date.now();
+            draft.updated = ref.current.updated;
             draft.pagination = ref.current.pagination;
             draft.filter = ref.current.filter;
             draft.sort = ref.current.sort;
@@ -290,12 +300,15 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             if (payload?.url) { draft.url = payload?.url; }
 
         });
-        action.current = [];
+        if (!keepAction) {
+            action.current = [];
+        }
     }
 
     const setData = (data, payload) => {
+        ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
         updateState(draft => {
-            draft.initLoaded = (draft.initLoaded === false) ? true : draft.initLoaded;
+            draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
             //draft.updated = Date.now();
             draft.pagination = ref.current.pagination;
@@ -363,14 +376,17 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const updateValue = (row, column, value) => {
         let _rows = [...state.data.rows];
         if (_rows[row] && column in _rows[row]) {
-            let _obj = { ..._rows[row]};
-            _obj[column] = value;
-            _obj["rowvalid"] = 0;
-            _rows[row] = { ..._obj };
-            updateState(draft => {
-                draft.updated = Date.now();
-                draft.data = { rows: [..._rows], total: state.data.total };
-            });
+            if (_rows[row][column] !== value) {
+                let _obj = { ..._rows[row] };
+                _obj[column] = value;
+                _obj["rowvalid"] = 0;
+                _rows[row] = { ..._obj };
+                ref.current.updated = Date.now();
+                updateState(draft => {
+                    draft.updated = ref.current.updated;
+                    draft.data = { rows: [..._rows], total: state.data.total };
+                });
+            }
         }
     }
     const clearData = () => {
@@ -382,7 +398,40 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const getData = () => {
         return { ...state.data };
     }
-    const _fetchPost = ({ url, withCredentials = null, token, signal, rowFn, fromSate = false } = {}) => {
+    // const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false } = {}) => {
+    //     console.log("FETCH POST-------")
+    //     let _url = (url) ? url : ref.current.url;
+    //     let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
+    //     const payload = getPayload(fromSate);
+    //     payload.tstamp = Date.now();
+    //     setIsLoading(true);
+    //     let ret = null;
+    //     //let ok = true;
+    //     if (id && useStorage) {
+    //         localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
+    //     }
+    //     try {
+    //         const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, ...((signal) ? { signal } : { cancelToken: token }) })).data;
+    //         if (typeof rowFn === "function") {
+    //             ret = await rowFn(dt);
+    //             setData(ret, payload);
+    //         } else if (typeof fnPostProcess === "function") {
+    //             ret = await fnPostProcess(dt);
+    //             setData(ret, payload);
+    //         } else {
+    //             ret = dt;
+    //             setData(ret, payload);
+    //         }
+    //     } catch (e) {
+    //         Modal.error({ content: e.message });
+    //         //ok = false;
+    //         ret = null;
+    //     }
+    //     setIsLoading(false);
+    //     return ret;
+    //     //return ok;
+    // }
+    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
         const payload = getPayload(fromSate);
@@ -457,14 +506,37 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const getTimeStamp = () => {
         return state.tstamp;
     }
-    const updated = () => {
-        return state.updated;
+    const updated = (fromState = false) => {
+        if (fromState) {
+            return state.updated;
+        }
+        else {
+            return ref.current.updated;
+        }
+    }
+    const initLoaded = (fromState = false) => {
+        if (fromState) {
+            return state.initLoaded;
+        }
+        else {
+            return ref.current.initLoaded;
+        }
     }
 
     const dirtyRows = () => {
         return (state.data.rows) ? state.data.rows.filter(v => v?.rowvalid === 0) : [];
     }
 
+    const setAction = (v, assign = false) => {
+        if (assign) {
+            action.current = [v];
+        } else {
+            action.current = [...action.current, v];
+        }
+    }
+    const clearActions = () => {
+        action.current = [];
+    }
 
 
     return {
@@ -474,6 +546,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         last,
         dirtyRows,
         currentPage,
+        getSkip,
         pageSize,
         setRows,
         addRow,
@@ -500,9 +573,12 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getSort,
         getData,
         sortOrder,
-        initLoaded: () => state.initLoaded,
+        initLoaded,
         nav,
         url,
+        setAction,
+        getActions: () => action.current,
+        clearActions,
         isActionPageSize: () => isAction('pageSize'),
         fetchPost: _fetchPost,
         isLoading: () => _isLoading(),

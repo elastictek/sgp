@@ -139,6 +139,11 @@ export default ({ dark = false }) => {
                 <Permissions permissions={permission} item="armazem" action="F"><Button size='small' type="link" onClick={() => navigate('/app/expedicoes/timearmazem', {})} title="B">Relatório de Expedições Mensal</Button></Permissions>
                 </Panel>
             </Permissions>
+			    <Permissions permissions={permission} item="reports" key="7" clone>
+                <Panel header={<b>Relatórios</b>} key="7">
+					<Permissions permissions={permission} item="reports" action="A"><Button size='small' type="link" onClick={() => navigate('/app/artigos/artigosproducao', {})} title="E">Volume Produzido - Artigos</Button></Permissions>
+                </Panel>
+            </Permissions>
         </StyledCollapse>
 
     );
