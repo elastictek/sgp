@@ -11,12 +11,13 @@ import sizeMe from 'react-sizeme';
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import Portal from "components/portal";
-import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox, Empty, Tag, Badge } from "antd";
+import { Button, Form, Space, Input, InputNumber, Tooltip, Popover, Dropdown, Menu, Divider, Select, Checkbox, Empty, Tag, Badge, notification } from "antd";
 import Icon, { LoadingOutlined, EditOutlined, CompassOutlined, InfoCircleOutlined, ReloadOutlined, EllipsisOutlined, FilterOutlined, SettingOutlined, SearchOutlined, FileFilled, RollbackOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
 import ResultMessage from 'components/resultMessage';
 import { Report } from "components/DownloadReports";
+import { uid } from 'uid';
 import Pagination from 'components/Paginator';
 import Spin from "./Spin";
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
@@ -31,6 +32,15 @@ import PaginationToolbar from '@inovua/reactdatagrid-community/packages/Paginati
 import '@inovua/reactdatagrid-enterprise/index.css';
 import { props } from 'ramda';
 
+const openNotification = (type, messages = []) => {
+    if (messages.length > 0) {
+        notification.open({
+            placement:"top",
+            message: type==="error" ? <b>Erros</b> : <b>Avisos</b>,
+            description:<ul>{messages.map((v,i)=><li key={`msg-${i}`}>{v}</li>)}</ul>,
+        });
+    }
+};
 
 const Table = styled(ReactDataGrid)`
     .InovuaReactDataGrid__header{
@@ -48,7 +58,7 @@ const Table = styled(ReactDataGrid)`
 
 export const useTableStyles = createUseStyles({
     error: {
-        background: "#ff4d4f52"
+        background: "#ff4d4f52 !important"
     },
     rowNotValid: {
         background: "#ffe7ba !important"
@@ -104,14 +114,21 @@ const Action = ({ dataAPI, content, ...props }) => {
 }
 
 const editMode = (obj = {}) => {
-    const { editKey = "datagrid", modeEdit } = obj;
-    if (modeEdit) {
-        return modeEdit[editKey];
+    const { modeKey = "datagrid", mode } = obj;
+    if (mode) {
+        return mode[modeKey]?.edit;
+    }
+    return false;
+}
+const addMode = (obj = {}) => {
+    const { modeKey = "datagrid", mode } = obj;
+    if (mode) {
+        return mode[modeKey]?.add;
     }
     return false;
 }
 
-const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit }) => {
+const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit, modeAdd }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
         console.log(e.target)
@@ -120,9 +137,9 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, se
     return (
         <div style={{ display: "flex", flexDirection: "column" }}>
             <Menu onClick={(v) => onClick(v)} items={[
-                (!modeEdit) && { label: 'Atualizar', key: 'refresh', icon: <ReloadOutlined />, data: {} },
-                (clearSort && !modeEdit) && { label: 'Limpar Ordenação', key: 'cleansort', icon: <Icon component={ClearSort} />, data: {} },
-                (moreFilters && !modeEdit) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} }
+                (!modeEdit && !modeAdd) && { label: 'Atualizar', key: 'refresh', icon: <ReloadOutlined />, data: {} },
+                (clearSort && !modeEdit && !modeAdd) && { label: 'Limpar Ordenação', key: 'cleansort', icon: <Icon component={ClearSort} />, data: {} },
+                (moreFilters && !modeEdit && !modeAdd) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} }
             ]}></Menu>
             <Divider style={{ margin: "8px 0" }} />
             {/* {dataAPI.getPagination(true).enabled && <div style={{ display: "flex", flexDirection: "row" }}>
@@ -202,11 +219,11 @@ const ResponsiveItem = ({ id, containerProps, children, maxHeight = 24, colWidth
     );
 }
 
-const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content, modeEdit }) => {
+const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content, modeEdit, modeAdd }) => {
     const countFilters = Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length;
     return (
         <Form style={{}} form={form} name={`f-ltf`} onFinish={(values) => { onFinish("filter", values); }} onValuesChange={onValuesChange} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
-            <FormContainer style={{ paddingRight: "0px" }} id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={!modeEdit} fluid>
+            <FormContainer style={{ paddingRight: "0px" }} id="LAY-TOOLBAR-FILTERS" wrapForm={false} form={form} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={!modeEdit && !modeAdd} fluid>
                 <Row gutterWidth={2} style={{}} >
                     <ResponsiveItem
                         checkHeight={false}
@@ -216,7 +233,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
                         rowProps={{ style: { display: "flex" } }}
                         colProps={{ style: { alignSelf: "end", marginBottom: "4px", marginTop: "7px" } }}
                         defaultCol={
-                            <Badge count={countFilters} size="small"><Button disabled={modeEdit} onClick={() => (form) && onFinish("filter", form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge>
+                            <Badge count={countFilters} size="small"><Button disabled={modeEdit || modeAdd} onClick={() => (form) && onFinish("filter", form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge>
                         }
                         popover={
 
@@ -308,37 +325,87 @@ const defaultMoreFilters = () => ({
 const FilterTags = ({ dataAPI, removeFilter, style }) => {
     return (
         <div style={{ ...style }}>
-            {dataAPI.getFilter(true) && Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).map(v =>
-                <Tag key={`ftag-${v}`} color="blue" closable onClose={() => removeFilter(v)}>{dataAPI.getFilter(true)[v]}</Tag>
+            {dataAPI.getAllFilter() && Object.keys(dataAPI.removeEmpty(dataAPI.getAllFilter())).map(v =>
+                <Tag key={`ftag-${v}`} color="blue" closable onClose={() => removeFilter(v)}>{dataAPI.getAllFilter()[v]}</Tag>
             )}
         </div>
     );
 }
 
-const EditControls = ({ editable = {}, dataAPI }) => {
-    const { enabled = false, editKey = "datagrid", modeEdit, onSave, setModeEdit } = editable;
-    const changeMode = () => {
+const EditControls = ({ editable = {}, dataAPI, columns, idProperty,dirty }) => {
+    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, setGridStatus, gridStatus } = editable;
+
+
+    const changeMode = async () => {
+        if (addMode(editable)) {
+            dataAPI.setAction("cancel", true);
+            setGridStatus({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
+            
+            const _v = { ...mode[modeKey], add: false };
+            setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
+            let _update=true;
+            if (editable?.onCancel && (typeof editable.onCancel==="function")){
+                _update=editable.onCancel();
+            }
+            if (_update!==false){
+                dataAPI.update(true);
+            }            
+            return;
+        }
+
         if (editMode(editable)) {
             dataAPI.setAction("cancel", true);
-            dataAPI.update(true);
+            setGridStatus({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
+            let _update=true;
+            if (editable?.onCancel && (typeof editable.onCancel==="function")){
+                _update=await editable.onCancel();
+            }
+            if (_update!==false){
+                dataAPI.update(true);
+            }            
         } else {
             dataAPI.setAction("edit", true);
             dataAPI.update(true);
         }
-        setModeEdit({ [editKey]: (modeEdit[editKey]) ? false : true });
+        const _v = { ...mode[modeKey], edit: mode[modeKey].edit ? false : true };
+        setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
     }
+    const _onAdd = () => {
+        if (typeof onAdd === "function") {
+            const cols = { ...columns.reduce((acc, curr) => { acc[curr?.id ? curr?.id : curr.name] = null; return acc; }, {}), [idProperty]: `*${uid(4)}` };
+            onAdd(cols);
+        }
+        // if (addMode(editable)) {
+        //     dataAPI.setAction("cancel", true);
+        //     dataAPI.update(true);
+        // } else {
+        dataAPI.setAction("add", true);
+        dataAPI.update(true);
+        // }
+        const _v = { ...mode[modeKey], add: true };
+        //const _v = { ...mode[modeKey], add: mode[modeKey].add ? false : true };
+        setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
+    }
+    const showMessages = (type) => {
+        openNotification(type,dataAPI.getMessages(gridStatus)[type]);
+    }
+
     return (<>
-        {enabled &&
-            <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
-                {!editMode(editable) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                {(editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
-                {(editMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >Guardar</Button>}
-            </Space>}
+        <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
+            {(gridStatus?.errors > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={()=>showMessages("error")}><Badge count={gridStatus.errors} /></a>}
+            {(gridStatus?.warnings > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={()=>showMessages("warning")}><Badge count={gridStatus.warnings} color="#faad14" /></a>}
+            {(enabled && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+            {(add && !addMode(editable) && !editMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={_onAdd}>Novo</Button>}
+            {enabled && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
+            {enabled && ((editMode(editable) && dataAPI.dirtyRows().length > 0) || (editMode(editable) && dirty)) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >Guardar</Button>}
+            {add && (addMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
+            {add && (addMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onAddSave} >Guardar</Button>}
+        </Space>
     </>
     )
 }
 
-export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName,idProperty="id", ...props }) => {
+export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, dirty=false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: '100%', fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -351,12 +418,16 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
 
 
     const rowClass = ({ data }) => {
-        if (data?.rowvalid === 0) {
+        if (data?.rowvalid === 0 || data?.rowadded === 1) {
             return classes.rowNotValid;
         }
         if (typeof rowClassName === "function") {
             return rowClassName({ data });
         }
+    }
+
+    const localDatasource = () => {
+        return dataAPI.getData()?.rows || [];
     }
 
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
@@ -368,7 +439,10 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
             dataAPI.clearActions();
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+        } else if (addMode(editable) && dataAPI.getActions().includes("add")) {
+            dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         } else if (editMode(editable) && ["editcomplete"].includes(action?.current)) {
+            console.log("completed!!!!!")
             dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         } else if (initialized.current && (dataAPI.getActions().includes("edit"))) {
             dataAPI.clearActions();
@@ -398,8 +472,9 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
             //dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         }
         action.current = null;
+        console.log("action", dataAPI.getActions(), dt)
         return dt;
-    } , [dataAPI.updated(true)]);
+    }, [dataAPI.updated(true)]);
 
 
     useEffect(() => {
@@ -428,7 +503,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
                         colProps={{ style: { alignSelf: "end", marginBottom: "4px" } }}
                         popover={
                             <Popover trigger="click">
-                                <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}>
+                                <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI.getAllFilter())).length}>
                                     <Button size="small">Filtros</Button>
                                 </Badge>
                             </Popover>
@@ -443,23 +518,32 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
         }, [/* dataAPI.getSkip(false) */])
 
     const onKeyDown = (event) => {
-        if (editMode(editable)) {
-            return
-        }
         const grid = gridRef.current
         let [rowIndex, colIndex] = grid.computedActiveCell
+        
+        if (event.key === 'Escape'){
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
 
         if (event.key === ' ' || event.key === 'Enter') {
-            const column = grid.getColumnBy(colIndex)
-            grid.startEdit({ columnId: column.name, rowIndex })
-            event.preventDefault()
+            const column = grid.getColumnBy(colIndex);
+            grid.startEdit({ columnId: column.name, rowIndex });
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
             return
         }
-        if (event.key !== 'Tab') {
-            return
+        if (event.key !== 'Tab' && (editMode(editable) || addMode(editable))) {
+            return;
         }
-        event.preventDefault()
-        event.stopPropagation()
+        //if (event.key !== 'Tab') {
+        //    return
+        //}
+        
+        event.preventDefault();
+        event.stopPropagation();
 
         const direction = event.shiftKey ? -1 : 1
 
@@ -475,7 +559,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
             rowIndex += 1
             colIndex = 0
         }
-        if (rowIndex < 0 || rowIndex === rowCount) {
+        if (rowIndex < 0 || rowIndex > rowCount) {
             return
         }
         grid.setActiveCell([rowIndex, colIndex])
@@ -506,6 +590,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
         action.current = "editcomplete";
         if (typeof editable?.onEditComplete === "function") {
             editable?.onEditComplete(v);
+            dataAPI.update(true);
         }
     }
     const hideSettings = () => {
@@ -517,7 +602,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
     const onSettingsClick = async (type) => {
         if (type?.key) {
             switch (type.key) {
-                case 'refresh': dataAPI.fetchPost(); break;
+                case 'refresh': onRefresh ? onRefresh() : dataAPI.fetchPost(); break;
                 case 'cleansort': dataAPI.clearSort(); dataAPI.fetchPost(); break;
                 case 'morefilters': setShowMoreFilters(prev => !prev); break;
                 default: break;
@@ -540,19 +625,20 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
             />}
         {toolbar && <Container fluid style={{ background: "#f8f9fa", /* border: "1px solid #dee2e6", borderRadius: "3px", */ padding: "5px" }}>
             <Row align='start' wrap="nowrap" gutterWidth={15}>
+                <Col xs="content"></Col>
                 {title && <Col xs="content">
                     <Row><Col>{title}</Col></Row>
                     <Row><Col>
-                        <EditControls dataAPI={dataAPI} editable={editable} />
+                        <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} />
                         {leftToolbar && leftToolbar}
                     </Col></Row>
                 </Col>
                 }
                 {!title && <Col xs="content" style={{ alignSelf: "end" }}>
-                    <EditControls dataAPI={dataAPI} editable={editable} />
+                    <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty}/>
                     {leftToolbar && leftToolbar}
                 </Col>}
-                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} />}</Col>
+                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} modeAdd={addMode(editable)} />}</Col>
                 {/* {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end", marginBottom: "4px" }}><Badge count={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length} size="small"><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge></Col>} */}
                 {settings && <Col xs="content" style={{ alignSelf: "end", marginBottom: "4px" }}>
 
@@ -561,7 +647,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
                         onOpenChange={handleSettingsClick}
                         placement="bottomRight" title="Opções"
                         content={
-                            <ContentSettings modeEdit={editMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
+                            <ContentSettings modeEdit={editMode(editable)} modeAdd={addMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                 dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} /* setPageSize={updatePageSize} */ reportTitle={reportTitle}
                                 moreFilters={moreFilters} reports={reports} clearSort={clearSort}
                             />
@@ -570,12 +656,14 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
                     </Popover>
 
                 </Col>}
+                
             </Row>
         </Container>}
 
 
         <div style={{ height: `calc(100vh - ${offsetHeight})` }}>
             <Table
+                loading={loading}
                 idProperty={idProperty}
                 i18n={i18n}
                 renderPaginationToolbar={renderPaginationToolbar}
@@ -584,7 +672,7 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
                 handle={setGridRef}
                 columns={columns}
                 rowHeight={rowHeight}
-                dataSource={dataSource}
+                dataSource={local ? localDatasource : dataSource}
                 style={gridStyle}
                 defaultActiveCell={DEFAULT_ACTIVE_CELL}
                 onKeyDown={onKeyDown}
@@ -596,11 +684,11 @@ export default ({ dataAPI, columns, loadOnInit = false, onPageChange, formFilter
                 /* filterValue={[{ ...dataAPI.getFilter(true) }]} */
                 onFilterValueChange={onFilterValueChange}
                 limit={dataAPI.getPageSize()}
-                sortInfo={dataAPI.getSort()}
+                {...!local && {sortInfo:dataAPI.getSort()}}
                 enableFiltering={false}
                 {...props}
-                {...editMode(editable) && { pagination: false }}
-                {...editMode(editable) && { sortable: false }}
+                {...(editMode(editable) || addMode(editable)) && { pagination: false }}
+                {...(editMode(editable) || addMode(editable)) && { sortable: false }}
             />
         </div>
     </>

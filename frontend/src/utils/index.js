@@ -1,11 +1,19 @@
 import React, { useEffect, useState, useRef } from 'react';
 import * as R from 'ramda';
+import dayjs from 'dayjs';
+
+export const sleep = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export const useSubmitting = (val = false) => {
     const [state, setState] = useState(val);
     const currentState = useRef(val);
 
-    const trigger = () => {
+    const trigger = async (seconds) => {
+        if (seconds){
+            await sleep(seconds);
+        }
         setState(true);
     }
 
@@ -18,8 +26,11 @@ export const useSubmitting = (val = false) => {
         return ret;
     }
 
-    const end = () => {
+    const end = async (seconds) => {
         currentState.current = false;
+        if (seconds){
+            await sleep(seconds);
+        }
         setState(false);
     }
 
@@ -31,20 +42,52 @@ export const useSubmitting = (val = false) => {
 
 }
 
-export const getFilterRangeValues = (data) => {
-    var ret = [];
+export const getFilterRangeValues = (data, force = false, minTime = null, maxTime = null) => {
+    let ret = [];
+    let _minTime = "";
+    let _maxTime = "";
     if (!data?.startValue && !data?.endValue) {
         return undefined;
     }
+    if (minTime) {
+        _minTime = ` ${minTime}`;
+    }
+    if (maxTime) {
+        _maxTime = ` ${maxTime}`;
+    }
     if (data?.startValue) {
-        ret.push(`>=${data.startValue}`);
+        if (_minTime !== "") {
+            ret.push(`>=${data.startValue.split(" ")[0]}${_minTime}`);
+        } else {
+            ret.push(`>=${data.startValue}${_minTime}`);
+        }
     } else {
-        ret.push(null);
+        if (!force) {
+            ret.push(null);
+        } else {
+            if (_minTime !== "") {
+                ret.push(`>=${data.endValue.split(" ")[0]}${_minTime}`);
+            } else {
+                ret.push(`>=${data.endValue}${_minTime}`);
+            }
+        }
     }
     if (data?.endValue) {
-        ret.push(`<=${data.endValue}`);
+        if (_maxTime !== "") {
+            ret.push(`<=${data.endValue.split(" ")[0]}${_maxTime}`);
+        } else {
+            ret.push(`<=${data.endValue}${_maxTime}`);
+        }
     } else {
-        ret.push(null);
+        if (!force) {
+            ret.push(null);
+        } else {
+            if (_maxTime !== "") {
+                ret.push(`<=${data.startValue.split(" ")[0]}${_maxTime}`);
+            } else {
+                ret.push(`<=${data.startValue}${_maxTime}`);
+            }
+        }
     }
     return ret;
 }
@@ -67,10 +110,11 @@ export const getFilterForceRangeValues = (data) => {
     return ret;
 }
 
+
 //type = any | start | end | exact
-export const getFilterValue = (v, type = 'exact',caseLetter=false) => {
+export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
     let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
-    val = (val===undefined || val===null) ? val : `${val}`;
+    val = (val === undefined || val === null) ? val : `${val}`;
     if (val !== '' && val !== undefined) {
         const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
         const matches = val.toString().match(re);

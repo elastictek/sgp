@@ -167,6 +167,134 @@ def export(sql, db_parameters, parameters,conn_name):
             return resp
 
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Sql(request, format=None):
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
+    
+
+def GetGranuladoInLine(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+
+    f.setParameters({}, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    cols = f"""ROW_NUMBER() OVER () id,t.cuba,IL.vcr_num,IFNULL(IL.artigo_cod,t.matprima_cod) artigo_cod ,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,
+            IFNULL(IL.artigo_des,t.matprima_des) artigo_des,group_concat(t.doser) dosers,IL.mp_group,IL.max_in"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+            with INLINE AS(
+            select t.artigo_des,t.vcr_num, ld.*,t.qty_lote,t.qty_reminder,t.mp_group ,t.densidade ,t.max_in from(
+            select 
+            LAST_VALUE(lg.id) OVER (PARTITION BY vcr_num ORDER BY lg.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+            lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
+            from lotesgranuladolinha lg
+            left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
+            )t
+            join lotesdoserslinha ld on ld.loteslinha_id=t.id
+            where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+            ),
+            FORMULACAO AS(
+            select formulacaov2
+            from producao_currentsettings cs
+            where status=3
+            ),
+            FORMULACAO_DOSERS AS(
+            SELECT doser,matprima_cod, arranque,cuba,matprima_des
+            FROM FORMULACAO F,
+            JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            WHERE doser is not null and arranque>0
+            )
+            SELECT {c(f'{dql.columns}')} FROM(
+            SELECT FR.cuba,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,FR.matprima_des,FR.doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            FROM FORMULACAO_DOSERS FR
+            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser) t
+            LEFT JOIN INLINE IL ON (IL.artigo_cod=t.matprima_cod or IL.mp_group=t.mp_group) AND IL.doser=t.doser
+            group by t.cuba,IFNULL(IL.artigo_cod,t.matprima_cod),IL.vcr_num,IL.mp_group,IL.max_in,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(IL.artigo_des,t.matprima_des)
+            {s(dql.sort)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeList(sql, connection, parameters)
+    except Exception as error:
+        print(error)
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def GetGranuladoLoteQuantity(request, format=None):
+    conngw = connections[connGatewayName].cursor()
+    sageAlias = dbgw.dbAlias.get("sage")
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    values = request.data['filter'].get("value")
+    rows = dbgw.executeSimpleList(lambda:(f"""
+        SELECT * FROM(
+        SELECT
+            ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",mprima."ITMDES1_0" artigo_des,
+            LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) "QTYPCU_0",
+            --SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+            ST."PCU_0",mprima."ITMDES1_0"
+            FROM {sageAlias}."STOCK" STK
+            JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            WHERE ST."VCRNUM_0"='{values[4]}'
+        ) t
+        where ("QTYPCU_0" > 0)
+        and "LOC_0" in ('BUFFER')
+        AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = "VCRNUM_0")
+    """),conngw,{})["rows"]
+    if len(rows)>0:            
+        conn = connections["default"].cursor()
+        rowsx = db.executeSimpleList(lambda:(f"""select id from lotesgranuladolinha where n_lote = '{values[1]}' and artigo_cod='{values[0]}' and vcr_num='{values[4]}'"""),conn,{})['rows']
+        if len(rowsx)>0:
+            return Response({"status": "error", "title": "O lote de Granulado já foi registado!", "subTitle":f'{None}',"row":{"qty_lote":values[2],"unit":values[3], "n_lote":values[1]}})
+        obs = values[5] if len(values)>5 else ''
+        return Response({"status": "success","row":{"lote_id":rows[0]["lote_id"],"obs":obs, "artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }})
+    else:
+        return Response({"status": "error", "title": "O lote de Granulado não se enconta em buffer!", "subTitle":f'{None}',"row":{"qty_lote":0, "unit":values[3], "n_lote":values[1]}})
+
+def AddGranuladoToLine(request, format=None):
+    filter = request.data['filter']
+    try:
+        filter["t_stamp"]=datetime.now()
+        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter else None,request.user.id,0)
+        print(args)
+        #cursor.callproc('add_granulado_to_line',args)
+        return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def RemoveGranuladoFromLine(request, format=None):
+    filter = request.data['filter']
+    try:
+        filter["t_stamp"]=datetime.now()
+        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
+        print("outtttttttt")
+        print(args)
+        #cursor.callproc('output_granulado_from_line',args)
+        return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+
+
 
 
 def inProduction(data,cursor):

@@ -685,7 +685,7 @@ const Action = ({ v, r, dataAPI }) => {
                 title = `Imprimir Packing List Detalhado <Excel> ${r.prf}`;
                 break;
         }
-        modal.show({ propsToChild: true, width: '500px', height: '320px', title, onOk: () => onDownload({ type, r, ...rest }), content: <PackingListForm form={form} downloading={false} r={{ ...r, produto_cod: r.item_nome.substring(0, r.item_nome.lastIndexOf(' L')) }} /> });
+        modal.show({ propsToChild: true, width: '500px', height: '320px', title, onOk: () => onDownload({ type, r, ...rest }), content: <PackingListForm form={form} downloading={false} r={{ ...r, produto_cod: r.produto_cod }} /> });
         return false;
     }
 

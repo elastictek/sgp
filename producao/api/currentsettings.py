@@ -173,6 +173,23 @@ def export(sql, db_parameters, parameters,conn_name):
                 resp['Content-Disposition'] = "inline; filename=list.csv"
             return resp
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Sql(request, format=None):
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
+    
+
 
 def getCurrentSettingsId():
     with connections["default"].cursor() as cursor:
@@ -364,11 +381,7 @@ def AuditCurrentSettingsGet(request, format=None):
         ), cursor, parameters)
         return Response(response)
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def CurrentSettingsGet(request, format=None):
+def GetCurrentSettings(request, format=None):
     cols = ['''
         `id`,`gamaoperatoria`,`nonwovens`,`artigospecs`,`cortes`,`cortesordem`,`cores`,`paletizacao`,`emendas`,`ofs`,`paletesstock`,`status`,`observacoes`,
         `start_prev_date`,`end_prev_date`,`horas_previstas_producao`,`sentido_enrolamento`,`amostragem`,`agg_of_id`,`user_id`,`gsm`,`produto_id`,`produto_cod`,`lotes`,
@@ -398,15 +411,14 @@ def CurrentSettingsGet(request, format=None):
                 {dql.sort}
             """
         ), cursor, parameters)
-        print(f"""
-                select 
-                {dql.columns}
-                from producao_currentsettings
-                {f.text}
-                {dql.sort}
-            """)
-        print(parameters)
         return Response(response)
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def CurrentSettingsGet(request, format=None):
+    return GetCurrentSettings(request, format=None)
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

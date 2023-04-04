@@ -322,7 +322,7 @@ def OFabricoList(request, format=None):
         oflist.n_paletes_stock_in || '/' || sgp_op.num_paletes_stock stock,oflist.n_paletes_total || '/' || sgp_op.num_paletes_total total,
         sgp_op.retrabalho, oflist.start_date, oflist.end_date, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
         oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.status,
-        sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
+        COALESCE(sgp_ac.produto,sgp_p.produto_cod) produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
         sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
 		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,oflist.matricula,oflist.matricula_reboque,oflist.modo_exp
     """
@@ -343,6 +343,7 @@ def OFabricoList(request, format=None):
         LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
         LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = oflist.item
         LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
+        LEFT JOIN {sgpAlias}.producao_artigocliente sgp_ac on sgp_ac.cliente_id = oflist.cliente_id and sgp_ac.artigo_id=sgp_a.id
         WHERE 
         NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
         {statusFilter(request.data['filter'])}

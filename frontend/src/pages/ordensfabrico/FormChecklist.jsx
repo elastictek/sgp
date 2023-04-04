@@ -48,7 +48,7 @@ const loadChecklistLookup = async (checklist_id) => {
     return data;
 }
 const loadChecklistItemsLookup = async (checklist_id) => {
-    const { data } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { enabled: true }, filter: { checklist_id: `==${checklist_id}` }, parameters: { method: "ChecklistItemsLookup" } });
+    const { data } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { enabled: true,pageSize:50 }, filter: { checklist_id: `==${checklist_id}` }, parameters: { method: "ChecklistItemsLookup" } });
     return data;
 }
 

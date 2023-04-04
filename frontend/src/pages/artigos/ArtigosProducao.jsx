@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -23,6 +23,7 @@ import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
+import {RightAlign} from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -52,12 +53,15 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
 const useStyles = createUseStyles({});
 
 const schema = (options = {}) => {
-  return getSchema({}, options).unknown(true);
+  return getSchema({
+    start: Joi.date().label("Data Início").required(),
+    end: Joi.date().label("Data Fim").greater(Joi.ref('start')).required()
+  }, options).unknown(true);
 }
 const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
   return (<>
     {true && <>
-      <Col width={100}>
+      {/*       <Col width={100}>
         <Field name="fgroup" shouldUpdate label={{ enabled: true, text: "Grupo", pos: "top", padding: "0px" }}>
           <Input size='small' allowClear />
         </Field>
@@ -70,6 +74,11 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
       <Col width={100}>
         <Field name="fdes" shouldUpdate label={{ enabled: true, text: "Artigo Des.", pos: "top", padding: "0px" }}>
           <Input size='small' allowClear />
+        </Field>
+      </Col> */}
+      <Col xs='content'>
+        <Field shouldUpdate name="fdata" label={{ enabled: true, text: "Data", pos: "top", padding: "0px" }}>
+          <RangeDateField size='small' allowClear />
         </Field>
       </Col>
     </>}
@@ -148,7 +157,7 @@ export default ({ setFormTitle, ...props }) => {
   const defaultFilters = {};
   const defaultParameters = { method: "ListVolumeProduzidoArtigos" };
   const defaultSort = [{ column: "pb.artigo_id", direction: "ASC" }];
-  const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/artigos/sql/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
+  const dataAPI = useDataAPI({ id: props.id || "list-artigos-producao", payload: { url: `${API_URL}/artigos/sql/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
   const submitting = useSubmitting(true);
 
   const [modalParameters, setModalParameters] = useState({});
@@ -185,7 +194,7 @@ export default ({ setFormTitle, ...props }) => {
     ...(true) ? [{ name: 'pa.cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
     ...(true) ? [{ name: 'pa.des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
     ...(true) ? [{ name: 'produto', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto}</div> }] : [],
-    ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.area}m2</div> }] : []
+    ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, width: 90, render: (p) => <RightAlign unit="m2">{p.data?.area}</RightAlign>}] : []
   ];
 
   useEffect(() => {
@@ -197,7 +206,10 @@ export default ({ setFormTitle, ...props }) => {
   const loadData = async ({ init = false, signal } = {}) => {
     if (init) {
       const { tstamp, ...initFilters } = loadInit({ ...defaultFilters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, { ...location?.state }, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
-      let { filterValues, fieldValues } = fixRangeDates([], initFilters);
+      if (!("fdata" in initFilters)) {
+        initFilters["fdata"] = [`>=${dayjs().startOf('month').format(DATE_FORMAT)} 00:00:00`, `<=${dayjs().format(DATE_FORMAT)} 23:59:59`];
+      }
+      let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
       formFilter.setFieldsValue({ ...fieldValues });
       dataAPI.addFilters({ ...filterValues }, true);
       dataAPI.setSort(dataAPI.getSort(), defaultSort);
@@ -208,24 +220,33 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const onFilterFinish = (type, values) => {
-    switch (type) {
-      case "filter":
-        //remove empty values
-        const vals = dataAPI.removeEmpty({ ...defaultFilters, ...values });
-        const _values = {
-          ...vals,
-          //fgroup: getFilterValue(vals?.fgroup, 'any'),
-          //fcod: getFilterValue(vals?.fcod, 'any'),
-          //fdes: getFilterValue(vals?.fdes, 'any'),
-          //f1: getFilterValue(vals?.f1, 'any'),
-          //f2: getFilterRangeValues(vals?.f2?.formatted)
-        };
-        dataAPI.addFilters(dataAPI.removeEmpty(_values));
-        dataAPI.addParameters(defaultParameters);
-        dataAPI.first();
-        dataAPI.setAction("filter", true);
-        dataAPI.update(true);
-        break;
+    const _data = { start: values?.fdata?.startValue?.format(DATE_FORMAT), end: values?.fdata?.endValue?.format(DATE_FORMAT) };
+    const { errors, warnings, value, messages, ...status } = getStatus(schema().validate(_data, { abortEarly: false, messages: validateMessages, context: {} }));
+    if (errors > 0) {
+      openNotification("error", 'top', "Notificação", messages.error);
+    } else {
+      if (warnings>0){
+        openNotification("warning", 'top', "Notificação", messages.warning);
+      }
+      switch (type) {
+        case "filter":
+          //remove empty values
+          const vals = dataAPI.removeEmpty({ ...defaultFilters, ...values });
+          const _values = {
+            ...vals,
+            //fgroup: getFilterValue(vals?.fgroup, 'any'),
+            //fcod: getFilterValue(vals?.fcod, 'any'),
+            //fdes: getFilterValue(vals?.fdes, 'any'),
+            //f1: getFilterValue(vals?.f1, 'any'),
+            fdata: getFilterRangeValues(vals?.fdata?.formatted, true, "00:00:00", "23:59:59")
+          };
+          dataAPI.addFilters(dataAPI.removeEmpty(_values));
+          dataAPI.addParameters(defaultParameters);
+          dataAPI.first();
+          dataAPI.setAction("filter", true);
+          dataAPI.update(true);
+          break;
+      }
     }
   };
   const onFilterChange = (changedValues, values) => {
@@ -246,11 +267,12 @@ export default ({ setFormTitle, ...props }) => {
   const onSave = async (mode) => {
     const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
     submitting.trigger();
+    let response = null;
     try {
-      // let response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
+      // response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
       // if (response.data.status !== "error") {
+      //   dataAPI.update(true);
       //   openNotification(response.data.status, 'top', "Notificação", response.data.title);
-      //   changeMode();
       // } else {
       //   openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
       // }
@@ -271,7 +293,7 @@ export default ({ setFormTitle, ...props }) => {
         defaultLimit={20}
         columns={columns}
         dataAPI={dataAPI}
-        editable={{enabled: false}}
+        editable={{ enabled: false }}
         //enableFiltering={false} //Column Filter...
         //defaultFilterValue={defaultFilterValue}
         moreFilters={true}

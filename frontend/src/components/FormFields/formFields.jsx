@@ -172,14 +172,14 @@ font-weight: 500;
 font-size: 10px;
 `;
 
-export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description,right, ...props }) => {
+export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, right, ...props }) => {
     //const parentProps = useContext(ParentContext);
     //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
     /* const classes = useFieldStyles(myProps); */
     //const { refMainAlertContainer } = parentProps;
     return (
         <>
-            {title && <StyledHRuleTitle style={{ padding, marginTop,display:"flex",justifyContent:"space-between" }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
+            {title && <StyledHRuleTitle style={{ padding, marginTop, display: "flex", justifyContent: "space-between" }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
         </>
     );
 }
@@ -279,7 +279,7 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
     );
 };
 
-export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size = "small", onPressEnter, ...rest }, ref) => {
+export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size, onPressEnter, ...rest }, ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -864,6 +864,10 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
         } else if (children.type === SelectField) {
             //console.log("FIELD-> SELECTFIELD");
             type = 'SelectField';
+        }
+        else if (children.type === AutoCompleteField) {
+            //console.log("FIELD-> SELECTFIELD");
+            type = 'Input';
         } else if (keyField) {
             type = "Selector";
         } else {
@@ -904,7 +908,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             );
                         case 'Selector':
                             return (<Selector forView={true} minHeight={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
-                        case 'SelectDebounceField':
+                        case 'SelectDebounceField':                            
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
                             if (r !== undefined) {

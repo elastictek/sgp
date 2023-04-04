@@ -23,6 +23,7 @@ import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
+import {RightAlign} from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -53,6 +54,12 @@ const useStyles = createUseStyles({});
 
 const schema = (options = {}) => {
   return getSchema({}, options).unknown(true);
+}
+const rowSchema = (options = {}) => {
+  return getSchema({
+    // "group": Joi.string().label("Grupo").required(),
+    // "des": Joi.string().label("des").required()
+  }, options).unknown(true);
 }
 const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
   return (<>
@@ -111,7 +118,7 @@ const FieldGroupEditor = ({ dataAPI, ...props }) => {
       e.stopPropagation();
       props.onTabNavigation(
         true /*complete navigation?*/,
-        e.shiftKey ? -1 : 1 /*backwards of forwards*/
+        //e.shiftKey ? -1 : 1 /*backwards of forwards*/
       );
     }
   }
@@ -137,7 +144,8 @@ export default ({ setFormTitle, ...props }) => {
   const media = useContext(MediaContext);
 
   const permission = usePermission({ item: "datagrid" });//Permissões Iniciais
-  const [modeEdit, setModeEdit] = useState({ datagrid: false });
+  const [mode, setMode] = useState({ datagrid: { edit: false, add: false } });
+  const [gridStatus, setGridStatus] = useState({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
 
   const { openNotification } = useContext(AppContext);
   const location = useLocation();
@@ -166,12 +174,12 @@ export default ({ setFormTitle, ...props }) => {
   }, [modalParameters]);
 
 
-  const editable = (row, col) => {
-    /* if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
-        return (col === "destino") ? true : false;
-    } */
-    return false;
-  }
+  // const editable = (row, col) => {
+  //   /* if (mode.datagrid.edit && permission.isOk({ action: "changeDestino" }) && !row?.carga_id && !row?.SDHNUM_0) {
+  //       return (col === "destino") ? true : false;
+  //   } */
+  //   return false;
+  // }
   // const editClass = (cellProps, { data }) => {
   //   if (cellProps.name.startsWith("ss_")) {
   //     if (ty?.trim() === 'in') {
@@ -183,9 +191,18 @@ export default ({ setFormTitle, ...props }) => {
   // }
 
 
+  const columnEditable = (v, { data, name }) => {
+    if (["group"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+      return true;
+    }
+    return false;
+  }
 
   const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-    if (modeEdit.datagrid && ["group"].includes(name)) {
+    if (gridStatus?.fieldStatus?.[rowIndex]?.[name]?.status === "error") {
+      return tableCls.error;
+    }
+    if (["group"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
       return tableCls.edit;
     }
     // if (["group"].includes(name)){
@@ -197,7 +214,7 @@ export default ({ setFormTitle, ...props }) => {
     ...(true) ? [{ name: 'pa.id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.id}</div> }] : [],
     ...(true) ? [{ name: 'cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
     ...(true) ? [{ name: 'des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
-    ...(true) ? [{ name: 'group', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, editable: modeEdit.datagrid, renderEditor: (props) => <FieldGroupEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.group}</div> }] : [],
+    ...(true) ? [{ name: 'group', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, editable: columnEditable, renderEditor: (props) => <FieldGroupEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.group}</div> }] : [],
     ...(true) ? [{ name: 'gtin', header: 'gtin', userSelect: true, defaultLocked: false, width: 150, render: (p) => <div style={{}}>{p.data?.gtin}</div> }] : [],
     ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.core}''</div> }] : [],
     ...(true) ? [{ name: 'lar', header: 'Largura', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.lar}mm</div> }] : [],
@@ -286,27 +303,59 @@ export default ({ setFormTitle, ...props }) => {
     showModal();
   }
 
-  const onEditComplete = ({ value, columnId, rowIndex, ...dd }) => {
+  const onEditComplete = ({ value, columnId, rowIndex, ...rest }) => {
+    const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, columnId, value, rowIndex, gridStatus);
+    setGridStatus({ errors, warnings, fieldStatus, formStatus });
     dataAPI.updateValue(rowIndex, columnId, value);
   }
 
-  const onSave = async (mode) => {
+  const onSave = async (type) => {
     const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
     submitting.trigger();
-    let response=null;
+    let response = null;
     try {
-      response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
-      if (response.data.status !== "error") {
-        dataAPI.update(true);
-        openNotification(response.data.status, 'top', "Notificação", response.data.title);
-      } else {
-        openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+      const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
+      setGridStatus({ errors, warnings, fieldStatus, formStatus });
+      if (errors === 0) {
+        response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
+        if (response.data.status !== "error") {
+          dataAPI.update(true);
+          openNotification(response.data.status, 'top', "Notificação", response.data.title);
+        } else {
+          openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+        }
       }
     } catch (e) {
       openNotification(response.data.status, 'top', "Notificação", e.message, null);
     } finally {
       submitting.end();
     };
+  }
+
+  const onAddSave = async (type) => {
+    const rows = dataAPI.getData().rows;
+    submitting.trigger();
+    let response = null;
+    try {
+      const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
+      setGridStatus({ errors, warnings, fieldStatus, formStatus });
+      if (errors === 0) {
+        //response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
+        //if (response.data.status !== "error") {
+        //  dataAPI.update(true);
+        //  openNotification(response.data.status, 'top', "Notificação", response.data.title);
+        //} else {
+        ///  openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+        //}
+      }
+    } catch (e) {
+      //openNotification(response.data.status, 'top', "Notificação", e.message, null);
+    } finally {
+      submitting.end();
+    };
+  }
+  const onAdd = (cols) => {
+    dataAPI.addRow(cols, null, 0);
   }
 
   return (
@@ -320,8 +369,11 @@ export default ({ setFormTitle, ...props }) => {
         dataAPI={dataAPI}
         editable={{
           enabled: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
+          add: permission.isOk({ forInput: [!submitting.state], action: "add" }),
+          gridStatus,setGridStatus,
+          onAdd: onAdd, onAddSave: onAddSave,
           onSave: () => onSave("update"),
-          editKey: "datagrid", setModeEdit, modeEdit, onEditComplete
+          modeKey: "datagrid", setMode, mode, onEditComplete
         }}
         //enableFiltering={false} //Column Filter...
         //defaultFilterValue={defaultFilterValue}

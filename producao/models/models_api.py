@@ -267,8 +267,12 @@ class ArtigoNonwovens(models.Model):
         unique_together = (('produto_id', 'designacao'))
 
 class Formulacao(models.Model):
+    group_name = models.CharField(verbose_name="Group", max_length=80,null=True)
+    subgroup_name = models.CharField(verbose_name="Subgroup", max_length=80,null=True)
     designacao = models.CharField(verbose_name="Designação", max_length=80,null=True)
+    reference = models.SmallIntegerField(verbose_name="Referência", default=1)
     versao = models.SmallIntegerField(verbose_name="Versão", default=1)
+    artigo_id = models.SmallIntegerField(verbose_name="Artigo", null=True)
     #artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)
     produto = models.ForeignKey('producao.Produtos',on_delete=models.PROTECT,verbose_name="Id Produto") #ADDED - ID PRODUTO
     cliente_cod = models.CharField(max_length=15,verbose_name="Código Cliente", null=True)

@@ -262,9 +262,175 @@ def TempOrdemFabricoGet(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+def GetFormulacao(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    if ("audit_cs_id" in filter):
+        f.add(f'id = :audit_cs_id',True)
+    elif ("cs_id" in filter):
+        f.add(f'id = :cs_id',True)
+    elif ("formulacao_id" in filter):
+        f.add(f'pfo.id = :formulacao_id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    if ("audit_cs_id" in filter):
+        sql = lambda: (f"""select formulacaov2 formulacao from audit_currentsettings {f.text}""")
+    elif ("cs_id" in filter):
+        sql = lambda: (f"""select formulacaov2 formulacao from producao_currentsettings {f.text}""")
+    elif ("formulacao_id" in filter):
+        sql = lambda: (f"""
+            SELECT            
+            JSON_OBJECT('cliente_cod', pfo.cliente_cod,'cliente_nome', pfo.cliente_nome,'created_date', pfo.created_date,'designacao', pfo.designacao,'extr0', 
+            pfo.extr0,'extr0_val', pfo.extr0_val,'extr1', pfo.extr1,'extr1_val', pfo.extr1_val,'extr2', pfo.extr2,'extr2_val', 
+            pfo.extr2_val,'extr3', pfo.extr3,'extr3_val', pfo.extr3_val,'extr4', pfo.extr4,'extr4_val', pfo.extr4_val,'id', 
+            pfo.id,'produto_id', pfo.produto_id,'updated_date', pfo.updated_date,'versao', pfo.versao,'group_name',pfo.group_name,'subgroup_name',pfo.subgroup_name,
+            'reference',pfo.reference,'artigo_id',pfo.artigo_id,
+            'items',(
+            SELECT JSON_ARRAYAGG(t) FROM (
+            select 
+            JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+            pfomp.extrusora,'formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+            pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+            ) t
+            FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = pfo.id AND pfomp.extrusora<>'BC'
+            UNION
+            select 
+            JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+            'B','formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+            pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+            ) t
+            FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = pfo.id AND pfomp.extrusora='BC'
+            UNION
+            select 
+            JSON_OBJECT('arranque', pfomp.arranque,'densidade', pfomp.densidade,'extrusora', 
+            'C','formulacao_id', pfomp.formulacao_id,'id', pfomp.id,'mangueira', pfomp.mangueira,'matprima_cod', 
+            pfomp.matprima_cod,'matprima_des', pfomp.matprima_des,'tolerancia', pfomp.tolerancia,'vglobal', pfomp.vglobal
+            ) t
+            FROM producao_formulacaomateriasprimas pfomp where pfomp.formulacao_id = pfo.id AND pfomp.extrusora='BC'
+                ) t
+            )) formulacao
+            from producao_formulacao pfo {f.text}
+        """)
+    else:    
+        sql = lambda: (f"""select formulacao from (
+            select id,MAX(id) over (partition by ac.agg_of_id) maxid,formulacaov2 formulacao from audit_currentsettings ac where contextid = (select id from producao_currentsettings cs where status=3)
+        ) t where id=maxid""")
+    
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def ListFormulacoes(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        "group_name": {"value": lambda v: Filters.getUpper(v.get('fgroup')), "field": lambda k, v: f'pf.{k}'},
+        "subgroup_name": {"value": lambda v: Filters.getUpper(v.get('fsubgroup')), "field": lambda k, v: f'pf.{k}'},
+        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdesignacao')), "field": lambda k, v: f'pf.{k}'},
+        "produto_cod": {"value": lambda v: Filters.getUpper(v.get('fproduto')), "field": lambda k, v: f'upper(pp.{k})'},
+        "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper(pf.{k})'},
+        "reference": {"value": lambda v: Filters.getNumeric(v.get('freference')), "field": lambda k, v: f'pf.{k}'},
+        **rangeP(f.filterData.get('fdata_created'), 'pf.created_date', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('fdata_updated'), 'pf.updated_date', lambda k, v: f'{k}')
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+
+    parameters = {**f.parameters, **f2['parameters']}
+    dql = db.dql(request.data, False,False)
+
+    cols = f'''pf.*,pp.produto_cod'''
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} 
+            FROM producao_formulacao pf
+            LEFT JOIN producao_produtos pp ON pp.id=pf.produto_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)   
+
+def FormulacaoGroupsLookup(request, format=None):
+    conn = connections["default"].cursor()
+    cols = ['group_name']
+    f = Filters(request.data['filter'])
+    f.setParameters({"group_name":{"value": lambda v: v.get('group_name'), "field": lambda k, v: f'{k}'}}, True)
+    f.auto()
+    f.where()
+    f.value("and")    
+
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select 
+            distinct {dql.columns}
+            from producao_formulacao
+            {f.text}
+            {dql.sort}
+            {dql.limit}
+        """
+    ), conn, f.parameters)
+
+    return Response(response)
+
+def FormulacaoSubGroupsLookup(request, format=None):
+    conn = connections["default"].cursor()
+    cols = ['subgroup_name']
+    f = Filters(request.data['filter'])
+    f.setParameters({"subgroup_name":{"value": lambda v: v.get('subgroup_name'), "field": lambda k, v: f'{k}'}}, True)
+    f.auto()
+    f.where()
+    f.value("and")    
+
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select 
+            distinct {dql.columns}
+            from producao_formulacao
+            {f.text}
+            {dql.sort}
+            {dql.limit}
+        """
+    ), conn, f.parameters)
+
+    return Response(response)
+
+def SaveFormulacao(request, format=None):
+    conn = connections["default"].cursor()
+    data = request.data.get("parameters")
+    print(data)
+
 
 
 #region INTERNAL METHODS
+def getFormulacaoVersao(data, cursor):
+    f = Filters({"produto_id": data['produto_id']})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'f.produto_id = :produto_id', True)
+    f.value("and")   
+    return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_formulacao f {f.text}'), cursor, f.parameters)['rows'][0]['mx']
+
 
 def checkAgg(ofabrico_id,ofabrico_cod,cursor):
     if ofabrico_id is None:

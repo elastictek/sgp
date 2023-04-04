@@ -60,6 +60,9 @@ const CheckLists = lazy(() => import('./ordensfabrico/CheckLists'));
 const ArtigosCompativeis = lazy(() => import('./artigos/ArtigosCompativeis'));
 const ArtigosProducao = lazy(() => import('./artigos/ArtigosProducao'));
 
+const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
+const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
+
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
 export const LayoutContext = React.createContext({});
@@ -155,6 +158,9 @@ const RenderRouter = () => {
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
 
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
+                
+                { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
+                { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

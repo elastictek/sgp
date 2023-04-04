@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 export const validateMessages = {
     'any.required': 'Campo {{#label}} é obrigatório.',
     'number.base': 'Campo {{#label}} tem de ser um valor numérico.',
-    'number.greater':'Campo {{#label}} tem de ser maior ou igual que {{:#limit}}.',
+    'number.greater': 'Campo {{#label}} tem de ser maior ou igual que {{:#limit}}.',
     'string.base': 'Campo {{#label}} tem de ser um valor de texto.',
     'string.empty': 'Campo {{#label}} tem de indicar o motivo.',
 };
@@ -59,7 +59,7 @@ export const pick = (keys, obj, exclude = []) => {
     return result;
 };
 
-export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false,forceversion1=false) => {
+export const getSchema = (rules, keys = [], excludeKeys = [], wrapArray = false, forceversion1 = false) => {
     if (keys !== null && !Array.isArray(keys) && !forceversion1) {
         return getSchemav2(rules, keys);
     }
@@ -85,7 +85,7 @@ export const getSchemav2 = (rules, { keys = [], excludeKeys = [], wrapArray = fa
 }
 
 export const getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}) => {
-    const ret = { errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
+    const ret = { messages:{error:[],warning:[]}, errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
     ret.value = vObject?.value;
     if (vObject?.error) {
         for (const itm of vObject.error?.details) {
@@ -95,6 +95,7 @@ export const getStatus = (vObject, { formStatus = { error: [], warning: [], info
             } else {
                 ret.formStatus.error.push({ message: itm.message });
             }
+            ret.messages.error.push(itm.message);
         }
     }
     if (vObject?.warning) {
@@ -105,6 +106,7 @@ export const getStatus = (vObject, { formStatus = { error: [], warning: [], info
             } else {
                 ret.formStatus.warning.push({ message: itm.message });
             }
+            ret.messages.warning.push(itm.message);
         }
     }
     return ret;

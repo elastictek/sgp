@@ -18,7 +18,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 
 
 import { Context } from "./formFields";
-import { ClearOutlined, SearchOutlined,CloseCircleFilled, CloseCircleOutlined } from '@ant-design/icons';
+import { ClearOutlined, SearchOutlined, CloseCircleFilled, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -133,27 +133,25 @@ const StyledSearch = styled(Search)`
     }
 `;
 
-const ForView = ({ forViewBorder, minHeight, forViewBackground, style, onDoubleClick, value }) => {
-
-
+const InternalForView = ({ forViewBorder, minHeight, forViewBackground, style, onDoubleClick, value, loading = false }) => {
     return (
-        <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight, whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>
+        <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight, whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}{loading && <LoadingOutlined />}</div>
     );
-
 }
 
-export default React.forwardRef(({ data, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear,...rest }, ref) => {
+export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear, style, ...rest }, ref) => {
     const dataAPI = useDataAPI(params);
     const [internalValue, setInternalValue] = useState();
     const [modalParameters, setModalParameters] = useState({});
     const [loaded, setLoaded] = useState(false);
     const ctx = useContext(Context);
+    const iRef = useRef();
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             return (<Popup {...modalParameters} />)
         }
         return (
-            <ResponsiveModal type={modalParameters.type} responsive title={title} onCancel={hideModal} width={popupWidth} height={popupHeight} footer="ref" yScroll>
+            <ResponsiveModal type={modalParameters.type} responsive title={title} onCancel={() => { hideModal(); focus(); }} width={popupWidth} height={popupHeight} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -161,6 +159,7 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
 
     const loadData = async () => {
         let _value = null;
+        
         if (typeof value === "object") {
             _value = value;
             setLoaded(true);
@@ -179,9 +178,9 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
             })
             setInternalValue(_value);
         } else if (load && value && !loaded) {
-            setLoaded(true);
             dataAPI.addFilters({ idSelector: value }, false);
             const _data = await dataAPI.fetchPost();
+            setLoaded(true);
             if (_data?.rows && _data.rows.length > 0) {
                 _value = _data.rows[0];
             } else {
@@ -191,12 +190,32 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
         }
     }
 
+    const focus = () => {
+        if (autoFocus) {
+            if (!ref) {
+                iRef.current.focus();
+            } else {
+                ref.current.focus();
+            }
+        }
+    }
+
+    useEffect(() => {
+        focus();
+    }, []);
+
     useEffect(() => {
         loadData();
     }, [value]);
 
-
-
+    const _onKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            onPopup();
+        }
+        if (typeof onKeyDown === "function") {
+            onKeyDown(e);
+        }
+    }
 
     const onSelectRow = (row) => {
         if ("name" in rest) {
@@ -214,7 +233,7 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
     }
 
     const clear = () => {
-        if (onClear){
+        if (onClear) {
             onClear();
         }
         onChange(null);
@@ -222,15 +241,19 @@ export default React.forwardRef(({ data, customSearch, rowHeight, forView, type 
     }
 
     return (
-        <div>
+        <div style={{ ...style }}>
             {
                 forView ?
-                    <ForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} {...rest} /> :
-                    customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup }) :
-                        <Input value={(internalValue && textField in internalValue) && internalValue[textField]} style={{ cursor: "pointer" }} size={size} ref={ref} {...rest} onClick={onPopup} readOnly {...(allowClear && internalValue) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }} addonAfter={<SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
+                    <InternalForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} loading={(load && !loaded)} {...rest} /> :
+                    customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup, onKeyDown: _onKeyDown }) :
+                        <>
+                            <Input value={(internalValue && textField in internalValue) && internalValue[textField]} style={{ cursor: "pointer" }} size={size} ref={ref ? ref : iRef} {...rest} onClick={onPopup} onKeyDown={_onKeyDown} readOnly {...(allowClear && internalValue) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }}
+                                addonAfter={(load && !loaded) ? <LoadingOutlined /> : <SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
+                            
+                        </>
                 //<StyledSearch allowClear={allowClear} value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} onClick={onPopup} readOnly />
             }
-            <div style={{ fontSize: "11px" }}>{((value && typeof detailText === 'function')) && detailText(value)}</div>
+            <div style={{ fontSize: "11px" }}>{((value && typeof detailText === 'function')) && detailText(internalValue)}</div>
         </div>
     );
 });

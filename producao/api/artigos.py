@@ -96,6 +96,7 @@ def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseC
                 hasFilters = f.hasFilters
     return {"hasFilters": hasFilters, "text": txt, "parameters": p}
 
+
 def rangeP(data, key, field, fieldDiff=None,pName=None):
     ret = {}
     if data is None:
@@ -304,6 +305,7 @@ def ListVolumeProduzidoArtigos(request, format=None):
     connection = connections["default"].cursor()    
     f = Filters({**request.data['filter']})
     f.setParameters({
+        **rangeP(f.filterData.get('fdata'), 'pb2.data', lambda k, v: f'{k}'),
         # "group": {"value": lambda v: v.get('fgroup'), "field": lambda k, v: f'ga.{k}'},
         # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
         # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
@@ -314,6 +316,7 @@ def ListVolumeProduzidoArtigos(request, format=None):
     }, True)
     f.where()
     f.auto()
+    f.add("pb.ig_id is not null",True)
     f.value("and")
 
     f2 = filterMulti(request.data['filter'], {
@@ -322,35 +325,67 @@ def ListVolumeProduzidoArtigos(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
     dql = db.dql(request.data, False,False)
 
-    cols = f"""pb.artigo_id,pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area"""
+    cols = f"""*"""
     sql = lambda p, c, s: (
         f"""
-            SELECT {c(f'{cols}')} 
-            from producao_bobine pb 
-            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id 
+            SELECT {c(f'{cols}')} FROM(
+            SELECT pb.artigo_id,pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area  
+            from producao_bobine pb
+            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
             join producao_artigo pa on pa.id=pb.artigo_id
             left join producao_produtos pp on pp.id=pa.produto_id
-            where pb.ig_id is not null AND pb2.data between '2023-02-01' and '2023-02-28'
-            {f.text} {f2["text"]}
+            {f.text}
             group by artigo_id
-                        {s(dql.sort)}
+            ) t
             {p(dql.paging)} {p(dql.limit)}
         """
     )
-    print(f"""
-            SELECT {f'{cols}'} 
-            from producao_bobine pb 
-            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id 
-            join producao_artigo pa on pa.id=pb.artigo_id
-            left join producao_produtos pp on pp.id=pa.produto_id
-            where pb.ig_id is not null AND DATE(pb2.`timestamp`) between '2023-02-01' and '2023-02-28'
-            {f.text} {f2["text"]}
-            group by artigo_id
-                        {dql.sort}
-            {dql.paging}
-        """)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
+def ClientesLookup(request, format=None):
+    cols = ['BPCNUM_0', 'BPCNAM_0']
+    f = filterMulti(request.data['filter'], {'fmulti_customer': {"keys": cols}})
+    parameters = {**f['parameters']}
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    dql.columns = encloseColumn(cols)
+    with connections[connGatewayName].cursor() as cursor:
+       response = dbgw.executeSimpleList(lambda: (
+         f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+       ), cursor, parameters)
+       response["rows"].append({"BPCNUM_0":'0',"BPCNAM_0":"Elastictek"})
+       response["rows"].append({"BPCNUM_0":'1',"BPCNAM_0":"Industrialização"})
+       response["rows"].append({"BPCNUM_0":'2',"BPCNAM_0":"Regranular"})
+       return Response(response)
+
+def ProdutosLookup(request, format=None):
+    cols = ['id','produto_cod']
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    if "idSelector" in request.data['filter']:
+        f = Filters(request.data['filter'])
+        f.setParameters({}, False)
+        f.where()
+        f.add(f'id = :idSelector', True)
+        f.value()
+        try:
+            with connections["default"].cursor() as cursor:
+                response = db.executeSimpleList(lambda: (f"""SELECT {dql.columns} FROM producao_produtos {f.text}"""), cursor, f.parameters)
+        except Error as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
+
+    
+    f = filterMulti(request.data['filter'], {'fcod': {"keys": ["produto_cod"]}},True,False,False)
+    parameters = {**f['parameters']}
+    with connections["default"].cursor() as cursor:
+       response = db.executeSimpleList(lambda: (
+         f'SELECT {dql.columns} FROM producao_produtos {f["text"]} {dql.sort} {dql.limit}'
+       ), cursor, parameters)
+       return Response(response)

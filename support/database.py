@@ -197,10 +197,10 @@ class BaseSql:
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
                 execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
-                # print("1-###########################################################################")
-                # print(f'SQL--> {execSql["sql"]}')
-                # print(f'PARAMS--> {execSql["parameters"]}')
-                # print("###########################################################################")
+                #print("1-###########################################################################")
+                #print(f'SQL--> {execSql["sql"]}')
+                #print(f'PARAMS--> {execSql["parameters"]}')
+                #print("###########################################################################")
                 cursor.execute(execSql["sql"],execSql["parameters"])
                 rows = fetchall(cursor, ignore)
                 if (countSql is None):
@@ -217,10 +217,10 @@ class BaseSql:
             else:
                 print("DB init fail")
             execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
-            # print("2-###########################################################################")
-            # print(f'SQL--> {execSql["sql"]}')
-            # print(f'PARAMS--> {execSql["parameters"]}')
-            # print("###########################################################################")
+            #print("2-###########################################################################")
+            #print(f'SQL--> {execSql["sql"]}')
+            #print(f'PARAMS--> {execSql["parameters"]}')
+            #print("###########################################################################")
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
             rows = fetchall(connOrCursor, ignore)
             if (countSql is None):
@@ -961,6 +961,12 @@ class Filters:
             return f"=={value}"
         else:
             return value
+    def getUpper(value):
+        if value is None: return None
+        return value.upper()
+    def getLower(value):
+        if value is None: return None
+        return value.upper()
 
 def FiltersParser(data, fields={}, encloseColumns=True):
     filters, parameters = [], {}

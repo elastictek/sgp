@@ -3,12 +3,47 @@ import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
 import { deepEqual, pickAll } from 'utils';
 import { useImmer } from "use-immer";
+import { validateMessages } from './schemaValidator';
 
 export const getLocalStorage = (id, useStorage) => {
     if (useStorage && id) {
         return JSON.parse(localStorage.getItem(`dapi-${id}`));
     }
     return {};
+}
+
+const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}, rowIndex) => {
+    const ret = { errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
+    ret.value = vObject?.value;
+    if (vObject?.error) {
+        for (const itm of vObject.error?.details) {
+            ret.errors++;
+            if (itm.path.length > 0) {
+                if (!(rowIndex in ret.fieldStatus)) {
+                    ret.fieldStatus[rowIndex] = { [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
+                } else {
+                    ret.fieldStatus[rowIndex] = { ...ret.fieldStatus[rowIndex], [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
+                }
+            } else {
+                ret.formStatus.error.push({ message: itm.message });
+            }
+        }
+    }
+    if (vObject?.warning) {
+        for (const itm of vObject.warning?.details) {
+            ret.warnings++;
+            if (itm.path.length > 0) {
+                if (!(rowIndex in ret.fieldStatus)) {
+                    ret.fieldStatus[rowIndex] = { [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
+                } else {
+                    ret.fieldStatus[rowIndex] = { ...ret.fieldStatus[rowIndex], [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
+                }
+            } else {
+                ret.formStatus.warning.push({ message: itm.message });
+            }
+        }
+    }
+    return ret;
 }
 
 
@@ -331,16 +366,19 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         });
         action.current = [];
     }
-    const addRow = (row, keys = null, at = null) => {
-        const r = pickAll(keys, row);
-        const _rows = state.data.rows;
+    const addRow = (row, keys = null, at = null, cb = null) => {
+        const r = keys ? pickAll(keys, row) : row;
+        let _rows = [...state?.data?.rows || []];
         if (_rows && _rows.length > 0) {
             const exists = (keys === null) ? false : _rows.some(v => deepEqual(pickAll(keys, v), r));
             if (!exists) {
                 if (at !== null) {
-                    _rows.splice(at, 0, row);
+                    _rows.splice(at, 0, { ...row, rowadded: 1 });
                 } else {
-                    _rows.push(row);
+                    _rows.push({ ...row, rowadded: 1 });
+                }
+                if (typeof cb === "function") {
+                    _rows = cb(_rows);
                 }
                 updateState(draft => {
                     draft.tstamp = Date.now();
@@ -348,9 +386,37 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 });
             }
         } else {
+            if (typeof cb === "function") {
+                _rows = cb(_rows);
+            }
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: [{ ...row }], total: 1 };
+                draft.data = { rows: [{ ...row, rowadded: 1 }], total: 1 };
+            });
+        }
+    }
+    const addRows = (rows, at = null, cb = null) => {
+        let _rows = [...state?.data?.rows || []];
+        if (_rows && _rows.length > 0) {
+            if (at !== null) {
+                _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1 })));
+            } else {
+                _rows.push(rows.map(v => ({ ...v, rowadded: 1 })));
+            }
+            if (typeof cb === "function") {
+                _rows = cb(_rows);
+            }
+            updateState(draft => {
+                draft.tstamp = Date.now();
+                draft.data = { rows: [..._rows], total: state.data.total + rows.length };
+            });
+        } else {
+            if (typeof cb === "function") {
+                _rows = cb(_rows);
+            }
+            updateState(draft => {
+                draft.tstamp = Date.now();
+                draft.data = { rows: rows.map(v => ({ ...v, rowadded: 1 })), total: rows.length };
             });
         }
     }
@@ -361,7 +427,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         });
     }
     const deleteRow = (data, keys) => {
-        const _rows = state.data.rows;
+        const _rows = [...state.data.rows];
         if (_rows) {
             const idx = _rows.findIndex(v => deepEqual(pickAll(keys, v), data));
             if (idx >= 0) {
@@ -373,14 +439,34 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
         }
     }
-    const updateValue = (row, column, value) => {
+    const updateValue = (idx, column, value) => {
         let _rows = [...state.data.rows];
-        if (_rows[row] && column in _rows[row]) {
-            if (_rows[row][column] !== value) {
-                let _obj = { ..._rows[row] };
+        if (_rows[idx] && column in _rows[idx]) {
+            if (_rows[idx][column] !== value) {
+                let _obj = { ..._rows[idx] };
                 _obj[column] = value;
                 _obj["rowvalid"] = 0;
-                _rows[row] = { ..._obj };
+                _rows[idx] = { ..._obj };
+                ref.current.updated = Date.now();
+                updateState(draft => {
+                    draft.updated = ref.current.updated;
+                    draft.data = { rows: [..._rows], total: state.data.total };
+                });
+            }
+        }
+    }
+    const updateValues = (idx, column, row, replaceRow = false) => {
+        let _rows = [...state.data.rows];
+        if (_rows[idx]) {
+            if (_rows[idx]?.[column] !== row?.[column]) {
+                let _obj = { ..._rows[idx] };
+                if (replaceRow) {
+                    _obj = { ...row };
+                } else {
+                    _obj = { ..._obj, ...row };
+                }
+                _obj["rowvalid"] = 0;
+                _rows[idx] = { ..._obj };
                 ref.current.updated = Date.now();
                 updateState(draft => {
                     draft.updated = ref.current.updated;
@@ -527,6 +613,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return (state.data.rows) ? state.data.rows.filter(v => v?.rowvalid === 0) : [];
     }
 
+    const newRows = () => {
+        return (state.data.rows) ? state.data.rows.filter(v => v?.rowadded === 1) : [];
+    }
+
     const setAction = (v, assign = false) => {
         if (assign) {
             action.current = [v];
@@ -538,6 +628,60 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         action.current = [];
     }
 
+    const validateRows = (schema, status = {}, options = {}) => {
+        let _accStatus = status?.status ? status?.status : {};
+        let _errors = status?.errors ? status?.errors : 0;
+        let _warnings = status?.warnings ? status?.warnings : 0;
+        for (const [i, v] of state.data.rows.entries()) {
+            if (v?.rowvalid === 0 || v?.rowadded === 1) {
+                let { errors, warnings, value, ..._status } = _getStatus(schema().validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, i);
+                _accStatus = _status;
+                _errors = _errors + errors;
+                _warnings = _warnings + warnings;
+            }
+        }
+        return { ..._accStatus, errors: _errors, warnings: _warnings };
+    }
+
+    const validateField = (schema, column, value, rowIndex, gridStatus) => {
+        let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowIndex);
+        const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
+        if (_gridStatus?.fieldStatus?.[rowIndex]?.[column]) {
+            if (_gridStatus?.fieldStatus?.[rowIndex]?.[column].status === "error") {
+                _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
+            } else {
+                _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
+            }
+            delete _gridStatus?.fieldStatus?.[rowIndex]?.[column];
+        }
+        _gridStatus.fieldStatus[rowIndex] = { ..._gridStatus?.fieldStatus?.[rowIndex], ...fieldStatus[rowIndex] };
+        _gridStatus.errors = _gridStatus.errors + errors;
+        _gridStatus.warnings = _gridStatus.warnings + warnings;
+        return _gridStatus;
+    }
+
+    const getMessages = (gridStatus) => {
+        const messages = { error: [], warning: [] };
+        for (const row of Object.keys(gridStatus?.fieldStatus)) {
+            for (const col of Object.keys(gridStatus.fieldStatus[row])) {
+                const item = gridStatus.fieldStatus[row][col];
+                for (const msg of item.msg) {
+                    messages[item.status].push(`#${row + 1} ${msg?.message}`);
+                }
+            }
+        }
+        if (gridStatus.formStatus?.error) {
+            for (const msg of gridStatus.formStatus?.error) {
+                messages["error"].push(`${msg}`);
+            }
+        }
+        if (gridStatus.formStatus?.warning) {
+            for (const msg of gridStatus.formStatus?.warning) {
+                messages["warning"].push(`${msg}`);
+            }
+        }
+        return messages;
+    }
 
     return {
         first,
@@ -545,13 +689,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         next,
         last,
         dirtyRows,
+        newRows,
         currentPage,
         getSkip,
         pageSize,
         setRows,
         addRow,
+        addRows,
         deleteRow,
         updateValue,
+        updateValues,
         setData,
         hasData: () => (state.data.rows !== undefined),
         setSort,
@@ -585,6 +732,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         setIsLoading,
         update,
         removeEmpty,
-        setFilters
+        setFilters,
+        validateRows,
+        validateField,
+        getMessages
     }
 }

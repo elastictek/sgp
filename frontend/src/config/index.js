@@ -69,7 +69,25 @@ const ponderacaoExtrusoras = () => {
     }
     return p;
 }
+const ponderacaoExtrusorasV2 = () => {
+    const p = {A:0,BC:0,B:0,C:0};
+    //const p = [0, 0, 0, 0];
+    for (const [index, value] of FORMULACAO_EXTRUSORAS_COD.entries()) {
+        if (value === "A") {
+            p.A += FORMULACAO_EXTRUSORAS_VAL[index];
+        } else {
+            p.BC += FORMULACAO_EXTRUSORAS_VAL[index];
+            if (value === "B") {
+                p.B += FORMULACAO_EXTRUSORAS_VAL[index];
+            } else if (value === "C") {
+                p.C += FORMULACAO_EXTRUSORAS_VAL[index];
+            }
+        }
+    }
+    return p;
+}
 export const FORMULACAO_PONDERACAO_EXTR = ponderacaoExtrusoras();
+export const FORMULACAO_PONDERACAO_EXTRUSORAS = ponderacaoExtrusorasV2();
 export const GAMAOPERATORIA = [
     { key: "A", designacao: "Gramagem do filme", unidade: "gsm", nvalues: 1, min: 0, max: 999, tolerancia: 10 },
     { key: "B", designacao: "Espessura set", unidade: "µm", nvalues: 1, min: 0, max: 999, tolerancia: 10 },

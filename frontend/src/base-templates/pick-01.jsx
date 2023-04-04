@@ -83,7 +83,7 @@ const loadLoteQuantity = async (parameters, signal) => {
     return data || {};
 }
 
-const Output = ({ data, openNotification, parentRef, closeParent, loadParentData }) => {
+const Output = ({ p, openNotification, parentRef, closeParent, loadParentData }) => {
     const id = uid(4);
     const [form] = Form.useForm();
     const [fieldStatus, setFieldStatus] = useState({});
@@ -95,7 +95,7 @@ const Output = ({ data, openNotification, parentRef, closeParent, loadParentData
     }
 
     const loadData = async ({ signal } = {}) => {
-        form.setFieldsValue({ ...data, t_stamp: dayjs(), qty_reminder: null });
+        form.setFieldsValue({ ...p, t_stamp: dayjs(), qty_reminder: null });
         submitting.end();
     };
     useEffect(() => {
@@ -145,7 +145,7 @@ const Output = ({ data, openNotification, parentRef, closeParent, loadParentData
         </Row>
         <Row style={{}} gutterWidth={10}>
             <Col><Field forInput={false} wrapFormItem={true} name="qty_lote" label={{ enabled: true, text: "Quantidade Lote" }}><InputNumber size="small" addonAfter="kg" /></Field></Col>
-            <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={data?.qty_lote} /></Field></Col>
+            <Col><Field wrapFormItem={true} name="qty_reminder" label={{ enabled: true, text: "Quantidade Restante" }}><InputNumber size="small" addonAfter="kg" min={0} max={p?.qty_lote} /></Field></Col>
             <Col><Field wrapFormItem={true} name="t_stamp" label={{ enabled: true, text: "Data Saída" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
         </Row>
         <Row style={{}} gutterWidth={10}>
@@ -180,7 +180,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
-                case "output": return <Output data={modalParameters.parameters.data} openNotification={modalParameters.parameters.openNotification} loadParentData={modalParameters?.loadData} column="" parameters={modalParameters.parameters} />;
+                case "output": return <Output p={modalParameters.parameters.p} openNotification={modalParameters.parameters.openNotification} loadParentData={modalParameters?.loadData} column="" parameters={modalParameters.parameters} />;
             }
         }
         return (
@@ -305,7 +305,6 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const loadData = async ({ signal } = {}) => {
         submitting.trigger();
         const rows = await loadGranuladoInline(signal);
-        console.log(rows)
         dataAPI.setData({ rows, total: rows.length });
         submitting.end();
     }
@@ -339,10 +338,10 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
         }
     }
 
-    const onOutput = (data) => {
-        setModalParameters({ content: "output", type: "drawer", title: `Saída ${data.n_lote} ${data.artigo_des}`, push: false, width: "550px", loadData: loadData, parameters: { openNotification, data } });
+    const onOutput = (p) => {
+        setModalParameters({ content: "output", type: "drawer", title: `Saída ${p.n_lote} ${p.artigo_des}`, push: false, width: "550px", loadData: loadData, parameters: { openNotification, p } });
         showModal();
-    };
+    }
 
 
     const backgroundColor = (i) => {
@@ -364,7 +363,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const columns = [
         ...(true) ? [{ name: 'cuba', header: 'Cuba', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 90, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}><Cuba value={p.data?.cuba} /></div> }] : [],
         ...(true) ? [{ name: 'dosers', header: 'Doseador', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 95, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}>{p.data?.dosers}</div> }] : [],
-        ...(true) ? [{ name: 'baction', header: '', minWidth: 90, maxWidth: 90, render: ({data}) => <Button icon={<LogoutOutlined />} size="small" onClick={() => onOutput(data)}>Saída</Button> }] : [],
+        ...(true) ? [{ name: 'baction', header: '', minWidth: 90, maxWidth: 90, render: p => <Button icon={<LogoutOutlined />} size="small" onClick={() => onOutput(p.data)}>Saída</Button> }] : [],
         ...(true) ? [{ name: 'artigo_cod', header: 'Artigo', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.artigo_cod}</div> }] : [],
         ...(true) ? [{ name: 'n_lote', header: 'Lote', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.n_lote}</div> }] : [],
         ...(true) ? [{ name: 'artigo_des', header: 'Designação', userSelect: true, showColumnMenuTool: false, flex: 2, minWidth: 170, render: (p) => <div style={{}}>{p.data?.artigo_des}</div> }] : [],
@@ -373,11 +372,6 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
         ...(true) ? [{ name: 't_stamp', header: 'Data', userSelect: true, showColumnMenuTool: false, width: 120, render: (p) => <div style={{}}>{p.data?.t_stamp && dayjs(p.data.t_stamp).format(DATETIME_FORMAT)}</div> }] : [],
         ...(true) ? [{ name: 'vcr_num', header: 'Movimento', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{}}>{p.data?.vcr_num}</div> }] : [],
     ]
-
-    // const columns=[
-    //     ...(true) ? [{ name: 'id', header: 'Movimento', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1,render: p =><div onClick={()=>console.log(p)}>gggg</div> }] : [],
-    //     ...(true) ? [{ name: 'baction', header: 'h', minWidth: 90, maxWidth: 90, render: p => <Button icon={<LogoutOutlined />} size="small" onClick={() => onOutput(p)}>Saída {p.data.artigo_cod}</Button> }] : [],
-    // ]
 
     return (
         <div style={{ width: "100%", height: "100vh" }} tabIndex={0}>

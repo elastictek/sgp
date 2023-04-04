@@ -267,6 +267,8 @@ urlpatterns = [
     re_path(r'^bobines/sql/$',bobines.Sql),
     re_path(r'^ordensfabrico/sql/$',ordens_fabrico.Sql),
     re_path(r'^artigos/sql/$',artigos.Sql),
+    re_path(r'^currentsettings/sql/$',currentsettings.Sql),
+    re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     
