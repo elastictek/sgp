@@ -233,7 +233,7 @@ def UpdateLabParameter(request, format=None):
                         del item["id"]
                         del item["rowvalid"]
                         del item["t_stamp"]
-                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",{"id":Filters.getNumeric(id)},None,False)
+                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",{"id":Filters.getNumeric(id,"isnull")},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
@@ -323,6 +323,14 @@ def ListLabMetodos(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
     )
+    print(f"""
+           SELECT {f'{cols}'} 
+            FROM producao_lab_metodos plm
+            LEFT JOIN producao_artigo pa on pa.id=plm.artigo_id
+            {f.text} {f2["text"]}
+            {dql.sort} {dql.paging} {dql.limit}  
+    """)
+    print("xxxxxxxxxxxxxxxx")
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [])
@@ -373,7 +381,7 @@ def UpdateLabMetodo(request, format=None):
                         del item["des"]
                         del item["rowvalid"]
                         del item["t_stamp"]
-                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_metodos",{"id":Filters.getNumeric(id)},None,False)
+                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_metodos",{"id":Filters.getNumeric(id,"isnull")},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
@@ -499,4 +507,35 @@ def ListLabArtigosSpecs(request, format=None):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
-     
+
+def NewLabArtigoSpecs(request, format=None):
+    data = request.data.get("parameters").get("data")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if data.get("rowadded")==1:
+                    values ={"lab_metodo_id":data.get("lab_metodo_id"),"obs":data.get("obs"),"`status`":data.get("status"),"reference":data.get("reference"),"designacao":data.get("designacao"), "t_stamp":datetime.now(),"user_id":request.user.id}
+                    dml = db.dml(TypeDml.INSERT, values, "producao_lab_artigospecs",None,None,False)
+                    print(dml.statement)
+                    print(dml.parameters)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Especificação criada com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao criar especificação! {str(error)}"})
+
+def UpdateLabArtigoSpecs(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if "rows" in data:
+                    for idx, item in enumerate(data.get("rows")):
+                        id = item.get("id")
+                        values = {"designacao":item.get("designacao"), "status":item.get("status"), "obs":item.get("obs"),"reference":item.get("reference")}
+                        dml = db.dml(TypeDml.UPDATE,{**values, "user_id":request.user.id},"producao_lab_artigospecs",{"id":Filters.getNumeric(id,"isnull")},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})

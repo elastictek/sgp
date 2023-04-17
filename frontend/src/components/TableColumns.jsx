@@ -3,14 +3,17 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import { StarFilled, CheckSquareOutlined, BorderOutlined } from '@ant-design/icons';
 import { Tag, Button } from "antd";
-import { FORMULACAO_CUBAS } from "config";
+import { FORMULACAO_CUBAS,DATETIME_FORMAT } from "config";
+import dayjs from 'dayjs';
 import { props } from 'ramda';
 
 
 export const Link = ({ value, onClick, style, cellProps, ...props }) => {
     return (<>{!cellProps?.inEdit && <Button type='link' style={{ fontWeight: 700, ...style }} onClick={onClick}>{value}</Button>}</>);
 }
-
+export const DateTime = ({ value,format=DATETIME_FORMAT,style,className, cellProps }) => {
+    return (<>{!cellProps?.inEdit && <div style={{ textAlign: "left", ...style }} {...className && { className }}>{dayjs(value).isValid() && dayjs(value).format(format)}</div>}</>);
+}
 export const RightAlign = ({ children, unit, style, className, addonAfter, addonBefore, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ textAlign: "right", ...style }} {...className && { className }}>{addonBefore}{children && `${children}${(unit && unit) || ''}`}{addonAfter}</div>}</>);
 }

@@ -12,9 +12,9 @@ import { includeObjectKeys, excludeObjectKeys } from "utils/object";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker } from "antd";
 const { Title, Text } = Typography;
-import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined, DeleteFilled, PlusCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined, DeleteFilled, PlusCircleOutlined,WarningOutlined } from '@ant-design/icons';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
 import { useModal } from "react-modal-hook";
@@ -27,6 +27,7 @@ import { TbCircles } from "react-icons/tb";
 import BobinesPopup from './commons/BobinesPopup';
 import { usePermission } from "utils/usePermission";
 import YScroll from 'components/YScroll';
+import dayjs from 'dayjs';
 
 const focus = (el, h,) => { el?.focus(); };
 
@@ -340,6 +341,110 @@ const CreateContent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
+const schemaCreateEvent = (options = {}) => {
+    return getSchema({
+        "comprimento": Joi.number().positive().label("Comprimento").required(),
+        "diametro": Joi.number().positive().label("Diâmetro").required(),
+        "peso": Joi.number().positive().label("Peso").required(),
+        "nw_inf": Joi.number().positive().label("Metros Nw. Inferior").required(),
+        "nw_sup": Joi.number().positive().label("Metros Nw. Superior").required()
+    }, options).unknown(true);
+}
+
+const schemaDate = Joi.object({
+    "t_stamp_init": Joi.date().required(),
+    "t_stamp_end": Joi.date().required()
+        .greater(Joi.ref('t_stamp_init')).message('A data de fim tem de ser superior à data de início')
+});
+const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
+    const [form] = Form.useForm();
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const submitting = useSubmitting(true);
+
+
+    const loadData = async ({ signal } = {}) => {
+        let response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: {}, parameters: { method: "LastIgBobinagemReelingExchangeLookup" } });
+        if (response?.data?.rows[0]?.fim_ts) {
+            form.setFieldsValue({ t_stamp_init: moment(response?.data?.rows[0]?.fim_ts) });
+        }
+        submitting.end();
+    };
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const onFinish = async () => {
+        const values = form.getFieldsValue(true);
+        const v = schemaCreateEvent().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
+        const date_init = values?.t_stamp_init?.format(DATETIME_FORMAT);
+        const date_end = values?.t_stamp_end?.format(DATETIME_FORMAT);
+        const result = schemaDate.validate({ t_stamp_init: date_init, t_stamp_end: date_end }, { abortEarly: false });
+        let vDate = getStatus(result);
+        let { errors, warnings, value, ...status } = getStatus(v);
+        if (dayjs(values?.t_stamp_end?.format(DATETIME_FORMAT)) > dayjs()) {
+            status.fieldStatus.t_stamp_end = { status: "error", messages: [{ message: "A data de fim não pode ser maior que a data atual." }] };
+            errors++;
+        }
+
+        setFieldStatus({ ...status.fieldStatus, ...vDate?.fieldStatus });
+        setFormStatus({ ...status.formStatus, ...vDate?.formStatus });
+        if (errors === 0 && vDate?.errors === 0) {
+            Modal.confirm({
+                title: <div>Criar evento Troca de Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Deseja criar o evento de troca de bobinagem? <br/>Data início: <b>{date_init}</b><br/>Data fim: <b>{date_end}</b>?</li></ul>,
+                onOk: async () => {
+                    submitting.trigger();
+                    try {
+                        let response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: {}, parameters: { method: "NewManualEvent", values: { ...values, date_init, date_end } } });
+                        if (response.data.status !== "error") {
+                            closeParent();
+                            Modal.success({ title: "Troca de Bobinagem criada com sucesso!" });
+                        } else {
+                            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
+                        }
+                    } catch (e) {
+                        Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+                    } finally {
+                        submitting.end();
+                    };
+                }
+            });
+        }
+    }
+
+    const onValuesChange = (changedValues, values) => {
+    }
+
+    return (
+        <Form form={form} name={`f-evt`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ t_stamp_end: moment(dayjs().format(DATETIME_FORMAT)) }}>
+            <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+            <FormContainer id="LAY-EVT" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaCreateEvent} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row style={{}} gutterWidth={10}>
+                    <Col width={150}><Field wrapFormItem={true} name="comprimento" label={{ enabled: true, text: "Comprimento Bobinagem" }}><InputNumber min={1} size="small" addonAfter="m" /></Field></Col>
+                    <Col width={150}><Field wrapFormItem={true} name="diametro" label={{ enabled: true, text: "Diâmetro" }}><InputNumber min={1} size="small" addonAfter="mm" /></Field></Col>
+                    <Col width={150}><Field wrapFormItem={true} name="peso" label={{ enabled: true, text: "Peso" }}><InputNumber min={1} size="small" addonAfter="kg" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col width={150}><Field wrapFormItem={true} name="nw_inf" label={{ enabled: true, text: "Nw Inf." }}><InputNumber min={1} size="small" addonAfter="m" /></Field></Col>
+                    <Col width={150}><Field wrapFormItem={true} name="nw_sup" label={{ enabled: true, text: "Nw Sup." }}><InputNumber min={1} size="small" addonAfter="m" /></Field></Col>
+                </Row>
+                <Row style={{}} gutterWidth={10}>
+                    <Col width={150}><Field wrapFormItem={true} name="t_stamp_init" label={{ enabled: true, text: "Data Início" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                    <Col width={150}><Field wrapFormItem={true} name="t_stamp_end" label={{ enabled: true, text: "Data Fim" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
+                </Row>
+            </FormContainer>
+            {parentRef && <Portal elId={parentRef.current}>
+                <Space>
+                    <Button onClick={onFinish}>Executar</Button>
+                    <Button onClick={closeParent}>Cancelar</Button>
+                </Space>
+            </Portal>
+            }
+        </Form>
+    );
+}
 
 export default (props) => {
     const navigate = useNavigate();
@@ -379,6 +484,7 @@ export default (props) => {
                 case "details": return <IFrame src={modalParameters.src} />;
                 case "delete": return <DeleteContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
                 case "create": return <CreateContent loadParentData={modalParameters.loadData} />;
+                case "createevent": return <CreateEvent loadParentData={modalParameters.loadData} />;
             }
         }
 
@@ -621,6 +727,10 @@ export default (props) => {
         setModalParameters({ type: "create", width: 800, height: 400, title: <div>Criar Bobinagem</div>, loadData: () => dataAPI.fetchPost() });
         showModal();
     }
+    const onCreateEvent = async () => {
+        setModalParameters({ type: "createevent", width: 800, height: 400, title: <div>Criar Evento Troca de Bobinagem!!</div>, loadData: () => dataAPI.fetchPost() });
+        showModal();
+    }
 
     return (
         <>
@@ -648,6 +758,7 @@ export default (props) => {
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                     {modeEdit.datagrid && <Button type="primary" disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onCreate}>Criar Bobinagem</Button>}
+                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<WarningOutlined style={{color:"orange"}} />} onClick={onCreateEvent}>Criar Troca de Bobinagem!!</Button>}
                     {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                 </Space>}
                 //content={<PickHolder/>}

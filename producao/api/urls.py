@@ -266,6 +266,7 @@ urlpatterns = [
 
     re_path(r'^permissions/sql/$',app_permissions.Sql),
     re_path(r'^bobines/sql/$',bobines.Sql),
+    re_path(r'^bobinagens/sql/$',bobinagens.Sql),
     re_path(r'^ordensfabrico/sql/$',ordens_fabrico.Sql),
     re_path(r'^artigos/sql/$',artigos.Sql),
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),

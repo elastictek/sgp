@@ -203,7 +203,7 @@ def checkCurrentSettings(id,status,cursor):
 def getCurrentSettingsId():
     with connections["default"].cursor() as cursor:
         return db.executeSimpleList(lambda: (f"""		
-                SELECT acs.id,acs.agg_of_id 
+                SELECT acs.id,acs.agg_of_id
                 from producao_currentsettings cs
                 join audit_currentsettings acs on cs.id=acs.contextid
                 where cs.status=3

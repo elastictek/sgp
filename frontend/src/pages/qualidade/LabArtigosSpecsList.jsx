@@ -21,9 +21,9 @@ import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUp
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor } from 'components/TableEditorsV3';
+import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor,LabMetodosTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link,DateTime , Favourite} from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -145,7 +145,10 @@ export default ({ setFormTitle, ...props }) => {
 
 
     const columnEditable = (v, { data, name }) => {
-        if (["designacao", "cliente_nome", "required", "des", "status", "obs", "owner"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["designacao", "lab_metodo", "status", "obs","reference"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
+            return true;
+        }
+        if (["designacao", "status", "obs","reference"].includes(name) && (mode.datagrid.edit)) {
             return true;
         }
         return false;
@@ -155,7 +158,10 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["designacao", "cliente_nome", "required", "des", "status", "obs", "owner"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["designacao", "lab_metodo", "status", "obs","reference"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
+            return tableCls.edit;
+        }
+        if (["designacao", "status", "obs","reference"].includes(name) && (mode.datagrid.edit)) {
             return tableCls.edit;
         }
     };
@@ -164,13 +170,15 @@ export default ({ setFormTitle, ...props }) => {
         //{ name: 'name', header: 'Header', headerAlign: "center" }
     ]
     const columns = [
-        ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data }) => <Link onClick={() => onOpenParameters(data?.id, data?.designacao)} value={data?.designacao} /> }] : [],
+        ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data,cellProps }) => <Link cellProps={cellProps} onClick={() => onOpenParameters(data?.id, data?.designacao)} value={data?.designacao} /> }] : [],
+        ...(true) ? [{ name: 'lab_metodo', header: 'Método', editable: columnEditable, renderEditor: (props) => <LabMetodosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : data?.metodo_designacao, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'des', header: 'Artigo', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'owner', header: 'Owner', editable: columnEditable, renderEditor: (props) => <MetodoOwnerTableEditor {...props} />, render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', editable: columnEditable, renderEditor: (props) => <ClientesTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : data?.cliente_nome, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'owner', header: 'Owner', editable: columnEditable, renderEditor: (props) => <MetodoOwnerTableEditor {...props} />, render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} genre="m" checkbox={true} />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'reference', header: 'Referência',editable: columnEditable, userSelect: true, defaultLocked: false, width: 90,renderEditor: (props) => <BooleanTableEditor {...props} genre="m" checkbox={true} />,cellProps: { className: columnClass }, render: ({data}) => <Favourite value={data?.reference} /> }] : [],
         ...(true) ? [{ name: 'obs', header: 'Observações', editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 't_stamp', header: 'Data', editable: columnEditable, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <DateTime value={data?.t_stamp} format={DATETIME_FORMAT}/>, userSelect: true, defaultLocked: false, width:150, headerAlign: "center" }] : [],
         ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
     ];
 
@@ -241,10 +249,8 @@ export default ({ setFormTitle, ...props }) => {
         const index = rowIndex;
         if (index >= 0) {
             let _rows = [];
-            if (columnId === "cliente_nome") {
-                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.BPCNAM_0, "cliente_cod": value?.BPCNUM_0 });
-            } else if (columnId === "des") {
-                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.des, "artigo_id": value?.id, "cod": value?.cod });
+            if (columnId === "lab_metodo") {
+                _rows = dataAPI.updateValues(index, columnId, { ...!data?.designacao && {designacao:`${dayjs().format(DATE_FORMAT_NO_SEPARATOR)} ${value?.designacao}`}, "metodo_designacao": value?.designacao, "lab_metodo_id": value?.id, "cliente_nome": value?.cliente_nome, "des": value?.des, "owner":value?.owner });
             } else {
                 _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
             }
@@ -272,7 +278,7 @@ export default ({ setFormTitle, ...props }) => {
                 if (status.errors > 0) {
                     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                 } else {
-                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "UpdateLabMetodo", rows } });
+                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "UpdateLabArtigoSpecs", rows } });
                     if (response.data.status !== "error") {
                         dataAPI.update(true);
                         openNotification(response.data.status, 'top', "Notificação", response.data.title);
@@ -300,7 +306,7 @@ export default ({ setFormTitle, ...props }) => {
                 if (status.errors > 0) {
                     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                 } else {
-                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabMetodo", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid", "des", "cod"]) } });
+                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabArtigoSpecs", data: excludeObjectKeys(rows[0], []) } });
                     if (response.data.status !== "error") {
                         dataAPI.setAction("load", true);
                         dataAPI.update(true);
@@ -319,7 +325,7 @@ export default ({ setFormTitle, ...props }) => {
         }
     }
     const onAdd = (cols) => {
-        dataAPI.addRow({ ...cols, required: 1, status: 1, owner: 0 }, null, 0);
+        dataAPI.addRow({ ...cols, status: 1,reference:0 }, null, 0);
     }
     const onDelete = (data, rowIndex) => {
         Modal.confirm({
@@ -333,7 +339,7 @@ export default ({ setFormTitle, ...props }) => {
                     if (status.errors > 0) {
                         openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                     } else {
-                        response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "DeleteLabMetodo" }, filter: { id: data["id"] } });
+                        //response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "DeleteLabMetodo" }, filter: { id: data["id"] } });
                         if (response.data.status !== "error") {
                             const _rows = dataAPI.deleteRow({ [dataAPI.getPrimaryKey()]: data?.[dataAPI.getPrimaryKey()] }, [dataAPI.getPrimaryKey()]);
                             dataAPI.setAction("edit", true);

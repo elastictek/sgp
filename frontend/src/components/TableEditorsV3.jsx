@@ -621,7 +621,7 @@ export const ArtigosTableEditor = ({ ...props }) => {
         selectorProps={{
             value: { artigo_id: props?.cellProps?.data?.artigo_id, des: props?.cellProps?.data?.des, cod: props?.cellProps?.data?.cod },
             title: "Artigo",
-            params: { payload: { url: `${API_URL}/artigos/sql/`, parameters: { method: "ArtigosLookup" }, pagination: { enabled: true, limit: 15 }, filter: {}, sort: [] } },
+            params: { payload: { url: `${API_URL}/artigos/sql/`, parameters: { method: "ArtigosLookup" }, pagination: { enabled: true }, filter: {}, sort: [] } },
             keyField: ["id"],
             textField: "des",
             // detailText={r => r?.cod}
@@ -630,6 +630,34 @@ export const ArtigosTableEditor = ({ ...props }) => {
                 { key: 'des', name: 'Nome' }
             ],
             filters: { fartigo: { type: "any", width: 150, text: "Artigo", autoFocus: true } },
+            moreFilters: {}
+        }}
+    />)
+}
+
+
+export const LabMetodosTableEditor = ({ ...props }) => {
+
+    return (<FieldSelectorEditor
+        {...props}
+        selectorProps={{
+            value: { lab_metodo_id: props?.cellProps?.data?.lab_metodo_id, designacao: props?.cellProps?.data?.metodo_designacao },
+            title: "Métodos de Testagem",
+            params: { payload: { url: `${API_URL}/qualidade/sql/`, parameters: { method: "ListLabMetodos" }, pagination: { enabled: true }, filter: {}, sort: [] } },
+            keyField: ["id"],
+            textField: "designacao",
+            // detailText={r => r?.cod}
+            columns: [
+                { key: 'designacao', name: 'Designação', width: 200 },
+                { key: 'des', name: 'Artigo' },
+                { key: 'cliente_nome', name: 'Cliente' },
+                { key: 'owner', name: 'Owner',width:70 }
+            ],
+            filters: { fdes: { type: "any", width: 150, text: "Designação", autoFocus: true },
+            fartigo_cod: { type: "any", width: 150, text: "Artigo Cód." },
+            fartigo_des: { type: "any", width: 150, text: "Artigo Des." },
+            fcliente: { type: "any", width: 150, text: "Cliente" }
+        },
             moreFilters: {}
         }}
     />)

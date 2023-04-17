@@ -40,6 +40,7 @@ from sistema.settings.appSettings import AppSettings
 import time
 import requests
 import psycopg2
+from producao.api.currentsettings import getCurrentSettingsId
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -168,6 +169,63 @@ def export(sql, db_parameters, parameters,conn_name):
                 resp['Content-Disposition'] = "inline; filename=list.csv"
             return resp
 
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Sql(request, format=None):
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
+
+def LastIgBobinagemReelingExchangeLookup(request, format=None):
+    return Response(_lastIgBobinagemReelingExchangeLookup())
+
+def _lastIgBobinagemReelingExchangeLookup():
+    conn = connections["default"].cursor()    
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select * from ig_bobinagens where `type`=1 order by id desc limit 1
+        """
+    ), conn, {})
+    return response
+
+def NewManualEvent(request, format=None):
+    data = request.data.get("parameters").get("values")
+    print(data)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                _current = getCurrentSettingsId()[0]
+                _last = _lastIgBobinagemReelingExchangeLookup().get("rows")[0]
+                del _last["id"]
+                _last["n_trocas"] = _last["n_trocas"] + 1
+                _last["diametro_calculado"] = data.get("diametro")
+                _last["diametro"] = data.get("diametro")
+                _last["peso"] = data.get("peso")
+                _last["metros"] = data.get("comprimento")
+                _last["metros_evento_estado"] = data.get("comprimento")
+                _last["nw_inf"] = data.get("nw_inf")
+                _last["nw_sup"] = data.get("nw_sup")
+                _last["nw_inf_evento_estado"] = data.get("nw_inf")
+                _last["nw_sup_evento_estado"] = data.get("nw_sup")
+                _last["inicio_ts"] = data.get("date_init")
+                _last["fim_ts"] = data.get("date_end")
+                _last["t_stamp"] = datetime.now()
+                _last["audit_cs_id"]=_current.get("id")
+                dml = db.dml(TypeDml.INSERT, _last, "ig_bobinagens",None,None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
 
 
 @api_view(['POST'])
