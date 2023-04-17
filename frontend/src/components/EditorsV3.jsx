@@ -39,7 +39,7 @@ export const Clientes = ({ name, label, forInput = null, forViewBorder = true, f
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
             <Selector
                 title="Clientes"
-                params={{ payload: { url: `${API_URL}/artigos/sql/`, parameters: { method: "ClientesLookup" }, pagination: { enabled: true, limit: 15 }, filter: {}, sort: [] } }}
+                params={{ payload: { url: `${API_URL}/artigos/sql/`, parameters: { method: "ClientesLookup" }, pagination: { enabled: true, pageSize:15 }, filter: {}, sort: [] } }}
                 keyField={["BPCNUM_0"]}
                 textField="BPCNAM_0"
                 detailText={r => r?.BPCNUM_0}

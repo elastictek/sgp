@@ -189,7 +189,16 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
     
-
+def checkCurrentSettings(id,status,cursor):
+    f = Filters({
+        "id": id
+    })
+    f.where()
+    f.add(f'pc.id = :id', lambda v:(v!=None) )
+    f.add(f'pc.`status` in ({",".join(status)})',True )
+    f.value("and")
+    exists = db.exists("producao_currentsettings pc", f, cursor).exists
+    return exists
 
 def getCurrentSettingsId():
     with connections["default"].cursor() as cursor:
@@ -201,6 +210,26 @@ def getCurrentSettingsId():
                 order by acs.id desc
                 limit 1
             """), cursor, {})['rows']
+
+def updateCurrentSettings(id,type,data,user_id,cursor):
+    try:
+        with cursor:
+            args = (id,data,type,user_id,0)
+            print(args)
+            #cursor.callproc('update_currentsettings',args)
+        return Response({"status": "success", "id":id, "title": f'Definições atualizadas com sucesso', "subTitle":f""})
+    except Exception as error:
+        return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
+
+
+
+
+
+
+
+
+
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -556,6 +585,8 @@ def UpdateCurrentSettings(request, format=None):
         try:
             with connections["default"].cursor() as cursor:
                 args = (request.data['filter']["csid"],json.dumps(data['formulacao']),data['type'],request.user.id,0)
+                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                print(args)
                 cursor.callproc('update_currentsettings',args)
                 #db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "id":request.data['filter']['csid'], "title": f'Definições Atuais Atualizadas com Sucesso', "subTitle":f""})

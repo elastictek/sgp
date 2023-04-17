@@ -14,6 +14,7 @@ from producao.api import paletes
 from producao.api import ordens_fabrico
 from producao.api import app_permissions
 from producao.api import artigos
+from producao.api import qualidade
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -160,7 +161,7 @@ urlpatterns = [
     re_path(r'^listmpalternativas/$', materias_primas.ListMPAlternativas),
     re_path(r'^savempalternativas/$', materias_primas.SaveMPAlternativas),
     
-    re_path(r'^materiasprimaslookup/$', materias_primas.MateriasPrimasLookup),
+    re_path(r'^materiasprimaslookup/$', materias_primas.MPrimasLookup),
     re_path(r'^listmpgroupslookup/$', materias_primas.ListMPGroupsLookup),
     re_path(r'^getmpalternativas/$', materias_primas.GetMPAlternativas),
     
@@ -269,6 +270,7 @@ urlpatterns = [
     re_path(r'^artigos/sql/$',artigos.Sql),
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),
     re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
+    re_path(r'^qualidade/sql/$',qualidade.Sql),
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

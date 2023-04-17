@@ -175,7 +175,7 @@ const moreFiltersSchema = ({ form }) => [
         fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 4 },
         fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 4 }
     },
-    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
+    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span:12 }, fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' }, span:12 } },
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
     { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula: { label: "Matrícula", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula_reboque: { label: "Mat.Reboque", field: { type: 'input', size: 'small' }, span: 8 } },
     { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
@@ -856,6 +856,7 @@ export default ({ setFormTitle, ...props }) => {
                     // fartigo: getFilterValue(vals?.fartigo, 'any'),
                     flote: getFilterValue(vals?.flote, 'any'),
                     fsdh: getFilterValue(vals?.fsdh, 'any'),
+                    fcliente: getFilterValue(vals?.fcliente, 'any'),
                     fclienteexp: getFilterValue(vals?.fclienteexp, 'any'),
                     fartigoexp: getFilterValue(vals?.fartigoexp, 'any'),
                     fartigo: getFilterValue(vals?.fartigo, 'any'),

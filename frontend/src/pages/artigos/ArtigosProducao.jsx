@@ -92,51 +92,6 @@ const moreFiltersSchema = ({ form }) => [
   { fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } },
 ];
 
-const fetchGroups = async ({ value, groups, signal }) => {
-  const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "ArtigosCompativeisGroupsLookup" }, pagination: { limit: 20 }, filter: { group: getFilterValue(value, 'any') }, signal });
-  if (!groups || groups.length === 0) {
-    return rows;
-  } else {
-    const r = [...rows];
-    groups.forEach(el => { if (!r.some(v => v.group === el)) { r.push({ group: el }); } });
-    return r;
-  }
-}
-
-const focus = (el, h,) => { el?.focus(); };
-const FieldGroupEditor = ({ dataAPI, ...props }) => {
-  const onChange = (v) => {
-    props.onChange(v === '' ? null : v);
-  };
-  const onComplete = (v) => {
-    props.onComplete(v === '' ? null : v);
-  }
-  const onSelect = (v) => {
-    props.onChange(v === '' ? null : v);
-  };
-  const onKeyDown = (e) => {
-    if (e.key == 'Tab' || e.key == 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-      props.onTabNavigation(
-        true /*complete navigation?*/,
-        e.shiftKey ? -1 : 1 /*backwards of forwards*/
-      );
-    }
-  }
-  return (
-    <AutoCompleteField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={props.value} ref={focus} onSelect={onSelect} onChange={onChange} onBlur={onComplete}
-      onKeyDown={onKeyDown}
-      size="small"
-      keyField="group"
-      textField="group"
-      showSearch
-      showArrow
-      allowClear
-      fetchOptions={async (value) => await fetchGroups({ value, groups: dataAPI.dirtyRows().map(v => v?.group) })}
-    />
-  );
-}
 
 /* const FilterDate = React.forwardRef((props, ref) => {
   return (<div className="InovuaReactDataGrid__column-header__filter-wrapper" style={{minHeight: "41px"}}><Input size="small"/></div>)

@@ -35,9 +35,9 @@ import { props } from 'ramda';
 const openNotification = (type, messages = []) => {
     if (messages.length > 0) {
         notification.open({
-            placement:"top",
-            message: type==="error" ? <b>Erros</b> : <b>Avisos</b>,
-            description:<ul>{messages.map((v,i)=><li key={`msg-${i}`}>{v}</li>)}</ul>,
+            placement: "top",
+            message: type === "error" ? <b>Erros</b> : <b>Avisos</b>,
+            description: <ul>{messages.map((v, i) => <li key={`msg-${i}`}>{v}</li>)}</ul>,
         });
     }
 };
@@ -62,6 +62,12 @@ export const useTableStyles = createUseStyles({
     },
     rowNotValid: {
         background: "#ffe7ba !important"
+    },
+    right: {
+        textAlign: "right"
+    },
+    selectable: {
+        cursor: "pointer"
     },
     edit: {
         position: "relative",
@@ -332,37 +338,38 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
     );
 }
 
-const EditControls = ({ editable = {}, dataAPI, columns, idProperty,dirty }) => {
-    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, setGridStatus, gridStatus } = editable;
+const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid }) => {
+    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave } = editable;
 
 
     const changeMode = async () => {
         if (addMode(editable)) {
             dataAPI.setAction("cancel", true);
-            setGridStatus({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
-            
+            dataAPI.clearStatus();
+
             const _v = { ...mode[modeKey], add: false };
             setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
-            let _update=true;
-            if (editable?.onCancel && (typeof editable.onCancel==="function")){
-                _update=editable.onCancel();
+            let _update = true;
+            if (editable?.onCancel && (typeof editable.onCancel === "function")) {
+                _update = editable.onCancel();
             }
-            if (_update!==false){
+            if (_update !== false) {
                 dataAPI.update(true);
-            }            
+            }
             return;
         }
 
         if (editMode(editable)) {
+            grid.current.cancelEdit();
             dataAPI.setAction("cancel", true);
-            setGridStatus({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
-            let _update=true;
-            if (editable?.onCancel && (typeof editable.onCancel==="function")){
-                _update=await editable.onCancel();
+            dataAPI.clearStatus();
+            let _update = true;
+            if (editable?.onCancel && (typeof editable.onCancel === "function")) {
+                _update = await editable.onCancel();
             }
-            if (_update!==false){
+            if (_update !== false) {
                 dataAPI.update(true);
-            }            
+            }
         } else {
             dataAPI.setAction("edit", true);
             dataAPI.update(true);
@@ -387,13 +394,13 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty,dirty }) => 
         setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
     }
     const showMessages = (type) => {
-        openNotification(type,dataAPI.getMessages(gridStatus)[type]);
+        openNotification(type, dataAPI.getMessages()[type]);
     }
 
     return (<>
         <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
-            {(gridStatus?.errors > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={()=>showMessages("error")}><Badge count={gridStatus.errors} /></a>}
-            {(gridStatus?.warnings > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={()=>showMessages("warning")}><Badge count={gridStatus.warnings} color="#faad14" /></a>}
+            {(dataAPI?.status()?.errors > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("error")}><Badge count={dataAPI?.status()?.errors} /></a>}
+            {(dataAPI?.status()?.warnings > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("warning")}><Badge count={dataAPI?.status()?.warnings} color="#faad14" /></a>}
             {(enabled && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
             {(add && !addMode(editable) && !editMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={_onAdd}>Novo</Button>}
             {enabled && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
@@ -405,9 +412,9 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty,dirty }) => 
     )
 }
 
-export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, dirty=false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", ...props }) => {
+export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, dirty = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id",onCellAction, ...props }) => {
     const classes = useTableStyles();
-    const gridStyle = { minHeight: '100%', fontSize: "12px" };
+    const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
     const [isSettingsDirty, setSettingsIsDirty] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
@@ -424,6 +431,9 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
         if (typeof rowClassName === "function") {
             return rowClassName({ data });
         }
+        if (rowSelect) {
+            return classes.selectable;
+        }
     }
 
     const localDatasource = () => {
@@ -432,41 +442,55 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
 
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
         let dt = { data: [], count: 0 };
+        console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww")
         if (!dataAPI.updated()) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-1", dt)
             return dt;
         }
         if (initialized.current && (dataAPI.getActions().includes("cancel"))) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-2")
             dataAPI.clearActions();
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
+        } else if (addMode(editable) && dataAPI.getActions().includes("load")) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-9")
+            dataAPI.setAction(dataAPI.getActions().filter(v => v !== 'load'), true);
+            const _v = await dataAPI.fetchPost();
+            dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         } else if (addMode(editable) && dataAPI.getActions().includes("add")) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-3")
             dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         } else if (editMode(editable) && ["editcomplete"].includes(action?.current)) {
-            console.log("completed!!!!!")
             dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
         } else if (initialized.current && (dataAPI.getActions().includes("edit"))) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-10")
             dataAPI.clearActions();
             dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
             //const _v = await dataAPI.fetchPost();
             //dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         } else if (initialized.current && (dataAPI.getActions().includes("filter"))) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-4")
             dataAPI.clearActions();
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         }
         else if (["page", "pagesize"].includes(action?.current)) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-5")
             //dataAPI.pageSize(limit);
             //dataAPI.currentPage((skip / limit) + 1);
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         } else if (["sort"].includes(action?.current)) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-6")
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
         } else if (loadOnInit && !initialized.current) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-7")
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
             initialized.current = true;
         } else if (initialized.current) {
+            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-8")
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
             //dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
@@ -474,7 +498,7 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
         action.current = null;
         console.log("action", dataAPI.getActions(), dt)
         return dt;
-    }, [dataAPI.updated(true)]);
+    }, [dataAPI?.updated(true)]);
 
 
     useEffect(() => {
@@ -489,12 +513,13 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                 const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
                 dataAPI.setFilters(filterValues);
                 toolbarFilters?.form.setFieldsValue(fieldValues);
-                dataAPI.update();
+                dataAPI.first();
+                dataAPI.setAction("filter", true);
+                dataAPI.update(true);
             }
+
             return <Container fluid style={{ padding: "0px 5px" }}>
                 <Row wrap="nowrap" nogutter style={{ borderTop: "1px solid #e4e3e2", display: "flex", flex: 1, alignItems: "center" }}>
-
-
                     <ResponsiveItem
                         maxHeight={24}
                         containerProps={{ style: {} }}
@@ -503,7 +528,7 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                         colProps={{ style: { alignSelf: "end", marginBottom: "4px" } }}
                         popover={
                             <Popover trigger="click">
-                                <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI.getAllFilter())).length}>
+                                <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI?.getAllFilter())).length}>
                                     <Button size="small">Filtros</Button>
                                 </Badge>
                             </Popover>
@@ -512,36 +537,58 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                         <FilterTags dataAPI={dataAPI} removeFilter={removeFilter} />
                     </ResponsiveItem>
                     {/* <ResponsiveItem maxHeight={24} id="pag" button={<Button size="small">Filtros</Button>} containerProps={{ xs: 2, md: 6 }} n={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}><FilterTags dataAPI={dataAPI} removeFilter={removeFilter} /></ResponsiveItem> */}
-                    <Col xs={10} md={6}><PaginationToolbar {...paginationProps} skip={dataAPI.getSkip()} {...paginationI18n} bordered={false} /></Col>
+                    <Col xs={10} md={6}><PaginationToolbar {...paginationProps} {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} {...paginationI18n} bordered={false} /></Col>
                 </Row>
             </Container>
-        }, [/* dataAPI.getSkip(false) */])
+        }, [dataAPI?.getSkip(true), dataAPI?.updated(true)])
 
-    const onKeyDown = (event) => {
+    const onCellDoubleClick = () => {
         const grid = gridRef.current
         let [rowIndex, colIndex] = grid.computedActiveCell
-        
-        if (event.key === 'Escape'){
+        if (!editMode(editable) && !addMode(editable) && typeof onCellAction==="function"){
+            onCellAction(grid.data[rowIndex],grid.getColumnBy(colIndex),"DoubleClick");
+        }
+    }
+    const onKeyDown = (event) => {
+        const grid = gridRef.current
+        if (!grid.computedActiveCell){
+            return;
+        }
+        let [rowIndex, colIndex] = grid.computedActiveCell
+
+        if (!editMode(editable) && !addMode(editable) && typeof onCellAction==="function"){
+            onCellAction(grid.data[rowIndex],grid.getColumnBy(colIndex),event.key);
+        }
+
+        if (!cellNavigation){
+            return;
+        }
+
+        if (event.key === 'Escape') {
             event.preventDefault();
             event.stopPropagation();
             return;
         }
 
-        if (event.key === ' ' || event.key === 'Enter') {
+
+
+        // if (event.key === ' ' || event.key === 'Enter') {
+        if ((!(["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) && !grid.isInEdit.current) || event.key === 'Enter') {
             const column = grid.getColumnBy(colIndex);
             grid.startEdit({ columnId: column.name, rowIndex });
-            if (event.key === 'Enter') {
-                event.preventDefault();
-            }
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault();
             return
         }
+        // }
         if (event.key !== 'Tab' && (editMode(editable) || addMode(editable))) {
             return;
         }
         //if (event.key !== 'Tab') {
         //    return
         //}
-        
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -629,13 +676,13 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                 {title && <Col xs="content">
                     <Row><Col>{title}</Col></Row>
                     <Row><Col>
-                        <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} />
+                        <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                         {leftToolbar && leftToolbar}
                     </Col></Row>
                 </Col>
                 }
                 {!title && <Col xs="content" style={{ alignSelf: "end" }}>
-                    <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty}/>
+                    <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                     {leftToolbar && leftToolbar}
                 </Col>}
                 <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} modeAdd={addMode(editable)} />}</Col>
@@ -648,7 +695,7 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                         placement="bottomRight" title="Opções"
                         content={
                             <ContentSettings modeEdit={editMode(editable)} modeAdd={addMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
-                                dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} /* setPageSize={updatePageSize} */ reportTitle={reportTitle}
+                                dataAPI={dataAPI} columns={columns} pageSize={dataAPI?.getPageSize(true)} /* setPageSize={updatePageSize} */ reportTitle={reportTitle}
                                 moreFilters={moreFilters} reports={reports} clearSort={clearSort}
                             />
                         } trigger="click">
@@ -656,12 +703,12 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                     </Popover>
 
                 </Col>}
-                
+
             </Row>
         </Container>}
 
 
-        <div style={{ height: `calc(100vh - ${offsetHeight})` }}>
+        <>
             <Table
                 loading={loading}
                 idProperty={idProperty}
@@ -674,8 +721,9 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                 rowHeight={rowHeight}
                 dataSource={local ? localDatasource : dataSource}
                 style={gridStyle}
-                defaultActiveCell={DEFAULT_ACTIVE_CELL}
-                onKeyDown={onKeyDown}
+                onKeyDown={ onKeyDown}
+                onCellDoubleClick={onCellDoubleClick}
+                {...cellNavigation && { defaultActiveCell: DEFAULT_ACTIVE_CELL }}
                 onSkipChange={onSkipChange}
                 onLimitChange={onLimitChange}
                 onSortInfoChange={onSortChange}
@@ -683,14 +731,14 @@ export default ({ dataAPI, columns, local=false,loading=false,onRefresh, loadOnI
                 rowClassName={rowClass}
                 /* filterValue={[{ ...dataAPI.getFilter(true) }]} */
                 onFilterValueChange={onFilterValueChange}
-                limit={dataAPI.getPageSize()}
-                {...!local && {sortInfo:dataAPI.getSort()}}
+                limit={dataAPI?.getPageSize()}
+                {...!local && { sortInfo: dataAPI?.getSort() }}
                 enableFiltering={false}
                 {...props}
                 {...(editMode(editable) || addMode(editable)) && { pagination: false }}
                 {...(editMode(editable) || addMode(editable)) && { sortable: false }}
             />
-        </div>
+        </>
     </>
     );
 }

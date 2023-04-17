@@ -41,6 +41,7 @@ import time
 import requests
 import psycopg2
 from decimal import Decimal
+from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -183,7 +184,49 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
     
+def OrdensFabricoInElaboration(request, format=None):
+    connection = connections["default"].cursor()
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select pt.id, pt.cod,pt.status,pt2.of_id,pf.id formulacao_id,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao, pt2.cliente_nome 
+            from producao_tempaggordemfabrico pt
+            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
+            left join producao_formulacao pf on pf.id=pt.formulacao_id
+            where pt.status=0 and not exists(select 1 from producao_artigodetails pa where pa.cod=pt2.of_id)
+            order by pt.cod ASC, pt2.of_id ASC
+        """
+    ), connection, {})
+    return Response(response)
 
+
+
+def OrdensFabricoInElaborationAllowed(request, format=None):
+    connection = connections["default"].cursor()
+    #f = Filters(request.data.get("filter"))
+    f = Filters({"produto_id":2,"artigo_id":3})
+    f.where(False,"")
+    f.add(f'(pt2.produto_id {f.nullValue("produto_id","=:produto_id")})',True )
+    f.add(f'(pt2.item_id = :artigo_id)',lambda v:(v!=None) )
+    f.value("and")
+    f2 = Filters({"artigo_id":3})
+    f2.where(False,"or" if f.hasFilters else "")
+    f2.add(f'(exists ( select 1 from group_artigos tga where tga.artigo_id=:artigo_id and tga.`group`=ga.`group`))',lambda v:(v!=None))
+    f2.value("and")
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select pt.id, pt.cod,pt.status,pt2.of_id,pf.id formulacao_id,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao
+            from producao_tempaggordemfabrico pt
+            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
+            left join producao_artigo pa on pa.id=pt2.item_id
+            left join group_artigos ga on ga.artigo_id = pt2.item_id
+            left join producao_formulacao pf on pf.id=pt.formulacao_id
+            where 
+            pt.status=0 and not exists(select 1 from producao_artigodetails pa where pa.cod=pt2.of_id)
+             {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
+            order by pt.cod ASC, pt2.of_id ASC
+        """
+    ), connection, {**f.parameters,**f2.parameters})
+    return Response(response)
 
 def OrdensFabricoOpen(request, format=None):
     connection = connections["default"].cursor()
@@ -278,9 +321,9 @@ def GetFormulacao(request, format=None):
 
     dql = db.dql(request.data, False)
     if ("audit_cs_id" in filter):
-        sql = lambda: (f"""select formulacaov2 formulacao from audit_currentsettings {f.text}""")
+        sql = lambda: (f"""select fconvert_to_formulacaoV2(formulacaov2) formulacao from audit_currentsettings {f.text}""")
     elif ("cs_id" in filter):
-        sql = lambda: (f"""select formulacaov2 formulacao from producao_currentsettings {f.text}""")
+        sql = lambda: (f"""select fconvert_to_formulacaoV2(formulacaov2) formulacao from producao_currentsettings {f.text}""")
     elif ("formulacao_id" in filter):
         sql = lambda: (f"""
             SELECT            
@@ -350,7 +393,8 @@ def ListFormulacoes(request, format=None):
 
     parameters = {**f.parameters, **f2['parameters']}
     dql = db.dql(request.data, False,False)
-
+    print("LISTING FORMULACOES")
+    print(request.data)
     cols = f'''pf.*,pp.produto_cod'''
     sql = lambda p, c, s: (
         f"""
@@ -415,22 +459,208 @@ def FormulacaoSubGroupsLookup(request, format=None):
 
     return Response(response)
 
-def SaveFormulacao(request, format=None):
-    conn = connections["default"].cursor()
+def UpdateFormulacaoReference(request, format=None):
     data = request.data.get("parameters")
-    print(data)
+    filter = request.data.get("filter")
+    data = {"reference": data.get("reference") if data.get("reference") is not None else 0}
+    try:
+        with connections["default"].cursor() as cursor:
+            dml = db.dml(TypeDml.UPDATE, data, "producao_formulacao",{"id":Filters.getNumeric(filter.get("formulacao_id"))},None,None)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "Formulação atualizada com sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
 
+def SaveFormulacao(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    data = {
+        **data,
+        "designacao": f"""{datetime.now().strftime("%Y%m%d")}""" if data.get("designacao") is None else data.get("designacao"),
+        "group_name": data.get("group_name"),
+        "subgroup_name": data.get("subgroup_name"),
+        "produto_id": data.get("produto_id").get("id") if type(data.get("produto_id")) is dict else data.get("produto_id"),
+        "artigo_id": data.get("artigo_id").get("id") if type(data.get("artigo_id")) is dict else data.get("artigo_id")
+    }
+    
+    def _updateFormulacao(formulacao_id,data,versao,cursor):
+        dml = db.dml(TypeDml.UPDATE, {
+            'produto_id': data.get("produto_id"),
+            'designacao': data.get("designacao"),
+            'cliente_cod': data.get("cliente_cod"),
+            'cliente_nome': data.get("cliente_nome"),
+            "group_name":data.get("group_name"),
+            "subgroup_name":data.get("subgroup_name"),
+            "artigo_id":data.get("artigo_id"),
+            "reference":data.get("reference"),
+            'versao': f'{versao}',
+            'extr0': data.get('extr0'),
+            'extr1': data.get('extr1'),
+            'extr2': data.get('extr2'),
+            'extr3': data.get('extr3'),
+            'extr4': data.get('extr4'),
+            'extr0_val': data.get('extr0_val'),
+            'extr1_val': data.get('extr1_val'),
+            'extr2_val': data.get('extr2_val'),
+            'extr3_val': data.get('extr3_val'),
+            'extr4_val': data.get('extr4_val'),
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }, "producao_formulacao",{"id":Filters.getNumeric(formulacao_id)},None,None,['versao'])
+        #db.execute(dml.statement, cursor, dml.parameters)
+
+    def _insertFormulacao(data,versao,cursor):
+        dml = db.dml(TypeDml.INSERT, {
+            'produto_id': data.get("produto_id"),
+            'designacao': data.get("designacao"),
+            'cliente_cod': data.get("cliente_cod"),
+            'cliente_nome': data.get("cliente_nome"),
+            "group_name":data.get("group_name"),
+            "subgroup_name":data.get("subgroup_name"),
+            "artigo_id":data.get("artigo_id"),
+            "reference":data.get("reference"),
+            'versao': f'{versao}',
+            'extr0': data.get('extr0'),
+            'extr1': data.get('extr1'),
+            'extr2': data.get('extr2'),
+            'extr3': data.get('extr3'),
+            'extr4': data.get('extr4'),
+            'extr0_val': data.get('extr0_val'),
+            'extr1_val': data.get('extr1_val'),
+            'extr2_val': data.get('extr2_val'),
+            'extr3_val': data.get('extr3_val'),
+            'extr4_val': data.get('extr4_val'),
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }, "producao_formulacao",None,None,False,['versao'])
+        #db.execute(dml.statement, cursor, dml.parameters)
+        return cursor.lastrowid
+
+    def _insertFormulacaoItems(formulacao_id,cursor):
+        for idx, v in enumerate(data.get("items")):
+            dml = db.dml(TypeDml.INSERT, {**v, 'formulacao_id':formulacao_id}, "producao_formulacaomateriasprimas",None,None,False)
+            #db.execute(dml.statement, cursor, dml.parameters)
+    
+    def _deleteFormulacaoItems(formulacao_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_formulacaomateriasprimas',{"formulacao_id":Filters.getNumeric(formulacao_id)},None,False)
+        #db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with connections["default"].cursor() as cursor:
+            if filter.get("new") is not None:
+                _id = _insertFormulacao(data,1,cursor)
+                _insertFormulacaoItems(_id,cursor)
+                return Response({"status": "success", "id":_id, "title": "A Formulação foi Registada com Sucesso!", "subTitle":f'Formulação {data.get("designacao")} [v1]'})
+            if filter.get("formulacao_id") is not None:
+                exists = checkFormulacao(data,filter.get("formulacao_id"),cursor)
+                inuse = checkFormulacaoIsInUse(filter.get("formulacao_id"),cursor)
+                versao = getFormulacaoVersao(data,filter.get("formulacao_id"),cursor)
+                if (exists==1 and inuse==1) or exists==0:
+                    _id = _insertFormulacao(data,versao,cursor)
+                    _insertFormulacaoItems(_id,cursor)
+                    return Response({"status": "success", "id":_id, "title": "A Formulação foi Registada com Sucesso!", "subTitle":f'Formulação {data.get("designacao")} [v{versao}]'})
+                else:
+                    _updateFormulacao(filter.get("formulacao_id"),data,versao,cursor)
+                    _deleteFormulacaoItems(filter.get("formulacao_id"),cursor)
+                    _insertFormulacaoItems(filter.get("formulacao_id"),cursor)
+            if filter.get("cs_id") is not None:
+                print("dddddddddddddd")
+                print(data.get("type"))
+                return updateCurrentSettings(filter.get("cs_id"),data.get("type"),data,request.user.id,cursor)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def SetOrdemFabricoFormulacao(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def _isAggInElaboration(aggid,cursor):
+        f = Filters({"id": aggid})
+        f.where(False,"and")
+        f.add(f'pt.id = :id', lambda v:(v!=None) )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (
+        f"""
+            select pt.id, pt.cod,pt.status,pt2.of_id, pt2.cliente_nome 
+            from producao_tempaggordemfabrico pt
+            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
+            where pt.status=0 and not exists(select 1 from producao_artigodetails pa where pa.cod=pt2.of_id) {f.text}
+            order by pt.cod ASC, pt2.of_id ASC 
+            limit 1
+        """
+        ), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            return row[0]
+        return None
+    
+    def _updateAgg(aggid,formulacao_id,cursor):
+        dml = db.dml(TypeDml.UPDATE, {
+            'formulacao_id': formulacao_id,
+            "updated_date": datetime.now()
+        }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(aggid)},None,None,[])
+        #db.execute(dml.statement, cursor, dml.parameters)
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            row = _isAggInElaboration(filter.get("aggid"),cursor)
+            if row is None:
+                return Response({"status": "error", "title": "Não é possível associar a formulação à ordem de fabrico selecionada! Só é possível com o estado 'Em elaboração'."})
+            _updateAgg(filter.get("aggid"),data.get("formulacao_id"),cursor)
+            return Response({"status": "success", "title": "A Formulação foi Associada com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
 
 
 #region INTERNAL METHODS
-def getFormulacaoVersao(data, cursor):
-    f = Filters({"produto_id": data['produto_id']})
-    f.setParameters({}, False)
-    f.where()
-    f.add(f'f.produto_id = :produto_id', True)
-    f.value("and")   
-    return db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_formulacao f {f.text}'), cursor, f.parameters)['rows'][0]['mx']
 
+
+def getFormulacaoVersao(data,formulacao_id,cursor):
+    f = Filters({
+        "group": data.get("group_name"),
+        "subgroup": data.get("subgroup_name"),
+        "produto": data.get("produto_id"),
+        "artigo": data.get("artigo_id")
+    })
+    f.where()
+    f.add(f'pf.group_name {f.nullValue("group","=:group")}',True )
+    f.add(f'pf.subgroup_name {f.nullValue("subgroup","=:subgroup")}',True )
+    f.add(f'pf.produto_id {f.nullValue("produto","=:produto")}',True )
+    f.add(f'pf.artigo_id {f.nullValue("artigo","=:artigo")}',True )
+    f.value("and")
+    rows = db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_formulacao pf {f.text}'), cursor, f.parameters).get("rows")
+    if rows is not None and len(rows)>0:
+        return rows[0].get("mx")
+    return 1
+
+def checkFormulacao(data,formulacao_id,cursor):
+    f = Filters({
+        "id": formulacao_id,
+        # "des": data.get("designacao"),
+        "group": data.get("group_name"),
+        "subgroup": data.get("subgroup_name"),
+        "produto": data.get("produto_id"),
+        "artigo": data.get("artigo_id")
+    })
+    f.where()
+    f.add(f'pf.id = :id', lambda v:(v!=None) )
+    # f.add(f'pf.designacao = :des',True )
+    f.add(f'pf.group_name {f.nullValue("group","=:group")}',True )
+    f.add(f'pf.subgroup_name {f.nullValue("subgroup","=:subgroup")}',True )
+    f.add(f'pf.produto_id {f.nullValue("produto","=:produto")}',True )
+    f.add(f'pf.artigo_id {f.nullValue("artigo","=:artigo")}',True )
+    f.value("and")
+    exists = db.exists("producao_formulacao pf", f, cursor).exists
+    return exists
+
+def checkFormulacaoIsInUse(formulacao_id,cursor):
+    f = Filters({"id": formulacao_id})
+    f.where()
+    f.add(f'tagg.formulacao_id = :id', True )
+    f.value("and")
+    exists = db.exists("producao_tempaggordemfabrico tagg", f, cursor).exists
+    return exists
 
 def checkAgg(ofabrico_id,ofabrico_cod,cursor):
     if ofabrico_id is None:
@@ -899,7 +1129,6 @@ def CheckLists(request, format=None):
     f.where(False,"and")
     f.auto()
     f.value()
-
     f2 = filterMulti(request.data['filter'] if "filter" in request.data else {}, {}, False, "and" if f.hasFilters else "where" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
@@ -921,7 +1150,7 @@ def CheckLists(request, format=None):
         return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
         response = db.executeList(sql, connection, parameters,[],None,None)
-    except Error as error:
+    except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
@@ -1089,6 +1318,19 @@ def TasksAvailableLookup(request, format=None):
         SELECT {f'{dql.columns}'} 
         FROM ofabrico_checklist cl
         JOIN ofabrico_checklist_tasks ct on cl.id=ct.checklist_id
+        where cl.`status`=1 and ct.`status`=1 and
+        not exists(
+            select 1 
+            from ofabrico_checklist_items t_oci  
+            join ofabrico_checklist_tasks t_ct on t_oci.checklist_task_id=t_ct.id
+            where t_oci.bobine_id={request.data['filter'].get("bobine_id")} and t_ct.type=%(type1)s and t_ct.status=1
+        )
+        {f.text} {f2["text"]} {dql.sort} {dql.limit}
+    """)
+    print(f"""
+        SELECT {f'{dql.columns}'} 
+        FROM ofabrico_checklist cl
+        JOIN ofabrico_checklist_tasks ct on cl.id=ct.checklist_id
         where cl.`status`=1 and
         not exists(
             select 1 
@@ -1098,6 +1340,7 @@ def TasksAvailableLookup(request, format=None):
         )
         {f.text} {f2["text"]} {dql.sort} {dql.limit}
     """)
+    print(parameters)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""

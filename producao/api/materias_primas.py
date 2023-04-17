@@ -275,8 +275,7 @@ def AddGranuladoToLine(request, format=None):
     try:
         filter["t_stamp"]=datetime.now()
         args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter else None,request.user.id,0)
-        print(args)
-        #cursor.callproc('add_granulado_to_line',args)
+        cursor.callproc('add_granulado_to_line',args)
         return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
@@ -286,12 +285,82 @@ def RemoveGranuladoFromLine(request, format=None):
     try:
         filter["t_stamp"]=datetime.now()
         args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
-        print("outtttttttt")
-        print(args)
-        #cursor.callproc('output_granulado_from_line',args)
+        cursor.callproc('output_granulado_from_line',args)
         return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
+
+def MateriasPrimasLookup(request, format=None):
+    conn = connections[connGatewayName].cursor()
+    cols = ['mprima."ITMREF_0"','mprima."ITMDES1_0"','mprima."ZFAMILIA_0"','mprima."ZSUBFAMILIA_0"','mprima."STU_0"', 'mprima."SAUSTUCOE_0"','mprima."TSICOD_3"']
+    
+    f = Filters(request.data['filter'])
+    f.setParameters({}, False)
+    f.where()
+    f.value("and")
+    
+    f2 = filterMulti(request.data['filter'], {
+        'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mprima.'}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    qty = None if "qty" not in request.data['parameters'] else request.data['parameters']['qty']
+    typ = None if "type" not in request.data['parameters'] else request.data['parameters']['type']
+    cfilter = ""
+    if typ=='nonwovens':
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
+    elif typ=='cores':
+        core = int(int(request.data['parameters']['core']) * 25.4)
+        largura = str(request.data['parameters']['largura'])[:-1]
+        #cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x%%_%%mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+    elif typ == 'all':
+        cfilter=''
+    else:
+        cfilter = f"""(LOWER("ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER("ITMDES1_0") NOT LIKE 'core%%') AND ("ACCCOD_0" = 'PT_MATPRIM')"""
+
+    if cfilter != "":
+        cfilter = f"and ({cfilter})" if f.hasFilters or f2["hasFilters"] else f"where ({cfilter})"
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    if qty is None:
+        dql.columns = encloseColumn(cols,False)
+        response = dbgw.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from {sageAlias}."ITMMASTER" mprima
+                {f.text} {f2["text"]} {cfilter}
+                {dql.sort}
+                {dql.limit}
+            """
+        ), conn, parameters)
+    else:
+        cols.append('ST."QTYPCU_0"')
+        dql.columns = encloseColumn(cols,False)
+        response = dbgw.executeSimpleList(lambda: (
+            f"""                
+                select
+                {dql.columns}
+                from {sageAlias}."ITMMASTER" mprima
+                join (
+                SELECT "ITMREF_0","QTYPCU_0" FROM (
+                SELECT "ITMREF_0","QTYPCU_0","ROWID", MAX("ROWID") OVER (PARTITION BY ST."ITMREF_0") MX FROM {sageAlias}."STOJOU" ST 
+                WHERE "VCRTYP_0"=6 AND "QTYPCU_0">0 ORDER BY "CREDATTIM_0"
+                ) tt where tt."ROWID"=MX
+                ) ST on mprima."ITMREF_0"=ST."ITMREF_0"
+                {f.text} {f2["text"]} {cfilter}
+                {dql.sort}
+                {dql.limit}
+            """
+        ), conn, parameters)
+
+
+
+
+    return Response(response)
 
 
 
@@ -318,6 +387,10 @@ def inProduction(data,cursor):
         if len(response["rows"])>0:
             return response["rows"][0]
         return None
+
+
+
+
 
 
 @api_view(['POST'])
@@ -412,6 +485,10 @@ def MateriasPrimasList(request, format=None):
     else:
         response = dbmssql.executeList(sql, connection, parameters, [])
     return Response(response)
+
+
+
+
 
 
 #region NONWOVENS
@@ -1592,7 +1669,7 @@ def GetMPAlternativas(request, format=None):
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
-def MateriasPrimasLookup(request, format=None):
+def MPrimasLookup(request, format=None):
     conn = connections[connGatewayName].cursor()
     cols = ['mprima."ITMREF_0"','mprima."ITMDES1_0"','mprima."ZFAMILIA_0"','mprima."ZSUBFAMILIA_0"','mprima."STU_0"', 'mprima."SAUSTUCOE_0"','mprima."TSICOD_3"']
     

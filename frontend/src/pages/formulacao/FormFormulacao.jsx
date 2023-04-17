@@ -24,20 +24,21 @@ import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
+import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, AutoCompleteField, SwitchField } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, AutoCompleteField, SwitchField, Chooser } from 'components/FormFields';
 import YScroll from 'components/YScroll';
 import { MediaContext, AppContext } from "../App";
 import { usePermission, Permissions } from "utils/usePermission";
 // import { isPrivate, LeftUserItem } from './commons';
-import { BsFillEraserFill } from 'react-icons/bs';
+import IconButton from "components/iconButton";
+import { MdAdjust, MdAssignmentReturned } from 'react-icons/md';
 
-const primaryKey = "rowid";
 const title = "Formulação";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
     return (<ToolbarTitle id={auth?.user} description={title} title={<>
@@ -60,14 +61,17 @@ const schema = (options = {}) => {
 }
 const rowSchema = (options = {}) => {
     return getSchema({
-        "matprima_des": Joi.string().label("Matéria Prima").required(),
+        "matprima_des":
+            Joi.alternatives(
+                Joi.string(),
+                Joi.object().keys({
+                    ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
+                }).unknown(true)).label("Matéria Prima").required(),
         // "des": Joi.string().label("des").required()
     }, options).unknown(true);
 }
 
-
-
-const loadFormulacao = async (params, signal) => {
+const loadFormulacao = async (params, primaryKey, signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetFormulacao" }, signal });
     if (rows && rows.length > 0) {
         let _v = json(rows[0]?.formulacao);
@@ -75,7 +79,8 @@ const loadFormulacao = async (params, signal) => {
             _v["items"] = [];
         }
         if (!("joinbc" in _v) || _v?.joinbc == 1) {
-            _v["items"] = _v?.items?.filter(v => v?.extrusora !== "C").map(v => ({ ...v, [primaryKey]: `${v.extrusora}-${uid(4)}` })).sort((a, b) => a.extrusora.localeCompare(b.extrusora));
+            const _c = _v?.items?.filter(v => v?.extrusora === "C");
+            _v["items"] = _v?.items?.filter(v => v?.extrusora !== "C").map((v, i) => ({ ...v, [primaryKey]: `${v.extrusora}-${uid(4)}`, doseador: [...new Set([v?.doseador, ...v?.extrusora !== "A" ? _c.filter(x => (x?.cuba == v?.cuba)).map(x => x?.doseador) : []].filter(Boolean))].join(",") })).sort((a, b) => a.extrusora.localeCompare(b.extrusora));
         } else {
             _v["items"] = _v?.items?.map(v => ({ ...v, [primaryKey]: `${v.extrusora}-${uid(4)}` })).sort((a, b) => a.extrusora.localeCompare(b.extrusora));
         }
@@ -84,106 +89,25 @@ const loadFormulacao = async (params, signal) => {
     return {};
 }
 
-const FieldSelectorEditor = ({ dataAPI, selectorProps, ...props }) => {
-    const onChange = async (v) => {
-        props.onChange(v === '' ? null : v);
-        await sleep(100);
-        props.onComplete(v === '' ? null : v);
-    };
-    const onComplete = (v) => {
-        props.onComplete(v === '' ? null : v);
-    }
-    const onSelect = (v) => {
-        props.onChange(v === '' ? null : v);
-    };
-    const onKeyDown = (e) => {
-        if (e.key == 'Escape') {
-            props.onCancel();
-        }
-        if (e.key == 'Tab') {
-            e.preventDefault();
-            e.stopPropagation();
-            props.onTabNavigation(
-                true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
-            );
-        }
-    }
-    return (<>
-        <Selector
-            onKeyDown={onKeyDown}
-            autoFocus
-            value={selectorProps?.value}
-            onChange={onChange}
-            style={{ width: "100%" }}
-            {...selectorProps}
-        />
-        {/* <AutoCompleteField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={props.value} ref={focus} onSelect={onSelect} onChange={onChange} onBlur={onComplete}
-        onKeyDown={onKeyDown}
-        size="small"
-        keyField="group"
-        textField="group"
-        showSearch
-        showArrow
-        allowClear
-        fetchOptions={async (value) => await fetchGroups({ value, groups: dataAPI.dirtyRows().map(v => v?.group) })}
-      /> */}
-    </>
-    );
-}
-
-const InputNumberEditor = ({ dataAPI, inputProps, ...props }) => {
-    const onChange = async (v) => {
-        props.onChange(v === '' ? null : v);
-    };
-    const onComplete = (v) => {
-        props.onComplete(v === '' ? null : v);
-    }
-    const onKeyDown = (e) => {
-        if (e.key == 'Escape') {
-            props.onCancel();
-        }
-        if (e.key == 'Tab' || e.key == "Enter") {
-            e.preventDefault();
-            e.stopPropagation();
-            props.onTabNavigation(
-                true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
-            );
-        }
-    }
-    return (<InputNumber onKeyDown={onKeyDown}
-        autoFocus
-        value={props?.value}
-        onChange={onChange}
-        onBlur={onComplete}
-        style={{ width: "100%" }}
-        {...inputProps}
-    />);
-}
-
-const menuOptions = ({ edit, joinbc }) => [
+const menuOptions = ({ edit, joinbc, referenceDisabled = false }) => [
     ...(edit && !joinbc) ? [{ key: 1, label: "Adicionar na Extrusora A" }, { key: 2, label: "Adicionar na Extrusora B" }, { key: 3, label: "Adicionar na Extrusora C" }] : [],
     ...(edit && joinbc) ? [{ key: 1, label: "Adicionar na Extrusora A" }, { key: 4, label: "Adicionar nas Extrusoras BC" }] : [],
     { type: 'divider' },
-    ...(edit) ? [{ key: 5, label: <Space><Field name="reference" label={{ enabled: false }}><SwitchField /></Field><span>Formulação de Referência</span></Space> }] : [],
+    ...(edit && !referenceDisabled) ? [{ key: 5, label: <Space><Field name="reference" label={{ enabled: false }}><SwitchField /></Field><span>Formulação de Referência</span></Space> }] : [],
     { type: 'divider' },
     ...(edit) ? [{ key: 6, label: <Space><Field name="joinbc" label={{ enabled: false }}><SwitchField /></Field><span>{joinbc ? "Desagrupar extrusora BC" : "Agrupar extrusora BC"}</span></Space> }] : []
 ];
-
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "datagrid" });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: false, add: false } });
-    const [gridStatus, setGridStatus] = useState({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [formDirty, setFormDirty] = useState(false);
+    const inputParameters = useRef({});
     const [form] = Form.useForm();
-    const joinbc = Form.useWatch('joinbc', form);
-    const reference = Form.useWatch('reference', form);
 
     const { openNotification } = useContext(AppContext);
     const location = useLocation();
@@ -192,42 +116,100 @@ export default ({ setFormTitle, ...props }) => {
     const tableCls = useTableStyles();
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
-    const defaultParameters = { method: "ListArtigosCompativeis" };
-    const defaultSort = [{ column: "pa.id", direction: "ASC" }];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/artigos/sql/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
+    const defaultParameters = {};
+    const defaultSort = [];
+    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
     const submitting = useSubmitting(true);
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
-                //case "<key_name>": return <Component p={modalParameters.parameters.p} column="" parameters={modalParameters.parameters} />;
+                case "ordensfabrico": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" extra="ref" yScroll>
+            <ResponsiveModal responsive={modalParameters?.responsive} title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" extra="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
     }, [modalParameters]);
+    const addToOFabrico = () => {
+        const _filter = form.getFieldsValue(["artigo_id", "produto_id"]);
+        console.log("???>",_filter)
+        setModalParameters({
+            content: "ordensfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico em Elaboração", push: false, loadData: () => { }, parameters: {
+                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "of_id", parameters: { method: "OrdensFabricoInElaborationAllowed" }, pagination: { enabled: false, limit: 50 }, filter: { ..._filter }, sort: [] } },
+                toolbar: false,
+                //pt.status,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao, pt2.cliente_nome
+                columns: [
+                    { name: 'cod', header: 'Agg', minWidth: 160 },
+                    { name: 'of_id', header: 'Ordem', minWidth: 160 },
+                    { name: 'cliente_nome', header: 'Cliente', minWidth: 160, flex: 1 },
+                    { name: 'designacao', header: 'Formulação Des.', minWidth: 160, flex: 1 },
+                    { name: 'group_name', header: 'Formulação Grupo', minWidth: 160, flex: 1 },
+                    { name: 'subgroup_name', header: 'Formulação Subgrupo', minWidth: 160, flex: 1 },
+                    { name: 'versao', header: 'Versão', width: 90 },
+                ],
+                onSelect: onSelectOrdemFabrico
+                // filters: { fofabrico: { type: "any", width: 150, text: "Ordem", autoFocus: true } },
+            },
+
+        });
+        showModal();
+    }
+
+    const onSelectOrdemFabrico = async ({ rowProps, closeSelf }) => {
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { aggid: rowProps?.data?.id }, parameters: { method: "SetOrdemFabricoFormulacao", ...inputParameters.current } });
+            if (response.data.status !== "error") {
+                closeSelf();
+                openNotification(response.data.status, 'top', "Notificação", response.data.title);
+            } else {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            }
+        } catch (e) {
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        } finally {
+        };
+    }
 
     const columnEditable = (v, { data, name }) => {
-        if (["matprima_des", "densidade", "arranque", "tolerancia"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["cuba", "doseador"].includes(name) && inputParameters.current?.type === "formulacao_dosers_change" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+            return true;
+        }
+        if (["matprima_des", "densidade", "arranque", "tolerancia"].includes(name) && inputParameters.current?.type !== "formulacao_dosers_change" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return true;
         }
         return false;
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        if (gridStatus?.fieldStatus?.[rowIndex]?.[name]?.status === "error") {
+        if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (!data?.__group && ["matprima_des", "densidade", "arranque", "tolerancia"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (!data?.__group && ["cuba", "doseador"].includes(name) && inputParameters.current?.type === "formulacao_dosers_change" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return tableCls.edit;
         }
-        // if (["group"].includes(name)){
-        //   return tableCls.error;
-        // }
+        if (!data?.__group && ["matprima_des", "densidade", "arranque", "tolerancia"].includes(name) && inputParameters.current?.type !== "formulacao_dosers_change" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+            return tableCls.edit;
+        }
+
+        if (data?.__group && ["vglobal"].includes(name)) {
+            if (form.getFieldValue("joinbc") == 1 && data?.value !== "A") {
+                if (parseFloat(value) !== 90) {
+                    return tableCls.error;
+                }
+            } else if ((data?.value === "B" || data?.value === "C")) {
+                if (parseFloat(value) !== 45) {
+                    return tableCls.error;
+                }
+            } else if (data?.value === "A" && parseFloat(value) !== 10) {
+                return tableCls.error;
+            }
+
+        }
     };
 
     const groups = [
@@ -235,24 +217,22 @@ export default ({ setFormTitle, ...props }) => {
     ]
 
     const columns = [
-        ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data }) => !data?.__group && <Button onClick={() => onDelete(data)} icon={<DeleteTwoTone />} /> }] : [],
+        ...(inputParameters.current?.cs_id) ? [{
+            name: 'cuba', header: "Cuba", userSelect: true, defaultLocked: false, width: 55, headerAlign: "center",
+            cellProps: { className: columnClass }, colspan: ({ data, column, columns }) => (data?.group) ? columns.length : 1,
+            editable: columnEditable, renderEditor: (props) => <CubaTableEditor {...props} />,
+            render: ({ cellProps, data }) => data?.group ? <div style={{ fontWeight: 900 }}>{data?.designacao}</div> : <Cuba value={data?.cuba} />
+        }] : [],
+        ...(inputParameters.current?.cs_id) ? [{
+            name: 'doseador', header: "Doseador", userSelect: true, defaultLocked: false, width: 90, headerAlign: "center",
+            cellProps: { className: columnClass },
+            editable: columnEditable, renderEditor: (props) => <DoserTableEditor {...props} joinbc={form.getFieldValue("joinbc")} />,
+            render: (p) => <CenterAlign style={{ fontWeight: 700 }}>{p.data?.doseador}</CenterAlign>
+        }] : [],
         ...(true) ? [{ name: 'matprima_cod', header: 'Código', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", }] : [],
         ...(true) ? [{
             name: 'matprima_des', header: 'Artigo', userSelect: true, defaultLocked: false, minWidth: 170, flex: 1, headerAlign: "center",
-            editable: columnEditable, renderEditor: (props) => <FieldSelectorEditor {...props}
-                selectorProps={{
-                    value: { ITMREF_0: props?.cellProps?.data?.matprima_cod, ITMDES1_0: props?.cellProps?.data?.matprima_des },
-                    title: "Matéria Prima",
-                    params: { payload: { url: `${API_URL}/materiasprimaslookup/`, parameters: {}, pagination: { enabled: true, limit: 15 }, filter: {}, sort: [] } },
-                    keyField: ["ITMREF_0"],
-                    textField: "ITMDES1_0",
-                    columns: [
-                        { key: 'ITMREF_0', name: 'Código', width: 160 },
-                        { key: 'ITMDES1_0', name: 'Designação' }
-                    ],
-                    filters: { fmulti_artigo: { type: "any", width: 150, text: "Artigo", autoFocus: true } },
-                    moreFilters: {}
-                }} />,
+            editable: columnEditable, renderEditor: (props) => <MateriasPrimasTableEditor {...props} />,
 
             cellProps: { className: columnClass },
             render: ({ cellProps, data }) => {
@@ -260,7 +240,7 @@ export default ({ setFormTitle, ...props }) => {
                     return <></>
                 }
                 if (data?.__group) {
-                    return (mode.datagrid.edit && permission.isOk({ forInput: [!submitting.state], action: "add" })) &&
+                    return (mode.datagrid.edit && permission.isOk({ forInput: [!submitting.state, inputParameters.current?.type !== "formulacao_dosers_change"], action: "add" })) &&
                         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}><Button style={{ width: "200px" }} size='small' icon={<PlusOutlined />} onClick={() => onCustomAdd(data)}>Adicionar</Button></div>;
                 } else {
                     return <div style={{ fontWeight: 700 }}>{data?.matprima_des}</div>;
@@ -270,25 +250,27 @@ export default ({ setFormTitle, ...props }) => {
         ...(true) ? [{
             name: 'densidade', header: 'Densidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center",
             render: (p) => <RightAlign>{p.data?.densidade}</RightAlign>, cellProps: { className: columnClass },
-            editable: columnEditable, renderEditor: (props) => <InputNumberEditor inputProps={{ min: 0, max: 5 }} {...props} />
+            editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 5 }} {...props} />
         }] : [],
         ...(true) ? [{
             name: 'arranque', header: 'Arranque', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center",
             render: (p) => <RightAlign unit="%">{p.data?.arranque}</RightAlign>, cellProps: { className: columnClass },
-            editable: columnEditable, renderEditor: (props) => <InputNumberEditor inputProps={{ min: 0, max: 100 }} {...props} />
+            editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />
         }] : [],
         ...(true) ? [{
             name: 'tolerancia', header: 'Tolerância', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center",
             render: (p) => <RightAlign unit="%">{p.data?.tolerancia}</RightAlign>, cellProps: { className: columnClass },
-            editable: columnEditable, renderEditor: (props) => <InputNumberEditor inputProps={{ min: 0, max: 100 }} {...props} />
+            editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />
         }] : [],
         ...(true) ? [{
-            name: 'vglobal', header: 'Global', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center",
+            name: 'vglobal', header: 'Global', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", cellProps: { className: columnClass },
             groupSummaryReducer: {
                 initialValue: 0, reducer: (a, b) => parseFloat(a) + parseFloat(b),
-                complete: (a, rows) => <RightAlign unit="%">{(rows[0]?.extrusora === "A" || form.getFieldValue("joinbc") == 1) ? parseFloat(a).toFixed(2) : (parseFloat(a) / 2).toFixed(2)}</RightAlign>
-            }
-        }] : []
+                complete: (a, rows) => parseFloat(a).toFixed(1)
+            },
+            render: ({ data, cellProps }) => <RightAlign unit="%" addonAfter={mode.datagrid.edit && !data?.__group && <IconButton style={{ marginLeft: "10px" }} onClick={() => adjust(data, cellProps)}><MdAdjust /></IconButton>}>{data?.__group ? data?.groupColumnSummary?.vglobal : data.vglobal}</RightAlign>
+        }] : [],
+        ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit, inputParameters.current?.type !== "formulacao_dosers_change"], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => !data?.__group && <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
     ];
 
 
@@ -298,14 +280,17 @@ export default ({ setFormTitle, ...props }) => {
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
     }, []);
 
-    const loadData = async ({ signal } = {}) => {
+    const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
-        const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new"]);
+        if (init) {
+            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type"]);
+            inputParameters.current = paramsIn;
+        }
         setFormDirty(false);
-        if (paramsIn?.new) {
+        if (inputParameters.current?.new) {
             form.setFieldsValue({ joinbc: 1, reference: 0 });
         } else {
-            const { items, ...formulacao } = await loadFormulacao({ ...paramsIn }, signal);
+            const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
             dataAPI.setData({ rows: items, total: items?.length });
             form.setFieldsValue({
                 joinbc: 1, reference: 0, ...formulacao,
@@ -353,46 +338,159 @@ export default ({ setFormTitle, ...props }) => {
         } */
     };
 
+    const sumVGlobal = (extrusora) => {
+        switch (extrusora) {
+            case "A": return dataAPI.getData().rows.filter(v => v?.extrusora === "A").reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+            case "B": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+            case "C": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+            case "BC": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") == 1 && v?.extrusora !== "A")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+        }
+        const sumA = dataAPI.getData().rows.filter(v => v?.extrusora === "A").reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        const sumBC = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") == 1 && v?.extrusora !== "A")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        const sumB = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        const sumC = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        return { sumA: parseFloat(sumA.toFixed(2)), sumBC: parseFloat(sumBC.toFixed(2)), sumB: parseFloat(sumB.toFixed(2)), sumC: parseFloat(sumC.toFixed(2)), total: parseFloat((sumA + sumBC + sumB + sumC).toFixed(2)) };
+    }
+    const sumArranque = (extrusora) => {
+        const _extrusora = extrusora === "BC" ? "B" : extrusora;
+        return parseFloat(dataAPI.getData().rows.filter(v => v?.extrusora === _extrusora).reduce((a, b) => parseFloat(a) + parseFloat(b?.arranque), 0).toFixed(2));
+    }
+    const ponderacao = (extrusora) => {
+        return FORMULACAO_PONDERACAO_EXTRUSORAS[extrusora] / 100;
+    }
+    const getExtrusora = (extrusora) => {
+        if (extrusora === "A") {
+            return "A";
+        } else if (form.getFieldValue("joinbc") == 1 && extrusora !== "A") {
+            return "BC";
+        } else if (form.getFieldValue("joinbc") !== 1 && extrusora === "B") {
+            return "B";
+        } else if (form.getFieldValue("joinbc") !== 1 && extrusora === "C") {
+            return "C";
+        }
+    }
+    const adjust = (data, cellProps) => {
+        let _extrusora = getExtrusora(data?.extrusora);
+        const diff = 100 - (sumArranque(_extrusora) - parseFloat(data?.arranque));
+        if (diff !== parseFloat(data?.arranque)) {
+            dataAPI.updateValues(dataAPI.getIndex(data), "arranque", { "arranque": parseFloat(diff.toFixed(2)), "vglobal": (diff * ponderacao(_extrusora)).toFixed(2) });
+        }
+
+    }
+    const vglobal = (extrusora, arranque) => {
+        return (parseFloat(arranque) * ponderacao(extrusora)).toFixed(2);
+    }
+
     const onEditComplete = ({ value, columnId, rowIndex, data, ...rest }) => {
-        const index = dataAPI.getData().rows.findIndex(v => v?.[primaryKey] === data?.[primaryKey]);
+        const index = dataAPI.getIndex(data);
         if (index >= 0) {
-            const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, columnId, value, rowIndex, gridStatus);
-            setGridStatus({ errors, warnings, fieldStatus, formStatus });
+            let _rows = [];
             if (columnId === "matprima_des") {
-                dataAPI.updateValues(index, columnId, { matprima_cod: value?.ITMREF_0, matprima_des: value?.ITMDES1_0 });
+                _rows = dataAPI.updateValues(index, columnId, { matprima_cod: value?.ITMREF_0, matprima_des: value?.ITMDES1_0 });
             } else {
-                const _ponderacao = FORMULACAO_PONDERACAO_EXTRUSORAS[data.extrusora === "A" ? "A" : "BC"] / 100;
-                const _vglobal = columnId === "arranque" ? value * _ponderacao : data.vglobal;
-                dataAPI.updateValues(index, columnId, { [columnId]: value, vglobal: parseFloat(_vglobal).toFixed(2) });
+                const _vglobal = columnId === "arranque" ? vglobal(getExtrusora(data.extrusora), value) : data.vglobal;
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, vglobal: _vglobal });
                 //dataAPI.updateValue(index, columnId, value);
             }
+            dataAPI.validateRows(rowSchema, {}, {}, _rows);
+            // const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, data[dataAPI.getPrimaryKey()], columnId, value, index, gridStatus);
+            // setGridStatus({ errors, warnings, fieldStatus, formStatus });
         }
 
     }
 
+    const onUpdateReference = async () => {
+        if ("formulacao_id" in inputParameters.current) {
+            submitting.trigger();
+            let response = null;
+            try {
+                response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...inputParameters.current }, parameters: { method: "UpdateFormulacaoReference", reference: form.getFieldValue("reference") } });
+                if (response.data.status !== "error") {
+                    dataAPI.update(true);
+                    openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                } else {
+                    openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                }
+            } catch (e) {
+                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            } finally {
+                submitting.end();
+            };
+        }
+    }
+
     const onSave = async (type) => {
-        console.log(dataAPI.getData().rows);
-        console.log(form.getFieldsValue(true));
-
-
-
         // const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
         submitting.trigger();
         let response = null;
         try {
-            const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-            setGridStatus({ errors, warnings, fieldStatus, formStatus });
-            if (errors === 0) {
-                //response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "SaveFormulacao", ...form.getFieldsValue(true), items: dataAPI.getData().rows } });
-                //if (response.data.status !== "error") {
-                //    dataAPI.update(true);
-                //    openNotification(response.data.status, 'top', "Notificação", response.data.title);
-                //} else {
-                //    openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
-                //}
+            const status = dataAPI.validateRows(rowSchema);
+            let sums = sumVGlobal();
+            const joinbc = form.getFieldValue("joinbc");
+            if (parseFloat(sums.total.toFixed(1)) !== 100) {
+                const msg = ["O Total Global das Matérias Primas tem de ser 100%!"];
+                if (sums.sumA !== 10) {
+                    msg.push("O Total das Matérias Primas da Extrusora A tem de ser 10%!");
+                }
+                if (joinbc) {
+                    if (sums.sumBC !== 90) {
+                        msg.push("O Total das Matérias Primas das Extrusoras B e C tem de ser 90%!");
+                    }
+                } else {
+                    if (sums.sumB !== 45) {
+                        msg.push("O Total das Matérias Primas da Extrusora B tem de ser 45%!");
+                    }
+                    if (sums.sumC !== 45) {
+                        msg.push("O Total das Matérias Primas da Extrusora C tem de ser 45%!");
+                    }
+                }
+                openNotification("error", "top", "Notificação", msg, 5, { width: "500px" });
+            } else {
+                if (status.errors > 0) {
+                    openNotification("error", "top", "Notificação", ["Existem erros no formulário!"], 5, { width: "500px" });
+                }
+            }
+            if (status.errors === 0 && parseFloat(sums.total.toFixed(1)) === 100) {
+                form.setFieldValue("cliente_cod", form.getFieldValue("cliente")?.BPCNUM_0);
+                form.setFieldValue("cliente_nome", form.getFieldValue("cliente")?.BPCNAM_0);
+                let _items = [];
+                if (joinbc == 1) {
+                    let _itemsAB = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque), ...(x.extrusora !== "A" && x?.doseador) && { doseador: x.doseador.split(",").filter(v => v.startsWith("B")).join(",") } }));
+                    let _itemsC = dataAPI.getData().rows.filter(x => x?.extrusora === "B").map(x => ({ ...x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque), ...(x?.doseador) && { doseador: x.doseador.split(",").filter(v => v.startsWith("C")).join(",") } }));
+                    _items = [..._itemsAB, ..._itemsC];
+                } else {
+                    _items = dataAPI.getData().rows;
+                }
+                response = await fetchPost({
+                    url: `${API_URL}/ordensfabrico/sql/`, filter: { ...inputParameters.current }, parameters: {
+                        method: "SaveFormulacao", ...dataAPI.removeEmpty(form.getFieldsValue(true), ["cliente"]),
+                        type: inputParameters.current?.type,
+                        items: _items.map(obj => Object.keys(obj).reduce((acc, key) => {
+                            if (obj[key] !== '') {
+                                acc[key] = obj[key];
+                            }
+                            return acc;
+                        }, {}))
+                    }
+                });
+                if (response.data.status !== "error") {
+                    if ("formulacao_id" in inputParameters.current) {
+                        inputParameters.current = { formulacao_id: response.data.id };
+                        loadData();
+                    } else if ("new" in inputParameters.current) {
+                        inputParameters.current = { formulacao_id: response.data.id };
+                        loadData();
+                    } else {
+                        dataAPI.update(true);
+                    }
+                    openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                } else {
+                    openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                }
             }
         } catch (e) {
-            openNotification(response.data.status, 'top', "Notificação", e.message, null);
+            console.log(e)
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
         } finally {
             submitting.end();
         };
@@ -403,8 +501,7 @@ export default ({ setFormTitle, ...props }) => {
         // submitting.trigger();
         // let response = null;
         // try {
-        //     const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-        //     setGridStatus({ errors, warnings, fieldStatus, formStatus });
+        //     dataAPI.validateRows(rowSchema);
         //     if (errors === 0) {
         //         //response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
         //         //if (response.data.status !== "error") {
@@ -423,8 +520,11 @@ export default ({ setFormTitle, ...props }) => {
     const onAdd = (cols) => {
         dataAPI.addRow(cols, null, 0);
     }
-    const onDelete = (data) => {
-        dataAPI.deleteRow({ [primaryKey]: data?.[primaryKey] }, [primaryKey]);
+    const onDelete = (data, rowIndex) => {
+        const _rows = dataAPI.deleteRow({ [dataAPI.getPrimaryKey()]: data?.[dataAPI.getPrimaryKey()] }, [dataAPI.getPrimaryKey()]);
+        dataAPI.validateRows(rowSchema, {}, {}, _rows);
+        // const { errors, warnings, fieldStatus, formStatus } = dataAPI.clearRowStatus(data?.[dataAPI.getPrimaryKey()], gridStatus);
+        // setGridStatus({ errors, warnings, fieldStatus, formStatus });
     }
     const onCustomAdd = (data) => {
         if (Array.isArray(data)) {
@@ -454,17 +554,20 @@ export default ({ setFormTitle, ...props }) => {
             case '2': onCustomAdd({ value: "B" }); break;
             case '3': onCustomAdd({ value: "C" }); break;
             case '4': onCustomAdd({ value: "B" }); break;
+            case '5': onUpdateReference(); break;
             case '6':
                 if (form.getFieldValue("joinbc") === 1) {
                     if (dataAPI.getData().rows) {
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C")
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
                         dataAPI.setData({ rows: _items, total: _items?.length });
+                        dataAPI.clearStatus();
                     }
                 } else {
                     if (dataAPI.getData().rows) {
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C")
-                        let _itemsC = _items.filter(x => x?.extrusora === "B").map(x => ({ ...x, extrusora: "C" }));
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
+                        let _itemsC = _items.filter(x => x?.extrusora === "B").map(x => ({ ...x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque) }));
                         dataAPI.setData({ rows: [..._items, ..._itemsC], total: _items?.length + _itemsC?.length });
+                        dataAPI.clearStatus();
                     }
                 }
                 break;
@@ -473,7 +576,9 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onValuesChange = (changed, all) => {
-        setFormDirty(true);
+        if (!("reference" in changed)) {
+            setFormDirty(true);
+        }
     }
 
     const onEditCancel = async () => {
@@ -490,9 +595,9 @@ export default ({ setFormTitle, ...props }) => {
                     <Col xs={4} md={2}><FormulacaoGroups name="group_name" label={{ enabled: true, text: "Grupo" }} /></Col>
                     <Col xs={4} md={2}><FormulacaoSubGroups name="subgroup_name" label={{ enabled: true, text: "SubGrupo" }} /></Col>
                     <Col xs={12} md={6} lg={4}><Field name="designacao" label={{ enabled: true, text: "Designação" }}><Input /></Field></Col>
-                    <Col xs={12} md={6} lg={4}><Produtos name="produto_id" label={{ enabled: true, text: "Produto" }} load /></Col>
+                    <Col xs={12} md={6} lg={4}><Produtos name="produto_id" allowClear label={{ enabled: true, text: "Produto" }} load /></Col>
                     <Col xs={12} md={6} lg={4}><Artigos name="artigo_id" allowClear label={{ enabled: true, text: "Artigo" }} load /></Col>
-                    <Col xs={12} md={6} lg={4}><Clientes name="cliente" label={{ enabled: true, text: "Cliente" }} /></Col>
+                    <Col xs={12} md={6} lg={4}><Clientes name="cliente" allowClear label={{ enabled: true, text: "Cliente" }} /></Col>
 
                 </Row>
                 <Row style={{}} nogutter>
@@ -500,8 +605,8 @@ export default ({ setFormTitle, ...props }) => {
                         <Table
                             dirty={formDirty}
                             loading={submitting.state}
-                            offsetHeight="150px"
-                            idProperty={primaryKey}
+                            offsetHeight="270px"
+                            idProperty={dataAPI.getPrimaryKey()}
                             local={true}
                             onRefresh={loadData}
                             rowClassName={rowClassName}
@@ -511,12 +616,21 @@ export default ({ setFormTitle, ...props }) => {
                             showColumnMenuTool={false}
                             disableGroupByToolbar={true}
                             groupBy={["extrusora"]}
-                            groupColumn={{ headerAlign: "center", defaultWidth: 75, header: form.getFieldValue("reference") === 1 && <StarFilled style={{ fontSize: "18px", color: "yellow" }} />, renderGroupValue: ({ value }) => form.getFieldValue("joinbc") === 1 && ["B", "C"].includes(value) ? <Space><LockOutlined />BC</Space> : value }}
+                            groupColumn={{
+                                headerAlign: "center", defaultWidth: 75,
+                                header: form.getFieldValue("reference") === 1 && <StarFilled style={{ fontSize: "18px", color: "yellow" }} />,
+                                renderGroupValue: ({ value }) => <span style={{ fontWeight: 700 }}>{form.getFieldValue("joinbc") === 1 && ["B", "C"].includes(value) ? <Space><LockOutlined />Extrusora BC</Space> : `Extrusora ${value}`}</span>,
+                                colspan: ({ data, column, columns }) => {
+                                    if (data?.__group) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                }
+                            }}
 
                             editable={{
                                 enabled: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
                                 add: false,
-                                gridStatus, setGridStatus,
                                 //onAdd: onAdd, onAddSave: onAddSave,
                                 onSave: () => onSave("update"), onCancel: onEditCancel,
                                 modeKey: "datagrid", setMode, mode, onEditComplete
@@ -526,15 +640,16 @@ export default ({ setFormTitle, ...props }) => {
                             dataAPI={dataAPI}
                             moreFilters={false}
                             leftToolbar={
-                                <>
-                                    {mode.datagrid.edit && < Dropdown menu={{ onClick: menuClick, items: menuOptions({ edit: mode.datagrid.edit, joinbc: form.getFieldValue("joinbc") }) }}>
+                                <Space>
+                                    <Permissions permissions={permission} action="edit" forInput={[form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
+                                    {(mode.datagrid.edit && inputParameters.current?.type !== "formulacao_dosers_change") && < Dropdown trigger={['click']} menu={{ onClick: menuClick, items: menuOptions({ edit: mode.datagrid.edit, joinbc: form.getFieldValue("joinbc"), referenceDisabled: inputParameters.current?.cs_id }) }}>
                                         <Button>
                                             <Space>
                                                 <EllipsisOutlined />
                                             </Space>
                                         </Button>
                                     </Dropdown>}
-                                </>
+                                </Space>
                             }
                             toolbarFilters={false}
                         />

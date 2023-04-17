@@ -582,6 +582,8 @@ class MySqlSql(BaseSql):
             ret.filter = p.text
             ret.parameters = p.parameters
             ret.statement = f'SELECT EXISTS (SELECT 1 FROM {table} {p.text})'
+            print(ret.statement)
+            print(ret.parameters)
         if connOrCursor is not None:
             if isinstance(connOrCursor,ConnectionProxy):
                 with connOrCursor.cursor() as cursor:
@@ -852,19 +854,19 @@ class Filters:
     def where(self, force=False, override=False):
         self.clause['enabled'] = True
         self.clause['force'] = force
-        self.clause['value'] = override if override else 'where'
+        self.clause['value'] = override if override is not False else 'where'
         return self
 
     def having(self, force=False, override=False):
         self.clause['enabled'] = True
         self.clause['force'] = force
-        self.clause['value'] = override if override else 'having'
+        self.clause['value'] = override if override is not False else 'having'
         return self
 
     def on(self, force=False, override=False):
         self.clause['enabled'] = True
         self.clause['force'] = force
-        self.clause['value'] = override if override else 'on'
+        self.clause['value'] = override if override is not False else 'on'
         return self
 
     def land(self, force=False):
@@ -953,8 +955,22 @@ class Filters:
 
         return self
 
-    def getNumeric(value):
-        if value is None: return None
+    def nullValue(self,key,dbparam,removeEmpty=True):
+        val = self.autoParamsSet.get(key)
+        val = self.paramsSetValues.get(key) if key in self.paramsSetValues else val
+        if key in self.filterData:
+            val = self.filterData.get(key) if key not in self.paramsSetValues else val
+        if val is None or val == '':
+            return "is null"
+        else:
+            return dbparam
+
+    def getNumeric(value,isNone=None):
+        if value is None: 
+            if isNone:
+                return isNone
+            else:
+                return None
         pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
         result = re.match(pattern, str(value), re.IGNORECASE)
         if not result:

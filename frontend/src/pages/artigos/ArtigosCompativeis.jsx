@@ -23,6 +23,7 @@ import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
+import {ArtigosCompativeisGroupEditor} from 'components/TableEditorsV3';
 import {RightAlign} from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
@@ -90,52 +91,6 @@ const moreFiltersSchema = ({ form }) => [
   { fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } },
 ];
 
-const fetchGroups = async ({ value, groups, signal }) => {
-  const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "ArtigosCompativeisGroupsLookup" }, pagination: { limit: 20 }, filter: { group: getFilterValue(value, 'any') }, signal });
-  if (!groups || groups.length === 0) {
-    return rows;
-  } else {
-    const r = [...rows];
-    groups.forEach(el => { if (!r.some(v => v.group === el)) { r.push({ group: el }); } });
-    return r;
-  }
-}
-
-const focus = (el, h,) => { el?.focus(); };
-const FieldGroupEditor = ({ dataAPI, ...props }) => {
-  const onChange = (v) => {
-    props.onChange(v === '' ? null : v);
-  };
-  const onComplete = (v) => {
-    props.onComplete(v === '' ? null : v);
-  }
-  const onSelect = (v) => {
-    props.onChange(v === '' ? null : v);
-  };
-  const onKeyDown = (e) => {
-    if (e.key == 'Tab' || e.key == 'Enter') {
-      e.preventDefault();
-      e.stopPropagation();
-      props.onTabNavigation(
-        true /*complete navigation?*/,
-        //e.shiftKey ? -1 : 1 /*backwards of forwards*/
-      );
-    }
-  }
-  return (
-    <AutoCompleteField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={props.value} ref={focus} onSelect={onSelect} onChange={onChange} onBlur={onComplete}
-      onKeyDown={onKeyDown}
-      size="small"
-      keyField="group"
-      textField="group"
-      showSearch
-      showArrow
-      allowClear
-      fetchOptions={async (value) => await fetchGroups({ value, groups: dataAPI.dirtyRows().map(v => v?.group) })}
-    />
-  );
-}
-
 /* const FilterDate = React.forwardRef((props, ref) => {
   return (<div className="InovuaReactDataGrid__column-header__filter-wrapper" style={{minHeight: "41px"}}><Input size="small"/></div>)
 }); */
@@ -145,7 +100,6 @@ export default ({ setFormTitle, ...props }) => {
 
   const permission = usePermission({ item: "datagrid" });//Permissões Iniciais
   const [mode, setMode] = useState({ datagrid: { edit: false, add: false } });
-  const [gridStatus, setGridStatus] = useState({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
 
   const { openNotification } = useContext(AppContext);
   const location = useLocation();
@@ -199,7 +153,7 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-    if (gridStatus?.fieldStatus?.[rowIndex]?.[name]?.status === "error") {
+    if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
       return tableCls.error;
     }
     if (["group"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
@@ -214,7 +168,7 @@ export default ({ setFormTitle, ...props }) => {
     ...(true) ? [{ name: 'pa.id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.id}</div> }] : [],
     ...(true) ? [{ name: 'cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
     ...(true) ? [{ name: 'des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
-    ...(true) ? [{ name: 'group', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, editable: columnEditable, renderEditor: (props) => <FieldGroupEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.group}</div> }] : [],
+    ...(true) ? [{ name: 'group', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, editable: columnEditable, renderEditor: (props) => <ArtigosCompativeisGroupEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.group}</div> }] : [],
     ...(true) ? [{ name: 'gtin', header: 'gtin', userSelect: true, defaultLocked: false, width: 150, render: (p) => <div style={{}}>{p.data?.gtin}</div> }] : [],
     ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.core}''</div> }] : [],
     ...(true) ? [{ name: 'lar', header: 'Largura', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.lar}mm</div> }] : [],
@@ -304,8 +258,7 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const onEditComplete = ({ value, columnId, rowIndex, ...rest }) => {
-    const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, columnId, value, rowIndex, gridStatus);
-    setGridStatus({ errors, warnings, fieldStatus, formStatus });
+    dataAPI.validateField(rowSchema, columnId, value, rowIndex);
     dataAPI.updateValue(rowIndex, columnId, value);
   }
 
@@ -314,8 +267,7 @@ export default ({ setFormTitle, ...props }) => {
     submitting.trigger();
     let response = null;
     try {
-      const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-      setGridStatus({ errors, warnings, fieldStatus, formStatus });
+      dataAPI.validateRows(rowSchema);
       if (errors === 0) {
         response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
         if (response.data.status !== "error") {
@@ -337,8 +289,7 @@ export default ({ setFormTitle, ...props }) => {
     submitting.trigger();
     let response = null;
     try {
-      const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-      setGridStatus({ errors, warnings, fieldStatus, formStatus });
+      dataAPI.validateRows(rowSchema);
       if (errors === 0) {
         //response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
         //if (response.data.status !== "error") {
@@ -370,7 +321,6 @@ export default ({ setFormTitle, ...props }) => {
         editable={{
           enabled: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
           add: permission.isOk({ forInput: [!submitting.state], action: "add" }),
-          gridStatus,setGridStatus,
           onAdd: onAdd, onAddSave: onAddSave,
           onSave: () => onSave("update"),
           modeKey: "datagrid", setMode, mode, onEditComplete

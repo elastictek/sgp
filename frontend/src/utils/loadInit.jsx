@@ -3,7 +3,8 @@ import moment from 'moment';
 
 export default (init, store = {}, props = {}, state = {}, fields) => {
     let df = { ...init };
-    for (let v of fields) {
+    let _fields = (fields === null) ? Object.keys({...store, ...props, ...state}) : fields;
+    for (let v of _fields) {
         if (store?.tstamp && state?.tstamp) {
             if (store.tstamp > state.tstamp) {
                 if (props && props[v]) { df[v] = props[v]; }

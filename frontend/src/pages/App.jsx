@@ -59,9 +59,13 @@ const BasePick = lazy(() => import('./picking/BasePick'));
 const CheckLists = lazy(() => import('./ordensfabrico/CheckLists'));
 const ArtigosCompativeis = lazy(() => import('./artigos/ArtigosCompativeis'));
 const ArtigosProducao = lazy(() => import('./artigos/ArtigosProducao'));
+const LabParametersList = lazy(() => import('./qualidade/LabParametersList'));
+const LabMetodosList = lazy(() => import('./qualidade/LabMetodosList'));
+const LabArtigosSpecsList = lazy(() => import('./qualidade/LabArtigosSpecsList'));
 
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
+
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
 
@@ -151,6 +155,11 @@ const RenderRouter = () => {
                 { path: "artigos/mpalternativas", element: <Suspense fallback={<Spin />}><MPAlternativas /></Suspense> },
                 { path: "artigos/artigoscompativeis", element: <Suspense fallback={<Spin />}><ArtigosCompativeis /></Suspense> },
 				{ path: "artigos/artigosproducao", element: <Suspense fallback={<Spin />}><ArtigosProducao /></Suspense> },
+                
+                
+                { path: "qualidade/labparameterslist", element: <Suspense fallback={<Spin />}><LabParametersList /></Suspense> },
+                { path: "qualidade/labmetodoslist", element: <Suspense fallback={<Spin />}><LabMetodosList /></Suspense> },
+                { path: "qualidade/labartigosspecslist", element: <Suspense fallback={<Spin />}><LabArtigosSpecsList /></Suspense> },
                 
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },

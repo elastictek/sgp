@@ -12,18 +12,19 @@ export const getLocalStorage = (id, useStorage) => {
     return {};
 }
 
-const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}, rowIndex) => {
+const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}, rowKey, rowIndex) => {
     const ret = { errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
     ret.value = vObject?.value;
     if (vObject?.error) {
         for (const itm of vObject.error?.details) {
             ret.errors++;
             if (itm.path.length > 0) {
-                if (!(rowIndex in ret.fieldStatus)) {
-                    ret.fieldStatus[rowIndex] = { [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
+                if (!(rowKey in ret.fieldStatus)) {
+                    ret.fieldStatus[rowKey] = { [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
                 } else {
-                    ret.fieldStatus[rowIndex] = { ...ret.fieldStatus[rowIndex], [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
+                    ret.fieldStatus[rowKey] = { ...ret.fieldStatus[rowKey], [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
                 }
+                ret.fieldStatus[rowKey]["row"] = rowIndex;
             } else {
                 ret.formStatus.error.push({ message: itm.message });
             }
@@ -33,11 +34,12 @@ const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], 
         for (const itm of vObject.warning?.details) {
             ret.warnings++;
             if (itm.path.length > 0) {
-                if (!(rowIndex in ret.fieldStatus)) {
-                    ret.fieldStatus[rowIndex] = { [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
+                if (!(rowKey in ret.fieldStatus)) {
+                    ret.fieldStatus[rowKey] = { [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
                 } else {
-                    ret.fieldStatus[rowIndex] = { ...ret.fieldStatus[rowIndex], [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
+                    ret.fieldStatus[rowKey] = { ...ret.fieldStatus[rowKey], [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
                 }
+                ret.fieldStatus[rowKey]["row"] = rowIndex;
             } else {
                 ret.formStatus.warning.push({ message: itm.message });
             }
@@ -48,6 +50,8 @@ const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], 
 
 
 export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
+    const [status, updateStatus] = useImmer({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
+    const statusRef = useRef({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
     const [isLoading, setIsLoading] = useState(false);
     const action = useRef([]);
     const [state, updateState] = useImmer({
@@ -58,6 +62,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         defaultSort: payload?.sort || [],
         sort: payload?.sort || [],
         parameters: payload?.parameters || {},
+        primaryKey: payload?.primaryKey || null,
         data: (payload?.data) ? payload.data : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
@@ -66,8 +71,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const ref = useRef({
         initLoaded: payload?.initLoaded || false,
         update: null,
+        primaryKey: payload?.primaryKey || null,
         pagination: payload?.pagination ? { ...payload.pagination } : { enabled: false, pageSize: 10 },
         filter: payload?.filter ? { ...payload.filter } : {},
+        baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         defaultSort: payload?.sort || [],
         sort: payload?.sort ? [...payload.sort] : [],
         parameters: payload?.parameters ? { ...payload.parameters } : {},
@@ -83,8 +90,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const isAction = (type) => {
         return action.current.includes(type);
     }
-
-
     const first = (updateStateData = false) => {
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: 1 };
@@ -274,7 +279,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return ref.current;
         }
     }
-    const getSkip = (fromState = false) => {
+    const getSkip = (fromState) => {
         if (fromState) {
             return (state.pagination.page - 1) * state.pagination.pageSize;
         } else {
@@ -310,13 +315,14 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return { ...state.parameters, ...ref.current.parameters };
     }
 
-    const removeEmpty = (obj) => {
-        return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== null && v !== '' && v !== undefined));
+    const removeEmpty = (obj, keys = []) => {
+        return Object.fromEntries(Object.entries(obj).filter(([_, v]) => (v !== null && v !== '' && v !== undefined && !keys.includes(_))));
     }
 
     const update = (keepAction = false, payload = {}) => {
         ref.current.updated = Date.now();
         updateState(draft => {
+            draft.primaryKey = ref.current.primaryKey;
             draft.updated = ref.current.updated;
             draft.pagination = ref.current.pagination;
             draft.filter = ref.current.filter;
@@ -326,6 +332,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.withCredentials = ref.current.withCredentials;
             draft.url = ref.current.url;
 
+            if (payload?.primaryKey) { draft.primaryKey = payload?.primaryKey; }
             if (payload?.pagination) { draft.pagination = payload?.pagination; }
             if (payload?.filter) { draft.filter = payload?.filter; }
             if (payload?.sort) { draft.sort = payload?.sort; }
@@ -346,6 +353,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
             //draft.updated = Date.now();
+            draft.primaryKey = ref.current.primaryKey;
             draft.pagination = ref.current.pagination;
             draft.filter = ref.current.filter;
             draft.sort = ref.current.sort;
@@ -355,7 +363,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.url = ref.current.url;
             draft.tstamp = Date.now();
 
-
+            if (payload?.primaryKey) { draft.primaryKey = payload?.primaryKey; }
             if (payload?.pagination) { draft.pagination = payload?.pagination; }
             if (payload?.filter) { draft.filter = payload?.filter; }
             if (payload?.sort) { draft.sort = payload?.sort; }
@@ -373,9 +381,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             const exists = (keys === null) ? false : _rows.some(v => deepEqual(pickAll(keys, v), r));
             if (!exists) {
                 if (at !== null) {
-                    _rows.splice(at, 0, { ...row, rowadded: 1 });
+                    _rows.splice(at, 0, { ...row, rowadded: 1, rowvalid: 0 });
                 } else {
-                    _rows.push({ ...row, rowadded: 1 });
+                    _rows.push({ ...row, rowadded: 1, rowvalid: 0 });
                 }
                 if (typeof cb === "function") {
                     _rows = cb(_rows);
@@ -391,7 +399,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: [{ ...row, rowadded: 1 }], total: 1 };
+                draft.data = { rows: [{ ...row, rowadded: 1, rowvalid: 0 }], total: 1 };
             });
         }
     }
@@ -399,9 +407,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         let _rows = [...state?.data?.rows || []];
         if (_rows && _rows.length > 0) {
             if (at !== null) {
-                _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1 })));
+                _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
             } else {
-                _rows.push(rows.map(v => ({ ...v, rowadded: 1 })));
+                _rows.push(...rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
             }
             if (typeof cb === "function") {
                 _rows = cb(_rows);
@@ -416,7 +424,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: rows.map(v => ({ ...v, rowadded: 1 })), total: rows.length };
+                draft.data = { rows: rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })), total: rows.length };
             });
         }
     }
@@ -438,7 +446,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 });
             }
         }
+        return _rows;
     }
+    //Update just one column
     const updateValue = (idx, column, value) => {
         let _rows = [...state.data.rows];
         if (_rows[idx] && column in _rows[idx]) {
@@ -454,7 +464,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 });
             }
         }
+        return _rows;
     }
+    //Update multiple columns
     const updateValues = (idx, column, row, replaceRow = false) => {
         let _rows = [...state.data.rows];
         if (_rows[idx]) {
@@ -474,6 +486,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 });
             }
         }
+        return _rows;
     }
     const clearData = () => {
         updateState(draft => {
@@ -530,7 +543,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
             try {
-                const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, ...((signal) ? { signal } : { cancelToken: token }) })).data;
+                const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, filter:{ ...payload.filter, ...ref.current.baseFilter } , ...((signal) ? { signal } : { cancelToken: token }) })).data;
                 if (typeof rowFn === "function") {
                     ret = await rowFn(dt);
                     setData(ret, payload);
@@ -628,59 +641,158 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         action.current = [];
     }
 
-    const validateRows = (schema, status = {}, options = {}) => {
+    const validateRows = (schema, status = {}, options = {}, rows = null) => {
         let _accStatus = status?.status ? status?.status : {};
         let _errors = status?.errors ? status?.errors : 0;
         let _warnings = status?.warnings ? status?.warnings : 0;
-        for (const [i, v] of state.data.rows.entries()) {
+        const _rows = rows ? rows : state.data.rows;
+        for (const [i, v] of _rows.entries()) {
             if (v?.rowvalid === 0 || v?.rowadded === 1) {
-                let { errors, warnings, value, ..._status } = _getStatus(schema().validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, i);
+                let { errors, warnings, value, ..._status } = _getStatus(schema().validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, v[getPrimaryKey()], i);
                 _accStatus = _status;
                 _errors = _errors + errors;
                 _warnings = _warnings + warnings;
             }
         }
+        statusRef.current = {
+            errors: _errors,
+            warnings: _warnings,
+            fieldStatus: _accStatus?.fieldStatus || {},
+            formStatus: _accStatus?.formStatus || {},
+        };
+        updateStatus(draft => {
+            draft.errors = _errors;
+            draft.warnings = _warnings;
+            draft.fieldStatus = _accStatus?.fieldStatus || {};
+            draft.formStatus = _accStatus?.formStatus || {};
+        });
         return { ..._accStatus, errors: _errors, warnings: _warnings };
     }
 
-    const validateField = (schema, column, value, rowIndex, gridStatus) => {
-        let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowIndex);
-        const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
-        if (_gridStatus?.fieldStatus?.[rowIndex]?.[column]) {
-            if (_gridStatus?.fieldStatus?.[rowIndex]?.[column].status === "error") {
-                _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
-            } else {
-                _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
+    const clearRowStatus = (rowKey) => {
+        const _gridStatus = { ...status };
+        let _errors = 0;
+        let _warnings = 0;
+        if (_gridStatus?.fieldStatus?.[rowKey]) {
+            const _keys = Object.keys(_gridStatus?.fieldStatus?.[rowKey]);
+            for (let v of _keys) {
+                if (_gridStatus?.fieldStatus?.[rowKey]?.[v].status === "error") {
+                    _errors += _gridStatus?.fieldStatus?.[rowKey]?.[v].msg.length;
+                } else {
+                    _warnings += _gridStatus?.fieldStatus?.[rowKey]?.[v].msg.length;
+                }
             }
-            delete _gridStatus?.fieldStatus?.[rowIndex]?.[column];
+            delete _gridStatus?.fieldStatus?.[rowKey];
         }
-        _gridStatus.fieldStatus[rowIndex] = { ..._gridStatus?.fieldStatus?.[rowIndex], ...fieldStatus[rowIndex] };
-        _gridStatus.errors = _gridStatus.errors + errors;
-        _gridStatus.warnings = _gridStatus.warnings + warnings;
+        _gridStatus.errors = _gridStatus.errors - _errors;
+        _gridStatus.warnings = _gridStatus.warnings - _warnings;
+        statusRef.current = {
+            errors: _gridStatus.errors,
+            warnings: _gridStatus.warnings,
+            fieldStatus: _gridStatus?.fieldStatus || {},
+            formStatus: _gridStatus?.formStatus || {},
+        };
+        updateStatus(draft => {
+            draft.errors = _gridStatus.errors;
+            draft.warnings = _gridStatus.warnings;
+            draft.fieldStatus = _gridStatus?.fieldStatus || {};
+            draft.formStatus = _gridStatus?.formStatus || {};
+        });
         return _gridStatus;
     }
 
-    const getMessages = (gridStatus) => {
+    const clearStatus = () => {
+        statusRef.current = { errors: 0, warnings: 0, fieldStatus: {}, formStatus: {} };
+        updateStatus(draft => { draft.fieldStatus = {}; draft.formStatus = {}; draft.errors = 0; draft.warnings = 0; });
+    }
+
+    const validateField = (schema, rowKey, column, value, rowIndex) => {
+        let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowKey, rowIndex);
+        const _gridStatus = { ...status };
+        //const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
+        if (_gridStatus?.fieldStatus?.[rowKey]?.[column]) {
+            _gridStatus.fieldStatus[rowKey]["row"] = rowIndex;
+            if (_gridStatus?.fieldStatus?.[rowKey]?.[column].status === "error") {
+                _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowKey]?.[column].msg.length;
+            } else {
+                _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowKey]?.[column].msg.length;
+            }
+            delete _gridStatus?.fieldStatus?.[rowKey]?.[column];
+        }
+        _gridStatus.fieldStatus[rowKey] = { ..._gridStatus?.fieldStatus?.[rowKey], ...fieldStatus[rowKey] };
+        _gridStatus.errors = _gridStatus.errors + errors;
+        _gridStatus.warnings = _gridStatus.warnings + warnings;
+        statusRef.current = {
+            errors: _gridStatus.errors,
+            warnings: _gridStatus.warnings,
+            fieldStatus: _gridStatus?.fieldStatus,
+            formStatus: _gridStatus?.formStatus
+        };
+        updateStatus(draft => {
+            draft.errors = _gridStatus.errors;
+            draft.warnings = _gridStatus.warnings;
+            draft.fieldStatus = _gridStatus.fieldStatus;
+            draft.formStatus = _gridStatus.formStatus;
+        });
+        return _gridStatus;
+        // let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowIndex);
+        // const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
+        // if (_gridStatus?.fieldStatus?.[rowIndex]?.[column]) {
+        //     if (_gridStatus?.fieldStatus?.[rowIndex]?.[column].status === "error") {
+        //         _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
+        //     } else {
+        //         _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
+        //     }
+        //     delete _gridStatus?.fieldStatus?.[rowIndex]?.[column];
+        // }
+        // _gridStatus.fieldStatus[rowIndex] = { ..._gridStatus?.fieldStatus?.[rowIndex], ...fieldStatus[rowIndex] };
+        // _gridStatus.errors = _gridStatus.errors + errors;
+        // _gridStatus.warnings = _gridStatus.warnings + warnings;
+        // return _gridStatus;
+    }
+
+    const getMessages = () => {
         const messages = { error: [], warning: [] };
-        for (const row of Object.keys(gridStatus?.fieldStatus)) {
-            for (const col of Object.keys(gridStatus.fieldStatus[row])) {
-                const item = gridStatus.fieldStatus[row][col];
-                for (const msg of item.msg) {
-                    messages[item.status].push(`#${row + 1} ${msg?.message}`);
+        for (const rowKey of Object.keys(status?.fieldStatus)) {
+            for (const col of Object.keys(status.fieldStatus[rowKey])) {
+                if (col !== "row") {
+                    const item = status.fieldStatus[rowKey][col];
+                    for (const msg of item.msg) {
+                        messages[item.status].push(`#${status.fieldStatus[rowKey]?.["row"] + 1} ${msg?.message}`);
+                    }
                 }
             }
         }
-        if (gridStatus.formStatus?.error) {
-            for (const msg of gridStatus.formStatus?.error) {
+        if (status.formStatus?.error) {
+            for (const msg of status.formStatus?.error) {
                 messages["error"].push(`${msg}`);
             }
         }
-        if (gridStatus.formStatus?.warning) {
-            for (const msg of gridStatus.formStatus?.warning) {
+        if (status.formStatus?.warning) {
+            for (const msg of status.formStatus?.warning) {
                 messages["warning"].push(`${msg}`);
             }
         }
         return messages;
+    }
+
+    const getFieldStatus = (key) => {
+        if (key) {
+            return status.fieldStatus?.[key];
+        }
+        return status.fieldStatus;
+    }
+
+    const getPrimaryKey = (fromState = false) => {
+        if (fromState) {
+            return state.primaryKey;
+        } else {
+            return ref.current.primaryKey;
+        }
+    }
+
+    const getIndex = (row) => {
+        return state.data.rows.findIndex(v => v?.[getPrimaryKey()] === row?.[getPrimaryKey()]);
     }
 
     return {
@@ -733,8 +845,18 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         update,
         removeEmpty,
         setFilters,
+        setBaseFilters: (f) => ref.current.baseFilter = f,
+        baseFilters:()=>ref.current.baseFilter,
+        getIndex,
         validateRows,
         validateField,
-        getMessages
+        clearRowStatus,
+        status: () => status,
+        updateStatus,
+        clearStatus,
+        getMessages,
+        getFieldStatus,
+
+        getPrimaryKey
     }
 }

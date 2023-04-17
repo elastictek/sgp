@@ -10,6 +10,7 @@ from ordens_fabrico import *
 from app_permissions import *
 from artigos import *
 from exports import *
+from qualidade import *
 from print import *
 from producao.api.urls import *
 

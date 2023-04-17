@@ -39,7 +39,8 @@ const ItemAgg = React.lazy(() => import('./ItemAgg'));
 const ItemNav = React.lazy(() => import('./ItemNav'));
 const ItemReciclado = React.lazy(() => import('./ItemReciclado'));
 const ItemBobinagens = React.lazy(() => import('./ItemBobinagens'));
-const ItemFormulacao = React.lazy(() => import('./ItemFormulacao'));
+//const ItemFormulacao = React.lazy(() => import('./ItemFormulacao'));
+const WidgetFormulacao = React.lazy(() => import('../../formulacao/WidgetFormulacao'));
 const ItemNonwovens = React.lazy(() => import('./ItemNonwovens'));
 const ItemGamaOperatoria = React.lazy(() => import('./ItemGamaOperatoria'));
 const ItemSpecs = React.lazy(() => import('./ItemSpecs'));
@@ -1059,6 +1060,7 @@ export default (props) => {
         hideSettings();
     }
     const onPinItem = (item) => {
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         const _layouts = (layouts[baseBreakpoint] || []).map(v => {
             return (v.i === item.i ? { ...v, static: !v.static, fixed: !v.static } : v);
         });
@@ -1148,7 +1150,7 @@ export default (props) => {
                         return (
                             <CustomGridItemComponent key={v.i}>
                                 {v.i === "nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemNonwovens card={{ title: "Nonwovens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
-                                {v.i === "formulacao" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemFormulacao card={{ title: "Formulação" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
+                                {v.i === "formulacao" && <Suspense fallback={<></>}><WidgetFormulacao card={{ title: "Formulação" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{cs_id:currentSettings.id, status:currentSettings?.status, ofs:currentSettings?.ofs,pinnable:v?.pin,closable:v?.closable,static:v?.static}} parentReload={loadData} /></Suspense>}
                                 {v.i === "stockavailable" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemStockAvailable card={{ title: "Stock Disponível" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "bobinagens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}

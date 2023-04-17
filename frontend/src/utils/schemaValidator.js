@@ -6,7 +6,7 @@ export const validateMessages = {
     'number.base': 'Campo {{#label}} tem de ser um valor numérico.',
     'number.greater': 'Campo {{#label}} tem de ser maior ou igual que {{:#limit}}.',
     'string.base': 'Campo {{#label}} tem de ser um valor de texto.',
-    'string.empty': 'Campo {{#label}} tem de indicar o motivo.',
+    'string.empty': 'Campo {{#label}} não pode ser vazio.',
 };
 
 

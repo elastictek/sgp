@@ -184,58 +184,7 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
     
-def ArtigosLookup(request, format=None):
-    connection = connections["default"].cursor()
-    f = Filters(request.data['filter'])
-    f.setParameters({}, False)
-    f.where()
-    f.value()
-
-    f2 = filterMulti(request.data['filter'], {
-        'fartigo': {"keys": ['cod', 'des'], "table": ''}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-
-    dql = db.dql(request.data, False)
-    cols = f"""*"""
-    dql.columns=encloseColumn(cols,False)
-    sql = lambda: (f"""select {f'{dql.columns}'} from producao_artigo {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
-        dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
-    try:
-        response = db.executeSimpleList(sql, connection, parameters)
-    except Error as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response(response)
-
-def ArtigosCompativeisGroupsLookup(request, format=None):
-    conn = connections["default"].cursor()
-    cols = ['`group`']
-    f = Filters(request.data['filter'])
-    f.setParameters({"group":{"value": lambda v: v.get('group'), "field": lambda k, v: f'`{k}`'}}, True)
-    f.auto()
-    f.where()
-    f.value("and")    
-
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
-    response = db.executeSimpleList(lambda: (
-        f"""
-            select 
-            distinct {dql.columns}
-            from group_artigos
-            {f.text}
-            {dql.sort}
-            {dql.limit}
-        """
-    ), conn, f.parameters)
-
-    return Response(response)
-
-def ArtigosSpecsParametersUnitLookup(request, format=None):
+def LabParametersUnitLookup(request, format=None):
     conn = connections["default"].cursor()
     cols = ['unit']
     f = Filters(request.data['filter'])
@@ -250,7 +199,7 @@ def ArtigosSpecsParametersUnitLookup(request, format=None):
         f"""
             select 
             distinct {dql.columns}
-            from producao_artigospecsparams
+            from producao_lab_parameters
             {f.text}
             {dql.sort}
             {dql.limit}
@@ -259,12 +208,12 @@ def ArtigosSpecsParametersUnitLookup(request, format=None):
 
     return Response(response)
 
-def NewArtigosSpecsParameter(request, format=None):
+def NewLabParameter(request, format=None):
     data = request.data.get("parameters").get("data")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_artigospecsparams",None,None,False)
+                dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_lab_parameters",None,None,False)
                 print(dml.statement)
                 print(dml.parameters)
                 db.execute(dml.statement, cursor, dml.parameters)
@@ -272,7 +221,7 @@ def NewArtigosSpecsParameter(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
 
-def UpdateArtigosSpecsParameter(request, format=None):
+def UpdateLabParameter(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
@@ -284,17 +233,18 @@ def UpdateArtigosSpecsParameter(request, format=None):
                         del item["id"]
                         del item["rowvalid"]
                         del item["t_stamp"]
-                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_artigospecsparams",{"id":Filters.getNumeric(id)},None,False)
+                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",{"id":Filters.getNumeric(id)},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
 
-def ListArtigosSpecsParameters(request, format=None):
+def ListLabParameters(request, format=None):
     connection = connections["default"].cursor()    
     f = Filters({**request.data['filter']})
     f.setParameters({
         "designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
+        "status": {"value": lambda v: Filters.getNumeric(v.get("status")), "field": lambda k, v: f'{k}'}
         # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
         # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
         # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
@@ -316,7 +266,7 @@ def ListArtigosSpecsParameters(request, format=None):
     sql = lambda p, c, s: (
         f"""
             SELECT {c(f'{cols}')} 
-            FROM producao_artigospecsparams asp
+            FROM producao_lab_parameters asp
             {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
@@ -326,17 +276,32 @@ def ListArtigosSpecsParameters(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
-def ListArtigosCompativeis(request, format=None):
+def DeleteLabParameter(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:        
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_parameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
+
+def ListLabMetodos(request, format=None):
     connection = connections["default"].cursor()    
     f = Filters({**request.data['filter']})
     f.setParameters({
-        "group": {"value": lambda v: v.get('fgroup'), "field": lambda k, v: f'ga.{k}'},
-        "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
+        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
+        "cod": {"value": lambda v: Filters.getUpper(v.get('fartigo_cod')), "field": lambda k, v: f'upper(pa.{k})'},
+        "des": {"value": lambda v: Filters.getUpper(v.get('fartigo_des')), "field": lambda k, v: f'upper(pa.{k})'},
+        "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper({k})'},
+        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
+        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
+        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
+        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
+        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
     }, True)
     f.where()
     f.auto()
@@ -348,13 +313,12 @@ def ListArtigosCompativeis(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
     dql = db.dql(request.data, False,False)
 
-    cols = f"""ga.*,pa.*,pp.produto_cod"""
+    cols = f"""plm.*,pa.cod,pa.des"""
     sql = lambda p, c, s: (
         f"""
             SELECT {c(f'{cols}')} 
-            FROM producao_artigo pa
-            LEFT JOIN group_artigos ga ON pa.id=ga.artigo_id
-            LEFT JOIN producao_produtos pp ON pp.id=pa.produto_id
+            FROM producao_lab_metodos plm
+            LEFT JOIN producao_artigo pa on pa.id=plm.artigo_id
             {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
@@ -364,7 +328,38 @@ def ListArtigosCompativeis(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
-def UpdateArtigosCompativeis(request, format=None):
+def checkLabMetodo(data,cursor):
+    f = Filters({
+        "artigo_id": data.get("artigo_id"),
+        "cliente_cod": data.get("cliente_cod"),
+        "designacao": data.get("designacao"),
+        "owner": data.get("owner")
+    })
+    f.where()
+    f.add(f'artigo_id {f.nullValue("artigo_id","=:artigo_id")}',True )
+    f.add(f'cliente_cod {f.nullValue("cliente_cod","=:cliente_cod")}',True )
+    f.add(f'designacao {f.nullValue("designacao","=:designacao")}',True ),
+    f.add(f'owner {f.nullValue("owner","=:owner")}',True )
+    f.value("and")
+    exists = db.exists("producao_lab_metodos", f, cursor).exists
+    return exists
+
+def NewLabMetodo(request, format=None):
+    data = request.data.get("parameters").get("data")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                exists= checkLabMetodo(data,cursor)
+                if exists==0:
+                    dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_lab_metodos",None,None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
+                else:
+                    return Response({"status": "error", "title": "Já existe um método definido com as mesmas condições!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
+
+def UpdateLabMetodo(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
@@ -372,32 +367,36 @@ def UpdateArtigosCompativeis(request, format=None):
             with connections["default"].cursor() as cursor:
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
-                        if item.get("group") is None:
-                            dml = db.dml(TypeDml.DELETE,None,"group_artigos",{"artigo_id":f'=={item.get("artigo_id")}'},None,False)
-                            db.execute(dml.statement, cursor, dml.parameters)
-                        else:
-                            item["`group`"] = item.get("group")
-                            del item["group"]
-                            dml = db.dml(TypeDml.INSERT, {**item, "t_stamp":datetime.now(),"user_id":request.user.id}, "group_artigos",None,None,False)
-                            dml.statement = f"""
-                                {dml.statement}
-                                ON DUPLICATE KEY UPDATE 
-                                    artigo_id=VALUES(artigo_id),
-                                    `group`=VALUES(`group`),
-                                    t_stamp=VALUES(t_stamp),
-                                    user_id=VALUES(user_id)
-                                """
-                            db.execute(dml.statement, cursor, dml.parameters)
+                        id = item.get("id")
+                        del item["id"]
+                        del item["cod"]
+                        del item["des"]
+                        del item["rowvalid"]
+                        del item["t_stamp"]
+                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_updated":datetime.now(),"user_id":request.user.id},"producao_lab_metodos",{"id":Filters.getNumeric(id)},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
 
-def ListVolumeProduzidoArtigos(request, format=None):
+def DeleteLabMetodo(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:        
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodos",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
+
+def ListLabMetodosParameters(request, format=None):
     connection = connections["default"].cursor()    
     f = Filters({**request.data['filter']})
     f.setParameters({
-        **rangeP(f.filterData.get('fdata'), 'pb2.data', lambda k, v: f'{k}'),
-        # "group": {"value": lambda v: v.get('fgroup'), "field": lambda k, v: f'ga.{k}'},
+        "lab_metodo_id": {"value": lambda v: Filters.getNumeric(v.get('lab_metodo_id')), "field": lambda k, v: f'lmp.{k}'},
+        #"designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
         # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
         # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
         # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
@@ -407,7 +406,6 @@ def ListVolumeProduzidoArtigos(request, format=None):
     }, True)
     f.where()
     f.auto()
-    f.add("pb.ig_id is not null",True)
     f.value("and")
 
     f2 = filterMulti(request.data['filter'], {
@@ -416,19 +414,15 @@ def ListVolumeProduzidoArtigos(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
     dql = db.dql(request.data, False,False)
 
-    cols = f"""*"""
+    cols = f"""lmp.*,p.id parametro_id,p.nvalues,p.unit,p.min_value,p.max_value,p.value_precision,p.designacao parametro_des,lm.designacao metodo_des"""
     sql = lambda p, c, s: (
         f"""
-            SELECT {c(f'{cols}')} FROM(
-            SELECT pb.artigo_id,pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area  
-            from producao_bobine pb
-            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
-            join producao_artigo pa on pa.id=pb.artigo_id
-            left join producao_produtos pp on pp.id=pa.produto_id
-            {f.text}
-            group by artigo_id
-            ) t
-            {p(dql.paging)} {p(dql.limit)}
+            SELECT {c(f'{cols}')}  
+            from producao_lab_metodosparameters lmp
+            join producao_lab_parameters p on p.id=lmp.parametro_id
+            join producao_lab_metodos lm on lm.id=lmp.lab_metodo_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
     )
     if ("export" in request.data["parameters"]):
@@ -436,58 +430,73 @@ def ListVolumeProduzidoArtigos(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
-def ClientesLookup(request, format=None):
-    cols = ['BPCNUM_0', 'BPCNAM_0']
-    f = filterMulti(request.data['filter'], {'fmulti_customer': {"keys": cols}})
-    parameters = {**f['parameters']}
+def DeleteLabMetodoParameter(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:        
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodosparameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
 
-    dql = dbgw.dql(request.data, False)
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
-    dql.columns = encloseColumn(cols)
-    with connections[connGatewayName].cursor() as cursor:
-        if dql.paging:
-            sql = lambda p, c, s: (
-                f"""
-                    SELECT {c(dql.columns)} 
-                    FROM {sageAlias}."BPCUSTOMER"
-                    {f["text"]}
-                    {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-                """
-            )
-            response = db.executeList(sql, cursor, parameters, [])
-        else:
-            response = dbgw.executeSimpleList(lambda: (
-                f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
-            ), cursor, parameters)
-            response["rows"].append({"BPCNUM_0":'0',"BPCNAM_0":"Elastictek"})
-            response["rows"].append({"BPCNUM_0":'1',"BPCNAM_0":"Industrialização"})
-            response["rows"].append({"BPCNUM_0":'2',"BPCNAM_0":"Regranular"})
-        return Response(response)
-
-def ProdutosLookup(request, format=None):
-    cols = ['id','produto_cod']
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
-    if "idSelector" in request.data['filter']:
-        f = Filters(request.data['filter'])
-        f.setParameters({}, False)
-        f.where()
-        f.add(f'id = :idSelector', True)
-        f.value()
-        try:
+def UpdateLabMetodoParameters(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                response = db.executeSimpleList(lambda: (f"""SELECT {dql.columns} FROM producao_produtos {f.text}"""), cursor, f.parameters)
-        except Error as error:
-            print(str(error))
-            return Response({"status": "error", "title": str(error)})
-        return Response(response)
+                for idx, v in enumerate(data.get("rows")):
+                    if v.get("rowadded")==1:
+                        values ={"parametro_id":v.get("parametro_id"),"status":v.get("status"),"required":v.get("required"), "lab_metodo_id":filter.get("id"), "t_stamp":datetime.now(),"user_id":request.user.id}
+                        dml = db.dml(TypeDml.INSERT, values, "producao_lab_metodosparameters",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    else:
+                        values ={"parametro_id":v.get("parametro_id"),"status":v.get("status"),"required":v.get("required"), "lab_metodo_id":filter.get("id"), "t_stamp":datetime.now(),"user_id":request.user.id}
+                        dml = db.dml(TypeDml.UPDATE, values, "producao_lab_metodosparameters",{"id":Filters.getNumeric(v.get("id"),"isnull")},None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Método alterado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao alterar método! {str(error)}"})
 
-    
-    f = filterMulti(request.data['filter'], {'fcod': {"keys": ["produto_cod"]}},True,False,False)
-    parameters = {**f['parameters']}
-    with connections["default"].cursor() as cursor:
-       response = db.executeSimpleList(lambda: (
-         f'SELECT {dql.columns} FROM producao_produtos {f["text"]} {dql.sort} {dql.limit}'
-       ), cursor, parameters)
-       return Response(response)
+def ListLabArtigosSpecs(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        #"lab_metodo_id": {"value": lambda v: Filters.getNumeric(v.get('lab_metodo_id')), "field": lambda k, v: f'lmp.{k}'},
+        #"designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
+        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
+        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
+        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
+        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
+        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
+        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "where" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+    dql = db.dql(request.data, False,False)
+
+    cols = f"""las.*,lm.designacao metodo_designacao,lm.cliente_nome,lm.owner,pa.cod,pa.des"""
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')}  
+            from producao_lab_artigospecs las
+            join producao_lab_metodos lm on lm.id=las.lab_metodo_id
+            join producao_artigo pa on pa.id=lm.artigo_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)
+     

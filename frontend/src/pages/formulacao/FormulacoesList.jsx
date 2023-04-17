@@ -23,7 +23,7 @@ import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { RightAlign } from 'components/TableColumns';
+import { RightAlign, Favourite, Link } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -34,6 +34,7 @@ import { MediaContext, AppContext } from "../App";
 import { usePermission, Permissions } from "utils/usePermission";
 // import { isPrivate, LeftUserItem } from './commons';
 import FormFormulacao from "./FormFormulacao";
+
 
 const title = "Formulações";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
@@ -92,7 +93,7 @@ const moreFiltersSchema = ({ form }) => [
   { fproduto: { label: "Produto", field: { type: 'input', size: 'small' }, span: 24 } },
   { fdesignacao: { label: "Desinação", field: { type: 'input', size: 'small' }, span: 24 } },
   { fversao: { label: "Versão", field: { type: 'input', size: 'small' }, span: 3 } },
-  { fgroup: { label: "Grupo", field: { type: 'input', size: 'small' }, span: 12 },fsubgroup: { label: "Subgrupo", field: { type: 'input', size: 'small' }, span: 12 } },
+  { fgroup: { label: "Grupo", field: { type: 'input', size: 'small' }, span: 12 }, fsubgroup: { label: "Subgrupo", field: { type: 'input', size: 'small' }, span: 12 } },
   { freference: { label: 'Referência', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Não" }, { value: 1, label: "Sim" }] }, span: 6 } },
   { fdata_created: { label: "Data Criação", field: { type: "rangedate", size: 'small' } } },
   { fdata_updated: { label: "Data Alteração", field: { type: "rangedate", size: 'small' } } }
@@ -103,7 +104,6 @@ export default ({ setFormTitle, ...props }) => {
 
   const permission = usePermission({ name: "formulacao", item: "datagrid" });//Permissões Iniciais
   const [mode, setMode] = useState({ datagrid: { edit: false, add: false } });
-  const [gridStatus, setGridStatus] = useState({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
 
   const { openNotification } = useContext(AppContext);
   const location = useLocation();
@@ -113,7 +113,7 @@ export default ({ setFormTitle, ...props }) => {
   const [formFilter] = Form.useForm();
   const defaultFilters = {};
   const defaultParameters = { method: "ListFormulacoes" };
-  const defaultSort = [{ column: "id", direction: "ASC" }];
+  const defaultSort = [/* { column: "id", direction: "ASC" } */];
   const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/ordensfabrico/sql/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
   const submitting = useSubmitting(true);
 
@@ -131,7 +131,7 @@ export default ({ setFormTitle, ...props }) => {
     );
   }, [modalParameters]);
   const onOpenFormulacao = (formulacao_id) => {
-    setModalParameters({ content: "formulacao", type: "drawer", width: "95%", title: "Formulação", push: false, loadData: () => dataAPI.fetchPost(), parameters: { ...formulacao_id ? { formulacao_id } : {new:true} } });
+    setModalParameters({ content: "formulacao", type: "drawer", width: "95%", title: "Formulação", push: false, loadData: () => dataAPI.fetchPost(), parameters: { ...formulacao_id ? { formulacao_id } : { new: true } } });
     showModal();
   }
 
@@ -143,13 +143,13 @@ export default ({ setFormTitle, ...props }) => {
   };
 
   const columns = [
-    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, minWidth: 170, defaultFlex: 1, render: ({ data }) => <Button type='link' onClick={() => onOpenFormulacao(data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */>{data?.designacao}</Button> }] : [],
-    ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1}] : [],
-    ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1}] : [],
+    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, minWidth: 170, defaultFlex: 1, render: ({ data }) => <Link onClick={() => onOpenFormulacao(data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao}/> }] : [],
+    ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1 }] : [],
+    ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1 }] : [],
     ...(true) ? [{ name: 'versao', header: 'Versão', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
     ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.cliente_nome}</div> }] : [],
     ...(true) ? [{ name: 'produto_cod', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto_cod}</div> }] : [],
-    ...(true) ? [{ name: 'reference', header: 'Referência', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.reference}</div> }] : [],
+    ...(true) ? [{ name: 'reference', header: 'Referência', userSelect: true, defaultLocked: false, width: 90, render: ({data}) => <Favourite value={data?.reference} /> }] : [],
     ...(true) ? [{ name: 'created_date', header: 'Data Criação', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.created_date).format(DATETIME_FORMAT)}</div> }] : [],
     ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.updated_date).format(DATETIME_FORMAT)}</div> }] : []
   ];
@@ -222,8 +222,7 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const onEditComplete = ({ value, columnId, rowIndex, ...rest }) => {
-    // const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, columnId, value, rowIndex, gridStatus);
-    // setGridStatus({ errors, warnings, fieldStatus, formStatus });
+    //dataAPI.validateField(rowSchema, columnId, value, rowIndex);
     // dataAPI.updateValue(rowIndex, columnId, value);
   }
 
@@ -232,8 +231,7 @@ export default ({ setFormTitle, ...props }) => {
     // submitting.trigger();
     // let response = null;
     // try {
-    //   const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-    //   setGridStatus({ errors, warnings, fieldStatus, formStatus });
+    //   dataAPI.validateRows(rowSchema);
     //   if (errors === 0) {
     //     response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
     //     if (response.data.status !== "error") {
@@ -255,8 +253,8 @@ export default ({ setFormTitle, ...props }) => {
     // submitting.trigger();
     // let response = null;
     // try {
-    //   const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateRows(rowSchema);
-    //   setGridStatus({ errors, warnings, fieldStatus, formStatus });
+    //   dataAPI.validateRows(rowSchema);
+    //   
     //   if (errors === 0) {
     //     //response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
     //     //if (response.data.status !== "error") {
@@ -281,6 +279,7 @@ export default ({ setFormTitle, ...props }) => {
     <>
       {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
       <Table
+        loading={submitting.state}
         loadOnInit={true}
         pagination="remote"
         defaultLimit={20}
@@ -289,7 +288,6 @@ export default ({ setFormTitle, ...props }) => {
         editable={{
           enabled: false,
           add: false,
-          gridStatus, setGridStatus,
           onAdd: onAdd, onAddSave: onAddSave,
           onSave: () => onSave("update"),
           modeKey: "datagrid", setMode, mode, onEditComplete
@@ -298,7 +296,7 @@ export default ({ setFormTitle, ...props }) => {
         //defaultFilterValue={defaultFilterValue}
         moreFilters={true}
         leftToolbar={<Permissions forInput={[!submitting.state]} permissions={permission} action="add">
-          <Button style={{}} onClick={()=>onOpenFormulacao()}>Nova formulação</Button>
+          <Button style={{}} onClick={() => onOpenFormulacao()}>Nova formulação</Button>
         </Permissions>}
         toolbarFilters={{
           form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,

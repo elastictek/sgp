@@ -18,7 +18,33 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 
 
 import { Context } from "./formFields";
-import { ClearOutlined, SearchOutlined, CloseCircleFilled, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ClearOutlined, SearchOutlined, CloseCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import { sleep } from 'utils/';
+
+const useStyles = createUseStyles({
+    inputContainer: {
+        position: 'relative',
+        //display: 'inline-block',
+        '&:hover $clearButton': {
+            display: 'block',
+        },
+    },
+    input: {
+        //width:"100%",
+        /*         padding: '8px', */
+
+    },
+    clearButton: {
+        position: 'absolute',
+        top: '50%',
+        right: '40px',
+        zIndex:2000,
+        transform: 'translateY(-50%)',
+        display: 'none',
+        cursor: 'pointer'
+    },
+});
+
 
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
@@ -141,11 +167,13 @@ const InternalForView = ({ forViewBorder, minHeight, forViewBackground, style, o
 
 export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear, style, ...rest }, ref) => {
     const dataAPI = useDataAPI(params);
+    const classes = useStyles();
     const [internalValue, setInternalValue] = useState();
     const [modalParameters, setModalParameters] = useState({});
     const [loaded, setLoaded] = useState(false);
     const ctx = useContext(Context);
     const iRef = useRef();
+    const initialized = useRef(0);
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             return (<Popup {...modalParameters} />)
@@ -159,7 +187,10 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
 
     const loadData = async () => {
         let _value = null;
-        
+        if (initialized.current == 1) {
+            initialized.current = 2;
+            setLoaded(false);
+        }
         if (typeof value === "object") {
             _value = value;
             setLoaded(true);
@@ -174,11 +205,12 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
                         return v;
                     }
                 }
-
             })
             setInternalValue(_value);
-        } else if (load && value && !loaded) {
+        } else if ((load && value && initialized.current === 2) || (load && value)) {
             dataAPI.addFilters({ idSelector: value }, false);
+
+            setLoaded(false);
             const _data = await dataAPI.fetchPost();
             setLoaded(true);
             if (_data?.rows && _data.rows.length > 0) {
@@ -187,6 +219,10 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
                 _value = null;
             }
             setInternalValue(_value);
+        }
+        if (initialized.current == 0) {
+            initialized.current = 1;
+            setLoaded(true);
         }
     }
 
@@ -225,6 +261,7 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
             onSelect(row);
         }
         onChange(row);
+        setInternalValue(row);
     }
 
     const onPopup = () => {
@@ -232,7 +269,9 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
         showModal();
     }
 
-    const clear = () => {
+    const clear = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         if (onClear) {
             onClear();
         }
@@ -246,11 +285,22 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
                 forView ?
                     <InternalForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} loading={(load && !loaded)} {...rest} /> :
                     customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup, onKeyDown: _onKeyDown }) :
-                        <>
-                            <Input value={(internalValue && textField in internalValue) && internalValue[textField]} style={{ cursor: "pointer" }} size={size} ref={ref ? ref : iRef} {...rest} onClick={onPopup} onKeyDown={_onKeyDown} readOnly {...(allowClear && internalValue) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }}
+                        <div className={classes.inputContainer}>
+                            <Input value={(internalValue && textField in internalValue) && internalValue[textField]} className={classes.input} style={{ cursor: "pointer" }} size={size} ref={ref ? ref : iRef} {...rest} onClick={onPopup} onKeyDown={_onKeyDown} readOnly /* {...(allowClear && internalValue && viewClear) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }} */
                                 addonAfter={(load && !loaded) ? <LoadingOutlined /> : <SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
-                            
-                        </>
+
+                            {(allowClear && internalValue) &&
+                                (
+                                    <div className={classes.clearButton} onClick={clear}>
+                                        <CloseCircleFilled /* onClick={clear}  */style={{ cursor: "pointer",color:"gray" }} />
+                                    </div>
+                                )
+                                //suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} />
+                            }
+
+
+
+                        </div>
                 //<StyledSearch allowClear={allowClear} value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} ref={ref} {...rest} onSearch={onPopup} onClick={onPopup} readOnly />
             }
             <div style={{ fontSize: "11px" }}>{((value && typeof detailText === 'function')) && detailText(internalValue)}</div>
