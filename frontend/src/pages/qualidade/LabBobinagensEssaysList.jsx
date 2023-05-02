@@ -17,13 +17,13 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BarsOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BarsOutlined, ExperimentOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor, LabMetodosTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid,MetodoAging } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid, Nonwovens, ArrayColumn } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -35,7 +35,7 @@ const LabArtigoSpecsParametersList = lazy(() => import('./LabArtigoSpecsParamete
 // import { isPrivate, LeftUserItem } from './commons';
 
 
-const title = "Especificações dos Artigos";
+const title = "Ensaios de Bobinagens";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
     return (<ToolbarTitle id={auth?.user} description={title} title={<>
         <Col>
@@ -71,11 +71,11 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
     return (<>
         {true && <>
             <Col width={200}>
-                <Field name="fdes" shouldUpdate label={{ enabled: true, text: "Designação", pos: "top", padding: "0px" }}>
+                <Field name="fbobinagem" shouldUpdate label={{ enabled: true, text: "Bobinagem", pos: "top", padding: "0px" }}>
                     <Input size='small' allowClear />
                 </Field>
             </Col>
-            <Col width={200}>
+            {/* <Col width={200}>
                 <Field name="fartigo_cod" shouldUpdate label={{ enabled: true, text: "Artigo Cód.", pos: "top", padding: "0px" }}>
                     <Input size='small' allowClear />
                 </Field>
@@ -84,7 +84,7 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
                 <Field name="fcliente" shouldUpdate label={{ enabled: true, text: "Cliente", pos: "top", padding: "0px" }}>
                     <Input size='small' allowClear />
                 </Field>
-            </Col>
+            </Col> */}
         </>}
     </>
     );
@@ -92,17 +92,53 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
-    { fdes: { label: "Designação", field: { type: 'input', size: 'small' }, span: 24 } },
-    { fartigo_cod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 12 }, fartigo_des: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
+    { fbobinagem: { label: "Bobinagem", field: { type: 'input', size: 'small' }, span: 24 } },
+    //{ fartigo_cod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 12 }, fartigo_des: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
+    //{ fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
     /*{ fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } }, */
 ];
+
+
+
+
+const Actions = ({ data, rowIndex, onAction }) => {
+
+    const items = [
+        {
+            key: 'Histerese',
+            icon: <ExperimentOutlined />,
+            label: "Carregar teste de Histerese",
+        },
+        {
+            key: 'Tração',
+            icon: <ExperimentOutlined />,
+            label: "Carregar teste de Tração",
+        },
+        {
+            key: 'Peel',
+            icon: <ExperimentOutlined />,
+            label: "Carregar teste de Peel",
+        },
+    ];
+
+    return (
+        <Dropdown menu={{ items, onClick: onAction }} placement="bottomLeft" trigger={["click"]}>
+            <Button icon={<EllipsisOutlined />} />
+        </Dropdown>
+    );
+}
+
+const LoadEssay = () => {
+    return (<>
+        <TextArea />
+    </>);
+}
 
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
 
-    const permission = usePermission({ name: "quality", item: "metodos" });//Permissões Iniciais
+    const permission = usePermission({ name: "quality", item: "test" });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: false, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -117,10 +153,12 @@ export default ({ setFormTitle, ...props }) => {
     const tableCls = useTableStyles();
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
-    const defaultParameters = { method: "ListLabArtigosSpecs" };
+    const defaultParameters = { method: "ListLabBobinagensEssays" };
     const defaultSort = [];
-    const dataAPI = useDataAPI({ id: props?.id, payload: { url: `${API_URL}/qualidade/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
+    const dataAPI = useDataAPI({ id: props?.id, fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/qualidade/sql/`, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
     const submitting = useSubmitting(true);
+    const [columns, setColumns] = useState([]);
+    const columnsRef = useRef([]);
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -128,6 +166,7 @@ export default ({ setFormTitle, ...props }) => {
             switch (modalParameters.content) {
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "parameters": return <LabArtigoSpecsParametersList parameters={modalParameters.parameters} />;
+                case "load": return <LoadEssay parameters={modalParameters.parameters} />;
                 //case "content": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
@@ -137,8 +176,17 @@ export default ({ setFormTitle, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
-    const onOpenParameters = ({id, designacao, valid,artigo_id,cliente_cod}) => {
-        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadData, lazy: true, parameters: { id, valid,artigo_id,cliente_cod } });
+    
+    const onAction = (action, data, rowIndex) => {
+        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Carregar o ensaio ${action} referente à bobinagem ${data?.nome}`, push: false, loadData, lazy: true, parameters: { id, valid } });
+        showModal();
+        Modal.confirm({ content: <TextArea></TextArea> })
+
+
+        console.log("oooo", data, rowIndex);
+    }
+    const onOpenParameters = (id, designacao, valid) => {
+        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadData, lazy: true, parameters: { id, valid } });
         showModal();
     }
 
@@ -158,31 +206,23 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["designacao", "lab_metodo", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
-            return tableCls.edit;
+        if (["nws"].includes(name)) {
+            return tableCls.cellPadding1;
         }
-        if (["designacao", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.edit)) {
-            return tableCls.edit;
-        }
+        // if (["designacao", "lab_metodo", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
+        //     return tableCls.edit;
+        // }
+        // if (["designacao", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.edit)) {
+        //     return tableCls.edit;
+        // }
     };
 
     const groups = [
         //{ name: 'name', header: 'Header', headerAlign: "center" }
     ]
-    const columns = [
-        ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data, cellProps }) => <Link cellProps={cellProps} onClick={() => onOpenParameters(data)} value={data?.designacao} /> }] : [],
-        ...(true) ? [{ name: 'lab_metodo', header: 'Método', editable: columnEditable, renderEditor: (props) => <LabMetodosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : data?.metodo_designacao, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'des', header: 'Artigo', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', editable: columnEditable, renderEditor: (props) => <ClientesTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : data?.cliente_nome, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'owner', header: 'Owner', editable: columnEditable, render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'aging', header: 'Aging', editable: columnEditable, render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} genre="m" checkbox={true} />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'reference', header: 'Referência', editable: columnEditable, userSelect: true, defaultLocked: false, width: 90, renderEditor: (props) => <BooleanTableEditor {...props} genre="m" checkbox={true} />, cellProps: { className: columnClass }, render: ({ data }) => <Favourite value={data?.reference} /> }] : [],
-        ...(true) ? [{ name: 'obs', header: 'Observações', editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 't_stamp', header: 'Data', editable: columnEditable, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <DateTime value={data?.t_stamp} format={DATETIME_FORMAT} />, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'valid', header: 'Válido', editable: columnEditable, render: ({ data, cellProps }) => <Valid cellProps={cellProps} value={data?.valid} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
-    ];
+    // const columns = [
+    //     ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data, cellProps }) => <Link cellProps={cellProps} onClick={() => onOpenParameters(data?.id, data?.designacao, data?.valid)} value={data?.designacao} /> }] : [],
+    // ];
 
 
     useEffect(() => {
@@ -190,6 +230,13 @@ export default ({ setFormTitle, ...props }) => {
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
     }, []);
+
+    useEffect(() => {
+        if (columnsRef.current.length > 0) {
+            setColumns(columnsRef.current);
+            columnsRef.current = [];
+        }
+    }, [dataAPI.updated])
 
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -203,8 +250,68 @@ export default ({ setFormTitle, ...props }) => {
         dataAPI.addFilters({ ...filterValues }, true);
         dataAPI.setSort(dataAPI.getSort(), defaultSort);
         dataAPI.addParameters({ ...defaultParameters }, true);
-        submitting.end();
+        dataAPI.setAction("init", true);
+        //dataAPI.fetchPost({update:true});
+        //dataAPI.setAction("init", true);
+        dataAPI.update(true);
+        //submitting.end();
     }
+
+    const postProcess = async (dt, submitting) => {
+        /* let _current = {};
+        let _columns = [];
+        for (let [i, v] of dt.rows.entries()) {
+            for (let x of v.parameters){
+                if (!(x in _current)){
+                    _current[x] = 1;
+                    _columns.push({ name: x, header: x, editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data, cellProps }) => <Link cellProps={cellProps} onClick={() => onOpenParameters(data?.id, data?.designacao, data?.valid)} value={data?.designacao} /> })
+                }
+            }
+            //     const _a = json(v?.values, null);
+        //     if (_a && Array.isArray(_a) && _a.length === 4) {
+        //         dt.rows[i]["value1"] = parseFloat(_a[0]).toFixed(dt.rows[i].value_precision);
+        //         dt.rows[i]["value2"] = parseFloat(_a[1]).toFixed(dt.rows[i].value_precision);
+        //         dt.rows[i]["value3"] = parseFloat(_a[2]).toFixed(dt.rows[i].value_precision);
+        //         dt.rows[i]["value4"] = parseFloat(_a[3]).toFixed(dt.rows[i].value_precision);
+        //     }
+        }
+        console.log("????????????????????????????",dt) */
+        // columns.current = [{name: dt.bobinagem_nome, header: "Bobinagemx"}];
+        // console.log("####",dt)
+
+        let _current = {};
+        let _columns = [];
+        for (let [i, v] of dt.rows.entries()) {
+            v["produtos"] = json(v?.produtos, null);
+            v["clientes"] = json(v?.clientes, null);
+            v["estados"] = json(v?.estados, null);
+            v["bobines"] = json(v?.bobines, null);
+            v["parameters"] = json(v?.parameters, null);
+            v["results"] = json(v?.results, null);
+            v["errors"] = json(v?.errors, null);
+            if (v?.parameters) {
+                for (let x of v.parameters) {
+                    if (!(x in _current)) {
+                        _current[x] = 1;
+                        _columns.push({ name: x, header: v?.results?.[x].designacao, editable: columnEditable, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center", render: ({ data, cellProps }) => data?.results?.[x]?.value });
+                    }
+                }
+            }
+        }
+
+        columnsRef.current = [
+            { name: 'baction', header: '', headerAlign: "center", userSelect: true, defaultLocked: true, width: 45, render: ({ data, rowIndex }) => <Actions data={data} rowIndex={rowIndex} onAction={(action) => onAction(action, data, rowIndex)} /> },
+            { name: "nome", header: "Bobinagem", defaultWidth: 110, userSelect: true, defaultLocked: true, headerAlign: "center" },
+            { name: "data_ensaio", header: "Data Ensaio", defaultWidth: 110, render: ({ data }) => <DateTime value={data?.data_ensaio} format={DATE_FORMAT} />, userSelect: true, defaultLocked: false, headerAlign: "center" },
+            { name: "nws", header: "Nonwovens", defaultWidth: 340, cellProps: { className: columnClass }, render: ({ data }) => <Nonwovens valueUp={data?.tiponwsup} valueInf={data?.tiponwinf} />, userSelect: true, defaultLocked: false, headerAlign: "center" },
+            { name: "produtos", header: "Produtos", defaultWidth: 340, cellProps: { className: columnClass }, render: ({ data, cellProps }) => <ArrayColumn value={data?.produtos} distinct={true} cellProps={cellProps} />, userSelect: true, defaultLocked: false, headerAlign: "center" },
+            { name: "cliente", header: "Cliente", defaultWidth: 240, cellProps: { className: columnClass }, render: ({ data, cellProps }) => <LeftAlign>{data?.cliente}</LeftAlign>, userSelect: true, defaultLocked: false, headerAlign: "center" },
+            ..._columns];
+        submitting.end();
+        return dt;
+    }
+
+
 
     const onFilterFinish = (type, values) => {
         //Required Filters
@@ -222,11 +329,11 @@ export default ({ setFormTitle, ...props }) => {
                 //remove empty values
                 const vals = dataAPI.removeEmpty({ ...defaultFilters, ...values });
                 const _values = {
-                    ...vals,
-                    fdes: getFilterValue(vals?.fdes, 'any'),
-                    fartigo_cod: getFilterValue(vals?.fartigo_cod, 'any'),
-                    fartigo_des: getFilterValue(vals?.fartigo_des, 'any'),
-                    fcliente: getFilterValue(vals?.fcliente, 'any'),
+                    //...vals,
+                    fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
+                    //fartigo_cod: getFilterValue(vals?.fartigo_cod, 'any'),
+                    //fartigo_des: getFilterValue(vals?.fartigo_des, 'any'),
+                    //fcliente: getFilterValue(vals?.fcliente, 'any'),
                     //fcod: getFilterValue(vals?.fcod, 'any'),
                     //fdes: getFilterValue(vals?.fdes, 'any'),
                     //f1: getFilterValue(vals?.f1, 'any'),
@@ -256,7 +363,7 @@ export default ({ setFormTitle, ...props }) => {
             } else if (columnId === "des") {
                 _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.des, "artigo_id": value?.id, "cod": value?.cod });
             } else if (columnId === "lab_metodo") {
-                _rows = dataAPI.updateValues(index, columnId, { ...!data?.designacao && { designacao: `${dayjs().format(DATE_FORMAT_NO_SEPARATOR)} ${value?.designacao}` }, "metodo_designacao": value?.designacao, "lab_metodo_id": value?.id, "cliente_nome": value?.cliente_nome, "des": value?.des, "owner": value?.owner, "aging": value?.aging });
+                _rows = dataAPI.updateValues(index, columnId, { ...!data?.designacao && { designacao: `${dayjs().format(DATE_FORMAT_NO_SEPARATOR)} ${value?.designacao}` }, "metodo_designacao": value?.designacao, "lab_metodo_id": value?.id, "cliente_nome": value?.cliente_nome, "des": value?.des, "owner": value?.owner });
             } else {
                 _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
             }
@@ -416,9 +523,11 @@ export default ({ setFormTitle, ...props }) => {
                 sortable
                 reorderColumns={false}
                 showColumnMenuTool
-                loadOnInit={true}
+                loadOnInit={false}
                 pagination="remote"
                 defaultLimit={20}
+                rowHeight={40}
+                enableColumnAutosize={true}
                 columns={columns}
                 dataAPI={dataAPI}
                 moreFilters={true}

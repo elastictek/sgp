@@ -136,7 +136,6 @@ export default ({ setFormTitle, ...props }) => {
     }, [modalParameters]);
     const addToOFabrico = () => {
         const _filter = form.getFieldsValue(["artigo_id", "produto_id"]);
-        console.log("???>",_filter)
         setModalParameters({
             content: "ordensfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico em Elaboração", push: false, loadData: () => { }, parameters: {
                 payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "of_id", parameters: { method: "OrdensFabricoInElaborationAllowed" }, pagination: { enabled: false, limit: 50 }, filter: { ..._filter }, sort: [] } },
@@ -558,14 +557,33 @@ export default ({ setFormTitle, ...props }) => {
             case '6':
                 if (form.getFieldValue("joinbc") === 1) {
                     if (dataAPI.getData().rows) {
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
+                        console.log("$$$-join-",dataAPI.getData().rows)
+                        let _itemsC =  dataAPI.getData().rows.filter(x => x?.extrusora === "C");
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x=> {
+                            let _x = {...x};
+                            let _c = _itemsC.find(v=>v.cuba==x.cuba && v.matprima_cod==x.matprima_cod);
+                            if (_c){
+                                let _doser = x?.doseador ? x?.["doseador"].split(',') : [];
+                                _doser.push(_c.doseador);
+                                _doser.sort();
+                                _x["doseador"] = _doser.join(',');
+                            }
+                            return _x;
+                        })
+                        //let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
                         dataAPI.setData({ rows: _items, total: _items?.length });
                         dataAPI.clearStatus();
                     }
                 } else {
                     if (dataAPI.getData().rows) {
+                        console.log("$$$-split-",dataAPI.getData().rows)
                         let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
-                        let _itemsC = _items.filter(x => x?.extrusora === "B").map(x => ({ ...x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque) }));
+                        let _itemsC = _items.filter(x => x?.extrusora === "B").map(x => { 
+                            // let _x = {...x}
+                            // ...x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque) 
+                        
+                        });
+
                         dataAPI.setData({ rows: [..._items, ..._itemsC], total: _items?.length + _itemsC?.length });
                         dataAPI.clearStatus();
                     }

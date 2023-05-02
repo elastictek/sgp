@@ -28,7 +28,7 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeD
 import { API_URL, DOSERS, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, FORMULACAO_MANGUEIRAS, JUSTIFICATION_OUT } from 'config';
 import { Status } from '../pages/bobines/commons';
 import IconButton from "components/iconButton";
-import { Cuba } from "./TableColumns";
+import { Cuba,MetodoOwner,MetodoAging } from "./TableColumns";
 import { CgCloseO } from 'react-icons/cg';
 import { sha1 } from 'crypto-hash';
 import { json, orderObjectKeys } from "utils/object"
@@ -253,6 +253,101 @@ export const MetodoOwnerTableEditor = ({ dataAPI, selectProps, ...props }) => {
             options={[
                 { value: 0, label: "Elastictek" },
                 { value: 1, label: "Cliente" }
+            ]}
+            value={props?.value}
+            onChange={onChange}
+            onBlur={onComplete}
+            style={{ width: "100%" }}
+            {...selectProps}
+        />
+    </>
+    );
+}
+
+export const MetodoTipoTableEditor = ({ dataAPI, selectProps, ...props }) => {
+    const selected = useRef(false);
+    const onChange = async (v) => {
+        props.onChange(v === '' ? null : v);
+        await sleep(300);
+        props.onComplete(v === '' ? null : v);
+    };
+    const onComplete = (v) => {
+        props.onComplete(v === '' ? null : v);
+    }
+    const onSelect = (v) => {
+        selected.current = true;
+        props.onChange(v === '' ? null : v);
+    };
+    const onKeyDown = (e) => {
+        if (e.key == 'Tab' || e.key == 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!selected.current) {
+                props.onTabNavigation(
+                    true /*complete navigation?*/,
+                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                );
+            }
+            selected.current = false;
+        }
+    }
+
+    return (<>
+        <Select
+            onKeyDown={onKeyDown}
+            autoFocus
+            options={[
+                { value: "gramagem", label: "Gramagem" },
+                { value: "peel", label: "Peel" },
+                { value: "traction", label: "Tração" },
+                { value: "histerese", label: "Histerese" }
+            ]}
+            value={props?.value}
+            onChange={onChange}
+            onBlur={onComplete}
+            style={{ width: "100%" }}
+            {...selectProps}
+        />
+    </>
+    );
+}
+
+export const MetodoModeTableEditor = ({ dataAPI, selectProps, ...props }) => {
+    const selected = useRef(false);
+    const onChange = async (v) => {
+        props.onChange(v === '' ? null : v);
+        await sleep(300);
+        props.onComplete(v === '' ? null : v);
+    };
+    const onComplete = (v) => {
+        props.onComplete(v === '' ? null : v);
+    }
+    const onSelect = (v) => {
+        selected.current = true;
+        props.onChange(v === '' ? null : v);
+    };
+    const onKeyDown = (e) => {
+        if (e.key == 'Tab' || e.key == 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!selected.current) {
+                props.onTabNavigation(
+                    true /*complete navigation?*/,
+                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                );
+            }
+            selected.current = false;
+        }
+    }
+
+    return (<>
+        <Select
+            onKeyDown={onKeyDown}
+            autoFocus
+            options={[
+                { value: "simples", label: "Simples" },
+                { value: "controle", label: "Controle" },
+                { value: "cíclico", label: "Cíclico" }
             ]}
             value={props?.value}
             onChange={onChange}
@@ -648,16 +743,12 @@ export const LabMetodosTableEditor = ({ ...props }) => {
             textField: "designacao",
             // detailText={r => r?.cod}
             columns: [
-                { key: 'designacao', name: 'Designação', width: 200 },
-                { key: 'des', name: 'Artigo' },
-                { key: 'cliente_nome', name: 'Cliente' },
-                { key: 'owner', name: 'Owner',width:70 }
+                { key: 'designacao', name: 'Designação' },
+                { key: 'owner', header: 'Owner', render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" },
+                { key: 'aging', header: 'Aging', render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" },
+        
             ],
-            filters: { fdes: { type: "any", width: 150, text: "Designação", autoFocus: true },
-            fartigo_cod: { type: "any", width: 150, text: "Artigo Cód." },
-            fartigo_des: { type: "any", width: 150, text: "Artigo Des." },
-            fcliente: { type: "any", width: 150, text: "Cliente" }
-        },
+            filters: { fdes: { type: "any", width: 150, text: "Designação", autoFocus: true }},
             moreFilters: {}
         }}
     />)

@@ -349,10 +349,15 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const setData = (data, payload) => {
         ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
+        if (payload?.update){
+            ref.current.updated = Date.now();
+        }
         updateState(draft => {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
-            //draft.updated = Date.now();
+            if (payload?.update){
+                draft.updated = ref.current.updated;
+            }
             draft.primaryKey = ref.current.primaryKey;
             draft.pagination = ref.current.pagination;
             draft.filter = ref.current.filter;
@@ -410,6 +415,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
             } else {
                 _rows.push(...rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
+                console.log("adding xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",_rows)
             }
             if (typeof cb === "function") {
                 _rows = cb(_rows);
@@ -419,6 +425,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 draft.data = { rows: [..._rows], total: state.data.total + rows.length };
             });
         } else {
+            console.log("adding rowsssssssssss 22222")
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
@@ -530,11 +537,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     //     return ret;
     //     //return ok;
     // }
-    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false } = {}) => {
+    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
         const payload = getPayload(fromSate);
         payload.tstamp = Date.now();
+        if (rest?.update===true){
+            payload.update = true;
+        }else{
+            payload.update = false;
+        }
         setIsLoading(true);
         return (async () => {
             let ret = null;
@@ -543,7 +555,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
             try {
-                const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, filter:{ ...payload.filter, ...ref.current.baseFilter } , ...((signal) ? { signal } : { cancelToken: token }) })).data;
+                const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, filter: { ...payload.filter, ...ref.current.baseFilter }, ...((signal) ? { signal } : { cancelToken: token }) })).data;
                 if (typeof rowFn === "function") {
                     ret = await rowFn(dt);
                     setData(ret, payload);
@@ -646,9 +658,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         let _errors = status?.errors ? status?.errors : 0;
         let _warnings = status?.warnings ? status?.warnings : 0;
         const _rows = rows ? rows : state.data.rows;
+        let _schema = schema;
+        if (typeof schema === "function") {
+            _schema = schema();
+        }
         for (const [i, v] of _rows.entries()) {
             if (v?.rowvalid === 0 || v?.rowadded === 1) {
-                let { errors, warnings, value, ..._status } = _getStatus(schema().validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, v[getPrimaryKey()], i);
+                let { errors, warnings, value, ..._status } = _getStatus(_schema.validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, v[getPrimaryKey()], i);
                 _accStatus = _status;
                 _errors = _errors + errors;
                 _warnings = _warnings + warnings;
@@ -667,6 +683,61 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.formStatus = _accStatus?.formStatus || {};
         });
         return { ..._accStatus, errors: _errors, warnings: _warnings };
+    }
+
+    const validateRow = (schema, status = {}, options = {}, row = {}, rowIndex) => {
+        let _accStatus = status?.status ? status?.status : {};
+        let _errors = status?.errors ? status?.errors : 0;
+        let _warnings = status?.warnings ? status?.warnings : 0;
+        let _schema = schema;
+        if (typeof schema === "function") {
+            _schema = schema();
+        }
+        let { errors, warnings, value, ..._status } = _getStatus(_schema.validate(row, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, row[getPrimaryKey()], rowIndex);
+        _accStatus = _status;
+        _errors = _errors + errors;
+        _warnings = _warnings + warnings;
+        return ({
+            errors: _errors,
+            warnings: _warnings,
+            fieldStatus: _accStatus?.fieldStatus || {},
+            formStatus: _accStatus?.formStatus || {},
+        });
+    }
+
+    const _updateRowStatus = ({ errors = 0, warnings = 0, fieldStatus, formStatus }, rowKey, updateState = true) => {
+        const _gridStatus = { ...statusRef.current };
+        _gridStatus.fieldStatus = { ..._gridStatus.fieldStatus, [rowKey]: fieldStatus?.[rowKey] };
+        const _alerts = getNumAlerts(_gridStatus);
+        statusRef.current = {
+            errors: _alerts.errors,
+            warnings: _alerts.warnings,
+            fieldStatus: _gridStatus.fieldStatus || {}
+        };
+        if (updateState) {
+            updateStatus(draft => {
+                draft.errors = statusRef.current.errors;
+                draft.warnings = statusRef.current.warnings;
+                draft.fieldStatus = statusRef.current.fieldStatus
+            });
+        }
+    }
+
+    const _updateStatus = (_status = null) => {
+        if (_status) {
+            statusRef.current = {
+                errors: _status?.errors,
+                warnings: _status?.warnings,
+                fieldStatus: _status.fieldStatus || {},
+                formStatus: _status?.formStatus || {}
+            };
+        }
+        updateStatus(draft => {
+            draft.errors = statusRef.current.errors;
+            draft.warnings = statusRef.current.warnings;
+            draft.fieldStatus = statusRef.current.fieldStatus;
+            draft.formStatus = statusRef.current.formStatus;
+        });
     }
 
     const clearRowStatus = (rowKey) => {
@@ -754,7 +825,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const getMessages = () => {
         const messages = { error: [], warning: [] };
         for (const rowKey of Object.keys(status?.fieldStatus)) {
-            for (const col of Object.keys(status.fieldStatus[rowKey])) {
+            for (const col of Object.keys(status.fieldStatus?.[rowKey] || {})) {
                 if (col !== "row") {
                     const item = status.fieldStatus[rowKey][col];
                     for (const msg of item.msg) {
@@ -771,6 +842,37 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         if (status.formStatus?.warning) {
             for (const msg of status.formStatus?.warning) {
                 messages["warning"].push(`${msg}`);
+            }
+        }
+        return messages;
+    }
+
+    const getNumAlerts = (gridStatus = null) => {
+        const _gridStatus = gridStatus ? gridStatus : statusRef.current;
+        const messages = { errors: 0, warnings: 0 };
+        for (const rowKey of Object.keys(_gridStatus?.fieldStatus || {})) {
+            for (const col of Object.keys(_gridStatus?.fieldStatus?.[rowKey] || {})) {
+                if (col !== "row") {
+                    const item = _gridStatus?.fieldStatus[rowKey][col];
+                    for (const msg of item.msg) {
+                        if (item.status === "error") {
+                            messages.errors = messages.errors + 1;
+                        }
+                        if (item.status === "warning") {
+                            messages.warnings = messages.warnings + 1;
+                        }
+                    }
+                }
+            }
+        }
+        if (_gridStatus?.formStatus?.error) {
+            for (const msg of _gridStatus?.formStatus?.error) {
+                messages.errors = messages.errors + 1;
+            }
+        }
+        if (_gridStatus?.formStatus?.warning) {
+            for (const msg of _gridStatus?.formStatus?.warning) {
+                messages.warnings = messages.warnings + 1;
             }
         }
         return messages;
@@ -846,13 +948,15 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         removeEmpty,
         setFilters,
         setBaseFilters: (f) => ref.current.baseFilter = f,
-        baseFilters:()=>ref.current.baseFilter,
+        baseFilters: () => ref.current.baseFilter,
         getIndex,
         validateRows,
+        validateRow,
         validateField,
         clearRowStatus,
+        updateRowStatus: _updateRowStatus,
         status: () => status,
-        updateStatus,
+        updateStatus:_updateStatus,
         clearStatus,
         getMessages,
         getFieldStatus,

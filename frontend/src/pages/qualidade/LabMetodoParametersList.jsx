@@ -17,13 +17,13 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BorderOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BorderOutlined, UploadOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, InputTableEditor, BooleanTableEditor, StatusTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer, Status } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer, Status, MetodoMode, MetodoTipo } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -107,7 +107,7 @@ export default ({ setFormTitle, ...props }) => {
     const tableCls = useTableStyles();
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
-    const defaultParameters = { method: "ListLabMetodosParameters" };
+    const defaultParameters = { method: "ListLabMetodoParameters" };
     const defaultSort = [];
     const dataAPI = useDataAPI({ id: props?.id, payload: { url: `${API_URL}/qualidade/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters } });
     const submitting = useSubmitting(true);
@@ -129,14 +129,17 @@ export default ({ setFormTitle, ...props }) => {
     const onParametersChooser = () => {
         setModalParameters({
             content: "parameters", responsive: true, type: "drawer", width: 1200, title: "Parâmetros", push: false, loadData: () => { }, parameters: {
-                payload: { payload: { url: `${API_URL}/qualidade/sql/`, primaryKey: "id", parameters: { method: "ListLabParameters" }, pagination: { enabled: true }, filter: {}, baseFilter: { status: 1 }, sort: [] } },
+                payload: { payload: { url: `${API_URL}/qualidade/sql/`, primaryKey: "id", parameters: { method: "ListLabParameters" }, pagination: { enabled: true, pageSize: 20 }, filter: {}, baseFilter: { status: 1 }, sort: [] } },
                 toolbar: false,
                 pagination: "remote",
                 multipleSelection: true,
                 columns: [
-                    ...(true) ? [{ name: 'designacao', header: 'Parâmetro', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'parameter_type', header: 'Tipo', render: ({ data, cellProps }) => <MetodoTipo cellProps={cellProps} value={data?.parameter_type} />, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'parameter_mode', header: 'Modo', render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
                     ...(true) ? [{ name: 'unit', header: 'Unidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
-                    ...(true) ? [{ name: 'nvalues', header: 'Nº Valores', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
                     ...(true) ? [{ name: 'min_value', header: 'Min', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
                     ...(true) ? [{ name: 'max_value', header: 'Max', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
                     ...(true) ? [{ name: 'value_precision', header: 'Precisão', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
@@ -151,10 +154,11 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
 
+
     const onSelectParameters = async ({ data, rows, close }) => {
         console.log(data, rows)
-        const _current = dataAPI.getData().rows.map(v => v?.parametro_id);
-        const _rows = rows.map(r => ({ parametro_id: r.id, parametro_des: r.designacao, unit: r.unit, nvalues: r.nvalues, min_value: r.min_value, max_value: r.max_value, value_precision: r.value_precision, required: r.required, status: 1, [dataAPI.getPrimaryKey()]: `id_${uid(4)}` })).filter(v => !_current.includes(v["parametro_id"]));
+        const _current = dataAPI.getData().rows.map(v => v?.parameter_id);
+        const _rows = rows.map(r => ({ parameter_id: r.id, parameter_nome: r.nome, parameter_des: r.designacao, parameter_type: r.parameter_type, parameter_mode: r.parameter_mode, unit: r.unit, nvalues: r.nvalues, min_value: r.min_value, max_value: r.max_value, value_precision: r.value_precision, required: r.required, status: 1, decisive: 0, [dataAPI.getPrimaryKey()]: `id_${uid(4)}` })).filter(v => !_current.includes(v["parameter_id"]));
         dataAPI.addRows(_rows);
         dataAPI.setAction("edit", true);
         dataAPI.update(true);
@@ -162,7 +166,7 @@ export default ({ setFormTitle, ...props }) => {
 
 
     const columnEditable = (v, { data, name }) => {
-        if (["required", "status"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["required", "status", "decisive"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return true;
         }
         return false;
@@ -172,7 +176,7 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["required", "status"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["required", "status", "decisive"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return tableCls.edit;
         }
     };
@@ -181,14 +185,18 @@ export default ({ setFormTitle, ...props }) => {
         //{ name: 'name', header: 'Header', headerAlign: "center" }
     ]
     const columns = [
-        ...(true) ? [{ name: 'parametro_des', header: 'Parâmetro', editable: columnEditable, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_nome', header: 'Nome', editable: columnEditable, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_des', header: 'Designação', editable: columnEditable, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_type', header: 'Tipo', editable: columnEditable, cellProps: { className: columnClass }, render: ({ data, cellProps }) => <MetodoTipo cellProps={cellProps} value={data?.parameter_type} />, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_mode', header: 'Modo', editable: columnEditable, render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'unit', header: 'Unidade', editable: columnEditable, renderEditor: (props) => <LabParametersUnitEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'nvalues', header: 'Nº Valores', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 1, max: 12 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'min_value', header: 'Min', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'max_value', header: 'Max', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'value_precision', header: 'Precisão', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 6 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} checkbox={true} genre="m" />, render: ({ data,cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data,cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} checkbox={true} genre="m" />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'decisive', header: 'Decisivo', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.decisive} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
     ];
 
@@ -337,7 +345,7 @@ export default ({ setFormTitle, ...props }) => {
             dataAPI.setAction("edit", true);
             dataAPI.update(true);
         } else {
-            dataAPI.validateRows(rowSchema, {}, {}, _rows);
+            dataAPI.validateRows(rowSchema, {}, {});
             Modal.confirm({
                 content: <div>Tem a certeza que deseja eliminar o parâmetro <span style={{ fontWeight: 700 }}>{data?.designacao}</span>?</div>, onOk: async () => {
                     submitting.trigger();

@@ -564,7 +564,7 @@ def SaveFormulacao(request, format=None):
                     _deleteFormulacaoItems(filter.get("formulacao_id"),cursor)
                     _insertFormulacaoItems(filter.get("formulacao_id"),cursor)
             if filter.get("cs_id") is not None:
-                print("dddddddddddddd")
+                print("aaaaa")
                 print(data.get("type"))
                 return updateCurrentSettings(filter.get("cs_id"),data.get("type"),data,request.user.id,cursor)
     except Exception as error:

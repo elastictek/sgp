@@ -214,9 +214,11 @@ def getCurrentSettingsId():
 def updateCurrentSettings(id,type,data,user_id,cursor):
     try:
         with cursor:
-            args = (id,data,type,user_id,0)
-            print(args)
-            #cursor.callproc('update_currentsettings',args)
+            if type.startswith('formulacao'):
+                print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+                args = (id, json.dumps(data),type,user_id,0)
+                #print(args)
+                cursor.callproc('update_currentsettings',args)
         return Response({"status": "success", "id":id, "title": f'Definições atualizadas com sucesso', "subTitle":f""})
     except Exception as error:
         return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
@@ -585,7 +587,7 @@ def UpdateCurrentSettings(request, format=None):
         try:
             with connections["default"].cursor() as cursor:
                 args = (request.data['filter']["csid"],json.dumps(data['formulacao']),data['type'],request.user.id,0)
-                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
                 print(args)
                 cursor.callproc('update_currentsettings',args)
                 #db.execute(dml.statement, cursor, dml.parameters)

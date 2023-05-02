@@ -272,6 +272,7 @@ urlpatterns = [
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),
     re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
     re_path(r'^qualidade/sql/$',qualidade.Sql),
+    re_path(r'^qualidade/loadlabmetodoparametersbyfile/$',qualidade.LoadLabMetodoParametersByFile),
     
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

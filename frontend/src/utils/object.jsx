@@ -10,8 +10,21 @@ export const json = (obj,ret) => {
     }
 }
 
+export const arrayItem = (array,index,ret=null) => {
+    try {
+        return array[index];
+    } catch (e) {
+        return ret;
+    }
+}
+
+
 export const excludeObjectKeys = (value = {}, exclude = []) => {
+    if (exclude.includes("*")) {
+        return false;
+    }
     const _exclude = v => exclude.some(x => {
+        
         if (x.startsWith('%') && x.endsWith('%')) {
             return v.includes(x.replace(/^\%*|\%*$/g, ''));
         } else if (x.startsWith('%')) {

@@ -62,6 +62,7 @@ const ArtigosProducao = lazy(() => import('./artigos/ArtigosProducao'));
 const LabParametersList = lazy(() => import('./qualidade/LabParametersList'));
 const LabMetodosList = lazy(() => import('./qualidade/LabMetodosList'));
 const LabArtigosSpecsList = lazy(() => import('./qualidade/LabArtigosSpecsList'));
+const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssaysList'));
 
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
@@ -160,6 +161,7 @@ const RenderRouter = () => {
                 { path: "qualidade/labparameterslist", element: <Suspense fallback={<Spin />}><LabParametersList /></Suspense> },
                 { path: "qualidade/labmetodoslist", element: <Suspense fallback={<Spin />}><LabMetodosList /></Suspense> },
                 { path: "qualidade/labartigosspecslist", element: <Suspense fallback={<Spin />}><LabArtigosSpecsList /></Suspense> },
+                { path: "qualidade/labbobinagensessayslist", element: <Suspense fallback={<Spin />}><LabBobinagensEssaysList /></Suspense> },
                 
                 { path: "devolucoes/devolucoeslist", element: <Suspense fallback={<Spin />}><DevolucoesList /></Suspense> },
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },

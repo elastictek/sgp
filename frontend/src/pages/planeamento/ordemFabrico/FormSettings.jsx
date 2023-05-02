@@ -56,6 +56,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload }) 
             default:
                 (async () => {
                     setLoading(true);
+                    console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaa!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",artigo)
                     setCoresLookup(await loadCoresLookup(artigo.core, artigo.lar, token));
                     let _emendas = {};
                     if (!emendas.id) {

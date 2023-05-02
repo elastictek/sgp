@@ -661,11 +661,12 @@ def UpdateDestinos(request, format=None):
                     ) t
                     UNION
                     SELECT distinct destino d from producao_bobine pb where comp_actual>0 and recycle=0 and destino is not null and destinos is null and palete_id = {filter["palete_id"]}
+                    UNION 
+	                SELECT distinct destinos->>"$.estado.label" from producao_bobine pb where palete_id = {filter["palete_id"]}
                     ) t
                 )
                 '''
                 ,1)
-
                 db.execute(statement, cursor, dml.parameters)
 
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})

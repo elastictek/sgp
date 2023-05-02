@@ -195,7 +195,7 @@ def GetGranuladoInLine(request, format=None):
     parameters = {**f.parameters}
     dql = db.dql(request.data, False)
     cols = f"""ROW_NUMBER() OVER () id,t.cuba,IL.vcr_num,IFNULL(IL.artigo_cod,t.matprima_cod) artigo_cod ,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,
-            IFNULL(IL.artigo_des,t.matprima_des) artigo_des,group_concat(t.doser) dosers,IL.mp_group,IL.max_in"""
+            IFNULL(IL.artigo_des,t.matprima_des) artigo_des,group_concat(distinct t.doser order by t.doser) dosers,IL.mp_group,IL.max_in"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
@@ -221,12 +221,24 @@ def GetGranuladoInLine(request, format=None):
             JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
             WHERE doser is not null and arranque>0
             )
-            SELECT {c(f'{dql.columns}')} FROM(
-            SELECT FR.cuba,FR.matprima_cod,FR.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,FR.matprima_des,FR.doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            select
+             {c(f'{dql.columns}')}
+            FROM (
+            SELECT IFNULL(FR.cuba,IL.group_id) cuba,IFNULL(FR.matprima_cod,IL.artigo_cod) matprima_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(FR.matprima_des,IL.artigo_des) matprima_des,IFNULL(FR.doser,IL.doser) doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
+            (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
+            FROM INLINE IL
+            LEFT JOIN FORMULACAO_DOSERS FR ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+            UNION
+            SELECT IFNULL(FR.cuba,IL.group_id) cuba,IFNULL(FR.matprima_cod,IL.artigo_cod) matprima_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(FR.matprima_des,IL.artigo_des) matprima_des,IFNULL(FR.doser,IL.doser) doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
+            (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
             FROM FORMULACAO_DOSERS FR
-            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser) t
+            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+            WHERE IL.id is null
+            ) t
             LEFT JOIN INLINE IL ON (IL.artigo_cod=t.matprima_cod or IL.mp_group=t.mp_group) AND IL.doser=t.doser
-            group by t.cuba,IFNULL(IL.artigo_cod,t.matprima_cod),IL.vcr_num,IL.mp_group,IL.max_in,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(IL.artigo_des,t.matprima_des)
+            group by t.formulation, t.cuba,IFNULL(IL.artigo_cod,t.matprima_cod),IL.vcr_num,IL.mp_group,IL.max_in,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(IL.artigo_des,t.matprima_des)
             {s(dql.sort)}
         """
     )
@@ -273,20 +285,22 @@ def GetGranuladoLoteQuantity(request, format=None):
 def AddGranuladoToLine(request, format=None):
     filter = request.data['filter']
     try:
-        filter["t_stamp"]=datetime.now()
-        args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter else None,request.user.id,0)
-        cursor.callproc('add_granulado_to_line',args)
-        return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
+        with connections["default"].cursor() as cursor:
+            filter["t_stamp"]=datetime.now()
+            args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter and filter["group_id"] is not None else None,request.user.id,0)
+            cursor.callproc('add_granulado_to_line',args)
+            return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def RemoveGranuladoFromLine(request, format=None):
     filter = request.data['filter']
     try:
-        filter["t_stamp"]=datetime.now()
-        args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
-        cursor.callproc('output_granulado_from_line',args)
-        return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
+        with connections["default"].cursor() as cursor:
+            filter["t_stamp"]=datetime.now()
+            args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
+            cursor.callproc('output_granulado_from_line',args)
+            return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
@@ -1689,14 +1703,14 @@ def MPrimasLookup(request, format=None):
     if type=='nonwovens':
         cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
     elif type=='cores':
+        print(request.data['parameters'])
+        print("aaaaaaa")
         core = int(int(request.data['parameters']['core']) * 25.4)
         largura = str(request.data['parameters']['largura'])[:-1]
         #cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
         cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x%%_%%mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
         print("largura")
         print(largura)
-        print(request.data['parameters']['core'])
-        print("aaaaaaa")
     elif type == 'all':
         cfilter=''
     else:

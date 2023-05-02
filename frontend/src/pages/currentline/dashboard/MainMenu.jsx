@@ -145,6 +145,7 @@ export default ({ dark = false }) => {
                     <Permissions permissions={permission} item="qualidade" action="A"><Button size='small' type="link" onClick={() => navigate('/app/qualidade/labparameterslist', {})} title="A">Parâmetros</Button></Permissions>
                     <Permissions permissions={permission} item="qualidade" action="B"><Button size='small' type="link" onClick={() => navigate('/app/qualidade/labmetodoslist', {})} title="B">Métodos</Button></Permissions>
                     <Permissions permissions={permission} item="qualidade" action="C"><Button size='small' type="link" onClick={() => navigate('/app/qualidade/labartigosspecslist', {})} title="C">Especificações dos Artigos</Button></Permissions>
+                    <Permissions permissions={permission} item="qualidade" action="D"><Button size='small' type="link" onClick={() => navigate('/app/qualidade/labbobinagensessayslist', {})} title="D">Ensaios de Bobinagens</Button></Permissions>
                 </Panel>
             </Permissions>
             <Permissions permissions={permission} item="reports" key="7" clone>

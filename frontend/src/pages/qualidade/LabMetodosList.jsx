@@ -21,9 +21,13 @@ import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUp
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor } from 'components/TableEditorsV3';
+import {
+    InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor,
+    MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor,
+    MetodoTipoTableEditor, MetodoModeTableEditor
+} from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, MetodoTipo, MetodoMode, MetodoAging } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -62,8 +66,12 @@ const rowSchema = (options = {}) => {
         //             ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
         //         }).unknown(true)).label("Matéria Prima").required(),
         "designacao": Joi.string().label("Designação").required(),
-        "cliente_nome": Joi.string().label("Cliente").required(),
-        "des": Joi.string().label("Artigo").required()
+        "aging": Joi.number().allow(null).min(1),
+        // "ciclos": Joi.when('mode', {
+        //     is: 'cíclico',
+        //     then: Joi.number().min(1).required(),
+        //     otherwise: Joi.optional()
+        //   })
     }, options).unknown(true);
 }
 
@@ -75,7 +83,7 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
                     <Input size='small' allowClear />
                 </Field>
             </Col>
-            <Col width={200}>
+            {/* <Col width={200}>
                 <Field name="fartigo_cod" shouldUpdate label={{ enabled: true, text: "Artigo Cód.", pos: "top", padding: "0px" }}>
                     <Input size='small' allowClear />
                 </Field>
@@ -84,7 +92,7 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
                 <Field name="fcliente" shouldUpdate label={{ enabled: true, text: "Cliente", pos: "top", padding: "0px" }}>
                     <Input size='small' allowClear />
                 </Field>
-            </Col>
+            </Col> */}
         </>}
     </>
     );
@@ -93,8 +101,8 @@ const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFiltersSchema = ({ form }) => [
     { fdes: { label: "Designação", field: { type: 'input', size: 'small' }, span: 24 } },
-    { fartigo_cod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 12 },fartigo_des: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
+    /*     { fartigo_cod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 12 },fartigo_des: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
+        { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span: 12 } }, */
     /*{ fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } }, */
 ];
 
@@ -142,10 +150,11 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
 
-
-
     const columnEditable = (v, { data, name }) => {
-        if (["designacao", "cliente_nome", "required", "des", "status", "obs", "owner"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["ciclos"].includes(name) && data["mode"]==="cíclico" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+            return true;
+        }
+        if (["designacao", "required", "status", "obs", "owner", "aging"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return true;
         }
         return false;
@@ -155,7 +164,10 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["designacao", "cliente_nome", "required", "des", "status", "obs", "owner"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        // if (["ciclos"].includes(name) && data["mode"]==="cíclico" && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        //     return tableCls.edit;
+        // }
+        if (["designacao", "required", "status", "obs", "owner", "aging"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return tableCls.edit;
         }
     };
@@ -165,9 +177,8 @@ export default ({ setFormTitle, ...props }) => {
     ]
     const columns = [
         ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data }) => <Link onClick={() => onOpenParameters(data?.id, data?.designacao)} value={data?.designacao} /> }] : [],
-        ...(true) ? [{ name: 'des', header: 'Artigo', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'owner', header: 'Owner', editable: columnEditable, renderEditor: (props) => <MetodoOwnerTableEditor {...props} />, render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', editable: columnEditable, renderEditor: (props) => <ClientesTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : data?.cliente_nome, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'aging', header: 'Aging', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} genre="m" checkbox={true} />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'obs', header: 'Observações', editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
@@ -214,9 +225,9 @@ export default ({ setFormTitle, ...props }) => {
                 const _values = {
                     ...vals,
                     fdes: getFilterValue(vals?.fdes, 'any'),
-                    fartigo_cod: getFilterValue(vals?.fartigo_cod, 'any'),
-                    fartigo_des: getFilterValue(vals?.fartigo_des, 'any'),
-                    fcliente: getFilterValue(vals?.fcliente, 'any'),
+                    // fartigo_cod: getFilterValue(vals?.fartigo_cod, 'any'),
+                    // fartigo_des: getFilterValue(vals?.fartigo_des, 'any'),
+                    // fcliente: getFilterValue(vals?.fcliente, 'any'),
                     //fcod: getFilterValue(vals?.fcod, 'any'),
                     //fdes: getFilterValue(vals?.fdes, 'any'),
                     //f1: getFilterValue(vals?.f1, 'any'),
@@ -241,13 +252,7 @@ export default ({ setFormTitle, ...props }) => {
         const index = rowIndex;
         if (index >= 0) {
             let _rows = [];
-            if (columnId === "cliente_nome") {
-                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.BPCNAM_0, "cliente_cod": value?.BPCNUM_0 });
-            } else if (columnId === "des") {
-                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.des, "artigo_id": value?.id, "cod": value?.cod });
-            } else {
-                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
-            }
+            _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
             dataAPI.validateRows(rowSchema, {}, {}, _rows);
             // const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, data[dataAPI.getPrimaryKey()], columnId, value, index, gridStatus);
             // setGridStatus({ errors, warnings, fieldStatus, formStatus });
@@ -300,7 +305,7 @@ export default ({ setFormTitle, ...props }) => {
                 if (status.errors > 0) {
                     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                 } else {
-                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabMetodo", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid", "des", "cod"]) } });
+                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabMetodo", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid"]) } });
                     if (response.data.status !== "error") {
                         dataAPI.setAction("load", true);
                         dataAPI.update(true);

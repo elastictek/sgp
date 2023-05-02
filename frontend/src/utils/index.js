@@ -2,6 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import * as R from 'ramda';
 import dayjs from 'dayjs';
 
+export const containsAll = (a1, a2) => {
+    for (let i = 0; i < a2.length; i++) {
+      if (a1.indexOf(a2[i]) === -1) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+
 export const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

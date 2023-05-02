@@ -17,13 +17,13 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, UploadOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, InputTableEditor, BooleanTableEditor } from 'components/TableEditorsV3';
+import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, InputTableEditor, BooleanTableEditor, MetodoTipoTableEditor,MetodoModeTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool,TextAreaViewer } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer,MetodoTipo, MetodoMode } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -31,10 +31,11 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeD
 import YScroll from 'components/YScroll';
 import { MediaContext, AppContext } from "../App";
 import { usePermission, Permissions } from "utils/usePermission";
+import LabLoadParameters from './LabLoadParameters';
 // import { isPrivate, LeftUserItem } from './commons';
 
 
-const title = "Especificações Artigos - Parâmetros";
+const title = "Parâmetros";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
     return (<ToolbarTitle id={auth?.user} description={title} title={<>
         <Col>
@@ -60,24 +61,27 @@ const rowSchema = (options = {}) => {
         //         Joi.object().keys({
         //             ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
         //         }).unknown(true)).label("Matéria Prima").required(),
+        "nome": Joi.string().label("Nome").required(),
         "designacao": Joi.string().label("Designação").required(),
         "unit": Joi.string().label("Unidade").required(),
         "nvalues": Joi.number().label("Nº Valores").required(),
         "min_value": Joi.number().max(Joi.ref('max_value')).label("Mínimo").required(),
         "max_value": Joi.number().label("Máximo").required(),
-        "value_precision": Joi.number().label("Precisão").default(0)
+        "value_precision": Joi.number().label("Precisão").default(0),
+        "parameter_mode": Joi.string().label("Modo").required(),
+        "parameter_type": Joi.string().label("Tipo").required(),
     }, options).unknown(true);
 }
 
 const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
     return (<>
         {true && <>
-        <Col width={200}>
-          <Field name="fdes" shouldUpdate label={{ enabled: true, text: "Designação", pos: "top", padding: "0px" }}>
-            <Input size='small' allowClear />
-          </Field>
-        </Col>
-      </>}
+            <Col width={200}>
+                <Field name="fdes" shouldUpdate label={{ enabled: true, text: "Designação", pos: "top", padding: "0px" }}>
+                    <Input size='small' allowClear />
+                </Field>
+            </Col>
+        </>}
     </>
     );
 }
@@ -98,6 +102,7 @@ export default ({ setFormTitle, ...props }) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const [formDirty, setFormDirty] = useState(false);
     const inputParameters = useRef({});
+    const bulkLoad = useRef(false);
     const [form] = Form.useForm();
 
     const { openNotification } = useContext(AppContext);
@@ -117,6 +122,7 @@ export default ({ setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
+                case "loadparameters": return <LabLoadParameters parameters={modalParameters.parameters} />;
                 //case "content": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
@@ -127,11 +133,21 @@ export default ({ setFormTitle, ...props }) => {
         );
     }, [modalParameters]);
 
+    const onParametersLoader = () => {
+        setMode({ datagrid: { edit: false, add: true } });
+        setModalParameters({ content: "loadparameters", responsive: true, type: "drawer", width: 1200, title: "Carregar Parâmetros", push: false, loadData: () => { }, parameters: { addLoadedParameters } });
+        showModal();
+    }
 
-
+    const addLoadedParameters = (rows) => {
+        dataAPI.addRows(rows.map(v => ({ ...v, [dataAPI.getPrimaryKey()]: `id_${uid(4)}`, nvalues: 4, min_value: 0, max_value: 100, value_precision: 0 })));
+        dataAPI.setAction("add", true);
+        dataAPI.update(true);
+        bulkLoad.current = true;
+    }
 
     const columnEditable = (v, { data, name }) => {
-        if (["designacao", "unit", "nvalues", "min_value", "max_value", "value_precision","required"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["designacao", "nome", "unit", "nvalues", "min_value", "max_value", "value_precision", "required","parameter_mode","parameter_type"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return true;
         }
         return false;
@@ -141,7 +157,7 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["designacao", "unit", "nvalues", "min_value", "max_value", "value_precision","required"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["designacao", "nome", "unit", "nvalues", "min_value", "max_value", "value_precision", "required","parameter_mode","parameter_type"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return tableCls.edit;
         }
     };
@@ -150,13 +166,16 @@ export default ({ setFormTitle, ...props }) => {
         //{ name: 'name', header: 'Header', headerAlign: "center" }
     ]
     const columns = [
+        ...(true) ? [{ name: 'nome', header: 'Nome', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'designacao', header: 'Designação', editable: columnEditable, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_type', header: 'Tipo', editable: columnEditable, renderEditor: (props) => <MetodoTipoTableEditor {...props} />, cellProps: { className: columnClass },render: ({ data, cellProps }) => <MetodoTipo cellProps={cellProps} value={data?.parameter_type} />, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'parameter_mode', header: 'Modo', editable: columnEditable, renderEditor: (props) => <MetodoModeTableEditor {...props} />,render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'unit', header: 'Unidade', editable: columnEditable, renderEditor: (props) => <LabParametersUnitEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'nvalues', header: 'Nº Valores', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 1, max: 12 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 1, max: 12 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'min_value', header: 'Min', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'max_value', header: 'Max', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'value_precision', header: 'Precisão', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 6 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />,render:({data,cellProps})=><Bool cellProps={cellProps} value={data?.required}/>, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
     ];
 
@@ -224,7 +243,14 @@ export default ({ setFormTitle, ...props }) => {
         const index = rowIndex;
         if (index >= 0) {
             let _rows = [];
-            _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
+            console.log("$$$$$$$$$$$$$$$$$$$$$$$$$",dataAPI.getData())
+            if (columnId === "nome") {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, ...!data?.designacao && { designacao: value } });
+            } else if (columnId === "parameter_type") {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, ...!data?.parameter_mode && { parameter_mode: value==="histerese" ? "cíclico" : "simples" } });
+            }else {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
+            }
             dataAPI.validateRows(rowSchema, {}, {}, _rows);
             // const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, data[dataAPI.getPrimaryKey()], columnId, value, index, gridStatus);
             // setGridStatus({ errors, warnings, fieldStatus, formStatus });
@@ -277,7 +303,11 @@ export default ({ setFormTitle, ...props }) => {
                 if (status.errors > 0) {
                     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                 } else {
-                    response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabParameter", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid"]) } });
+                    if (bulkLoad.current === true) {
+                        response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabBulkParameter", rows } });
+                    } else {
+                        response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabParameter", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid"]) } });
+                    }
                     if (response.data.status !== "error") {
                         dataAPI.setAction("load", true);
                         dataAPI.update(true);
@@ -345,8 +375,8 @@ export default ({ setFormTitle, ...props }) => {
         return false;
     }
 
-    const onCellAction = (data,column,key) => {
-        if (key==="Enter" || key==="DoubleClick"){
+    const onCellAction = (data, column, key) => {
+        if (key === "Enter" || key === "DoubleClick") {
             //setModalParameters({content: "textarea", type: "drawer", width: 550, title: column.header, push: false, parameters: {value:data[column.name]}});
             //showModal();
         }
@@ -398,6 +428,9 @@ export default ({ setFormTitle, ...props }) => {
                     onSave: () => onSave("update"), onCancel: onEditCancel,
                     modeKey: "datagrid", setMode, mode, onEditComplete
                 }}
+                leftToolbar={<Space>
+                    <Permissions permissions={permission} action="edit" forInput={[!submitting.state, !mode.datagrid.edit, !mode.datagrid.add]}><Button icon={<UploadOutlined />} onClick={onParametersLoader}>Carregar Parâmetros</Button></Permissions>
+                </Space>}
 
             />
             {/* </Col>

@@ -4214,9 +4214,10 @@ def TempAggOFabricoLookup(request, format=None):
     sgpAlias = dbgw.dbAlias.get("sgp")
     mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
     dql.columns = encloseColumn(cols,False)
-
     with connections[connGatewayName].cursor() as cursor:
         if group:
+            print("UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
+            print(request.data)
             f = Filters(request.data['filter'])
             f.setParameters({}, False)
             f.where()
@@ -4266,29 +4267,34 @@ def TempAggOFabricoLookup(request, format=None):
             #     {f.text}
             #     ) t
             # """),cursor,f.parameters)
-            print("EEEEEEEEEEEEEEE1")
-            print(
-                f"""
+            print("--------------------------------------------------------------------------------------------")
+            print(f"""
+            with tof AS(
+                select tof.id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,
+                tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id,tof.emendas_id,tof.agg_of_id from
+                {sgpAlias}.producao_tempordemfabrico tof
+                where 
+                not exists (select 1 from {sgpAlias}.planeamento_ordemproducao po where po.draft_ordem_id=tof.id )
+                )
                 select json_agg(t) v from (
                 SELECT
-                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id
-                ,(select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
+                tofa.cod,tofa.id,tof.id tempof_id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id,
+                (select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) paletizacao,
                 ppz.filmeestiravel_bobines, ppz.filmeestiravel_exterior,ppz.cintas, ppz.ncintas,
                 (select json_agg(pp.nome) x from {sgpAlias}.producao_palete pp where tof.id=pp.draft_ordem_id) paletesstock,
                 (select row_to_json(_) from (select pe.*) as _) emendas,
                 (select row_to_json(_) from (select pa.*) as _) artigo
-                FROM {mv_ofabrico_list} oflist
-                join {sgpAlias}.producao_tempordemfabrico tof on tof.of_id=oflist.ofabrico and tof.item_cod=oflist.item
-                join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id
+                from tof
+                join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id and tofa.status = 0
                 left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
                 left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
                 left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
                 {f.text}
                 ) t
-                """
-            )
-            print(f.parameters)
+            """)
         else:
+            print("UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUxxxxxxxxxxxxxxxxxxxxxxxxUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
+            print(request.data)
             f = Filters(request.data['filter'])
             f.setParameters({}, False)
             f.where()

@@ -221,6 +221,7 @@ def NewManualEvent(request, format=None):
                 _last["fim_ts"] = data.get("date_end")
                 _last["t_stamp"] = datetime.now()
                 _last["audit_cs_id"]=_current.get("id")
+                _last["manual"] = 1
                 dml = db.dml(TypeDml.INSERT, _last, "ig_bobinagens",None,None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
