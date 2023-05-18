@@ -47,6 +47,12 @@ const Table = styled(ReactDataGrid)`
     .InovuaReactDataGrid__header{
         background-color:#000;
         color:#fff;
+   }
+    .InovuaReactDataGrid__column-header__content{
+        padding:1px !important;
+    }
+    .InovuaReactDataGrid__header-group__title{
+        padding:1px !important;
     }
     .InovuaReactDataGrid__cell{
         color:#000;

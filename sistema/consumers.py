@@ -83,29 +83,75 @@ def executeAlerts():
          """), cursor, {})['rows']
     dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
 
-    if dataInProd:
-        with connections["default"].cursor() as cursor:
-            rows = db.executeSimpleList(lambda: (f"""
-                    with paletes as(
-                    SELECT
-                    sum(num_bobines_act) npaletes
-                    FROM planeamento_ordemproducao op
-                    join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
-                    where op.agg_of_id_id = {dataInProd["agg_of_id"]}
-                    ),
-                    bobines as(
-                    select 
-                    count(*) nbobines
-                    from producao_bobine pb
-                    where pb.agg_of_id = {dataInProd["agg_of_id"]}
-                    )
-                    select * 
-                    from paletes
-                    cross join bobines
-            """), cursor, {})['rows']
-        dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
-    else:
-        dataEstadoProducao = json.dumps({},default=str)
+    #if dataInProd:
+    #     with connections["default"].cursor() as cursor:
+    #         rows = db.executeSimpleList(lambda: (f"""
+    #                 with paletes as(
+    #                 SELECT
+    #                 sum(num_bobines_act) npaletes
+    #                 FROM planeamento_ordemproducao op
+    #                 join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
+    #                 where op.agg_of_id_id = {dataInProd["agg_of_id"]}
+    #                 ),
+    #                 bobines as(
+    #                 select 
+    #                 count(*) nbobines
+    #                 from producao_bobine pb
+    #                 where pb.agg_of_id = {dataInProd["agg_of_id"]}
+    #                 )
+    #                 select * 
+    #                 from paletes
+    #                 cross join bobines
+    #         """), cursor, {})['rows']
+    #     dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+    # else:
+    #     dataEstadoProducao = json.dumps({},default=str)
+    with connections["default"].cursor() as cursor:
+        args = [dataInProd.get("agg_of_id")]
+        #args = [250]
+        #print("fixedddddddddddddddd")
+
+        cursor.callproc('list_estado_producao',args)
+        selects = f"""
+            select * from tbl_estadoproducao;
+            select * from tbl_estadoproducao_bobines;
+            select * from tbl_estadoproducao_bobinagens;
+            select * from tbl_estadoproducao_nws;
+            select * from tbl_estadoproducao_paletizacao;
+            select * from tbl_estadoproducao_params;
+            select * from tbl_estadoproducao_paletes;
+            select * from tbl_estadoproducao_status;
+            select * from tbl_estadoproducao_defeitos;
+        """
+        cursor.execute(selects)
+        estadoproducao = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobinagens = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_nws = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_paletizacao = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_params = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_paletes = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_status = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_defeitos = fetchall(cursor)
+        dataEstadoProducao = json.dumps({
+            "estado_producao": estadoproducao,
+            "estado_producao_bobines": estadoproducao_bobines,
+            "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
+            "estado_producao_paletizacao": estadoproducao_paletizacao[0].get("_paletizacao") if len(estadoproducao_paletizacao)>0 else {},
+            "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
+            "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
+            "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
+            "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
+            "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else {}
+        },default=str)
     dataInProd = json.dumps(dataInProd,default=str)
 
     #with connections["default"].cursor() as cursor:
@@ -143,7 +189,8 @@ def executeAlerts():
             "auditcs":dataAuditCs,
             #"buffer":dataBuffer,
             "inproduction":dataInProd,
-            "datalinelog_params":datalinelog_params,
+            "estadoProducao":dataEstadoProducao,
+            #"datalinelog_params":datalinelog_params,
             #"dosers":dataDosers,
             #"availability":dataLotesAvailability, 
             #"doserssets":dataDosersSets

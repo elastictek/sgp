@@ -448,14 +448,15 @@ def BobinesList(request, format=None):
     
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'mb.timestamp'),
+        "comp_actual": {"value": lambda v: Filters.getNumeric(v.get('fcomp'),0,">"), "field": lambda k, v: f'mb.{k}'},
+        "recycle": {"value": lambda v: Filters.getNumeric(v.get('frecycle'),0,"=="), "field": lambda k, v: f'mb.{k}'},
         "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'mb.{k}'},
         "palete_nome": {"value": lambda v: v.get('fpalete').upper() if v.get('fpalete') is not None else None, "field": lambda k, v: f'sgppl.nome'},
-        "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'mb.ofid'},
+        "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'po.ofid'},
         "pofid": {"value": lambda v: v.get('fpof').upper() if v.get('fpof') is not None else None, "field": lambda k, v: f'sgppl.ofid'},
         "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"mb.{k}"},
         "core": {"value": lambda v: Filters.getNumeric(v.get('fcore')), "field": lambda k, v: f"mb.{k}"},
         "area": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'mb.{k}'},
-        "comp_actual": {"value": lambda v: Filters.getNumeric(v.get('fcomp')), "field": lambda k, v: f'mb.{k}'},
         "destino": {"value": lambda v: v.get('fdestinoold').lower() if v.get('fdestinoold') is not None else None, "field": lambda k, v: f'lower(mb.{k})'},
         "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
         "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
@@ -473,7 +474,7 @@ def BobinesList(request, format=None):
         "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
         "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'}        
     }, True)
-    f.where(False,"and")
+    f.where()
     f.auto()
     f.value()
 
@@ -495,7 +496,12 @@ def BobinesList(request, format=None):
         if name in data:
             dt = [o['value'] for o in data[name]]
             for v in dt:
-                fP[v] = {"key": v, "value": value, "field": lambda k, v: f'mb.{k}'}
+                if v in ['rugas','furos','ff','fc','buracos']:
+                    fP[v] = {"key": v, "value": value, "field": lambda k, _v: f'IF(JSON_LENGTH({v}_pos)>0,1,0)'}
+                elif v in ['prop']:
+                    fP[v] = {"key": v, "value": value, "field": lambda k, _v: f"IF({v}_obs='' or {v}_obs is null,0,1)"}
+                else:
+                    fP[v] = {"key": v, "value": value, "field": lambda k, _v: f'mb.{k}'}
         f.setParameters({**fP}, True)
         f.auto()
         f.where(False, "and")
@@ -589,7 +595,6 @@ def BobinesList(request, format=None):
                 LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
                 LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
                 {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] else ""}
-                WHERE mb.comp_actual > 0 and mb.recycle = 0
                 {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
                 {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             """
@@ -616,7 +621,7 @@ def BobinesList(request, format=None):
             ,sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original
             ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
             ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
-            po1.ofid ofid_original, po2.ofid palete_ofid, 
+            po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
             sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
             mva.cod artigo_cod
         """
@@ -632,7 +637,6 @@ def BobinesList(request, format=None):
                 LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
                 LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
                 LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
-                WHERE mb.comp_actual > 0 and mb.recycle = 0
                 {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
                 {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             """
@@ -642,7 +646,21 @@ def BobinesList(request, format=None):
             dql.paging=""
             return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
         try:
-            print("oiooioioioioioi")
+            print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+            print(f"""  
+                select {f'{dql.columns}'}
+                FROM producao_bobine mb
+                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+                {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
+                {dql.sort} {dql.paging} {dql.limit}
+            """)
+            print(parameters)
             print(f"select {dql.currentPage*dql.pageSize+1}")
             response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}")
 

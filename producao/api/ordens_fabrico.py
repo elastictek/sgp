@@ -192,23 +192,24 @@ def OrdensFabricoInElaboration(request, format=None):
             from producao_tempaggordemfabrico pt
             join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
             left join producao_formulacao pf on pf.id=pt.formulacao_id
-            where pt.status=0 and not exists(select 1 from producao_artigodetails pa where pa.cod=pt2.of_id)
+            where pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
             order by pt.cod ASC, pt2.of_id ASC
         """
     ), connection, {})
     return Response(response)
 
-
-
 def OrdensFabricoInElaborationAllowed(request, format=None):
+    filter = request.data.get("filter")
     connection = connections["default"].cursor()
-    #f = Filters(request.data.get("filter"))
-    f = Filters({"produto_id":2,"artigo_id":3})
+    f = Filters(filter)
+    #f = Filters({"produto_id":2,"artigo_id":3})
     f.where(False,"")
-    f.add(f'(pt2.produto_id {f.nullValue("produto_id","=:produto_id")})',True )
+    #f.add(f'(pt2.produto_id {f.nullValue("produto_id","=:produto_id")})',True )
+    f.add(f'(pt2.produto_id = :produto_id)',lambda v:(v!=None) )
     f.add(f'(pt2.item_id = :artigo_id)',lambda v:(v!=None) )
+    f.add(f'(pt2.cliente_cod = :cliente_cod)',lambda v:(v!=None) )
     f.value("and")
-    f2 = Filters({"artigo_id":3})
+    f2 = Filters({"artigo_id":filter.get("artigo_id")})
     f2.where(False,"or" if f.hasFilters else "")
     f2.add(f'(exists ( select 1 from group_artigos tga where tga.artigo_id=:artigo_id and tga.`group`=ga.`group`))',lambda v:(v!=None))
     f2.value("and")
@@ -221,11 +222,25 @@ def OrdensFabricoInElaborationAllowed(request, format=None):
             left join group_artigos ga on ga.artigo_id = pt2.item_id
             left join producao_formulacao pf on pf.id=pt.formulacao_id
             where 
-            pt.status=0 and not exists(select 1 from producao_artigodetails pa where pa.cod=pt2.of_id)
+            pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
              {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
             order by pt.cod ASC, pt2.of_id ASC
         """
     ), connection, {**f.parameters,**f2.parameters})
+
+    print(f"""
+            select pt.id, pt.cod,pt.status,pt2.of_id,pf.id formulacao_id,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao
+            from producao_tempaggordemfabrico pt
+            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
+            left join producao_artigo pa on pa.id=pt2.item_id
+            left join group_artigos ga on ga.artigo_id = pt2.item_id
+            left join producao_formulacao pf on pf.id=pt.formulacao_id
+            where 
+            pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
+             {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
+            order by pt.cod ASC, pt2.of_id ASC
+        """)
+    print({**f.parameters,**f2.parameters})
     return Response(response)
 
 def OrdensFabricoOpen(request, format=None):
@@ -395,12 +410,13 @@ def ListFormulacoes(request, format=None):
     dql = db.dql(request.data, False,False)
     print("LISTING FORMULACOES")
     print(request.data)
-    cols = f'''pf.*,pp.produto_cod'''
+    cols = f'''pf.*,pp.produto_cod,pa.cod,pa.des'''
     sql = lambda p, c, s: (
         f"""
             SELECT {c(f'{cols}')} 
             FROM producao_formulacao pf
             LEFT JOIN producao_produtos pp ON pp.id=pf.produto_id
+            LEFT JOIN producao_artigo pa ON pa.id=pf.artigo_id
             {f.text} {f2["text"]}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
         """
@@ -508,7 +524,7 @@ def SaveFormulacao(request, format=None):
             "created_date": datetime.now(),
             "updated_date": datetime.now()
         }, "producao_formulacao",{"id":Filters.getNumeric(formulacao_id)},None,None,['versao'])
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
 
     def _insertFormulacao(data,versao,cursor):
         dml = db.dml(TypeDml.INSERT, {
@@ -534,17 +550,17 @@ def SaveFormulacao(request, format=None):
             "created_date": datetime.now(),
             "updated_date": datetime.now()
         }, "producao_formulacao",None,None,False,['versao'])
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
         return cursor.lastrowid
 
     def _insertFormulacaoItems(formulacao_id,cursor):
         for idx, v in enumerate(data.get("items")):
             dml = db.dml(TypeDml.INSERT, {**v, 'formulacao_id':formulacao_id}, "producao_formulacaomateriasprimas",None,None,False)
-            #db.execute(dml.statement, cursor, dml.parameters)
+            db.execute(dml.statement, cursor, dml.parameters)
     
     def _deleteFormulacaoItems(formulacao_id,cursor):
         dml = db.dml(TypeDml.DELETE, None,'producao_formulacaomateriasprimas',{"formulacao_id":Filters.getNumeric(formulacao_id)},None,False)
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
     try:
         with connections["default"].cursor() as cursor:
             if filter.get("new") is not None:
@@ -564,8 +580,9 @@ def SaveFormulacao(request, format=None):
                     _deleteFormulacaoItems(filter.get("formulacao_id"),cursor)
                     _insertFormulacaoItems(filter.get("formulacao_id"),cursor)
             if filter.get("cs_id") is not None:
-                print("aaaaa")
-                print(data.get("type"))
+                del data["method"]
+                del data["rowvalid"]
+                del data["rowadded"]
                 return updateCurrentSettings(filter.get("cs_id"),data.get("type"),data,request.user.id,cursor)
     except Exception as error:
         print(str(error))
@@ -599,7 +616,7 @@ def SetOrdemFabricoFormulacao(request, format=None):
             'formulacao_id': formulacao_id,
             "updated_date": datetime.now()
         }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(aggid)},None,None,[])
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
     
     try:
         with connections["default"].cursor() as cursor:

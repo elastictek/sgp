@@ -246,7 +246,7 @@ const applyValueToAllRows = (rows, col, currentIndex, value) => {
     });
 }
 
-export default ({ setFormTitle, ...props }) => {
+export default ({ setFormTitle, noid=false, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
     const navigate = useNavigate();
@@ -260,7 +260,7 @@ export default ({ setFormTitle, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "BobinesList" };
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ id: "lst-bobines", fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const dataAPI = useDataAPI({ ...(!noid && {id: "lst-bobines"}), fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTabPalete, setLastTabPalete] = useState('1');
     const [lastTabBobine, setLastTabBobine] = useState('1');
@@ -486,7 +486,7 @@ export default ({ setFormTitle, ...props }) => {
 
     const loadData = async ({ init = false, signal, type } = {}) => {
         if (init) {
-            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
+            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, {}, null);
             let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues, ...!filterValues?.type && { type: "A" } }, true, false);

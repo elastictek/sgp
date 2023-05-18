@@ -944,6 +944,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         fetchPost: _fetchPost,
         isLoading: () => _isLoading(),
         setIsLoading,
+        getTotalRows: () => (isNaN(state?.data?.total) || !state?.data?.total) ? 0 : state?.data?.total,
         update,
         removeEmpty,
         setFilters,

@@ -47,6 +47,31 @@ function RightArrow() {
   );
 }
 
+export const WidgetSimpleTitle = ({ parameters, onClose, onPinItem, title, children }) => {
+  const classes = useStyles();
+  const { pinnable, closable, ofs: items } = parameters;
+
+  return (
+    <Container fluid style={{ padding: "0px" }}>
+      <Row gutterWidth={10}>
+        <Col>
+          <Row nogutter>
+            <Col>
+              {title && <div style={{ fontSize: "16px", fontWeight: 700 }}>{title}</div>}
+            </Col>
+          </Row>
+        </Col>
+        <Col xs="content" style={{ display: "flex", alignSelf: "end" }}>
+          {children && <>{children}</>}
+        </Col>
+        <Col xs="content">{closable && <Button size="small" style={{ fontWeight: 700, border: "0px" }} onClick={onClose}>x</Button>}</Col>
+        <Col xs="content">{pinnable && <Button type={parameters?.static && "primary"} size="small" onClick={onPinItem} icon={<TbPin />} />}</Col>
+      </Row>
+    </Container>
+  );
+}
+
+
 export default ({ parameters, onClose, onPinItem, title, children }) => {
   const classes = useStyles();
   const { pinnable, closable, ofs: items } = parameters;
@@ -82,7 +107,7 @@ export default ({ parameters, onClose, onPinItem, title, children }) => {
             </Col>
           </Row>
         </Col>
-        <Col xs="content" style={{ display: "flex",alignSelf:"end" }}>
+        <Col xs="content" style={{ display: "flex", alignSelf: "end" }}>
           {children && <>{children}</>}
         </Col>
         <Col xs="content">

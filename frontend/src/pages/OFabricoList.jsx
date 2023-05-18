@@ -726,7 +726,7 @@ export default () => {
         }
 
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} extra="ref" footer="none" yScroll>
+            <ResponsiveModal responsive title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} extra="ref" footer="none" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -869,7 +869,7 @@ export default () => {
                     {/* <ColumnSettings columns={columns.all} /> */}
                     <Spin spinning={dataAPI.isLoading()} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} style={{ /* top: "50%", left: "50%", position: "absolute" */ }} >
                         <MenuActions showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} />
-                        <Suspense fallback={<></>}><Drawer showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
+                        <Suspense fallback={<></>}><Drawer width="95%" showWrapper={showValidar} setShowWrapper={setShowValidar} parentReload={dataAPI.fetchPost}><FormOFabricoValidar /></Drawer></Suspense>
                         <TitleForm form={formFilter} dataAPI={dataAPI} setFlyoutStatus={setFlyoutStatus} flyoutStatus={flyoutStatus} ordemFabricoStatusField={ordemFabricoStatusField} />
                         {elFilterTags && <Portal elId={elFilterTags}>
                             <FilterTags form={formFilter} filters={dataAPI.getAllFilter()} schema={filterSchema} rules={filterRules()} />

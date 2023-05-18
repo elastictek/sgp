@@ -15,6 +15,23 @@ export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const SOCKET = { url: 'ws://localhost:8000/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
+ export const bColors = (estado) => {
+    if (estado === "G") {
+        return { color: "#237804", fontColor: "#fff" };//"green";
+    } else if (estado === "DM") {
+        return { color: "#fadb14", fontColor: "#000" };//"gold";
+    } else if (estado === "R") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "LAB") {
+        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
+    } else if (estado === "BA") {
+        return { color: "#ff1100", fontColor: "#fff" };//"red";
+    } else if (estado === "IND") {
+        return { color: "#0050b3", fontColor: "#fff" };//"blue";
+    } else if (estado === "HOLD") {
+        return { color: "#391085", fontColor: "#fff" };//"purple";
+    }
+}
 
 //APP DATA
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };

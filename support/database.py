@@ -965,15 +965,22 @@ class Filters:
         else:
             return dbparam
 
-    def getNumeric(value,isNone=None):
-        if value is None: 
+    def getNumeric(value,isNone=None,compare=None):
+        if value is None and compare is None: 
             if isNone:
                 return isNone
+            else:
+                return None
+        if value is None and compare is not None:
+            if isNone is not None:
+                value=isNone
             else:
                 return None
         pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
         result = re.match(pattern, str(value), re.IGNORECASE)
         if not result:
+            if compare is not None:
+                return f"{compare}{value}"
             return f"=={value}"
         else:
             return value

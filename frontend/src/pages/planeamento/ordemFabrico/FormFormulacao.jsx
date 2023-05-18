@@ -12,6 +12,7 @@ import { LoadingOutlined, EditOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import FormFormulacaoUpsert from '../formulacao/FormFormulacaoUpsert';
 import { OFabricoContext } from './FormOFabricoValidar';
+import FormulacaoReadOnly from '../../formulacao/FormulacaoReadOnly';
 
 const DrawerFormulacao = ({ showWrapper, setShowWrapper, parentReload }) => {
     const [formTitle, setFormTitle] = useState({});
@@ -114,52 +115,56 @@ export default ({ changedValues }) => {
     }
 
     return (
-        <>
-            <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
-                <DrawerFormulacao showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
-                <FormLayout
-                    id="LAY-FORMULACAO"
-                    guides={guides}
-                    layout="vertical"
-                    style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
-                    schema={schema}
-                    field={{
-                        //wide: [3, 2, 1, '*'],
-                        margin: "2px", overflow: false, guides: guides,
-                        label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: true, ellipsis: true },
-                        alert: { pos: "right", tooltip: true, container: true /* container: "el-external" */ },
-                        layout: { top: "", right: "", center: "", bottom: "", left: "" },
-                        addons: {}, //top|right|center|bottom|left
-                        required: true,
-                        style: { alignSelf: "top" }
-                    }}
-                    fieldSet={{
-                        guides: guides,
-                        wide: 16, margin: "2px", layout: "horizontal", overflow: false
-                    }}
-                >
-                    <FieldSet>
-                        <Toolbar
-                            style={{ width: "100%" }}
-                            left={
-                                <FieldSet>
-                                    <Field name="formulacao_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Formulacao", pos: "left" }} addons={{
-                                        ...(form.getFieldValue("formulacao_id") && { right: <Button onClick={() => onShowForm(false, true)} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
-                                    }}>
-                                        <SelectField allowClear size="small" data={formulacoes} keyField="id" textField="designacao"
-                                            optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
-                                        />
-                                    </Field>
-                                </FieldSet>
-                            }
-                            right={<Button onClick={() => onShowForm(true, true)}>Nova Formulação</Button>}
-                        />
-                    </FieldSet>
-                    <FieldSet>
-                        {(!loading && form.getFieldValue("formulacao_id")) && <FormFormulacaoUpsert record={form.getFieldsValue(true)} wrapForm={false} forInput={false} parentReload={loadData} />}
-                    </FieldSet>
-                </FormLayout>
-            </Spin>
-        </>
+        <div style={{height:"calc(100vh - 350px)"}}>
+            <FormulacaoReadOnly noDosers form={form} parameters={{formulacao_id:form.getFieldValue("formulacao_id")}}/>
+        </div>
     );
+
+
+
+    // <Spin spinning={loading} indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} tip="A carregar...">
+    //             <DrawerFormulacao showWrapper={showForm} setShowWrapper={setShowForm} parentReload={loadData} />
+    //             <FormLayout
+    //                 id="LAY-FORMULACAO"
+    //                 guides={guides}
+    //                 layout="vertical"
+    //                 style={{ width: "100%", padding: "0px"/* , minWidth: "700px" */ }}
+    //                 schema={schema}
+    //                 field={{
+    //                     //wide: [3, 2, 1, '*'],
+    //                     margin: "2px", overflow: false, guides: guides,
+    //                     label: { enabled: true, pos: "top", align: "start", vAlign: "center", /* width: "80px", */ wrap: false, overflow: false, colon: true, ellipsis: true },
+    //                     alert: { pos: "right", tooltip: true, container: true /* container: "el-external" */ },
+    //                     layout: { top: "", right: "", center: "", bottom: "", left: "" },
+    //                     addons: {}, //top|right|center|bottom|left
+    //                     required: true,
+    //                     style: { alignSelf: "top" }
+    //                 }}
+    //                 fieldSet={{
+    //                     guides: guides,
+    //                     wide: 16, margin: "2px", layout: "horizontal", overflow: false
+    //                 }}
+    //             >
+    //                 <FieldSet>
+    //                     <Toolbar
+    //                         style={{ width: "100%" }}
+    //                         left={
+    //                             <FieldSet>
+    //                                 <Field name="formulacao_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Formulacao", pos: "left" }} addons={{
+    //                                     ...(form.getFieldValue("formulacao_id") && { right: <Button onClick={() => onShowForm(false, true)} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
+    //                                 }}>
+    //                                     <SelectField allowClear size="small" data={formulacoes} keyField="id" textField="designacao"
+    //                                         optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "150px" }}><b>{d[textField]}</b></div><div>v.{d["versao"]}</div></div>, value: d[keyField] })}
+    //                                     />
+    //                                 </Field>
+    //                             </FieldSet>
+    //                         }
+    //                         right={<Button onClick={() => onShowForm(true, true)}>Nova Formulação</Button>}
+    //                     />
+    //                 </FieldSet>
+    //                 <FieldSet>
+    //                     {(!loading && form.getFieldValue("formulacao_id")) && <FormFormulacaoUpsert record={form.getFieldsValue(true)} wrapForm={false} forInput={false} parentReload={loadData} />}
+    //                 </FieldSet>
+    //             </FormLayout>
+    //         </Spin>
 }

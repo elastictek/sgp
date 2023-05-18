@@ -77,7 +77,7 @@ const loadFormulacao = async (params, primaryKey, signal) => {
     return {};
 }
 
-export default ({ setFormTitle, ...props }) => {
+export default ({ setFormTitle, noDosers = false, form, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "readonly" });//Permissões Iniciais
@@ -124,8 +124,8 @@ export default ({ setFormTitle, ...props }) => {
     ]
 
     const columns = [
-        ...(true) ? [{ name: 'cuba', header: false, userSelect: true, defaultLocked: false, width: 45, headerAlign: "center", cellProps: { className: columnClass }, colspan: ({ data, column, columns }) => (data?.group) ? columns.length : 1, render: ({ cellProps, data }) => data?.group ? <div style={{ fontWeight: 900 }}>{data?.designacao}</div> : <Cuba value={data?.cuba} /> }] : [],
-        ...(true) ? [{ name: 'doseador', header: false, userSelect: true, defaultLocked: false, width: 30, headerAlign: "center", render: (p) => <CenterAlign style={{ fontWeight: 700 }}>{p.data?.doseador}</CenterAlign> }] : [],
+        ...(!noDosers) ? [{ name: 'cuba', header: false, userSelect: true, defaultLocked: false, width: 45, headerAlign: "center", cellProps: { className: columnClass }, colspan: ({ data, column, columns }) => (data?.group) ? columns.length : 1, render: ({ cellProps, data }) => data?.group ? <div style={{ fontWeight: 900 }}>{data?.designacao}</div> : <Cuba value={data?.cuba} /> }] : [],
+        ...(!noDosers) ? [{ name: 'doseador', header: false, userSelect: true, defaultLocked: false, width: 30, headerAlign: "center", render: (p) => <CenterAlign style={{ fontWeight: 700 }}>{p.data?.doseador}</CenterAlign> }] : [],
         ...(true) ? [{ name: 'matprima_cod', header: 'Código', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'matprima_des', header: 'Artigo', userSelect: true, defaultLocked: false, minWidth: 170, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <div style={{ fontWeight: 700 }}>{data?.matprima_des}</div> }] : [],
         ...(true) ? [{ name: 'densidade', header: 'Densidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", render: (p) => <RightAlign>{p.data?.densidade}</RightAlign> }] : [],
@@ -149,6 +149,16 @@ export default ({ setFormTitle, ...props }) => {
         }
         const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
         dataAPI.setData({ rows: items, total: items?.length });
+        if (form) {
+            form.setFieldsValue({
+                formulacaoRO: {
+                    joinbc: 1, reference: 0, ...formulacao,
+                    cliente: { BPCNUM_0: formulacao?.cliente_cod, BPCNAM_0: formulacao?.cliente_nome },
+                    produto_id: formulacao?.produto_id,
+                    artigo_id: formulacao?.artigo_id
+                }
+            });
+        }
         submitting.end();
     }
 
@@ -157,29 +167,43 @@ export default ({ setFormTitle, ...props }) => {
     const rowClassName = ({ data }) => { }
 
     return (
-        <Table
-            style={{ fontSize: "10px", minHeight: "100%" }}
-            rowHeight={20}
-            headerHeight={20}
-            cellNavigation={false}
-            loading={submitting.state}
-            idProperty={dataAPI.getPrimaryKey()}
-            local={true}
-            onRefresh={loadData}
-            rowClassName={rowClassName}
-            groups={groups}
-            sortable={false}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            disableGroupByToolbar={true}
-            editable={{ enabled: false, add: false }}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-            leftToolbar={false}
-            toolbarFilters={false}
-            toolbar={false}
-        />
+        <>
+            <FormContainer id="form" fluid loading={submitting.state} wrapForm={false} {...form && { form: form }} wrapFormItem={true} forInput={false} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
+                {form && <Row style={{ marginBottom: "10px" }} gutterWidth={10} wrap="wrap">
+                    <Col xs={2} md={1}><Field name={["formulacaoRO", "versao"]} forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
+                    <Col xs={4} md={2}><FormulacaoGroups name={["formulacaoRO", "group_name"]} label={{ enabled: true, text: "Grupo" }} /></Col>
+                    <Col xs={4} md={2}><FormulacaoSubGroups name={["formulacaoRO", "subgroup_name"]} label={{ enabled: true, text: "SubGrupo" }} /></Col>
+                    <Col xs={12} md={6} lg={4}><Field name={["formulacaoRO", "designacao"]} label={{ enabled: true, text: "Designação" }}><Input /></Field></Col>
+                    <Col xs={12} md={6} lg={4}><Produtos name={["formulacaoRO", "produto_id"]} allowClear label={{ enabled: true, text: "Produto" }} load /></Col>
+                    <Col xs={12} md={6} lg={4}><Artigos name={["formulacaoRO", "artigo_id"]} allowClear label={{ enabled: true, text: "Artigo" }} load /></Col>
+                    <Col xs={12} md={6} lg={4}><Clientes name={["formulacaoRO", "cliente"]} allowClear label={{ enabled: true, text: "Cliente" }} /></Col>
+                </Row>}
+            </FormContainer>
+            <Table
+                style={{ fontSize: "10px", minHeight: "100%" }}
+                rowHeight={20}
+                headerHeight={20}
+                cellNavigation={false}
+                loading={submitting.state}
+                idProperty={dataAPI.getPrimaryKey()}
+                local={true}
+                onRefresh={loadData}
+                rowClassName={rowClassName}
+                groups={groups}
+                sortable={false}
+                reorderColumns={false}
+                showColumnMenuTool={false}
+                disableGroupByToolbar={true}
+                editable={{ enabled: false, add: false }}
+                columns={columns}
+                dataAPI={dataAPI}
+                moreFilters={false}
+                leftToolbar={false}
+                toolbarFilters={false}
+                toolbar={false}
+            />
+
+        </>
     );
 
 

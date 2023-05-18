@@ -4,13 +4,13 @@ import dayjs from 'dayjs';
 
 export const containsAll = (a1, a2) => {
     for (let i = 0; i < a2.length; i++) {
-      if (a1.indexOf(a2[i]) === -1) {
-        return false;
-      }
+        if (a1.indexOf(a2[i]) === -1) {
+            return false;
+        }
     }
     return true;
-  }
-  
+}
+
 
 export const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -21,7 +21,7 @@ export const useSubmitting = (val = false) => {
     const currentState = useRef(val);
 
     const trigger = async (seconds) => {
-        if (seconds){
+        if (seconds) {
             await sleep(seconds);
         }
         setState(true);
@@ -38,7 +38,7 @@ export const useSubmitting = (val = false) => {
 
     const end = async (seconds) => {
         currentState.current = false;
-        if (seconds){
+        if (seconds) {
             await sleep(seconds);
         }
         setState(false);
@@ -256,3 +256,34 @@ export const secondstoDay = (n) => {
     let seconds = n;
     return ((day > 0) ? day + "d " : '') + ((hour > 0) ? hour + "h " : '') + ((minutes.toFixed() > 0) ? minutes.toFixed() + "m" : '');
 }
+
+
+//a function that return the float value from string watch out null values
+export const getFloat = (value, fixed = null, ret = 0) => {
+    let f = parseFloat(value);
+    if (isNaN(f) || f === null || f === undefined) {
+        f = ret;
+    }
+    if (fixed === null) {
+        return f;
+    } else {
+        return parseFloat(f.toFixed(fixed));
+    }
+}
+
+export const lpadFloat = (number, length=2,char='0') => {
+    var str = number.toString();
+    var parts = str.split('.');
+    var integerPart = parts[0];
+    var decimalPart = parts[1] || '';
+    var integerLength = integerPart.length;
+    var decimalLength = decimalPart.length;
+    var zerosToAdd = length - integerLength - decimalLength;
+  
+    if (zerosToAdd <= 0) {
+      return str;
+    }
+  
+    var zeros = new Array(zerosToAdd + 1).join(char);
+    return zeros + str;
+  }

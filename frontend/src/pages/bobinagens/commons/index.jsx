@@ -26,7 +26,7 @@ import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@
 
 import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, UserOutlined, DownOutlined, ProfileOutlined, RightOutlined, ClockCircleOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined, CheckOutlined, EllipsisOutlined, MenuOutlined, LoadingOutlined, UnorderedListOutlined } from "@ant-design/icons";
 const ButtonGroup = Button.Group;
-import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
+import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED,bColors } from 'config';
 const { Title } = Typography;
 
 
@@ -151,23 +151,7 @@ export const Ofs = ({ r }) => {
     );
 };
 
-export const bColors = (estado) => {
-    if (estado === "G") {
-        return { color: "#237804", fontColor: "#fff" };//"green";
-    } else if (estado === "DM") {
-        return { color: "#fadb14", fontColor: "#000" };//"gold";
-    } else if (estado === "R") {
-        return { color: "#ff1100", fontColor: "#fff" };//"red";
-    } else if (estado === "LAB") {
-        return { color: "#13c2c2", fontColor: "#000" };//"cyan";
-    } else if (estado === "BA") {
-        return { color: "#ff1100", fontColor: "#fff" };//"red";
-    } else if (estado === "IND") {
-        return { color: "#0050b3", fontColor: "#fff" };//"blue";
-    } else if (estado === "HOLD") {
-        return { color: "#391085", fontColor: "#fff" };//"purple";
-    }
-}
+
 
 export const Bobines = ({ id, b, bm, setShow, onClick, align="start" }) => {
     const handleClick = () => {

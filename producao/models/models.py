@@ -680,6 +680,8 @@ class Palete(models.Model):
     destinos = models.JSONField(blank=True, null=True) #ADDED
     nbobines_emendas = models.IntegerField(verbose_name="Bobines Com emendas", null=True) #ADDED
     destinos_has_obs = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se os destinos têm observações") #ADDED
+    lvl_item_id = models.IntegerField(verbose_name="Indica o id do item no embalamento", null=True) #ADDED
+    lvl = models.IntegerField(verbose_name="Indica a posição no embalamento", null=True) #ADDED
     def __str__(self):
         return self.nome
 

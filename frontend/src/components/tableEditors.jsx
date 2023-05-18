@@ -73,7 +73,7 @@ export const useEditorStyles = createUseStyles({
 const focus = (el, h,) => { el?.focus(); };
 
 
-export const FieldSelectEditor = ({ p, forInput, column, data,children }) => {
+export const FieldSelectEditor = ({ p, forInput, column, data, children }) => {
     const onChange = (v) => {
         p.onRowChange({ ...p.row, [column]: v, notValid: v !== p.row[column] ? 1 : 0 }, true)
     };
@@ -221,7 +221,7 @@ export const ModalRangeEditor = ({ p, type, column, title, forInput, valid, unit
 }
 
 export const SwitchEditor = ({ column, p, onChange, ...props }) => {
-    return <SwitchField style={{}} autoFocus value={p.row[column]} onChange={onChange ? v => onChange(p.row, v,p) : (e) => p.onRowChange({ ...p.row, notValid: p.row[column] !== e ? 1 : 0, valid: p.row[column] !== e ? 0 : null, [column]: e }, true)} {...props} />
+    return <SwitchField style={{}} autoFocus value={p.row[column]} onChange={onChange ? v => onChange(p.row, v, p) : (e) => p.onRowChange({ ...p.row, notValid: p.row[column] !== e ? 1 : 0, valid: p.row[column] !== e ? 0 : null, [column]: e }, true)} {...props} />
 };
 
 export const InputNumberEditor = ({ field, p, onChange, ...props }) => {
@@ -320,7 +320,7 @@ export const DestinoEditor = ({ p, onChange, forInput, forInputTroca, onConfirm,
                 destinoTxt = destino;
                 values = null;
             }
-            await onConfirm(p, values, destinoTxt, obs, prop_obs,troca_etiqueta, props.loadData);
+            await onConfirm(p, values, destinoTxt, obs, prop_obs, troca_etiqueta, props.loadData);
             submitting.end();
         }
     }
@@ -333,8 +333,8 @@ export const DestinoEditor = ({ p, onChange, forInput, forInputTroca, onConfirm,
                 Modal.confirm({
                     content: "Ao regranular, as linhas de destino serão eliminadas! Deseja continuar?",
                     onOk: () => {
-                        form.setFieldsValue({ estado: { value: "R" }, destinos: [] });
-                        oldEstadoRef.current = { value: "R" };
+                        form.setFieldsValue({ estado: { value: "R", label: "REJEITADO" }, destinos: [] });
+                        oldEstadoRef.current = { value: "R", label: "REJEITADO" };
                     },
                     onCancel: () => form.setFieldValue("regranular", 0)
                 });
@@ -342,8 +342,8 @@ export const DestinoEditor = ({ p, onChange, forInput, forInputTroca, onConfirm,
         }
         if ("estado" in changedValues) {
             if (form.getFieldValue("regranular")) {
-                form.setFieldsValue({ estado: { value: "R" }, destinos: [] });
-                oldEstadoRef.current = { value: "R" };
+                form.setFieldsValue({ estado: { value: "R",label:"REJEITADO" }, destinos: [] });
+                oldEstadoRef.current = { value: "R",label:"REJEITADO" };
             } else if (form.getFieldValue("estado")?.value === "R") {
                 Modal.confirm({
                     content: "Ao alterar o estado para Rejeitado, as linhas de destino serão eliminadas! Deseja continuar?",

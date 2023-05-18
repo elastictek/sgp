@@ -142,12 +142,12 @@ export default ({ setFormTitle, ...props }) => {
                 toolbar: false,
                 //pt.status,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao, pt2.cliente_nome
                 columns: [
-                    { name: 'cod', header: 'Agg', minWidth: 160 },
-                    { name: 'of_id', header: 'Ordem', minWidth: 160 },
-                    { name: 'cliente_nome', header: 'Cliente', minWidth: 160, flex: 1 },
-                    { name: 'designacao', header: 'Formulação Des.', minWidth: 160, flex: 1 },
-                    { name: 'group_name', header: 'Formulação Grupo', minWidth: 160, flex: 1 },
-                    { name: 'subgroup_name', header: 'Formulação Subgrupo', minWidth: 160, flex: 1 },
+                    { name: 'cod', header: 'Agg.', defaultWidth: 160 },
+                    { name: 'of_id', header: 'Ordem', defaultWidth: 160 },
+                    { name: 'cliente_nome', header: 'Cliente', defaultWidth: 160 },
+                    { name: 'designacao', header: 'Formulação Des.', defaultWidth: 260 },
+                    { name: 'group_name', header: 'Formulação Grupo', defaultWidth: 160 },
+                    { name: 'subgroup_name', header: 'Formulação Subgrupo', defaultWidth: 160 },
                     { name: 'versao', header: 'Versão', width: 90 },
                 ],
                 onSelect: onSelectOrdemFabrico
@@ -264,7 +264,7 @@ export default ({ setFormTitle, ...props }) => {
         ...(true) ? [{
             name: 'vglobal', header: 'Global', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", cellProps: { className: columnClass },
             groupSummaryReducer: {
-                initialValue: 0, reducer: (a, b) => parseFloat(a) + parseFloat(b),
+                initialValue: 0, reducer: (a, b) => (parseFloat(a) + parseFloat(b)),
                 complete: (a, rows) => parseFloat(a).toFixed(1)
             },
             render: ({ data, cellProps }) => <RightAlign unit="%" addonAfter={mode.datagrid.edit && !data?.__group && <IconButton style={{ marginLeft: "10px" }} onClick={() => adjust(data, cellProps)}><MdAdjust /></IconButton>}>{data?.__group ? data?.groupColumnSummary?.vglobal : data.vglobal}</RightAlign>
@@ -340,14 +340,14 @@ export default ({ setFormTitle, ...props }) => {
     const sumVGlobal = (extrusora) => {
         switch (extrusora) {
             case "A": return dataAPI.getData().rows.filter(v => v?.extrusora === "A").reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
-            case "B": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
-            case "C": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+            case "B": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") != 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
+            case "C": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") != 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
             case "BC": return dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") == 1 && v?.extrusora !== "A")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0); break;
         }
         const sumA = dataAPI.getData().rows.filter(v => v?.extrusora === "A").reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
         const sumBC = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") == 1 && v?.extrusora !== "A")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
-        const sumB = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
-        const sumC = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") !== 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        const sumB = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") != 1 && v?.extrusora === "B")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
+        const sumC = dataAPI.getData().rows.filter(v => form.getFieldValue("joinbc") != 1 && v?.extrusora === "C")?.reduce((a, b) => parseFloat(a) + parseFloat(b?.vglobal), 0);
         return { sumA: parseFloat(sumA.toFixed(2)), sumBC: parseFloat(sumBC.toFixed(2)), sumB: parseFloat(sumB.toFixed(2)), sumC: parseFloat(sumC.toFixed(2)), total: parseFloat((sumA + sumBC + sumB + sumC).toFixed(2)) };
     }
     const sumArranque = (extrusora) => {
@@ -362,9 +362,9 @@ export default ({ setFormTitle, ...props }) => {
             return "A";
         } else if (form.getFieldValue("joinbc") == 1 && extrusora !== "A") {
             return "BC";
-        } else if (form.getFieldValue("joinbc") !== 1 && extrusora === "B") {
+        } else if (form.getFieldValue("joinbc") != 1 && extrusora === "B") {
             return "B";
-        } else if (form.getFieldValue("joinbc") !== 1 && extrusora === "C") {
+        } else if (form.getFieldValue("joinbc") != 1 && extrusora === "C") {
             return "C";
         }
     }
@@ -555,9 +555,8 @@ export default ({ setFormTitle, ...props }) => {
             case '4': onCustomAdd({ value: "B" }); break;
             case '5': onUpdateReference(); break;
             case '6':
-                if (form.getFieldValue("joinbc") === 1) {
+                if (form.getFieldValue("joinbc") == 1) {
                     if (dataAPI.getData().rows) {
-                        console.log("$$$-join-",dataAPI.getData().rows)
                         let _itemsC =  dataAPI.getData().rows.filter(x => x?.extrusora === "C");
                         let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x=> {
                             let _x = {...x};
@@ -566,7 +565,8 @@ export default ({ setFormTitle, ...props }) => {
                                 let _doser = x?.doseador ? x?.["doseador"].split(',') : [];
                                 _doser.push(_c.doseador);
                                 _doser.sort();
-                                _x["doseador"] = _doser.join(',');
+                                _x["doseador"] = _doser.filter(Boolean).join(',');
+                                _x["vglobal"] = vglobal(getExtrusora(x.extrusora), x.arranque);
                             }
                             return _x;
                         })
@@ -576,12 +576,19 @@ export default ({ setFormTitle, ...props }) => {
                     }
                 } else {
                     if (dataAPI.getData().rows) {
-                        console.log("$$$-split-",dataAPI.getData().rows)
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => ({ ...x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) }));
-                        let _itemsC = _items.filter(x => x?.extrusora === "B").map(x => { 
-                            // let _x = {...x}
-                            // ...x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque) 
-                        
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => { 
+                            let _x = {...x}
+                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v=>v.startsWith(x.extrusora));
+                            _dosers.sort();
+                            _x["doseador"] = _dosers.filter(Boolean).join(',');
+                            return {..._x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque)}; 
+                        });
+                        let _itemsC = dataAPI.getData().rows.filter(x => x?.extrusora === "B").map(x => { 
+                            let _x = {...x}
+                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v=>v.startsWith("C"));
+                            _dosers.sort();
+                            _x["doseador"] = _dosers.filter(Boolean).join(',');
+                            return {..._x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque)}
                         });
 
                         dataAPI.setData({ rows: [..._items, ..._itemsC], total: _items?.length + _itemsC?.length });
@@ -637,7 +644,7 @@ export default ({ setFormTitle, ...props }) => {
                             groupColumn={{
                                 headerAlign: "center", defaultWidth: 75,
                                 header: form.getFieldValue("reference") === 1 && <StarFilled style={{ fontSize: "18px", color: "yellow" }} />,
-                                renderGroupValue: ({ value }) => <span style={{ fontWeight: 700 }}>{form.getFieldValue("joinbc") === 1 && ["B", "C"].includes(value) ? <Space><LockOutlined />Extrusora BC</Space> : `Extrusora ${value}`}</span>,
+                                renderGroupValue: ({ value }) => <span style={{ fontWeight: 700 }}>{form.getFieldValue("joinbc") == 1 && ["B", "C"].includes(value) ? <Space><LockOutlined />Extrusora BC</Space> : `Extrusora ${value}`}</span>,
                                 colspan: ({ data, column, columns }) => {
                                     if (data?.__group) {
                                         return 2;

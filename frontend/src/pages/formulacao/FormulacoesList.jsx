@@ -143,12 +143,14 @@ export default ({ setFormTitle, ...props }) => {
   };
 
   const columns = [
-    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, minWidth: 170, defaultFlex: 1, render: ({ data }) => <Link onClick={() => onOpenFormulacao(data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao}/> }] : [],
-    ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1 }] : [],
-    ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1 }] : [],
-    ...(true) ? [{ name: 'versao', header: 'Versão', userSelect: true, defaultLocked: false, width: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
-    ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.cliente_nome}</div> }] : [],
-    ...(true) ? [{ name: 'produto_cod', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto_cod}</div> }] : [],
+    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, defaultWidth: 170, defaultFlex: 1, render: ({ data }) => <Link onClick={() => onOpenFormulacao(data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao}/> }] : [],
+    ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1 }] : [],
+    ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1 }] : [],
+    ...(true) ? [{ name: 'versao', header: 'Versão', userSelect: true, defaultLocked: false, defaultWidth: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
+    ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.cliente_nome}</div> }] : [],
+    ...(true) ? [{ name: 'produto_cod', header: 'Produto', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto_cod}</div> }] : [],
+    ...(true) ? [{ name: 'cod', header: 'Artigo', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.cod}</div> }] : [],
+    ...(true) ? [{ name: 'des', header: 'Artigo Des.', userSelect: true, defaultLocked: false, defaultWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
     ...(true) ? [{ name: 'reference', header: 'Referência', userSelect: true, defaultLocked: false, width: 90, render: ({data}) => <Favourite value={data?.reference} /> }] : [],
     ...(true) ? [{ name: 'created_date', header: 'Data Criação', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.created_date).format(DATETIME_FORMAT)}</div> }] : [],
     ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.updated_date).format(DATETIME_FORMAT)}</div> }] : []

@@ -633,6 +633,7 @@ class BobineEditForm(ModelForm):
                 ('PANAI S.A.L.', 'PANAI S.A.L.'),
                 ('PARMON', 'PARMON'),
                 ('PAUL HARTMANN AG', 'PAUL HARTMANN AG'),
+                ('PAUL HARTMANN S.A.S', 'PAUL HARTMANN S.A.S'),
                 ('PESQUISUAVE, LDA', 'PESQUISUAVE, LDA'),
                 ('Pozzani Disposables S.p.A.', 'Pozzani Disposables S.p.A.'),
                 ('SAH', 'SAH'),

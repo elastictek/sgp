@@ -14,12 +14,12 @@ import { API_URL, DOSERS, JUSTIFICATION_OUT } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
-import { getFilterRangeValues, getFilterValue,containsAll } from "utils";
+import { getFilterRangeValues, getFilterValue, containsAll } from "utils";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, Dropdown, DatePicker } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, CloseCircleOutlined, LogoutOutlined, PropertySafetyOutlined } from '@ant-design/icons';
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, CloseCircleOutlined, LogoutOutlined, PropertySafetyOutlined, LoginOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -164,6 +164,24 @@ const Output = ({ data, openNotification, parentRef, closeParent, loadParentData
     </FormContainer>);
 }
 
+const ButtonIO = ({ data, onOutput, onInputDoser, onOutputDoser }) => {
+    return (<>
+        {(data?.arranque && data?.n_lote) ? <Button icon={<LogoutOutlined />} size="small" onClick={() => onOutput(data)}>Saída</Button> : <></>}
+        {(data?.arranque && !data?.n_lote) ? <Button icon={<LoginOutlined />} size="small" onClick={() => onInputDoser(data)}>Entrada doseador</Button> : <></>}
+        {(!data?.arranque && data?.n_lote) ? <Dropdown.Button size="small" trigger={["click"]} onClick={() => onOutputDoser(data)} menu={{
+            onClick: () => onOutput(data),
+            items: [
+                {
+                    label: 'Saída de Linha',
+                    key: 'output',
+                    icon: <LogoutOutlined />,
+                }]
+        }}
+        ><LoginOutlined />Saída Doseador</Dropdown.Button>
+            : <></>}
+    </>);
+}
+
 export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent, minItems = 1, maxItems = 5 }) => {
     const permission = usePermission({ allowed: {} });
     const { openNotification } = useContext(AppContext);
@@ -241,7 +259,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
                     const _row = form.getFieldValue(["items", i, "row"]);
                     if (_row?.dosers && _row?.valid) {
                         const valid = dataAPI.getData().rows.find(v => _row?.dosers.split(',').every(item => v.dosers.split(',').includes(item)) && v.artigo_cod === _row?.artigo_cod && v.n_lote !== _row?.n_lote);
-                        form.setFieldValue(["items", i, "row","group_id"], valid ? valid?.cuba : null);
+                        form.setFieldValue(["items", i, "row", "group_id"], valid ? valid?.cuba : null);
                         form.setFieldValue(["items", i, "valid"], valid ? true : false);
                     }
                     break;
@@ -306,8 +324,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const loadData = async ({ signal } = {}) => {
         submitting.trigger();
         const rows = await loadGranuladoInline(signal);
-        console.log(rows)
-        dataAPI.setData({ rows, total: rows.length });
+        dataAPI.setData({ rows, total: rows.length }, { update: true });
         submitting.end();
     }
 
@@ -344,6 +361,38 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
         setModalParameters({ content: "output", type: "drawer", title: `Saída ${data.n_lote} ${data.artigo_des}`, push: false, width: "550px", loadData: loadData, parameters: { openNotification, data } });
         showModal();
     };
+    const onInputDoser = async (data) => {
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: data, sort: [], parameters: { method: "AddDoserToLine" } });
+            if (response.data.status !== "error") {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                loadData();
+            } else {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            }
+        } catch (e) {
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        } finally {
+            submitting.end();
+        };
+    }
+    const onOutputDoser = async (data) => {
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: data, sort: [], parameters: { method: "RemoveDoserFromLine" } });
+            if (response.data.status !== "error") {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                loadData();
+            } else {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            }
+        } catch (e) {
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        } finally {
+            submitting.end();
+        };
+    }
 
 
     const backgroundColor = (i) => {
@@ -357,7 +406,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     }
 
     const rowClassName = ({ data }) => {
-        if (!data?.n_lote) {
+        if (!data?.n_lote || !data?.arranque) {
             return tableCls.error;
         }
     }
@@ -365,7 +414,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const columns = [
         ...(true) ? [{ name: 'cuba', header: 'Cuba', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 90, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}><Cuba value={p.data?.cuba} /></div> }] : [],
         ...(true) ? [{ name: 'dosers', header: 'Doseador', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 95, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}>{p.data?.dosers}</div> }] : [],
-        ...(true) ? [{ name: 'baction', header: '', minWidth: 90, maxWidth: 90, render: ({data}) => data?.arranque ? <Button icon={<LogoutOutlined />} size="small" onClick={() => onOutput(data)}>Saída</Button> : <></> }] : [],
+        ...(true) ? [{ name: 'baction', header: '', minWidth: 160, maxWidth: 160, render: ({ data }) => <ButtonIO data={data} onOutput={onOutput} onInputDoser={onInputDoser} onOutputDoser={onOutputDoser} /> }] : [],
         ...(true) ? [{ name: 'artigo_cod', header: 'Artigo', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.artigo_cod}</div> }] : [],
         ...(true) ? [{ name: 'n_lote', header: 'Lote', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.n_lote}</div> }] : [],
         ...(true) ? [{ name: 'artigo_des', header: 'Designação', userSelect: true, showColumnMenuTool: false, flex: 2, minWidth: 170, render: (p) => <div style={{}}>{p.data?.artigo_des}</div> }] : [],

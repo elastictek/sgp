@@ -200,15 +200,20 @@ def GetGranuladoInLine(request, format=None):
     sql = lambda p, c, s: (
         f"""
             with INLINE AS(
-            select t.artigo_des,t.vcr_num, ld.*,t.qty_lote,t.qty_reminder,t.mp_group ,t.densidade ,t.max_in from(
-            select 
-            LAST_VALUE(lg.id) OVER (PARTITION BY vcr_num ORDER BY lg.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
-            lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
-            from lotesgranuladolinha lg
-            left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
-            )t
-            join lotesdoserslinha ld on ld.loteslinha_id=t.id
-            where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+                select * from (
+                select 
+                t.artigo_des,t.vcr_num, ld.*,t.qty_lote,t.qty_reminder,t.mp_group ,t.densidade ,t.max_in 
+                ,LAST_VALUE(ld.id) OVER (PARTITION BY t.vcr_num,ld.group_id,ld.doser ORDER BY ld.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_doser_entry
+                from(
+                select 
+                LAST_VALUE(lg.id) OVER (PARTITION BY vcr_num ORDER BY lg.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+                lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
+                from lotesgranuladolinha lg
+                left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
+                )t
+                join lotesdoserslinha ld on ld.loteslinha_id=t.id
+                where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 #and ld.type_mov=1
+                ) t where t.id=t.last_doser_entry and t.type_mov=1
             ),
             FORMULACAO AS(
             select formulacaov2
@@ -301,6 +306,31 @@ def RemoveGranuladoFromLine(request, format=None):
             args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
             cursor.callproc('output_granulado_from_line',args)
             return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def RemoveDoserFromLine(request, format=None):
+    filter = request.data['filter']
+    try:
+        with connections["default"].cursor() as cursor:
+            filter["t_stamp"]=datetime.now()
+            for v in filter.get("dosers").split(","):
+                filter["t_stamp"]=datetime.now()
+                args = (filter.get("t_stamp"), filter.get("artigo_cod"),filter["vcr_num"],filter["n_lote"],filter.get("cuba"),v,request.user.id)
+                cursor.callproc('remove_doser_from_line',args)
+            return Response({"status": "success","title":"Saída de doseador efetuado com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def AddDoserToLine(request, format=None):
+    filter = request.data['filter']
+    try:
+        with connections["default"].cursor() as cursor:
+            filter["t_stamp"]=datetime.now()
+            for v in filter.get("dosers").split(","):
+                args = (filter.get("t_stamp"), filter.get("artigo_cod"),filter.get("cuba"),v,request.user.id)
+                cursor.callproc('add_doser_to_line',args)
+            return Response({"status": "success","title":"Entrada de doseador efetuado com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
@@ -849,14 +879,20 @@ def GranuladoListInLine(request, format=None):
     sql = lambda p, c, s: (
         f"""
                 with INLINE AS(
-                select ld.*,t.qty_lote,t.qty_reminder from(
+                select * from (
                 select 
-                LAST_VALUE(id) OVER (PARTITION BY vcr_num ORDER BY t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
-                lg.*
+                t.artigo_des,t.vcr_num, ld.*,t.qty_lote,t.qty_reminder,t.mp_group ,t.densidade ,t.max_in 
+                ,LAST_VALUE(ld.id) OVER (PARTITION BY t.vcr_num,ld.group_id,ld.doser ORDER BY ld.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_doser_entry
+                from(
+                select 
+                LAST_VALUE(lg.id) OVER (PARTITION BY vcr_num ORDER BY lg.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+                lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
                 from lotesgranuladolinha lg
+                left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
                 )t
                 join lotesdoserslinha ld on ld.loteslinha_id=t.id
-                where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 and ld.type_mov=1
+                where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 #and ld.type_mov=1
+                ) t where t.id=t.last_doser_entry and t.type_mov=1
                 ),
                 FORMULACAO AS(
                 select formulacaov2

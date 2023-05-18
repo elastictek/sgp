@@ -1761,6 +1761,7 @@ def SellCustomersLookup(request, format=None):
        response["rows"].append({"BPCNUM_0":'0',"BPCNAM_0":"Elastictek"})
        response["rows"].append({"BPCNUM_0":'1',"BPCNAM_0":"Industrialização"})
        response["rows"].append({"BPCNUM_0":'2',"BPCNAM_0":"Regranular"})
+       response["rows"].append({"BPCNUM_0":'3',"BPCNAM_0":"Sem alternativa"})
        return Response(response)
 #endregion
 

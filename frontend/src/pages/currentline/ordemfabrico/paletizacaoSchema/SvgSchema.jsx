@@ -133,7 +133,7 @@ export const SvgCutHere = ({ key, pos, text = "Etiqueta Cut Here" }) => {
     );
 }
 
-export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%", height, viewBox, onClick }) => {
+export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%", height,heightPercentage=1, viewBox, onClick }) => {
     const [elements, setElements] = useState([]);
     const [totalHeight, setTotalHeight] = useState(0);
 
@@ -216,13 +216,13 @@ export default ({ vGap = 2, form, items, changedValues, x = 200, width = "100%",
         }
     }, [changedValues, JSON.stringify(items)]);
     return (
-        <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : totalHeight + 50} viewBox={viewBox ? viewBox : `0 0 480 ${totalHeight + 50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
+        <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : (totalHeight*heightPercentage) + 50} viewBox={viewBox ? viewBox : `0 0 480 ${(totalHeight*heightPercentage) + 50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
             {isValue((items) ? items.filmeestiravel_exterior : form.getFieldValue("filmeestiravel_exterior"), undefined, 0) === 1 && <g transform={`translate(${x - 100},${0})`}>
                 <title>Filme Estirável</title>
                 <line id="svg_10" y2={(totalHeight)} x2="300" y1="-10" x1="300" stroke="#000000" fill="none" />
                 <line id="svg_11" y2="-10.5007" x2="300" y1="-10.5007" x1="290" stroke="#000000" fill="none" />
                 <line id="svg_12" y2={(totalHeight)} x2="300" y1={(totalHeight)} x1="290" stroke="#000000" fill="none" />
-                <text x="311" y={(totalHeight) / 2} transform={`rotate(90, 311, ${(totalHeight) / 2})`} stroke-width="2" text-anchor="middle">Filme Estirável</text>
+                <text x="311" y={(totalHeight) / 2} transform={`rotate(90, 311, ${(totalHeight) / 2})`} strokeWidth="2" textAnchor="middle">Filme Estirável</text>
             </g>
             }
             {elements.map((v, i) => v.obj({ key: `svg-${i}`, ...v, elements, idx: i }))}

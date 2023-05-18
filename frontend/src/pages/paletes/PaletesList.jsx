@@ -175,7 +175,7 @@ const moreFiltersSchema = ({ form }) => [
         fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 4 },
         fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 4 }
     },
-    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span:12 }, fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' }, span:12 } },
+    { fcliente: { label: "Cliente", field: { type: 'input', size: 'small' }, span: 12 }, fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' }, span: 12 } },
     { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
     { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula: { label: "Matrícula", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula_reboque: { label: "Mat.Reboque", field: { type: 'input', size: 'small' }, span: 8 } },
     { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
@@ -673,7 +673,7 @@ const modoExpedicao = (v) => {
     }
 }
 
-export default ({ setFormTitle, ...props }) => {
+export default ({ setFormTitle, noid = false, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
     const navigate = useNavigate();
@@ -687,7 +687,7 @@ export default ({ setFormTitle, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "PaletesList" };
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ id: "lst-paletes", payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const dataAPI = useDataAPI({ ...(!noid && { id: "lst-paletes" }), payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTab, setLastTab] = useState('1');
 
@@ -717,7 +717,7 @@ export default ({ setFormTitle, ...props }) => {
         return false;
     }
     const editableClass = (row, col) => {
-        if (col === "destino" && row.destinos_has_obs>0) {
+        if (col === "destino" && row.destinos_has_obs > 0) {
             return classes.hasObs;
         }
     }
@@ -768,17 +768,17 @@ export default ({ setFormTitle, ...props }) => {
         },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
-        { key: 'nbobines_emendas', name: 'Bobines C/Emendas',reportFormat:'0', width: 60, formatter: p => p.row.nbobines_emendas },
+        { key: 'nbobines_emendas', name: 'Bobines C/Emendas', reportFormat: '0', width: 60, formatter: p => p.row.nbobines_emendas },
         { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
-        { key: 'area_real', name: 'Área',reportFormat:'0.0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
-        { key: 'comp_real', name: 'Comp.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
-        { key: 'peso_bruto', name: 'Peso B.',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
-        { key: 'peso_liquido', name: 'Peso .L',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
-        { key: 'diam_min', name: 'Diam. Min.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
-        { key: 'diam_max', name: 'Diam. Máx.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
-        { key: 'diam_avg', name: 'Diam. Médio.',reportFormat:'0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
+        { key: 'area_real', name: 'Área', reportFormat: '0.0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area_real} m&sup2;</div> },
+        { key: 'comp_real', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_real} m</div> },
+        { key: 'peso_bruto', name: 'Peso B.', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_bruto} kg</div> },
+        { key: 'peso_liquido', name: 'Peso .L', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso_liquido} kg</div> },
+        { key: 'diam_min', name: 'Diam. Min.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_min} mm</div> },
+        { key: 'diam_max', name: 'Diam. Máx.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_max} mm</div> },
+        { key: 'diam_avg', name: 'Diam. Médio.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam_avg} mm</div> },
         {
             key: 'destino', name: 'Destino', width: 200,
             editor: p => <DestinoPaleteEditor forInput={false} p={p} />,
@@ -795,16 +795,16 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
         { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
         { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
-        { key: 'stock_qtypcu', name: 'Qtd. Stock',reportFormat:'0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
+        { key: 'stock_qtypcu', name: 'Qtd. Stock', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
         { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
         { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
         { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
         { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
-        { key: 'modo_exp', name: 'Modo Expedição',reportFormat:'0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
+        { key: 'modo_exp', name: 'Modo Expedição', reportFormat: '0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
         { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
         { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
-        { key: 'mes', name: 'Mês',reportFormat:'0', width: 60, formatter: p => p.row.mes },
-        { key: 'ano', name: 'Ano',reportFormat:'0', width: 60, formatter: p => p.row.ano },
+        { key: 'mes', name: 'Mês', reportFormat: '0', width: 60, formatter: p => p.row.mes },
+        { key: 'ano', name: 'Ano', reportFormat: '0', width: 60, formatter: p => p.row.ano },
 
 
 
@@ -835,7 +835,7 @@ export default ({ setFormTitle, ...props }) => {
 
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
-            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
+            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, {}, null);
             let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
@@ -865,11 +865,12 @@ export default ({ setFormTitle, ...props }) => {
                     fcarganome: getFilterValue(vals?.fcarganome, 'any'),
                     fdestinoold: getFilterValue(vals?.fdestinoold, 'any'),
                     fbobine: getFilterValue(vals?.fbobine, 'any'),
-                    fmatricula:getFilterValue(vals?.fmatricula, 'any'),
-                    fmatricula_reboque:getFilterValue(vals?.fmatricula_reboque, 'any'),
+                    fmatricula: getFilterValue(vals?.fmatricula, 'any'),
+                    fmatricula_reboque: getFilterValue(vals?.fmatricula_reboque, 'any'),
                     fprf: getFilterValue(vals?.fprf, 'any'),
                     forder: getFilterValue(vals?.forder, 'any'),
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
+                    fof: getFilterValue(vals?.fof, 'any'),
                     fartigo_mp: getFilterValue(vals?.fartigo_mp, 'any'),
                     flote_mp: getFilterValue(vals?.flote_mp, 'any'),
                     fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
@@ -976,7 +977,7 @@ export default ({ setFormTitle, ...props }) => {
     }
 
     const onCreatePalete = () => {
-        setModalParameters({ content: "createpalete",type: "drawer", title:"Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
+        setModalParameters({ content: "createpalete", type: "drawer", title: "Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
         showModal();
     }
 

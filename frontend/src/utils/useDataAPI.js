@@ -30,8 +30,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     var _pagination = payload?.pagination;
     var _parameters = payload?.parameters;
 
-    const setId = (_id,_useStorage=true) => {
-        setDataState(prev=>({...prev,...getLocalStorage(_id, _useStorage)}));
+    const setId = (_id, _useStorage = true) => {
+        setDataState(prev => ({ ...prev, ...getLocalStorage(_id, _useStorage) }));
     }
 
     const addAction = (type) => {
@@ -322,7 +322,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     setData(await rowFn(dt), payload);
                 } else if (typeof fnPostProcess === "function") {
                     setData(await fnPostProcess(dt), payload);
-                }else{
+                } else {
                     setData(dt, payload);
                 }
             } catch (e) {

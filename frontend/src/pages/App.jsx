@@ -17,6 +17,7 @@ import YScroll from "components/YScroll";
 import { fetch, fetchPost } from "utils/fetch";
 import { API_URL, ROOT_URL } from "config";
 import { openNotification } from 'components/openNotification';
+import { json } from "utils/object";
 
 /* import 'react-data-grid/lib/styles.css'; */
 
@@ -283,7 +284,8 @@ const App2 = () => {
         const controller = new AbortController();
         const interval = null;
         (async () => {
-            setEstadoProducao(await fetchPost({ url: `${API_URL}/estadoproducao/`, pagination: { enabled: false }, filter: {}, signal: controller.signal }));
+            //setEstadoProducao(await fetchPost({ url: `${API_URL}/estadoproducao/`, pagination: { enabled: false }, filter: {}, signal: controller.signal }));
+            setEstadoProducao(json(lastJsonMessage?.data?.estadoProducao));
         })();
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
     }, [lastJsonMessage?.hash?.hash_estadoproducao]);
