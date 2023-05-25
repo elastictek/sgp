@@ -210,6 +210,7 @@ def GetGranuladoInLine(request, format=None):
                 lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
                 from lotesgranuladolinha lg
                 left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
+                where lg.closed=0
                 )t
                 join lotesdoserslinha ld on ld.loteslinha_id=t.id
                 where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 #and ld.type_mov=1
@@ -271,11 +272,10 @@ def GetGranuladoLoteQuantity(request, format=None):
             FROM {sageAlias}."STOCK" STK
             JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
             JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            WHERE ST."VCRNUM_0"='{values[4]}'
+            WHERE ST."LOC_0" = 'BUFFER' AND ST."QTYPCU_0" > 0 AND ST."VCRNUM_0"='{values[4]}'
         ) t
-        where ("QTYPCU_0" > 0)
-        and "LOC_0" in ('BUFFER')
-        AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = "VCRNUM_0")
+        where ("QTYPCU_0" > 0)        
+        AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = t."VCRNUM_0")
     """),conngw,{})["rows"]
     if len(rows)>0:            
         conn = connections["default"].cursor()

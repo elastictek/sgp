@@ -6,7 +6,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
-import { pickAll, useSizeMe,useSubmitting } from "utils";
+import { pickAll, useSizeMe, useSubmitting } from "utils";
 import sizeMe from 'react-sizeme';
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -67,8 +67,11 @@ export const useTableStyles = createUseStyles({
     error: {
         background: "#ff4d4f52 !important"
     },
+    warning: {
+        background: "#ffec3d !important"
+    },
     cellPadding1: {
-        padding:"1px 5px !important"
+        padding: "1px 5px !important"
     },
     rowNotValid: {
         background: "#ffe7ba !important"
@@ -422,7 +425,7 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid
     )
 }
 
-export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, dirty = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
+export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -747,7 +750,7 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
 
         <>
             <Table
-                loading={loading || submitting.state}
+                {...showLoading ? { loading: loading || submitting.state } : { loading: false }}
                 idProperty={idProperty}
                 i18n={i18n}
                 renderPaginationToolbar={renderPaginationToolbar}

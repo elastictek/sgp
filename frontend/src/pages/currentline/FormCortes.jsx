@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL } from "config";
+import { json } from "utils/object";
 import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace } from "components/formLayout";
 import AlertMessages from "components/alertMessages";
 import Toolbar from "components/toolbar";
@@ -22,7 +23,6 @@ import Modalv4 from "components/Modalv4";
 /* import { OFabricoContext } from './FormOFabricoValidar'; */
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
-import { json } from "utils/object";
 import FormEtapasCortes from './FormEtapasCortes';
 
 const schema = (keys, excludeKeys) => {
@@ -155,13 +155,13 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, wr
         (async () => {
             const { cortes, cortesordem, ofs } = record;
             const _cortesOrdemLookup = (forInput) ? await loadCortesOrdemLookup({ cortes_id: cortes.id, token }) : [{ ...cortesordem }];
-            const _larguras = JSON.parse(cortes.largura_json);
+            const _larguras = JSON.parse(cortes?.largura_json);
             let _cortes = Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos: ofs.filter(v => v.artigo_lar == key).map((item) => ({ color: item.color, artigo_id: item.artigo_id, artigo_cod: item.artigo_cod, artigo_des: item.artigo_des, cliente_cod: item.cliente_cod, cliente_nome: item.cliente_nome, of_id: item.of_id, of_cod: item.of_cod })) }));
             
             //            Object.keys(_larguras).map((key, i) => ({ item_lar: key, item_ncortes: _larguras[key], bcolor: colors[i].bcolor, color: colors[i].color, artigos:[...new Map(ofs.filter(v=>v.artigo_lar==key).map((item) => [item["artigo_id"], {artigo_id:item.artigo_id,artigo_cod:item.artigo_cod,artigo_des:item.artigo_des,cliente_cod:item.cliente_cod,cliente_nome:item.cliente_nome,of_id:item.of_id,of_cod:item.of_cod}])).values()] }));
             form.setFieldsValue({ cortes: _cortes, cortes_id: cortes.id, cortesordem_id: cortesordem.id });
             (setFormTitle) && setFormTitle({ title: `Cortes` });
-            setLarguraUtil(calculateLarguraUtil({ larguras: JSON.parse(cortes.largura_json) }));
+            setLarguraUtil(calculateLarguraUtil({ larguras: JSON.parse(cortes?.largura_json) }));
             setCortesOrdemLookup(_cortesOrdemLookup);
             setLoading(false);
         })();

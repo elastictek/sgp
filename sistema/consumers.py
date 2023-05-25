@@ -2,6 +2,7 @@ import os
 from sqlite3 import Cursor
 import sys
 import django
+from datetime import datetime, timedelta
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sistema.settings")
@@ -107,21 +108,33 @@ def executeAlerts():
     # else:
     #     dataEstadoProducao = json.dumps({},default=str)
     with connections["default"].cursor() as cursor:
+        args = []
+        cursor.callproc('list_materiaprima_inline',args)
+        selects = f"""
+            select * from tbl_nw_queue;
+            select * from tbl_granulado_inline;
+        """
+        cursor.execute(selects)
+        estadoproducao_nw_queue = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_granulado_inline = fetchall(cursor)
+        
         args = [dataInProd.get("agg_of_id")]
-        #args = [250]
-        #print("fixedddddddddddddddd")
-
+        
+        #args = [205]
         cursor.callproc('list_estado_producao',args)
         selects = f"""
             select * from tbl_estadoproducao;
             select * from tbl_estadoproducao_bobines;
             select * from tbl_estadoproducao_bobinagens;
             select * from tbl_estadoproducao_nws;
-            select * from tbl_estadoproducao_paletizacao;
+            select * from tbl_estadoproducao_current;
             select * from tbl_estadoproducao_params;
             select * from tbl_estadoproducao_paletes;
             select * from tbl_estadoproducao_status;
             select * from tbl_estadoproducao_defeitos;
+            select * from tbl_estadoproducao_bobines_nopalete;
+            select * from tbl_estadoproducao_bobines_retrabalhadas;
         """
         cursor.execute(selects)
         estadoproducao = fetchall(cursor)
@@ -132,7 +145,7 @@ def executeAlerts():
         cursor.nextset()
         estadoproducao_nws = fetchall(cursor)
         cursor.nextset()
-        estadoproducao_paletizacao = fetchall(cursor)
+        estadoproducao_current = fetchall(cursor)
         cursor.nextset()
         estadoproducao_params = fetchall(cursor)
         cursor.nextset()
@@ -141,16 +154,24 @@ def executeAlerts():
         estadoproducao_status = fetchall(cursor)
         cursor.nextset()
         estadoproducao_defeitos = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines_nopalete = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines_retrabalhadas = fetchall(cursor)
         dataEstadoProducao = json.dumps({
             "estado_producao": estadoproducao,
             "estado_producao_bobines": estadoproducao_bobines,
+            "estado_producao_bobines_nopalete": estadoproducao_bobines_nopalete,
+            "estadoproducao_bobines_retrabalhadas": estadoproducao_bobines_retrabalhadas,
             "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
-            "estado_producao_paletizacao": estadoproducao_paletizacao[0].get("_paletizacao") if len(estadoproducao_paletizacao)>0 else {},
+            "estado_producao_current": estadoproducao_current[0] if len(estadoproducao_current)>0 else {},
             "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
             "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
             "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
             "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
-            "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else {}
+            "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
+            "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
+            "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else []
         },default=str)
     dataInProd = json.dumps(dataInProd,default=str)
 

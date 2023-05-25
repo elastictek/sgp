@@ -285,7 +285,7 @@ const baseItems = [
     { i: "stockavailable", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
     //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
     { i: "dataprod" },
-    { i: "dataprod#estado", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
+    { i: "dataprod#estado", x: 0, y: 0, w: 12, h:19, minH: 19, minW:12, closable: true },
     { i: "mp" },
     { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
     { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -1141,7 +1141,7 @@ export default (props) => {
                     compactType="horizontal"
                     breakpoints={breakpoints}
                     cols={cols}
-                    rowHeight={35}
+                    rowHeight={36}
                     preventCollision={preventCollisions}
                     allowOverlap={overlap}
                     measureBeforeMount={false}

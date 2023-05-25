@@ -66,7 +66,7 @@ export default ({ record, card, parentReload }) => {
     const navigate = useNavigate();
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ id: "dashb-bobinagens", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: { valid: "0", type: "1"/* agg_of_id: record.agg_of_id, valid: "0", type: "1" */ }, sort: [{ column: 'nome', direction: 'ASC' }] } });
+    const dataAPI = useDataAPI({ id: "dashb-bobinagens", payload: { url: `${API_URL}/bobinagens/sql/`, parameters: {method:"BobinagensList"}, pagination: { enabled: false, limit: 20 }, filter: { valid: "0", type: "1"/* agg_of_id: record.agg_of_id, valid: "0", type: "1" */ }, sort: [{ column: 'nome', direction: 'ASC' }] } });
     const primaryKeys = ['id'];
     const columns = [
         { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },

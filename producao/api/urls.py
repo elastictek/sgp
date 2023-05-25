@@ -132,7 +132,6 @@ urlpatterns = [
     re_path(r'^loteslookup/$', views.LotesLookup),
 
     #BOBINAGENS
-    re_path(r'^bobinagenslist/$', views.BobinagensList),
     re_path(r'^validarbobinagenslist/$', views.ValidarBobinagensList), #to remove
     re_path(r'^validarbobineslist/$', views.ValidarBobinesList),
     re_path(r'^validarbobinagem/$', views.ValidarBobinagem),

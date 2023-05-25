@@ -6,7 +6,32 @@ import { Tag, Button } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT } from "config";
 import dayjs from 'dayjs';
 import { props } from 'ramda';
+import { ImArrowDown,ImArrowUp } from 'react-icons/im';
 
+
+
+export const QueueNwColumn = ({ value, status, cellProps, style = {} }) => {
+
+    const getValue = () => {
+        if (status === 0) {
+            return <div />;
+        }
+        switch (value) {
+            case 1: return <Tag style={{ width: "100%", color: "#000", ...style }} color="#87d068">Em uso</Tag>;
+            case 2: return <Tag style={{ width: "100%", color: "#000", ...style }} color="#fff566">Em espera</Tag>
+            default: return <Tag style={{ width: "100%", color: "#000", ...style }} color="#2db7f5">Em preparação</Tag>
+        }
+    }
+
+    return (<>{!cellProps?.inEdit && getValue(value)}</>);
+}
+
+export const PosColumn = ({ value, cellProps }) => {
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+        {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
+        <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
+    </div>}</>);
+}
 
 export const Link = ({ value, onClick, style, cellProps, ...props }) => {
     return (<>{!cellProps?.inEdit && <Button type='link' style={{ fontWeight: 700, ...style }} onClick={onClick}>{value}</Button>}</>);
@@ -27,23 +52,23 @@ export const Favourite = ({ value, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", justifyContent: "center" }}>{value ? <StarFilled style={{ fontSize: "18px", color: "#d4b106" }} /> : ""}</div>}</>)
 }
 export const Nonwovens = ({ valueUp, valueInf, onClick, style, cellProps, ...props }) => {
-    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "column",fontSize:"11px" }}>
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "column", fontSize: "11px" }}>
         <div>{valueUp ? valueUp : '--'}</div>
         <div>{valueInf ? valueInf : '--'}</div>
     </div>}</>);
 }
 
-export const ArrayColumn = ({ value, distinct=true, onClick, style, cellProps, ...props }) => {
+export const ArrayColumn = ({ value, distinct = true, onClick, style, cellProps, ...props }) => {
     const getValue = (v) => {
-        if (distinct){
+        if (distinct) {
             return [...new Set(v)];
-        }else{
+        } else {
             return v;
         }
     }
 
-    return (<>{!cellProps?.inEdit && <div style={{ display: "flex",fontSize:"11px" }}>
-        {value && getValue(value).map((v,i)=><div key={`${cellProps?.name}-${i}`}>{v}</div>) }
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", fontSize: "11px" }}>
+        {value && getValue(value).map((v, i) => <div key={`${cellProps?.name}-${i}`}>{v}</div>)}
     </div>}</>);
 }
 
@@ -77,11 +102,11 @@ const StyledCuba = styled.div`
     }
         `;
 export const getValue = (v) => (v) ? FORMULACAO_CUBAS.find(x => x.key == v)?.value : null;
-export const Cuba = ({ value }) => {
+export const Cuba = ({ value,style }) => {
     const val = getValue(value);
     return (<>
         {value && <>
-            {(val !== null && val !== undefined) ? <StyledCuba color={colors[value].color} fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" fontColor="#fff">{value}</StyledCuba>}
+            {(val !== null && val !== undefined) ? <StyledCuba style={{...style}} color={colors[value].color} fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" fontColor="#fff">{value}</StyledCuba>}
         </>}
     </>);
 }

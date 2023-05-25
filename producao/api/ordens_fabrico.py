@@ -629,7 +629,39 @@ def SetOrdemFabricoFormulacao(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
+def GetPaletesStock(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({
+        "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('fordem_id')), "field": lambda k, v: f'pl.{k}'},
+    }, False)
+    f.where()
+    if ("audit_cs_id" in filter):
+        f.add(f'id = :audit_cs_id',True)
+    elif ("cs_id" in filter):
+        f.add(f'id = :cs_id',True)
+    elif ("formulacao_id" in filter):
+        f.add(f'pfo.id = :formulacao_id',True)
+    f.value()
 
+    dql = db.dql(request.data, False)
+    cols = f"""pl.*"""
+    sql = lambda: (f"""        
+        SELECT 
+        {cols}
+        FROM planeamento_ordemproducao op
+        left join producao_palete pl on pl.ordem_id=op.id and pl.ordem_id_original <> pl.ordem_id
+        {t.text}
+        {dql.sort}
+    """)
+
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 #region INTERNAL METHODS
 
 

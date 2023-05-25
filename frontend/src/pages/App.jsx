@@ -57,6 +57,7 @@ const ConsumosList = lazy(() => import('./artigos/ConsumosList'));
 const FormEtapasCortes = lazy(() => import('./currentline/FormEtapasCortes'));
 const PaletesList = lazy(() => import('./paletes/PaletesList'));
 const BasePick = lazy(() => import('./picking/BasePick'));
+const GranuladoPick = lazy(() => import('./picking/GranuladoPick'));
 const CheckLists = lazy(() => import('./ordensfabrico/CheckLists'));
 const ArtigosCompativeis = lazy(() => import('./artigos/ArtigosCompativeis'));
 const ArtigosProducao = lazy(() => import('./artigos/ArtigosProducao'));
@@ -170,6 +171,7 @@ const RenderRouter = () => {
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
 
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
+                { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },
                 
                 { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
                 { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },

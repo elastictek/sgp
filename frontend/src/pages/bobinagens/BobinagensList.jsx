@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker } from "antd";
 const { Title, Text } = Typography;
-import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined, DeleteFilled, PlusCircleOutlined,WarningOutlined } from '@ant-design/icons';
+import { DeleteOutlined, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, ReadOutlined, LockOutlined, DeleteFilled, PlusCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 'config';
 import { useModal } from "react-modal-hook";
@@ -393,7 +393,7 @@ const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
         setFormStatus({ ...status.formStatus, ...vDate?.formStatus });
         if (errors === 0 && vDate?.errors === 0) {
             Modal.confirm({
-                title: <div>Criar evento Troca de Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Deseja criar o evento de troca de bobinagem? <br/>Data início: <b>{date_init}</b><br/>Data fim: <b>{date_end}</b>?</li></ul>,
+                title: <div>Criar evento Troca de Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Deseja criar o evento de troca de bobinagem? <br />Data início: <b>{date_init}</b><br />Data fim: <b>{date_end}</b>?</li></ul>,
                 onOk: async () => {
                     submitting.trigger();
                     try {
@@ -446,7 +446,7 @@ const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-export default (props) => {
+export default ({ noid = false,setFormTitle, ...props }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useStyles();
@@ -463,8 +463,8 @@ export default (props) => {
  */
     const [formFilter] = Form.useForm();
     const submitting = useSubmitting(true);
-    const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/bobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
-    const defaultParameters = { typelist: "A" };
+    const dataAPI = useDataAPI({ ...(!noid && { id: "bobinagensL1list" }), payload: { url: `${API_URL}/bobinagens/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
+    const defaultParameters = { typelist: "A", method: "BobinagensList" };
     const defaultFilters = { type: "-1", valid: "-1" };
     const defaultSort = [{ column: 'nome', direction: 'DESC' }];
     const primaryKeys = ['id'];
@@ -632,12 +632,12 @@ export default (props) => {
     }, [location?.state?.typelist, location?.state?.type, location?.state?.valid]);
     const loadData = ({ init = false, signal }) => {
         if (init) {
-            const { typelist, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter())]);
+            const { typelist, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, location?.state, null);
             let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
             formFilter.setFieldsValue({ typelist, ...fieldValues });
             dataAPI.addFilters(filterValues, true, false);
             dataAPI.setSort(defaultSort);
-            dataAPI.addParameters({ typelist }, true, false);
+            dataAPI.addParameters({ ...defaultParameters,typelist }, true, false);
             dataAPI.fetchPost({ signal });
 
             setAllowEdit({ datagrid: permission.allow() });
@@ -734,7 +734,8 @@ export default (props) => {
 
     return (
         <>
-            <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />
+            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
+            {/* <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} /> */}
             <Table
                 loading={submitting.state}
                 reportTitle="Bobinagens"
@@ -758,7 +759,7 @@ export default (props) => {
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                     {modeEdit.datagrid && <Button type="primary" disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
                     {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={onCreate}>Criar Bobinagem</Button>}
-                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<WarningOutlined style={{color:"orange"}} />} onClick={onCreateEvent}>Criar Troca de Bobinagem!!</Button>}
+                    {modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<WarningOutlined style={{ color: "orange" }} />} onClick={onCreateEvent}>Criar Troca de Bobinagem!!</Button>}
                     {!modeEdit.datagrid && <Button disabled={(!allowEdit.datagrid || submitting.state)} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                 </Space>}
                 //content={<PickHolder/>}

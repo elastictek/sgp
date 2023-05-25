@@ -254,7 +254,7 @@ export const secondstoDay = (n) => {
     let minutes = n / 60;
     n %= 60;
     let seconds = n;
-    return ((day > 0) ? day + "d " : '') + ((hour > 0) ? hour + "h " : '') + ((minutes.toFixed() > 0) ? minutes.toFixed() + "m" : '');
+    return ((day > 0) ? day + "d " : '') + ((hour > 0) ? hour + "h " : '') + ((minutes.toFixed() > 0) ? minutes.toFixed().padStart(2, '0') + "m" : '');
 }
 
 
