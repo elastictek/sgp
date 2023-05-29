@@ -602,7 +602,6 @@ class RetrabalhoCreateView(LoginRequiredMixin, CreateView):
 def create_bobinagem_retrabalho(request):
     template_name = 'retrabalho/retrabalho_create.html'
     form = RetrabalhoCreateForm(request.POST or None)
-
     if form.is_valid():
         instance = form.save(commit=False)
 
@@ -3220,6 +3219,8 @@ def retrabalho_v2(request, pk):
     form = RetrabalhoFormEmendas(request.POST or None)
     template_name = "retrabalho/retrabalho_create_v2.html"
 
+    print("######################")
+    print(form.is_valid())
     if form.is_valid():
         b_1 = form.cleaned_data['bobine_1']
         b_2 = form.cleaned_data['bobine_2']
@@ -4714,6 +4715,11 @@ def load_artigos_cliente(request):
     produto = request.GET.get('produto')
     gsm = request.GET.get('gsm')
     cliente_obj = get_object_or_404(Cliente, pk=cliente)
+    # print("aaaaaaaaaaaaaaaaaaaaaaa")
+    # print(cliente)
+    # print(largura)
+    # print(produto)
+    # print(gsm)
     if cliente_obj.cod == 0:
         artigos_cliente = ArtigoCliente.objects.filter(
             cliente=cliente_obj).order_by('artigo')

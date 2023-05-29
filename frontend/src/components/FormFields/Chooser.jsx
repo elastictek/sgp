@@ -65,7 +65,7 @@ const Filters = ({ filters }) => {
 
 
 export default ({ parameters, closeSelf, ...props }) => {
-    const { payload, columns, filters, moreFilters = true, onSelect, toolbar = true, data = null, multipleSelection = false, ...rest } = parameters;
+    const { payload, columns, filters, moreFilters = true, onSelect, toolbar = true, data = null, multipleSelection = false, onFilterFinish, ...rest } = parameters;
     const inputParameters = useRef({});
     const [form] = Form.useForm();
 
@@ -107,7 +107,13 @@ export default ({ parameters, closeSelf, ...props }) => {
         submitting.end();
     }
 
-    const onFilterFinish = (type, values) => {
+    const _onFilterFinish = (type, values) => {
+        if (onFilterFinish){
+            onFilterFinish(type, values);
+            console.log("!ssssssssssssssssTOIMPLEMENTsssssssssssssssss!")
+        }else{
+            console.log("!ssssssssssssssssTOIMPLEMENTsssssssssssssssss!")
+        }
         // switch (type) {
         //     case "filter":
         //         //remove empty values
@@ -204,7 +210,7 @@ export default ({ parameters, closeSelf, ...props }) => {
             onRenderRow={onRowRender}
             moreFilters={moreFilters}
             toolbarFilters={{
-                form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,
+                form: formFilter, schema, onFinish: _onFilterFinish, onValuesChange: onFilterChange,
                 filters: <Filters filters={filters} />,
                 moreFilters: { schema: moreFiltersSchema }
             }}

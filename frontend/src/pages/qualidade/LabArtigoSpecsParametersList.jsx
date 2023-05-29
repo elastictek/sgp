@@ -251,7 +251,6 @@ export default ({ setFormTitle, ...props }) => {
         dataAPI.addFilters({ ...excludeObjectKeys(filterValues, ["*"]) }, true);
         dataAPI.setSort(dataAPI.getSort(), defaultSort);
         dataAPI.addParameters({ ...defaultParameters }, true);
-        dataAPI.setc
         submitting.end();
     }
 

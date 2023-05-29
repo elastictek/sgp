@@ -257,12 +257,13 @@ urlpatterns = [
 
     #PALETES
     re_path(r'^paletes/paletessql/$',paletes.PaletesSql),
-    re_path(r'^paletes/stockavailablelist/$',paletes.StockAvailableList),
-    re_path(r'^paletes/paletesstocklist/$',paletes.PaletesStockList),
+    #re_path(r'^paletes/stockavailablelist/$',paletes.StockAvailableList),
+    #re_path(r'^paletes/paletesstocklist/$',paletes.PaletesStockList),
     re_path(r'^paletes/allowedofchanges/$',paletes.AllowedOFChanges),
     
     #END PALETES
 
+    re_path(r'^paletes/sql/$',paletes.Sql),
     re_path(r'^permissions/sql/$',app_permissions.Sql),
     re_path(r'^bobines/sql/$',bobines.Sql),
     re_path(r'^bobinagens/sql/$',bobinagens.Sql),

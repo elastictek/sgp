@@ -177,6 +177,23 @@ def PaletesSql(request, format=None):
         return response
     return Response({})
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Sql(request, format=None):
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
+    
+
 def PaletesList(request, format=None):
     connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'])
@@ -375,6 +392,7 @@ def PaletesLookup(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+
 def PaletesHistoryList(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
@@ -466,70 +484,67 @@ def PaletizacaoLookup(request, format=None):
 
 
 
-def StockAvailableList(request, format=None):
-    connection = connections["default"].cursor()
-    f = Filters(request.data['filter'])
+# def StockAvailableList(request, format=None):
+#     connection = connections["default"].cursor()
+#     f = Filters(request.data['filter'])
 
-    f.setParameters({
-    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
-    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
-    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
-    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
-    #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-    #    "fof": {"value": lambda v: v.get('fof')},
-    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
-    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
-    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
-    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
-    }, True)
-    f.where(False,"and")
-    f.auto()
-    f.value()
+#     f.setParameters({
+#     #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+#     #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+#     #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+#     #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+#     #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
+#     #    "fof": {"value": lambda v: v.get('fof')},
+#     #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+#     #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+#     #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+#     #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+#     }, True)
+#     f.where(False,"and")
+#     f.auto()
+#     f.value()
 
-    f2 = filterMulti(request.data['filter'], {
-        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
-    }, False, "and" if f.hasFilters else "and" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
+#     f2 = filterMulti(request.data['filter'], {
+#         # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+#     }, False, "and" if f.hasFilters else "and" ,False)
+#     parameters = {**f.parameters, **f2['parameters']}
 
-    dql = db.dql(request.data, False)
-    cols = f"""*"""
-    dql.columns=encloseColumn(cols,False)
-    sql = lambda p, c, s: (
-        f"""
-            select
-                {c(f'{dql.columns}')}
-            from produto_stock_disponivel
-        """
-    )
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
-        dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
-    try:
-        response = db.executeList(sql, connection, parameters,[],None,None)
-    except Exception as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response(response)
+#     dql = db.dql(request.data, False)
+#     cols = f"""*"""
+#     dql.columns=encloseColumn(cols,False)
+#     sql = lambda p, c, s: (
+#         f"""
+#             select
+#                 {c(f'{dql.columns}')}
+#             from produto_stock_disponivel
+#         """
+#     )
+#     if ("export" in request.data["parameters"]):
+#         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+#         dql.paging=""
+#         return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+#     try:
+#         response = db.executeList(sql, connection, parameters,[],None,None)
+#     except Exception as error:
+#         print(str(error))
+#         return Response({"status": "error", "title": str(error)})
+#     return Response(response)
 
-def PaletesStockList(request, format=None):
-    connection = connections["default"].cursor()
+def PaletesStockAvailableList(request, format=None):
+    connection = connections[connGatewayName].cursor()
     f = Filters(request.data['filter'] if "filter" in request.data else {})
-
     f.setParameters({
-    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
-    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
-    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
-    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
-    #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-    #    "fof": {"value": lambda v: v.get('fof')},
-    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
-    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
-    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
-    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+         "nome": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'sgppl.{k}'},
+         "carga_id": {"value": lambda v: "isnull", "field": lambda k, v: f'sgppl.{k}'},
+         "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('ordem_id'),v.get('ordem_id'),"!=="), "field": lambda k, v: f'sgppl.{k}'},
+         "disabled": {"value": lambda v: Filters.getNumeric(0), "field": lambda k, v: f'sgppl.{k}'},
+         "cliente_cod": {"value": lambda v: Filters.getNumeric(v.get('cliente_cod')), "field": lambda k, v: f'sgppl.{k}'},
+         "SDHNUM_0": {"value": lambda v: "isnull", "field": lambda k, v: f'mv."{k}"'},
+         "artigo_cod": {"value": lambda v: f"=={v.get('artigo_cod')}", "field": lambda k, v: f"j->>'cod'"},
     }, True)
-    f.where(False,"and")
+    f.where()
     f.auto()
+    f.add(f'sgppl.nbobines_real = sgppl.num_bobines', True)
     f.value()
 
     f2 = filterMulti(request.data['filter'] if "filter" in request.data else {}, {
@@ -537,28 +552,37 @@ def PaletesStockList(request, format=None):
     }, False, "and" if f.hasFilters else "and" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
-    dql = db.dql(request.data, False)
-    cols = f"""t.nbobines,pl.*"""
+    dql = dbgw.dql(request.data, False)
+    cols = f"""
+            distinct on (sgppl.id) id, mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
+            mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
+            sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
+            sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
+            sgppl.cliente_cod,
+            sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
+            sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
+            sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
+            sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,
+            mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
+    """
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
-            select {c(f'{dql.columns}')} from (
-            select distinct pl.id,count(*) over (partition by pb.palete_id) nbobines
-            from producao_palete pl
-            join producao_bobine pb on pb.palete_id=pl.id and pb.recycle=0 #and #pb.estado in ('G','DM')
-            where pl.carga_id is null #pl.stock=1
-            ) t 
-            join producao_palete pl on pl.id=t.id
-            where t.nbobines>0
+            select {c(f'{dql.columns}')}
+            FROM mv_paletes sgppl
+            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            cross join lateral json_array_elements ( sgppl.artigo ) as j
+            {f.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None)
+        response = dbgw.executeList(sql, connection, parameters,[],None,None)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -673,3 +697,34 @@ def UpdateDestinos(request, format=None):
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Error as error:
         return Response({"status": "error", "title": str(error)})
+
+
+def AddPaletesStock(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = [data.get("ordem_id"),data.get("rows"),request.user.id]
+                print(args)
+                #cursor.callproc('add_paletes_stock',args)
+        return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+def DeletePaletesStock(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = [data.get("ordem_id"),data.get("rows"),request.user.id]
+                print(args)
+                #cursor.callproc('delete_paletes_stock',args)
+        return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
+        

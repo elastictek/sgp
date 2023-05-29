@@ -537,10 +537,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     //     return ret;
     //     //return ok;
     // }
-    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false, ...rest } = {}) => {
+    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
-        const payload = getPayload(fromSate);
+        const payload = getPayload(fromState);
         payload.tstamp = Date.now();
         if (rest?.update===true){
             payload.update = true;

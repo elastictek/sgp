@@ -215,7 +215,7 @@ class Emendas(models.Model):
         unique_together = (('designacao', 'cliente_cod', 'artigo_cod'))
 
 class Paletizacao(models.Model):
-    designacao = models.CharField(verbose_name="Designação", max_length=20,null=True)
+    designacao = models.CharField(verbose_name="Designação", max_length=30,null=True)
     cliente_cod = models.PositiveIntegerField(verbose_name="SAGE BPCORD_0 Código de cliente", unique=False, null=True)
     cliente_nome = models.CharField(max_length=80,verbose_name="Nome Cliente", null=True) #ADDED - NOME CLIENTE SAGE NOME
     artigo_cod = models.CharField(verbose_name="SAGE ITMREF_0 Código Produto Acabado", max_length=25)

@@ -629,6 +629,7 @@ class BobineEditForm(ModelForm):
                 ('NUNEX', 'NUNEX'),
                 ('Obviperiplo, Lda', 'Obviperiplo, Lda'),
                 ('ONTEX TUKETIM URUNLERI SAN VE TIC AS', 'ONTEX TUKETIM URUNLERI SAN VE TIC AS'),
+                ('Ontex Pakistan (Private) Limited', 'Ontex Pakistan (Private) Limited'),
                 ('PAKTEN SAGLIK URUNLERI', 'PAKTEN SAGLIK URUNLERI'),
                 ('PANAI S.A.L.', 'PANAI S.A.L.'),
                 ('PARMON', 'PARMON'),

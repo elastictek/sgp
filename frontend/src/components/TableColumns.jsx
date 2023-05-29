@@ -1,14 +1,72 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef, useLayoutEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone } from '@ant-design/icons';
 import { Tag, Button } from "antd";
-import { FORMULACAO_CUBAS, DATETIME_FORMAT } from "config";
+import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
-import { props } from 'ramda';
-import { ImArrowDown,ImArrowUp } from 'react-icons/im';
+import { ImArrowDown, ImArrowUp } from 'react-icons/im';
+import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
 
 
+
+
+export const Largura = ({ id, artigos, nome, onClick, cellProps }) => {
+    return (<>
+        {(!cellProps?.inEdit && Array.isArray(artigos)) && [...new Set(artigos.map(item => item.lar))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("lar", id, nome, { lar: v })} key={`${id}_${v}`}>{v}</Tag>)}
+    </>);
+}
+
+export const Core = ({ id, artigos, nome, onClick, cellProps }) => {
+    return (<>
+        {(!cellProps?.inEdit && Array.isArray(artigos)) && [...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
+    </>);
+}
+
+const StyledBobine = styled.div`
+    border:dashed 1px #000;
+    background-color:${props => props.color};
+    color:${props => props.fontColor};
+    border-radius:3px;
+    margin-right:1px;
+    text-align:center;
+    width:25px;
+    min-width:25px;
+    font-size:8px;
+    cursor:pointer;
+    &:hover {
+        border-color: #d9d9d9;
+    }
+    .lar{
+        font-size:9px;
+    }
+`;
+
+export const Bobines = ({ id, b, bm, setShow, onClick, align = "start", cellProps, style = {} }) => {
+    const handleClick = () => {
+        //setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
+    };
+
+    return (<>
+        {!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", lineHeight: "12px", justifyContent: align }}>
+            {b.map((v, i) => {
+                return (<StyledBobine onClick={() => onClick(v)} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
+            })}
+        </div>}
+    </>
+    );
+};
+
+export const EstadoBobines = ({ id, artigos, nome, onClick, align, cellProps, style = {} }) => {
+    return (<>
+        {(!cellProps?.inEdit && Array.isArray(artigos)) && <Bobines align={align} id={id} onClick={(v) => onClick && onClick("estado", id, nome, v)} b={uniqWith(allPass(map(eqProps)(['lar', 'estado'])))(artigos).map(v => ({ estado: v.estado, lar: v.lar }))} />}
+    </>);
+}
+export const EstadoBobine = ({ id, nome, onClick, align, largura, estado, cellProps, style = {} }) => {
+    return (<>
+        {(!cellProps?.inEdit) && <Bobines align={align} id={id} onClick={(v) => onClick && onClick("estado", id, nome, v)} b={[{ estado: estado, lar: largura }]} />}
+    </>);
+}
 
 export const QueueNwColumn = ({ value, status, cellProps, style = {} }) => {
 
@@ -31,6 +89,11 @@ export const PosColumn = ({ value, cellProps }) => {
         {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
     </div>}</>);
+}
+
+
+export const Delete = ({ value, rowIndex, onClick, style, cellProps }) => {
+    return (<>{!cellProps?.inEdit && <Button onClick={onClick} icon={<DeleteTwoTone twoToneColor="#f5222d" />} />}</>);
 }
 
 export const Link = ({ value, onClick, style, cellProps, ...props }) => {
@@ -102,11 +165,11 @@ const StyledCuba = styled.div`
     }
         `;
 export const getValue = (v) => (v) ? FORMULACAO_CUBAS.find(x => x.key == v)?.value : null;
-export const Cuba = ({ value,style }) => {
+export const Cuba = ({ value, style }) => {
     const val = getValue(value);
     return (<>
         {value && <>
-            {(val !== null && val !== undefined) ? <StyledCuba style={{...style}} color={colors[value].color} fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" fontColor="#fff">{value}</StyledCuba>}
+            {(val !== null && val !== undefined) ? <StyledCuba style={{ ...style }} color={colors[value].color} fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" fontColor="#fff">{value}</StyledCuba>}
         </>}
     </>);
 }

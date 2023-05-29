@@ -52,6 +52,7 @@ import Palete from '../paletes/Palete';
 import PaletesList from '../paletes/PaletesList';
 import BobinesList from '../bobines/BobinesList';
 import BobinagensList from '../bobinagens/BobinagensList';
+const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
@@ -779,19 +780,23 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
 
         const content = () => {
             switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal lazy={modalParameters?.lazy} title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
     }, [modalParameters]);
-    const onClickPalete = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
-        showModal();
+    const onClickBobinagem = (row) => {
+        if (row?.valid==0){
+            console.log("open validated form");
+        }else{
+            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy:true, type: "drawer", push: false, width: "90%", title:"Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            showModal();
+        }
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
@@ -806,7 +811,7 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
     const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
         ...(true) ? [{ name: 'inico', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.inico }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.fim }] : [],
         ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.duracao }] : [],
@@ -952,7 +957,7 @@ const BobinesDefeitos = ({ data, onDefeitosClick }) => {
 
     return (<Container fluid style={{ padding: "0px", margin: "0px", fontSize: "10px" }}>
         <Row gutterWidth={2}>
-            {BOBINE_DEFEITOS.filter(v=>v.value!=="troca_nw").map((item, index) => {
+            {BOBINE_DEFEITOS.filter(v => v.value !== "troca_nw").map((item, index) => {
                 return (
                     <React.Fragment key={`def-${summedData?.id}-${index}`}>
                         {summedData?.[item.value] > 0 && <><Col xs={5} style={{ textAlign: "right", fontWeight: summedData?.[item.value] > 0 ? 700 : 400 }}>{item.label}</Col>
@@ -1229,7 +1234,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         showModal();
     }
     const onPaletesStockClick = (data) => {
-        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy:true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock</div>, parameters: { filter: { fordem_id: `==${data?.id}` } } });
+        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { status: data?.status, id: data.id, cliente_cod: data?.cliente_cod,artigo_cod:data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
         showModal();
     }
 
@@ -1346,7 +1351,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                             const items = dataAPI.getData().rows.filter(x => x.of_cod == v);
                             return (
                                 <Col key={`off-${i}`} lg={12} xl={6}>
-                                    <Row nogutter style={{ border: "solid 1px #595959", margin: "5px 5px 0 0" }}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", margin: "5px 2px 0 2px" }}>
 
 
                                         <Col style={{}}>
@@ -1356,10 +1361,10 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                                 <Space>
                                                     <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<PaperClipOutlined />} title="Anexos" />
                                                     <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost title="Paletização">Paletização</Button>
-                                                    <Button type="primary" size="small" onClick={()=>onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
+                                                    <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
                                                 </Space>
                                             </div>
-                                            <div style={{ height: "300px" }}>
+                                            <div style={{ height: ofs.length <=2 ? "400px" : "300px" }}>
                                                 <YScroll>
                                                     <div style={{}}>
 

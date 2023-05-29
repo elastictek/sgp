@@ -175,6 +175,8 @@ def export(sql, db_parameters, parameters,conn_name):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def Sql(request, format=None):
+    print("sqlllll")
+    print(request.data)
     try:
         if "parameters" in request.data and "method" in request.data["parameters"]:
             method=request.data["parameters"]["method"]

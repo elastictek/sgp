@@ -671,21 +671,15 @@ def BobinesList(request, format=None):
 
 
 def BobinesLookup(request, format=None):
-    connection = connections[connGatewayName].cursor()
+    type_list = request.data.get("filter").get("type") if request.data.get("filter").get("type") is not None else 'A'
+    connection = connections[connGatewayName].cursor() if type_list=='C' else connections["default"].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({
-    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
-    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
-    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
-    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
-    #    "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'{k}'},
-    "id": {"value": lambda v: v.get('bobine_id'), "field": lambda k, v: f'mb.{k}'},
-    "comp_actual": {"value": lambda v: '>0', "field": lambda k, v: f'mb.{k}'},
-    "recycle": {"value": lambda v: '==0', "field": lambda k, v: f'mb.{k}'},
-    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
-    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
-    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
-    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+        "id": {"value": lambda v: v.get('bobine_id'), "field": lambda k, v: f'mb.{k}'},
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get("fbobinagemid")), "field": lambda k, v: f'mb.{k}'},
+        "comp_actual": {"value": lambda v: '>0', "field": lambda k, v: f'mb.{k}'},
+        "recycle": {"value": lambda v: '==0', "field": lambda k, v: f'mb.{k}'},
+        **({} if type_list =='C' else {}),
     }, True)
     f.where()
     f.auto()
@@ -696,44 +690,101 @@ def BobinesLookup(request, format=None):
     }, False, "and" if f.hasFilters else "and" ,False)
     parameters = {**f.parameters, **f2['parameters']}
 
-    dql = dbgw.dql(request.data, False)
-    cols = f"""
-    mb.*,(mb.comp-mb.comp_actual) metros_cons,
-        mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0"
-        ,mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
-        mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
-        sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
-        sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
-        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
-        sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
-        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
-        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
-        mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp,mva.cod artigo_cod
-    """
-    dql.columns=encloseColumn(cols,False)
-    sql = lambda: (
-        f"""  
-            select
-                {f'{dql.columns}'}
-            from mv_bobines mb
-            LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
-            LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
-            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
-            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
-            {f.text} {f2["text"]}
-            {dql.sort} {dql.limit}
+
+    if type_list=='C':
+        dql = dbgw.dql(request.data, False)
+        cols = f"""
+        mb.*,(mb.comp-mb.comp_actual) metros_cons,
+            mv.STOCK_LOC,mv.STOCK_LOT,mv.STOCK_ITMREF,mv.STOCK_QTYPCU,mv."SDHNUM_0",mv."BPCNAM_0",mv."ITMREF_0"
+            ,mv."ITMDES1_0",mv."EECICT_0",mv."IPTDAT_0",mv."VCRNUM_0",
+            mv."VCRNUMORI_0",mv.mes,mv.ano,mv."BPRNUM_0",mv."VCRLINORI_0",mv."VCRSEQORI_0",
+            sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total,
+            sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
+            sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original,
+            sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
+            sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid palete_ofid, sgppl.disabled,
+            sgppl.cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp,mva.cod artigo_cod
         """
-    )
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
-        dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
-    try:
-        response = dbgw.executeSimpleList(sql, connection, parameters)
-    except Exception as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response(response)
+        dql.columns=encloseColumn(cols,False)
+        sql = lambda: (
+            f"""  
+                select
+                    {f'{dql.columns}'}
+                from mv_bobines mb
+                LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
+                LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+                {f.text} {f2["text"]}
+                {dql.sort} {dql.limit}
+            """
+        )
+        if ("export" in request.data["parameters"]):
+            dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+            dql.paging=""
+            return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+        try:
+            response = dbgw.executeSimpleList(sql, connection, parameters)
+        except Exception as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
+    else:
+        parameters = {**f.parameters,**f2['parameters']}
+        dql = db.dql(request.data, False)
+        cols = f"""
+            mb.*,(mb.comp-mb.comp_actual) metros_cons,
+            sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total
+            ,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id
+            ,sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original
+            ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
+            ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
+            po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
+            sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            mva.cod artigo_cod
+        """
+        dql.columns=encloseColumn(cols,False)
+        sql = lambda: (
+            f"""  
+                select {f'{dql.columns}'}
+                FROM producao_bobine mb
+                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+                {f.text} {f2["text"]}
+                {dql.sort} {dql.limit}
+            """
+        )
+        if ("export" in request.data["parameters"]):
+            dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+            dql.paging=""
+            return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        try:
+            print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
+            print(f"""  
+                select {f'{dql.columns}'}
+                FROM producao_bobine mb
+                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+                {f.text} {f2["text"]}
+                {dql.sort} {dql.limit}
+            """)
+            print(parameters)
+            response = db.executeSimpleList(sql, connection, parameters)
+        except Exception as error:
+            print(str(error))
+            return Response({"status": "error", "title": str(error)})
+        return Response(response)
 
 
 def TrocaEtiqueta(request, format=None):  

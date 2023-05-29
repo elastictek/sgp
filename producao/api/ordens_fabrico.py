@@ -630,34 +630,35 @@ def SetOrdemFabricoFormulacao(request, format=None):
         return Response({"status": "error", "title": str(error)})
 
 def GetPaletesStock(request, format=None):
-    connection = connections["default"].cursor()
+    connection = connections[connGatewayName].cursor()
     filter = request.data['filter']
     f = Filters(filter)
     f.setParameters({
-        "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('fordem_id')), "field": lambda k, v: f'pl.{k}'},
-    }, False)
-    f.where()
-    if ("audit_cs_id" in filter):
-        f.add(f'id = :audit_cs_id',True)
-    elif ("cs_id" in filter):
-        f.add(f'id = :cs_id',True)
-    elif ("formulacao_id" in filter):
-        f.add(f'pfo.id = :formulacao_id',True)
+        "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('fordem_id')), "field": lambda k, v: f'sgppl.{k}'},
+        **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
+        "nome": {"value": lambda v: Filters.getUpper(v.get('flote')), "field": lambda k, v: f'sgppl.{k}'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
     f.value()
 
-    dql = db.dql(request.data, False)
-    cols = f"""pl.*"""
-    sql = lambda: (f"""        
-        SELECT 
+    dql = dbgw.dql(request.data, False)
+    cols = f"""sgppl.id,sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
+        sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
+        sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
+        sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
+        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
+        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs"""
+    sql = lambda: (f"""
+        select
         {cols}
-        FROM planeamento_ordemproducao op
-        left join producao_palete pl on pl.ordem_id=op.id and pl.ordem_id_original <> pl.ordem_id
-        {t.text}
+        FROM mv_paletes sgppl
+        LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+        WHERE sgppl.ordem_id_original <> sgppl.ordem_id {f.text}
         {dql.sort}
     """)
-
     try:
-        response = db.executeSimpleList(sql, connection, f.parameters)
+        response = dbgw.executeSimpleList(sql, connection, f.parameters)
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

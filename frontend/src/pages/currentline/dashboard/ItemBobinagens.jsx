@@ -10,7 +10,7 @@ import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } fro
 import { useModal } from "react-modal-hook";
 import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, noValue } from "utils";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import YScroll from "components/YScroll";
 import { Button, Select, Typography, Card, Collapse, Space, Form, Tag, Drawer } from "antd";
 const { Option } = Select;
