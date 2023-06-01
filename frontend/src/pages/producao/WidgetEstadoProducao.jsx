@@ -33,7 +33,7 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import WidgetTitle, { WidgetSimpleTitle } from 'components/WidgetTitle';
 import { InputNumberEditor, MateriasPrimasTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -53,6 +53,7 @@ import PaletesList from '../paletes/PaletesList';
 import BobinesList from '../bobines/BobinesList';
 import BobinagensList from '../bobinagens/BobinagensList';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
+const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
@@ -65,7 +66,7 @@ const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw'
 const TitleForm = ({ data, onChange, level, auth, form }) => {
     return (<ToolbarTitle id={auth?.user} description={title} title={<>
         <Col>
-            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+            <Row style={{ marginBottom: "3px" }} wrap="nowrap" nogutter>
                 <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
             </Row>
@@ -82,7 +83,7 @@ const StyledCollapse = styled(Collapse)`
         background-color:#f5f5f5;
         border-radius: 2px!important;
         padding:1px 1px!important;
-        margin-top:5px;
+        margin-top:3px;
     }
     .ant-collapse-content > .ant-collapse-content-box{
         padding:2px 2px!important;
@@ -119,6 +120,23 @@ const useStyles = createUseStyles({
     }
 });
 
+
+const OfArtigoColumn = ({ data, cellProps }) => {
+    return (
+        <div>
+            <div style={{ display: "flex", fontSize: "11px" }}>
+                <div style={{ marginRight: "10px", fontWeight: 700 }}>{data?.of_cod}</div>
+                <div style={{}}>{data?.artigo_cod}</div>
+            </div>
+            <div style={{ display: "flex", fontSize: "10px" }}>
+                <div>{data?.artigo_des}</div>
+            </div>
+            <div style={{ display: "flex", fontSize: "10px" }}>
+                <div>{data?.cliente_nome}</div>
+            </div>
+        </div>
+    );
+}
 
 const MiniGaugeVelocidade = ({ data, title, min = 0, max = 100, style, ...props }) => {
 
@@ -221,11 +239,11 @@ const PaletePositionColumn = ({ data, cellProps }) => {
 
     const btn = (pos, max, bobines) => {
         if ((pos != 1 && pos != max) || max == 1) {
-            return <Button style={{ maxHeight: "25px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>{bobines}</Button>;
+            return <Button style={{ maxHeight: "23px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>{bobines}</Button>;
         } else if (pos == max) {
-            return <Button style={{ maxHeight: "25px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }} icon={<CaretUpOutlined />} >{bobines}</Button>;
+            return <Button style={{ maxHeight: "23px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }} icon={<CaretUpOutlined />} >{bobines}</Button>;
         } else if (pos == 1) {
-            return <Button style={{ maxHeight: "25px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }} icon={<CaretDownOutlined />}>{bobines}</Button>;
+            return <Button style={{ maxHeight: "23px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }} icon={<CaretDownOutlined />}>{bobines}</Button>;
         }
     }
 
@@ -238,23 +256,6 @@ const PaletePositionColumn = ({ data, cellProps }) => {
     )
 }
 
-
-const ArtigoColumn = ({ data, cellProps }) => {
-    return (
-        <div>
-            <div style={{ display: "flex", fontSize: "11px" }}>
-                <div style={{ marginRight: "10px", fontWeight: 700 }}>{data?.of_cod}</div>
-                <div style={{}}>{data?.artigo_cod}</div>
-            </div>
-            <div style={{ display: "flex", fontSize: "10px" }}>
-                <div>{data?.artigo_des}</div>
-            </div>
-            <div style={{ display: "flex", fontSize: "10px" }}>
-                <div>{data?.cliente_nome}</div>
-            </div>
-        </div>
-    );
-}
 
 const ListPaletesOf = ({ hash_estadoproducao, mini = false, data, ...props }) => {
     const media = useContext(MediaContext);
@@ -269,7 +270,7 @@ const ListPaletesOf = ({ hash_estadoproducao, mini = false, data, ...props }) =>
     const defaultFilters = {};
     const defaultParameters = {};
     const defaultSort = [];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
+    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "palete_id", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
     const submitting = useSubmitting(false);
 
     const [lastTab, setLastTab] = useState('1');
@@ -304,7 +305,7 @@ const ListPaletesOf = ({ hash_estadoproducao, mini = false, data, ...props }) =>
     const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Palete', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Palete', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
         ...(true) ? [{ name: 'ofid', header: 'Ordem', userSelect: true, defaultLocked: false, defaultWidth: 115, headerAlign: "center", render: ({ cellProps, data }) => data?.ofid }] : [],
         ...(true) ? [{ name: 'current_stock', header: 'Stock', userSelect: true, defaultLocked: false, defaultWidth: 53, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.current_stock} /> }] : [],
         ...(true) ? [{ name: 'comp_real', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_real, 0)}</RightAlign> }] : [],
@@ -399,8 +400,8 @@ const ListPaletesOf = ({ hash_estadoproducao, mini = false, data, ...props }) =>
             //rowHeight={null}
             headerHeight={25}
             cellNavigation={false}
-            enableSelection={false}
-            showActiveRowIndicator={false}
+            //enableSelection={false}
+            //showActiveRowIndicator={true}
             //loading={submitting.state}
             showLoading={false}
             idProperty={dataAPI.getPrimaryKey()}
@@ -472,8 +473,9 @@ const ListNWsQueue = ({ hash_estadoproducao, data, ...props }) => {
 
     const columns = [
         ...(true) ? [{ name: 'type', header: '', userSelect: true, defaultLocked: false, defaultWidth: 50, headerAlign: "center", render: ({ cellProps, data }) => <PosColumn value={data.type} cellProps={cellProps} /> }] : [],
-        ...(true) ? [{ name: 'artigo_cod', header: 'Cód', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_cod }] : [],
-        ...(true) ? [{ name: 'artigo_des', header: 'Artigo', userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_des.replace("Nonwoven ", "") }] : [],
+        ...(true) ? [{ name: 'n_lote', header: 'Nonwoven', userSelect: true, defaultLocked: false, defaultWidth: 150, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <NwColumn data={data} cellProps={cellProps} /> }] : [],
+        //...(true) ? [{ name: 'artigo_cod', header: 'Cód', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_cod }] : [],
+        //...(true) ? [{ name: 'artigo_des', header: 'Artigo', userSelect: true, defaultLocked: false, defaultWidth: 140, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_des.replace("Nonwoven ", "") }] : [],
         ...(true) ? [{ name: 'queue', header: 'Fila', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <QueueNwColumn style={{ fontSize: "9px" }} value={data.queue} status={data.status} /> }] : [],
         ...(true) ? [{ name: 't_stamp', header: 'Data', userSelect: true, defaultLocked: false, defaultWidth: 110, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.t_stamp} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 55, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
@@ -554,12 +556,12 @@ const ListNWsQueue = ({ hash_estadoproducao, data, ...props }) => {
     return (<>
         <Table
             {...true && { style: { fontSize: "10px", minHeight: "150px" } }}
-            {...true && { rowHeight: 25 }}
+            {...true && { rowHeight: 35 }}
             //rowHeight={null}
             headerHeight={25}
             cellNavigation={false}
-            enableSelection={false}
-            showActiveRowIndicator={false}
+            //enableSelection={false}
+            //showActiveRowIndicator={false}
             //loading={submitting.state}
             showLoading={false}
             idProperty={dataAPI.getPrimaryKey()}
@@ -632,15 +634,12 @@ const ListGranuladoInline = ({ hash_estadoproducao, data, ...props }) => {
     const columns = [
         ...(true) ? [{
             name: 'cuba', header: 'Pos.', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 70, render: (p) => <div style={{ display: "flex", alignItems: "center", flexDirection: "column" }}>
-                <Cuba style={{ fontSize: "10px", height: "15px", lineHeight: 1.2 }} value={p.data?.cuba} />
+                <Cuba style={{ fontSize: "10px", height: "13px", lineHeight: 1.2 }} value={p.data?.cuba} />
                 {p.data?.dosers}
             </div>
         }] : [],
         ...(true) ? [{
-            name: 'artigo_cod', header: 'Artigo', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 170, render: (p) => <div style={{ display: "flex", alignItems: "start", flexDirection: "column" }}>
-                <div style={{ fontWeight: 700 }}>{p.data?.artigo_cod}</div>
-                <div style={{}}>{p.data?.artigo_des}</div>
-            </div>
+            name: 'artigo_cod', header: 'Artigo', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 170, flex: 1, render: ({ data, cellProps }) => <ArtigoColumn data={data} cellProps={cellProps} />
         }] : [],
         ...(true) ? [{
             name: 'n_lote', header: 'Lote', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 140, render: (p) =>
@@ -727,13 +726,13 @@ const ListGranuladoInline = ({ hash_estadoproducao, data, ...props }) => {
 
     return (<>
         <Table
-            {...true && { style: { fontSize: "10px", minHeight: "315px" } }}
+            {...true && { style: { fontSize: "10px", minHeight: "313px" } }}
             {...true && { rowHeight: 35 }}
             //rowHeight={null}
             headerHeight={25}
             cellNavigation={false}
-            enableSelection={false}
-            showActiveRowIndicator={false}
+            //enableSelection={false}
+            //showActiveRowIndicator={false}
             //loading={submitting.state}
             showLoading={false}
             idProperty={dataAPI.getPrimaryKey()}
@@ -770,10 +769,11 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "BobinagensList" };
     const defaultSort = [{ column: "id", direction: "DESC" }];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false, limit: 5 }, filter: defaultFilters, sort: [...defaultSort] } });
+    const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false, limit: 10 }, filter: defaultFilters, sort: [...defaultSort] } });
     const submitting = useSubmitting(false);
 
     const [lastTab, setLastTab] = useState('1');
+    const [lastBobinagemTab, setLastBobinagemTab] = useState('1');
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -781,6 +781,7 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "bobinagem": return <Bobinagem /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
@@ -791,12 +792,16 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
         );
     }, [modalParameters]);
     const onClickBobinagem = (row) => {
-        if (row?.valid==0){
-            console.log("open validated form");
-        }else{
-            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy:true, type: "drawer", push: false, width: "90%", title:"Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+        if (row?.valid == 0) {
+            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             showModal();
+        } else {
+            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
         }
+    }
+    const onClickTest = (row) => {
+        setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+        showModal();
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
@@ -811,13 +816,13 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
     const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
         ...(true) ? [{ name: 'inico', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.inico }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.fim }] : [],
         ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.duracao }] : [],
         ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
         ...(true) ? [{ name: 'area', header: 'Área.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m2">{getFloat(data?.area, 2)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'diam', header: 'Diam.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 2)}</RightAlign> }] : []
+        ...(true) ? [{ name: 'diam', header: 'Diam.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <div onClick={() => onClickTest(data)}><RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 2)}</RightAlign></div> }] : []
     ];
 
 
@@ -862,8 +867,8 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
             loadOnInit={false}
             headerHeight={25}
             cellNavigation={false}
-            enableSelection={false}
-            showActiveRowIndicator={false}
+            //enableSelection={false}
+            //showActiveRowIndicator={false}
             // loading={submitting.state}
             showLoading={false}
             idProperty={dataAPI.getPrimaryKey()}
@@ -1125,7 +1130,7 @@ const TotaisEstadoBobines = ({ data, onTotaisEstadoClick }) => {
 
     return (<div>
         {data?.bobines && <>
-            <div style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+            <div style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                 <div style={{}}>Bobines [Estados e Defeitos]</div>
             </div>
             <ReactECharts option={options()} onTooltipClick={onTooltipClick} events={[
@@ -1154,14 +1159,14 @@ const BobinesTotais = ({ data }) => {
             <div style={{ border: "solid 1px #000", fontSize: "10px" }}>
                 <div style={{ display: "flex", padding: "2px", justifyContent: "space-between", background: "#f0f0f0" }}><div style={{ fontWeight: 700 }}>Total de bobines retrabalhadas</div><div style={{ fontWeight: 700 }}>{getFloat(data.bobines_retrabalhadas[0]?.total_por_of_m2, 1).toLocaleString('pt-PT')}m&#178;</div><div style={{ fontWeight: 700 }}>{getFloat(data.bobines[0]?.total_produzidas_of) == 0 ? 0 : ((getFloat(data.bobines_retrabalhadas[0]?.total_por_of) * 100) / getFloat(data.bobines[0]?.total_produzidas_of)).toFixed(1)}%</div></div>
             </div>
-            <div style={{ border: "solid 1px #000", fontSize: "10px", marginTop: "5px" }}>
+            <div style={{ border: "solid 1px #000", fontSize: "10px", marginTop: "3px" }}>
                 <div style={{ display: "flex", padding: "2px", justifyContent: "space-between", background: "#f0f0f0" }}><div style={{ fontWeight: 700 }}>Total produzido para a encomenda</div><div>{getFloat(data?.qty_encomenda, 1).toLocaleString('pt-PT')}m&#178;</div></div>
                 <div style={{ display: "flex", flexDirection: "row", textAlign: "right", fontSize: "10px", padding: "2px" }}>
                     <div style={{ flex: 1, fontWeight: 700 }}>{getFloat(data?.paletes_m2_produzidas, 1).toLocaleString('pt-PT')}m&#178;</div>
                     <div style={{ flex: 1, fontWeight: 700 }}>{getFloat(data?.qty_encomenda, 1)} {((getFloat(data?.paletes_m2_produzidas, 1) / getFloat(data?.qty_encomenda, 1)) * 100).toFixed(2)}%</div>
                 </div>
             </div>
-            <div style={{ border: "solid 1px #000", fontSize: "10px", marginTop: "5px" }}>
+            <div style={{ border: "solid 1px #000", fontSize: "10px", marginTop: "3px" }}>
                 <div style={{ display: "flex", padding: "2px", justifyContent: "space-between", background: "#f0f0f0" }}><div style={{ fontWeight: 700 }}>Total produzido</div></div>
                 <div style={{ display: "flex", flexDirection: "row", textAlign: "right", fontSize: "10px", padding: "2px" }}>
                     <div style={{ flex: 1, fontWeight: 700 }}>{getFloat(data?.paletes_m2_produzidas_total, 1).toLocaleString('pt-PT')}m&#178;</div>
@@ -1234,7 +1239,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         showModal();
     }
     const onPaletesStockClick = (data) => {
-        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { status: data?.status, id: data.id, cliente_cod: data?.cliente_cod,artigo_cod:data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
+        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { status: data?.status, id: data.id, cliente_cod: data?.cliente_cod, artigo_cod: data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
         showModal();
     }
 
@@ -1345,17 +1350,17 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     return (<>
         <Container fluid style={{ padding: "0px" }}>
             <Row nogutter>
-                <Col width={720}>
+                <Col width={ofs.length < 2 ? 360 : 720}>
                     <Row nogutter style={{}}>
                         {dataAPI.hasData() && ofs.map((v, i) => {
                             const items = dataAPI.getData().rows.filter(x => x.of_cod == v);
                             return (
-                                <Col key={`off-${i}`} lg={12} xl={6}>
-                                    <Row nogutter style={{ border: "solid 1px #595959", margin: "5px 2px 0 2px" }}>
+                                <Col key={`off-${i}`} lg={12} xl={ofs.length < 2 ? 12 : 6}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 3px 0 3px" }}>
 
 
                                         <Col style={{}}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}><ArtigoColumn data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes(v)} /></div>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "3px" }}><OfArtigoColumn data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes(v)} /></div>
                                             {/**TOOLBOX */}
                                             <div style={{ display: "flex", justifyContent: "end", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px" }}>
                                                 <Space>
@@ -1364,12 +1369,12 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                                     <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
                                                 </Space>
                                             </div>
-                                            <div style={{ height: ofs.length <=2 ? "400px" : "300px" }}>
+                                            <div style={{ height: ofs.length <= 2 ? "400px" : "300px" }}>
                                                 <YScroll>
                                                     <div style={{}}>
 
                                                         <Container fluid style={{ padding: "0px" }}>
-                                                            <Row nogutter style={{ backgroundColor: "#fafafa", textAlign: "center", display: "flex", alignItems: "center", marginTop: "5px" }}>
+                                                            <Row nogutter style={{ backgroundColor: "#fafafa", textAlign: "center", display: "flex", alignItems: "center", marginTop: "3px" }}>
                                                                 <Col width={120} style={{ fontSize: "10px" }}>Bobines por palete</Col>
                                                                 <Col width={35}>Linha</Col>
                                                                 <Col width={35}>Stock</Col>
@@ -1391,26 +1396,26 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
                                                     </div>
                                                     <div style={{}}>
-                                                        <StyledCollapse expandIconPosition="end" bordered={false} activeKey={activeKeys} style={{ padding: "5px" }} onChange={onActiveKeyChange}>
+                                                        <StyledCollapse expandIconPosition="end" bordered={false} activeKey={activeKeys} style={{ padding: "3px" }} onChange={onActiveKeyChange}>
                                                             <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Bobines</b></div></div>} key="1">
                                                                 <Container fluid style={{ padding: "0px" }}>
 
                                                                     <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><MiniBarBobines onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "25px" }} /></Col>
+                                                                        <Col><MiniBarBobines onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
                                                                     </Row>
                                                                 </Container>
                                                             </Panel>
                                                             {items[0]?.bobines_nopalete.length > 0 && <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", fontWeight: 700/* , justifyContent: "right" */, width: "100%"/* , fontStyle: "italic" */ }}><div>Bobines sem palete atribuída</div></div>} key="2">
                                                                 <Container fluid style={{ padding: "0px" }}>
                                                                     <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><MiniBarBobinesNoPalete onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "25px" }} /></Col>
+                                                                        <Col><MiniBarBobinesNoPalete onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
                                                                     </Row>
                                                                 </Container>
                                                             </Panel>}
                                                             <Panel showArrow={true} header={<div style={{ width: "100%", fontSize: "10px" }}>
                                                                 <div style={{ fontWeight: 700, fontSize: "12px" }}>Resumo de Produção</div>
                                                                 <div style={{ display: "flex", flexDirection: "row" }}>
-                                                                    <div style={{ width: "45px", fontWeight: 700 }}>Bobines:</div>
+                                                                    <div style={{ width: "43px", fontWeight: 700 }}>Bobines:</div>
                                                                     <div style={{ width: "60px" }}>Planeadas</div>
                                                                     <div style={{ flex: .6, fontWeight: 700 }}>{getFloat(items[0].num_bobines_of)}</div>
                                                                     <div style={{ width: "60px" }}>Produzidas</div>
@@ -1430,7 +1435,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                                             <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Defeitos</b></div></div>} key="3">
                                                                 <Container fluid style={{ padding: "0px" }}>
                                                                     <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><BobinesDefeitos onDefeitosClick={onDefeitosClick} data={items[0]} style={{ width: "100%", height: "25px" }} /></Col>
+                                                                        <Col><BobinesDefeitos onDefeitosClick={onDefeitosClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
                                                                     </Row>
                                                                 </Container>
                                                             </Panel>
@@ -1464,9 +1469,9 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                         {/**PALETES */}
                         <Col lg={12} xl={7}>
                             <Row nogutter>
-                                {paletes.length > 0 && <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "5px" }}>
+                                {paletes.length > 0 && <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "3px" }}>
                                     <Row nogutter>
-                                        <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                        <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Paletes</div>
                                             <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<ExpandAltOutlined />} /></div>
                                         </Col>
@@ -1483,9 +1488,9 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                         {/**CORTES */}
                         <Col lg={12} xl={5}>
                             <Row nogutter>
-                                <Col style={{ border: "solid 1px #595959", padding: "5px" }}>
+                                <Col style={{ border: "solid 1px #595959", padding: "3px" }}>
                                     <Row nogutter>
-                                        <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                        <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
                                             <div><Button type="primary" size="small" /* onClick={onPaletesExpand} */ ghost icon={<EditOutlined />} /></div>
                                         </Col>
@@ -1507,21 +1512,21 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                             <Row nogutter>
 
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "5px" }}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col>
                                             <div style={{}}><LineParameters data={parameters?.data?.params} /></div>
                                         </Col>
                                     </Row>
-                                    {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "5px 0 0 0", padding: "5px" }}>
+                                    {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 0 0 0", padding: "3px" }}>
                                     <Col>
                                         <div style={{}}><TotaisEstadoBobines data={parameters?.data} onTotaisEstadoClick={onTotaisEstadoClick} /></div>
                                     </Col>
                                 </Row> */}
 
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "5px", margin: "5px 0 0 0" }}>{/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}>xxxxx</div> */}
+                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px", margin: "3px 0 0 0" }}>{/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "3px" }}>xxxxx</div> */}
                                         <Col>
                                             <Row nogutter>
-                                                <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                                <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Granulado em linha</div>
                                                     <div>
                                                         <Space>
@@ -1553,10 +1558,10 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                             <Row nogutter>
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
                                     {/**ÚLTIMAS BOBINAGENS */}
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "5px" }}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col >
                                             <Row nogutter>
-                                                <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                                <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Últimas bobinagens</div>
                                                     <div><Button type="primary" size="small" onClick={onBobinagensExpand} ghost icon={<ExpandAltOutlined />} /></div>
                                                 </Col>
@@ -1589,10 +1594,10 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
 
                                     {/**NONWOVENS PLANEADOS */}
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "5px", margin: "5px 0 0 0 " }}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px", margin: "3px 0 0 0 " }}>
                                         <Col >
                                             <Row nogutter>
-                                                <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                                <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Nonwovens planeados</div>
                                                     <div><Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<EditOutlined />} /></div>
                                                 </Col>
@@ -1613,10 +1618,10 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
 
                                     {/**NONWOVENS FILA */}
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "5px", margin: "5px 0 0 0 " }}>
+                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px", margin: "3px 0 0 0 " }}>
                                         <Col >
                                             <Row nogutter>
-                                                <Col style={{ background: "#f0f0f0", padding: "5px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                                <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Nonwovens Fila</div>
                                                     <div><Button type="primary" size="small"/*  onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} /></div>
                                                 </Col>
@@ -1931,7 +1936,7 @@ export default ({ setFormTitle, ...props }) => {
             hoverable
             headStyle={{ padding: "0px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" }}
             style={{ height: "100%", border: "1px solid #8c8c8c" }}
-            bodyStyle={{ height: "calc(100% - 61px)", padding: "0px 5px 5px 0px" }}
+            bodyStyle={{ height: "calc(100% - 61px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
                 <WidgetSimpleTitle title="Produção" parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>

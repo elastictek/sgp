@@ -113,14 +113,15 @@ export default (props) => {
             editorOptions: { editOnClick: true, commitOnOutsideClick: false },
             formatter: p => p.row.destino
         },
-
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => row.l_real },
+        { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
+        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.l_real}  {row.l_real && "mm"}</div> },
         { key: 'fc_pos', sortable: false, width: 85, name: "Falha Corte", formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />, editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
         { key: 'ff_pos', sortable: false, width: 85, name: "Falha de Filme", formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />, editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
         { key: 'buracos_pos', sortable: false, width: 85, name: "Buracos", formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />, editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
         { key: 'furos_pos', sortable: false, width: 85, name: "Furos", formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />, editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
         { key: 'rugas_pos', sortable: false, width: 85, name: "Rugas", formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />, editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={false} valid={1} /> }, editorOptions: { editOnClick: true } },
-        { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
+        { key: 'comp_actual', sortable: false, name: 'Comp. Atual', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+        { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.comp} m</div> },
         { key: 'defeitos', sortable: false, width: 250, name: "Outros Defeitos", formatter: (p) => <FieldDefeitos p={p} /> },
         { key: 'prop_obs', sortable: false, 
             headerRenderer: p => <CheckColumn id="obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p.row, 'destino')} />,

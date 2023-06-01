@@ -36,9 +36,11 @@ import { props } from 'ramda';
 const openNotification = (type, messages = []) => {
     if (messages.length > 0) {
         notification.open({
+            style: {/*  background: "#ff0000f2", */borderRadius: "5px" },
+            duration: 5,
             placement: "top",
-            message: type === "error" ? <b>Erros</b> : <b>Avisos</b>,
-            description: <div style={{ height: "calc(100vh - 50vh)", overflow: "hidden" }}><YScroll><ul>{messages.map((v, i) => <li key={`msg-${i}`}>{v}ccc</li>)}</ul></YScroll></div>,
+            message: type === "error" ? <div style={{ fontWeight: 700, fontSize: "16px", color: "#000" }}>Erros</div> : <div style={{ fontWeight: 700, fontSize: "16px", color: "#000" }}>Avisos</div>,
+            description: <div style={{ height: "calc(100vh - 50vh)", overflow: "hidden" }}><YScroll>{messages.map((v, i) => <div key={`msg-${i}`} style={{ margin: "2px" }}><Tag color={type}>{v.match(/#(\d+)/)[1].padStart(2, '0')}</Tag>{v.replace(/#\d+\s*/, '')}</div>)}</YScroll></div>,
         });
     }
 };
@@ -352,7 +354,7 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
 }
 
 const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid }) => {
-    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true } = editable;
+    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true,saveText = "Guardar",cancelText="Cancelar",addText="Novo",editText="Editar" } = editable;
 
 
     const changeMode = async () => {
@@ -414,18 +416,18 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid
         <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
             {(dataAPI?.status()?.errors > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("error")}><Badge count={dataAPI?.status()?.errors} /></a>}
             {(dataAPI?.status()?.warnings > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("warning")}><Badge count={dataAPI?.status()?.warnings} color="#faad14" /></a>}
-            {(enabled && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-            {(add && showAddButton && !addMode(editable) && !editMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={_onAdd}>Novo</Button>}
-            {enabled && showCancelButton && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
-            {enabled && showSaveButton && ((editMode(editable) && dataAPI.dirtyRows().length > 0) || (editMode(editable) && dirty)) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >Guardar</Button>}
-            {add && showCancelButton && (addMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >Cancelar</Button>}
-            {add && showSaveButton && (addMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onAddSave} >Guardar</Button>}
+            {(enabled && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>{editText}</Button>}
+            {(add && showAddButton && !addMode(editable) && !editMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={_onAdd}>{addText}</Button>}
+            {enabled && showCancelButton && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >{cancelText}</Button>}
+            {enabled && showSaveButton && ((editMode(editable) && dataAPI.dirtyRows().length > 0) || (editMode(editable) && dirty)) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >{saveText}</Button>}
+            {add && showCancelButton && (addMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >{cancelText}</Button>}
+            {add && showSaveButton && (addMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onAddSave} >{saveText}</Button>}
         </Space>
     </>
     )
 }
 
-export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, toolbar = true, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
+export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -440,7 +442,9 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
 
     const rowClass = ({ data }) => {
         if (data?.rowvalid === 0 || data?.rowadded === 1) {
-            return classes.rowNotValid;
+            if (editable?.markRows !== false) {
+                return classes.rowNotValid;
+            }
         }
         if (typeof rowClassName === "function") {
             return rowClassName({ data });
@@ -715,13 +719,15 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
                 <Col xs="content"></Col>
                 {title && <Col xs="content">
                     <Row><Col>{title}</Col></Row>
-                    <Row><Col>
+                    <Row><Col style={{display:"flex"}}>
+                    {startToolbar && startToolbar}
                         <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                         {leftToolbar && leftToolbar}
                     </Col></Row>
                 </Col>
                 }
-                {!title && <Col xs="content" style={{ alignSelf: "end" }}>
+                {!title && <Col xs="content" style={{ alignSelf: "end" ,display:"flex"}}>
+                {startToolbar && startToolbar}
                     <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                     {leftToolbar && leftToolbar}
                 </Col>}
@@ -747,6 +753,12 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
             </Row>
         </Container>}
 
+
+        {topContainer && <Container fluid style={{ padding: "5px" }}>
+            <Row align='start' wrap="nowrap" gutterWidth={15}>
+                <Col>{topContainer}</Col>
+            </Row>
+        </Container>}
 
         <>
             <Table

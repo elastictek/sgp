@@ -127,7 +127,8 @@ export default (props) => {
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => row.l_real },
+        { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
+        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) =><div style={{ textAlign: "right" }}>{row.l_real} {row.l_real && "mm"}</div>  },
         {
             key: 'fc_pos', sortable: false, width: 85,
             headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p.row, 'generic')} />,
@@ -168,7 +169,8 @@ export default (props) => {
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
-        { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => row.comp },
+        { key: 'comp_actual', sortable: false, name: 'Comp. Atual', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
+        { key: 'comp', sortable: false, name: 'Comp. Original', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
         {
             key: 'defeitos', sortable: false,
             headerRenderer: p => <CheckColumn id="defeitos" name="Outros Defeitos" onChange={onCheckChange} defaultChecked={checkData?.defeitos} forInput={editable(p.row, 'generic')} />,

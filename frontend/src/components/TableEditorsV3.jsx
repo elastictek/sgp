@@ -28,7 +28,7 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeD
 import { API_URL, DOSERS, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, FORMULACAO_MANGUEIRAS, JUSTIFICATION_OUT } from 'config';
 import { Status } from '../pages/bobines/commons';
 import IconButton from "components/iconButton";
-import { Cuba,MetodoOwner,MetodoAging } from "./TableColumns";
+import { Cuba, MetodoOwner, MetodoAging, EstadoBobine } from "./TableColumns";
 import { CgCloseO } from 'react-icons/cg';
 import { sha1 } from 'crypto-hash';
 import { json, orderObjectKeys } from "utils/object"
@@ -155,7 +155,7 @@ export const BooleanTableEditor = ({ dataAPI, selectProps, checkbox = true, chec
     );
 }
 
-export const StatusTableEditor = ({ dataAPI, selectProps,checkBoxProps, allowed = [0, 1], genre = "m", checkbox = false, ...props }) => {
+export const StatusTableEditor = ({ dataAPI, selectProps, checkBoxProps, allowed = [0, 1], genre = "m", checkbox = false, ...props }) => {
     const selected = useRef(false);
     const onChange = async (v) => {
         let _value = v;
@@ -527,6 +527,61 @@ export const CubaTableEditor = ({ type, onSelect, ...props }) => {
     )
 }
 
+export const EstadoTableEditor = ({ type, onSelect, filter, ...props }) => {
+    const [showModal, setModal] = useState(true);
+    const defaultFilters = {};
+    const defaultParameters = {};
+    const defaultSort = [];
+    const dataAPI = useDataAPI({ payload: { url: ``, primaryKey: "value", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
+
+    const _onSelect = async ({ rowProps, closeSelf }) => {
+        if (typeof onSelect === "function") {
+            await onSelect({ rowProps, closeSelf });
+        } else {
+            props.onChange(rowProps.data?.value);
+            await sleep(300);
+            props.onComplete(rowProps.data?.value);
+        }
+        //closeSelf();
+    }
+
+    //     const _onMultiSelect = async ({ data, closeSelf }) => {       
+    //     if (typeof onSelect === "function") {
+    //         await onSelect({ data, closeSelf });
+    //     } else {
+    //         props.onChange(data);
+    //         await sleep(300);
+    //         props.onComplete(data);
+    //     }
+    //     //closeSelf();
+    // }
+
+    const getOptions = () => {
+        if (filter) {
+            return BOBINE_ESTADOS.filter(v => filter(v));
+        }
+        return BOBINE_ESTADOS;
+    }
+
+    return (
+        <ResponsiveModal open={showModal} title="Estado" type="drawer" push={false} onCancel={() => setModal(false)} width={"400px"} height={null} footer="ref" extra="ref" yScroll>
+            <Chooser parameters={{
+                multipleSelection: false,
+                settings: false,
+                toolbar: false,
+                toolbarFilters: false,
+                data: getOptions(),
+                payload: { payload: { url: ``, primaryKey: "value", parameters: { ...defaultParameters }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [] } },
+                columns: [
+                    { name: "value", header: 'Estado', flex: 1, render: ({ cellProps, data }) => <EstadoBobine estado={data?.value} /> }
+                ],
+                onSelect: _onSelect
+
+            }} />
+        </ResponsiveModal>
+    )
+}
+
 export const DoserTableEditor = ({ type, joinbc, onSelect, ...props }) => {
     const key = "key";
     const [showModal, setModal] = useState(true);
@@ -730,7 +785,6 @@ export const ArtigosTableEditor = ({ ...props }) => {
     />)
 }
 
-
 export const LabMetodosTableEditor = ({ ...props }) => {
 
     return (<FieldSelectorEditor
@@ -746,11 +800,32 @@ export const LabMetodosTableEditor = ({ ...props }) => {
                 { key: 'designacao', name: 'Designação' },
                 { key: 'owner', header: 'Owner', render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" },
                 { key: 'aging', header: 'Aging', render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" },
-        
+
             ],
-            filters: { fdes: { type: "any", width: 150, text: "Designação", autoFocus: true }},
+            filters: { fdes: { type: "any", width: 150, text: "Designação", autoFocus: true } },
             moreFilters: {}
         }}
     />)
 }
 
+export const NwTableEditor = ({ filters, ...props }) => {
+    return (
+        <FieldSelectorEditor {...props}
+            selectorProps={{
+                popupWidth: 700,
+                value: { vcr_num: (filters?.type == 0) ? props?.cellProps?.data?.vcr_num_inf : props?.cellProps?.data?.vcr_num_sup, n_lote: (filters?.type == 0) ? props?.cellProps?.data?.lotenwinf : props?.cellProps?.data?.lotenwsup },
+                title: "Lotes de Nonwovens",
+                params: { payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "ListNwQueue" }, pagination: { enabled: true, limit: 15 }, filter: { ...filters }, sort: [] } },
+                keyField: ["vcr_num"],
+                textField: "n_lote",
+                columns: [
+                    { key: 'artigo_cod', name: 'Artigo', width: 160 },
+                    { key: 'artigo_des', name: 'Designação', width: 160 },
+                    { key: 'n_lote', name: 'Lote', width: 160 },
+                    { key: 'vcr_num', name: 'Movimento', width: 160 }
+                ],
+                filters: {},
+                moreFilters: {}
+            }} />
+    )
+}

@@ -408,8 +408,86 @@ def BobinagensList(request, format=None):
     response = db.executeList(sql, connection, parameters, [],None,sqlCount)
     return Response(response)
 
+def Validar(request, format=None):
+    data = request.data.get("parameters").get("rows")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                try:
+                    rows = [{prop: d.get(prop) for prop in ["id","comp","comp_emenda","estado","troca_nw","l_real","lar","vcr_num_inf","vcr_num_sup","bobinagem_id"]} for d in data]
+                    args = (json.dumps(rows, ensure_ascii=False),request.data.get("parameters").get("lar_bruta"),request.user.id,0)
+                    cursor.callproc('validate_bobinagemv2',args)
+                except Exception as error:
+                    return Response({"status": "error", "title": str(error)})
+                return Response({"status": "success", "title": "Bobinagem validada com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao validar a bobinagem! {str(error)}"})
 
 
+def BobinagensLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+        "id": {"value": lambda v: Filters.getNumeric(v.get('bobinagem_id')), "field": lambda k, v: f'pbm.{k}'},
+    #"id": {"value": lambda v: v.get('palete_id')},
+    #"nbobines_real": {"value": lambda v: '>0'},
+    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    fid = Filters(request.data['filter'])
+    fid.setParameters({
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get('bobinagem_id')), "field": lambda k, v: f'pb.{k}'},
+    }, True)
+    fid.where()
+    fid.auto()
+    fid.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters,**fid.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""pbm.*,
+            (
+            select JSON_ARRAYAGG(v) from (
+            select JSON_OBJECT("id",pa.id,"cod",pa.cod,"desc",pa.des,"core",pa.core,"lar",pa.lar,"estado",pb.estado) v
+            from producao_bobine pb join producao_artigo pa on pa.id=pb.artigo_id 
+            {fid.text}
+            GROUP BY pa.id, pa.cod, pa.des, pa.core, pa.lar, pb.estado
+            ) t
+            ) artigo
+    """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (
+        f"""  
+            select 
+            {f'{dql.columns}'}
+            from producao_bobinagem pbm
+            {f.text} {f2["text"]}
+            {dql.sort} {dql.limit}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 
 

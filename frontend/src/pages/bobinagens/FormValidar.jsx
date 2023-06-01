@@ -22,9 +22,9 @@ import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUp
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor, LabMetodosTableEditor } from 'components/TableEditorsV3';
+import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, NwTableEditor, EstadoTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor, LabMetodosTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid, Nonwovens, ArrayColumn, EstadoBobine, Largura, Core, Delete } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid, Nonwovens, ArrayColumn, EstadoBobine, Largura, Core, Delete, NwColumn } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -50,21 +50,23 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
 }
 const useStyles = createUseStyles({});
 const schema = (options = {}) => {
-    return getSchema({}, options).unknown(true);
-}
-const rowSchema = (options = {}) => {
     return getSchema({
-        // "matprima_des":
-        //     Joi.alternatives(
-        //         Joi.string(),
-        //         Joi.object().keys({
-        //             ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
-        //         }).unknown(true)).label("Matéria Prima").required(),
-        //"designacao": Joi.string().label("Designação").required(),
-        //"cliente_nome": Joi.string().label("Cliente").required(),
-        //"des": Joi.string().label("Artigo").required()
+        "lar_bruta": Joi.number().label("Largura bruta").required(),
     }, options).unknown(true);
 }
+// const rowSchema = (options = {}) => {
+//     return getSchema({
+//         // "matprima_des":
+//         //     Joi.alternatives(
+//         //         Joi.string(),
+//         //         Joi.object().keys({
+//         //             ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
+//         //         }).unknown(true)).label("Matéria Prima").required(),
+//         //"designacao": Joi.string().label("Designação").required(),
+//         //"cliente_nome": Joi.string().label("Cliente").required(),
+//         //"des": Joi.string().label("Artigo").required()
+//     }, options).unknown(true);
+// }
 
 const ToolbarFilters = ({ dataAPI, auth, num, v, ...props }) => {
     return (<>
@@ -147,10 +149,10 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
     }
 
     const leftContent = (<>
-        {/* <Space>
-            {modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={()=>changeMode('formPalete')} />}
-            {!modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<EditOutlined />} onClick={()=>changeMode('formPalete')}>Editar</Button>}
-        </Space> */}
+        <Space>
+            {/* {modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={()=>changeMode('formPalete')} />}
+            {!modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<EditOutlined />} onClick={()=>changeMode('formPalete')}>Editar</Button>} */}
+        </Space>
         {/* <LeftToolbar permission={permission} /> */}
     </>);
 
@@ -164,6 +166,55 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
     );
 }
 
+
+
+const rowSchema = (options = {}, required = false) => {
+    return getSchema({
+        comp: Joi.number().label("Comprimento"),
+        troca_nw: Joi.number().label("Troca de Nonwoven"),
+        lar: Joi.number().required().label("Largura"),
+        estado: Joi.string().required().label("Estado"),
+        vcr_num_inf: Joi.string().required().label("O Nonwoven inferior é obrigatório preencher."),
+        vcr_num_sup: Joi.string().required().label("O Nonwoven superior é obrigatório preencher."),
+        comp_emenda: Joi.when(Joi.ref('troca_nw'), {
+            is: Joi.number().valid(1),
+            then: Joi.number().min(1).max(Joi.ref('comp')).required()
+                .messages({
+                    'number.base': 'O comprimento da emenda tem de ser preenchido.',
+                    'number.empty': 'O comprimento da emenda  tem de ser preenchido.',
+                    'number.min': 'O comprimento da emenda tem de ser maior que zero',
+                    'number.max': 'O comprimento da emenda tem de ser menor que o comprimento',
+                    'any.required': 'O comprimento da emenda tem de ser preenchido.'
+                }),
+            otherwise: Joi.optional()
+        }),
+        l_real: Joi.when(Joi.ref('estado'), {
+            is: Joi.string().valid('BA'),
+            then: Joi.number().min(Joi.ref('lar', { adjust: val => val - 10 })).max(Joi.ref('lar', { adjust: val => val + 10 })).required()
+                .messages({
+                    'number.base': 'A largura real tem de ser um número válido',
+                    'number.empty': 'A largura real não pode ser vazia',
+                    'number.min': 'A largura real tem de ser um valor aproximado da largura definida [-10,+10]',
+                    'number.max': 'A largura real tem de ser um valor aproximado da largura definida [-10,+10]',
+                    'any.required': 'A largura real é obrigatória quando o estado é "BA"'
+                })
+            //,otherwise: Joi.optional()
+        }).concat(
+            Joi.when(Joi.ref('$num'), {
+                is: Joi.number().multiple(10),
+                then: Joi.number().min(Joi.ref('lar', { adjust: val => val - 10 })).max(Joi.ref('lar', { adjust: val => val + 10 })).required()
+                    .messages({
+                        'number.base': 'A largura real tem de ser preenchida.',
+                        'number.empty': 'A largura real tem de ser preenchida.',
+                        'number.min': 'A largura real tem de ser um valor aproximado da largura definida [-10,+10]',
+                        'number.max': 'A largura real tem de ser um valor aproximado da largura definida [-10,+10]',
+                        'any.required': 'A largura real tem de ser preenchida.'
+                    }),
+                otherwise: Joi.optional()
+            })
+        )
+    }, options).unknown(true);
+}
 
 export default ({ setFormTitle, noid = false, ...props }) => {
     const media = useContext(MediaContext);
@@ -184,7 +235,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
     const defaultParameters = {};
-    const defaultSort = [];
+    const defaultSort = [{ column: "queue", direction: "ASC" }];
     const dataAPI = useDataAPI({ ...(!noid && { id: props?.id }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { primaryKey: "id" } });
     const submitting = useSubmitting(true);
     //const [columns, setColumns] = useState([]);
@@ -210,8 +261,17 @@ export default ({ setFormTitle, noid = false, ...props }) => {
             inputParameters.current = { ...paramsIn };
             console.log("IN--->", paramsIn);
         }
-        const _bobines = await loadBobinesLookup(inputParameters.current.bobinagem_id);
-        inputParameters.current = { ...inputParameters.current, produto: _bobines[0]?.produto, agg_of_id: _bobines[0]?.agg_of_id };
+        const _bobines = (await loadBobinesLookup(inputParameters.current.bobinagem_id)).map(v => {
+            return {
+                ...v,
+                inicio: inputParameters.current.bobinagem.inico, fim: inputParameters.current.bobinagem.fim, duracao: inputParameters.current.bobinagem.duracao,
+                data: inputParameters.current.bobinagem.data,
+                tiponwinf: inputParameters.current.bobinagem.tiponwinf, tiponwsup: inputParameters.current.bobinagem.tiponwsup,
+                rowvalid: 0
+            }
+        });
+
+        inputParameters.current = { ...inputParameters.current, produto: _bobines[0]?.produto, agg_of_id: _bobines[0]?.agg_of_id, largura_bobinagem: _bobines[0]?.largura_bobinagem };
         //console.log("AFTER--->", _bobines)
         setFormDirty(false);
         dataAPI.setData({ rows: _bobines, total: _bobines?.length });
@@ -296,35 +356,113 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         /* if (["designacao", "lab_metodo", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
             return true;
         }*/
-        if (["l_real"].includes(name) && (mode.datagrid.edit)) {
+        if (["l_real", "comp_emenda", "troca_nw", "vcr_num_inf", "vcr_num_sup", "estado"].includes(name) && (mode.datagrid.edit)) {
+            if (name == "comp_emenda") {
+                if (data?.troca_nw == 1) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
             return true;
         }
         return false;
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        /* if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
+        if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["nws"].includes(name)) {
+        /*if (["nws"].includes(name)) {
             return tableCls.cellPadding1;
         } */
         // if (["designacao", "lab_metodo", "status", "obs", "reference", "cliente_nome", "des"].includes(name) && (mode.datagrid.add && data?.rowadded === 1)) {
         //     return tableCls.edit;
         // }
-        if (["l_real"].includes(name) && (mode.datagrid.edit)) {
+        if (["l_real", "comp_emenda", "troca_nw", "vcr_num_inf", "vcr_num_sup", "estado"].includes(name) && (mode.datagrid.edit)) {
+            if (name == "comp_emenda") {
+                if (data?.troca_nw == 1) {
+                    return tableCls.edit;
+                } else {
+                    return null;
+                }
+            }
             return tableCls.edit;
         }
     };
 
+    const onSave = async (type) => {
+        //const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
+        const _values = form.getFieldsValue(true);
+        const v = schema().validate(_values, { abortEarly: false, messages: validateMessages, context: {} });
+        let { errors, warnings, value, ...status } = getStatus(v);
+        if (errors === 0) {
+            if (inputParameters.current.largura_bobinagem > _values.lar_bruta || _values.lar_bruta > (inputParameters.current.largura_bobinagem + 200)) {
+                errors = 1;
+                status.fieldStatus.lar_bruta = { status: "error", messages: [{ message: "A largura bruta não está dentro dos valores permitidos (não inferior à largura da bobinagem)!" }] };
+            }
+        }
+        setFieldStatus({ ...status.fieldStatus });
+        setFormStatus({ ...status.formStatus });
+        const _rows = dataAPI.getData().rows;
+        if (errors == 0 && _rows && _rows.length > 0) {
+            submitting.trigger();
+            let response = null;
+            try {
+                const status = dataAPI.validateRows(rowSchema, {}, { context: { num: _rows[0].nome.split('-')[1] } }, _rows); //Validate all rows
+                const msg = dataAPI.getMessages();
+                if (status.errors > 0) {
+                    openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
+                } else {
+                    response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: _rows, lar_bruta: _values.lar_bruta } });
+                    if (response.data.status !== "error") {
+                        dataAPI.update(true);
+                        openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                    } else {
+                        openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                    }
+                }
+            } catch (e) {
+                console.log(e)
+                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            } finally {
+                submitting.end();
+            };
+        }
+    }
+
     const onEditComplete = ({ value, columnId, rowIndex, data, ...rest }) => {
-        //const index = dataAPI.getIndex(data);
-        const index = rowIndex;
+        const index = dataAPI.getIndex(data);
         if (index >= 0) {
             let _rows = [];
-            _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
-            dataAPI.validateRows(rowSchema, {}, {}, _rows);
-            //// const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, data[dataAPI.getPrimaryKey()], columnId, value, index, gridStatus);
+            if (columnId === "troca_nw") {
+                _rows = dataAPI.getData().rows.map(v => {
+                    return { ...v, [columnId]: value, ...(value == 0 && { comp_emenda: 0 }), rowvalid: 0 }
+                });
+                dataAPI.setRows(_rows, _rows.length);
+            } else if (columnId === "vcr_num_inf") {
+                _rows = dataAPI.getData().rows.map(v => {
+                    return {
+                        ...v, tiponwinf: value?.artigo_des, lotenwinf: value?.n_lote, vcr_num_inf: value?.vcr_num, rowvalid: 0
+                    }
+                });
+                dataAPI.setRows(_rows, _rows.length);
+            } else if (columnId === "vcr_num_sup") {
+                _rows = dataAPI.getData().rows.map(v => {
+                    return {
+                        ...v, tiponwsup: value?.artigo_des, lotenwsup: value?.n_lote, vcr_num_sup: value?.vcr_num, rowvalid: 0
+                    }
+                });
+                dataAPI.setRows(_rows, _rows.length);
+            } else if (columnId === "troca_nw" || columnId === "comp_emenda" || columnId === "estado") {
+                _rows = dataAPI.getData().rows.map(v => { return { ...v, [columnId]: value, rowvalid: 0 } });
+                dataAPI.setRows(_rows, _rows.length);
+            } else {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, rowvalid: 0 });
+            }
+            dataAPI.validateRows(rowSchema, {}, { context: { num: _rows[0].nome.split('-')[1] } }, _rows);
+            //const { errors, warnings, fieldStatus, formStatus } = dataAPI.validateField(rowSchema, data[dataAPI.getPrimaryKey()], columnId, value, index, gridStatus);
+            //console.log("aaaa",errors, warnings, fieldStatus, formStatus)
             //// setGridStatus({ errors, warnings, fieldStatus, formStatus });
         }
     }
@@ -345,15 +483,42 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
     const columns = [
         ...(true) ? [{ name: "nome", header: "Bobine", defaultWidth: 130, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.nome}</LeftAlign> }] : [],
-        ...(true) ? [{ name: "estado", header: "Estado", defaultWidth: 70, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <EstadoBobine id={data.id} nome={data.nome} estado={data.estado} largura={data.lar} cellProps={cellProps} /> }] : [],
-        ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m&sup2;">{getFloat(data?.area, 0)}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'data', header: 'Data', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <DateTime value={data?.data} format={DATE_FORMAT} /> }] : [],
+        ...(true) ? [{ name: "inicio", header: "inicio", defaultWidth: 100, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.inicio}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "fim", header: "fim", defaultWidth: 100, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.fim}</LeftAlign> }] : [],
         ...(true) ? [{
-            name: 'l_real', header: 'Largura Real', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center",
+            name: "estado", header: "Estado", defaultWidth: 70, userSelect: true, defaultlocked: false, headerAlign: "center",
+            render: ({ data, cellProps }) => <EstadoBobine id={data.id} nome={data.nome} estado={data.estado} largura={data.lar} cellProps={cellProps} />,
             editable: columnEditable,
             cellProps: { className: columnClass },
-            render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.l_real}</LeftAlign>,
-            renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />
+            renderEditor: (props) => <EstadoTableEditor filter={(v => v?.value === "BA" || v?.value === "LAB")} {...props} />
         }] : [],
+        ...(true) ? [{ name: 'troca_nw', header: 'Troca NW', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.troca_nw} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{
+            name: 'l_real', header: 'Largura Real', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center",
+            editable: columnEditable,
+            cellProps: { className: columnClass },
+            render: ({ data, cellProps }) => <RightAlign cellProps={cellProps} unit="mm">{data?.l_real}</RightAlign>,
+            renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0 }} {...props} />
+        }] : [],
+        ...(true) ? [{
+            name: 'comp_emenda', header: 'Comp. Emenda', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center",
+            editable: columnEditable,
+            cellProps: { className: columnClass },
+            render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_emenda, 0)}</RightAlign>,
+            renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0 }} {...props} />
+        }] : [],
+        ...(true) ? [{ name: 'vcr_num_inf', header: 'Nonwoven Inf.', defaultWidth: 150, flex: 1, editable: columnEditable, renderEditor: (props) => <NwTableEditor dataAPI={dataAPI} {...props} filters={{ type: 0, queue: 1, status: 1 }} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <NwColumn style={{ fontSize: "10px" }} data={{ data, artigo_des: data?.tiponwinf, n_lote: data?.lotenwinf }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'vcr_num_sup', header: 'Nonwoven Sup.', defaultWidth: 150, flex: 1, editable: columnEditable, renderEditor: (props) => <NwTableEditor dataAPI={dataAPI} {...props} filters={{ type: 1, queue: 1, status: 1 }} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <NwColumn style={{ fontSize: "10px" }} data={{ data, artigo_des: data?.tiponwsup, n_lote: data?.lotenwsup }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'comp', header: 'Comprimento', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m&sup2;">{getFloat(data?.area, 0)}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <Core cellProps={cellProps} value={data?.core} /> }] : [],
+        ...(true) ? [{ name: 'diam', header: 'Diâmetro', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 0)}</RightAlign> }] : [],
+        /* ...(true) ? [{ name: "artigo_cod", header: "Artigo", defaultWidth: 150, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.artigo_cod}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "ofid_bobine", header: "Ordem F.", defaultWidth: 130, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.ofid_bobine}</LeftAlign> }] : [],
+        */
+
+        //...(true) ? [{ name: "designacao_prod", header: "Produto", defaultWidth: 170, flex: 1, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign cellProps={cellProps}>{data?.designacao_prod}</LeftAlign> }] : [],
     ];
 
 
@@ -361,11 +526,11 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     return (
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
-            <ToolbarTable {...props} submitting={submitting} />
-            <FormContainer id="form" wrapForm={true} wrapFormItem={true} fluid loading={submitting.state} style={{ padding: "0px" }}>
+            <FormContainer id="form" form={form} wrapForm={true} wrapFormItem={true} fluid loading={submitting.state} style={{ padding: "0px" }} schema={schema} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} alert={{ tooltip: true, pos: "none" }}>
+                {/* <Row nogutter><Col><ToolbarTable {...props} submitting={submitting} /></Col></Row> */}
                 <Row>
-                    <Col>
-                        <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
+                    {/*                     <Col>
+                        <AlertsContainer  mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
                         <Row gutterWidth={5} style={{ marginBottom: "10px" }}>
                             <Col><Field name={inputParameters.current?.agg_of_id ? "produto_cod" : "perfil_nome"} label={{ enabled: true, text: inputParameters.current?.agg_of_id ? "Produto" : "Perfil", padding: "0px" }}><Input style={{ padding: "0px 10px" }} /></Field></Col>
                             <Col xs="content"><Field name="data" label={{ enabled: true, text: "Data", padding: "0px" }}><DatePicker style={{ padding: "0px 10px" }} showTime={false} format={DATE_FORMAT} /></Field></Col>
@@ -376,36 +541,45 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
 
 
-                    </Col>
+                    </Col> */}
                     <Col>
 
                         <Table
-                            dirty={formDirty}
+                            //dirty={formDirty}
+                            dirty={true}
                             loading={submitting.state}
-                            offsetHeight="150px"
+                            offsetHeight="180px"
+                            {...true && { rowHeight: 35 }}
                             idProperty={dataAPI.getPrimaryKey()}
                             local={true}
                             onRefresh={loadData}
                             rowClassName={rowClassName}
                             sortable={false}
                             //cellNavigation={false}
+                            editStartEvent={"click"}
                             reorderColumns={false}
                             showColumnMenuTool={false}
                             onCellAction={onCellAction}
                             editable={{
+                                markRows: false,
                                 showCancelButton: false,
-                                showSaveButton: false,
+                                showSaveButton: true,
                                 enabled: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
                                 add: false,
                                 //onAdd: onAdd, onAddSave: onAddSave,
                                 onSave: () => onSave("update"), onCancel: onEditCancel,
-                                modeKey: "datagrid", setMode, mode, onEditComplete
+                                modeKey: "datagrid", setMode, mode, onEditComplete,
+                                saveText: "Validar"
                             }}
                             columns={columns}
                             dataAPI={dataAPI}
                             moreFilters={false}
                             leftToolbar={false}
-                            toolbar={false}
+                            startToolbar={
+                                <Space style={{ marginRight: "50px" }}>
+                                    <Field name="lar_bruta" label={{ enabled: true, text: <div style={{ fontSize: "10px", lineHeight: 1.2 }}><div>Largura bruta</div><div>[{inputParameters.current.largura_bobinagem}mm]</div></div>, pos: "left", width: "80px" }}><InputNumber style={{ textAlign: "right", width: "150px" }} addonAfter="mm" /></Field>
+                                </Space>}
+                            toolbar={true}
                             toolbarFilters={false}
                         />
 

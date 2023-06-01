@@ -4715,11 +4715,11 @@ def load_artigos_cliente(request):
     produto = request.GET.get('produto')
     gsm = request.GET.get('gsm')
     cliente_obj = get_object_or_404(Cliente, pk=cliente)
-    # print("aaaaaaaaaaaaaaaaaaaaaaa")
-    # print(cliente)
-    # print(largura)
-    # print(produto)
-    # print(gsm)
+    #print("aaaaaaaaaaaaaaaaaaaaaaa")
+    #print(cliente)
+    #print(largura)
+    #print(produto)
+    #print(gsm)
     if cliente_obj.cod == 0:
         artigos_cliente = ArtigoCliente.objects.filter(
             cliente=cliente_obj).order_by('artigo')

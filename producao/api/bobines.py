@@ -742,6 +742,7 @@ def BobinesLookup(request, format=None):
             ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
             po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
             sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            sum(mb.lar) over (partition by mb.bobinagem_id) largura_bobinagem,
             mva.cod artigo_cod
         """
         dql.columns=encloseColumn(cols,False)

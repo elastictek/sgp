@@ -40,6 +40,7 @@ from sistema.settings.appSettings import AppSettings
 import time
 import requests
 import psycopg2
+from producao.api.exports import export as exportv2
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -406,9 +407,27 @@ def MateriasPrimasLookup(request, format=None):
 
     return Response(response)
 
-
-
-
+def ListNwQueue(request,format=None):
+    f = Filters(request.data.get('filter'))
+    f.setParameters({
+         "type": {"value": lambda v: Filters.getNumeric(v.get('type')), "field": lambda k, v: f'{k}'},
+         "queue": {"value": lambda v: Filters.getNumeric(v.get('queue')), "field": lambda k, v: f'{k}'},
+         "status": {"value": lambda v: Filters.getNumeric(v.get('status')), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select artigo_cod,n_lote,artigo_des,vcr_num,type from lotesnwlinha l
+                {f.text}
+                {dql.sort} {dql.limit}
+            """
+        ), cursor, parameters)
+        return Response(response)
 
 def inProduction(data,cursor):
         response = db.executeSimpleList(lambda: (
@@ -847,7 +866,10 @@ def GranuladoBufferLineList(request, format=None):
         """
 
     if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return exportv2(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+        #return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     try:
         response = dbgw.executeList(sql, connection, parameters,[],None,sqlCount)
     except Exception as error:

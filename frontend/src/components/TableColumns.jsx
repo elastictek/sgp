@@ -17,7 +17,12 @@ export const Largura = ({ id, artigos, nome, onClick, cellProps }) => {
     </>);
 }
 
-export const Core = ({ id, artigos, nome, onClick, cellProps }) => {
+export const Core = ({ id, artigos, value, nome, onClick, cellProps }) => {
+
+    if (value) {
+        return (<Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: value })}>{value}''</Tag>);
+    }
+
     return (<>
         {(!cellProps?.inEdit && Array.isArray(artigos)) && [...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
     </>);
@@ -30,10 +35,15 @@ const StyledBobine = styled.div`
     border-radius:3px;
     margin-right:1px;
     text-align:center;
+    min-height:25px;
     width:25px;
     min-width:25px;
     font-size:8px;
     cursor:pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     &:hover {
         border-color: #d9d9d9;
     }
@@ -84,13 +94,26 @@ export const QueueNwColumn = ({ value, status, cellProps, style = {} }) => {
     return (<>{!cellProps?.inEdit && getValue(value)}</>);
 }
 
+export const ArtigoColumn = ({ data, cellProps }) => {
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column" }}>
+        <div style={{ fontWeight: 700 }}>{data?.artigo_cod}</div>
+        <div style={{}}>{data?.artigo_des}</div>
+    </div>}</>)
+}
+
+export const NwColumn = ({ data, cellProps, style }) => {
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column", ...style }}>
+        <div><span style={{ fontWeight: 700 }}>{data?.artigo_cod}</span> {data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
+        <div style={{ fontWeight: 700 }}>{data?.n_lote}</div>
+    </div>}</>)
+}
+
 export const PosColumn = ({ value, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
         {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
     </div>}</>);
 }
-
 
 export const Delete = ({ value, rowIndex, onClick, style, cellProps }) => {
     return (<>{!cellProps?.inEdit && <Button onClick={onClick} icon={<DeleteTwoTone twoToneColor="#f5222d" />} />}</>);
