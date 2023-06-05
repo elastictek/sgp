@@ -163,9 +163,7 @@ export default ({ setFormTitle, ...props }) => {
       if (!("fdata" in initFilters)) {
         initFilters["fdata"] = [`>=${dayjs().startOf('month').format(DATE_FORMAT)} 00:00:00`, `<=${dayjs().format(DATE_FORMAT)} 23:59:59`];
       }
-      console.log("entreieeeeeeeeeeeeeeeeeee1")
       let { filterValues, fieldValues } = fixRangeDates(null, initFilters);
-      console.log("entreieeeeeeeeeeeeeeeeeee2",fieldValues)
       formFilter.setFieldsValue({ ...fieldValues });
       dataAPI.addFilters({ ...filterValues }, true);
       dataAPI.setSort(dataAPI.getSort(), defaultSort);
