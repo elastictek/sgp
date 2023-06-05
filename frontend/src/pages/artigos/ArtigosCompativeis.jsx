@@ -258,6 +258,7 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const onEditComplete = ({ value, columnId, rowIndex, ...rest }) => {
+    console.log("xxxxxxxxxxxxxxxxxxx",value)
     dataAPI.validateField(rowSchema, columnId, value, rowIndex);
     dataAPI.updateValue(rowIndex, columnId, value);
   }

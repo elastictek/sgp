@@ -349,13 +349,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const setData = (data, payload) => {
         ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
-        if (payload?.update){
+        if (payload?.update) {
             ref.current.updated = Date.now();
         }
         updateState(draft => {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
-            if (payload?.update){
+            if (payload?.update) {
                 draft.updated = ref.current.updated;
             }
             draft.primaryKey = ref.current.primaryKey;
@@ -415,7 +415,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
             } else {
                 _rows.push(...rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
-                console.log("adding xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",_rows)
+                console.log("adding xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", _rows)
             }
             if (typeof cb === "function") {
                 _rows = cb(_rows);
@@ -542,9 +542,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
         const payload = getPayload(fromState);
         payload.tstamp = Date.now();
-        if (rest?.update===true){
+        if (rest?.update === true) {
             payload.update = true;
-        }else{
+        } else {
             payload.update = false;
         }
         setIsLoading(true);
@@ -779,7 +779,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const validateField = (schema, rowKey, column, value, rowIndex) => {
         let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowKey, rowIndex);
-        const _gridStatus = { ...status };
+        let _gridStatus = { ...status };
         //const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
         if (_gridStatus?.fieldStatus?.[rowKey]?.[column]) {
             _gridStatus.fieldStatus[rowKey]["row"] = rowIndex;
@@ -790,7 +790,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
             delete _gridStatus?.fieldStatus?.[rowKey]?.[column];
         }
-        _gridStatus.fieldStatus[rowKey] = { ..._gridStatus?.fieldStatus?.[rowKey], ...fieldStatus[rowKey] };
+        _gridStatus.fieldStatus = { ..._gridStatus.fieldStatus, [rowKey]: { ..._gridStatus?.fieldStatus?.[rowKey], ...fieldStatus?.[rowKey] } };
         _gridStatus.errors = _gridStatus.errors + errors;
         _gridStatus.warnings = _gridStatus.warnings + warnings;
         statusRef.current = {
@@ -957,7 +957,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         clearRowStatus,
         updateRowStatus: _updateRowStatus,
         status: () => status,
-        updateStatus:_updateStatus,
+        updateStatus: _updateStatus,
         clearStatus,
         getMessages,
         getFieldStatus,
