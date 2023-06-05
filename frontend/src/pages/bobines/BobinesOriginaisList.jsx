@@ -327,7 +327,6 @@ export default (props) => {
     }
 
     const onPaleteClick = (row, level) => {
-        console.log("ROWWWW", { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] });
         setModalParameters({ content: "palete", /* tab: lastTab, setLastTab */ type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row[`palete_id${level}`], nome: row[`palete${level}`] }, palete_id: row[`palete_id${level}`], palete_nome: row[`palete${level}`] } });
         showModal();
     }
@@ -405,8 +404,8 @@ export default (props) => {
                     moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
                 }}
                 leftToolbar={<Space>
-                    <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
-                    <Permissions permissions={props?.permission} action="editList">
+                    {!props?.noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
+                    <Permissions permissions={props?.permission} action="editList" forInput={!props?.noEdit}>
                         {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                         {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
