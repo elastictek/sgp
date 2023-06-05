@@ -3675,7 +3675,7 @@ def palete_picagem(request, pk):
                         array_bobines.append(bobine)
                         array_cores.append(bobine.bobinagem.perfil.core)
                         array_larguras.append(bobine.largura.largura)
-                        array_produtos.append(bobine.designacao_prod)
+                        array_produtos.append(bobine.designacao_prod.lower())
                         array_estados.append(bobine.estado)
                         if cliente != 0:
                             try:

@@ -34,15 +34,14 @@ import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { MediaContext } from "../App";
 //import FormPalete from './FormPalete';
-import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
-import BobinesDestinosList from '../bobines/BobinesDestinosList';
-import BobinesPropriedadesList from '../bobines/BobinesPropriedadesList';
-import BobinagensHistoryList from './BobinagensHistoryList';
-import BobinesMPGranuladoList from '../bobines/BobinesMPGranuladoList';
-import BobinesOriginaisList from '../bobines/BobinesOriginaisList';
+import BobinesDefeitosList from './BobinesDefeitosList';
+import BobinesDestinosList from './BobinesDestinosList';
+import BobinesPropriedadesList from './BobinesPropriedadesList';
+
+import BobinesMPGranuladoList from './BobinesMPGranuladoList';
+import BobinesOriginaisList from './BobinesOriginaisList';
 //import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
-import FormBobinagem from './FormBobinagem';
 import FormPrint from "../commons/FormPrint";
 
 
@@ -139,7 +138,7 @@ export default (props) => {
     const submitting = useSubmitting(true);
     const primaryKeys = [];
     const [activeTab, setActiveTab] = useState();
-    const [bobinagemExists, setBobinagemExists] = useState(false);
+    // const [bobinagemExists, setBobinagemExists] = useState(false);
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
@@ -169,10 +168,10 @@ export default (props) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        const formValues = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
-        if (formValues.length > 0/* && formValues[0]?.artigo */) {
-            setBobinagemExists(true);
-        }
+        // const formValues = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
+        // if (formValues.length > 0/* && formValues[0]?.artigo */) {
+        //     setBobinagemExists(true);
+        // }
         setActiveTab(props?.tab);
         submitting.end();
     }
@@ -190,46 +189,35 @@ export default (props) => {
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <div style={{ height: "calc(100vh - 120px)" }}>
             <YScroll>
-                {bobinagemExists &&
-                    <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                        items={[
-                            {
-                                label: `Informação`,
-                                key: '1',
-                                children: <FormBobinagem {...{ parameters: props?.parameters, permission }} />,
-                            },
-                            {
-                                label: `Bobines`,
-                                key: '3',
-                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
-                            }, {
-                                label: `Bobines Defeitos`,
-                                key: '4',
-                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
-                            },
-                            {
-                                label: `Bobines Destinos`,
-                                key: '5',
-                                children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
-                            },
-                            {
-                                label: `MP Granulado (Lotes)`,
-                                key: '6',
-                                children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
-                            }, {
-                                label: `Bobines Originais`,
-                                key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
-                            },
-                            {
-                                label: `Histórico`,
-                                key: '8',
-                                children: <BobinagensHistoryList {...{ parameters: props?.parameters, permission }} />,
-                            },
-                        ]}
+                <Tabs type="card" dark={1} defaultActiveKey="3" activeKey={activeTab} onChange={onTabChange}
+                    items={[
+                        {
+                            label: `Bobines`,
+                            key: '3',
+                            children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                        }, {
+                            label: `Bobines Defeitos`,
+                            key: '4',
+                            children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                        },
+                        {
+                            label: `Bobines Destinos`,
+                            key: '5',
+                            children: <BobinesDestinosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                        },
+                        {
+                            label: `Bobines Originais`,
+                            key: '7',
+                            children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                        }
+                        /*                             {
+                                                        label: `Histórico`,
+                                                        key: '8',
+                                                        children: <BobinagensHistoryList {...{ parameters: props?.parameters, permission }} />,
+                                                    }, */
+                    ]}
 
-                    />}
-                {(!bobinagemExists && !submitting.state) && <Empty description="A Bobinagem não foi encontrada!" />}
+                />
             </YScroll>
         </div>
         // </Context.Provider>

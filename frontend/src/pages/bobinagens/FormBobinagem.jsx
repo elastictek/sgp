@@ -13,23 +13,24 @@ import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import Toolbar from "components/toolbar";
+import { orderObjectKeys, json } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, TimePicker } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT } from 'config';
 import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -37,6 +38,7 @@ import { MediaContext } from "../App";
 import { Context } from './Bobinagem';
 import { Core, EstadoBobines, Largura } from "components/TableColumns";
 import { LeftToolbar, RightToolbar } from "./Bobinagem";
+import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 
 const schema = (options = {}) => {
     return getSchema({
@@ -49,7 +51,7 @@ const loadBobinagensLookup = async (bobinagem_id) => {
     return rows;
 }
 
-const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permission }) => {
+const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, parameters, permission }) => {
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
@@ -71,7 +73,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
 
     const rightContent = (
         <Space>
-            <RightToolbar permission={permission}/>
+            <RightToolbar permission={permission} bobinagem={{ id: parameters?.bobinagem?.id, nome: parameters?.bobinagem?.nome }} />
         </Space>
     );
     return (
@@ -82,7 +84,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     const permission = usePermission({ name: "bobinagens", item: "details" });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
@@ -103,49 +105,23 @@ export default (props) => {
 
     useEffect(() => {
         const controller = new AbortController();
-        loadData({ signal: controller.signal,init:true });
+        loadData({ signal: controller.signal, init: true });
         return (() => controller.abort());
     }, []);
 
-    const loadData = async ({ signal,init=false } = {}) => {
+    const loadData = async ({ signal, init = false } = {}) => {
         setFormDirty(false);
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        console.log("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",inputParameters.current)
         const formValues = await loadBobinagensLookup(inputParameters.current.bobinagem_id);
-        console.log("ccccccccccccccccccccccccccc--->>>>>>",formValues)
-        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp) } : {});
+        const v = formValues.length > 0 ? json(formValues[0].artigo)[0] : {};
+        const _ofs = formValues.length > 0 ? json(formValues[0].ofs) : [];
+        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], core: v?.core, ofs: _ofs, timestamp: dayjs(formValues[0].timestamp) } : {});
         if (formValues.length > 0 && formValues[0]?.artigo) {
-            dataAPIArtigos.setRows(formValues[0].artigo);
+            dataAPIArtigos.setRows(json(formValues[0].artigo));
         }
-        
-        
-        
-        
-        /*if (!permission.allow()) {
-            Modal.error({ content: "Não tem permissões!" });
-            return;
-        } */
-
-        //const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
-        //const formValues = await loadPaleteLookup(initFilters.palete_id);
-        //form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
-        //if (formValues.length > 0 && formValues[0]?.artigo) {
-        //    dataAPIArtigos.setRows(formValues[0].artigo);
-        //}
-        /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
-        formFilter.setFieldsValue({ ...fieldValues });
-        dataAPI.addFilters({ ...filterValues }, true, false);
-        dataAPI.setSort(defaultSort);
-        dataAPI.addParameters(defaultParameters, true, false);
-        dataAPI.fetchPost({
-            signal, rowFn: async (dt) => {
-                submitting.end();
-                return dt;
-            }
-        });*/
         submitting.end();
     }
 
@@ -189,67 +165,69 @@ export default (props) => {
     }
 
 
-
-
     return (
         <YScroll>
-            <ToolbarTable {...props} submitting={submitting} />
+            <ToolbarTable {...props} parameters={inputParameters.current} submitting={submitting} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
-                <Row style={{}} gutterWidth={10}>
-                    <Col width={150}><Field name="nome" label={{ enabled: true, text: "Lote" }}><Input size="small" /></Field></Col>
-                    <Col width={160}><Field name="timestamp" label={{ enabled: true, text: "Data" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
-                    <Col width={110}><Field name="comp_real" label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="m" /></Field></Col>
-                    <Col width={110}><Field name="area_real" label={{ enabled: true, text: "Área" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter={<span>m&sup2;</span>} /></Field></Col>
-                    <Col width={110}><Field name="nbobines_real" label={{ enabled: true, text: "Nº Bobines" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter={`/${form.getFieldValue("num_bobines")}`} /></Field></Col>
-                    <Col width={100}><Field name="peso_palete" label={{ enabled: true, text: "Peso Palete" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="kg" /></Field></Col>
-                    <Col width={110}><Field name="peso_bruto" label={{ enabled: true, text: "Peso Bruto" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="kg" /></Field></Col>
-                    <Col width={110}><Field name="peso_liquido" label={{ enabled: true, text: "Peso Líquido" }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="kg" /></Field></Col>
+                <Row gutterWidth={10} style={{}}>
+                    <Col width={300}><Field name="produto_cod" label={{ enabled: true, text: "Produto" }}><Input size='small' /></Field></Col>
+                    <Col width={110}><Field name="data" label={{ enabled: true, text: "Data" }}><DatePicker size='small' style={{}} showTime={false} format={DATE_FORMAT} /></Field></Col>
+                    <Col width={110}><Field name="inico" label={{ enabled: true, text: "Início" }}><TimePicker size='small' style={{}} format={TIME_FORMAT} /></Field></Col>
+                    <Col width={110}><Field name="fim" label={{ enabled: true, text: "Fim" }}><TimePicker size='small' style={{}} format={TIME_FORMAT} /></Field></Col>
+                    <Col width={110}><Field name="duracao" label={{ enabled: true, text: "Duração" }}><Input size='small' style={{}} /></Field></Col>
                 </Row>
-                {form.getFieldValue("cliente_id") && <><Row><Col><HorizontalRule title="Cliente" /></Col></Row>
-                    <Row style={{}} gutterWidth={10}>
-                        <Col width={400}><Field name="cliente_nome" label={{ enabled: true, text: "Cliente" }}><Input size="small" /></Field></Col>
-                        <Col width={120}><Field name="cliente_diamref" label={{ enabled: true, text: "Diâmetro Referência" }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
-                        <Col width={120}><Field name="cliente_liminf" label={{ enabled: true, text: "Diâmetro Lim. Inf." }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
-                        <Col width={120}><Field name="cliente_limsup" label={{ enabled: true, text: "Diâmetro Lim. Sup." }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
-                    </Row>
+                <Row gutterWidth={10} style={{ marginTop: "10px" }}>
+                    <Col width={120}><Field name="lar_util" label={{ enabled: true, text: "Largura Útil" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} min={0} addonAfter={<b>mm</b>} /></Field></Col>
+                    <Col width={120}><Field required name="largura_bruta" label={{ enabled: true, text: "Largura Bruta" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
+                    <Col width={120}><Field name="comp_par" required label={{ enabled: true, text: "Com. Emenda" }}><InputNumber size="small" style={{ textAlign: "right" }} addonAfter={<b>m</b>} /></Field></Col>
+                    <Col width={120}><Field name="diam" label={{ enabled: true, text: "Diâmetro" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
+                    <Col width={120}><Field name="area" label={{ enabled: true, text: "Área" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>m<sup>2</sup></b>} /></Field></Col>
+                    {form.getFieldValue("cortes") && <>
+                        <Col width={200}><CortesField value={form.getFieldValue("cortes")} /></Col>
+                        <Col width={90}><Field name="core" label={{ enabled: true, text: "Core" }}><Input size='small' style={{}} addonAfter={<b>''</b>} /></Field></Col>
+                    </>}
+                </Row>
+                {(form.getFieldValue("ofs") && form.getFieldValue("ofs").length > 0) && <>
+                    <Row><Col><HorizontalRule title="Ordens de Fabrico" /></Col></Row>
+                    {form.getFieldValue("ofs").map((v, i) => {
+                        return (
+                            <Row style={{}} gutterWidth={10} key={`vof-${v.id}`}>
+                                <Col style={{ display: "flex" }}>
+                                    <Field name={["ofs", i, "of_cod"]} label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>
+                                    <Field name={["ofs", i, "op"]} label={{ enabled: false, text: "" }}><Input style={{ width: "450px" }} size="small" /></Field>
+                                </Col>
+                            </Row>
+                        );
+                    })}
                 </>}
-
-
-                <Row style={{}} gutterWidth={10}>
-                    <Col><Field name="destino" label={{ enabled: true, text: "Destino" }}><Input style={{ width: "570px" }} size="small" /></Field></Col>
+                <Row><Col><HorizontalRule title="Nonwovens" /></Col></Row>
+                <Row style={{}} gutterWidth={10} wrap="nowrap">
+                    <Col width={20}></Col>
+                    <Col width={70} style={{ fontWeight: 700 }}>Consumo</Col>
+                    <Col width={110} style={{ fontWeight: 700 }}>Artigo</Col>
+                    <Col width={170} style={{ fontWeight: 700 }}>Lote</Col>
+                    <Col width={350} style={{ fontWeight: 700 }}>Designação</Col>
+                </Row>
+                <Row style={{ alignItems: "center" }} gutterWidth={10} wrap="nowrap">
+                    <Col width={20} style={{ fontWeight: 700 }}><ImArrowUp /></Col>
+                    <Col width={70}><Field name="nwsup" label={{ enabled: false }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="m" /></Field></Col>
+                    <Col width={110}><Field name="nwcodsup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={170}><Field name="nwlotesup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={350}><Field name="nwdessup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                </Row>
+                <Row style={{ alignItems: "center" }} gutterWidth={10} wrap="nowrap">
+                    <Col width={20} style={{ fontWeight: 700 }}><ImArrowDown /></Col>
+                    <Col width={70}><Field name="nwinf" label={{ enabled: false }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="m" /></Field></Col>
+                    <Col width={110}><Field name="nwcodinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={170}><Field name="nwloteinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={350}><Field name="nwdesinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
                 </Row>
 
-
-                {(form.getFieldValue("ofid") || form.getFieldValue("op")) && <>
-                    <Row><Col><HorizontalRule title="Ordem de Fabrico" /></Col></Row>
-                    <Row style={{}} gutterWidth={10}>
-                        <Col style={{ display: "flex" }}>
-                            {form.getFieldValue("ofid") && <Field name="ofid" label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>}
-                            <Field name="op" label={{ enabled: false, text: "" }}><Input style={{ width: "450px" }} size="small" /></Field>
-                        </Col>
-                    </Row>
-                    <Row style={{}} gutterWidth={10}><Col><Label text="Ordem Fabrico Original" /></Col></Row>
-                    <Row style={{}} gutterWidth={10}>
-                        <Col style={{ display: "flex" }}>
-                            {form.getFieldValue("ofid_original") && <Field name="ofid_original" label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>}
-                            <Field name="op_original" label={{ enabled: false, text: "Ordem Fabrico Original" }}><Input style={{ width: "450px" }} size="small" /></Field>
-                        </Col>
-                    </Row></>}
-
-                {(form.getFieldValue("carga") || form.getFieldValue("SDHNUM_0")) && <><Row><Col><HorizontalRule title="Expedição" /></Col></Row>
-                    <Row style={{}} gutterWidth={10}>
-                        {form.getFieldValue("carga") && <Col width={250}><Field name="carga" label={{ enabled: true, text: "Carga" }}><Input size="small" /></Field></Col>}
-                        {form.getFieldValue("SDHNUM_0") && <><Col width={150}><Field name="SDHNUM_0" label={{ enabled: true, text: "Expedição" }}><Input size="small" /></Field></Col>
-                            <Col width={160}><Field name="IPTDAT_0" label={{ enabled: true, text: "Data Expedição" }}><DatePicker showTime format={DATETIME_FORMAT} size="small" /></Field></Col>
-                            <Col width={250}><Field name="BPCNAM_0" label={{ enabled: true, text: "Expedição Cliente" }}><Input size="small" /></Field></Col>
-                            <Col width={40}><Field name="EECICT_0" label={{ enabled: true, text: "EEC" }}><Input size="small" /></Field></Col></>
-                        }
-                    </Row></>}
                 <Row><Col><HorizontalRule title="Artigos" /></Col></Row>
                 <Row>
                     <Col>
-{/*                         <Table
+                        <Table
                             rowStyle={`cursor:pointer;font-size:12px;`}
                             loadOnInit={false}
                             columns={[
@@ -267,7 +245,7 @@ export default (props) => {
                             primaryKeys={["id", "estado", "lar"]}
                             editable={false}
                             rowHeight={28}
-                        /> */}
+                        />
                     </Col>
                 </Row>
             </FormContainer>

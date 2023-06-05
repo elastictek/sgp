@@ -108,7 +108,7 @@ export default (props) => {
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = { method: "BobinesGranuladoMPList" };
-    const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
+    const [defaultFilters, setDefaultFilters] = useState({});
     const defaultSort = [{ column: 'pb.nome', direction: 'ASC' }];
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, sort: [] } });
     const primaryKeys = ['id', 'artigo_cod', 'n_lote'];
@@ -175,7 +175,7 @@ export default (props) => {
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({ signal });

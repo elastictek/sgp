@@ -51,6 +51,7 @@ import PaletizacaoSchema from '../currentline/ordemfabrico/paletizacaoSchema/Svg
 import Palete from '../paletes/Palete';
 import PaletesList from '../paletes/PaletesList';
 import BobinesList from '../bobines/BobinesList';
+import BobinesGroup from '../bobines/BobinesGroup';
 import BobinagensList from '../bobinagens/BobinagensList';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
 const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
@@ -796,12 +797,9 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
             setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             showModal();
         } else {
-            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
-        }
-    }
-    const onClickTest = (row) => {
-        setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastTab:setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
         showModal();
+        }
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
@@ -822,7 +820,7 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
         ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.duracao }] : [],
         ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
         ...(true) ? [{ name: 'area', header: 'Área.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m2">{getFloat(data?.area, 2)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'diam', header: 'Diam.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <div onClick={() => onClickTest(data)}><RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 2)}</RightAlign></div> }] : []
+        ...(true) ? [{ name: 'diam', header: 'Diam.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 2)}</RightAlign> }] : []
     ];
 
 
@@ -1201,7 +1199,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "paletesexpand": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />
-                case "bobines": return <BobinesList parameters={{ ...modalParameters.parameters }} noid={true} />
+                case "bobines": return <BobinesGroup parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "bobinagensexpand": return <BobinagensList parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />

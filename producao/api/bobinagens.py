@@ -458,10 +458,20 @@ def BobinagensLookup(request, format=None):
     parameters = {**f.parameters,**fid.parameters, **f2['parameters']}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,
+    cols = f"""
+            lnw0.artigo_cod nwcodinf,
+            lnw1.artigo_cod nwcodsup,
+            lnw0.artigo_des nwdesinf,
+            lnw1.artigo_des nwdessup,
+            lnw0.n_lote nwloteinf,
+            lnw1.n_lote nwlotesup,
+            (SELECT JSON_ARRAYAGG(JSON_OBJECT('id',of_id,'of_cod',of_cod,'op',CONCAT(cliente_nome,' L',artigo_lar,' LINHA ',order_cod))) FROM JSON_TABLE(acs.ofs,"$[*]" COLUMNS(of_id INT PATH "$.of_id",of_cod VARCHAR(30) PATH "$.of_cod",order_cod VARCHAR(40) PATH "$.order_cod",cliente_nome VARCHAR(200) PATH "$.cliente_nome",artigo_lar int PATH "$.artigo_lar")) tx) ofs,
+            pbm.*,
+                CASE WHEN acs.id is not null THEN acs.produto_cod ELSE pf.produto END as produto_cod,
+                acs.cortes->>'$.largura_json' cortes,
             (
             select JSON_ARRAYAGG(v) from (
-            select JSON_OBJECT("id",pa.id,"cod",pa.cod,"desc",pa.des,"core",pa.core,"lar",pa.lar,"estado",pb.estado) v
+            select JSON_OBJECT("id",pa.id,"cod",pa.cod,"des",pa.des,"core",pa.core,"lar",pa.lar,"estado",pb.estado) v
             from producao_bobine pb join producao_artigo pa on pa.id=pb.artigo_id 
             {fid.text}
             GROUP BY pa.id, pa.cod, pa.des, pa.core, pa.lar, pb.estado
@@ -474,6 +484,10 @@ def BobinagensLookup(request, format=None):
             select 
             {f'{dql.columns}'}
             from producao_bobinagem pbm
+            LEFT JOIN audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+            LEFT JOIN producao_perfil pf on pf.id=pbm.perfil_id
+            LEFT JOIN lotesnwlinha lnw0 on lnw0.vcr_num=pbm.vcr_num_inf
+            LEFT JOIN lotesnwlinha lnw1 on lnw1.vcr_num=pbm.vcr_num_sup
             {f.text} {f2["text"]}
             {dql.sort} {dql.limit}
         """
@@ -489,7 +503,80 @@ def BobinagensLookup(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+def BobinagensHistoryList(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+    #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
+    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+        "id": {"value": lambda v: f"=={v.get('bobinagem_id')}", "field": lambda k, v: f'{k}'},
+    #    "fof": {"value": lambda v: v.get('fof')},
+    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
 
+    f2 = filterMulti(request.data['filter'], {
+        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = db.dql(request.data, False)
+    cols = f"""t.*
+    #,pc.nome cliente_nome,po1.ofid ofid_original,po2.ofid ofid
+    """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select
+                {c(f'{dql.columns}')}
+            FROM (
+
+                select * from audit_producao_bobinagem pbm {f.text}
+                union
+                select null,null,null,pbm.* from producao_bobinagem pbm {f.text}
+
+            ) t
+            #LEFT JOIN producao_carga pcarga ON pcarga.id = t.carga_id
+            #LEFT JOIN producao_cliente pc ON pc.id = t.cliente_id
+            #LEFT JOIN planeamento_ordemproducao po1 ON po1.id = t.ordem_id_original
+            #LEFT JOIN planeamento_ordemproducao po2 ON po2.id = t.ordem_id
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    print(f"""  
+            select
+                {f'{dql.columns}'}
+            FROM (
+
+                select * from audit_producao_bobinagem pbm {f.text}
+                union
+                select null,null,null,pbm.* from producao_bobinagem pbm {f.text}
+
+            ) t
+            #LEFT JOIN producao_carga pcarga ON pcarga.id = t.carga_id
+            #LEFT JOIN producao_cliente pc ON pc.id = t.cliente_id
+            #LEFT JOIN planeamento_ordemproducao po1 ON po1.id = t.ordem_id_original
+            #LEFT JOIN planeamento_ordemproducao po2 ON po2.id = t.ordem_id
+            {dql.sort} {dql.paging} {dql.limit}
+        """)
+    print(parameters)
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 
 

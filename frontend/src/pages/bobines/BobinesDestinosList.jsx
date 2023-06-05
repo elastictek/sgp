@@ -30,6 +30,7 @@ import YScroll from 'components/YScroll';
 import ToolbarTitle from 'components/ToolbarTitle';
 import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos } from 'components/tableEditors';
 import FormPrint from '../commons/FormPrint';
+import Palete from '../paletes/Palete';
 
 const title = "";
 
@@ -56,17 +57,21 @@ export default (props) => {
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
-    const defaultParameters = {};
-    const [defaultFilters, setDefaultFilters] = useState({ fcompactual: ">0" });
+    const defaultParameters = {method: "BobinesList"};
+    const [defaultFilters, setDefaultFilters] = useState({});
     const defaultSort = [{ column: 'posicao_palete', direction: 'ASC' }];
-    const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobineslist/`, parameters: {}, pagination: { enabled: false, limit: 100 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { 
+        ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 100 }
+    }, filter: {}, sort: [] } });
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
+    const [lastPaleteTab, setLastPaleteTab] = useState('1');
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
             switch (modalParameters.content) {
                 case "print": return <FormPrint v={{ ...modalParameters }} />;
+                case "palete": return <Palete tab={modalParameters?.tab} setTab={modalParameters?.setTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
@@ -76,7 +81,10 @@ export default (props) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
-
+    const onPaleteClick = (row, level) => {
+        setModalParameters({ content: "palete", tab: lastPaleteTab, setTab:setLastPaleteTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row?.palete_id, nome: row?.palete_nome }, palete_id: row?.palete_id, palete_nome: row?.palete_nome } });
+        showModal();
+    }
 
     const editable = (row, col) => {
         if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
@@ -103,6 +111,8 @@ export default (props) => {
 
     const columns = [
         { key: 'nome', sortable: false, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
+        ...(props?.columns && 'palete_nome' in props?.columns) ? [{ key: 'palete_nome', sortable: false, name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 0)}>{p.row.palete_nome}</Button> }] : [],
+        { key: 'posicao_palete', sortable: false, name: 'Pos.', width: 60, formatter: p => p.row.posicao_palete },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
         { key: 'troca_etiqueta', name: 'Troca Etiqueta', reportFormat: '0', width: 90, formatter: p => <div style={{}}><Checkbox checked={p.row.troca_etiqueta} disabled/></div> },
         {
@@ -182,7 +192,7 @@ export default (props) => {
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id,fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({signal});
@@ -270,8 +280,8 @@ export default (props) => {
                 onRowsChange={onRowsChange}
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
-                    <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>
-                    <Permissions permissions={props?.permission} action="editList">
+                    {!props?.noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
+                    <Permissions permissions={props?.permission} action="editList" forInput={!props?.noEdit}>
                         {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                         {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}

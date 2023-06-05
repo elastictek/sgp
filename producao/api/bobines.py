@@ -241,7 +241,8 @@ def BobinesGranuladoMPList(request,format=None):
     f = Filters(request.data['filter'])
     f.setParameters({
         "id": {"value": lambda v: v.get('id'), "field": lambda k, v: f'pb.{k}'},
-        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'pb.{k}'},
+        "palete_id": {"value": lambda v: Filters.getNumeric(v.get('palete_id')), "field": lambda k, v: f'pb.{k}'},
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get('bobinagem_id')), "field": lambda k, v: f'pb.{k}'},
         "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'pb.{k}'},
         "n_lote": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'lgl.{k}'}
     }, True)
@@ -284,7 +285,8 @@ def BobinesOriginaisList(request,format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
     f.setParameters({
-        "palete_id": {"value": lambda v: v.get('palete_id'), "field": lambda k, v: f'ppb.{k}'},
+        "palete_id": {"value": lambda v: Filters.getNumeric(v.get('palete_id')), "field": lambda k, v: f'ppb.{k}'},
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get('bobinagem_id')), "field": lambda k, v: f'ppb.{k}'},
         "nome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'ppb.{k}'}
     }, True)
     f.where(False,"and")
@@ -437,7 +439,16 @@ def BobinesOriginaisList(request,format=None):
 def BobinesList(request, format=None):
     type_list = request.data.get("filter").get("type") if request.data.get("filter").get("type") is not None else 'A'
     connection = connections[connGatewayName].cursor() if type_list=='C' else connections["default"].cursor()
-    f = Filters(request.data['filter'])
+    
+    _f = request.data['filter'].get("filter") if request.data['filter'].get("filter") is not None else {}
+    if "filter" in request.data["filter"]:
+        del request.data['filter']["filter"]
+    filter_data = {**request.data['filter'],**_f}
+
+    print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    print(filter_data)
+
+    f = Filters(filter_data)
     # print("###SORRRRRRRTTTTTTTTTTTTTTTTTT###")
     
     
@@ -445,7 +456,6 @@ def BobinesList(request, format=None):
     #     d.update((k, f"pbm.{v}") for k, v in d.items() if v == "timestamp")
     # print(request.data)
 
-    
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'mb.timestamp'),
         "comp_actual": {"value": lambda v: Filters.getNumeric(v.get('fcomp'),0,">"), "field": lambda k, v: f'mb.{k}'},
@@ -453,6 +463,8 @@ def BobinesList(request, format=None):
         "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'mb.{k}'},
         "palete_nome": {"value": lambda v: v.get('fpalete').upper() if v.get('fpalete') is not None else None, "field": lambda k, v: f'sgppl.nome'},
         "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'po.ofid'},
+        "palete_id": {"value": lambda v: Filters.getNumeric(v.get('palete_id')), "field": lambda k, v: f'mb.{k}'},
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get('bobinagem_id')), "field": lambda k, v: f'mb.{k}'},
         "pofid": {"value": lambda v: v.get('fpof').upper() if v.get('fpof') is not None else None, "field": lambda k, v: f'sgppl.ofid'},
         "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"mb.{k}"},
         "core": {"value": lambda v: Filters.getNumeric(v.get('fcore')), "field": lambda k, v: f"mb.{k}"},
@@ -507,7 +519,7 @@ def BobinesList(request, format=None):
         f.where(False, "and")
         f.value(frel)
         return f
-    fdefeitos = filterDefeitosMultiSelect(request.data['filter'],'fdefeitos','freldefeitos')
+    fdefeitos = filterDefeitosMultiSelect(filter_data,'fdefeitos','freldefeitos')
 
     
 
@@ -523,9 +535,9 @@ def BobinesList(request, format=None):
         f.where(False, "and")
         f.value()
         return f
-    festados = filterMultiSelectJson(request.data['filter'],'festados','estado','mb')
+    festados = filterMultiSelectJson(filter_data,'festados','estado','mb')
 
-    fbobinemulti = filterMulti(request.data['filter'], {
+    fbobinemulti = filterMulti(filter_data, {
         'flotenwinf': {"keys": ['lotenwinf'], "table": 'mb.'},
         'ftiponwinf': {"keys": ['tiponwinf'], "table": 'mb.'},
 
@@ -533,7 +545,7 @@ def BobinesList(request, format=None):
         'ftiponwsup': {"keys": ['tiponwsup'], "table": 'mb.'}
     }, False, "and" if f.hasFilters else "and" ,False)
 
-    fbobinedestinos = Filters(request.data['filter'])
+    fbobinedestinos = Filters(filter_data)
     fbobinedestinos.setParameters({
         "destino_cli": {"value": lambda v: v.get('fdestino').lower() if v.get('fdestino') is not None else None, "field": lambda k, v: f"lower(d->'cliente'->>'BPCNAM_0')"},
         "destino_lar": {"value": lambda v: Filters.getNumeric(v.get('fdestino_lar')), "field": lambda k, v: f"(d->>'largura')::int"},
@@ -550,11 +562,11 @@ def BobinesList(request, format=None):
         limit 1
     )""" if fbobinedestinos.hasFilters else ""
 
-    fartigompmulti = filterMulti(request.data['filter'], {
+    fartigompmulti = filterMulti(filter_data, {
         #'fartigo_mp': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'},
         #'flote_mp': {"keys": ['n_lote'], "table": 'mcg.'},
     }, False, "and" if f.hasFilters else "and" ,False)
-    # fbobine = Filters(request.data['filter'])
+    # fbobine = Filters(filter_data)
     # fbobine.setParameters({"bobinenome": {"value": lambda v: v.get('fbobine'), "field": lambda k, v: f'nome'}}, True)
     # fbobine.where()
     # fbobine.auto()
@@ -562,7 +574,7 @@ def BobinesList(request, format=None):
     fartigompmulti["text"] = f""" and exists (select 1 from mv_bobines mb join mv_consumo_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
     #fartigompmulti["text"] = f"""and exists (select 1 from mv_bobines mb where mb.palete_id=sgppl.id {fartigompmulti["text"].lstrip("where (").rstrip(")")}))""" if fartigompmulti["hasFilters"] else ""
 
-    fartigo = filterMulti(request.data['filter'], {
+    fartigo = filterMulti(filter_data, {
         'fartigo': {"keys": ["cod"], "table": 'mva.'},
         'fartigodes': {"keys": ["des"], "table": 'mva.'},
         **({'fartigoexp': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mv.'}} if type_list =='C' else {})

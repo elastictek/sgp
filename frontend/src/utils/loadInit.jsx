@@ -45,7 +45,7 @@ export const fixRangeDates = (fields, values = {}) => {
                 for (let [i, x] of _fieldValues[v].entries()) {
                     if (x) {
                         let f = (i === 0) ? "startValue" : "endValue";
-                        _fval[f] = dayjs(x.replace("=", '').replace("<", "").replace(">", ""));
+                        _fval[f] = dayjsValue(x.replace("=", '').replace("<", "").replace(">", ""));
                         _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
                         _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
                     }
@@ -62,7 +62,7 @@ export const fixRangeDates = (fields, values = {}) => {
                 for (let [i, x] of _fieldValues[v].entries()) {
                     if (x) {
                         let f = (i === 0) ? "startValue" : "endValue";
-                        _fval[f] = dayjs(x.replace("=", '').replace("<", "").replace(">", ""));
+                        _fval[f] = dayjsValue(x.replace("=", '').replace("<", "").replace(">", ""));
                         _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
                         _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
                     }

@@ -7,7 +7,7 @@ import { ConditionalWrapper } from '../conditionalWrapper';
 import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
-import { debounce } from "utils";
+import { debounce,dayjsValue } from "utils";
 import { validate, getSchema, pick, getStatus } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
@@ -277,6 +277,18 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
             />
         </div>
     );
+};
+
+export const DatetimeField = ({ value, ...rest }) => {
+        return (
+        <DatePicker value={dayjsValue(value)} {...rest} />
+    );
+};
+
+export const TimeField = ({ value, ...rest }) => {
+    return (
+    <TimePicker value={dayjsValue(value)} {...rest} />
+);
 };
 
 export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size, onPressEnter, ...rest }, ref) => {
@@ -843,7 +855,6 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
     //console.log("zzzzzzz->", children.type, keyField, rest)
     if (!type || type === 'C') {
         if (children.type === DatePicker || children.type === TimePicker) {
-            //console.log("FIELD-> PICKER");
             type = 'Picker';
         } else if (children.type === Input) {
             //console.log("FIELD-> INPUT");
@@ -922,7 +933,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? value.format(format) : ''}</div>)
+                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? dayjsValue(value).format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue) {

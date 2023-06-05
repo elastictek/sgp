@@ -1,5 +1,5 @@
 import React from 'react';
-export const ROOT_URL = "http://localhost:8000";
+export const ROOT_URL = "http://192.168.0.16:81";
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
@@ -12,7 +12,8 @@ export const DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
-export const SOCKET = { url: 'ws://localhost:8000/ws' };
+export const DATE_ENGINE = "moment";
+export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
  export const bColors = (estado) => {

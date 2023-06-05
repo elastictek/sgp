@@ -164,7 +164,7 @@ export default (props) => {
             setPaleteExists(true);
         }
         setActiveTab(props?.tab);
-        console.log("####", initFilters)
+/*         console.log("############PALETEPROPS--", props) */
         submitting.end();
         /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
@@ -182,7 +182,9 @@ export default (props) => {
 
     const onTabChange = (k) => {
         //Guarda a tab selecionada no parent, por forma a abrir sempre no último selecionado.
-        if (props?.setTab) { props.setTab(k); }
+        if (props?.setTab) { 
+            props.setTab(k); 
+        }
         setActiveTab(k);
     }
     const changeMode = (key) => {

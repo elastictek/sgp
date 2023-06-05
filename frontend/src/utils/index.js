@@ -1,6 +1,39 @@
 import React, { useEffect, useState, useRef } from 'react';
 import * as R from 'ramda';
+import moment from 'moment';
 import dayjs from 'dayjs';
+import { DATE_ENGINE } from 'config';
+
+
+export const dayjsValue = (value) => {
+    if (!value) {
+      return null;
+    }
+    if (dayjs.isDayjs(value)) {
+        return value;
+    }
+    if (moment.isMoment(value)) {
+        return value;
+      }
+  
+    let dayjsObj;
+    if (value.includes('-')) {
+      // Date or datetime value
+      dayjsObj = DATE_ENGINE=="moment" ? moment(value) : dayjs(value);
+    } else if (value.includes(':')) {
+      // Time value
+      const timeFormat = (value.split(':').length === 2) ? 'HH:mm' : 'HH:mm:ss';
+      dayjsObj = DATE_ENGINE=="moment" ? moment(`1970-01-01T${value}`, { format: timeFormat }) : dayjs(`1970-01-01T${value}`, { format: timeFormat });
+    } else {
+      return null; // Invalid format
+    }
+  
+    if (!dayjsObj.isValid()) {
+      return null;
+    }
+  
+    return dayjsObj;
+  };
 
 export const containsAll = (a1, a2) => {
     for (let i = 0; i < a2.length; i++) {
