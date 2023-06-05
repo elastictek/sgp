@@ -1226,9 +1226,9 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
         showModal();
     }
-    const onEstadoClick = (data, estado) => {
+    const onEstadoClick = (data, estado,noPalete=null) => {
         const item = BOBINE_ESTADOS.filter(v => v.value === estado)[0];
-        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
+        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { ...noPalete && {palete_id:"isnull"}, fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
         showModal();
     }
     const onTotaisEstadoClick = (estado, ofsData, defeito) => {
@@ -1819,7 +1819,7 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     // }
 
     return (<>{data?.bobines_nopalete && <div className={cls.bobineschart} style={{ lineHeight: 1.1, fontSize: "10px", ...style }}>{data?.bobines_nopalete?.map((v, i) => {
-        return (<div onClick={() => onEstadoClick(data, v.estado)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
+        return (<div onClick={() => onEstadoClick(data, v.estado,true)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
     })}</div>}</>);
 }
 
