@@ -258,7 +258,6 @@ export default ({ setFormTitle, ...props }) => {
   }
 
   const onEditComplete = ({ value, columnId, rowIndex, ...rest }) => {
-    console.log("xxxxxxxxxxxxxxxxxxx",value)
     dataAPI.validateField(rowSchema, columnId, value, rowIndex);
     dataAPI.updateValue(rowIndex, columnId, value);
   }
@@ -268,8 +267,8 @@ export default ({ setFormTitle, ...props }) => {
     submitting.trigger();
     let response = null;
     try {
-      dataAPI.validateRows(rowSchema);
-      if (errors === 0) {
+      const status = dataAPI.validateRows(rowSchema);
+      if (status.errors === 0) {
         response = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "UpdateArtigosCompativeis", rows } });
         if (response.data.status !== "error") {
           dataAPI.update(true);
