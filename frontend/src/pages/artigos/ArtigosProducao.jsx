@@ -144,11 +144,11 @@ export default ({ setFormTitle, ...props }) => {
   };
 
   const columns = [
-    ...(true) ? [{ name: 'pb.artigo_id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.artigo_id}</div> }] : [],
-    ...(true) ? [{ name: 'pa.cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
-    ...(true) ? [{ name: 'pa.des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
+    ...(true) ? [{ name: 'artigo_id', header: 'id', userSelect: true, defaultLocked: true, width: 70, render: (p) => <div style={{}}>{p.data?.artigo_id}</div> }] : [],
+    ...(true) ? [{ name: 'cod', header: 'Cód', userSelect: true, defaultLocked: true, width: 170, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.cod}</div> }] : [],
+    ...(true) ? [{ name: 'des', header: 'Designação', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
     ...(true) ? [{ name: 'produto', header: 'Produto', userSelect: true, defaultLocked: false, minWidth: 170, defaultFlex: 1, render: (p) => <div style={{}}>{p.data?.produto}</div> }] : [],
-    ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, width: 90, render: (p) => <RightAlign unit="m2">{p.data?.area}</RightAlign>}] : []
+    ...(true) ? [{ name: 'area', header: 'Área', reportFormat:"0.00", userSelect: true, defaultLocked: false, width: 90, render: (p) => <RightAlign unit="m2">{p.data?.area}</RightAlign>}] : []
   ];
 
   useEffect(() => {

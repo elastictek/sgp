@@ -23,7 +23,6 @@ export const dayjsValue = (value) => {
     } else if (value.includes(':')) {
       // Time value
       const timeFormat = (value.split(':').length === 2) ? 'HH:mm' : 'HH:mm:ss';
-      console.log("----------------------------------?????---->",timeFormat)
       dayjsObj = DATE_ENGINE=="moment" ? moment(`1970-01-01T${value}`, timeFormat) : dayjs(`1970-01-01T${value}`, { format: timeFormat });
     } else {
       return null; // Invalid format

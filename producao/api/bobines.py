@@ -424,6 +424,115 @@ def BobinesOriginaisList(request,format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
+
+    print(f"""  
+            select 
+            
+            {f'{dql.columns}'}
+                        
+            FROM (
+            select
+            palete_id,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4, original_lvl5,
+            IFNULL(original_lvl5, IFNULL(original_lvl4, IFNULL(original_lvl3, IFNULL(original_lvl2, original_lvl1)))) root,
+            IFNULL(estado5, IFNULL(estado4, IFNULL(estado3, IFNULL(estado2, estado1)))) root_estado
+
+            ,case when (original_lvl5 is not null) THEN 5
+            ELSE (case when (original_lvl4 is not null) THEN 4
+            ELSE (case when (original_lvl3 is not null) THEN 3
+            ELSE (case when (original_lvl2 is not null) THEN 2
+            ELSE (case when (original_lvl1 is not null) THEN 1
+            ELSE 0 END) END) END) END) END nretrabalhos,
+
+            (select SUM(metros) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) metros_lvl4,
+            (select SUM(metros) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) metros_lvl3,
+            (select SUM(metros) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) metros_lvl2,
+            (select SUM(metros) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) metros_lvl1,
+            (select SUM(metros) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) metros,
+
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl5,metros,'e',emenda)) from producao_emenda where bobine_id=b5 and bobinagem_id=bm4) emenda_lvl4,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl4,metros,'e',emenda)) from producao_emenda where bobine_id=b4 and bobinagem_id=bm3) emenda_lvl3,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl3,metros,'e',emenda)) from producao_emenda where bobine_id=b3 and bobinagem_id=bm2) emenda_lvl2,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl2,metros,'e',emenda)) from producao_emenda where bobine_id=b2 and bobinagem_id=bm1) emenda_lvl1,
+            (select JSON_ARRAYAGG(JSON_OBJECT(original_lvl1,metros,'e',emenda)) from producao_emenda where bobine_id=b1 and bobinagem_id=bm0) emenda
+            ,comp0,comp1,comp2,comp3,comp4,comp5
+            ,b1,b2,b3,b4,b5
+            ,largura0,largura1,largura2,largura3,largura4,largura5
+            ,palete_id1,palete_id2,palete_id3,palete_id4,palete_id5,
+            estado,estado1,estado2,estado3,estado4,estado5
+            from (
+            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1, pb2.nome original_lvl2, pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,  
+
+            pb0.bobinagem_id bm0,pb0.id b0, case when pb0.comp=0 then pbm0.comp else pb0.comp end comp0,
+            pb.bobinagem_id bm1,pb.id b1, case when pb.comp=0 then pbm.comp else pb.comp end comp1,
+            pb2.bobinagem_id bm2,pb2.id b2, case when pb2.comp=0 then pbm2.comp else pb2.comp end comp2,
+            pb3.bobinagem_id bm3,pb3.id b3, case when pb3.comp=0 then pbm3.comp else pb3.comp end comp3,
+            pb4.bobinagem_id bm4,pb4.id b4, case when pb4.comp=0 then pbm4.comp else pb4.comp end comp4,
+            pb5.bobinagem_id bm5,pb5.id b5, case when pb5.comp=0 then pbm5.comp else pb5.comp end comp5
+
+            ,l0.largura largura0,l.largura largura1,l2.largura largura2, l3.largura largura3,l4.largura largura4,l5.largura largura5,
+
+            pb.palete_id palete_id1,pb2.palete_id palete_id2,pb3.palete_id palete_id3,pb4.palete_id palete_id4,pb5.palete_id palete_id5,
+			pb0.estado, pb.estado estado1,pb2.estado estado2,pb3.estado estado3,pb4.estado estado4,pb5.estado estado5
+
+            FROM producao_bobine pb0
+            JOIN producao_bobinagem pbm0 on pb0.bobinagem_id = pbm0.id
+            JOIN producao_largura l0 on l0.id = pb0.largura_id
+
+            /*NÍVEL 1*/
+            join producao_emenda pem on pem.bobinagem_id = pb0.bobinagem_id
+            left join producao_bobine pb on pem.bobine_id = pb.id
+            left join producao_bobinagem pbm on pb.bobinagem_id = pbm.id
+            left join producao_largura l on l.id = pb.largura_id
+            /**/
+
+            /*NÍVEL 2*/
+            left join producao_emenda pem2 on pem2.bobinagem_id = pb.bobinagem_id     
+
+            left join producao_bobine pb2 on pem2.bobine_id = pb2.id
+            left join producao_bobinagem pbm2 on pb2.bobinagem_id = pbm2.id
+            left join producao_largura l2 on l2.id = pb2.largura_id
+            /**/
+
+            /*NÍVEL 3*/
+            left join producao_emenda pem3 on pem3.bobinagem_id = pb2.bobinagem_id    
+
+            left join producao_bobine pb3 on pem3.bobine_id = pb3.id
+            left join producao_bobinagem pbm3 on pb3.bobinagem_id = pbm3.id
+            left join producao_largura l3 on l3.id = pb3.largura_id
+            /**/
+
+            /*NÍVEL 4*/
+            left join producao_emenda pem4 on pem4.bobinagem_id = pb3.bobinagem_id    
+
+            left join producao_bobine pb4 on pem4.bobine_id = pb4.id
+            left join producao_bobinagem pbm4 on pb4.bobinagem_id = pbm4.id
+            left join producao_largura l4 on l4.id = pb4.largura_id
+            /**/
+
+            /*NÍVEL 5*/
+            left join producao_emenda pem5 on pem5.bobinagem_id = pb4.bobinagem_id    
+
+            left join producao_bobine pb5 on pem5.bobine_id = pb5.id
+            left join producao_bobinagem pbm5 on pb5.bobinagem_id = pbm5.id
+            left join producao_largura l5 on l5.id = pb5.largura_id
+            /**/
+             WHERE (pb0.nome in (
+             
+                select ppb.nome from producao_bobine ppb where ppb.recycle=0 and comp_actual>0 {f.text} 
+
+             
+             ) )
+
+            ) tb0 LIMIT 5000) tb1
+            LEFT JOIN producao_palete plt on tb1.palete_id=plt.id
+            LEFT JOIN producao_palete plt1 on tb1.palete_id1=plt1.id
+            LEFT JOIN producao_palete plt2 on tb1.palete_id2=plt2.id
+            LEFT JOIN producao_palete plt3 on tb1.palete_id3=plt3.id
+            LEFT JOIN producao_palete plt4 on tb1.palete_id4=plt4.id
+            LEFT JOIN producao_palete plt5 on tb1.palete_id5=plt5.id
+            {dql.sort} {dql.paging} {dql.limit}
+        """)
+    print(parameters)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""

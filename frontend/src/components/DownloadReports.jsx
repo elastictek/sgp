@@ -102,7 +102,11 @@ export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, ti
     let cols = {};
     if (Array.isArray(columns)) {
         for (const v of columns) {
-            cols[v.key] = { title: v?.reportTitle ? v.reportTitle : (typeof (v.name) !== "object" ? v.name : v.key), width: v.width, format: v?.reportFormat && v.reportFormat };
+            if ("key" in v){
+                cols[v.key] = { title: v?.reportTitle ? v.reportTitle : (typeof (v.name) !== "object" ? v.name : v.key), width: v.width, format: v?.reportFormat && v.reportFormat };
+            }else{
+                cols[("id" in v) ? v.id : v.name] = { title: v?.reportTitle ? v.reportTitle : (typeof (v.header) !== "object" ? v.header : (("id" in v) ? v.id : v.name)), width: v?.width ? v?.width : v?.defaultWidth, format: v?.reportFormat && v.reportFormat };
+            }
         }
     }else{
         cols=columns;
