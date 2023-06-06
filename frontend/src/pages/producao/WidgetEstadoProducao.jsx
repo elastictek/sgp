@@ -33,7 +33,7 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import WidgetTitle, { WidgetSimpleTitle } from 'components/WidgetTitle';
 import { InputNumberEditor, MateriasPrimasTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn, EventColumn } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -146,8 +146,9 @@ const MiniGaugeVelocidade = ({ data, title, min = 0, max = 100, style, ...props 
             left: 'center',
             text: title,
             textStyle: {
-                fontSize: 12,
-                fontWeight: 'bolder'
+                fontSize: 10,
+                fontWeight: 'bolder',
+                fontFamily: "Roboto,sans-serif"
             }
         },
         series: [
@@ -213,7 +214,7 @@ const MiniGaugeVelocidade = ({ data, title, min = 0, max = 100, style, ...props 
                     lineHeight: 40,
                     borderRadius: 8,
                     offsetCenter: [0, '-15%'],
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: 'bolder',
                     formatter: '{value}',
                     color: 'inherit'
@@ -556,7 +557,7 @@ const ListNWsQueue = ({ hash_estadoproducao, data, ...props }) => {
 
     return (<>
         <Table
-            {...true && { style: { fontSize: "10px", minHeight: "150px" } }}
+            {...true && { style: { fontSize: "10px", minHeight: "160px" } }}
             {...true && { rowHeight: 35 }}
             //rowHeight={null}
             headerHeight={25}
@@ -892,51 +893,66 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
 const LineParameters = ({ data }) => {
     return (<>
         <Row nogutter>
-            <Col width={200} style={{ textAlign: "center" }}>{(getFloat(data?.winder_speed, 1) - getFloat(data?.line_speed, 1)).toFixed(1)} m/min</Col>
+            <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "center" }}>
+                <div><RealtimeData data={data?.realtime} /></div>
+            </Col>
         </Row>
+        {/*         <Row nogutter>
+            <Col width={200} style={{ textAlign: "center" }}>{(getFloat(data?.realtime?.winder_speed, 1) - getFloat(data?.realtime?.line_speed, 1)).toFixed(1)} m/min</Col>
+        </Row> */}
         <Row nogutter>
             <Col>
                 <Row nogutter>
-                    <Col width={100}>
-                        <MiniGaugeVelocidade data={getFloat(data?.winder_speed, 1)} title="V.Bobinadora" min={0} max={100} style={{ width: "80px", height: "80px" }} />
+                    <Col>
+                        <Row nogutter>
+                            <Col width={80}>
+                                <MiniGaugeVelocidade data={getFloat(data?.realtime?.winder_speed, 1)} title="V.Bobinadora" min={0} max={100} style={{ width: "80px", height: "70px" }} />
+                            </Col>
+                            <Col width={10} style={{ alignSelf: "center" }}>
+                                {(getFloat(data?.realtime?.winder_speed, 1) - getFloat(data?.realtime?.line_speed, 1)).toFixed(1)}
+                            </Col>
+                            <Col width={80}>
+                                <MiniGaugeVelocidade data={getFloat(data?.realtime?.line_speed, 1)} title="V. Linha" min={0} max={100} style={{ width: "80px", height: "70px" }} />
+                            </Col>
+                            <Col width={80}>
+                                <MiniGaugeVelocidade data={getFloat(data?.params?.avg_line_speed, 1)} title="V. Média" min={0} max={100} style={{ width: "80px", height: "70px" }} />
+                            </Col>
+                            <Col width={80}>
+                                <MiniGaugeVelocidade data={getFloat(data?.params?.max_line_speed, 1)} title="V. Máxima" min={0} max={100} style={{ width: "80px", height: "70px" }} />
+                            </Col>
+                            <Col width={80}>
+                                <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Capacity(current/set)</Col></Row>
+                                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>kg/h</Col></Row>
+                                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.Qnet_PV, 1)}/{getFloat(data?.realtime?.Qnet_SP, 1)}</Col></Row>
+                            </Col>
+                        </Row>
                     </Col>
-                    <Col width={100}>
-                        <MiniGaugeVelocidade data={getFloat(data?.line_speed, 1)} title="V. Linha" min={0} max={100} style={{ width: "80px", height: "80px" }} />
+                </Row>
+                <Row nogutter>
+                    <Col width={80}>
+                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Thickness</Col></Row>
+                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.spess_PV, 1)}/{getFloat(data?.realtime?.spess_MIS, 1)} &#181;m</Col></Row>
                     </Col>
-                    <Col width={100}>
-                        <MiniGaugeVelocidade data={getFloat(data?.avg_line_speed, 1)} title="V. Média" min={0} max={100} style={{ width: "80px", height: "80px" }} />
+                    <Col width={80}>
+                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Density</Col></Row>
+                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.density, 3)} g/cm&sup3;</Col></Row>
                     </Col>
-                    <Col width={100}>
-                        <MiniGaugeVelocidade data={getFloat(data?.max_line_speed, 1)} title="V. Máxima" min={0} max={100} style={{ width: "80px", height: "80px" }} />
+                    <Col width={80}>
+                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film gsm</Col></Row>
+                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.grammage, 2)} g/m&sup2;</Col></Row>
                     </Col>
-                    <Col width={100}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Capacity(current/set)</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>kg/h</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.Qnet_PV, 1)}/{getFloat(data?.Qnet_SP, 1)}</Col></Row>
+                    <Col width={80}>
+                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center", alignItems: "center" }}><TbMathAvg fontSize={"14px"} />Diameter</Col></Row>
+                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.diametro_bobine, 1)} mm</Col></Row>
+                    </Col>
+                    <Col width={80}>
+                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Meters</Col></Row>
+                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.metros_bobine, 1)} m</Col></Row>
                     </Col>
                 </Row>
             </Col>
-        </Row>
-        <Row nogutter>
-            <Col width={100}>
-                <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Thickness</Col></Row>
-                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.spess_PV, 1)}/{getFloat(data?.spess_MIS, 1)} &#181;m</Col></Row>
-            </Col>
-            <Col width={100}>
-                <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Density</Col></Row>
-                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.density, 3)} g/cm&sup3;</Col></Row>
-            </Col>
-            <Col width={100}>
-                <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Grammage</Col></Row>
-                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.grammage, 2)} g/m&sup2;</Col></Row>
-            </Col>
-            <Col width={100}>
-                <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center", alignItems: "center" }}><TbMathAvg fontSize={"14px"} />Diameter</Col></Row>
-                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.diametro_bobine, 1)} mm</Col></Row>
-            </Col>
-            <Col width={80}>
-                <Row nogutter style={{}}><Col style={{ fontSize: "12px", fontFamily: "Microsoft YaHei", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Meters</Col></Row>
-                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.metros_bobine, 1)} m</Col></Row>
+            <Col width={120}>
+                <LastEvents data={data?.events} />
             </Col>
         </Row>
     </>);
@@ -964,7 +980,7 @@ const BobinesDefeitos = ({ data, onDefeitosClick }) => {
                 return (
                     <React.Fragment key={`def-${summedData?.id}-${index}`}>
                         {summedData?.[item.value] > 0 && <><Col xs={5} style={{ textAlign: "right", fontWeight: summedData?.[item.value] > 0 ? 700 : 400 }}>{item.label}</Col>
-                            <Col xs={1} style={{ fontWeight: summedData?.[item.value] > 0 ? 700 : 400,fontSize:"10px" }}>{summedData?.[item.value] > 0 ? <div onClick={() => onDefeitosClick({ of_cod: summedData?.of_cod }, item)} style={{ color: "#0050b3" }}>{summedData?.[item.value]}</div> : summedData?.[item.value]}</Col>
+                            <Col xs={1} style={{ fontWeight: summedData?.[item.value] > 0 ? 700 : 400, fontSize: "10px" }}>{summedData?.[item.value] > 0 ? <div onClick={() => onDefeitosClick({ of_cod: summedData?.of_cod }, item)} style={{ color: "#0050b3" }}>{summedData?.[item.value]}</div> : summedData?.[item.value]}</Col>
                         </>}
                     </React.Fragment>
                 );
@@ -1181,6 +1197,31 @@ const BobinesTotais = ({ data }) => {
     );
 }
 
+const LastEvents = ({ data }) => {
+    return (
+        <div style={{}}>
+            <div>
+                {data && data.map((item, index) => (
+                    <div key={`evt-${item.id}`} style={{ display: "flex" }}>
+                        <div style={{ /* border: "solid 1px #f0f0f0", */ height: "22px",margin:"0px 3px 0px 3px" }}><EventColumn v={item.type} title={item.t_stamp} /></div>
+                        <div style={{ /* border: "solid 1px #f0f0f0", */ fontSize:"10px" }}>{item.t_stamp}</div>
+                    </div>
+                ))}
+            </div>
+            {/*             <div style={{ fontSize: "10px" }}>{data && data[0].t_stamp}</div> */}
+        </div>
+    );
+}
+
+const RealtimeData = ({ data }) => {
+    return (<div style={{ display: "flex",alignItems:"center" }}>
+        {data && <>
+            <div style={{fontSize:"10px",fontWeight:400,marginRight:"10px"}}>Tempo restante</div>
+            <div style={{ fontWeight: 700, fontSize: "14px" }}>{data.time_bobinagem}</div>
+        </>}
+    </div>);
+}
+
 const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     const media = useContext(MediaContext);
     const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
@@ -1235,7 +1276,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     }
     const onEstadoClick = (data, estado, noPalete = null) => {
         const item = BOBINE_ESTADOS.filter(v => v.value === estado)[0];
-        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", tab:lastBobinesTab, setLastTab:setLastBobinesTab, title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { ...noPalete && { palete_id: "isnull" }, fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
+        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", tab: lastBobinesTab, setLastTab: setLastBobinesTab, title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { ...noPalete && { palete_id: "isnull" }, fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
         showModal();
     }
     const onTotaisEstadoClick = (estado, ofsData, defeito) => {
@@ -1472,26 +1513,6 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
                 <Col>
                     <Row nogutter className={classes.container} >
-                        {/**EVENTS AND START/STOP/RESUME? */}
-                        <Col xs={12}>
-                            <Row nogutter>
-                                <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "3px" }}>
-                                    {/* <Row nogutter>
-                                        <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
-                                            <div style={{}}>Paletes</div>
-                                            <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<ExpandAltOutlined />} /></div>
-                                        </Col>
-                                    </Row> */}
-                                    <Row nogutter>
-                                        <Col>
-                                            <div style={{}}>XXXXXX</div>
-                                        </Col>
-                                    </Row>
-                                </Col>
-                            </Row>
-                        </Col>
-
-
                         {/**PALETES */}
                         <Col lg={12} xl={7}>
                             <Row nogutter>
@@ -1540,7 +1561,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
                                     <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col>
-                                            <div style={{}}><LineParameters data={parameters?.data?.params} /></div>
+                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} /></div>
                                         </Col>
                                     </Row>
                                     {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 0 0 0", padding: "3px" }}>
@@ -1851,6 +1872,15 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     })}</div>}</>);
 }
 
+const Operations = ({parameters}) => {
+    
+    useEffect(()=> {
+        console.log("OPERATIONS",parameters)
+    },[parameters?.status]);
+
+    return(<>xxxxxxxxxx</>);
+}
+
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} };
@@ -1968,6 +1998,7 @@ export default ({ setFormTitle, ...props }) => {
             size="small"
             title={
                 <WidgetSimpleTitle title="Produção" parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
+                   <Operations parameters={{ data: dataEstadoProducao?.status, isRunning: isRunning(), isClosed: isClosed(),status:dataEstadoProducao?.status?.status }}/>
                     {/* {props?.parameters?.ofs && <Space>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_formulation_change")} icon={<EditOutlined />}>Alterar</Button>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_dosers_change")} icon={<EditOutlined />}>Doseadores</Button>

@@ -7,7 +7,25 @@ import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
+import { GiBandageRoll } from 'react-icons/gi';
+import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
+import { VscDebugStart } from 'react-icons/vsc';
+import { BsFillStopFill } from 'react-icons/bs';
+import { IoCodeWorkingOutline } from 'react-icons/io5';
 
+
+export const EventColumn = ({ v, grayColor = false,title }) => {
+    return (<>
+
+        {v == 1 && <GiBandageRoll color={grayColor ? "#8c8c8c" : "#69c0ff"} size={20} title={`Bobinagem ${title}`}/>}
+        {v == 9 && <BsFillStopFill color={grayColor ? "#8c8c8c" : "red"} size={20} title={`Máquina Parada ${title}`}/>}
+        {v == 7 && <VscDebugStart color={grayColor ? "#8c8c8c" : "orange"} size={20} title={`Máquina Arranque ${title}`}/>}
+        {v == 8 && <IoCodeWorkingOutline color={grayColor ? "#8c8c8c" : "green"} size={20} title={`Máquina em Produção ${title}`}/>}
+        {v == 6 && <AiOutlineVerticalAlignTop size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Superior ${title}`}/>}
+        {v == 5 && <AiOutlineVerticalAlignBottom size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Inferior ${title}`}/>}
+
+    </>);
+}
 
 
 
