@@ -40,7 +40,7 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
 }
 
-export default (props) => {
+export default ({ noEdit=true,noPrint=true, ...props }) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
     const location = useLocation();
@@ -117,7 +117,8 @@ export default (props) => {
         { key: 'tiponwsup', name: 'Tipo NW Superior', width: 300, sortable: true },
         { key: 'lotenwinf', name: 'Lote NW Inferior', width: 150, sortable: true },
         { key: 'lotenwsup', name: 'Lote NW Superior', width: 150, sortable: true },
-        { key: 'ofid', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
+        { key: 'ofid_bobine', name: 'Ordem Fabrico', width: 130, formatter: p => <OF id={p.row.ofid_bobine} ofid={p.row.ofid_bobine} /> },
+        { key: 'ofid_original', name: 'Ordem Fabrico Original', width: 130, formatter: p => <OF id={p.row.ofid_original} ofid={p.row.ofid_original} /> },
     ];
 
 
@@ -231,8 +232,8 @@ export default (props) => {
                 onRowsChange={onRowsChange}
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
-                    {!props?.noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                    <Permissions permissions={props?.permission} action="editList" forInput={!props?.noEdit}>
+                    {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
+                    <Permissions permissions={props?.permission} action="editList" forInput={!noEdit}>
                         {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                         {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}

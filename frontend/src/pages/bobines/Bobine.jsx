@@ -210,16 +210,16 @@ export default (props) => {
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <div></div> //<BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
+                                children: <div></div> //<BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <div></div>//<BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
+                                children: <div></div>//<BobinesDefeitosList noPrint={false} noEdit={false} {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <div></div>//<BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
+                                children: <div></div>//<BobinesDestinosList noPrint={false} noEdit={false} {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
@@ -228,7 +228,7 @@ export default (props) => {
                             }, {
                                 label: `Bobines Originais`,
                                 key: '7',
-                                children: <div></div>//<BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
+                                children: <div></div>//<BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permission }} />,
                             },
                             {
                                 label: `Histórico`,

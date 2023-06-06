@@ -193,26 +193,26 @@ export default (props) => {
                     items={[
                         {
                             label: `Bobines`,
-                            key: '3',
+                            key: '1',
                             children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
                         }, {
                             label: `Bobines Defeitos`,
-                            key: '4',
+                            key: '2',
                             children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
                         },
                         {
                             label: `Bobines Destinos`,
-                            key: '5',
+                            key: '3',
                             children: <BobinesDestinosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
                         },
                         {
                             label: `Bobines Originais`,
-                            key: '7',
+                            key: '4',
                             children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
                         }
                         /*                             {
                                                         label: `Histórico`,
-                                                        key: '8',
+                                                        key: '5',
                                                         children: <BobinagensHistoryList {...{ parameters: props?.parameters, permission }} />,
                                                     }, */
                     ]}

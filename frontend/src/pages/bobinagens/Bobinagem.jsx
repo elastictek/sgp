@@ -201,16 +201,16 @@ export default (props) => {
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <BobinesDestinosList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
@@ -219,7 +219,7 @@ export default (props) => {
                             }, {
                                 label: `Bobines Originais`,
                                 key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permission }} />,
                             },
                             {
                                 label: `Histórico`,

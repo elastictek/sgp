@@ -797,8 +797,8 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
             setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             showModal();
         } else {
-            setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastTab:setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
-        showModal();
+            setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            showModal();
         }
     }
 
@@ -964,7 +964,7 @@ const BobinesDefeitos = ({ data, onDefeitosClick }) => {
                 return (
                     <React.Fragment key={`def-${summedData?.id}-${index}`}>
                         {summedData?.[item.value] > 0 && <><Col xs={5} style={{ textAlign: "right", fontWeight: summedData?.[item.value] > 0 ? 700 : 400 }}>{item.label}</Col>
-                            <Col xs={1} style={{ fontWeight: summedData?.[item.value] > 0 ? 700 : 400 }}>{summedData?.[item.value] > 0 ? <div onClick={() => onDefeitosClick({ of_cod: summedData?.of_cod }, item)} style={{ color: "#0050b3" }}>{summedData?.[item.value]}</div> : summedData?.[item.value]}</Col>
+                            <Col xs={1} style={{ fontWeight: summedData?.[item.value] > 0 ? 700 : 400,fontSize:"10px" }}>{summedData?.[item.value] > 0 ? <div onClick={() => onDefeitosClick({ of_cod: summedData?.of_cod }, item)} style={{ color: "#0050b3" }}>{summedData?.[item.value]}</div> : summedData?.[item.value]}</Col>
                         </>}
                     </React.Fragment>
                 );
@@ -1165,10 +1165,16 @@ const BobinesTotais = ({ data }) => {
                 </div>
             </div>
             <div style={{ border: "solid 1px #000", fontSize: "10px", marginTop: "3px" }}>
-                <div style={{ display: "flex", padding: "2px", justifyContent: "space-between", background: "#f0f0f0" }}><div style={{ fontWeight: 700 }}>Total produzido</div></div>
+                <div style={{ display: "flex", padding: "2px", justifyContent: "space-between", background: "#f0f0f0" }}><div style={{ fontWeight: 700 }}>Total</div></div>
                 <div style={{ display: "flex", flexDirection: "row", textAlign: "right", fontSize: "10px", padding: "2px" }}>
+                    <div style={{ flex: 1 }}>Produzido</div>
                     <div style={{ flex: 1, fontWeight: 700 }}>{getFloat(data?.paletes_m2_produzidas_total, 1).toLocaleString('pt-PT')}m&#178;</div>
                     <div style={{ flex: 1, fontWeight: 700 }}>{((getFloat(data?.paletes_m2_produzidas_total, 1) / getFloat(data?.qty_encomenda, 1)) * 100).toFixed(2)}%</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "row", textAlign: "right", fontSize: "10px", padding: "2px" }}>
+                    <div style={{ flex: 1 }}>Produzido+Stock</div>
+                    <div style={{ flex: 1, fontWeight: 700 }}>{getFloat(data?.paletes_m2_total, 1).toLocaleString('pt-PT')}m&#178;</div>
+                    <div style={{ flex: 1, fontWeight: 700 }}>{((getFloat(data?.paletes_m2_total, 1) / getFloat(data?.qty_encomenda, 1)) * 100).toFixed(2)}%</div>
                 </div>
             </div>
         </>
@@ -1194,12 +1200,13 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     const [activeKeys, setActiveKeys] = useState(["1", "2", "3"]);
     const [paletes, setPaletes] = useState([]);
     const [modalParameters, setModalParameters] = useState({});
+    const [lastBobinesTab, setLastBobinesTab] = useState('1');
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
             switch (modalParameters.content) {
                 case "paletesexpand": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />
-                case "bobines": return <BobinesGroup parameters={{ ...modalParameters.parameters }} noid={true} />
+                case "bobines": return <BobinesGroup tab={modalParameters.tab} setTab={modalParameters.setLastTab} parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "bobinagensexpand": return <BobinagensList parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />
@@ -1226,9 +1233,9 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
         showModal();
     }
-    const onEstadoClick = (data, estado,noPalete=null) => {
+    const onEstadoClick = (data, estado, noPalete = null) => {
         const item = BOBINE_ESTADOS.filter(v => v.value === estado)[0];
-        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { ...noPalete && {palete_id:"isnull"}, fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
+        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", tab:lastBobinesTab, setLastTab:setLastBobinesTab, title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { ...noPalete && { palete_id: "isnull" }, fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, festados: [{ ...item, key: item.value }] } } });
         showModal();
     }
     const onTotaisEstadoClick = (estado, ofsData, defeito) => {
@@ -1283,6 +1290,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                 acc[cur.gid].bobines_retrabalhadas = parameters?.data?.bobines_retrabalhadas?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
                 acc[cur.gid].paletes_m2_produzidas = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
                 acc[cur.gid].paletes_m2_produzidas_total = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
+                acc[cur.gid].paletes_m2_total = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
                 acc[cur.gid].qty_encomenda = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.qty_encomenda;
                 acc[cur.gid].defeitos = parameters?.data?.defeitos?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
                 acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
@@ -1358,9 +1366,9 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
 
                                         <Col style={{}}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "3px" }}><OfArtigoColumn data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes(v)} /></div>
+                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}><OfArtigoColumn data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes(v)} /></div>
                                             {/**TOOLBOX */}
-                                            <div style={{ display: "flex", justifyContent: "end", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px" }}>
+                                            <div style={{ display: "flex", justifyContent: "end", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
                                                 <Space>
                                                     <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<PaperClipOutlined />} title="Anexos" />
                                                     <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost title="Paletização">Paletização</Button>
@@ -1819,7 +1827,7 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     // }
 
     return (<>{data?.bobines_nopalete && <div className={cls.bobineschart} style={{ lineHeight: 1.1, fontSize: "10px", ...style }}>{data?.bobines_nopalete?.map((v, i) => {
-        return (<div onClick={() => onEstadoClick(data, v.estado,true)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
+        return (<div onClick={() => onEstadoClick(data, v.estado, true)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
     })}</div>}</>);
 }
 
