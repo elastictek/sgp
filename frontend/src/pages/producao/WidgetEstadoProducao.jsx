@@ -1361,7 +1361,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                         {dataAPI.hasData() && ofs.map((v, i) => {
                             const items = dataAPI.getData().rows.filter(x => x.of_cod == v);
                             return (
-                                <Col key={`off-${i}`} lg={12} xl={ofs.length < 2 ? 12 : 6}>
+                                <Col key={`off-${i}`} sm={12} md={ofs.length < 2 ? 12 : 6}>
                                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 3px 0 3px" }}>
 
 
@@ -1472,6 +1472,26 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
                 <Col>
                     <Row nogutter className={classes.container} >
+                        {/**EVENTS AND START/STOP/RESUME? */}
+                        <Col xs={12}>
+                            <Row nogutter>
+                                <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "3px" }}>
+                                    {/* <Row nogutter>
+                                        <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
+                                            <div style={{}}>Paletes</div>
+                                            <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<ExpandAltOutlined />} /></div>
+                                        </Col>
+                                    </Row> */}
+                                    <Row nogutter>
+                                        <Col>
+                                            <div style={{}}>XXXXXX</div>
+                                        </Col>
+                                    </Row>
+                                </Col>
+                            </Row>
+                        </Col>
+
+
                         {/**PALETES */}
                         <Col lg={12} xl={7}>
                             <Row nogutter>
@@ -1903,7 +1923,9 @@ export default ({ setFormTitle, ...props }) => {
                 defeitos: json(estadoProducao)["estado_producao_defeitos"],
                 nws_planeados: json(estadoProducao)["estado_producao_nws"],
                 nws_queue: json(estadoProducao)["estado_producao_nw_queue"],
-                granulado_inline: json(estadoProducao)["estado_producao_granulado_inline"]
+                granulado_inline: json(estadoProducao)["estado_producao_granulado_inline"],
+                realtime: json(estadoProducao)["estado_producao_realtime"],
+                events: json(estadoProducao)["estado_producao_events"]
             });
         } else {
             setDataParams({});

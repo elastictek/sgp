@@ -113,11 +113,14 @@ def executeAlerts():
         selects = f"""
             select * from tbl_nw_queue;
             select * from tbl_granulado_inline;
+            select * from ig_realtime;
         """
         cursor.execute(selects)
         estadoproducao_nw_queue = fetchall(cursor)
         cursor.nextset()
         estadoproducao_granulado_inline = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_realtime = fetchall(cursor)
         
         args = [dataInProd.get("agg_of_id")]
         
@@ -135,6 +138,7 @@ def executeAlerts():
             select * from tbl_estadoproducao_defeitos;
             select * from tbl_estadoproducao_bobines_nopalete;
             select * from tbl_estadoproducao_bobines_retrabalhadas;
+            select * from tbl_estadoproducao_events;
         """
         cursor.execute(selects)
         estadoproducao = fetchall(cursor)
@@ -158,6 +162,8 @@ def executeAlerts():
         estadoproducao_bobines_nopalete = fetchall(cursor)
         cursor.nextset()
         estadoproducao_bobines_retrabalhadas = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_events = fetchall(cursor)
         dataEstadoProducao = json.dumps({
             "estado_producao": estadoproducao,
             "estado_producao_bobines": estadoproducao_bobines,
@@ -171,7 +177,9 @@ def executeAlerts():
             "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
             "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
             "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
-            "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else []
+            "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else [],
+            "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {},
+            "estado_producao_events":estadoproducao_events if len(estadoproducao_events)>0 else [],
         },default=str)
     dataInProd = json.dumps(dataInProd,default=str)
 

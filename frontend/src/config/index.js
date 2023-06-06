@@ -1,6 +1,6 @@
 import React from 'react';
-export const ROOT_URL = "http://192.168.0.16:81";
-//export const ROOT_URL = "http://localhost:8000";
+//export const ROOT_URL = "http://192.168.0.16:81";
+export const ROOT_URL = "http://localhost:8000";
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
