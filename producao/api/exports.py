@@ -58,30 +58,44 @@ def max_length(worksheet):
     for i, column_width in column_widths.items():
         worksheet.column_dimensions[i].width = column_width + 10
 
+def getKeyInsensitive(dictionary, key):
+    for dict_key in dictionary.keys():
+        if dict_key.lower() == key.lower():
+            print("uuuuuuuuuuuuuuuuuuuuuuuu")
+            print(dict_key)
+            return dict_key
+    return None  # Return None if the key is not found
 
 def exportRunxlslist(req,dbi,conn):
     try:
         response = dbi.executeSimpleList(req["sql"], conn, req["data"])
         df = pd.DataFrame(response["rows"])
-        cols = list(filter(lambda x: x in df.columns.values.tolist(), req["cols"].keys()))
+        #lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
+        #lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
+        #cols = [column for column in df.columns.values.tolist() if column.lower() in lowercase_reqcols]
+        lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
+        lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
+        cols = [column for column in req["cols"] if column.lower() in lowercase_columns]
         rcols = []
         for v in cols:
-            if ("format" in req["cols"][v]):
-                if req["cols"][v]["format"]=='0':
-                    df[v] = df[v].fillna(0).astype(int)
-                elif req["cols"][v]["format"]=='0.0':
-                    df[v] = df[v].fillna(0).astype(float).round(1)
-                elif req["cols"][v]["format"]=='0.00':
-                    df[v] = df[v].fillna(0).astype(float).round(2)
-                elif req["cols"][v]["format"]=='0.000':
-                    df[v] = df[v].fillna(0).astype(float).round(3)
-                elif req["cols"][v]["format"]=='0.0000':
-                    df[v] = df[v].fillna(0).astype(float).round(4)
-            if "title" in req["cols"][v]:
-                df.rename(columns = {v:req["cols"][v]["title"]}, inplace = True)
-                rcols.append(req["cols"][v]["title"])
+            df_k = getKeyInsensitive(df,v)
+            rq_k = getKeyInsensitive(req["cols"],v)
+            if ("format" in req["cols"][rq_k]):
+                if req["cols"][rq_k]["format"]=='0':
+                    df[df_k] = df[df_k].fillna(0).astype(int)
+                elif req["cols"][rq_k]["format"]=='0.0':
+                    df[df_k] = df[df_k].fillna(0).astype(float).round(1)
+                elif req["cols"][rq_k]["format"]=='0.00':
+                    df[df_k] = df[df_k].fillna(0).astype(float).round(2)
+                elif req["cols"][rq_k]["format"]=='0.000':
+                    df[df_k] = df[df_k].fillna(0).astype(float).round(3)
+                elif req["cols"][rq_k]["format"]=='0.0000':
+                    df[df_k] = df[df_k].fillna(0).astype(float).round(4)
+            if "title" in req["cols"][rq_k]:
+                df.rename(columns = {df_k:req["cols"][rq_k]["title"]}, inplace = True)
+                rcols.append(req["cols"][rq_k]["title"])
             else:
-                rcols.append(v)
+                rcols.append(df_k)
 
         #print(req["cols"].keys())
         #df = df.loc[:, df.columns.isin(req["cols"].keys())]

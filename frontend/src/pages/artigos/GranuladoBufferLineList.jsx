@@ -176,8 +176,10 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'ITMREF_0', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.ITMREF_0 },
         { key: 'ITMDES1_0', name: 'Designação', formatter: p => <b>{p.row.ITMDES1_0}</b> },
         { key: 'LOT_0', width: 310, name: 'Lote', formatter: p => <b>{p.row.LOT_0}</b> },
-        { key: 'QTYPCU_0', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qtypcu_0).toFixed(2)} kg</div> },
         { key: 'VCRNUM_0', name: 'Movimento', width: 200, formatter: p => p.row.VCRNUM_0 },
+        { key: 'QTYPCU_0', name: 'Qtd Buffer', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qtypcu_0).toFixed(2)} kg</div> },
+        { key: 'qty_lote', name: 'Qtd Entrada', minWidth: 95, width: 95, formatter: p => p.row.t_stamp ? <div style={{ textAlign: "right" }}>{!p.row.qty_lote ? "0.00" : parseFloat(p.row.qty_lote).toFixed(2)} kg</div> : ""},
+        { key: 'qty_out', name: 'Qtd Saída', minWidth: 95, width: 95, formatter: p => p.row.t_stamp_out ? <div style={{ textAlign: "right" }}>{!p.row.qty_out ? "0.00" : parseFloat(p.row.qty_out).toFixed(2)} kg</div> : ""},
         { key: 'CREDATTIM_0', width: 140, name: 'Data Buffer', formatter: p => moment(p.row.CREDATTIM_0).format(DATETIME_FORMAT) },
         { key: 't_stamp', width: 140, name: 'Data entrada Linha', formatter: p => p.row.t_stamp && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 't_stamp_out', width: 140, name: 'Data saída Linha', formatter: p => p.row.t_stamp_out && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) }

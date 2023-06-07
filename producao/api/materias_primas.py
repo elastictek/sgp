@@ -816,7 +816,7 @@ def GranuladoBufferLineList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = dbgw.dql(request.data, False)
-    cols = f"""tx."ITMDES1_0",tx."ITMREF_0",tx."LOT_0",tx.QTYPCU_0,tx."PCU_0",tx."VCRNUM_0",tx."CREDATTIM_0",cg.t_stamp,cg.t_stamp_out"""
+    cols = f"""tx."ITMDES1_0",tx."ITMREF_0",tx."LOT_0",tx.QTYPCU_0,tx."PCU_0",tx."VCRNUM_0",tx."CREDATTIM_0",cg.t_stamp,cg.t_stamp_out,cg.qty_out,cg.qty_lote"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
@@ -843,27 +843,27 @@ def GranuladoBufferLineList(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}            
         """
     )
-    sqlCount = f""" 
-            SELECT count(*)
-            FROM(
-            SELECT
-            ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
-            SUM(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM, 
-            --LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
-            ST."QTYPCU_0" QTYPCU_0,
-            ST."PCU_0",mprima."ITMDES1_0"
-            FROM "SAGE-PROD"."STOCK" STK
-            JOIN "SAGE-PROD"."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
-            JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
-            WHERE ST."VCRTYP_0" NOT IN (28)
-            and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) 
-            and ST."LOC_0" in ('BUFFER')
-            --AND STK.ITMREF_0='NNWSB0023000056' AND STK.LOT_0='E0120/00741'
-            --AND ST."CREDATTIM_0">=now() - interval '2 month'
-            ) tx
-            where (QTY_SUM > 0) --AND "ITMREF_0"='RVMAX0862000013'
-            {f.text} {f2["text"]}
-        """
+    # sqlCount = f""" 
+    #         SELECT count(*)
+    #         FROM(
+    #         SELECT
+    #         ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",
+    #         SUM(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM, 
+    #         --LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
+    #         ST."QTYPCU_0" QTYPCU_0,
+    #         ST."PCU_0",mprima."ITMDES1_0"
+    #         FROM "SAGE-PROD"."STOCK" STK
+    #         JOIN "SAGE-PROD"."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+    #         JOIN "SAGE-PROD"."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+    #         WHERE ST."VCRTYP_0" NOT IN (28)
+    #         and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) 
+    #         and ST."LOC_0" in ('BUFFER')
+    #         --AND STK.ITMREF_0='NNWSB0023000056' AND STK.LOT_0='E0120/00741'
+    #         --AND ST."CREDATTIM_0">=now() - interval '2 month'
+    #         ) tx
+    #         where (QTY_SUM > 0) --AND "ITMREF_0"='RVMAX0862000013'
+    #         {f.text} {f2["text"]}
+    #     """
 
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
@@ -871,7 +871,7 @@ def GranuladoBufferLineList(request, format=None):
         return exportv2(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
         #return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"])
     try:
-        response = dbgw.executeList(sql, connection, parameters,[],None,sqlCount)
+        response = dbgw.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}")
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

@@ -901,7 +901,7 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
 const LineParameters = ({ data,onLineLogExpand }) => {
     return (<>
         <Row nogutter>
-            <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "center" }}>
+            <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800/* , display: "flex", justifyContent: "center" */ }}>
                 <div><RealtimeData data={data?.realtime} onLineLogExpand={onLineLogExpand}/></div>
             </Col>
         </Row>
@@ -1222,12 +1222,12 @@ const LastEvents = ({ data }) => {
 }
 
 const RealtimeData = ({ data,onLineLogExpand }) => {
-    return (<div style={{ display: "flex",alignItems:"space-between" }}>
+    return (<div style={{ display: "flex",justifyContent:"space-between" }}>
         {data && <>
             <div></div>
             <div>
             <span style={{fontSize:"10px",fontWeight:400,marginRight:"10px"}}>Tempo restante</span>
-            <span style={{ fontWeight: 700, fontSize: "14px" }}>{data.time_bobinagem}</span>
+            <span style={{ fontWeight: 700, fontSize: "14px" }}>{data?.time_bobinagem?.split(':').map(num => num.padStart(2, '0')).join(':')}</span>
             </div>
             <div><Button type="primary" size="small" onClick={onLineLogExpand} ghost icon={<ExpandAltOutlined />} /></div>
         </>}
