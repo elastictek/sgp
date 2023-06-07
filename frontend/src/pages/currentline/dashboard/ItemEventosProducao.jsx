@@ -24,7 +24,6 @@ import Table from 'components/TableV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, CheckboxField } from 'components/FormFields';
 import TitleCard from './TitleCard';
-import useWebSocket from 'react-use-websocket';
 import { EventColumn, doserConsume } from '../../logslist/commons';
 import { SocketContext } from '../../App';
 import { useSubmitting, noValue } from "utils";

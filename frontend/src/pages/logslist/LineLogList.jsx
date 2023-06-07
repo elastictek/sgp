@@ -146,7 +146,7 @@ const TitleForm = ({ data, onChange, form }) => {
 
 
 
-export default (props) => {
+export default ({setFormTitle, ...props}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useStyles();
@@ -235,7 +235,7 @@ export default (props) => {
     return (
         <>
             {/*  <ToolbarTitle data={dataAPI.getAllFilter()} onChange={onFilterChange} form={formFilter} /> */}
-            <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />
+            {!setFormTitle && <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} />}
             <Table
                 //title=""
                 reportTitle="Eventos da Linha"

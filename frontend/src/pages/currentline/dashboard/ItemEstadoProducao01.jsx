@@ -20,7 +20,6 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectDebounceField } from 'components/FormFields';
 import moment from 'moment';
 import { SOCKET } from 'config';
-import useWebSocket from 'react-use-websocket';
 import { useSubmitting, noValue } from "utils";
 import { json } from "utils/object";
 import TitleCard from './TitleCard';

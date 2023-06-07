@@ -58,7 +58,7 @@ const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
 const ItemEstadoProducao01 = React.lazy(() => import('./ItemEstadoProducao01'));
-import { AppContext, MediaContext } from "../../App";
+import { AppContext, MediaContext, SocketContext } from "../../App";
 
 
 const useStyles = createUseStyles({
@@ -285,7 +285,7 @@ const baseItems = [
     { i: "stockavailable", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
     //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
     { i: "dataprod" },
-    { i: "dataprod#estado", x: 0, y: 0, w: 12, h:19, minH: 19, minW:12, fixed:true,static:true,pinnable:false, },
+    { i: "dataprod#estado", x: 0, y: 0, w: 12, h: 19, minH: 19, minW: 12, fixed: true, static: true, pinnable: false, },
     { i: "mp" },
     { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
     { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -766,6 +766,8 @@ const prepareLayouts = (layouts, breakpoint) => {
 }
 
 export default (props) => {
+    const { hash: { hash_estadoproducao } = {} } = useContext(SocketContext) || { hash: {}, data: {} };
+    const { updateAggId } = useContext(AppContext);
     const media = useContext(MediaContext);
     const classes = useStyles();
     const navigate = useNavigate();
@@ -785,38 +787,41 @@ export default (props) => {
     const [rightDrawerVisible, setRightDrawerVisible] = useState(false);
     const permission = usePermission();
     const [allItems, setAllItems] = useState({ current: false });
-    const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
-        onOpen: () => console.log(`Connected to Web Socket`),
-        queryParams: { /* 'token': '123456' */ },
-        onError: (event) => { console.error(event); },
-        shouldReconnect: (closeEvent) => true,
-        reconnectInterval: 5000,
-        reconnectAttempts: 500
-    });
-    const loadInterval = async () => {
-        const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
-        request();
-        return setInterval(request, 30000);
-    }
-    useEffect(() => {
-        //const controller = new AbortController();
-        const interval = loadInterval();
-        return (() => { clearInterval(interval); });
-    }, []);
+    // const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
+    //     onOpen: () => console.log(`Connected to Web Socket`),
+    //     queryParams: { /* 'token': '123456' */ },
+    //     onError: (event) => { console.error(event); },
+    //     shouldReconnect: (closeEvent) => true,
+    //     reconnectInterval: 5000,
+    //     reconnectAttempts: 500
+    // });
+    // const loadInterval = async () => {
+    //     const request = (async () => sendJsonMessage({ cmd: 'checkcurrentsettings', value: {} }));
+    //     request();
+    //     return setInterval(request, 30000);
+    // }
+    // useEffect(() => {
+    //     //const controller = new AbortController();
+    //     const interval = loadInterval();
+    //     return (() => { clearInterval(interval); });
+    // }, []);
 
     useEffect(() => {
         //Every time breakpoint changes updates allItems
-        if (media?.breakpoint && lastJsonMessage) {
+
+        console.log("breakpoint", media?.breakpoint,hash_estadoproducao);
+        if (media?.breakpoint && hash_estadoproducao) {
             const controller = new AbortController();
             loadData({ aggId: props?.aggId, signal: controller.signal });
             return (() => { controller.abort(); });
         }
-    }, [media?.breakpoint, lastJsonMessage?.hash, location]);
+    }, [media?.breakpoint, hash_estadoproducao, location]);
 
     const loadData = (data = {}, type = "init") => {
         const { signal } = data;
-        const { aggId } = loadInit({}, {}, data, location?.state, [...Object.keys(location?.state || {}), ...Object.keys(data || {})]);
+        const { aggId } = loadInit({}, {}, data, location?.state, null);
         //let aggId = (data?.aggId) ? data.aggId : location?.state?.aggId;
+        updateAggId(aggId);
         switch (type) {
             default:
                 (async () => {
@@ -1153,7 +1158,7 @@ export default (props) => {
                         return (
                             <CustomGridItemComponent key={v.i}>
                                 {v.i === "nonwovens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemNonwovens card={{ title: "Nonwovens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
-                                {v.i === "formulacao" && <Suspense fallback={<></>}><WidgetFormulacao card={{ title: "Formulação" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{cs_id:currentSettings.id, status:currentSettings?.status, ofs:currentSettings?.ofs,pinnable:v?.pin,closable:v?.closable,static:v?.static}} parentReload={loadData} /></Suspense>}
+                                {v.i === "formulacao" && <Suspense fallback={<></>}><WidgetFormulacao card={{ title: "Formulação" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{ cs_id: currentSettings.id, status: currentSettings?.status, ofs: currentSettings?.ofs, pinnable: v?.pin, closable: v?.closable, static: v?.static }} parentReload={loadData} /></Suspense>}
                                 {v.i === "stockavailable" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemStockAvailable card={{ title: "Stock Disponível" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "bobinagens" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemBobinagens card={{ title: "Bobinagens" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "cortes" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemCortes card={{ title: "Cortes" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
@@ -1172,7 +1177,7 @@ export default (props) => {
                                 {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "fichaprocesso#specs" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemSpecs card={{ title: "Especificações" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {/* {v.i === "dataprod#estado" && <><PinItem color="#fff" background="#237804" value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem color="#fff" background="#237804" closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemEstadoProducao01 card={{ title: "Produção Atual" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>} */}
-                                {v.i === "dataprod#estado" && <Suspense fallback={<></>}><WidgetEstadoProducao card={{ title: "Produção" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{cs_id:currentSettings.id, status:currentSettings?.status, ofs:currentSettings?.ofs,pinnable:v?.pin,closable:v?.closable,static:v?.static}} parentReload={loadData} /></Suspense>}
+                                {v.i === "dataprod#estado" && <Suspense fallback={<></>}><WidgetEstadoProducao card={{ title: "Produção" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{ currentSettings, cs_id: currentSettings.id, status: currentSettings?.status, ofs: currentSettings?.ofs, pinnable: v?.pin, closable: v?.closable, static: v?.static }} parentReload={loadData} /></Suspense>}
                             </CustomGridItemComponent>
                         );
                     })

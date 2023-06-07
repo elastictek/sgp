@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone } from '@ant-design/icons';
-import { Tag, Button } from "antd";
+import { Tag, Button, Space } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
@@ -10,19 +10,19 @@ import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
 import { VscDebugStart } from 'react-icons/vsc';
-import { BsFillStopFill } from 'react-icons/bs';
+import { BsFillStopFill, BsPauseCircleFill, BsStopCircleFill, BsPlayCircleFill } from 'react-icons/bs';
 import { IoCodeWorkingOutline } from 'react-icons/io5';
 
 
-export const EventColumn = ({ v, grayColor = false,title }) => {
+export const EventColumn = ({ v, grayColor = false, title }) => {
     return (<>
 
-        {v == 1 && <GiBandageRoll color={grayColor ? "#8c8c8c" : "#69c0ff"} size={20} title={`Bobinagem ${title}`}/>}
-        {v == 9 && <BsFillStopFill color={grayColor ? "#8c8c8c" : "red"} size={20} title={`Máquina Parada ${title}`}/>}
-        {v == 7 && <VscDebugStart color={grayColor ? "#8c8c8c" : "orange"} size={20} title={`Máquina Arranque ${title}`}/>}
-        {v == 8 && <IoCodeWorkingOutline color={grayColor ? "#8c8c8c" : "green"} size={20} title={`Máquina em Produção ${title}`}/>}
-        {v == 6 && <AiOutlineVerticalAlignTop size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Superior ${title}`}/>}
-        {v == 5 && <AiOutlineVerticalAlignBottom size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Inferior ${title}`}/>}
+        {v == 1 && <GiBandageRoll color={grayColor ? "#8c8c8c" : "#69c0ff"} size={20} title={`Bobinagem ${title}`} />}
+        {v == 9 && <BsFillStopFill color={grayColor ? "#8c8c8c" : "red"} size={20} title={`Máquina Parada ${title}`} />}
+        {v == 7 && <VscDebugStart color={grayColor ? "#8c8c8c" : "orange"} size={20} title={`Máquina Arranque ${title}`} />}
+        {v == 8 && <IoCodeWorkingOutline color={grayColor ? "#8c8c8c" : "green"} size={20} title={`Máquina em Produção ${title}`} />}
+        {v == 6 && <AiOutlineVerticalAlignTop size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Superior ${title}`} />}
+        {v == 5 && <AiOutlineVerticalAlignBottom size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Inferior ${title}`} />}
 
     </>);
 }
@@ -231,6 +231,52 @@ export const Status = ({ value = 1, genre = "m", onClick, allowed = [0, 1], cell
                 {value == 9 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="red">Finalizad{genre === "m" ? "o" : "a"}</Tag>}
             </>
         }</>);
+}
+
+
+// {allowEdit.form && <>
+//     {(record.status == 1 || record.status == 2) &&
+//         <>
+//             <Button block size="large" style={{ background: "#389e0d", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(3)}>Iniciar Produção</Button>
+//             <VerticalSpace height="5px" />
+//             {record.was_in_production ===1 && <Button block size="large" style={{ background: "#40a9ff", color: "#000", fontWeight: 700 }} onClick={() => changeStatus(9)}>Finalizar Produção</Button>}
+//             {/* <Button block size="large" style={{ background: "#fa8c16", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(0)}>Refazer Planeamento</Button> */}
+//         </>
+//     }
+//     {record.status == 3 &&
+//         <>
+//             <Button block size="large" style={{ background: "red", color: "#fff", fontWeight: 700 }} onClick={() => changeStatus(1)}>Parar/Suspender Produção</Button>
+//             <VerticalSpace height="5px" />
+//             <Button block size="large" style={{ background: "#40a9ff", color: "#000", fontWeight: 700 }} onClick={() => changeStatus(9)}>Finalizar Produção</Button>
+//         </>
+//     }</>
+// }
+
+export const StatusProduction = ({ status, wasInProduction, onClick }) => {
+    return (<>
+
+        {(status == 1 || status == 2) && <Space>
+
+            <Button icon={<BsPlayCircleFill color='green' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Iniciar</Button>
+            {wasInProduction == 1 && <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Finalizar</Button>}
+
+        </Space>}
+        {status == 3 && <Space>
+
+            <Button icon={<BsPauseCircleFill color='orange' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Suspender</Button>
+            <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Finalizar</Button>
+
+        </Space>}
+
+
+        {/* {v == 1 && <GiBandageRoll color={grayColor ? "#8c8c8c" : "#69c0ff"} size={20} title={`Bobinagem ${title}`}/>}
+        {v == 9 && <BsFillStopFill color={grayColor ? "#8c8c8c" : "red"} size={20} title={`Máquina Parada ${title}`}/>}
+        {v == 7 && <VscDebugStart color={grayColor ? "#8c8c8c" : "orange"} size={20} title={`Máquina Arranque ${title}`}/>}
+        {v == 8 && <IoCodeWorkingOutline color={grayColor ? "#8c8c8c" : "green"} size={20} title={`Máquina em Produção ${title}`}/>}
+        {v == 6 && <AiOutlineVerticalAlignTop size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Superior ${title}`}/>}
+        {v == 5 && <AiOutlineVerticalAlignBottom size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Inferior ${title}`}/>} */}
+
+    </>);
 }
 
 export const Valid = ({ value = 1, genre = "m", onClick, allowed = [0, 1], cellProps }) => {

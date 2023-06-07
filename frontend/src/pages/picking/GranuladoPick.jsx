@@ -25,7 +25,6 @@ import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { RightAlign, Cuba } from 'components/TableColumns';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from 'config';
-import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -207,13 +206,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
             </ResponsiveModal>
         );
     }, [modalParameters]);
-    /*     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/lotespick`, {
-            onOpen: () => console.log(`Connected to Web Socket`),
-            onError: (event) => { console.error(event); },
-            shouldReconnect: (closeEvent) => true,
-            reconnectInterval: 3000
-        }); */
-
+   
     // useEffect(() => {
     //     if (lastJsonMessage !== null) {
     //         setLastValue(prev => ({ ...prev?.last && { last: { ...prev?.last } }, type: prev?.type, picked: true, row: { id: uuIdInt(0).uuid(), t_stamp: Date(), notValid: 1, qty_consumed: 0, qty_reminder: lastJsonMessage.row.qty_lote, ...lastJsonMessage.row }, error: lastJsonMessage.error }));

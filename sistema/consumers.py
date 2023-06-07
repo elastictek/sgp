@@ -39,6 +39,83 @@ def getCurrentSettingsId():
                 limit 1
             """), cursor, {})['rows']
 
+def getEstadoProducao(agg_of_id):
+    with connections["default"].cursor() as cursor:
+        args = []
+        cursor.callproc('list_materiaprima_inline',args)
+        selects = f"""
+            select * from tbl_nw_queue;
+            select * from tbl_granulado_inline;
+            select * from ig_realtime;
+        """
+        cursor.execute(selects)
+        estadoproducao_nw_queue = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_granulado_inline = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_realtime = fetchall(cursor)
+        
+        args = [agg_of_id if agg_of_id else None]
+        
+        #args = [261]
+        cursor.callproc('list_estado_producao',args)
+        selects = f"""
+            select * from tbl_estadoproducao;
+            select * from tbl_estadoproducao_bobines;
+            select * from tbl_estadoproducao_bobinagens;
+            select * from tbl_estadoproducao_nws;
+            select * from tbl_estadoproducao_current;
+            select * from tbl_estadoproducao_params;
+            select * from tbl_estadoproducao_paletes;
+            select * from tbl_estadoproducao_status;
+            select * from tbl_estadoproducao_defeitos;
+            select * from tbl_estadoproducao_bobines_nopalete;
+            select * from tbl_estadoproducao_bobines_retrabalhadas;
+            select * from tbl_estadoproducao_events;
+        """
+        cursor.execute(selects)
+        estadoproducao = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobinagens = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_nws = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_current = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_params = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_paletes = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_status = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_defeitos = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines_nopalete = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_bobines_retrabalhadas = fetchall(cursor)
+        cursor.nextset()
+        estadoproducao_events = fetchall(cursor)
+        dataEstadoProducao = json.dumps({
+            "estado_producao": estadoproducao,
+            "estado_producao_bobines": estadoproducao_bobines,
+            "estado_producao_bobines_nopalete": estadoproducao_bobines_nopalete,
+            "estadoproducao_bobines_retrabalhadas": estadoproducao_bobines_retrabalhadas,
+            "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
+            "estado_producao_current": estadoproducao_current[0] if len(estadoproducao_current)>0 else {},
+            "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
+            "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
+            "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
+            "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
+            "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
+            "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
+            "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else [],
+            "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {},
+            "estado_producao_events":estadoproducao_events if len(estadoproducao_events)>0 else [],
+        },default=str)
+        return dataEstadoProducao
+
 def executeAlerts():
     group_name = 'broadcast'
     channel_layer = channels.layers.get_channel_layer()
@@ -107,80 +184,7 @@ def executeAlerts():
     #     dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
     # else:
     #     dataEstadoProducao = json.dumps({},default=str)
-    with connections["default"].cursor() as cursor:
-        args = []
-        cursor.callproc('list_materiaprima_inline',args)
-        selects = f"""
-            select * from tbl_nw_queue;
-            select * from tbl_granulado_inline;
-            select * from ig_realtime;
-        """
-        cursor.execute(selects)
-        estadoproducao_nw_queue = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_granulado_inline = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_realtime = fetchall(cursor)
-        
-        args = [dataInProd.get("agg_of_id")]
-        
-        #args = [261]
-        cursor.callproc('list_estado_producao',args)
-        selects = f"""
-            select * from tbl_estadoproducao;
-            select * from tbl_estadoproducao_bobines;
-            select * from tbl_estadoproducao_bobinagens;
-            select * from tbl_estadoproducao_nws;
-            select * from tbl_estadoproducao_current;
-            select * from tbl_estadoproducao_params;
-            select * from tbl_estadoproducao_paletes;
-            select * from tbl_estadoproducao_status;
-            select * from tbl_estadoproducao_defeitos;
-            select * from tbl_estadoproducao_bobines_nopalete;
-            select * from tbl_estadoproducao_bobines_retrabalhadas;
-            select * from tbl_estadoproducao_events;
-        """
-        cursor.execute(selects)
-        estadoproducao = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_bobines = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_bobinagens = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_nws = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_current = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_params = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_paletes = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_status = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_defeitos = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_bobines_nopalete = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_bobines_retrabalhadas = fetchall(cursor)
-        cursor.nextset()
-        estadoproducao_events = fetchall(cursor)
-        dataEstadoProducao = json.dumps({
-            "estado_producao": estadoproducao,
-            "estado_producao_bobines": estadoproducao_bobines,
-            "estado_producao_bobines_nopalete": estadoproducao_bobines_nopalete,
-            "estadoproducao_bobines_retrabalhadas": estadoproducao_bobines_retrabalhadas,
-            "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
-            "estado_producao_current": estadoproducao_current[0] if len(estadoproducao_current)>0 else {},
-            "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
-            "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
-            "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
-            "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
-            "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
-            "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
-            "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else [],
-            "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {},
-            "estado_producao_events":estadoproducao_events if len(estadoproducao_events)>0 else [],
-        },default=str)
+    dataEstadoProducao=getEstadoProducao(None)
     dataInProd = json.dumps(dataInProd,default=str)
 
     #with connections["default"].cursor() as cursor:
@@ -239,7 +243,7 @@ def executeAlerts():
             }
     })
     #self.send(text_data=json.dumps({"val":val},default=str))
-    Timer(5,executeAlerts).start()
+    Timer(10,executeAlerts).start()
 executeAlerts()
 
 class RealTimeAlerts(WebsocketConsumer):
@@ -270,7 +274,7 @@ class RealTimeAlerts(WebsocketConsumer):
     }
 
     def connect(self):
-        print("USER")
+        print("REALTIME SOCKET CONNECTED")
         #user = User.objects.get(username=self.scope['user']) # get Some User.
         
         async_to_sync(self.channel_layer.group_add)(self.room_group_name,self.channel_name)
@@ -414,6 +418,10 @@ class RealTimeGeneric(WebsocketConsumer):
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
+    def _getEstadoProducao(self,data):
+        v = getEstadoProducao(data.get("value").get("aggId"))
+        self.send(text_data=json.dumps({"data":{"estadoProducao":v},"hash":{"hash_estadoproducao":hashlib.md5(v.encode()).hexdigest()}},default=str))
+
     commands = {
         'checkreciclado':checkReciclado,
         'checkgranulado':checkGranulado,
@@ -423,7 +431,8 @@ class RealTimeGeneric(WebsocketConsumer):
         'checklineevents':checkLineEvents,
         'checkbobinagens':checkBobinagens,
         'checkbufferin':checkBufferIn,
-        'checkcurrentsettings':checkCurrentSettings
+        'checkcurrentsettings':checkCurrentSettings,
+        'getEstadoProducao':_getEstadoProducao
     }
 
     def connect(self):
@@ -433,6 +442,8 @@ class RealTimeGeneric(WebsocketConsumer):
         pass
 
     def receive(self, text_data):
+        print("RECEIVED")
+        print(text_data)
         dt = json.loads(text_data)
         self.commands[dt['cmd']](self, dt)
 

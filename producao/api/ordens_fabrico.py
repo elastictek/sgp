@@ -183,7 +183,195 @@ def Sql(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response({})
-    
+
+
+def OrdensFabricoList(request, format=None):
+    def statusFilter(v):
+        if ('fofstatus' not in v):
+            return ''
+        elif v['fofstatus'] == 'Todos':
+            return ''
+        elif v['fofstatus'] == 'Por Validar':
+            return 'and ((sgp_op.status=0 or sgp_op.status is null) and sgp_top.id is null)'
+        elif v['fofstatus'] == 'Em Elaboração':
+            return 'and ((sgp_op.status=1 or sgp_op.status is null) and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Na Produção':
+            return 'and (sgp_op.status=2 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Em Produção':
+            return 'and (sgp_op.status=3 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'Finalizada':
+            return 'and (sgp_op.status=9 and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'IN(2,3)':
+            return 'and (sgp_op.status in (2,3) and sgp_top.id is not null)'
+        elif v['fofstatus'] == 'IN(2,3,9)':
+            return 'and (sgp_op.status in (2,3,9) and sgp_top.id is not null)'
+        return ''
+
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+
+    f.setParameters({
+        **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE(oflist.{k})'),
+        **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+        **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE(sgp_tagg.{k})'),
+        # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
+        # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+
+    f2 = filterMulti(request.data['filter'], {
+        'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": 'oflist.'},
+        'fmulti_order': {"keys": ['iorder', 'prf'], "table": 'oflist.'},
+        'fmulti_item': {"keys": ['item', 'item_nome'], "table": 'oflist.'},
+        'f_ofabrico': {"keys": ['ofabrico'], "table": 'oflist.'},
+        'f_agg': {"keys": ['cod'], "table": 'sgp_tagg.'}
+    }, False, "and",False)
+    parameters = {**f.parameters, **f2['parameters']}
+
+    dql = dbgw.dql(request.data, False)
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    sageAlias = dbgw.dbAlias.get("sage")
+    mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
+    #cols = encloseColumn(['ofitm."ROWID" OFROWID','itm."ROWID" ITMROWID', 'enc."ROWID" ENCROWID', 'ofitm.MFGNUM_0', 'itm.TSICOD_0',
+    #        'itm.ITMREF_0', 'itm.ITMDES1_0', 'enc.SOHNUM_0', 'enclin.SOPLIN_0', 'enc.ORDDAT_0', 'enc.DEMDLVDAT_0', 'enc.SHIDAT_0',
+    #        'enc.PRFNUM_0', 'enc.CUSORDREF_0', 'enc.DAYLTI_0',
+    #        'enc.LASDLVDAT_0', 'enc.LASDLVNUM_0', 'enc.lasinvdat_0', 'enc.LASINVNUM_0', 'enc.DSPTOTQTY_0', 'enc.DSPTOTVOL_0', 'enc.DSPTOTWEI_0',
+    #        'enc.DSPVOU_0', 'enc.DSPWEU_0',
+    #        'enc.BPCORD_0', 'enc.BPCNAM_0', 'enc.CREUSR_0', 'enc.CREDAT_0', 'enc.CREDATTIM_0', 'enc.UPDUSR_0', 'enc.UPDDAT_0', 'enc.UPDDATTIM_0'
+    #],True,True,['"ROWID" OFROWID','"ROWID" ITMROWID', '"ROWID" ENCROWID'])
+    #dql.columns = encloseColumn(cols,False)
+
+    cols = f"""
+        CONCAT(row_number() over (),'.',oflist.ofabrico,'.', oflist.iorder) rowid,
+        sgp_tagg.cod,
+        oflist.ofabrico, oflist.prf, oflist.ofabrico_sgp_nome,oflist.ofabrico_sgp,
+        oflist.item, oflist.item_nome, oflist.iorder,oflist.cliente_cod,oflist.cliente_nome,
+        oflist.n_paletes_produzidas,sgp_op.num_paletes_produzir,
+        oflist.n_paletes_stock_in,sgp_op.num_paletes_stock,
+        oflist.n_paletes_total,sgp_op.num_paletes_total,
+        sgp_op.inicio,sgp_op.fim,
+        oflist.n_paletes_produzidas || '/' || sgp_op.num_paletes_produzir produzidas,
+        oflist.n_paletes_stock_in || '/' || sgp_op.num_paletes_stock stock,oflist.n_paletes_total || '/' || sgp_op.num_paletes_total total,
+        sgp_op.retrabalho, oflist.start_date, oflist.end_date, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
+        oflist.bom_alt, oflist.qty_prevista, oflist.qty_item, sgp_op.status,
+        COALESCE(sgp_ac.produto,sgp_p.produto_cod) produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
+        sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
+		sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,oflist.matricula,oflist.matricula_reboque,oflist.modo_exp
+    """
+
+
+    print("ofardddd")
+    print(f.text)
+    print(f2["text"])
+    print({statusFilter(request.data['filter'])})
+
+
+    sql = lambda p, c, s: (
+        f"""
+        SELECT {c(f'{cols}')} 
+        FROM {mv_ofabrico_list} oflist
+        LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op on sgp_op.id = oflist.ofabrico_sgp
+        LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = oflist.ofabrico and sgp_top.item_cod=oflist.item
+        LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
+        LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = oflist.item
+        LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
+        LEFT JOIN {sgpAlias}.producao_artigocliente sgp_ac on sgp_ac.cliente_id = oflist.cliente_id and sgp_ac.artigo_id=sgp_a.id
+        WHERE 
+        NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = oflist.ofabrico)
+        {statusFilter(request.data['filter'])}
+        {f.text} {f2["text"]}
+        {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+
+    #print(sql(lambda v:v,lambda v:v))
+    print(sql)
+    response = dbgw.executeList(sql, connection, parameters, [])
+
+
+    # cols = f"""
+    #     t.prf,t.data_encomenda,t.rowid,t.ofabrico,
+    #     t.ofabrico_status,t.start_date,t.end_date,t.qty_prevista,t.qty_realizada,t.ofabrico_sgp,
+    #     t.ofabrico_sgp_nome,t.paletes_produzir_sgp,t.paletes_stock_sgp,t.paletes_total_sgp,
+    #     t.retrabalho_sgp,t.ativa_sgp,t.completa_sgp,t.item,t.item_nome,t.qty_item,t.iorder,
+    #     t.cliente_cod,t.cliente_nome,t.cod,t.inicio,t.fim,t.retrabalho, t.ativa, t.completa, t.stock, 
+    #     t.status,t.produto_cod, t.produto_id, t.temp_ofabrico, t.temp_ofabrico_agg, t.item_thickness,
+    #     t.item_diam,t.item_core, t.item_width, t.item_id,t.start_prev_date,t.end_prev_date
+    # """
+
+    # response = dbgw.executeList(lambda p, c, s: (
+    #     f"""
+    #     SELECT {c(f'{cols}')} 
+    #     from (
+    #     SELECT DISTINCT ON (ofh."MFGNUM_0", ofitm."MFGLIN_0") ofh."MFGNUM_0" AS ofabrico,
+    #     oforder."PRFNUM_0" AS prf,
+    #     oforder."ORDDAT_0" AS data_encomenda,
+    #     ofh."ROWID" AS rowid,
+    #     ofh."MFGTRKFLG_0" AS ofabrico_status,
+    #     ofh."STRDAT_0" AS start_date,
+    #     ofh."ENDDAT_0" AS end_date,
+    #     ofh."EXTQTY_0" AS qty_prevista,
+    #     ofh."CPLQTY_0" AS qty_realizada,
+    #     sgp_op.id AS ofabrico_sgp,
+    #     sgp_op.op AS ofabrico_sgp_nome,
+    #     sgp_op.num_paletes_produzir AS paletes_produzir_sgp,
+    #     sgp_op.num_paletes_stock AS paletes_stock_sgp,
+    #     sgp_op.num_paletes_total AS paletes_total_sgp,
+    #     sgp_op.retrabalho AS retrabalho_sgp,
+    #     sgp_op.ativa AS ativa_sgp,
+    #     sgp_op.completa AS completa_sgp,
+    #     ofitm."ITMREF_0" AS item,
+    #     itmsales."ITMDES1_0" AS item_nome,
+    #     ofitm."UOMEXTQTY_0" AS qty_item,
+    #     sgp_tagg.cod,
+    #     sgp_op.inicio,sgp_op.fim,
+    #     sgp_op.retrabalho, sgp_op.ativa, sgp_op.completa, sgp_op.stock, 
+    #     sgp_op.status,
+    #     sgp_p.produto_cod, sgp_a.produto_id, sgp_top.id temp_ofabrico, sgp_top.agg_of_id temp_ofabrico_agg, sgp_a.thickness item_thickness,
+    #     sgp_a.diam_ref item_diam,sgp_a.core item_core, sgp_a.lar item_width, sgp_a.id item_id,
+    #     sgp_tagg.start_prev_date,sgp_tagg.end_prev_date,
+    #     CASE
+    #     WHEN length(ofitm."VCRNUMORI_0"::text) = 1 THEN sgp_op.enccod
+    #     ELSE ofitm."VCRNUMORI_0"
+    #     END AS iorder,
+    #     CASE
+    #     WHEN oforder."BPCORD_0" IS NULL THEN sgp_op.clientecod
+    #     ELSE oforder."BPCORD_0"
+    #     END AS cliente_cod,
+    #     CASE
+    #     WHEN oforder."BPCNAM_0" IS NULL THEN sgp_op.clientenome
+    #     ELSE oforder."BPCNAM_0"
+    #     END AS cliente_nome
+    #     FROM {sageAlias}."MFGHEAD" ofh
+    #     LEFT JOIN {sageAlias}."MFGITM" ofitm ON ofitm."MFGNUM_0"::text = ofh."MFGNUM_0"::text
+    #     LEFT JOIN {sageAlias}."SORDER" oforder ON oforder."SOHNUM_0"::text = ofitm."VCRNUMORI_0"::text
+    #     LEFT JOIN {sageAlias}."ITMSALES" itmsales ON itmsales."ITMREF_0"::text = ofitm."ITMREF_0"::text
+    #     LEFT JOIN {sgpAlias}.planeamento_ordemproducao sgp_op ON sgp_op.ofid::text = ofh."MFGNUM_0"::text
+    #     LEFT JOIN {sgpAlias}.producao_tempordemfabrico sgp_top on sgp_top.of_id = ofh."MFGNUM_0" and sgp_top.item_cod=ofitm."ITMREF_0"
+    #     LEFT JOIN {sgpAlias}.producao_tempaggordemfabrico sgp_tagg on sgp_top.agg_of_id = sgp_tagg.id
+    #     LEFT JOIN {sgpAlias}.producao_artigo sgp_a on sgp_a.cod = ofitm."ITMREF_0"
+    #     LEFT JOIN {sgpAlias}.producao_produtos sgp_p on sgp_p.id = sgp_a.produto_id
+    #     WHERE 
+    #     NOT EXISTS(SELECT 1 FROM {sgpAlias}.producao_ordemfabricodetails ex WHERE ex.cod = ofh."MFGNUM_0")
+    #     ) t
+    #     {f.text} {f2["text"]}
+    #     {s(dql.sort)} {p(dql.paging)}
+    #     """
+    # ), connection, parameters, [])
+
+    #ret = dbgw.executeSimpleList(lambda:(f"""SELECT id,status FROM {sgpAlias}.planeamento_ordemproducao where id>679"""),connection,{})
+    #print(f'----------------------{ret}')
+    return Response(response)
+
+
+
+
 def OrdensFabricoInElaboration(request, format=None):
     connection = connections["default"].cursor()
     response = db.executeSimpleList(lambda: (

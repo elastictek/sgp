@@ -24,7 +24,6 @@ import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, PaperClipOutlined, 
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, THICKNESS, GTIN, ENROLAMENTO_OPTIONS } from 'config';
-import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";

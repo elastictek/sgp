@@ -23,7 +23,6 @@ import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, Snipp
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, BOBINE_ESTADOS, BOBINE_DEFEITOS } from 'config';
-import useWebSocket from 'react-use-websocket';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';

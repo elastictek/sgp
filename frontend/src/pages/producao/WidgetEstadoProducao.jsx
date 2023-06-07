@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense,lazy } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -33,7 +33,7 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import WidgetTitle, { WidgetSimpleTitle } from 'components/WidgetTitle';
 import { InputNumberEditor, MateriasPrimasTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn, EventColumn } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn, EventColumn, StatusProduction } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -56,7 +56,7 @@ import BobinagensList from '../bobinagens/BobinagensList';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
 const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
-
+const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 const GranuladoPick = React.lazy(() => import('../picking/GranuladoPick'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
@@ -94,6 +94,14 @@ const StyledCollapse = styled(Collapse)`
 
 
 const useStyles = createUseStyles({
+
+    widgetTitle: {
+        color: 'black',
+        '&:hover': {
+          color: '#fff',
+        },
+      },
+
     container: {
         display: 'flex',
         '& > div > div > div': {
@@ -890,11 +898,11 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
     </>);
 }
 
-const LineParameters = ({ data }) => {
+const LineParameters = ({ data,onLineLogExpand }) => {
     return (<>
         <Row nogutter>
             <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "center" }}>
-                <div><RealtimeData data={data?.realtime} /></div>
+                <div><RealtimeData data={data?.realtime} onLineLogExpand={onLineLogExpand}/></div>
             </Col>
         </Row>
         {/*         <Row nogutter>
@@ -1213,11 +1221,15 @@ const LastEvents = ({ data }) => {
     );
 }
 
-const RealtimeData = ({ data }) => {
-    return (<div style={{ display: "flex",alignItems:"center" }}>
+const RealtimeData = ({ data,onLineLogExpand }) => {
+    return (<div style={{ display: "flex",alignItems:"space-between" }}>
         {data && <>
-            <div style={{fontSize:"10px",fontWeight:400,marginRight:"10px"}}>Tempo restante</div>
-            <div style={{ fontWeight: 700, fontSize: "14px" }}>{data.time_bobinagem}</div>
+            <div></div>
+            <div>
+            <span style={{fontSize:"10px",fontWeight:400,marginRight:"10px"}}>Tempo restante</span>
+            <span style={{ fontWeight: 700, fontSize: "14px" }}>{data.time_bobinagem}</span>
+            </div>
+            <div><Button type="primary" size="small" onClick={onLineLogExpand} ghost icon={<ExpandAltOutlined />} /></div>
         </>}
     </div>);
 }
@@ -1252,6 +1264,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
+                case "linelogexpand": return <LineLogList parameters={modalParameters.parameters} />
                 //case "paletesexpand": return <ListPaletesOf data={{ ...modalParameters.parameters }} />;
             }
         }
@@ -1264,6 +1277,10 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     }, [modalParameters]);
     const onPaletesExpand = () => {
         setModalParameters({ content: "paletesexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `in:${ofs.join(",")}` } } });
+        showModal();
+    }
+    const onLineLogExpand = () => {
+        setModalParameters({ content: "linelogexpand", lazy:true,  type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Eventos da Linha</div>, parameters: {} });
         showModal();
     }
     const onBobinagensExpand = () => {
@@ -1561,7 +1578,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
                                     <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col>
-                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} /></div>
+                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} onLineLogExpand={onLineLogExpand}/></div>
                                         </Col>
                                     </Row>
                                     {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 0 0 0", padding: "3px" }}>
@@ -1875,15 +1892,26 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
 const Operations = ({parameters}) => {
     
     useEffect(()=> {
-        console.log("OPERATIONS",parameters)
+
     },[parameters?.status]);
 
-    return(<>xxxxxxxxxx</>);
+    return(<><StatusProduction status={parameters?.status} wasInProduction={parameters?.was_in_production}/></>);
 }
+
+const OrdemFabricoChooser = ({parameters, onClick}) => {
+    
+    useEffect(()=> {
+        console.log("chooser--------------------",parameters)
+    },[parameters?.data?.agg_cod]);
+
+    return(<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
+}
+
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} };
+    const {updateAggId} = useContext(AppContext);
     const [dataParams, setDataParams] = useState({});
     const [dataEstadoProducao, setDataEstadoProducao] = useState([]);
 
@@ -1906,9 +1934,9 @@ export default ({ setFormTitle, ...props }) => {
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
-            // switch (modalParameters.content) {
-            //     case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />;
-            // }
+            switch (modalParameters.content) {
+                case "ordemfabrico": return <Chooser parameters={modalParameters.parameters} />;
+            }
         }
         return (
             <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" extra="ref" yScroll>
@@ -1922,6 +1950,39 @@ export default ({ setFormTitle, ...props }) => {
         //     setModalParameters({ content: "formulacao", type: "drawer", width: "95%", title: "Formulação", push: false, loadData: () => dataAPI.fetchPost(), parameters: { cs_id: inputParameters.current?.cs_id, type } });
         //     showModal();
         // }
+    }
+    const onOrdemFabricoClick = () => {
+        //const { status, cod, temp_ofabrico_agg } = record;
+        navigate("/app", { state: { aggId: 244, tstamp: Date.now() }, replace: true });
+        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            setModalParameters({
+                content: "ordemfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico", push: false, loadData: () => { }, parameters: {
+                    payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "rowid", parameters: { method: "OrdensFabricoList" }, pagination: { enabled: true, pageSize: 20 }, filter: {}, baseFilter: {}, sort: [] } },
+                    toolbar: false,
+                    pagination: "remote",
+                    multipleSelection: false,
+                    columns: [
+                        ...(true) ? [{ name: 'ofabrico', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
+                        ...(true) ? [{ name: 'prf', header: 'Designação', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
+                        ...(true) ? [{ name: 'iorder', header: 'Encomenda', render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'parameter_mode', header: 'Modo', render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'unit', header: 'Unidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
+                        // //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'min_value', header: 'Min', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'max_value', header: 'Max', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'value_precision', header: 'Precisão', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'status', header: 'Estado', render: ({ data }) => <Status value={data?.status} genre="m" />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                        // ...(true) ? [{ name: 'required', header: 'Obrigatório', render: ({ data }) => <Bool value={data?.required} />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : []
+                    ],
+                    onSelect: onSelectParameters
+                    // filters: { fofabrico: { type: "any", width: 150, text: "Ordem", autoFocus: true } },
+                },
+    
+            });
+            showModal();
+    }
+    const onSelectParameters = (data) => {
+        console.log(data)
     }
 
     useEffect(() => {
@@ -1997,7 +2058,8 @@ export default ({ setFormTitle, ...props }) => {
             bodyStyle={{ height: "calc(100% - 61px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
-                <WidgetSimpleTitle title="Produção" parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
+                <WidgetSimpleTitle title={<div onClick={onOrdemFabricoClick} className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>} parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
+                   {/* <OrdemFabricoChooser parameters={{ data: dataEstadoProducao?.current }} onClick={onOrdemFabricoClick} /> */}
                    <Operations parameters={{ data: dataEstadoProducao?.status, isRunning: isRunning(), isClosed: isClosed(),status:dataEstadoProducao?.status?.status }}/>
                     {/* {props?.parameters?.ofs && <Space>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_formulation_change")} icon={<EditOutlined />}>Alterar</Button>

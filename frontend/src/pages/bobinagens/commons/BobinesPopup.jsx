@@ -18,7 +18,6 @@ import { EditOutlined, HistoryOutlined, AppstoreAddOutlined, MoreOutlined } from
 import ResponsiveModal from 'components/Modal';
 import loadInit from "utils/loadInit";
 import Table from 'components/TableV2';
-import useWebSocket from 'react-use-websocket';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer } from 'components/FormFields';
 import { Status } from "../../bobines/commons";
