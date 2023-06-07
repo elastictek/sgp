@@ -108,7 +108,7 @@ export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({name: "paletes"});//Permissões Iniciais
+    const permission = usePermission({/* name: "paletes" */});//Permissões Iniciais
     const [modeEdit, setModeEdit] = useState({});
 
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });

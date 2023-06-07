@@ -14,7 +14,7 @@ export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const DATE_ENGINE = "moment";
-export const SOCKET = { url: 'ws://localhost:8000/ws' };
+export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
  export const bColors = (estado) => {
