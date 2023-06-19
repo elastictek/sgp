@@ -407,7 +407,8 @@ class SearchPerfil(forms.Form):
                 ('CAR PROTECTION SHEET 57', 'CAR PROTECTION SHEET 57'),
                 ('ELASTIC FILM', 'ELASTIC FILM'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED'),
-                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE')
+                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE'),
+                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
                 )
     nome = forms.CharField(label="Produto", max_length=200,
                            required=False, widget=forms.Select(choices=PRODUTO))
@@ -644,7 +645,8 @@ class BobineEditForm(ModelForm):
                 ('SANITA CONSUMER PRODUCTS S.A.E.', 'SANITA CONSUMER PRODUCTS S.A.E.'),
                 ('Sanita S.A.L.', 'Sanita S.A.L.'),
                 ('Seni S.A.', 'Seni S.A.'),
-                ('Sté SOFAS S.A.R.L.', 'Sté SOFAS S.A.R.L.')
+                ('Sté SOFAS S.A.R.L.', 'Sté SOFAS S.A.R.L.'),
+                ('Hygienika Sp. z o.o.', 'Hygienika Sp. z o.o.')
         )
     cliente = forms.CharField(
         max_length=100, required=True, widget=forms.Select(choices=CLIENTE))

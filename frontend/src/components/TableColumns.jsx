@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef, useLayoutEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone } from '@ant-design/icons';
+import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, SyncOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone } from '@ant-design/icons';
 import { Tag, Button, Space } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
@@ -12,6 +12,32 @@ import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-i
 import { VscDebugStart } from 'react-icons/vsc';
 import { BsFillStopFill, BsPauseCircleFill, BsStopCircleFill, BsPlayCircleFill } from 'react-icons/bs';
 import { IoCodeWorkingOutline } from 'react-icons/io5';
+import TagButton from "components/TagButton";
+
+
+
+
+export const OFabricoStatus = ({ data, onClick, cellProps }) => {
+    return (
+        <div style={{ display: "flex", flexDirection: "row" }}>
+            {(data?.ofabrico_status == 0) && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+            </>}
+            {(data?.ofabrico_status == 1) && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+            </>}
+            {(data?.ofabrico_status == 2) && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
+            </>}
+            {(data?.ofabrico_status) == 3 && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+            </>}
+            {(data?.ofabrico_status) == 9 && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
+            </>}
+        </div>
+    );
+}
 
 
 export const EventColumn = ({ v, grayColor = false, title }) => {
@@ -26,8 +52,6 @@ export const EventColumn = ({ v, grayColor = false, title }) => {
 
     </>);
 }
-
-
 
 export const Largura = ({ id, artigos, nome, onClick, cellProps }) => {
     return (<>
@@ -221,6 +245,37 @@ export const Bool = ({ value, cellProps }) => {
         </div>}
     </>);
 }
+
+export const StatusApproval = ({ value = 0, docStatus, genre = "m", onClick, allowed = [0, 1], cellProps }) => {
+    return (<>
+        {!cellProps?.inEdit &&
+            <>
+                {docStatus == -1 || docStatus == 1 ? <>
+                    {(docStatus == -1 || value== -1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
+                    {(docStatus == 1 && value!==-1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#fa8c16">Em revisão</Tag>}
+                </> :
+                    <>
+                        {value== -1 && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
+                        {value == 0 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="warning">Em Elaboração</Tag>}
+                        {value == 1 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="blue">Em Standby</Tag>}
+                        {value == 2 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="green">Aprovad{genre === "m" ? "o" : "a"}</Tag>}
+                    </>
+                }
+            </>
+        }</>);
+}
+
+// export const StatusDoc = ({ value = 0, genre = "m", onClick, allowed = [-1, 0, 1, 2], cellProps }) => {
+//     return (<>
+//         {!cellProps?.inEdit &&
+//             <>
+//                 {value == -1 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="error">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
+//                 {value == 0 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }}>Em Elaboração</Tag>}
+//                 {value == 1 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="warning">Em Revisão</Tag>}
+//                 {value == 2 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="green">Ativ{genre === "m" ? "o" : "a"}</Tag>}
+//             </>
+//         }</>);
+// }
 
 export const Status = ({ value = 1, genre = "m", onClick, allowed = [0, 1], cellProps }) => {
     return (<>

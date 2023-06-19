@@ -134,6 +134,7 @@ export default ({ setFormTitle, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
+    
     const addToOFabrico = () => {
         const _filter = form.getFieldsValue(["artigo_id", "produto_id"]);
         setModalParameters({
@@ -377,6 +378,7 @@ export default ({ setFormTitle, ...props }) => {
 
     }
     const vglobal = (extrusora, arranque) => {
+        console.log("vglobal-----",arranque,extrusora)
         return (parseFloat(arranque) * ponderacao(extrusora)).toFixed(2);
     }
 
@@ -590,7 +592,7 @@ export default ({ setFormTitle, ...props }) => {
                             _x["doseador"] = _dosers.filter(Boolean).join(',');
                             return {..._x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque)}
                         });
-
+                        console.log("itemssssssssssss",[..._items, ..._itemsC])
                         dataAPI.setData({ rows: [..._items, ..._itemsC], total: _items?.length + _itemsC?.length });
                         dataAPI.clearStatus();
                     }

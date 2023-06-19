@@ -155,6 +155,56 @@ export const BooleanTableEditor = ({ dataAPI, selectProps, checkbox = true, chec
     );
 }
 
+export const StatusApprovalTableEditor = ({ dataAPI, selectProps, allowed = [-1, 0, 1], genre = "m", ...props }) => {
+    const selected = useRef(false);
+    const onChange = async (v) => {
+        let _value = v;
+        props.onChange(_value === '' ? null : _value);
+        await sleep(300);
+        props.onComplete(_value === '' ? null : _value);
+    };
+    const onComplete = (v) => {
+        props.onComplete(v === '' ? null : v);
+    }
+    const onSelect = (v) => {
+        selected.current = true;
+        props.onChange(v === '' ? null : v);
+    };
+    const onKeyDown = (e) => {
+        if (e.key == 'Tab' || e.key == 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!selected.current) {
+                props.onTabNavigation(
+                    true /*complete navigation?*/,
+                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                );
+            }
+            selected.current = false;
+        }
+    }
+
+    return (
+
+        <Select
+            onKeyDown={onKeyDown}
+            autoFocus
+            options={[
+                ...allowed.includes(-1) ? [{ value: -1, label: `Obsolet${genre === "m" ? "o" : "a"}` }] : [],
+                ...allowed.includes(0) ? [{ value: 0, label: `Em Elaboração` }] : [],
+                ...allowed.includes(1) ? [{ value: 1, label: `Em Standby` }] : [],
+                ...allowed.includes(2) ? [{ value: 2, label: `Aprovad${genre === "m" ? "o" : "a"}` }] : [],
+            ]}
+            value={props?.value}
+            onChange={onChange}
+            onBlur={onComplete}
+            popupMatchSelectWidth={false}
+            style={{ width: "100%" }}
+            {...selectProps}
+        />
+    );
+}
+
 export const StatusTableEditor = ({ dataAPI, selectProps, checkBoxProps, allowed = [0, 1], genre = "m", checkbox = false, ...props }) => {
     const selected = useRef(false);
     const onChange = async (v) => {
@@ -762,6 +812,26 @@ export const ClientesTableEditor = ({ ...props }) => {
             moreFilters: {}
         }}
     />)
+}
+
+export const SalesPriceProdutosTableEditor = ({ ...props }) => {
+    return (<>{props?.cellProps?.data?.cliente_cod ? <FieldSelectorEditor
+        {...props}
+        selectorProps={{
+            title: "Produtos",
+            value: { produto: props?.cellProps?.data?.produto, gsm: props?.cellProps?.data?.gsm },
+            params: { payload: { url: `${API_URL}/artigos/sql/`, parameters: { method: "SalesPriceProdutosLookup" }, pagination: { enabled: false, limit: 100 }, filter: { cliente_cod: props?.cellProps?.data?.cliente_cod }, sort: [] } },
+            keyField: ["produto"],
+            textField: "produto",
+            /* detailText: r => r?.BPCNUM_0, */
+            columns: [
+                { key: 'produto', name: 'Produto' },
+                { key: 'gsm_des', name: 'Gsm', width: 160 }
+            ],
+            filters: { /* fmulti_customer: { type: "any", width: 150, text: "Cliente", autoFocus: true } */ },
+            moreFilters: {}
+        }}
+    /> : <></>}</>)
 }
 
 export const ArtigosTableEditor = ({ ...props }) => {

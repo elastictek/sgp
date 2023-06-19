@@ -9,11 +9,15 @@ import MainMenu from '../pages/currentline/dashboard/MainMenu';
 import LogoWhite from 'assets/logowhite.svg';
 import { getSchema } from "utils/schemaValidator";
 import { DASHBOARD_URL } from 'config';
+import YScroll from "components/YScroll";
 
 const schema = (options = {}) => { return getSchema({}, options).unknown(true); };
 
 
 const StyledDrawer = styled(Drawer)`
+    .ant-drawer-wrapper-body{
+        background:#2a3142;
+    }
     .ant-drawer-content{
         background:#2a3142;
     }
@@ -88,7 +92,9 @@ export default ({ title, right, details, description, id }) => {
                 onClose={onCloseDrawer}
                 visible={drawerVisible}
             >
-                <MainMenu dark />
+                <YScroll>
+                    <MainMenu dark />
+                </YScroll>
             </StyledDrawer>
             <FormContainer id="frm-title" /* form={form} */ wrapForm={false} wrapFormItem={false} schema={schema} fluid style={{}}>
                 <Row style={{ marginBottom: "5px" }}>
@@ -110,9 +116,11 @@ export default ({ title, right, details, description, id }) => {
                                             </Dropdown>
                                         </Breadcrumb.Item>
                                     }
-                                    <Breadcrumb.Item style={{ cursor: "pointer", display: "flex", alignItems: "center" }} onClick={() => onNavigate({ label: "Dashboard", key: DASHBOARD_URL })}>
-                                        <HomeOutlined />
-                                        <span>Dashboard</span>
+                                    <Breadcrumb.Item onClick={() => onNavigate({ label: "Dashboard", key: DASHBOARD_URL })}>
+                                        <Space style={{ cursor: "pointer", display: "flex", alignItems: "center" }} size={4}>
+                                            <HomeOutlined style={{ fontSize: "14px" }} />
+                                            <span>Dashboard</span>
+                                        </Space>
                                     </Breadcrumb.Item>
                                 </Breadcrumb>
                             </Col>

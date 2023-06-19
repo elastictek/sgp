@@ -134,6 +134,9 @@ const StyledScrollMenu = styled(ScrollMenu)`
 `;
 
 const StyledDrawer = styled(Drawer)`
+    .ant-drawer-wrapper-body{
+        background:#2a3142;
+    }    
     .ant-drawer-content{
         background:#2a3142;
     }
@@ -1135,7 +1138,9 @@ export default (props) => {
                     onClose={onCloseDrawer}
                     visible={drawerVisible}
                 >
+                   <YScroll>
                     <MainMenu dark />
+                    </YScroll>
                 </StyledDrawer>
                 <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[baseBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<ButtonSettings dashboards={dashboards} currentDashboard={currentDashboard} onClick={setRightDrawerVisible} />} items={(toolbox[baseBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
                     {(toolbox[baseBreakpoint] || []).map(item => <ToolboxItem allItems={allItems} currentBreakpoint={currentBreakpoint} itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}

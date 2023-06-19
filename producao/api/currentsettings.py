@@ -215,10 +215,13 @@ def updateCurrentSettings(id,type,data,user_id,cursor):
     try:
         with cursor:
             if type.startswith('formulacao'):
-                print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-                args = (id, json.dumps(data),type,user_id,0)
-                #print(args)
-                cursor.callproc('update_currentsettings',args)
+                if "items" in data:
+                    for item in data["items"]:
+                        if "rowvalid" in item:
+                            del item["rowvalid"]
+                    args = (id, json.dumps(data),type,user_id,0)                
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
         return Response({"status": "success", "id":id, "title": f'Definições atualizadas com sucesso', "subTitle":f""})
     except Exception as error:
         return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})

@@ -204,7 +204,8 @@ class Perfil(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
                 ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra'),
-                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE')
+                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE'),
+                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
         )
     user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="Username")
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -286,10 +287,11 @@ class Artigo(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
                 ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra'),
-                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE')
+                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE'),
+                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
             )                                                                                                                                                                                      
     cod = models.CharField(verbose_name="Cód. Artigo", max_length=18, unique=True)
-    des = models.CharField(verbose_name="Descrição artigo", max_length=200, unique=True)
+    des = models.CharField(verbose_name="Descrição artigo", max_length=200, unique=False)
     tipo = models.CharField(verbose_name="Tipo", max_length=50, default="Produto final")
     nw1 = models.CharField(verbose_name="NW1", max_length=10, default="")
     formu = models.CharField(verbose_name="Formulação", max_length=10, default="", choices=FORMU)
@@ -368,7 +370,8 @@ class Largura(models.Model):
                 ('NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 95 T-HE'),
                 ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
                 ('NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra', 'NW Elastic Bands ELA-ACE 100 HE (L) PUNCTURED Amostra'),
-                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE')
+                ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE'),
+                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
     )
     perfil = models.ForeignKey(Perfil, on_delete=models.CASCADE, verbose_name="Largura")
     num_bobine = models.PositiveIntegerField(verbose_name="Bobine nº")
@@ -841,7 +844,8 @@ class Bobine(models.Model):
             ('NONWOVEN ELASTIC BAND 100 HE NON WOVEN STRETCH EAR', 'NONWOVEN ELASTIC BAND 100 HE NON WOVEN STRETCH EAR'), 
             ('NONWOVEN ELASTIC BAND ELA-ACE 100 T-HT', 'NONWOVEN ELASTIC BAND ELA-ACE 100 T-HT'), 
             ('NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE', 'NONWOVEN ELASTIC BAND ELA-ACE 100 T-HE'),
-            ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80')
+            ('NONWOVEN ELASTIC BAND ELA-CARDED 80', 'NONWOVEN ELASTIC BAND ELA-CARDED 80'),
+            ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
     )
     TIPODESP = (('R', 'R'), ('BA', 'BA'))
     bobinagem = models.ForeignKey(Bobinagem, on_delete=models.CASCADE, verbose_name="Bobinagem")

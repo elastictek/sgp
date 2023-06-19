@@ -2,10 +2,11 @@ import React, { useEffect, useState, Suspense, lazy, useContext, useRef } from '
 //import ReactDOM from "react-dom";
 import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Spin, Input, Modal, notification } from 'antd';
+import { Spin, Input, Modal, notification, ConfigProvider } from 'antd';
 import { useMediaQuery } from 'react-responsive';
 import './app.css'
-import 'antd/dist/antd.compact.less';
+//import 'antd/dist/antd.compact.less';
+import 'antd/dist/reset.css';
 import { SOCKET } from 'config';
 import useWebSocket from 'react-use-websocket';
 import { useImmer } from "use-immer";
@@ -18,6 +19,9 @@ import { fetch, fetchPost } from "utils/fetch";
 import { API_URL, ROOT_URL } from "config";
 import { openNotification } from 'components/openNotification';
 import { json } from "utils/object";
+import dayjs from 'dayjs';
+let quarterOfYear = require('dayjs/plugin/quarterOfYear');
+dayjs.extend(quarterOfYear);
 
 /* import 'react-data-grid/lib/styles.css'; */
 
@@ -68,6 +72,9 @@ const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssa
 
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
+const FormOrdemFabrico = React.lazy(() => import('./ordensfabrico/FormOrdemFabrico'));
+
+const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
 
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
@@ -175,6 +182,10 @@ const RenderRouter = () => {
 
                 { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
                 { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },
+                { path: "ofabrico/formordemfabrico", element: <Suspense fallback={<Spin />}><FormOrdemFabrico /></Suspense> },
+                
+                { path: "comercial/salespricelist", element: <Suspense fallback={<Spin />}><SalesPriceList /></Suspense> },
+
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]
@@ -323,7 +334,7 @@ const App2 = () => {
 
     useEffect(() => {
         const controller = new AbortController();
-        let interval =null;
+        let interval = null;
         //interval = loadInterval();
         loadData({ signal: controller.signal });
         return (() => { controller.abort(); interval && clearInterval(interval); });
@@ -331,11 +342,11 @@ const App2 = () => {
     }, []);
 
     useEffect(() => {
-        console.log("ohohohohohohohohoho",aggId.current,wsMessage?.hash?.hash_estadoproducao)
+        console.log("ohohohohohohohohoho", aggId.current, wsMessage?.hash?.hash_estadoproducao)
         if (!aggId.current) {
             setEstadoProducao(wsMessageBroadcast);
-        }else{
-            console.log("------------------->>>>",wsMessage)
+        } else {
+            console.log("------------------->>>>", wsMessage)
             setEstadoProducao(wsMessage);
         }
     }, [wsMessageBroadcast?.hash?.hash_estadoproducao, wsMessage?.hash?.hash_estadoproducao]);
@@ -368,7 +379,18 @@ const App2 = () => {
                     {contextHolder}
                     <SocketContext.Provider value={estadoProducao}>
                         <ModalProvider>
-                            {auth?.isAuthenticated && <RenderRouter />}
+                            <ConfigProvider
+                                theme={{
+                                    token: {
+                                        borderRadius:3,
+                                        //sizeStep:2,
+                                        //sizeUnit:2,
+                                        fontSize:12,
+                                        controlHeight:28
+                                    },
+                                }}>
+                                {auth?.isAuthenticated && <RenderRouter />}
+                            </ConfigProvider>
                         </ModalProvider>
                     </SocketContext.Provider>
                 </AppContext.Provider>

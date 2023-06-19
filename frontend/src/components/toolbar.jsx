@@ -27,8 +27,8 @@ const StyledToolbar = styled.div`
         white-space: nowrap;
     }
 
-    ${(props) => {
-        return (!props?.clean) ? `
+    ${({clean="false"}) => {
+        return (clean == "true") ? `
             padding:5px;
             margin-bottom: .2rem!important;
             background: #f8f9fa;
@@ -49,7 +49,7 @@ const StyledToolbar = styled.div`
 export default ({ left, right, center, clean = false, ...props }) => {
     //children.displayName || this.props.children.type.name
     return (
-        <StyledToolbar clean={clean} {...props}>
+        <StyledToolbar clean={clean ? "true" : "false"} {...props}>
             <div className="left">{left}</div>
             {center && <div className="center">{center}</div>}
 {/*             <div className='right'>

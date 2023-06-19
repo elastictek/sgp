@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext, Suspense,lazy } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, lazy } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -23,7 +23,7 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -33,7 +33,7 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import WidgetTitle, { WidgetSimpleTitle } from 'components/WidgetTitle';
 import { InputNumberEditor, MateriasPrimasTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn, EventColumn, StatusProduction } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Link, DateTime, QueueNwColumn, PosColumn, ArtigoColumn, NwColumn, EventColumn, StatusProduction, OFabricoStatus } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -53,7 +53,13 @@ import PaletesList from '../paletes/PaletesList';
 import BobinesList from '../bobines/BobinesList';
 import BobinesGroup from '../bobines/BobinesGroup';
 import BobinagensList from '../bobinagens/BobinagensList';
+import OrdemFabricoBoxes from './OrdemFabricoBoxes';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
+
+const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
+const FormOrdemFabrico = React.lazy(() => import('../ordensfabrico/FormOrdemFabrico'));
+
+
 const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -98,9 +104,9 @@ const useStyles = createUseStyles({
     widgetTitle: {
         color: 'black',
         '&:hover': {
-          color: '#fff',
+            color: '#fff',
         },
-      },
+    },
 
     container: {
         display: 'flex',
@@ -898,11 +904,11 @@ const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
     </>);
 }
 
-const LineParameters = ({ data,onLineLogExpand }) => {
+const LineParameters = ({ data, onLineLogExpand }) => {
     return (<>
         <Row nogutter>
             <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800/* , display: "flex", justifyContent: "center" */ }}>
-                <div><RealtimeData data={data?.realtime} onLineLogExpand={onLineLogExpand}/></div>
+                <div><RealtimeData data={data?.realtime} onLineLogExpand={onLineLogExpand} /></div>
             </Col>
         </Row>
         {/*         <Row nogutter>
@@ -1211,8 +1217,8 @@ const LastEvents = ({ data }) => {
             <div>
                 {data && data.map((item, index) => (
                     <div key={`evt-${item.id}`} style={{ display: "flex" }}>
-                        <div style={{ /* border: "solid 1px #f0f0f0", */ height: "22px",margin:"0px 3px 0px 3px" }}><EventColumn v={item.type} title={item.t_stamp} /></div>
-                        <div style={{ /* border: "solid 1px #f0f0f0", */ fontSize:"10px" }}>{item.t_stamp}</div>
+                        <div style={{ /* border: "solid 1px #f0f0f0", */ height: "22px", margin: "0px 3px 0px 3px" }}><EventColumn v={item.type} title={item.t_stamp} /></div>
+                        <div style={{ /* border: "solid 1px #f0f0f0", */ fontSize: "10px" }}>{item.t_stamp}</div>
                     </div>
                 ))}
             </div>
@@ -1221,13 +1227,13 @@ const LastEvents = ({ data }) => {
     );
 }
 
-const RealtimeData = ({ data,onLineLogExpand }) => {
-    return (<div style={{ display: "flex",justifyContent:"space-between" }}>
+const RealtimeData = ({ data, onLineLogExpand }) => {
+    return (<div style={{ display: "flex", justifyContent: "space-between" }}>
         {data && <>
             <div></div>
             <div>
-            <span style={{fontSize:"10px",fontWeight:400,marginRight:"10px"}}>Tempo restante</span>
-            <span style={{ fontWeight: 700, fontSize: "14px" }}>{data?.time_bobinagem?.split(':').map(num => num.padStart(2, '0')).join(':')}</span>
+                <span style={{ fontSize: "10px", fontWeight: 400, marginRight: "10px" }}>Tempo restante</span>
+                <span style={{ fontWeight: 700, fontSize: "14px" }}>{data?.time_bobinagem?.split(':').map(num => num.padStart(2, '0')).join(':')}</span>
             </div>
             <div><Button type="primary" size="small" onClick={onLineLogExpand} ghost icon={<ExpandAltOutlined />} /></div>
         </>}
@@ -1280,7 +1286,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         showModal();
     }
     const onLineLogExpand = () => {
-        setModalParameters({ content: "linelogexpand", lazy:true,  type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Eventos da Linha</div>, parameters: {} });
+        setModalParameters({ content: "linelogexpand", lazy: true, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Eventos da Linha</div>, parameters: {} });
         showModal();
     }
     const onBobinagensExpand = () => {
@@ -1330,6 +1336,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
             const _dj = Object.values(parameters?.data?.rows.reduce((acc, cur) => {
+                console.log("currrrrrrrrrrrrrrrrrrrrrrr", cur)
                 if (!acc[cur.gid]) {
                     acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
                 } else {
@@ -1415,116 +1422,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         <Container fluid style={{ padding: "0px" }}>
             <Row nogutter>
                 <Col width={ofs.length < 2 ? 360 : 720}>
-                    <Row nogutter style={{}}>
-                        {dataAPI.hasData() && ofs.map((v, i) => {
-                            const items = dataAPI.getData().rows.filter(x => x.of_cod == v);
-                            return (
-                                <Col key={`off-${i}`} sm={12} md={ofs.length < 2 ? 12 : 6}>
-                                    <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 3px 0 3px" }}>
-
-
-                                        <Col style={{}}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}><OfArtigoColumn data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes(v)} /></div>
-                                            {/**TOOLBOX */}
-                                            <div style={{ display: "flex", justifyContent: "end", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
-                                                <Space>
-                                                    <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<PaperClipOutlined />} title="Anexos" />
-                                                    <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost title="Paletização">Paletização</Button>
-                                                    <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
-                                                </Space>
-                                            </div>
-                                            <div style={{ height: ofs.length <= 2 ? "400px" : "300px" }}>
-                                                <YScroll>
-                                                    <div style={{}}>
-
-                                                        <Container fluid style={{ padding: "0px" }}>
-                                                            <Row nogutter style={{ backgroundColor: "#fafafa", textAlign: "center", display: "flex", alignItems: "center", marginTop: "3px" }}>
-                                                                <Col width={120} style={{ fontSize: "10px" }}>Bobines por palete</Col>
-                                                                <Col width={35}>Linha</Col>
-                                                                <Col width={35}>Stock</Col>
-                                                                <Col width={50}>Total</Col>
-                                                                <Col><Progress percent={items[0]?.num_paletes_of_percentage} showInfo={true} trailColor="#dbdbdb" /></Col>
-                                                            </Row>
-                                                            {items.map((x, idx) => {
-                                                                return (
-                                                                    <Row key={`itm-${v}-${idx}`} gutterWidth={2} style={{ textAlign: "center", alignItems: "center" }}>
-                                                                        <Col width={120}><PaletePositionColumn data={x} /></Col>
-                                                                        <Col width={35}>{lpadFloat(x?.total_current?.num_paletes_line)}</Col>
-                                                                        <Col width={35}>{lpadFloat(x?.total_current?.num_paletes_stock)}</Col>
-                                                                        <Col width={50}><b>{lpadFloat(x?.total_current?.num_paletes)}</b>/{lpadFloat(x?.num_paletes)}</Col>
-                                                                        <Col></Col>
-                                                                    </Row>
-                                                                );
-                                                            })}
-                                                        </Container>
-
-                                                    </div>
-                                                    <div style={{}}>
-                                                        <StyledCollapse expandIconPosition="end" bordered={false} activeKey={activeKeys} style={{ padding: "3px" }} onChange={onActiveKeyChange}>
-                                                            <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Bobines</b></div></div>} key="1">
-                                                                <Container fluid style={{ padding: "0px" }}>
-
-                                                                    <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><MiniBarBobines onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
-                                                                    </Row>
-                                                                </Container>
-                                                            </Panel>
-                                                            {items[0]?.bobines_nopalete.length > 0 && <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", fontWeight: 700/* , justifyContent: "right" */, width: "100%"/* , fontStyle: "italic" */ }}><div>Bobines sem palete atribuída</div></div>} key="2">
-                                                                <Container fluid style={{ padding: "0px" }}>
-                                                                    <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><MiniBarBobinesNoPalete onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
-                                                                    </Row>
-                                                                </Container>
-                                                            </Panel>}
-                                                            <Panel showArrow={true} header={<div style={{ width: "100%", fontSize: "10px" }}>
-                                                                <div style={{ fontWeight: 700, fontSize: "12px" }}>Resumo de Produção</div>
-                                                                <div style={{ display: "flex", flexDirection: "row" }}>
-                                                                    <div style={{ width: "43px", fontWeight: 700 }}>Bobines:</div>
-                                                                    <div style={{ width: "60px" }}>Planeadas</div>
-                                                                    <div style={{ flex: .6, fontWeight: 700 }}>{getFloat(items[0].num_bobines_of)}</div>
-                                                                    <div style={{ width: "60px" }}>Produzidas</div>
-                                                                    <div style={{ flex: 1, fontWeight: 700, paddingRight: "3px" }}>{getFloat(items[0].bobines[0]?.total_produzidas_of)}</div>
-                                                                    <div style={{ width: "70px" }}>Retrabalhadas</div>
-                                                                    <div style={{ flex: 1, fontWeight: 700, paddingRight: "3px" }}>{getFloat(items[0].bobines_retrabalhadas[0]?.total_por_of)}</div>
-                                                                </div>
-                                                            </div>
-
-                                                            } key={`tof-${items[0].id}10`}>
-                                                                <Container fluid style={{ padding: "0px" }}>
-                                                                    <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><BobinesTotais data={items[0]} /></Col>
-                                                                    </Row>
-                                                                </Container>
-                                                            </Panel>
-                                                            <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }}><div><b>Defeitos</b></div></div>} key="3">
-                                                                <Container fluid style={{ padding: "0px" }}>
-                                                                    <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                                        <Col><BobinesDefeitos onDefeitosClick={onDefeitosClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
-                                                                    </Row>
-                                                                </Container>
-                                                            </Panel>
-                                                            {/* <Panel header={<div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "80%" }} ><div><b>Paletização</b></div></div>} key="2">
-                                                            <div style={{height: "200px"}}>
-                                                            <YScroll>
-                                                                <PaletizacaoSchema items={json(items[0]?.paletizacao?.paletizacao)} heightPercentage={.6} />
-                                                            </YScroll>
-                                                            </div>
-                                                        </Panel> */}
-                                                        </StyledCollapse>
-                                                    </div>
-                                                </YScroll>
-                                            </div>
-                                        </Col>
-
-                                    </Row>
-                                </Col>
-                            )
-                        })
-                        }
-
-
-
-                    </Row>
+                    <OrdemFabricoBoxes onTogglePaletes={onTogglePaletes} paletes={paletes} boxWidth={ofs.length < 2 ? 12 : 6} dataAPI={dataAPI} />
                 </Col>
 
 
@@ -1578,7 +1476,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
                                     <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col>
-                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} onLineLogExpand={onLineLogExpand}/></div>
+                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} onLineLogExpand={onLineLogExpand} /></div>
                                         </Col>
                                     </Row>
                                     {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 0 0 0", padding: "3px" }}>
@@ -1889,29 +1787,29 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     })}</div>}</>);
 }
 
-const Operations = ({parameters}) => {
-    
-    useEffect(()=> {
+const Operations = ({ parameters }) => {
 
-    },[parameters?.status]);
+    useEffect(() => {
 
-    return(<><StatusProduction status={parameters?.status} wasInProduction={parameters?.was_in_production}/></>);
+    }, [parameters?.status]);
+
+    return (<><StatusProduction status={parameters?.status} wasInProduction={parameters?.was_in_production} /></>);
 }
+/* 
+const OrdemFabricoChooser = ({ parameters, onClick }) => {
 
-const OrdemFabricoChooser = ({parameters, onClick}) => {
-    
-    useEffect(()=> {
-        console.log("chooser--------------------",parameters)
-    },[parameters?.data?.agg_cod]);
+    useEffect(() => {
+        console.log("chooser--------------------", parameters)
+    }, [parameters?.data?.agg_cod]);
 
-    return(<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
-}
+    return (<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
+} */
 
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} };
-    const {updateAggId} = useContext(AppContext);
+    const { updateAggId } = useContext(AppContext);
     const [dataParams, setDataParams] = useState({});
     const [dataEstadoProducao, setDataEstadoProducao] = useState([]);
 
@@ -1944,6 +1842,20 @@ export default ({ setFormTitle, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
+    const [modalParametersL1, setModalParametersL1] = useState({});
+    const [showModalL1, hideModalL1] = useModal(({ in: open, onExited }) => {
+        const content = () => {
+            switch (modalParametersL1.content) {
+                case "validar": return <FormOrdemFabricoValidar parameters={modalParametersL1.parameters} />;
+                case "viewordemfabrico": return <FormOrdemFabrico parameters={modalParametersL1.parameters} />;
+            }
+        }
+        return (
+            <ResponsiveModal lazy={modalParametersL1?.lazy} title={modalParametersL1?.title} type={modalParametersL1?.type} push={modalParametersL1?.push} onCancel={hideModalL1} width={modalParametersL1.width} height={modalParametersL1.height} footer="ref" extra="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParametersL1]);
     const onOpenFormulacao = (type) => {
         // console.log(inputParameters.current)
         // if (inputParameters.current?.cs_id) {
@@ -1951,35 +1863,79 @@ export default ({ setFormTitle, ...props }) => {
         //     showModal();
         // }
     }
-    const onOrdemFabricoClick = () => {
+
+
+    // cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
+    // /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
+    // estado: { title: "", sort:false, width: 125, render: (v, r) => <ColumnEstado onValidar={onValidar} allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+    // /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
+    // //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
+    // item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
+    // cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
+
+
+    const onOFStatusClick = (e, data, allowChangeStatus, allowValidar, allowReopen) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (data?.ofabrico_status === 0 && allowChangeStatus && allowValidar) {
+            //Validar
+            setModalParametersL1({ content: "validar", type: "drawer", width: "95%"/* , title: "Entrada/Saída de granulado em linha" */, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data } });
+            showModalL1();
+
+        }
+        if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
+            //navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
+            //Validar
+            setModalParametersL1({ content: "viewordemfabrico", type: "drawer", width: "95%"/* , title: "Entrada/Saída de granulado em linha" */, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, allowChangeStatus, allowValidar, allowReopen } });
+            showModalL1();
+
+        }
+        console.log("-------------------", data?.ofabrico_status, allowChangeStatus, allowValidar, allowReopen);
+    }
+
+    const onOrdemFabricoClick = async () => {
+        const instantPermissions = await permission.loadInstantPermissions({ name: "ordemfabrico", module: "main" });
+        permission.isOk(instantPermissions);
+        const allowChangeStatus = permission.isOk({ item: "changeStatus", instantPermissions });
+        const allowValidar = permission.isOk({ item: "changeStatus", action: "validar", instantPermissions });
+        const allowReopen = permission.isOk({ item: "changeStatus", action: "reopen", instantPermissions });
+        const allowInElaboration = permission.isOk({ item: "viewInElaboration", instantPermissions });
+        const allowViewValidar = permission.isOk({ item: "viewValidar", instantPermissions });
         //const { status, cod, temp_ofabrico_agg } = record;
-        navigate("/app", { state: { aggId: 244, tstamp: Date.now() }, replace: true });
-        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-            setModalParameters({
-                content: "ordemfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico", push: false, loadData: () => { }, parameters: {
-                    payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "rowid", parameters: { method: "OrdensFabricoList" }, pagination: { enabled: true, pageSize: 20 }, filter: {}, baseFilter: {}, sort: [] } },
-                    toolbar: false,
-                    pagination: "remote",
-                    multipleSelection: false,
-                    columns: [
-                        ...(true) ? [{ name: 'ofabrico', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
-                        ...(true) ? [{ name: 'prf', header: 'Designação', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
-                        ...(true) ? [{ name: 'iorder', header: 'Encomenda', render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'parameter_mode', header: 'Modo', render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'unit', header: 'Unidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
-                        // //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'min_value', header: 'Min', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'max_value', header: 'Max', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'value_precision', header: 'Precisão', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'status', header: 'Estado', render: ({ data }) => <Status value={data?.status} genre="m" />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-                        // ...(true) ? [{ name: 'required', header: 'Obrigatório', render: ({ data }) => <Bool value={data?.required} />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : []
-                    ],
-                    onSelect: onSelectParameters
-                    // filters: { fofabrico: { type: "any", width: 150, text: "Ordem", autoFocus: true } },
-                },
-    
-            });
-            showModal();
+        //navigate("/app", { state: { aggId: 244, tstamp: Date.now() }, replace: true });
+        setModalParameters({
+            content: "ordemfabrico", responsive: true, type: "drawer", width: "95%", title: "Ordens de Fabrico", push: false, loadData: () => { }, parameters: {
+                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "rowid", parameters: { method: "OrdensFabricoList", allowInElaboration, allowViewValidar }, pagination: { enabled: true, pageSize: 20 }, filter: {}, baseFilter: {}, sort: [{ column: 'ofabrico_status', direction: 'ASC' }, { column: 'ofabrico', direction: 'DESC' }] } },
+                toolbar: false,
+                pagination: "remote",
+                multipleSelection: false,
+                columns: [
+                    ...(true) ? [{ name: 'ofabrico', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.ofabrico}</LeftAlign> }] : [],
+                    ...(true) ? [{ name: 'prf', header: 'Designação', userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.prf}</LeftAlign> }] : [],
+                    ...(true) ? [{ name: 'iorder', header: 'Encomenda', render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'cod', header: 'Agg', userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
+                    ...(true) ? [{ name: 'ofabrico_status', header: '', userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data, allowChangeStatus, allowValidar, allowReopen)} /> }] : [],
+                    ...(true) ? [{ name: "cliente_nome", header: "Cliente", defaultWidth: 160, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
+                    ...(true) ? [{ name: "item", header: "Artigo", defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
+                    ...(true) ? [{ name: 'start_prev_date', header: 'Início Previsto', userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.start_prev_date} format={DATETIME_FORMAT} /> }] : [],
+                    ...(true) ? [{ name: 'end_prev_date', header: 'Fim Previsto', userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.end_prev_date} format={DATETIME_FORMAT} /> }] : [],
+                    ...(true) ? [{ name: 'inicio', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.inicio} format={DATETIME_FORMAT} /> }] : [],
+                    ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.fim} format={DATETIME_FORMAT} /> }] : [],
+                    // ...(true) ? [{ name: 'parameter_mode', header: 'Modo', render: ({ data, cellProps }) => <MetodoMode cellProps={cellProps} value={data?.parameter_mode} />, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'unit', header: 'Unidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
+                    // //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'min_value', header: 'Min', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'max_value', header: 'Max', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'value_precision', header: 'Precisão', userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'status', header: 'Estado', render: ({ data }) => <Status value={data?.status} genre="m" />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                    // ...(true) ? [{ name: 'required', header: 'Obrigatório', render: ({ data }) => <Bool value={data?.required} />, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : []
+                ],
+                onSelect: onSelectParameters
+                // filters: { fofabrico: { type: "any", width: 150, text: "Ordem", autoFocus: true } },
+            },
+
+        });
+        showModal();
     }
     const onSelectParameters = (data) => {
         console.log(data)
@@ -2053,14 +2009,19 @@ export default ({ setFormTitle, ...props }) => {
     return (
         <Card
             hoverable
-            headStyle={{ padding: "0px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" }}
+            headStyle={{ padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" }}
             style={{ height: "100%", border: "1px solid #8c8c8c" }}
             bodyStyle={{ height: "calc(100% - 61px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
-                <WidgetSimpleTitle title={<div onClick={onOrdemFabricoClick} className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>} parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
-                   {/* <OrdemFabricoChooser parameters={{ data: dataEstadoProducao?.current }} onClick={onOrdemFabricoClick} /> */}
-                   <Operations parameters={{ data: dataEstadoProducao?.status, isRunning: isRunning(), isClosed: isClosed(),status:dataEstadoProducao?.status?.status }}/>
+                <WidgetSimpleTitle title={
+                    <Space>
+                        <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" />
+                        <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
+                    </Space>
+                } parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
+                    {/* <OrdemFabricoChooser parameters={{ data: dataEstadoProducao?.current }} onClick={onOrdemFabricoClick} /> */}
+                    <Operations parameters={{ data: dataEstadoProducao?.status, isRunning: isRunning(), isClosed: isClosed(), status: dataEstadoProducao?.status?.status }} />
                     {/* {props?.parameters?.ofs && <Space>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_formulation_change")} icon={<EditOutlined />}>Alterar</Button>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_dosers_change")} icon={<EditOutlined />}>Doseadores</Button>

@@ -17,3 +17,7 @@ def try_float(value):
         return float(value)
     except ValueError:
         return None
+
+
+def delKeys(d, keys):
+    return {k: v for k, v in d.items() if k not in keys}

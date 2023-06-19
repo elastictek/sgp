@@ -102,6 +102,7 @@ class BaseSql:
             self.columns = []
             self.tags = []
             self.statement = ''
+            self.filter = ''
             self.parameters = {}
 
     class Count:
@@ -358,6 +359,7 @@ class PostgresSql(BaseSql):
             for i, c in enumerate(ks):
                 ret.tags.append(f'{ret.columns[i]} = %({c})s')
                 ret.parameters[c] = data.get(c)
+            ret.filter = filter.text
             if table is not None:
                 if returning is None:
                     ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text}'
@@ -543,6 +545,7 @@ class MySqlSql(BaseSql):
                 else:
                     ret.tags.append(f'{ret.columns[i]} = %({c})s')
                     ret.parameters[c] = data.get(c)
+            ret.filter = filter.text
             if table is not None:
                 if returning is None:
                     ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text}'
@@ -733,6 +736,7 @@ class SqlServerSql(BaseSql):
             for i, c in enumerate(ks):
                 ret.tags.append(f'{ret.columns[i]} = %({c})s')
                 ret.parameters[c] = data.get(c)
+            ret.filter = filter.text
             if table is not None:
                 if returning is None:
                     ret.statement = f'UPDATE {table} SET {",".join(ret.tags)} {filter.text}'

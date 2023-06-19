@@ -153,6 +153,11 @@ export default ({ dark = false }) => {
                     <Permissions permissions={permission} item="reports" action="A"><Button size='small' type="link" onClick={() => navigate('/app/artigos/artigosproducao', {})} title="E">Volume Produzido - Artigos</Button></Permissions>
                 </Panel>
             </Permissions>
+            <Permissions permissions={permission} item="comercial" key="9" clone>
+                <Panel header={<b>Comercial</b>} key="9">
+                    <Permissions permissions={permission} item="comercial" action="A"><Button size='small' type="link" onClick={() => navigate('/app/comercial/salespricelist', {})} title="A">Preços de Venda</Button></Permissions>
+                </Panel>
+            </Permissions>
         </StyledCollapse>
 
     );

@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 
-export default styled.div`
+const YScroll = styled.div`
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
     height:100%;
@@ -29,3 +29,7 @@ export default styled.div`
       outline-style:auto;
     }    
 `;
+
+export default React.forwardRef(({ children }, ref) => (
+  <YScroll ref={ref}>{children}</YScroll>
+));

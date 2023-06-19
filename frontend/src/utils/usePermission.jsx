@@ -54,15 +54,24 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         setPermissions(json(_perm?.permissions));
     }
 
-    const isOk = ({ action = null, item = null, forInput = null, onPlace = null, log = null }) => {
+    const loadInstantPermissions = async ({ name, module="main", set = false }) => {
+        const _perm = await loadPermissions({ name: name ? name : loc.pathname.replace(/\:$/, ''), module });
+        if (set) {
+            setPermissions(json(_perm?.permissions));
+        }
+        return json(_perm?.permissions);
+    }
+
+    const isOk = ({ action = null, item = null, forInput = null, onPlace = null, log = null, instantPermissions = null }) => {
         //onPlace - indica as permissões mínimas para ter acesso, sobrepõe-se às "permissions" definidas em app_permissions 
         //example.1 {createRecord: {rolename: 200}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200
         //example.2 {formA: { createRecord: {rolename: 200}}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200 on item ("formA")
+        const _permissions = (instantPermissions) ? instantPermissions : permissions;
         if (!item && globalItem) {
             item = globalItem;
         }
-        if (!item && permissions) {
-            item = Object.keys(permissions)[0];
+        if (!item && _permissions) {
+            item = Object.keys(_permissions)[0];
         }
         if (Array.isArray(forInput)) {
             if (forInput.includes(false)) {
@@ -75,7 +84,7 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         if (auth.isAdmin) {
             //return true;
         }
-        if (!permissions) {
+        if (!_permissions) {
             return false;
         }
         let min = null;
@@ -84,9 +93,9 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         //console.log(log, action, item)
         //console.log(permissions)
         //console.log(json(permissions)[action])
-        let p = (onPlace) ? json(onPlace) : (item) ? (permissions[item] ? permissions[item][action] : null) : permissions[action];
+        let p = (onPlace) ? json(onPlace) : (item) ? (_permissions[item] ? _permissions[item][action] : null) : _permissions[action];
         if (!p) {
-            p = (item) ? (permissions[item] ? ((permissions[item]["default"]) ? permissions[item]["default"] : permissions["default"]) : null) : permissions["default"];
+            p = (item) ? (_permissions[item] ? ((_permissions[item]["default"]) ? _permissions[item]["default"] : _permissions["default"]) : null) : _permissions["default"];
         }
         if (!p) {
             return false;
@@ -134,5 +143,5 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         return false;
     }
 
-    return { auth, allow, permissions, name: name ? name : loc.pathname, module, isOk };
+    return { auth, allow, permissions, name: name ? name : loc.pathname, module, isOk,loadInstantPermissions };
 }

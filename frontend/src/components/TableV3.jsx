@@ -23,7 +23,7 @@ import Spin from "./Spin";
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
 import DataGrid, { Row as TableRow, SelectColumn } from 'react-data-grid';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, FilterDrawer } from 'components/FormFields';
+import { Field, Container as FormContainer, FilterDrawer, AutoCompleteField, RangeDateField, RangeTimeField, SelectMultiField, SelectField, DatetimeField } from 'components/FormFields';
 import { fixRangeDates } from "utils/loadInit";
 import YScroll from 'components/YScroll';
 
@@ -148,6 +148,37 @@ const addMode = (obj = {}) => {
     }
     return false;
 }
+
+
+export const getFilters = ({ columns, filterdrawer = false }) => {
+    if (!columns) return [];
+    const _toolbar = (v) => (!filterdrawer && (v?.filter?.show === true || v?.filter?.show === 'toolbar'));
+    const _morefilters = (v) => (filterdrawer && !(v?.filter?.show === false));
+    return columns?.map(v =>
+    (
+        <React.Fragment key={`tf-${v?.name ? v?.name : v?.id}`}>
+            {(_morefilters(v) || _toolbar(v)) && <Col xs={v?.filter?.width ? v?.filter?.width : "content"} style={{ marginRight: "2px" }}>
+                <Field name={`f${v?.name ? v?.name : v?.id}`} label={{ enabled: true, text: v?.header, pos: "top", padding: "0px", ...v?.filter?.label }}>
+                    {(typeof v?.filter?.type === 'function') ? v.filter.type() :
+                        {
+                            autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />
+                        }[v?.filter?.type] || <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />
+
+                    }
+
+                </Field>
+            </Col>}
+        </React.Fragment>)
+    );
+}
+
+export const getMoreFilters = ({ columns }) => getFilters({ columns, filterdrawer: true });
 
 const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit, modeAdd }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
@@ -354,7 +385,7 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
 }
 
 const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid }) => {
-    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true,saveText = "Guardar",cancelText="Cancelar",addText="Novo",editText="Editar" } = editable;
+    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true, saveText = "Guardar", cancelText = "Cancelar", addText = "Novo", editText = "Editar" } = editable;
 
 
     const changeMode = async () => {
@@ -392,10 +423,10 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid
         const _v = { ...mode[modeKey], edit: mode[modeKey].edit ? false : true };
         setMode((prev) => ({ ...prev, [modeKey]: { ..._v } }));
     }
-    const _onAdd = () => {
+    const _onAdd = async () => {
         if (typeof onAdd === "function") {
             const cols = { ...columns.reduce((acc, curr) => { acc[curr?.id ? curr?.id : curr.name] = null; return acc; }, {}), [idProperty]: `*${uid(4)}` };
-            onAdd(cols);
+            await onAdd(cols);
         }
         // if (addMode(editable)) {
         //     dataAPI.setAction("cancel", true);
@@ -619,7 +650,7 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         // if (event.key === ' ' || event.key === 'Enter') {
         if ((!(["Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) && !grid.isInEdit.current) || event.key === 'Enter') {
             const column = grid.getColumnBy(colIndex);
-            grid.startEdit({ columnId: column.name, rowIndex });
+            grid.startEdit({ columnId: column.name, rowIndex, ...(event.key !== 'Enter' && { value: event.key }) });
         }
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -711,7 +742,8 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
                 {...toolbarFilters?.form && { form: toolbarFilters.form }}
                 {...toolbarFilters.moreFilters?.width && { width: toolbarFilters.moreFilters.width }}
                 {...toolbarFilters.moreFilters?.rules && { filterRules: toolbarFilters.moreFilters.rules() }}
-                {...toolbarFilters.moreFilters?.schema && { schema: toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form }) }}
+                {...toolbarFilters.moreFilters?.schema && { schema: toolbarFilters.moreFilters.schema({ form: toolbarFilters?.form }) }} //DEPRECATED USE filters instead
+                {...toolbarFilters.moreFilters?.filters && { filters: toolbarFilters.moreFilters?.filters({ form: toolbarFilters?.form, columns: columns }) }}
                 {...toolbarFilters.moreFilters?.mask && { mask: toolbarFilters.moreFilters?.mask }}
             />}
         {toolbar && <Container fluid style={{ background: "#f8f9fa", /* border: "1px solid #dee2e6", borderRadius: "3px", */ padding: "5px" }}>
@@ -719,15 +751,15 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
                 <Col xs="content"></Col>
                 {title && <Col xs="content">
                     <Row><Col>{title}</Col></Row>
-                    <Row><Col style={{display:"flex"}}>
-                    {startToolbar && startToolbar}
+                    <Row><Col style={{ display: "flex" }}>
+                        {startToolbar && startToolbar}
                         <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                         {leftToolbar && leftToolbar}
                     </Col></Row>
                 </Col>
                 }
-                {!title && <Col xs="content" style={{ alignSelf: "end" ,display:"flex"}}>
-                {startToolbar && startToolbar}
+                {!title && <Col xs="content" style={{ alignSelf: "end", display: "flex" }}>
+                    {startToolbar && startToolbar}
                     <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
                     {leftToolbar && leftToolbar}
                 </Col>}

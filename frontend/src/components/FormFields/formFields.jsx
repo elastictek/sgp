@@ -7,7 +7,7 @@ import { ConditionalWrapper } from '../conditionalWrapper';
 import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
-import { debounce,dayjsValue } from "utils";
+import { debounce, dayjsValue } from "utils";
 import { validate, getSchema, pick, getStatus } from "utils/schemaValidator";
 import { LoadingOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
@@ -123,7 +123,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                     </div>
                 }
             >
-                <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }}>
+                {schema && <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }}>
                     {schema.map((line, ridx) => (
                         <Row key={`rf-${ridx}`} gutter={16}>
                             {Object.keys(line).map((col, cidx) => {
@@ -144,6 +144,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                                     inputnumber: <InputNumber allowClear {...field} />,
                                                     selectmulti: <SelectMultiField allowClear {...field} />,
                                                     select: <SelectField allowClear {...field} />,
+                                                    datetime: <DatetimeField allowClear {...field} />,
                                                     checkbox: <CheckboxField {...field}>{labelChk}</CheckboxField>
                                                 }[field?.type] || <Input style={{ ...itemWidth }} allowClear {...field} />
                                             }
@@ -155,6 +156,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                         </Row>
                     ))}
                 </Form>
+                }
             </Drawer>
         </>
     );
@@ -280,15 +282,15 @@ export const CheckboxField = ({ onChange, value, checkedValue = 1, uncheckedValu
 };
 
 export const DatetimeField = ({ value, ...rest }) => {
-        return (
+    return (
         <DatePicker value={dayjsValue(value)} {...rest} />
     );
 };
 
 export const TimeField = ({ value, ...rest }) => {
     return (
-    <TimePicker value={dayjsValue(value)} {...rest} />
-);
+        <TimePicker value={dayjsValue(value)} {...rest} />
+    );
 };
 
 export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size, onPressEnter, ...rest }, ref) => {
@@ -919,7 +921,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             );
                         case 'Selector':
                             return (<Selector forView={true} minHeight={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
-                        case 'SelectDebounceField':                            
+                        case 'SelectDebounceField':
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
                             if (r !== undefined) {

@@ -22,6 +22,7 @@ class AppSettings:
         "gw":"PG-SGP-GW"
     }
     materializedViews = {
-        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST'
+        "MV_OFABRICO_LIST":f'MV_OFABRICO_LIST',
+        "MV_OFABRICO_LISTV2":f'MV_OFABRICO_LISTV2'
     }
 
