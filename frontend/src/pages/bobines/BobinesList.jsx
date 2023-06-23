@@ -339,7 +339,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
     }
 
     const columns = [
-        { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'nome', name: 'Lote', frozen: true, width: 135, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
         ...dataAPI.getAllFilter()?.type !== "C" ? [{
             key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<SettingOutlined />} size="small" onClick={() => onClickTasks(p.row)} />,
         }] : [],

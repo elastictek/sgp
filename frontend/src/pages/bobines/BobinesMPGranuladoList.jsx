@@ -144,7 +144,7 @@ export default (props) => {
     const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
 
     const columns = [
-        { key: 'nome', sortable: true, name: 'Bobine', width: 130, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'nome', sortable: true, name: 'Bobine', width: 135, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
         { key: 'posicao_palete', sortable: false, name: 'Pos. Palete', width: 90, formatter: p => p.row.posicao_palete },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
         { key: 'artigo_cod', name: 'Cód. Matéria Prima', width: 150, sortable: true },

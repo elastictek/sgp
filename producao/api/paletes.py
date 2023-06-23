@@ -617,6 +617,7 @@ def AllowedOFChanges(request, format=None):
 def UpdateDestinos(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
+
     def checkPalete01(id, cursor):
         f = Filters({"id":id})
         f.where()
@@ -671,30 +672,8 @@ def UpdateDestinos(request, format=None):
                 db.execute(dml.statement, cursor, dml.parameters)
                 dml = db.dml(TypeDml.UPDATE,{"prop_obs":data["values"]["prop_obs"]},"producao_bobine",{"id":f'in:{ids_po}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
-
-                dml = db.dml(TypeDml.UPDATE,{},"producao_palete",{"id":f'=={filter["palete_id"]}'},None,False)
-                statement = dml.statement.replace('SET',
-                f'''SET 
-                destinos = (
-                    select JSON_ARRAYAGG(json_object('destinos',destinos,'estado',estado,'regranular',regranular)) from(
-                    SELECT JSON_ARRAYAGG(json_object('cliente',cliente,'largura',largura,'obs',obs)) destinos,estado,regranular FROM (
-                    SELECT distinct t.cliente,t.largura,t.obs, destinos->'$.estado' estado,destinos->'$.regranular' regranular from producao_bobine pb, JSON_TABLE(destinos,'$.destinos[*]' COLUMNS (cliente JSON PATH '$.cliente', largura INT PATH '$.largura', obs TEXT PATH '$.obs')) t where palete_id = {filter["palete_id"]} and recycle=0 and comp_actual>0
-                    ) t group by estado,regranular) t
-                ),
-                destino = (                    
-                    select GROUP_CONCAT(distinct d SEPARATOR ' // ') from (
-                    select GROUP_CONCAT(distinct cliente->>'$.BPCNAM_0',' ',largura, ' ', estado ORDER BY cliente->>'$.BPCNAM_0',t.largura SEPARATOR ' // ') d FROM (
-                    SELECT distinct t.cliente,t.largura,destinos->>'$.estado.value' estado from producao_bobine pb, JSON_TABLE(destinos,'$.destinos[*]' COLUMNS (cliente JSON PATH '$.cliente', largura INT PATH '$.largura')) t where palete_id = {filter["palete_id"]} and recycle=0 and comp_actual>0
-                    ) t
-                    UNION
-                    SELECT distinct destino d from producao_bobine pb where comp_actual>0 and recycle=0 and destino is not null and destinos is null and palete_id = {filter["palete_id"]}
-                    UNION 
-                    SELECT distinct destinos->>"$.estado.label" from producao_bobine pb where palete_id = {filter["palete_id"]} and recycle=0 and comp_actual>0
-                    ) t
-                )
-                '''
-                ,1)
-                db.execute(statement, cursor, dml.parameters)
+                args = (filter["palete_id"],None)
+                cursor.callproc('update_palete',args)
 
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Error as error:

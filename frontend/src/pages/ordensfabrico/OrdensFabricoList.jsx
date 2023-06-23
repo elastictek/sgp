@@ -7,13 +7,13 @@ import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
-import { useSubmitting, sleep } from "utils";
+import { useSubmitting, sleep,getFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, OFABRICO_FILTER_STATUS } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch } from "antd";
+import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch,Progress } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
@@ -439,10 +439,13 @@ export default ({ noid = true, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'ofabrico_status', header: 'Estado Produção', filter: { show: true, type: "select", field: { style: { width: "80px" }, options: OFABRICO_FILTER_STATUS } }, userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data)} /> }] : [],
         ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 160, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item", header: "Artigo", filter: { show: true, op: "any" }, defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
-        ...(true) ? [{ name: "num_paletes_total", header: "Planeado", filter: { show: true,type:"number",field:{style:{width:"80px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.num_paletes_total}</RightAlign> }] : [],
-        ...(true) ? [{ name: "n_paletes_produzidas", header: "Produzidas", filter: { show: true,type:"number",field:{style:{width:"80px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.num_paletes_total - data?.n_paletes_stock_in}</RightAlign> }] : [],
-        ...(true) ? [{ name: "n_paletes_stock_in", header: "Stock", filter: { show: true,type:"number",field:{style:{width:"80px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_stock_in}</RightAlign> }] : [],
-       
+        
+        ...(true) ? [{ name: "n_paletes", header: "Total", filter: { show: true,type:"number",field:{style:{width:"70px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <LeftAlign style={{}}>{data?.n_paletes_total}/{data?.n_paletes}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "progress", header: "", filter: { show: false }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <Progress percent={getFloat(data?.progress,0)} showInfo={true} trailColor="#dbdbdb" /> }] : [],
+        ...(true) ? [{ name: "n_paletes_produzidas", header: "Produzidas", filter: { show: true,type:"number",field:{style:{width:"80px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_produzidas}</RightAlign> }] : [],
+        ...(true) ? [{ name: "n_paletes_stock_in", header: "Stock", filter: { show: true,type:"number",field:{style:{width:"60px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_stock_in}</RightAlign> }] : [],
+
+
         ...(true) ? [{ name: 'start_prev_date', header: 'Início Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.start_prev_date} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'end_prev_date', header: 'Fim Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.end_prev_date} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'inicio', header: 'Início', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.inicio} format={DATETIME_FORMAT} /> }] : [],
