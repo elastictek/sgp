@@ -48,6 +48,7 @@ connMssqlName = "sqlserver"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
+mv_ofabrico_list = "mv_ofabrico_listv2"
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication])
@@ -184,6 +185,11 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
 
+def updateMaterializedView():
+    conngw = connections[connGatewayName]
+    cgw = conngw.cursor()
+    cgw.execute(f"REFRESH MATERIALIZED VIEW public.{mv_ofabrico_list};")
+    conngw.commit()
 
 def OrdensFabricoList(request, format=None):
     def statusFilter(v):
@@ -254,7 +260,6 @@ def OrdensFabricoList(request, format=None):
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
     sageAlias = dbgw.dbAlias.get("sage")
-    mv_ofabrico_list = "mv_ofabrico_listv2"
     cols = f"""*"""
     sql = lambda p, c, s: (
         f"""
@@ -743,7 +748,7 @@ def GetPaletesStock(request, format=None):
         select
         {cols}
         FROM mv_paletes sgppl
-        LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+        LEFT JOIN {mv_ofabrico_list} mol on mol.ofabrico=sgppl.ofid
         WHERE sgppl.ordem_id_original <> sgppl.ordem_id {f.text}
         {dql.sort}
     """)
@@ -798,6 +803,7 @@ def OpenPrf(request, format=None):
                 raise Exception("A Prf já se encontra aberta!")
             dml = db.dml(TypeDml.UPDATE, {"fim":None,"ativa":1,"completa":0}, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
             db.execute(dml.statement, cursor, dml.parameters)
+            updateMaterializedView()
             return Response({"status": "success", "title": "Prf aberta com sucesso!"})
     except Exception as error:
         print(str(error))
@@ -838,6 +844,7 @@ def ClosePrf(request, format=None):
                 "completa":1
                 }, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
             db.execute(dml.statement, cursor, dml.parameters)
+            updateMaterializedView()
             return Response({"status": "success", "title": "Prf fechada com sucesso!"})
     except Exception as error:
         print(str(error))
@@ -848,8 +855,9 @@ def RevertToElaboration(request, format=None):
     data = request.data.get("parameters")
     try:
         with connections["default"].cursor() as cursor:
-            args = (data.get("aggid"))
+            args = [data.get("aggid")]
             cursor.callproc('of_to_elaboration',args)
+            updateMaterializedView()
             return Response({"status": "success","title":"Ordem de fabrico revertida com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
