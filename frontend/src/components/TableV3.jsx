@@ -6,7 +6,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
-import { pickAll, useSizeMe, useSubmitting } from "utils";
+import { pickAll, useSizeMe, useSubmitting,getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import sizeMe from 'react-sizeme';
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -152,7 +152,7 @@ const addMode = (obj = {}) => {
 
 export const getFilters = ({ columns, filterdrawer = false }) => {
     if (!columns) return [];
-    const _toolbar = (v) => (!filterdrawer && (v?.filter?.show === true || v?.filter?.show === 'toolbar'));
+    const _toolbar = (v) => (!filterdrawer && (v?.filter?.show === 'toolbar'));
     const _morefilters = (v) => (filterdrawer && !(v?.filter?.show === false));
     return columns?.map(v =>
     (
@@ -162,8 +162,10 @@ export const getFilters = ({ columns, filterdrawer = false }) => {
                     {(typeof v?.filter?.type === 'function') ? v.filter.type() :
                         {
                             autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
                             rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
                             rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                            number:<Input size="small" allowClear {...v?.filter?.field && v.filter.field} />,
                             inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} />,
                             selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
                             select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
@@ -177,13 +179,58 @@ export const getFilters = ({ columns, filterdrawer = false }) => {
         </React.Fragment>)
     );
 }
-
 export const getMoreFilters = ({ columns }) => getFilters({ columns, filterdrawer: true });
+
+export const getFiltersValues = ({ columns,values, server=false }) => {
+    const _values = {};
+
+    if (server){
+        //por forma a facilitar, este parametro gera o código dos filtros a aplicar no server (pode carecer de alterações!!!!)
+        //**rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE({k})'),
+        //{"value": lambda v: Filters.getNumeric(v.get('fdiam_avg')), "field": lambda k, v: f'sgppl.{k}'},
+        
+        columns.forEach((v) => {
+            const fname = `f${v?.name ? v?.name : v?.id}`;
+            const name = v?.name ? v?.name : v?.id;
+            switch(v?.filter?.type){
+                case "number":console.log(`"${name}":{"value": lambda v: Filters.getNumeric(v.get('${fname}')), "field": lambda k, v: f'{k}'},`);break;
+                case "inputnumber":console.log(`${name}":{"value": lambda v: Filters.getNumeric(v.get('${fname}'),'=='), "field": lambda k, v: f'{k}'},`);break;
+                case "datetime":console.log(`${name}":{"value": lambda v:v.get('${fname}'), "field": lambda k, v: f'{k}'},`);break;
+                case "select":console.log(`${name}":{"value": lambda v:v.get('${fname}'), "field": lambda k, v: f'{k}'},`);break;
+                case "selectmulti":console.log(`${name}":{"value": lambda v:v.get('${fname}'), "field": lambda k, v: f'{k}'},`);break;
+                case "autocomplete":console.log(`${name}":{"value": lambda v: v.get('${fname}'), "field": lambda k, v: f'{k}'},`);break;
+                case "rangetime":console.log(`**rangeP(f.filterData.get('${fname}'), '${name}', lambda k, v: f'{k}'),`); break;
+                case "rangedate":console.log(`**rangeP(f.filterData.get('${fname}'), '${name}', lambda k, v: f'DATE({k})'),`);break;
+                case "rangedatetime":console.log(`**rangeP(f.filterData.get('${fname}'), '${name}', lambda k, v: f'{k}'),`);break;
+                default:_values[fname] = console.log(`${name}:{"value": lambda v: Filters.getLower(v.get('${fname}')), "field": lambda k, v: f'{k}'},`);break;
+            }
+        });
+    }
+
+    columns.forEach((v) => {
+        const fname = `f${v?.name ? v?.name : v?.id}`;
+        if (!v?.filter?.op && !(["rangetime","rangedate","rangedatetime"].includes(v?.filter?.type))) {
+            return;
+        }
+        switch(v?.filter?.type){
+            case "number":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "inputnumber":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "datetime":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "select":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "selectmulti":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "autocomplete":_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+            case "rangetime":_values[fname] = getFilterRangeValues(values?.[fname]?.formatted);  break;
+            case "rangedate":_values[fname] = getFilterRangeValues(values?.[fname]?.formatted); break;
+            case "rangedatetime":_values[fname] = getFilterRangeValues(values?.[fname]?.formatted, true, "00:00:00", "23:59:59"); break;
+            default:_values[fname] = getFilterValue(values?.[fname], v.filter.op);break;
+        }
+    });
+    return _values;
+}
 
 const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit, modeAdd }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
-        console.log(e.target)
         setReportTitle(e.target.value);
     }
     return (
@@ -490,13 +537,11 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
     }
 
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
+        const log = true;
         let dt = { data: [], count: 0 };
-        console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww");
-        console.log(dataAPI.getActions())
-        console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
         if (dataAPI.getActions().includes("init")) {
+            if (log){console.log("LOG DATASOURCE - 1 ",dataAPI.getActions());}
             submitting.trigger();
-            console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-55")
             dataAPI.clearActions();
             const _v = await dataAPI.fetchPost();
             dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
@@ -504,66 +549,67 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
             submitting.end();
         } else {
             if (!dataAPI.updated()) {
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-1", dt)
+                if (log){console.log("LOG DATASOURCE - 2 ",dataAPI.getActions());}
                 return dt;
             }
             if (initialized.current && (dataAPI.getActions().includes("cancel"))) {
+                if (log){console.log("LOG DATASOURCE - 3 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-2")
                 dataAPI.clearActions();
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
             } else if (addMode(editable) && dataAPI.getActions().includes("load")) {
+                if (log){console.log("LOG DATASOURCE - 4 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-9")
                 dataAPI.setAction(dataAPI.getActions().filter(v => v !== 'load'), true);
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
             } else if (addMode(editable) && dataAPI.getActions().includes("add")) {
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-3")
+                if (log){console.log("LOG DATASOURCE - 5 ",dataAPI.getActions());}
                 dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
             } else if (editMode(editable) && ["editcomplete"].includes(action?.current)) {
+                if (log){console.log("LOG DATASOURCE - 6 ",dataAPI.getActions());}
                 dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
             } else if (initialized.current && (dataAPI.getActions().includes("edit"))) {
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-10")
+                if (log){console.log("LOG DATASOURCE - 7 ",dataAPI.getActions());}
                 dataAPI.clearActions();
                 dt = { data: dataAPI.hasData() ? dataAPI.getData()?.rows : [], count: dataAPI.hasData() ? dataAPI.getData()?.total : 0 };
                 //const _v = await dataAPI.fetchPost();
                 //dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
             } else if (initialized.current && (dataAPI.getActions().includes("filter"))) {
+                if (log){console.log("LOG DATASOURCE - 8 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-4")
                 dataAPI.clearActions();
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
             }
             else if (["page", "pagesize"].includes(action?.current)) {
+                if (log){console.log("LOG DATASOURCE - 9 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-5")
                 //dataAPI.pageSize(limit);
                 //dataAPI.currentPage((skip / limit) + 1);
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
             } else if (["sort"].includes(action?.current)) {
+                if (log){console.log("LOG DATASOURCE - 10 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-6")
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
             } else if (loadOnInit && !initialized.current) {
+                if (log){console.log("LOG DATASOURCE - 11 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-7")
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 initialized.current = true;
                 submitting.end();
             } else if (initialized.current) {
+                if (log){console.log("LOG DATASOURCE - 12 ",dataAPI.getActions());}
                 submitting.trigger();
-                console.log("entreeeeeeeeeeeeeeeewwwwwwwwwwwwwwwwwwwwwwwwww-8")
                 const _v = await dataAPI.fetchPost();
                 dt = { data: _v?.rows ? _v?.rows : [], count: _v?.total ? _v?.total : 0 };
                 submitting.end();
@@ -571,7 +617,6 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
             }
         }
         action.current = null;
-        console.log("action", dataAPI.getActions(), dt)
         return dt;
     }, [dataAPI?.updated(true)]);
 
@@ -687,24 +732,22 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         grid.setActiveCell([rowIndex, colIndex])
     }
     const onSkipChange = (skip) => {
+        console.log("onSkipchange",dataAPI.getActions(),skip,dataAPI.getSkip())
         if (action.current !== "editcomplete") {
             action.current = "page";
             dataAPI.currentPage((skip / dataAPI.getPageSize()) + 1);
         }
     }
     const onLimitChange = (limit) => {
-        console.log("limit")
         action.current = "pagesize";
         dataAPI.pageSize(limit, true);
     }
     const onSortChange = (sortInfo) => {
-        console.log("sort")
         onSkipChange(dataAPI.getSkip(true)); //It's necessary, because every time we trigger the onSortChange event, also, the event onSkipChange is triggered too, in first place. This replace the original skip position.
         action.current = "sort";
         dataAPI.setSort(Array.isArray(sortInfo) ? sortInfo : [sortInfo], [], true);
     }
     const onFilterValueChange = (filterValue) => {
-        console.log("filter")
         action.current = "filter";
     }
     const onEditComplete = (v) => {

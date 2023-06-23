@@ -10,7 +10,7 @@ import { getSchema } from "utils/schemaValidator";
 import { getFilterRangeValues, getFilterValue, isValue } from 'utils';
 
 import FormManager, { FieldLabel, FieldSet as OldFieldSet, FilterTags, AutoCompleteField as OldAutoCompleteField, useMessages, DropDown } from "components/form";
-import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer } from "components/formLayout";
+import { FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, InputAddon, SelectField, WrapperForm, SelectDebounceField, AutoCompleteField, RangeDateField, FilterDrawer,CheckboxField  } from "components/formLayout";
 import Drawer from "components/Drawer";
 import Table, { setColumns } from "components/table";
 import Toolbar from "components/toolbar";
@@ -31,7 +31,7 @@ const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions')
 import { SocketContext } from './App';
 
 
-import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal } from "antd";
+import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, Checkbox } from "antd";
 import { FilePdfTwoTone, FileExcelTwoTone, FileWordTwoTone, FileFilled } from '@ant-design/icons';
 import useModalv4 from 'components/useModalv4';
 
@@ -622,6 +622,7 @@ const PackingListForm = ({ r, form, ...rest }) => {
                         <Field name="modo_exp" label={{ enabled: true, width: "60px", text: "Modo Expedição", pos: "top" }}><Input size="small" /></Field>
                         <Field name="po" label={{ enabled: true, width: "60px", text: "PO (Cliente)", pos: "top" }}><Input size="small" /></Field>
                     </FieldSet>
+                    <Field name="dates" label={{ enabled: true, width: "160px", text: "Data Produção/Validade", pos: "left" }}><CheckboxField /></Field>
                     <Field name="carga" label={{ enabled: true, width: "60px", text: "Carga", pos: "top" }}>
 
                         <SelectField
@@ -663,7 +664,8 @@ const Action = ({ v, r, dataAPI }) => {
                 ...(values.carga && { "CARGA_ID": values.carga }),
                 "PRF_COD": r.prf,
                 "ORDER_COD": r.iorder,
-                "PO_COD": values.po
+                "PO_COD": values.po,
+                "DATES": values.dates
             }
         };
         downloadReport({ dataAPI, url: `${API_URL}/exportfile/`, type, dataexport, limit, orientation, isDirty });

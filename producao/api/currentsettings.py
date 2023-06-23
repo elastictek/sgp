@@ -227,7 +227,16 @@ def updateCurrentSettings(id,type,data,user_id,cursor):
         return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
 
 
-
+def changeStatus(id,type,data,user_id,cursor):
+    try:
+        with cursor:
+            if type == 'status':
+                args = (id, json.dumps(data),type,user_id,0)                
+                #print(args)
+                #cursor.callproc('update_currentsettings',args)
+        return Response({"status": "success", "id":id, "title": f'Estado atualizado com sucesso', "subTitle":f""})
+    except Exception as error:
+        return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
 
 
 

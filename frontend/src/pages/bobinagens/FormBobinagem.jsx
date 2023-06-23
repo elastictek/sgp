@@ -204,23 +204,23 @@ export default (props) => {
                 <Row style={{}} gutterWidth={10} wrap="nowrap">
                     <Col width={20}></Col>
                     <Col width={70} style={{ fontWeight: 700 }}>Consumo</Col>
-                    <Col width={110} style={{ fontWeight: 700 }}>Artigo</Col>
-                    <Col width={170} style={{ fontWeight: 700 }}>Lote</Col>
-                    <Col width={350} style={{ fontWeight: 700 }}>Designação</Col>
+                    <Col width={180} style={{ fontWeight: 700 }}>Artigo</Col>
+                    <Col width={180} style={{ fontWeight: 700 }}>Lote</Col>
+                    <Col width={430} style={{ fontWeight: 700 }}>Designação</Col>
                 </Row>
                 <Row style={{ alignItems: "center" }} gutterWidth={10} wrap="nowrap">
                     <Col width={20} style={{ fontWeight: 700 }}><ImArrowUp /></Col>
                     <Col width={70}><Field name="nwsup" label={{ enabled: false }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="m" /></Field></Col>
-                    <Col width={110}><Field name="nwcodsup" label={{ enabled: false }}><Input size="small" /></Field></Col>
-                    <Col width={170}><Field name="nwlotesup" label={{ enabled: false }}><Input size="small" /></Field></Col>
-                    <Col width={350}><Field name="nwdessup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={180}><Field name="nwcodsup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={180}><Field name="nwlotesup" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={430}><Field name="nwdessup" label={{ enabled: false }}><Input size="small" /></Field></Col>
                 </Row>
                 <Row style={{ alignItems: "center" }} gutterWidth={10} wrap="nowrap">
                     <Col width={20} style={{ fontWeight: 700 }}><ImArrowDown /></Col>
                     <Col width={70}><Field name="nwinf" label={{ enabled: false }}><InputNumber style={{ textAlign: "right" }} size="small" addonAfter="m" /></Field></Col>
-                    <Col width={110}><Field name="nwcodinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
-                    <Col width={170}><Field name="nwloteinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
-                    <Col width={350}><Field name="nwdesinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={180}><Field name="nwcodinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={180}><Field name="nwloteinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
+                    <Col width={430}><Field name="nwdesinf" label={{ enabled: false }}><Input size="small" /></Field></Col>
                 </Row>
 
                 <Row><Col><HorizontalRule title="Artigos" /></Col></Row>

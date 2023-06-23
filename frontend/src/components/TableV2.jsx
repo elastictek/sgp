@@ -218,7 +218,7 @@ export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: co
             setColumns([
                 ...rowSelection ? [SelectColumn] : [],
                 {
-                    key: 'action', name: '', frozen: frozenActionColumn, minWidth: 40, width: 40, sortable: false, resizable: false,
+                    key: 'action', name: '', frozen: frozenActionColumn, minWidth: 45, width: 45, sortable: false, resizable: false,
                     formatter: (props) => <Action {...props} dataAPI={dataAPI} content={actionColumn} />
                 }, ...cols.filter(v=>!v?.hidden===true)]);
         } else {

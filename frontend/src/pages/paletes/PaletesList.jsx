@@ -28,6 +28,9 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField } from 'components/FormFields';
+
+import { BadgeNumber } from 'components/TableColumns';
+
 import ToolbarTitle from 'components/ToolbarTitle';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -165,6 +168,13 @@ const moreFiltersSchema = ({ form }) => [
         fdiam_max: { label: "Diâm. (Max)", field: { type: 'input', size: 'small' }, span: 5 },
         fdiam_avg: { label: "Diâm. (Médio)", field: { type: 'input', size: 'small' }, span: 5 }
     },
+    {
+        fnbobines_sem_destino: { label: "sem Destino", field: { type: 'input', size: 'small' }, span: 4 },
+        fnbobines_emendas: { label: "emendas", field: { type: 'input', size: 'small' }, span: 5 }
+    },
+
+
+    
     { fpeso_bruto: { label: "Peso Bruto", field: { type: 'input', size: 'small' }, span: 12 }, fpeso_liquido: { label: "Peso Líquido", field: { type: 'input', size: 'small' }, span: 12 } },
     { fof: { label: "Ordem Fabrico", field: { type: 'input', size: 'small' } } },
     { fprf: { label: "PRF", field: { type: 'input', size: 'small' }, span: 12 }, forder: { label: "Encomenda", field: { type: 'input', size: 'small' }, span: 12 } },
@@ -764,11 +774,12 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     const columns = [
         { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
         {
-            key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
+            key: 'baction', name: '', minWidth: 45, maxWidth: 45, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
         },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },
-        { key: 'nbobines_emendas', name: 'Bobines C/Emendas', reportFormat: '0', width: 60, formatter: p => p.row.nbobines_emendas },
+        { key: 'nbobines_emendas', name: 'C/Emendas', reportFormat: '0', width: 60, formatter: p => p.row.nbobines_emendas },
+        { key: 'nbobines_sem_destino', name: 'S/Destino', reportFormat: '0', width: 60, formatter: p => <BadgeNumber value={p.row.nbobines_sem_destino} cellProps={{}}/> },
         { key: 'estado', name: 'Estado', width: 90, formatter: p => <EstadoBobines id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'largura', name: 'Larguras (mm)', width: 90, formatter: p => <Largura id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },
         { key: 'core', name: 'Cores', width: 90, formatter: p => <Core id={p.row.id} nome={p.row.nome} artigos={json(p.row.artigo)} /> },

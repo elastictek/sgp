@@ -91,6 +91,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return action.current.includes(type);
     }
     const first = (updateStateData = false) => {
+        console.log("first");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: 1 };
         if (updateStateData) {
@@ -100,6 +101,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const previous = (updateStateData = false) => {
+        console.log("previous");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: ((ref.current.pagination.page <= 1) ? 1 : (ref.current.pagination.page - 1)) };
         if (updateStateData) {
@@ -109,6 +111,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const next = (updateStateData = false) => {
+        console.log("next");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: (ref.current.pagination.page + 1) };
         if (updateStateData) {
@@ -118,6 +121,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const last = (updateStateData = false) => {
+        console.log("last");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: -1 };
         if (updateStateData) {
@@ -127,6 +131,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const currentPage = (page = 0, updateStateData = false) => {
+        console.log("current");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: ((page <= 0) ? 0 : page) };
         if (updateStateData) {
@@ -136,6 +141,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const pageSize = (size = 10, updateStateData = false) => {
+        console.log("pageSize");
         addAction('pageSize');
         ref.current.pagination = { ...ref.current.pagination, pageSize: size }
         if (updateStateData) {
@@ -321,6 +327,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const update = (keepAction = false, payload = {}) => {
         ref.current.updated = Date.now();
+        if (!keepAction) {
+            action.current = [];
+        }
         updateState(draft => {
             draft.primaryKey = ref.current.primaryKey;
             draft.updated = ref.current.updated;
@@ -342,9 +351,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             if (payload?.url) { draft.url = payload?.url; }
 
         });
-        if (!keepAction) {
-            action.current = [];
-        }
+        
     }
 
     const setData = (data, payload) => {
@@ -577,7 +584,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         })();
     }
     const getPostRequest = ({ url, fromState = false } = {}) => {
-        return { url: (url) ? url : ref.current.url, ...getPayload(fromState) };
+        return { ...getPayload(fromState),url: (url) ? url : ref.current.url };
     }
     const nav = ({ action = "", page = 1, onFetch } = {}) => {
         addAction('nav');

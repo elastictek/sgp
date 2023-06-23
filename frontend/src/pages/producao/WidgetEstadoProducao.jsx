@@ -57,7 +57,7 @@ import OrdemFabricoBoxes from './OrdemFabricoBoxes';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
 
 const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
-const FormOrdemFabrico = React.lazy(() => import('../ordensfabrico/FormOrdemFabrico'));
+const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
 
 
 const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
@@ -66,6 +66,8 @@ const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 const GranuladoPick = React.lazy(() => import('../picking/GranuladoPick'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
+
+const PickNWList = lazy(() => import('../picking/PickNWList'));
 
 const title = "Produção";
 const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop'];
@@ -1240,6 +1242,70 @@ const RealtimeData = ({ data, onLineLogExpand }) => {
     </div>);
 }
 
+export const estadoProducaoData = ({ data }) => {
+    const _dj = Object.values(data?.rows.reduce((acc, cur) => {
+        if (!acc[cur.gid]) {
+            acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
+        } else {
+            if (cur.current_stock == 1) {
+                acc[cur.gid].stock = cur;
+            } else {
+                //acc[cur.gid].a += cur.a;
+            }
+        }
+
+        //totals
+        acc[cur.gid].timestamp = data?.timestamp;
+        acc[cur.gid].agg_cod = data?.current?.agg_cod;
+        acc[cur.gid].cortes = json(data?.current?.cortes);
+        acc[cur.gid].cortesordem = json(data?.current?.cortesordem);
+        acc[cur.gid].current = json(data?.current);
+        acc[cur.gid].nonwovens = json(data?.current?.nonwovens);
+        acc[cur.gid].paletizacao = { ...json(data?.current?.paletizacao).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+        acc[cur.gid].emendas = { ...json(data?.current?.emendas).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+        acc[cur.gid].of = { ...json(data?.current?.ofs).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+        acc[cur.gid].bobines = data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+        acc[cur.gid].bobines_nopalete = data?.bobines_nopalete?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+        acc[cur.gid].bobines_retrabalhadas = data?.bobines_retrabalhadas?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+        acc[cur.gid].paletes_m2_produzidas = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
+        acc[cur.gid].paletes_m2_produzidas_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
+        acc[cur.gid].paletes_m2_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
+        acc[cur.gid].qty_encomenda = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.qty_encomenda;
+        acc[cur.gid].defeitos = data?.defeitos?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+        acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
+        acc[cur.gid].total_planned = {
+            num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
+            num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
+        };
+
+        if (cur.current_stock == 1){
+            acc[cur.gid].total_current = {
+                num_paletes_line : acc[cur.gid].total_current?.["num_paletes_line"] ? acc[cur.gid].total_current["num_paletes_line"] : 0,
+                num_bobines_line: acc[cur.gid].total_current?.["num_bobines_line"] ? acc[cur.gid].total_current["num_bobines_line"] : 0,
+                ...acc[cur.gid].total_current,
+                num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
+                num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
+            }
+        }else{
+            acc[cur.gid].total_current = {
+                num_paletes_stock : acc[cur.gid].total_current?.["num_paletes_stock"] ? acc[cur.gid].total_current["num_paletes_stock"] : 0,
+                num_bobines_stock: acc[cur.gid].total_current?.["num_bobines_stock"] ? acc[cur.gid].total_current["num_bobines_stock"] : 0,
+                ...acc[cur.gid].total_current,               
+                num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
+                num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines)
+            }
+        }
+        acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
+        acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
+        acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
+        acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
+
+        return acc;
+    }, {}));
+    const _ofs = [...new Set(_dj.map(obj => obj.of_cod))];
+    return { ofs: _ofs, rows: _dj, total: _dj.length };
+}
+
 const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     const media = useContext(MediaContext);
     const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
@@ -1271,7 +1337,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
                 case "linelogexpand": return <LineLogList parameters={modalParameters.parameters} />
-                //case "paletesexpand": return <ListPaletesOf data={{ ...modalParameters.parameters }} />;
+                case "nwspick": return <PickNWList {...modalParameters.parameters } />;
             }
         }
 
@@ -1324,6 +1390,11 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         showModal();
     }
 
+    const onNwsPick = () => {
+        setModalParameters({ content: "nwspick", type: "drawer", width: "95%", title: "Entrada/Saída de Nonwovens", lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: {} });
+        showModal();
+    }
+
 
 
     useEffect(() => {
@@ -1335,51 +1406,11 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
-            const _dj = Object.values(parameters?.data?.rows.reduce((acc, cur) => {
-                console.log("currrrrrrrrrrrrrrrrrrrrrrr", cur)
-                if (!acc[cur.gid]) {
-                    acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
-                } else {
-                    if (cur.current_stock == 1) {
-                        acc[cur.gid].stock = cur;
-                    } else {
-                        //acc[cur.gid].a += cur.a;
-                    }
-                }
-
-                //totals
-                acc[cur.gid].timestamp = parameters?.data?.timestamp;
-                acc[cur.gid].paletizacao = { ...json(parameters?.data?.current?.paletizacao).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-                acc[cur.gid].bobines = parameters?.data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-                acc[cur.gid].bobines_nopalete = parameters?.data?.bobines_nopalete?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-                acc[cur.gid].bobines_retrabalhadas = parameters?.data?.bobines_retrabalhadas?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-                acc[cur.gid].paletes_m2_produzidas = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
-                acc[cur.gid].paletes_m2_produzidas_total = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
-                acc[cur.gid].paletes_m2_total = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
-                acc[cur.gid].qty_encomenda = parameters?.data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.qty_encomenda;
-                acc[cur.gid].defeitos = parameters?.data?.defeitos?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-                acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
-                acc[cur.gid].total_planned = {
-                    num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
-                    num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
-                };
-                acc[cur.gid].total_current = {
-                    num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
-                    num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
-                    num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines),
-                    num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
-                }
-                acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
-                acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
-                acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
-                acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
-
-                return acc;
-            }, {}));
-            console.log("djjjjjjjjjjj", _dj, parameters?.data)
-            const _ofs = [...new Set(_dj.map(obj => obj.of_cod))];
-            setOfs([..._ofs]);
-            dataAPI.setData({ rows: _dj, total: _dj.length });
+            const v = estadoProducaoData({ data: parameters?.data });
+            //setOfs([..._ofs]);
+            //dataAPI.setData({ rows: _dj, total: _dj.length });
+            setOfs(v.ofs);
+            dataAPI.setData({ rows: v.rows, total: v.total });
 
 
 
@@ -1585,7 +1616,12 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                             <Row nogutter>
                                                 <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Nonwovens Fila</div>
-                                                    <div><Button type="primary" size="small"/*  onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} /></div>
+                                                    <div>
+                                                        <Space>
+                                                            <Button type="primary" size="small" icon={<TabletOutlined />} title="Entrada e saida de Nonwovens" onClick={onNwsPick} />
+                                                            <div><Button type="primary" size="small"/*  onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} /></div>
+                                                        </Space>
+                                                    </div>
                                                 </Col>
                                             </Row>
                                             <Row nogutter>
@@ -1787,14 +1823,7 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     })}</div>}</>);
 }
 
-const Operations = ({ parameters }) => {
 
-    useEffect(() => {
-
-    }, [parameters?.status]);
-
-    return (<><StatusProduction status={parameters?.status} wasInProduction={parameters?.was_in_production} /></>);
-}
 /* 
 const OrdemFabricoChooser = ({ parameters, onClick }) => {
 
@@ -1847,7 +1876,7 @@ export default ({ setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParametersL1.content) {
                 case "validar": return <FormOrdemFabricoValidar parameters={modalParametersL1.parameters} />;
-                case "viewordemfabrico": return <FormOrdemFabrico parameters={modalParametersL1.parameters} />;
+                case "viewordemfabrico": return <OrdemFabrico parameters={modalParametersL1.parameters} />;
             }
         }
         return (
@@ -1886,14 +1915,15 @@ export default ({ setFormTitle, ...props }) => {
         if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
             //navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            setModalParametersL1({ content: "viewordemfabrico", type: "drawer", width: "95%"/* , title: "Entrada/Saída de granulado em linha" */, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, allowChangeStatus, allowValidar, allowReopen } });
+            setModalParametersL1({ content: "viewordemfabrico", type: "drawer", width: "95%", title: `${dataEstadoProducao?.current?.agg_cod}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, allowChangeStatus, allowValidar, allowReopen } });
             showModalL1();
 
         }
-        console.log("-------------------", data?.ofabrico_status, allowChangeStatus, allowValidar, allowReopen);
     }
 
     const onOrdemFabricoClick = async () => {
+        navigate('/app/ofabrico/ordensfabricolist/');
+        return;
         const instantPermissions = await permission.loadInstantPermissions({ name: "ordemfabrico", module: "main" });
         permission.isOk(instantPermissions);
         const allowChangeStatus = permission.isOk({ item: "changeStatus", instantPermissions });
@@ -1938,7 +1968,6 @@ export default ({ setFormTitle, ...props }) => {
         showModal();
     }
     const onSelectParameters = (data) => {
-        console.log(data)
     }
 
     useEffect(() => {
@@ -2021,7 +2050,7 @@ export default ({ setFormTitle, ...props }) => {
                     </Space>
                 } parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
                     {/* <OrdemFabricoChooser parameters={{ data: dataEstadoProducao?.current }} onClick={onOrdemFabricoClick} /> */}
-                    <Operations parameters={{ data: dataEstadoProducao?.status, isRunning: isRunning(), isClosed: isClosed(), status: dataEstadoProducao?.status?.status }} />
+
                     {/* {props?.parameters?.ofs && <Space>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_formulation_change")} icon={<EditOutlined />}>Alterar</Button>
                         <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_dosers_change")} icon={<EditOutlined />}>Doseadores</Button>

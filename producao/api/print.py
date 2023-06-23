@@ -55,6 +55,38 @@ db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
 
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def Sql(request, format=None):
+    try:
+        print("eeeeeeeeeeeeeeeeeeeee")
+        print(request.data["parameters"])
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
+
+
+def ExportFile(request, format=None):
+    p = request.data["parameters"]
+    req = {**p}
+    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json=req)
+    if (fstream.status_code==200):
+        resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+        if (p["export"] == "pdf"):
+            resp['Content-Disposition'] = "inline; filename=list.pdf"
+        elif (p["export"] == "excel"):
+            resp['Content-Disposition'] = "inline; filename=list.xlsx"
+        elif (p["export"] == "word"):
+            resp['Content-Disposition'] = "inline; filename=list.docx"
+        return resp
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

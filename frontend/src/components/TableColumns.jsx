@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, SyncOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone } from '@ant-design/icons';
-import { Tag, Button, Space } from "antd";
+import { Tag, Button, Space, Badge } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
@@ -15,6 +15,13 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 import TagButton from "components/TagButton";
 
 
+
+export const BadgeNumber = ({ value, onClick, cellProps }) => {
+    return (<>
+        {(!(cellProps?.inEdit) && value && value>0 ) ? <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", height: "100%", alignItems: "center" }}><Badge count={value} /></div> : <></>}
+    </>
+    )
+}
 
 
 export const OFabricoStatus = ({ data, onClick, cellProps }) => {
@@ -238,10 +245,10 @@ export const Cuba = ({ value, style }) => {
         </>}
     </>);
 }
-export const Bool = ({ value, cellProps }) => {
+export const Bool = ({ value, cellProps, style }) => {
     return (<>
         {!cellProps?.inEdit && <div style={{ display: "flex", justifyContent: "center" }}>
-            {(value == 1) ? <CheckSquareOutlined style={{ fontSize: "18px" }} /> : <BorderOutlined style={{ fontSize: "18px", color: "#d9d9d9" }} />}
+            {(value == 1) ? <CheckSquareOutlined style={{ fontSize: "18px", ...style }} /> : <BorderOutlined style={{ fontSize: "18px", color: "#d9d9d9", ...style }} />}
         </div>}
     </>);
 }
@@ -251,11 +258,11 @@ export const StatusApproval = ({ value = 0, docStatus, genre = "m", onClick, all
         {!cellProps?.inEdit &&
             <>
                 {docStatus == -1 || docStatus == 1 ? <>
-                    {(docStatus == -1 || value== -1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
-                    {(docStatus == 1 && value!==-1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#fa8c16">Em revisão</Tag>}
+                    {(docStatus == -1 || value == -1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
+                    {(docStatus == 1 && value !== -1) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#fa8c16">Em revisão</Tag>}
                 </> :
                     <>
-                        {value== -1 && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
+                        {value == -1 && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="#f5222d">Obsolet{genre === "m" ? "o" : "a"}</Tag>}
                         {value == 0 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="warning">Em Elaboração</Tag>}
                         {value == 1 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="blue">Em Standby</Tag>}
                         {value == 2 && allowed.includes(value) && <Tag {...onClick && { onClick }} style={{ width: "80px", ...onClick && { cursor: "pointer" } }} color="green">Aprovad{genre === "m" ? "o" : "a"}</Tag>}
@@ -307,19 +314,19 @@ export const Status = ({ value = 1, genre = "m", onClick, allowed = [0, 1], cell
 //     }</>
 // }
 
-export const StatusProduction = ({ status, wasInProduction, onClick }) => {
+export const StatusProduction = ({ status, onClick }) => {
     return (<>
 
         {(status == 1 || status == 2) && <Space>
 
-            <Button icon={<BsPlayCircleFill color='green' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Iniciar</Button>
-            {wasInProduction == 1 && <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Finalizar</Button>}
+            <Button icon={<BsPlayCircleFill color='green' fontSize={18} style={{ marginLeft: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>{/* Iniciar */}</Button>
+            {status == 1 && <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginLeft: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>{/* Finalizar */}</Button>}
 
         </Space>}
         {status == 3 && <Space>
 
-            <Button icon={<BsPauseCircleFill color='orange' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Suspender</Button>
-            <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginRight: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>Finalizar</Button>
+            <Button icon={<BsPauseCircleFill color='orange' fontSize={18} style={{ marginLeft: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>{/* Suspender */}</Button>
+            <Button icon={<BsStopCircleFill color='red' fontSize={18} style={{ marginLeft: "5px" }} />} style={{ display: "flex", alignItems: "center" }}>{/* Finalizar */}</Button>
 
         </Space>}
 

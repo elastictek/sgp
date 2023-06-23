@@ -239,11 +239,11 @@ def BobinagensList(request, format=None):
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
         **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "_nome": {"value": lambda v: "2%", "field": lambda k, v: f'pbm.nome'},
         "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
         "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
         "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
         "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
-        "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pf.{k}'},
         "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
         "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
         "type": {"value": lambda v: f"=={v.get('agg_of_id')}" if (v.get("type")=="1" and v.get('agg_of_id') is not None) else None, "field": lambda k, v: f'acs.agg_of_id'},
@@ -254,6 +254,14 @@ def BobinagensList(request, format=None):
     
     f2 = filterMulti(request.data['filter'], {}, False if f.hasFilters else True, "and",False)
     
+    f3 = Filters(request.data['filter'])
+    f3.setParameters({
+        "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pb.{k}'}
+    }, True)
+    f3.where(False,"and")
+    f3.auto()
+    f3.value()
+
     def filterDefeitosMultiSelect(data,name,relname):
         f = Filters(data)
         frel = "and"
@@ -313,10 +321,10 @@ def BobinagensList(request, format=None):
     f5.auto()
     f5.value("and")
 
-    parameters = {**f.parameters, **f2['parameters'], **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
+    parameters = {**f.parameters, **f2['parameters'],**f3.parameters, **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pl.largura,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines,sum(pl.largura) largura"""
+    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pb.lar,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines,sum(pb.lar) largura,pb.core"""
     dql.columns=encloseColumn(cols,False)
 
     w = "where" if f.text=='' and f2["text"] == '' else 'and'
@@ -334,7 +342,7 @@ def BobinagensList(request, format=None):
             SELECT
             {c(f'{dql.columns}')}
             from(
-                select pbm.*,pf.core
+                select pbm.*
                 {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
                 (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
                 ''' if feature=='fixconsumos' else ''}
@@ -346,7 +354,6 @@ def BobinagensList(request, format=None):
                 ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
                 acs.agg_of_id
                 FROM producao_bobinagem pbm
-                join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
                 left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 {f.text} {f2["text"]}
@@ -355,26 +362,28 @@ def BobinagensList(request, format=None):
                 {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
-            join producao_largura pl on pl.id = pb.largura_id
-            {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
-            group by pbm.id {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
+            where 1=1 {f3.text}
+            {f' and no_lotes>0' if feature=='fixconsumos' else ''}
+            group by pbm.id,pb.core {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
             {s(dql.sort)}
         """
     )
-    sqlCount = f""" 
-            SELECT count(*) FROM (
-                SELECT
-                pbm.id 
-                {f''',(select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes''' if feature=='fixconsumos' else ''}
-                FROM producao_bobinagem pbm
-                join producao_perfil pf on pf.id = pbm.perfil_id and pf.retrabalho=0
-                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
-                {f.text} {f2["text"]}
-                {fText01}
-                {fText02}
-            ) t
-            {f'WHERE no_lotes>0' if feature=='fixconsumos' else ''}
-        """
+    
+    # sqlCount = f""" 
+    #         SELECT count(*) FROM (
+    #             SELECT
+    #             pbm.id 
+    #             {f''',(select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes''' if feature=='fixconsumos' else ''}
+    #             FROM producao_bobinagem pbm
+    #             left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+    #             {f.text} {f2["text"]}
+    #             {fText01}
+    #             {fText02}
+    #         ) t
+    #         join producao_bobine pb on pb.bobinagem_id = t.id
+    #         where 1=1 {f3.text}
+    #         {f' and no_lotes>0' if feature=='fixconsumos' else ''}
+    #     """
 
     if ("export" in request.data["parameters"]):
         for x in range(0, 30):
@@ -405,7 +414,7 @@ def BobinagensList(request, format=None):
                 {tmpsql} 
                 ) t"""
         return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
-    response = db.executeList(sql, connection, parameters, [],None,sqlCount)
+    response = db.executeList(sql, connection, parameters, [],None,f"select {dql.currentPage*dql.pageSize+1}")
     return Response(response)
 
 def Validar(request, format=None):

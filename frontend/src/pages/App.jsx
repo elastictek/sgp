@@ -72,7 +72,8 @@ const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssa
 
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
-const FormOrdemFabrico = React.lazy(() => import('./ordensfabrico/FormOrdemFabrico'));
+const OrdemFabrico = React.lazy(() => import('./ordensfabrico/OrdemFabrico'));
+const OrdensFabricoList = React.lazy(() => import('./ordensfabrico/OrdensFabricoList'));
 
 const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
 
@@ -182,8 +183,10 @@ const RenderRouter = () => {
 
                 { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
                 { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },
-                { path: "ofabrico/formordemfabrico", element: <Suspense fallback={<Spin />}><FormOrdemFabrico /></Suspense> },
+                { path: "ofabrico/ordemfabrico", element: <Suspense fallback={<Spin />}><OrdemFabrico /></Suspense> },
+                { path: "ofabrico/ordensfabricolist", element: <Suspense fallback={<Spin />}><OrdensFabricoList /></Suspense> },
                 
+
                 { path: "comercial/salespricelist", element: <Suspense fallback={<Spin />}><SalesPriceList /></Suspense> },
 
 
@@ -342,11 +345,9 @@ const App2 = () => {
     }, []);
 
     useEffect(() => {
-        console.log("ohohohohohohohohoho", aggId.current, wsMessage?.hash?.hash_estadoproducao)
         if (!aggId.current) {
             setEstadoProducao(wsMessageBroadcast);
         } else {
-            console.log("------------------->>>>", wsMessage)
             setEstadoProducao(wsMessage);
         }
     }, [wsMessageBroadcast?.hash?.hash_estadoproducao, wsMessage?.hash?.hash_estadoproducao]);

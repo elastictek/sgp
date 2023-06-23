@@ -243,7 +243,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         submitting.trigger();
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, null);
-            inputParameters.current = { ...paramsIn, isOpen: paramsIn.status == 3 ? true : false };
+            inputParameters.current = { ...paramsIn, isOpen: paramsIn.ativa == 1 ? true : false };
         }
         setFormDirty(false);
         let { filterValues, fieldValues } = fixRangeDates([], inputParameters.current?.filter);

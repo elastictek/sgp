@@ -101,7 +101,7 @@ export default ({ parameters, closeSelf, ...props }) => {
         if (data) {
             dataAPI.setData({ rows: data, total: data?.length });
         } else {
-            dataAPI.fetchPost();
+            //dataAPI.fetchPost();
         }
         dataAPI.update(true);
         submitting.end();

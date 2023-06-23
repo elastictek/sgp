@@ -24,7 +24,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall,fetchone, Check
 from support.myUtils import  ifNull
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -41,7 +41,7 @@ import time
 import requests
 import psycopg2
 from decimal import Decimal
-from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings
+from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings,changeStatus
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -187,23 +187,23 @@ def Sql(request, format=None):
 
 def OrdensFabricoList(request, format=None):
     def statusFilter(v):
-        if ('fofstatus' not in v):
+        if ('fofabrico_status' not in v):
             return ''
-        elif v['fofstatus'] == 'Todos':
+        elif v['fofabrico_status'] == 'Todos':
             return ''
-        elif v['fofstatus'] == 'Por Validar':
+        elif v['fofabrico_status'] == 'Por Validar':
             return 'and (ofabrico_status = 0)'
-        elif v['fofstatus'] == 'Em Elaboração':
+        elif v['fofabrico_status'] == 'Em Elaboração':
             return 'and (ofabrico_status = 1)'
-        elif v['fofstatus'] == 'Na Produção':
+        elif v['fofabrico_status'] == 'Na Produção':
             return 'and (ofabrico_status = 2)'
-        elif v['fofstatus'] == 'Em Produção':
+        elif v['fofabrico_status'] == 'Em Produção':
             return 'and (ofabrico_status = 3)'
-        elif v['fofstatus'] == 'Finalizada':
+        elif v['fofabrico_status'] == 'Finalizada':
             return 'and (ofabrico_status = 9)'
-        elif v['fofstatus'] == 'IN(2,3)':
+        elif v['fofabrico_status'] == 'IN(2,3)':
             return 'and (ofabrico_status in (2,3))'
-        elif v['fofstatus'] == 'IN(2,3,9)':
+        elif v['fofabrico_status'] == 'IN(2,3,9)':
             return 'and (ofabrico_status in (2,3,9))'
         return ''
     allowInElaboration = True if request.data['parameters'].get('allowInElaboration') else False
@@ -212,9 +212,29 @@ def OrdensFabricoList(request, format=None):
     f = Filters(request.data['filter'])
 
     f.setParameters({
-        **rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE({k})'),
-        **rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE({k})'),
-        **rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE({k})'),
+        "ativa":{"value": lambda v: Filters.getNumeric(v.get('fativa')), "field": lambda k, v: f'{k}'},
+        "ofabrico":{"value": lambda v: Filters.getLower(v.get('fofabrico')), "field": lambda k, v: f'{k}'},
+        "prf":{"value": lambda v: Filters.getLower(v.get('fprf')), "field": lambda k, v: f'{k}'},
+        "iorder":{"value": lambda v: Filters.getLower(v.get('fiorder')), "field": lambda k, v: f'{k}'},
+        "cod":{"value": lambda v: Filters.getLower(v.get('fcod')), "field": lambda k, v: f'{k}'},
+        "cliente_nome":{"value": lambda v: Filters.getLower(v.get('fcliente_nome')), "field": lambda k, v: f'{k}'},
+        "item":{"value": lambda v: Filters.getLower(v.get('fitem')), "field": lambda k, v: f'{k}'},
+        "num_paletes_total":{"value": lambda v: Filters.getNumeric(v.get('fnum_paletes_total')), "field": lambda k, v: f'{k}'},
+        "n_paletes_produzidas":{"value": lambda v: Filters.getNumeric(v.get('fn_paletes_produzidas')), "field": lambda k, v: f'{k}'},
+        "n_paletes_stock_in":{"value": lambda v: Filters.getNumeric(v.get('fn_paletes_stock_in')), "field": lambda k, v: f'{k}'},
+        **rangeP(f.filterData.get('fstart_prev_date'), 'start_prev_date', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('fend_prev_date'), 'end_prev_date', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('finicio'), 'inicio', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('ffim'), 'fim', lambda k, v: f'{k}')
+        #**rangeP(f.filterData.get('fstart_prev_date'), 'start_prev_date', lambda k, v: f'{k}'),
+        #**rangeP(f.filterData.get('fend_prev_date'), 'end_prev_date', lambda k, v: f'{k}'),
+        #**rangeP(f.filterData.get('finicio'), 'inicio', lambda k, v: f'{k}'),
+        #**rangeP(f.filterData.get('ffim'), 'fim', lambda k, v: f'{k}')
+       
+        
+        #**rangeP(f.filterData.get('forderdate'), 'data_encomenda', lambda k, v: f'DATE({k})'),
+        #**rangeP(f.filterData.get('fstartprevdate'), 'start_prev_date', lambda k, v: f'DATE({k})'),
+        #**rangeP(f.filterData.get('fendprevdate'), 'end_prev_date', lambda k, v: f'DATE({k})'),
         # **rangeP(f.filterData.get('SHIDAT_0'), 'SHIDAT_0', lambda k, v: f'"enc"."{k}"'),
         # "LASDLVNUM_0": {"value": lambda v: v.get('LASDLVNUM_0').lower() if v.get('LASDLVNUM_0') is not None else None, "field": lambda k, v: f'lower("enc"."{k}")'}
     }, True)
@@ -223,11 +243,11 @@ def OrdensFabricoList(request, format=None):
     f.value()
 
     f2 = filterMulti(request.data['filter'], {
-        'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": ''},
-        'fmulti_order': {"keys": ['iorder', 'prf'], "table": ''},
-        'fmulti_item': {"keys": ['item', 'item_nome'], "table": ''},
-        'f_ofabrico': {"keys": ['ofabrico'], "table": ''},
-        'f_agg': {"keys": ['cod'], "table": ''}
+        #'fmulti_customer': {"keys": ['cliente_cod', 'cliente_nome'], "table": ''},
+        #'fmulti_order': {"keys": ['iorder', 'prf'], "table": ''},
+        #'fmulti_item': {"keys": ['item', 'item_nome'], "table": ''},
+        #'f_ofabrico': {"keys": ['ofabrico'], "table": ''},
+        #'f_agg': {"keys": ['cod'], "table": ''}
     }, False, "and",False)
     parameters = {**f.parameters, **f2['parameters']}
 
@@ -248,6 +268,7 @@ def OrdensFabricoList(request, format=None):
         {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
+   
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -733,6 +754,105 @@ def GetPaletesStock(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+def ChangeStatus(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with connections["default"].cursor() as cursor:
+            return changeStatus(filter.get("cs_id"),"status",data,request.user.id,cursor)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def chekPrfStatus(ofid,cursor):
+    f = Filters({"id": ofid})
+    f.where()
+    f.add(f'id = :id', True )
+    f.value("and")
+    response = db.executeSimpleList(lambda: (f"""        
+        select ativa from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
+    """), cursor, f.parameters)
+    if len(response["rows"])>0:
+        return response["rows"][0]["ativa"]
+    return None
+
+def OpenPrf(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+   
+    def checkOpenPrfs(cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select count(*) cnt from planeamento_ordemproducao po where ativa=1 and `status` <>3 and agg_of_id_id is not null
+        """), cursor, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]["cnt"]
+        return 0
+
+    try:
+        with connections["default"].cursor() as cursor:
+            _n = checkOpenPrfs(cursor)
+            if _n >3:
+                raise Exception("Não é possível abrir a Prf! Existem mais de 3 Prf's abertas!")
+            _status = chekPrfStatus(data.get("ofid"),cursor)
+            if _status == 1:
+                raise Exception("A Prf já se encontra aberta!")
+            dml = db.dml(TypeDml.UPDATE, {"fim":None,"ativa":1,"completa":0}, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "Prf aberta com sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+
+def ClosePrf(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def getPrf(ofid,cursor):
+        f = Filters({"id": ofid})
+        f.where()
+        f.add(f'id = :id', True )
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""        
+            select ativa,num_paletes_produzidas,num_paletes_produzir,num_paletes_stock_in,num_paletes_stock from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
+        """), cursor, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+    try:
+        with connections["default"].cursor() as cursor:
+            _prf = getPrf(data.get("ofid"),cursor)
+            if not _prf:
+                raise Exception("A Prf não existe!")
+            if _prf.get("ativa")==0:
+                raise Exception("A Prf não não pode ser fechada!")
+            if _prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock"):
+                raise Exception("Número de paletes da Prf insuficiente!")
+            dml = db.dml(TypeDml.UPDATE, {
+                "fim": datetime.now(),
+                "num_paletes_total":_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in"),
+                "num_paletes_stock":_prf.get("num_paletes_stock_in"),
+                "num_paletes_produzir":_prf.get("num_paletes_produzidas"),
+                "ativa":0,
+                "completa":1
+                }, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "Prf fechada com sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)}) 
+
+
+def RevertToElaboration(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with connections["default"].cursor() as cursor:
+            args = (data.get("aggid"))
+            cursor.callproc('of_to_elaboration',args)
+            return Response({"status": "success","title":"Ordem de fabrico revertida com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 #region ESTADO PRODUCAO
 
@@ -756,20 +876,27 @@ def GetEstadoProducao(request, format=None):
     #     {dql.sort}
     # """)
     calls = [
-        {"key":"params","st":"CALL list_estadoproducao_params(%s)"},
-        {"key":"defeitos","st":"CALL list_estadoproducao_defeitos(%s)"}
+        {"key":"params","st":"CALL list_estadoproducao_params(%s)","array":False},
+        {"key":"defeitos","st":"CALL list_estadoproducao_defeitos(%s,%s)","array":True},
+        {"key":"bobinagens","st":"CALL list_estadoproducao_bobinagens(%s,%s)","array":False},
+        {"key":"rows","st":"CALL list_estadoproducao_summary(%s,%s)","array":True},
+        {"key":"bobines","st":"CALL list_estadoproducao_bobines(%s,%s)","array":True},
+        {"key":"bobines_nopalete","st":"CALL list_estadoproducao_nopalete(%s,%s)","array":True},
+        {"key":"paletes","st":"CALL list_estadoproducao_paletes(%s,%s,%s)","array":True},
+        {"key":"bobines_retrabalhadas","st":"CALL list_estadoproducao_retrabalhadas(%s,%s)","array":True},
+        {"key":"current","st":"CALL list_estadoproducao_current(%s)","array":False}
     ]
     results={}
     try:
-        print(datetime.now())
         for item in calls:
-            print("aaaaaaaaaaaaaaaaeeeeaaaa")
-            cursor.execute(item.get("st"), [244])
-            results[item.get("key")] = cursor.fetchall()
-        print(datetime.now())
-        print(results)
-        response={}
-        #response = db.executeSimpleList(sql, connection, f.parameters)
+            if item.get("key") in ["params","current"]:
+                cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id")])
+            elif item.get("key") in ["paletes"]:
+                cursor.execute(item.get("st"), [None,request.data.get("filter").get("ordem_id"),1])
+            else:
+                cursor.execute(item.get("st"), [None,request.data.get("filter").get("ordem_id")])
+            results[item.get("key")] = fetchall(cursor) if item.get("array") else fetchone(cursor)
+        response = {"status": "success", "rows": results}
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

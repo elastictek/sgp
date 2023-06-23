@@ -53,6 +53,20 @@ def fetchall(cursor, exclude=[]):
             for row in cursor.fetchall()
         ]
 
+def fetchone(cursor, exclude=[]):
+    "Return row from a cursor as dict"
+    columns = [col[0] for col in cursor.description]
+    if len(exclude) > 0:
+        excludeIdxs = find(columns, exclude)
+        columns = [v for i, v in enumerate(columns) if i not in excludeIdxs]
+        row = cursor.fetchone()
+        return dict(zip(columns, [v for i, v in enumerate(row) if i not in excludeIdxs]))        
+    else:
+        row = cursor.fetchone()
+        if (row):
+            return dict(zip(columns, row))
+        return {}    
+
 
 def encloseColumn(col, enclose=True, join=True, ignore=[], colSeparator='.', listSeparator=', '):
     if not col:

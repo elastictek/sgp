@@ -55,9 +55,6 @@ import BobinesGroup from '../bobines/BobinesGroup';
 import BobinagensList from '../bobinagens/BobinagensList';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
 
-const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
-const FormOrdemFabrico = React.lazy(() => import('../ordensfabrico/FormOrdemFabrico'));
-
 const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -509,7 +506,7 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
     }
 
     const onPaletesStockClick = (data) => {
-        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { status: data?.status, id: data.id, cliente_cod: data?.cliente_cod, artigo_cod: data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
+        setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { ativa: data?.ativa, id: data.id, cliente_cod: data?.cliente_cod, artigo_cod: data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
         showModal();
     }
 

@@ -21,7 +21,7 @@ import "react-resizable/css/styles.css";
 
 import { MdOutlineApps, MdOutlineMenu, MdOutlineReceipt } from 'react-icons/md';
 import { BsChevronCompactLeft, BsChevronCompactRight, BsDot } from 'react-icons/bs';
-import { GoPrimitiveDot } from 'react-icons/go';
+import { GoDotFill } from 'react-icons/go';
 import { TbPinnedOff, TbPin } from 'react-icons/tb';
 import { breakpoints, cols, baseBreakpoint, staticBreakpoints } from "utils/useMedia";
 import { usePermission } from "utils/usePermission";
@@ -664,14 +664,14 @@ const SettingsLayout = ({ clickSettings, onSettingsClick, handleSettingsClick, d
 
                     {showOfs.allowChange === true && <><Divider style={{ margin: "8px 0" }} />
                         <Menu onClick={() => onChange("ofs")} items={[
-                            { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={showOfs.visible}>Mostrar ordens de fabrico</Checkbox>, key: 'viewofs', icon: <GoPrimitiveDot /> }
+                            { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={showOfs.visible}>Mostrar ordens de fabrico</Checkbox>, key: 'viewofs', icon: <GoDotFill /> }
                         ]}></Menu>
                     </>}
                     <Divider style={{ margin: "8px 0" }} />
                     <Menu onClick={(v) => onSettingsClick(v)} items={[
-                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={getOneElement()}>Apenas um elemento na área de trabalho</Checkbox>, key: 'oneelement', icon: <GoPrimitiveDot /> },
-                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={preventCollisions}>Prevenir colisões</Checkbox>, key: 'collisions', icon: <GoPrimitiveDot /> },
-                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={overlap}>Permitir sobreposições</Checkbox>, key: 'overlap', icon: <GoPrimitiveDot /> }
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={getOneElement()}>Apenas um elemento na área de trabalho</Checkbox>, key: 'oneelement', icon: <GoDotFill /> },
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={preventCollisions}>Prevenir colisões</Checkbox>, key: 'collisions', icon: <GoDotFill /> },
+                        { label: <Checkbox onClick={(e) => e.stopPropagation()} checked={overlap}>Permitir sobreposições</Checkbox>, key: 'overlap', icon: <GoDotFill /> }
                     ]}></Menu>
                     <Divider style={{ margin: "8px 0" }} />
                     <Menu onClick={(v) => onSettingsClick(v)} items={[

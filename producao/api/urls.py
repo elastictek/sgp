@@ -15,6 +15,7 @@ from producao.api import ordens_fabrico
 from producao.api import app_permissions
 from producao.api import artigos
 from producao.api import qualidade
+from producao.api import cargas
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -269,6 +270,8 @@ urlpatterns = [
     re_path(r'^bobinagens/sql/$',bobinagens.Sql),
     re_path(r'^ordensfabrico/sql/$',ordens_fabrico.Sql),
     re_path(r'^artigos/sql/$',artigos.Sql),
+    re_path(r'^cargas/sql/$',cargas.Sql),
+    re_path(r'^print/sql/$',print.Sql),
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),
     re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
     re_path(r'^qualidade/sql/$',qualidade.Sql),

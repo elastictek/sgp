@@ -94,9 +94,10 @@ const Content = ({ menuItems, limit, setLimit, orientation, setOrientation, setI
 }
 
 
-export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, title, orientation, isDirty, columns }) => {
+export const downloadReport = async ({ dataAPI, url,method, type, dataexport, limit, title, orientation, isDirty, columns }) => {
     const requestData = dataAPI.getPostRequest({ url });
     const _orientation = (!isDirty && dataexport?.orientation) ? dataexport?.orientation : orientation.value;
+    const _type = (!isDirty && dataexport?.export) ? dataexport?.export : type.key;
     const _title = (dataexport?.title) ? dataexport?.title : title;
 
     let cols = {};
@@ -117,14 +118,14 @@ export const downloadReport = async ({ dataAPI, url, type, dataexport, limit, ti
         "config": "default",
         ...(_title) && { title: _title },
         "template": `TEMPLATES-LIST/LIST-A4-${_orientation.toUpperCase()}`,
-        "export": type.key,
+        "export": _type,
         "orientation": _orientation.toUpperCase(),
         "limit": limit ? limit : 5000,
         ...(columns) && { cols },
         ...dataexport
     };
     const { filter = {}, sort = [], pagination = {}, parameters = {} } = requestData;
-    const fetch = { url: requestData.url, method: "post", responseType: "blob", data: { sort, filter, pagination, parameters } };
+    const fetch = { url: requestData.url, method: "post", responseType: "blob", data: { sort, filter, pagination, parameters:{...parameters,...(method && {method})} } };
     const controller = new AbortController();
     let mkey = uuIdInt(4);
     message.loading({

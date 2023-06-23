@@ -1,6 +1,6 @@
 import React from 'react';
-//export const ROOT_URL = "http://192.168.0.16:81";
-export const ROOT_URL = "http://localhost:8000";
+export const ROOT_URL = "http://192.168.0.16:81";
+//export const ROOT_URL = "http://localhost:8000";
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
@@ -37,6 +37,8 @@ export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 }
 
 //APP DATA
+export const MODO_EXPEDICAO = [{value:"1",label:"CONTAINER"},{value:"3",label:"TRUCK"},{value:"4",label:"AIR"}];
+export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" },{ value: "Por Validar", label: "Por validar" },{ value: "Em Elaboração", label: "Em Elaboração" },{ value: "Na Produção", label: "Na Produção" },{ value: "Em Produção", label: "Em Produção" },{ value: "Finalizada", label: "Finalizada" }];
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
 export const JUSTIFICATION_OUT = [{ value: "" },{ value: "NÃO CONFORME" },{ value: "TROCA DE PRODUÇÃO" },{ value: "TROCA DE MATÉRIA PRIMA" }];
 //DOSERS

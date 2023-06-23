@@ -688,6 +688,7 @@ class Palete(models.Model):
     destinos_has_obs = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Indica se os destinos têm observações") #ADDED
     lvl_item_id = models.IntegerField(verbose_name="Indica o id do item no embalamento", null=True) #ADDED
     lvl = models.IntegerField(verbose_name="Indica a posição no embalamento", null=True) #ADDED
+    nbobines_sem_destino = models.IntegerField(verbose_name="Indica o numero de bobines sem destino em estado DM", null=True) #ADDED
     def __str__(self):
         return self.nome
 
