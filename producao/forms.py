@@ -408,7 +408,8 @@ class SearchPerfil(forms.Form):
                 ('ELASTIC FILM', 'ELASTIC FILM'),
                 ('NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED', 'NONWOVEN ELASTIC BAND ELA-ACE 100 HE(L) PUNCTURED'),
                 ('Nonwoven Elastic Bands ELA-CARDED 80 HE','Nonwoven Elastic Bands ELA-CARDED 80 HE'),
-                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE')
+                ('Nonwoven Elastic Bands ELA-CARDED 90 HE','Nonwoven Elastic Bands ELA-CARDED 90 HE'),
+                ('Nonwoven Elastic Bands ELA-CARDED 80 HT','Nonwoven Elastic Bands ELA-CARDED 80 HT')
                 )
     nome = forms.CharField(label="Produto", max_length=200,
                            required=False, widget=forms.Select(choices=PRODUTO))
