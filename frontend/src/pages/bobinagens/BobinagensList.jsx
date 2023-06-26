@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
@@ -167,12 +166,12 @@ const InputNumberEditor = ({ field, p, onChange, ...props }) => {
 }
 
 const loadNwLotesLookup = async (p, value) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, pagination: { limit: 15 }, filter: { closed: 0, t_stamp: `<=${moment(p.row.timestamp).format(DATETIME_FORMAT)}`, type: p.row.type, n_lote: getFilterValue(value, 'any') }, sort: [{ column: 't_stamp', direction: 'DESC' }], parameters: { lookup: true } });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/nwlistlookup/`, pagination: { limit: 15 }, filter: { closed: 0, t_stamp: `<=${dayjs(p.row.timestamp).format(DATETIME_FORMAT)}`, type: p.row.type, n_lote: getFilterValue(value, 'any') }, sort: [{ column: 't_stamp', direction: 'DESC' }], parameters: { lookup: true } });
     return rows;
 }
 const optionsRender = d => ({
     label: <div>
-        <div><span><b>{d["n_lote"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["t_stamp"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["qty_lote"]} m<sup>2</sup></b>]</span></div>
+        <div><span><b>{d["n_lote"]}</b></span> <span style={{ color: "#096dd9" }}>{dayjs(d["t_stamp"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["qty_lote"]} m<sup>2</sup></b>]</span></div>
         <div><span>{d["artigo_cod"]}</span> <span>{d["artigo_des"]}</span></div>
     </div>, value: d["id"], key: d["id"], row: d
 });
@@ -266,8 +265,8 @@ const CreateContent = ({ parentRef, closeParent, loadParentData }) => {
     const submitting = useSubmitting(true);
     const primaryKeys = ['id'];
     const columns = [
-        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => moment(props.row.inicio_ts).format(DATETIME_FORMAT) },
-        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => moment(props.row.fim_ts).format(DATETIME_FORMAT) },
+        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => dayjs(props.row.inicio_ts).format(DATETIME_FORMAT) },
+        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => dayjs(props.row.fim_ts).format(DATETIME_FORMAT) },
         { key: 'diametro', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diametro} mm</div> },
         { key: 'metros', name: 'Comprimento', width: 110, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros} m</div> },
         { key: 'nw_inf', name: 'NW Inferior', formatter: p => <div style={{ textAlign: "right" }}>{p.row.nw_inf} m</div> },
@@ -285,7 +284,7 @@ const CreateContent = ({ parentRef, closeParent, loadParentData }) => {
 
     const onFinish = async (v, r) => {
         Modal.confirm({
-            title: <div>Criar Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Tem a certeza que deseja criar a bobinagem com data de <b>{moment(r.t_stamp).format(DATETIME_FORMAT)}</b>?</li></ul>,
+            title: <div>Criar Bobinagem</div>, content: <ul><li style={{ fontWeight: 700 }}>Tem a certeza que deseja criar a bobinagem com data de <b>{dayjs(r.t_stamp).format(DATETIME_FORMAT)}</b>?</li></ul>,
             onOk: async () => {
                 submitting.trigger();
                 try {
@@ -366,7 +365,7 @@ const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
     const loadData = async ({ signal } = {}) => {
         let response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: {}, parameters: { method: "LastIgBobinagemReelingExchangeLookup" } });
         if (response?.data?.rows[0]?.fim_ts) {
-            form.setFieldsValue({ t_stamp_init: moment(response?.data?.rows[0]?.fim_ts) });
+            form.setFieldsValue({ t_stamp_init: dayjs(response?.data?.rows[0]?.fim_ts) });
         }
         submitting.end();
     };
@@ -418,7 +417,7 @@ const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
     }
 
     return (
-        <Form form={form} name={`f-evt`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ t_stamp_end: moment(dayjs().format(DATETIME_FORMAT)) }}>
+        <Form form={form} name={`f-evt`} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={{ t_stamp_end: dayjs(dayjs().format(DATETIME_FORMAT)) }}>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-EVT" loading={submitting.state} wrapForm={false} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ /* onValuesChange={onValuesChange}  */ schema={schemaCreateEvent} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>
@@ -506,7 +505,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
 
     const editable = (row, col) => {
         if (modeEdit.datagrid && allowEdit.datagrid && row?.valid === 1) {
-            if (moment().diff(row.timestamp, 'days') > 3) {
+            if (dayjs().diff(row.timestamp, 'days') > 3) {
                 return false;
             }
             return true;
@@ -515,7 +514,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
     }
     const editableClass = (row, col) => {
         if (modeEdit.datagrid && allowEdit.datagrid && row?.valid === 1) {
-            return (moment().diff(row.timestamp, 'days') < 3) ? classes.edit : undefined;
+            return (dayjs().diff(row.timestamp, 'days') < 3) ? classes.edit : undefined;
         }
     }
     const formatterClass = (row, col) => {
@@ -692,7 +691,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
 
     const onSave = async (action) => {
         let rows = dataAPI.getData().rows.filter(v => v?.rowvalid === 0).map((values) => includeObjectKeys(values, ['id', 'timestamp', 'nome', 'comp_par', 'comp', 'largura', 'diam', 'largura_bruta', 'lotenwinf', 'lotenwsup', 'tiponwinf', 'tiponwsup', '%_original', 'values_changed']));
-        rows = rows.map(obj => ({ ...obj, timestamp: moment(obj.timestamp).format(DATETIME_FORMAT) }));
+        rows = rows.map(obj => ({ ...obj, timestamp: dayjs(obj.timestamp).format(DATETIME_FORMAT) }));
         submitting.trigger();
         try {
             let response = await fetchPost({ url: `${API_URL}/updatebobinagem/`, parameters: { rows } });

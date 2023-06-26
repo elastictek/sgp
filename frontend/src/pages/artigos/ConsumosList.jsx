@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+//import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -164,7 +165,7 @@ const RemoveConsumosContent = ({ parentRef, closeParent, loadParentData }) => {
         setFormStatus({ ...status.formStatus });
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updateconsumos/`, filter: { reopen: values?.reopen, t_stamp_out: moment(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "removeconsumos", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updateconsumos/`, filter: { reopen: values?.reopen, t_stamp_out: dayjs(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "removeconsumos", status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -233,11 +234,11 @@ const ProcessConsumosContent = ({ parentRef, closeParent, loadParentData }) => {
         setFormStatus({ ...status.formStatus });
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updateconsumos/`, filter: { nonwovens: values?.nonwovens, granulado: values?.granulado, t_stamp_out: moment(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "processconsumos", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updateconsumos/`, filter: { nonwovens: values?.nonwovens, granulado: values?.granulado, t_stamp_out: dayjs(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "processconsumos", status: 0 } });
                 if (response.data.status !== "error") {
-                    loadParentData();
-                    closeParent();
-                    Modal.success({ title: "Consumos processados com sucesso!" })
+                 //   loadParentData();
+                 //   closeParent();
+                //    Modal.success({ title: "Consumos processados com sucesso!" })
                 } else {
                     status.formStatus.error.push({ message: response.data.title });
                     setFormStatus({ ...status.formStatus });
@@ -331,8 +332,8 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'artigo_des', minWidth: 250, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
         { key: 'n_lote', width: 310, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'ofid', name: 'Ordem Fabrico', width: 200, formatter: p => p.row.ofid },
-        { key: 't_stamp_in', width: 140, name: 'Data Entrada Linha', formatter: p => p.row.t_stamp_in && moment(p.row.t_stamp_in).format(DATETIME_FORMAT) },
-        { key: 't_stamp_out', width: 140, name: 'Data saída Linha', formatter: p => p.row.t_stamp_out && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
+        { key: 't_stamp_in', width: 140, name: 'Data Entrada Linha', formatter: p => p.row.t_stamp_in && dayjs(p.row.t_stamp_in).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 140, name: 'Data saída Linha', formatter: p => p.row.t_stamp_out && dayjs(p.row.t_stamp_out).format(DATETIME_FORMAT) },
         { key: 'qty_lote', name: 'Qtd. Lote', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} <Unit v={p.row.type_mp} /></div> },
         { key: 'qty', name: 'Qtd.', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty).toFixed(2)} <Unit v={p.row.type_mp} /></div> },
         { key: 'n_bobinagens', reportTitle: 'N. Bobinagens/of', name: <div style={{ lineHeight: 1.5 }}><div>N. Bobinagens por</div><div>OF</div></div>, width: 90, formatter: p => p.row.n_bobinagens },

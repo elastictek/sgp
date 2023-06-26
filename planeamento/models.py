@@ -147,7 +147,7 @@ class OrdemProducao(models.Model):
     ativa                   = models.BooleanField(default=False, verbose_name="Em progresso")
     completa                = models.BooleanField(default=False, verbose_name="Completa")
     retrabalho              = models.BooleanField(default=False, verbose_name="Ordem de retrabalho")
-
+    was_in_production       = models.BooleanField(default=False, verbose_name="Esteve em produção")
     class Meta:
         verbose_name_plural = "Ordens de Produção"
         

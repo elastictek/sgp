@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -171,7 +171,7 @@ const loadMateriasPrimasLookup = async (value) => {
 
 const optionsRender = d => ({
     label: <div>
-        <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} kg</b>]</span></div>
+        <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{dayjs(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} kg</b>]</span></div>
         <div><span>{d["ITMREF_0"]}</span> <span>{d["ITMDES1_0"]}</span></div>
     </div>, value: d["VCRNUM_0"], key: d["VCRNUM_0"], row: d
 });
@@ -183,7 +183,7 @@ const OutContent = ({ record, parentRef, closeParent, loadParentData }) => {
 
     const loadData = async ({ signal } = {}) => {
         console.log(record)
-        form.setFieldsValue({ ...record, t_stamp: moment(), qty_reminder: null });
+        form.setFieldsValue({ ...record, t_stamp: dayjs(), qty_reminder: null });
         submitting.end();
     };
     useEffect(() => {
@@ -205,7 +205,7 @@ const OutContent = ({ record, parentRef, closeParent, loadParentData }) => {
 
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: dayjs.isDayjs(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : dayjs(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -280,7 +280,7 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
         const v = schemaIn().validate(values, { abortEarly: false, messages: validateMessages, context: { saida_mp: saidaMP } });
         let { errors, warnings, value, ...status } = getStatus(v);
         if (saidaMP === 1 && errors === 0 && !values.t_stamp_out) {
-            values.t_stamp_out = moment();
+            values.t_stamp_out = dayjs();
         }
         if (saidaMP === 1 && errors === 0 && !values.qty_reminder) {
             values.qty_reminder = 0;
@@ -305,8 +305,8 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
                     artigo_cod: movimento.ITMREF_0,
                     type_mov: 1,
                     group_id: values?.cuba?.key,
-                    t_stamp: moment(values.t_stamp).format(DATETIME_FORMAT),
-                    ...(saidaMP === 1) && { t_stamp_out: moment(values.t_stamp_out).format(DATETIME_FORMAT) },
+                    t_stamp: dayjs(values.t_stamp).format(DATETIME_FORMAT),
+                    ...(saidaMP === 1) && { t_stamp_out: dayjs(values.t_stamp_out).format(DATETIME_FORMAT) },
                     n_lote: movimento.LOT_0,
                     status: -1,
                     vcr_num: movimento.VCRNUM_0,
@@ -332,7 +332,7 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
         // const { errors, warnings, value, ...status } = getStatus(v);
         // if (errors === 0) {
         //     try {
-        //         let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+        //         let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: dayjs.isDayjs(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : dayjs(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
         //         if (response.data.status !== "error") {
         //             loadParentData();
         //             closeParent();
@@ -399,10 +399,10 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
                             params={{ payload: { url: `${API_URL}/stocklistbuffer/`, pagination: { limit: 15 }, filter: { floc: 'BUFFER', fitm: artigo_cod?.ITMREF_0 }, parameters: { lookup: true }, sort: [] } }}
                             keyField={["LOT_0"]}
                             textField="LOT_0"
-                            detailText={r => <div><span><b>{r["VCRNUM_0"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(r["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{r["QTYPCU_0"]} kg</b>]</span></div>}
+                            detailText={r => <div><span><b>{r["VCRNUM_0"]}</b></span> <span style={{ color: "#096dd9" }}>{dayjs(r["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{r["QTYPCU_0"]} kg</b>]</span></div>}
                             columns={[
                                 { key: 'LOT_0', name: 'Lote', width: 150 },
-                                { key: 'CREDATTIM_0', name: 'Data', formatter: p => moment(p.row["CREDATTIM_0"]).format(DATETIME_FORMAT) },
+                                { key: 'CREDATTIM_0', name: 'Data', formatter: p => dayjs(p.row["CREDATTIM_0"]).format(DATETIME_FORMAT) },
                                 { key: 'VCRNUM_0', name: 'Movimento', width: 180 },
                                 { key: 'QTYPCU_0', name: 'Qtd.', width: 100, formatter: p => <span>[Qtd: <b>{p.row["QTYPCU_0"]} kg</b>]</span> }
                             ]}
@@ -472,7 +472,7 @@ const CloseContent = ({ record, parentRef, closeParent, loadParentData }) => {
     const loadData = async ({ signal } = {}) => {
         console.log(record)
 
-        form.setFieldsValue({ ...record, in_t: moment(record.in_t), out_t: moment(record.out_t) });
+        form.setFieldsValue({ ...record, in_t: dayjs(record.in_t), out_t: dayjs(record.out_t) });
         submitting.end();
     };
     useEffect(() => {
@@ -559,7 +559,7 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { t_stamp_out: moment(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "close", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { t_stamp_out: dayjs(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "close", status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -691,13 +691,13 @@ export default ({ setFormTitle, ...props }) => {
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', frozen: true, formatter: p => p.row.dosers },
         { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
-        { key: 't_stamp', width: 140, name: 'Data Mov.', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data Mov.', editable: editable, cellClass: r => editableClass(r, 't_stamp'), editor: p => <DateTimeEditor p={p} field="t_stamp" />, editorOptions: { editOnClick: true }, formatter: p => dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
         { key: 'n_lote', width: 310, name: 'Lote', editable: (r) => editable(r, 'n_lote'), cellClass: r => editableClass(r, 'n_lote'), editor: p => <SelectDebounceEditor onSelect={(o, v) => onLoteChange(p, v)} fetchOptions={(v) => loadMovimentosLookup(p, v)} optionsRender={optionsRender} p={p} field="n_lote" />, editorOptions: { editOnClick: true }, formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, editable: (r) => editable(r, 'qty_lote'), cellClass: r => editableClass(r, 'qty_lote'), editor: p => <InputNumberEditor onChange={onQtyLoteChange} p={p} field="qty_lote" min={0} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div> },
         { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor onChange={onQtyReminderChange} p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
-        { key: "in_t", width: 140, name: 'Data Entrada', formatter: p => moment(p.row.in_t).format(DATETIME_FORMAT) },
-        { key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && moment(p.row.out_t).format(DATETIME_FORMAT) },
+        { key: "in_t", width: 140, name: 'Data Entrada', formatter: p => dayjs(p.row.in_t).format(DATETIME_FORMAT) },
+        { key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && dayjs(p.row.out_t).format(DATETIME_FORMAT) },
         { key: "diff", width: 140, name: 'Duração', cellClass: r => formatterClass(r, 'diff'), formatter: p => p.row.diff !== 0 && secondstoDay(p.row.diff) },
         { key: "avgdiff", width: 140, name: 'Duração Média', formatter: p => secondstoDay(p.row.avgdiff) },
         { key: "stddiff", width: 140, name: 'Desvio Padrão', formatter: p => secondstoDay(p.row.stddiff) },
@@ -795,7 +795,7 @@ export default ({ setFormTitle, ...props }) => {
     }
     const onSave = async (action) => {
         const rows = dataAPI.getData().rows.filter(v => v?.valid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov, obs }) =>
-            ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov, obs })
+            ({ n_lote, vcr_num, t_stamp: dayjs.isDayjs(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : dayjs(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov, obs })
         );
         submitting.trigger();
         try {

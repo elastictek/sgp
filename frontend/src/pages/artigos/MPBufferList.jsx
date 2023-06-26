@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
@@ -138,7 +138,7 @@ export default (props) => {
         { key: 'VCRNUM_0', name: 'Cód. Movimento' },
         { key: 'QTYPCU_0', name: 'Qtd.', width: 110, formatter: p => <Quantity v={p.row.QTYPCU_0} u={p.row.PCU_0} /> },
         { key: 'LOC_0', name: 'Localização', width: 110 },
-        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
+        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => dayjs(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
 
     const editable = (row) => {

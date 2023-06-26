@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useImmer } from 'use-immer';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -343,7 +343,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
         ...dataAPI.getAllFilter()?.type !== "C" ? [{
             key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<SettingOutlined />} size="small" onClick={() => onClickTasks(p.row)} />,
         }] : [],
-        { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+        { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
         {
             key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, name: 'Estado',
             editor: p => <FieldEstadoEditor forInput={editable(p.row, 'generic')} p={p} />,
@@ -392,7 +392,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
         ...(dataAPI.getAllFilter()?.type === "C") ? [
             { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
             { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
-            { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && moment(p.row.data_encomenda).format(DATETIME_FORMAT) },
+            { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && dayjs(p.row.data_encomenda).format(DATETIME_FORMAT) },
             { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
             { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
             { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },

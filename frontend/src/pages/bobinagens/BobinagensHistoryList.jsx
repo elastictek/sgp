@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -141,7 +141,7 @@ export default ({ setFormTitle, ...props }) => {
     const primaryKeys = ['audit_id'];
 
     const columns = [
-        { key: 'audit_timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+        { key: 'audit_timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'inico', name: 'Início', width: 90, formatter: p => p.row.inico },
         { key: 'fim', name: 'Fim', width: 90, formatter: p => p.row.fim },
         { key: 'duracao', name: 'Duração', width: 90, formatter: p => p.row.duracao },

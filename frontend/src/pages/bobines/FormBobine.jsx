@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -115,13 +115,13 @@ export default (props) => {
         } */
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
         const formValues = await loadBobineLookup(initFilters.bobine_id);
-        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
+        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         console.log("-----loaded--->",formValues)
         if (formValues.length > 0 && formValues[0]?.destinos?.destinos) {
             const _destinos = formValues[0]?.destinos?.destinos.map((v,i)=>({...v,idx:`dst-${i}`}));
             dataAPIDestinos.setRows(_destinos);
         }
-        form.setFieldsValue(props?.values ? { ...props?.values, timestamp: moment(props?.values.timestamp) } : {});
+        form.setFieldsValue(props?.values ? { ...props?.values, timestamp: dayjs(props?.values.timestamp) } : {});
         submitting.end();
     }
 

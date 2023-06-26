@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef, useLayoutEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, SyncOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone } from '@ant-design/icons';
+import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined,PauseOutlined, SyncOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone } from '@ant-design/icons';
 import { Tag, Button, Space, Badge } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
@@ -33,8 +33,11 @@ export const OFabricoStatus = ({ data, onClick, cellProps }) => {
             {(data?.ofabrico_status == 1) && <>
                 <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
             </>}
-            {(data?.ofabrico_status == 2) && <>
+            {(data?.ofabrico_status == 2 && data?.was_in_production == 0) && <>
                 <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
+            </>}
+            {(data?.ofabrico_status == 2 && data?.was_in_production == 1) && <>
+                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>
             </>}
             {(data?.ofabrico_status) == 3 && <>
                 <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>

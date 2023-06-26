@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -180,9 +180,9 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'QTYPCU_0', name: 'Qtd Buffer', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qtypcu_0).toFixed(2)} kg</div> },
         { key: 'qty_lote', name: 'Qtd Entrada', minWidth: 95, width: 95, formatter: p => p.row.t_stamp ? <div style={{ textAlign: "right" }}>{!p.row.qty_lote ? "0.00" : parseFloat(p.row.qty_lote).toFixed(2)} kg</div> : ""},
         { key: 'qty_out', name: 'Qtd Saída', minWidth: 95, width: 95, formatter: p => p.row.t_stamp_out ? <div style={{ textAlign: "right" }}>{!p.row.qty_out ? "0.00" : parseFloat(p.row.qty_out).toFixed(2)} kg</div> : ""},
-        { key: 'CREDATTIM_0', width: 140, name: 'Data Buffer', formatter: p => moment(p.row.CREDATTIM_0).format(DATETIME_FORMAT) },
-        { key: 't_stamp', width: 140, name: 'Data entrada Linha', formatter: p => p.row.t_stamp && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 't_stamp_out', width: 140, name: 'Data saída Linha', formatter: p => p.row.t_stamp_out && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) }
+        { key: 'CREDATTIM_0', width: 140, name: 'Data Buffer', formatter: p => dayjs(p.row.CREDATTIM_0).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data entrada Linha', formatter: p => p.row.t_stamp && dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 140, name: 'Data saída Linha', formatter: p => p.row.t_stamp_out && dayjs(p.row.t_stamp_out).format(DATETIME_FORMAT) }
     ];
 
     useEffect(() => {

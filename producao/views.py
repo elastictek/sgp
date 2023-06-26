@@ -4715,17 +4715,18 @@ def load_artigos_cliente(request):
     produto = request.GET.get('produto')
     gsm = request.GET.get('gsm')
     cliente_obj = get_object_or_404(Cliente, pk=cliente)
-    #print("aaaaaaaaaaaaaaaaaaaaaaa")
-    #print(cliente)
-    #print(largura)
-    #print(produto)
-    #print(gsm)
+    print("aaaaaaaaaaaaaaaaaaaaaaa")
+    print(cliente)
+    print(largura)
+    print(produto)
+    print(gsm)
+    print(cliente_obj.cod)
     if cliente_obj.cod == 0:
         artigos_cliente = ArtigoCliente.objects.filter(
             cliente=cliente_obj).order_by('artigo')
     else:
         artigos_cliente = ArtigoCliente.objects.filter(
-            cliente=cliente_obj, artigo__lar=largura, artigo__produto=produto, artigo__gsm=gsm).order_by('artigo')
+            cliente=cliente_obj, artigo__lar=largura, artigo__gsm=gsm).order_by('artigo')
     return render(request, 'perfil/dropdown_options.html', {'artigos_cliente': artigos_cliente})
 
 

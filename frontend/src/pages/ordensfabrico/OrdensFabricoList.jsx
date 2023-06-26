@@ -165,7 +165,7 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Packing List Detalhado', key: 'pld-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } },
             { type: 'divider' }
         ] : [],
-        ...(allows?.allowValidar && data.ofabrico_status == 2) ? [
+        ...(allows?.allowValidar && data.ofabrico_status == 2 && data.was_in_production==0) ? [
             { label: 'Reverter para elaboração', key: 'op-revert', icon: <UndoOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
@@ -178,8 +178,13 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { type: 'divider' }
         ] : [],
         ...(allows?.allowChangeStatus) ? [
-            ...(data.ofabrico_status == 2) ? [
+            ...(data.ofabrico_status == 2 && data.was_in_production==0) ? [
                 { label: 'Iniciar Produção', key: 'op-start', icon: <BsPlayCircleFill color='green' style={{ fontSize: "18px" }} /> },
+                { type: 'divider' }
+            ] : [],
+            ...(data.ofabrico_status == 2 && data.was_in_production==1) ? [
+                { label: 'Continuar Produção', key: 'op-start', icon: <BsPlayCircleFill color='green' style={{ fontSize: "18px" }} /> },
+                { label: 'Finalizar Produção', key: 'op-stop', icon: <BsStopCircleFill color='red' style={{ fontSize: "18px" }} /> },
                 { type: 'divider' }
             ] : [],
             ...(data.ofabrico_status == 3) ? [

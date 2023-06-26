@@ -31,7 +31,6 @@ const { Title } = Typography;
 import { SocketContext, MediaContext } from '../App';
 const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
 import useModalv4 from 'components/useModalv4';
-import moment from 'moment';
 
 
 const schema = (keys, excludeKeys) => {
@@ -258,7 +257,7 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
         }
 
 
-        form.setFieldsValue({ qty_lote: record.QTYPCU_0, saida_mp: 1, date: moment(record.CREDATTIM_0, 'YYYY-MM-DD HH:mm'), lote_id: record.ROWID, n_lote: record.LOT_0,group_id:_group });
+        form.setFieldsValue({ qty_lote: record.QTYPCU_0, saida_mp: 1, date: dayjs(record.CREDATTIM_0, 'YYYY-MM-DD HH:mm'), lote_id: record.ROWID, n_lote: record.LOT_0,group_id:_group });
     }, []);
 
     const onValuesChange = () => {
@@ -272,7 +271,7 @@ const FormAdd = ({ record, parameters, parentDataAPI, closeParent, parentRef }) 
 
     const onFinish = async (values) => {
         console.log("111111", { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, qty_lote_buffer: record.QTYPCU_0, ...values });
-        values.date = moment(values.date).format(DATETIME_FORMAT);
+        values.date = dayjs(values.date).format(DATETIME_FORMAT);
         const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { pickItems: parameters.pickItems, direction: parameters.direction, ig_id: parameters.ig_id, id: record.ROWID, qty_lote_buffer: record.QTYPCU_0, ...values } });
         setSubmitting(false);
         closeParent();

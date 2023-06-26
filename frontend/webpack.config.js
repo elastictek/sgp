@@ -7,6 +7,7 @@ const baseTheme = require('./src/baseTheme');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const VersionFile = require('webpack-version-file');
 //const AntdDayjsWebpackPlugin = require('antd-dayjs-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const rootPath = __dirname;
 const baseFolder = "src";
@@ -41,6 +42,7 @@ module.exports = (env, argv) => {
     console.log(`Compile Mode--->${argv.mode}`);
 
     const commonPlugins = [
+        // new BundleAnalyzerPlugin(),
         new VersionFile({
             data: {
                 date: new Date(),

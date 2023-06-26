@@ -57,7 +57,7 @@ export default ({ noEdit=true,noPrint=true, ...props }) => {
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: {
-                ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 100 }
+                ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 150 }
             }, filter: {}, sort: []
         }
     });

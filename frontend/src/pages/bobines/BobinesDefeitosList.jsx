@@ -88,7 +88,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     const dataAPI = useDataAPI({
         fnPostProcess: (dt) => postProcess(dt, submitting), payload: {
             url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: {
-                ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 100 }
+                ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 150 }
             }, filter: {}, sort: []
         }
     });

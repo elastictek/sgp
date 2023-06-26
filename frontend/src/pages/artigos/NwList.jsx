@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -178,7 +178,7 @@ const InputNumberEditor = ({ field, p, onChange, ...props }) => {
     return <InputNumber style={{ width: "100%", padding: "3px" }} keyboard={false} controls={false} bordered={true} size="small" value={p.row[field]} onChange={onChange ? (v) => onChange(p, v, field) : (e) => p.onRowChange({ ...p.row, rowvalid: p.row[field] !== e ? 0 : null, [field]: e }, true)} ref={focus} {...props} />
 }
 const DateTimeEditor = ({ field, p, onChange, ...props }) => {
-    return <DatePicker showTime size="small" format={DATETIME_FORMAT} value={moment(p.row[field])} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props}><Input /></DatePicker>
+    return <DatePicker showTime size="small" format={DATETIME_FORMAT} value={dayjs(p.row[field])} ref={focus} onChange={onChange ? v => onChange(p, v) : (e) => p.onRowChange({ ...p.row, valid: p.row[field] !== e ? 0 : null, [field]: e }, true)} {...props}><Input /></DatePicker>
 }
 const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
     return (<SelectDebounceField
@@ -196,7 +196,7 @@ const SelectDebounceEditor = ({ field, keyField, textField, p, ...props }) => {
 }
 const optionsRender = d => ({
     label: <div>
-        <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{moment(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} m<sup>2</sup></b>]</span></div>
+        <div><span><b>{d["LOT_0"]}</b></span> <span style={{ color: "#096dd9" }}>{dayjs(d["CREDATTIM_0"]).format(DATETIME_FORMAT)}</span> <span>[Qtd: <b>{d["QTYPCU_0"]} m<sup>2</sup></b>]</span></div>
         <div><span>{d["ITMREF_0"]}</span> <span>{d["ITMDES1_0"]}</span></div>
     </div>, value: d["VCRNUM_0"], key: `${d["LOT_0"]}#${d["VCRNUM_0"]}`, row: d
 });
@@ -208,7 +208,7 @@ const OutContent = ({ record, parentRef, closeParent, loadParentData }) => {
 
     const loadData = async ({ signal } = {}) => {
         console.log(record)
-        form.setFieldsValue({ ...record, t_stamp: moment(), qty_reminder: null });
+        form.setFieldsValue({ ...record, t_stamp: dayjs(), qty_reminder: null });
         submitting.end();
     };
     useEffect(() => {
@@ -223,7 +223,7 @@ const OutContent = ({ record, parentRef, closeParent, loadParentData }) => {
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updatenw/`, filter: { ...values, vcr_num: record.vcr_num, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updatenw/`, filter: { ...values, vcr_num: record.vcr_num, t_stamp: dayjs.isDayjs(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : dayjs(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -300,7 +300,7 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
                     artigo_des: movimento.ITMDES1_0,
                     artigo_cod: movimento.ITMREF_0,
                     type: values.type,
-                    t_stamp: moment(values.t_stamp).format(DATETIME_FORMAT),
+                    t_stamp: dayjs(values.t_stamp).format(DATETIME_FORMAT),
                     n_lote: movimento.LOT_0,
                     status: 1,
                     largura: movimento.TSICOD_3,
@@ -327,7 +327,7 @@ const InContent = ({ parentRef, closeParent, loadParentData }) => {
         // const { errors, warnings, value, ...status } = getStatus(v);
         // if (errors === 0) {
         //     try {
-        //         let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: moment.isMoment(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : moment(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
+        //         let response = await fetchPost({ url: `${API_URL}/updategranulado/`, filter: { ...values, id: record.id, t_stamp: dayjs.isDayjs(values?.t_stamp) ? values?.t_stamp.format(DATETIME_FORMAT) : dayjs(values?.t_stamp).format(DATETIME_FORMAT) }, parameters: { type: "out", status: 0 } });
         //         if (response.data.status !== "error") {
         //             loadParentData();
         //             closeParent();
@@ -483,7 +483,7 @@ const CloseContent = ({ record, parentRef, closeParent, loadParentData }) => {
     const loadData = async ({ signal } = {}) => {
         console.log(record)
 
-        form.setFieldsValue({ ...record, in_t: moment(record.in_t), out_t: moment(record.out_t) });
+        form.setFieldsValue({ ...record, in_t: dayjs(record.in_t), out_t: dayjs(record.out_t) });
         submitting.end();
     };
     useEffect(() => {
@@ -569,7 +569,7 @@ const CloseDateContent = ({ parentRef, closeParent, loadParentData }) => {
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/updatenw/`, filter: { t_stamp_out: moment(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "close", status: 0 } });
+                let response = await fetchPost({ url: `${API_URL}/updatenw/`, filter: { t_stamp_out: dayjs(values.t_stamp_out).format(DATE_FORMAT) }, parameters: { type: "close", status: 0 } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -788,9 +788,9 @@ export default ({ setFormTitle, ...props }) => {
         //{ key: 'print', frozen: true, name: '', cellClass: classes.noOutline, minWidth: 50, width: 50, sortable: false, resizable: false, formatter: p => <ColumnPrint record={p.row} dataAPI={dataAPI} onClick={() => onPrint(p.row)} /> },
         { key: 'status', width: 90, name: 'Movimento', frozen: true, cellClass: r => formatterClass(r, 'status'), formatter: p => <MovNwColumn value={p.row.status} /> },
         { key: 'artigo_cod', name: 'Artigo', frozen: true, width: 200, formatter: p => p.row.artigo_cod },
-        { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 't_stamp_inuse', width: 140, name: 'Data Entrada', formatter: p => p.row?.t_stamp_inuse && moment(p.row.t_stamp_inuse).format(DATETIME_FORMAT) },
-        { key: 't_stamp_out', width: 140, name: 'Data Saída', formatter: p => (p.row?.t_stamp_out && p.row.status == 0) && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data', formatter: p => dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_inuse', width: 140, name: 'Data Entrada', formatter: p => p.row?.t_stamp_inuse && dayjs(p.row.t_stamp_inuse).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 140, name: 'Data Saída', formatter: p => (p.row?.t_stamp_out && p.row.status == 0) && dayjs(p.row.t_stamp_out).format(DATETIME_FORMAT) },
         { key: 'artigo_des', width: 280, name: 'Designação', formatter: p => <b>{p.row.artigo_des}</b> },
         { key: 'n_lote', width: 310, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} m<sup>2</sup></div> },
@@ -800,8 +800,8 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'comp', name: 'Comp.', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.comp).toFixed(2)} m</div> },
         { key: 'queue', width: 110, maxWidth: 110, name: 'Fila', editable: (r) => editable(r, 'queue'), cellClass: r => editableClass(r, 'queue'), editor: p => <ModalQueueEditor p={p} column="rugas_pos" onChange={onQueueChange} />, editorOptions: { editOnClick: true }, formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
         //{ key: 'qty_reminder', width: 110, name: 'Qtd. Restante', editable: (r) => editable(r, 'qty_reminder'), cellClass: r => editableClass(r, 'qty_reminder'), editor: p => <InputNumberEditor onChange={onQtyReminderChange} p={p} field="qty_reminder" min={0} max={p.row.qty_lote} addonAfter="kg" />, editorOptions: { editOnClick: true }, formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
-        //{ key: "in_t", width: 140, name: 'Data Entrada', formatter: p => moment(p.row.in_t).format(DATETIME_FORMAT) },
-        //{ key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && moment(p.row.out_t).format(DATETIME_FORMAT) },
+        //{ key: "in_t", width: 140, name: 'Data Entrada', formatter: p => dayjs(p.row.in_t).format(DATETIME_FORMAT) },
+        //{ key: "out_t", width: 140, name: 'Data Saída', formatter: p => p.row.diff !== 0 && dayjs(p.row.out_t).format(DATETIME_FORMAT) },
         //{ key: "diff", width: 140, name: 'Duração', cellClass: r => formatterClass(r, 'diff'), formatter: p => p.row.diff !== 0 && secondstoDay(p.row.diff) },
         //{ key: "avgdiff", width: 140, name: 'Duração Média', formatter: p => secondstoDay(p.row.avgdiff)},
         //{ key: "stddiff", width: 140, name: 'Desvio Padrão', formatter: p => secondstoDay(p.row.stddiff)},
@@ -900,7 +900,7 @@ export default ({ setFormTitle, ...props }) => {
     }
     const onSave = async (action) => {
         let rows = dataAPI.getData().rows.filter(v => v?.rowvalid === 0).map((values) =>includeObjectKeys(values,['id','qty_out','qty_lote','closed','status','n_lote','vcr_num']));
-        rows = rows.map(obj => ({...obj, timestamp: moment(obj.timestamp).format(DATETIME_FORMAT)}));
+        rows = rows.map(obj => ({...obj, timestamp: dayjs(obj.timestamp).format(DATETIME_FORMAT)}));
         submitting.trigger();
         try {
             let response = await fetchPost({ url: `${API_URL}/updatenw/`, parameters: { rows, type: "datagrid"  } });
@@ -930,7 +930,7 @@ export default ({ setFormTitle, ...props }) => {
             submitting.end();
         };
         // const rows = dataAPI.getData().rows.filter(v => v?.rowvalid === 0).map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov }) =>
-        //     ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
+        //     ({ n_lote, vcr_num, t_stamp: dayjs.isDayjs(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : dayjs(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
         // );
         // submitting.trigger();
         // try {

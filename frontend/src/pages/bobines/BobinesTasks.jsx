@@ -3,7 +3,6 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -43,6 +42,7 @@ import { json } from "utils/object";
 // import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
 import { ButtonTypeChecklist, SubType } from '../ordensfabrico/commons';
+import dayjs from 'dayjs';
 
 
 const loadBobineLookup = async (bobine_id) => {
@@ -186,7 +186,7 @@ export default (props) => {
                                 <Col width={150} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><ButtonTypeChecklist v={v.type} onClick={() => onTaskClick(v)} /></Col>
                                 <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><SubType type={v.type} v={v.subtype} /></Col>
                                 <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{v.nome}</Col>
-                                <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{moment(v.timestamp).format(DATETIME_FORMAT)}</Col>
+                                <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{dayjs(v.timestamp).format(DATETIME_FORMAT)}</Col>
                                 <Col style={{ borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><TaskParameters type={v.type} r={v} /></Col>
                             </Row>
 
@@ -205,7 +205,7 @@ export default (props) => {
                                 <Col width={150} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><ButtonTypeChecklist v={v.type} onClick={() => onTaskClick(v)} /></Col>
                                 <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><SubType type={v.type} v={v.subtype} /></Col>
                                 <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{v.nome}</Col>
-                                <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{moment(v.timestamp).format(DATETIME_FORMAT)}</Col>
+                                <Col width={140} style={{ display: "flex", alignItems: "center", borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}>{dayjs(v.timestamp).format(DATETIME_FORMAT)}</Col>
                                 <Col style={{ borderBlockEnd: "1px solid #ddd", borderInlineEnd: "1px solid #ddd" }}><TaskParameters type={v.type} r={v} /></Col>
                             </Row>
 

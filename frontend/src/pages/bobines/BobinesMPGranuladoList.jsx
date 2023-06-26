@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from "classnames";
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -150,9 +150,9 @@ export default (props) => {
         { key: 'artigo_cod', name: 'Cód. Matéria Prima', width: 150, sortable: true },
         { key: 'artigo_des', name: 'Matéria Prima', sortable: true },
         { key: 'n_lote', name: 'Lote', width: 220, sortable: true },
-        { key: 't_stamp', width: 130, name: 'Data Entrada', formatter: p => p.row.t_stamp && moment(p.row.t_stamp).format(DATETIME_FORMAT) },
-        { key: 't_stamp_out', width: 130, name: 'Data Saída', formatter: p => p.row.t_stamp_out && moment(p.row.t_stamp_out).format(DATETIME_FORMAT) },
-        { key: 't_stamp_close', width: 130, name: 'Data Fecho', formatter: p => p.row.t_stamp_close && moment(p.row.t_stamp_close).format(DATETIME_FORMAT) }
+        { key: 't_stamp', width: 130, name: 'Data Entrada', formatter: p => p.row.t_stamp && dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp_out', width: 130, name: 'Data Saída', formatter: p => p.row.t_stamp_out && dayjs(p.row.t_stamp_out).format(DATETIME_FORMAT) },
+        { key: 't_stamp_close', width: 130, name: 'Data Fecho', formatter: p => p.row.t_stamp_close && dayjs(p.row.t_stamp_close).format(DATETIME_FORMAT) }
     ];
 
     const loadData = async ({ signal } = {}) => {

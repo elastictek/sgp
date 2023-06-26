@@ -193,7 +193,7 @@ export default (props) => {
 
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
-        <div style={{ height: "calc(100vh - 120px)" }}>
+        <div style={{ height: "calc(100vh - 130px)" }}>
             <YScroll>
                 {paleteExists &&
                     <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}

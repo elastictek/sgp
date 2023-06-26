@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from "classnames";
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -602,14 +602,14 @@ const FormRegister = ({ submitting, dataAPI, loadData, bobinagem, modeEdit, setM
                 comp: dataAPI.getData()["comp"],
                 comp_par: dataAPI.getData()["comp_par"],
                 lar_util: larguraUtil(),
-                data: moment(dataAPI.getData()["data"]),
+                data: dayjs(dataAPI.getData()["data"]),
                 core: dataAPI.getData()["core"],
                 cortes: dataAPI.getData()["cortes"],
                 perfil_nome: dataAPI.getData()["perfil_nome"],
                 produto_cod: dataAPI.getData()["produto_cod"],
                 area: dataAPI.getData()["area"],
-                inico: moment(dataAPI.getData()["inico"], TIME_FORMAT),
-                fim: moment(dataAPI.getData()["fim"], TIME_FORMAT),
+                inico: dayjs(dataAPI.getData()["inico"], TIME_FORMAT),
+                fim: dayjs(dataAPI.getData()["fim"], TIME_FORMAT),
                 duracao: dataAPI.getData()["duracao"],
                 diam: dataAPI.getData()["diam"],
                 tiponwsup: dataAPI.getData()["tiponwsup"],
@@ -805,7 +805,7 @@ export default (props) => {
 
                 setAllowEdit({ ..._allowEdit });
                 setModeEdit(dt.valid === 0 ? { elevated: _allowEdit.elevated, form: _allowEdit.form, datagrid: _allowEdit.datagrid } : { form: false, datagrid: false, elevated: false });
-                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"], acs_id: dt["audit_current_settings_id"], ig_id: dt["ig_bobinagem_id"], "timestamp": moment(dt["timestamp"]).format(DATETIME_FORMAT) });
+                setBobinagem({ id: bobinagem_id, nome: bobinagem_nome, agg_of_id: dt["agg_of_id"], valid: dt["valid"], acs_id: dt["audit_current_settings_id"], ig_id: dt["ig_bobinagem_id"], "timestamp": dayjs(dt["timestamp"]).format(DATETIME_FORMAT) });
                 if (dt["valid"] === 0) {
                     let nwl = await loadNWLookup(signal, { cs_status: 3, status: 1, queue: 1 });
                     let ni = nwl.find(x => x.type == 0);

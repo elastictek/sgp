@@ -290,7 +290,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         console.log()
         return;
 
-        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
+        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0 && formValues[0]?.artigo) {
             dataAPIArtigos.setRows(formValues[0].artigo);
         }

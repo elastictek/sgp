@@ -922,6 +922,9 @@ class Bobine(models.Model):
     vcr_num_sup=models.CharField(max_length = 80, null = True, blank = True, verbose_name = "Vcr sup") #ADDED
     troca_etiqueta = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Troca de Etiqueta") #ADDED 0/1/2
     timestamp = models.DateTimeField(blank=True, null=True) #ADDED
+    cliente_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Cliente") #ADDED
+    cliente_cod = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Cliente") #ADDED
+    produto_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Produto") #ADDED
     def __str__(self):
         return self.nome
 
