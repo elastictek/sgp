@@ -158,7 +158,7 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Paletes Stock', key: 'op-stock', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' },
         ] : [],
-        ...(allows?.allowPackingList) ? [
+        ...(allows?.allowPackingList && data.ofabrico_status >= 2) ? [
             { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
             { label: 'Packing List', key: 'pl-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
             { label: 'Packing List Detalhado', key: 'pld-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } },

@@ -47,6 +47,7 @@ connMssqlName = "sqlserver"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
+mv_ofabrico_list = "mv_ofabrico_listv2"
 
 defeitosCols = {
 "columns" : ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'rugas_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs'],
@@ -639,7 +640,7 @@ def BobinesList(request, format=None):
                 from mv_bobines mb
                 LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
                 LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
-                LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+                LEFT JOIN {mv_ofabrico_list} mol on mol.ofabrico=sgppl.ofid
                 LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
                 {"cross join lateral json_array_elements ( sgppl.artigo ) as j" if fartigo["hasFilters"] else ""}
                 {f.text} {fartigo["text"]} {festados.text} {fdefeitos.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
@@ -669,7 +670,7 @@ def BobinesList(request, format=None):
             ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
             ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
             po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
-            sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            sgppl.disabled,pc.name cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
             mva.cod artigo_cod,pbm.tiponwinf,pbm.tiponwsup
         """
         dql.columns=encloseColumn(cols,False)
@@ -745,7 +746,7 @@ def BobinesLookup(request, format=None):
                 from mv_bobines mb
                 LEFT JOIN mv_artigos mva on mva.id=mb.artigo_id 
                 LEFT JOIN mv_paletes sgppl on sgppl.id=mb.palete_id 
-                LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+                LEFT JOIN {mv_ofabrico_list} mol on mol.ofabrico=sgppl.ofid
                 LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
                 {f.text} {f2["text"]}
                 {dql.sort} {dql.limit}
@@ -772,7 +773,7 @@ def BobinesLookup(request, format=None):
             ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
             ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
             po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
-            sgppl.disabled,pc.nome cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+            sgppl.disabled,pc.name cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
             sum(mb.lar) over (partition by mb.bobinagem_id) largura_bobinagem,
             mva.cod artigo_cod
         """
@@ -797,21 +798,6 @@ def BobinesLookup(request, format=None):
             dql.paging=""
             return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
         try:
-            print("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
-            print(f"""  
-                select {f'{dql.columns}'}
-                FROM producao_bobine mb
-                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
-                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
-                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
-                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
-                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
-                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
-                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
-                {f.text} {f2["text"]}
-                {dql.sort} {dql.limit}
-            """)
-            print(parameters)
             response = db.executeSimpleList(sql, connection, parameters)
         except Exception as error:
             print(str(error))

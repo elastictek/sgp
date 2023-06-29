@@ -306,8 +306,8 @@ def BobinagensList(request, format=None):
     
     f4 = Filters(request.data['filter'])
     f4.setParameters({
-        "cliente": {"value": lambda v: v.get('fcliente'), "field": lambda k, v: f'tpb.{k}'},
-        "destino": {"value": lambda v: v.get('fdestino'), "field": lambda k, v: f'tpb.{k}'}
+        "cliente": {"value": lambda v: Filters.getLower(v.get('fcliente')), "field": lambda k, v: f'lower(tpb.{k})'},
+        "destino": {"value": lambda v: Filters.getLower(v.get('fdestino')), "field": lambda k, v: f'lower(tpb.{k})'}
     }, True)
     f4.where(False, "and")
     f4.auto()
@@ -368,6 +368,39 @@ def BobinagensList(request, format=None):
             {s(dql.sort)}
         """
     )
+
+    print(
+f""" 
+            SELECT
+            {f'{dql.columns}'}
+            from(
+                select pbm.*
+                {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
+                (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
+                ''' if feature=='fixconsumos' else ''}
+                {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
+                      ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
+                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
+                ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
+                ,JSON_EXTRACT(acs.ofs, '$[*].cliente_nome') clientes
+                ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
+                acs.agg_of_id
+                FROM producao_bobinagem pbm
+                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
+                {f.text} {f2["text"]}
+                {fText01}
+                {fText02}
+                {dql.sort} {dql.paging} {dql.limit}
+            ) pbm
+            join producao_bobine pb on pb.bobinagem_id = pbm.id
+            where 1=1 {f3.text}
+            {f' and no_lotes>0' if feature=='fixconsumos' else ''}
+            group by pbm.id,pb.core {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
+            {dql.sort}
+        """
+
+    )
     
     # sqlCount = f""" 
     #         SELECT count(*) FROM (
@@ -425,7 +458,9 @@ def Validar(request, format=None):
                 try:
                     rows = [{prop: d.get(prop) for prop in ["id","comp","comp_emenda","estado","troca_nw","l_real","lar","vcr_num_inf","vcr_num_sup","bobinagem_id"]} for d in data]
                     args = (json.dumps(rows, ensure_ascii=False),request.data.get("parameters").get("lar_bruta"),request.user.id,0)
-                    cursor.callproc('validate_bobinagemv2',args)
+                    print("validateeeee verificar nonwoven superior passa null?????????????????")
+                    pront(args)
+                    #cursor.callproc('validate_bobinagemv2',args)
                 except Exception as error:
                     return Response({"status": "error", "title": str(error)})
                 return Response({"status": "success", "title": "Bobinagem validada com sucesso!", "subTitle":None})
@@ -538,7 +573,7 @@ def BobinagensHistoryList(request, format=None):
 
     dql = db.dql(request.data, False)
     cols = f"""t.*
-    #,pc.nome cliente_nome,po1.ofid ofid_original,po2.ofid ofid
+    #,pc.name cliente_nome,po1.ofid ofid_original,po2.ofid ofid
     """
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (

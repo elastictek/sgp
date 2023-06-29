@@ -317,11 +317,12 @@ class Artigo(models.Model):
 class Cliente(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     cod = models.PositiveIntegerField(verbose_name="Código de cliente", unique=True)
-    nome = models.CharField(max_length=255, unique=True, null=True, blank=True, verbose_name="Nome")
+    nome = models.CharField(max_length=255, unique=True, null=True, blank=True, verbose_name="Nome") #OBSOLETE
     abv = models.CharField(max_length=3, unique=True, null=True, blank=True, verbose_name="Abreviatura")
     limsup = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Limite Superior")
     liminf = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Limite Inferior")
     diam_ref = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Diametro de referência", null=True, blank=True)
+    name = models.CharField(max_length=255, unique=False, null=True, blank=True, verbose_name="Nome") #ADDED
 
     class Meta:
         verbose_name_plural = "Clientes"

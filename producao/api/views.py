@@ -1756,7 +1756,7 @@ def SellCustomersLookup(request, format=None):
     dql.columns = encloseColumn(cols)
     with connections[connGatewayName].cursor() as cursor:
        response = dbgw.executeSimpleList(lambda: (
-         f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+         f'SELECT {dql.columns} FROM mv_clientes_sage {f["text"]} {dql.sort} {dql.limit}'
        ), cursor, parameters)
        response["rows"].append({"BPCNUM_0":'0',"BPCNAM_0":"Elastictek"})
        response["rows"].append({"BPCNUM_0":'1',"BPCNAM_0":"Industrialização"})
@@ -5046,9 +5046,10 @@ def ValidarBobinagem(request, format=None):
                         bobine_values["furos"] = 1 if bobine_values['furos_pos'] is not None and len(bobine_values['furos_pos'])>0 else 0
                         bobine_values["buraco"] = 1 if bobine_values['buracos_pos'] is not None and len(bobine_values['buracos_pos'])>0 else 0
                         bobine_values["rugas"] = 1 if bobine_values['rugas_pos'] is not None and len(bobine_values['rugas_pos'])>0 else 0
-
+                        print("--------ggggggggggggggggggggggggggggg")
                         dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
                         db.execute(dml.statement, cursor, dml.parameters)
+                        print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 else:
                     return Response({"status": "error", "title": "Não existem dados para validar/classificar!"})
         return Response({"status": "success", "id": None, "title": f"A Bobinagem {data['bobinagem']['nome']} foi Validada/Classificada com Sucesso!", "subTitle": ''})
@@ -6522,7 +6523,7 @@ def SellCustomersLookup_OLD(request, format=None):
     dql.columns = encloseColumn(cols)
 
     response = dbgw.executeSimpleList(lambda: (
-        f'SELECT {dql.columns} FROM {sageAlias}."BPCUSTOMER" {f["text"]} {dql.sort} {dql.limit}'
+        f'SELECT {dql.columns} FROM mv_clientes_sage {f["text"]} {dql.sort} {dql.limit}'
     ), connection, parameters)
     return Response(response)
 

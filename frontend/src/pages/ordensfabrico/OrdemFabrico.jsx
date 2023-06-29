@@ -217,7 +217,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
   return (
     <FormContainer id="lay-of" fluid wrapForm={false} style={{ padding: "0px", margin: "0px" }}>
       <Row nogutter style={{ padding: "0px", margin: "0px 5px 0px 0px" }}>
-        <Col style={{ height: "calc(100vh - 200px)" }}>
+        <Col style={{ height: "calc(100vh - 130px)" }}>
           {ofExists &&
 
             <YScroll>
@@ -227,12 +227,12 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                   {
                     label: `Informação`,
                     key: '1',
-                    children: <FormRequirements {...{ parameters: inputParameters.current, permission }} />,
+                    children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormRequirements {...{ parameters: inputParameters.current, permission }} /></YScroll></div>,
                   },
                   {
                     label: `Definições`,
                     key: '2',
-                    children: <FormSettings {...{ parameters: inputParameters.current, permission }} />,
+                    children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormSettings {...{ parameters: inputParameters.current, permission }} /></YScroll></div>,
                   }
                 ]}
 

@@ -420,7 +420,7 @@ def PaletesHistoryList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = db.dql(request.data, False)
-    cols = f"""t.*,pc.nome cliente_nome,po1.ofid ofid_original,po2.ofid ofid"""
+    cols = f"""t.*,pc.name cliente_nome,po1.ofid ofid_original,po2.ofid ofid"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""  

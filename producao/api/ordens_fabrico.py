@@ -1165,6 +1165,7 @@ def addCliente(data,cursor):
         dta = {
             'cod': data.get('cliente_cod'),
             'nome': data.get('cliente_nome'),
+            'name': data.get('cliente_nome'),
             'abv': data.get('cliente_abv').upper(),
             "liminf":data.get("artigo_diam"),
             "limsup":data.get("artigo_diam"),

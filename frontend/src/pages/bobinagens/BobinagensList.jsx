@@ -6,9 +6,9 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
 import { API_URL } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import { includeObjectKeys, excludeObjectKeys } from "utils/object";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker } from "antd";
@@ -632,7 +632,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
     const loadData = ({ init = false, signal }) => {
         if (init) {
             const { typelist, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, location?.state, null);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
+            let { filterValues, fieldValues } = fixRangeDates(null, initFilters);
             formFilter.setFieldsValue({ typelist, ...fieldValues });
             dataAPI.addFilters(filterValues, true, false);
             dataAPI.setSort(defaultSort);
@@ -648,7 +648,8 @@ export default ({ noid = false,setFormTitle, ...props }) => {
         switch (type) {
             case "filter":
                 //remove empty values
-                const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
+               // const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
+                const { typelist, ...vals } = dataAPI.removeEmpty({ ...defaultFilters, ...values });
                 const _values = {
                     ...vals,
                     fbobinagem: getFilterValue(vals?.fbobinagem, 'any'),
@@ -659,8 +660,8 @@ export default ({ noid = false,setFormTitle, ...props }) => {
                     fcliente: getFilterValue(vals?.fcliente, 'any'),
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
-                dataAPI.addFilters(_values, true);
-                dataAPI.addParameters({ typelist })
+                dataAPI.addFilters(dataAPI.removeEmpty(_values));
+                dataAPI.addParameters({...defaultParameters, typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -668,11 +669,11 @@ export default ({ noid = false,setFormTitle, ...props }) => {
     };
     const onFilterChange = (changedValues, values) => {
         if ("typelist" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), typelist: changedValues.typelist, tstamp: Date.now() }, replace: true });
+            navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getAllFilter(), typelist: changedValues.typelist, tstamp: Date.now() }, replace: true });
         } else if ("type" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
+            navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getAllFilter(), type: changedValues.type, tstamp: Date.now() }, replace: true });
         } else if ("valid" in changedValues) {
-            navigate("/app/bobinagens/reellings", { state: { ...formFilter.getFieldsValue(true), valid: changedValues.valid, tstamp: Date.now() }, replace: true });
+            navigate("/app/bobinagens/reellings", { state: { ...dataAPI.getAllFilter(), valid: changedValues.valid, tstamp: Date.now() }, replace: true });
         }
     };
     const onAction = (item, row) => {

@@ -201,26 +201,26 @@ export default (props) => {
                             {
                                 label: `Informação`,
                                 key: '1',
-                                children: <FormPalete {...{ parameters: props?.parameters, permission }} />,
+                                children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormPalete {...{ parameters: props?.parameters, permission }} /></YScroll></div>,
                             },
                             {
                                 label: `Embalamento`,
                                 key: '2',
-                                children: <FormPaletizacao {...{ parameters: props?.parameters, permission }} />,
+                                children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormPaletizacao {...{ parameters: props?.parameters, permission }} /></YScroll></div>,
                             },
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} /></YScroll></div>,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} /></YScroll></div>,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} /></YScroll></div>,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
