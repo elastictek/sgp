@@ -22,7 +22,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponse
-from datetime import datetime
+from datetime import datetime,timedelta
 from urllib.error import HTTPError
 import django.core.exceptions
 import csv
@@ -6636,6 +6636,7 @@ def palete_picagem_v3(request, pk):
                             array_produtos.append(bobine.designacao_prod)
                             array_artigos.append(bobine.artigo_id) #v1
                             array_estados.append(bobine.estado)
+                                
                             if cliente != 0:
                                 try:
                                     artigo_cliente = ArtigoCliente.objects.get(
@@ -6671,8 +6672,17 @@ def palete_picagem_v3(request, pk):
                             if bobine.bobinagem.perfil.core != palete.core_bobines:
                                 messages.error(request, '(' + str(count) + ') O core da ' + bobine.nome + ' (' + str(bobine.bobinagem.perfil.core) + '") não corresponde ao core definido na palete de ' + str(palete.core_bobines) + '".')
                                 validation = False
+                            
+                            current_date = datetime.datetime.now().date()
+                            bobine_date = bobine.bobinagem.data
+                            tdate = current_date - timedelta(days=3*30)
+                            expired = 1 if bobine_date < tdate else 0
+                            if expired==1:
+                                messages.error(request, '(' + str(count) + ') A bobine ' + bobine.nome + ' foi produzida à mais de 3 meses.')
+                                validation = False
 
-                        except:
+                        except Exception as e:
+                            print(e)
                             messages.error(
                                 request, '(' + str(count) + ') A bobine ' + b + ' não existe.')
                             validation = False

@@ -724,6 +724,33 @@ def SetOrdemFabricoFormulacao(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
+def GetPaletizacao(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'po.id = :id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    sql = lambda: (f"""
+        select pa.paletizacao,pl.designacao 
+        from planeamento_ordemproducao po
+        join producao_currentsettings pc on pc.agg_of_id =po.agg_of_id_id
+        JOIN JSON_TABLE(JSON_EXTRACT(fix_json(pc.paletizacao),'$'),'$[*]' COLUMNS(of_id INT PATH '$.of_id',	paletizacao JSON PATH '$.paletizacao')) pa on pa.of_id=po.id
+        JOIN producao_paletizacao pl on pl.id=pa.paletizacao->>'$.id'
+        {f.text}
+    """)   
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
 def GetPaletesStock(request, format=None):
     connection = connections[connGatewayName].cursor()
     filter = request.data['filter']
@@ -809,7 +836,6 @@ def OpenPrf(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
-
 def ClosePrf(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
@@ -849,7 +875,6 @@ def ClosePrf(request, format=None):
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)}) 
-
 
 def RevertToElaboration(request, format=None):
     data = request.data.get("parameters")

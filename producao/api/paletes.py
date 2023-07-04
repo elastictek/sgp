@@ -533,19 +533,20 @@ def PaletizacaoLookup(request, format=None):
 #     return Response(response)
 
 def PaletesStockAvailableList(request, format=None):
-    connection = connections[connGatewayName].cursor()
+    _c = connections[connGatewayName]
+    connection = _c.cursor()
     f = Filters(request.data['filter'] if "filter" in request.data else {})
     f.setParameters({
          "nome": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'sgppl.{k}'},
          "carga_id": {"value": lambda v: "isnull", "field": lambda k, v: f'sgppl.{k}'},
-         "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('ordem_id'),v.get('ordem_id'),"!=="), "field": lambda k, v: f'sgppl.{k}'},
+         "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('ordem_id'),v.get('ordem_id'),"!==="), "field": lambda k, v: f'sgppl.{k}'},
          "disabled": {"value": lambda v: Filters.getNumeric(0), "field": lambda k, v: f'sgppl.{k}'},
          "cliente_cod": {"value": lambda v: Filters.getNumeric(v.get('cliente_cod')), "field": lambda k, v: f'sgppl.{k}'},
          "SDHNUM_0": {"value": lambda v: "isnull", "field": lambda k, v: f'mv."{k}"'},
          "artigo_cod": {"value": lambda v: f"=={v.get('artigo_cod')}", "field": lambda k, v: f"j->>'cod'"},
     }, True)
     f.where()
-    f.auto()
+    f.auto([],[],True,DBSql(_c.alias).typeDB)
     f.add(f'sgppl.nbobines_real = sgppl.num_bobines', True)
     f.value()
 
@@ -565,20 +566,36 @@ def PaletesStockAvailableList(request, format=None):
             sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
             sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
             sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,
-            mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
+            case when (select 1 from mv_bobines mb where mb.palete_id=sgppl.id and mb.date_expired=1 limit 1) isnull then 0 else 1 END has_bobines_expired
+            --,mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
     """
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
             select {c(f'{dql.columns}')}
             FROM mv_paletes sgppl
-            LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+            --LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
             cross join lateral json_array_elements ( sgppl.artigo ) as j
             {f.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
+    print(
+
+f"""
+            select {f'{dql.columns}'}
+            FROM mv_paletes sgppl
+            --JOIN (select 1 from mv_bobines mb where mb.date_expired=1 limit 1) 
+            --LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            cross join lateral json_array_elements ( sgppl.artigo ) as j
+            {f.text}
+            {dql.sort} {dql.paging} {dql.limit}
+        """
+
+    )
+    print(parameters)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -706,4 +723,16 @@ def DeletePaletesStock(request, format=None):
     except Error as error:
         return Response({"status": "error", "title": str(error)})
 
-        
+def CreatePaleteLine(request, format=None):
+    data = request.data.get("parameters")
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),data.get("pesobruto"),data.get("palete_id"),data.get("pesopalete"),request.user.id]
+                cursor.callproc('create_palete',args)
+                cursor.execute("select * from tmp_paletecheck_report;")
+                report = fetchall(cursor)
+        return Response({"status": "success", "data":report, "title":None})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})

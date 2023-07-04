@@ -7,17 +7,17 @@ import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
-import { useSubmitting, sleep,getFloat } from "utils";
+import { useSubmitting, sleep, getFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, OFABRICO_FILTER_STATUS } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch,Progress } from "antd";
+import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch, Progress } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -39,6 +39,7 @@ const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
 const FormPackingList = React.lazy(() => import('../ordensfabrico/FormPackingList'));
 const PaletesList = React.lazy(() => import('../paletes/PaletesList'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
+const FormNewPaleteLine = React.lazy(() => import('../paletes/FormNewPaleteLine'));
 
 
 const Operations = ({ parameters }) => {
@@ -156,7 +157,11 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
         ...(data.ofabrico_status > 1) ? [
             { label: 'Paletes', key: 'op-paletes', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
             { label: 'Paletes Stock', key: 'op-stock', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
-            { type: 'divider' },
+            { type: 'divider' }
+        ] : [],
+        ...(data.ativa == 1 && data.ofabrico_status == 3) ? [
+            { label: 'Nova Palete Linha', key: 'op-newpalete', icon: <AppstoreAddOutlined style={{ fontSize: "18px" }} /> },
+            { type: 'divider' }
         ] : [],
         ...(allows?.allowPackingList && data.ofabrico_status >= 2) ? [
             { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
@@ -165,7 +170,7 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Packing List Detalhado', key: 'pld-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } },
             { type: 'divider' }
         ] : [],
-        ...(allows?.allowValidar && data.ofabrico_status == 2 && data.was_in_production==0) ? [
+        ...(allows?.allowValidar && data.ofabrico_status == 2 && data.was_in_production == 0) ? [
             { label: 'Reverter para elaboração', key: 'op-revert', icon: <UndoOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
@@ -178,11 +183,11 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { type: 'divider' }
         ] : [],
         ...(allows?.allowChangeStatus) ? [
-            ...(data.ofabrico_status == 2 && data.was_in_production==0) ? [
+            ...(data.ofabrico_status == 2 && data.was_in_production == 0) ? [
                 { label: 'Iniciar Produção', key: 'op-start', icon: <BsPlayCircleFill color='green' style={{ fontSize: "18px" }} /> },
                 { type: 'divider' }
             ] : [],
-            ...(data.ofabrico_status == 2 && data.was_in_production==1) ? [
+            ...(data.ofabrico_status == 2 && data.was_in_production == 1) ? [
                 { label: 'Continuar Produção', key: 'op-start', icon: <BsPlayCircleFill color='green' style={{ fontSize: "18px" }} /> },
                 { label: 'Finalizar Produção', key: 'op-stop', icon: <BsStopCircleFill color='red' style={{ fontSize: "18px" }} /> },
                 { type: 'divider' }
@@ -237,6 +242,7 @@ export default ({ noid = true, setFormTitle, ...props }) => {
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
                 case "paletes": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />;
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
+                case "newpalete": return <FormNewPaleteLine parameters={modalParameters.parameters} />
                 //case "content": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
@@ -444,11 +450,11 @@ export default ({ noid = true, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'ofabrico_status', header: 'Estado Produção', filter: { show: true, type: "select", field: { style: { width: "80px" }, options: OFABRICO_FILTER_STATUS } }, userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data)} /> }] : [],
         ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 160, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item", header: "Artigo", filter: { show: true, op: "any" }, defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
-        
-        ...(true) ? [{ name: "n_paletes", header: "Total", filter: { show: true,type:"number",field:{style:{width:"70px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <LeftAlign style={{}}>{data?.n_paletes_total}/{data?.n_paletes}</LeftAlign> }] : [],
-        ...(true) ? [{ name: "progress", header: "", filter: { show: false }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <Progress percent={getFloat(data?.progress,0)} showInfo={true} trailColor="#dbdbdb" /> }] : [],
-        ...(true) ? [{ name: "n_paletes_produzidas", header: "Produzidas", filter: { show: true,type:"number",field:{style:{width:"80px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_produzidas}</RightAlign> }] : [],
-        ...(true) ? [{ name: "n_paletes_stock_in", header: "Stock", filter: { show: true,type:"number",field:{style:{width:"60px"}} }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_stock_in}</RightAlign> }] : [],
+
+        ...(true) ? [{ name: "n_paletes", header: "Total", filter: { show: true, type: "number", field: { style: { width: "70px" } } }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <LeftAlign style={{}}>{data?.n_paletes_total}/{data?.n_paletes}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "progress", header: "", filter: { show: false }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <Progress percent={getFloat(data?.progress, 0)} showInfo={true} trailColor="#dbdbdb" /> }] : [],
+        ...(true) ? [{ name: "n_paletes_produzidas", header: "Produzidas", filter: { show: true, type: "number", field: { style: { width: "80px" } } }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_produzidas}</RightAlign> }] : [],
+        ...(true) ? [{ name: "n_paletes_stock_in", header: "Stock", filter: { show: true, type: "number", field: { style: { width: "60px" } } }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <RightAlign style={{}}>{data?.n_paletes_stock_in}</RightAlign> }] : [],
 
 
         ...(true) ? [{ name: 'start_prev_date', header: 'Início Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.start_prev_date} format={DATETIME_FORMAT} /> }] : [],
@@ -500,7 +506,8 @@ export default ({ noid = true, setFormTitle, ...props }) => {
         const allowInElaboration = permission.isOk({ item: "viewInElaboration", instantPermissions });
         const allowViewValidar = permission.isOk({ item: "viewValidar", instantPermissions });
         const allowPackingList = permission.isOk({ item: "packingList", instantPermissions });
-        setAllows({ allowChangeStatus, allowValidar, allowReopen, allowInElaboration, allowViewValidar, allowPackingList });
+        const allowNewPalete = permission.isOk({ item: "newPalete", instantPermissions });
+        setAllows({ allowChangeStatus, allowValidar, allowReopen, allowInElaboration, allowViewValidar, allowPackingList, allowNewPalete });
         dataAPI.addParameters({ ...defaultParameters, allowInElaboration, allowViewValidar }, true);
         dataAPI.setAction("init", true);
         dataAPI.update(true);
@@ -532,9 +539,6 @@ export default ({ noid = true, setFormTitle, ...props }) => {
     }
 
     const onAction = (action, data, rowIndex) => {
-
-
-
         switch (action.key) {
             case "pl-pdf":
                 setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, ...data } });
@@ -564,14 +568,19 @@ export default ({ noid = true, setFormTitle, ...props }) => {
             case "op-close":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ClosePrf", data: { ofid: data.ofabrico_sgp }, content: `Tem a certeza que deseja Fechar a Proforma (PRF) ${data?.prf}` });
                 break;
-            case "op-stock": 
+            case "op-stock":
                 setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.ofabrico}</div>, parameters: { ativa: data?.ativa, id: data.ofabrico_sgp, cliente_cod: data?.cliente_cod, artigo_cod: data?.item, filter: { fordem_id: `==${data?.ofabrico_sgp}` } } });
                 showModal();
-            break;
+                break;
             case "op-paletes":
-                setModalParameters({ content: "paletes", type: "drawer", lazy:true,push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `==${data?.ofabrico}` } } });
-                showModal();    
-            break;
+                setModalParameters({ content: "paletes", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `==${data?.ofabrico}` } } });
+                showModal();
+                break;
+            case "op-newpalete":
+                navigate('/app/paletes/formnewpaleteline', { state: { id: data?.ofabrico_sgp, of: data?.ofabrico, tstamp: Date.now() }, replace: true });
+                //setModalParameters({ content: "newpalete", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Nova Palete <span>de linha</span> <span style={{ fontSize: "12px", fontWeight: 400 }}>{data?.ofabrico}</span></div>, parameters: { filter: { id: data?.ofabrico_sgp, of: data?.ofabrico } } });
+                //showModal();
+                break;
 
         }
     }

@@ -251,7 +251,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
                     //Check formulação
                     const _row = form.getFieldValue(["items", i, "row"]);
                     if (_row?.dosers && _row?.valid) {
-                        const valid = dataAPI.getData().rows.find(v => _row?.dosers.split(',').every(item => v.dosers.split(',').includes(item)) && v.artigo_cod === _row?.artigo_cod && v.n_lote !== _row?.n_lote);
+                        const valid = dataAPI.getData().rows.find(v => _row?.dosers.split(',').every(item => v.dosers.split(',').includes(item)) && (v.artigo_cod === _row?.artigo_cod || v.mp_group === _row?.mp_group) && v.n_lote !== _row?.n_lote);
                         form.setFieldValue(["items", i, "row", "group_id"], valid ? valid?.cuba : null);
                         form.setFieldValue(["items", i, "valid"], valid ? true : false);
                     }

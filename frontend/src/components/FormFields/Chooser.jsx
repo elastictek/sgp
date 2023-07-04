@@ -174,7 +174,6 @@ export default ({ parameters, closeSelf, ...props }) => {
             if (selected === true) {
                 const _uns = (!unSelected) ? [] : Object.keys(unSelected);
                 _data = dataAPI.getData().rows.map(v => v[dataAPI.getPrimaryKey()]).filter(v => !_uns.includes(`${v[dataAPI.getPrimaryKey()]}`));
-                console.log("bbbbbbbbbbbbb",_uns,dataAPI.getData().rows,dataAPI.getPrimaryKey())
                 _rows = dataAPI.getData().rows.filter(v => !_uns.includes(`${v[dataAPI.getPrimaryKey()]}`));
             } else {
                 _data = Object.keys(selected);

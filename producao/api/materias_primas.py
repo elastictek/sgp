@@ -264,7 +264,7 @@ def GetGranuladoLoteQuantity(request, format=None):
     sgpAlias = dbgw.dbAlias.get("sgp")
     values = request.data['filter'].get("value")
     rows = dbgw.executeSimpleList(lambda:(f"""
-        SELECT * FROM(
+        SELECT t.*,gmp.group FROM(
         SELECT
             ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",mprima."ITMDES1_0" artigo_des,
             LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) "QTYPCU_0",
@@ -275,6 +275,7 @@ def GetGranuladoLoteQuantity(request, format=None):
             JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
             WHERE ST."LOC_0" = 'BUFFER' AND ST."QTYPCU_0" > 0 AND ST."VCRNUM_0"='{values[4]}'
         ) t
+        left join "SGP-PROD".group_materiasprimas gmp on gmp.artigo_cod=t."ITMREF_0"
         where ("QTYPCU_0" > 0)        
         AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = t."VCRNUM_0")
     """),conngw,{})["rows"]
@@ -284,7 +285,7 @@ def GetGranuladoLoteQuantity(request, format=None):
         if len(rowsx)>0:
             return Response({"status": "error", "title": "O lote de Granulado já foi registado!", "subTitle":f'{None}',"row":{"qty_lote":values[2],"unit":values[3], "n_lote":values[1]}})
         obs = values[5] if len(values)>5 else ''
-        return Response({"status": "success","row":{"lote_id":rows[0]["lote_id"],"obs":obs, "artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }})
+        return Response({"status": "success","row":{"mp_group":rows[0]["group"],"lote_id":rows[0]["lote_id"],"obs":obs, "artigo_des":rows[0]["artigo_des"], "artigo_cod":values[0], "qty_lote":values[2], "vcr_num":values[4], "unit":values[3], "n_lote":values[1] }})
     else:
         return Response({"status": "error", "title": "O lote de Granulado não se enconta em buffer!", "subTitle":f'{None}',"row":{"qty_lote":0, "unit":values[3], "n_lote":values[1]}})
 

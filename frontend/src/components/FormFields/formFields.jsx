@@ -8,8 +8,8 @@ import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
 import { debounce, dayjsValue } from "utils";
-import { validate, getSchema, pick, getStatus } from "utils/schemaValidator";
-import { LoadingOutlined } from '@ant-design/icons';
+import { validate, getSchema, pick, getStatus,validateMessages } from "utils/schemaValidator";
+import { LoadingOutlined, CheckSquareOutlined, BorderOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
 import { AiOutlineFullscreen } from "react-icons/ai";
@@ -327,7 +327,7 @@ export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeo
 
     return (
         <AutoComplete
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             ref={ref}
             value={value}
             onSearch={debounceFetcher}
@@ -380,7 +380,7 @@ export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull = true
 
     return (
         <Select
-            dropdownMatchSelectWidth={false}
+            popupMatchSelectWidth={false}
             labelInValue
             filterOption={false}
             onSearch={debounceFetcher}
@@ -412,7 +412,7 @@ export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */
     }
 
     return (
-        <Select ref={ref} showSearch={showSearch} options={options} dropdownMatchSelectWidth={false} {...rest}>
+        <Select ref={ref} showSearch={showSearch} options={options} popupMatchSelectWidth={false} {...rest}>
             {/* {optionsRender({ data, keyField, valueField })} */}
         </Select>
     );
@@ -720,10 +720,6 @@ const InnerField = ({ children, alert, ...props }) => {
 
 
 
-const validateMessages = {
-    'any.required': 'Campo {{#label}} é obrigatório.'
-};
-
 export const validateForm = (rules, messages) => {
     var schema = rules;
     var fieldStatus = { error: {}, info: {}, warning: {} };
@@ -912,9 +908,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                         case 'Input':
                             return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
-                            return (
-                                <CheckboxField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
-                            );
+                            if (value == 1 || value == true) {
+                                return <CheckSquareOutlined color='#595959' {...children.props} style={{ fontSize: "16px", ...style && style }}  {...onDoubleClick && { onDoubleClick }} />
+                            } else {
+                                return <BorderOutlined color='#595959' {...children.props} style={{ fontSize: "16px", ...style && style }}  {...onDoubleClick && { onDoubleClick }} />
+                            }
                         case 'SwitchField':
                             return (
                                 <SwitchField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
@@ -951,20 +949,23 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             )
                         case 'InputNumber':
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
-                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), display: "flex", flexDirection: "row", alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
-                                    {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
-                                    <div style={{ flex: 1 }}>{value}</div>
-                                    {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
+                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                    <div style={{ flex: 1, display: "flex",alignItems: "center" }}>
+                                        {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
+                                        <div>{value}</div>
+                                        {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
+                                    </div>
                                 </div>)
                             }
                             return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", minHeight: height(children?.props?.size), alignItems: "center", justifyContent: "end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         default:
-
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
-                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), display: "flex", flexDirection: "row", alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
-                                    {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
-                                    <div style={{ flex: 1 }}>{value}</div>
-                                    {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
+                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                    <div style={{ flex: 1, display: "flex" ,alignItems: "center"}}>
+                                        {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
+                                        <div>{value}</div>
+                                        {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
+                                    </div>
                                 </div>)
                             }
 

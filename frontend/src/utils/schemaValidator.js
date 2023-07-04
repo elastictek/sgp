@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 export const validateMessages = {
     'any.required': 'Campo {{#label}} é obrigatório.',
     'number.base': 'Campo {{#label}} tem de ser um valor numérico.',
+    'number.positive': 'Campo {{#label}} tem de ser um valor maior que zero.',
     'number.greater': 'Campo {{#label}} tem de ser maior ou igual que {{:#limit}}.',
     'string.base': 'Campo {{#label}} tem de ser um valor de texto.',
     'string.empty': 'Campo {{#label}} não pode ser vazio.',
@@ -89,6 +90,7 @@ export const getStatus = (vObject, { formStatus = { error: [], warning: [], info
     ret.value = vObject?.value;
     if (vObject?.error) {
         for (const itm of vObject.error?.details) {
+            console.log("errorrrrr",vObject.error.details)
             ret.errors++;
             if (itm.path.length > 0) {
                 ret.fieldStatus[[...itm.path]] = { status: "error", messages: [{ message: itm.message }] }

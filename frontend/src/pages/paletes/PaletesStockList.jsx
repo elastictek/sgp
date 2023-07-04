@@ -182,12 +182,13 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
         const _filter = { ordem_id: inputParameters.current.id, cliente_cod: inputParameters.current.cliente_cod, artigo_cod: inputParameters.current.artigo_cod };
         setModalParameters({
-            content: "paletesstock", responsive: true, type: "drawer", width: 1200, title: "Paletes disponíveis", push: false, loadData: () => { }, parameters: {
+            content: "paletesstock", responsive: true, type: "drawer", width: "85%", title: "Paletes disponíveis", push: false, loadData: () => { }, parameters: {
+                offsetHeight:"200px",
                 multipleSelection: true,
                 payload: { payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: { method: "PaletesStockAvailableList" }, pagination: { enabled: true }, filter: _filter, sort: [] } },
                 toolbar: true,
                 columns: [
-                    { name: 'nome', header: 'Palete', defaultWidth: 160 },
+                    { name: 'nome', header: 'Palete', defaultWidth: 160,defaultLocked: true },
                     { name: 'ofid', header: 'Ordem', defaultWidth: 160 },
                     { name: 'cliente_nome', header: 'Cliente', defaultWidth: 160 },
                     ...(true) ? [{ name: 'timestamp', header: 'Data', userSelect: true, defaultLocked: false, defaultWidth: 110, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.timestamp} format={DATETIME_FORMAT} /> }] : [],
@@ -196,6 +197,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                     ...(true) ? [{ name: "estado", header: "Estado", defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <EstadoBobines id={data.id} nome={data.nome} artigos={json(data.artigo)} cellProps={cellProps} /> }] : [],
                     ...(true) ? [{ name: 'largura', header: 'Largura', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <Largura id={data.id} nome={data.nome} artigos={json(data.artigo)} cellProps={cellProps} /> }] : [],
                     ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <Core id={data.id} nome={data.nome} artigos={json(data.artigo)} cellProps={cellProps} /> }] : [],
+                    ...(true) ? [{ name: "has_bobines_expired", header: "B. Expiradas", defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <Boolean data={data?.has_bobines_expired}/> }] : [],
                     ...(true) ? [{ name: 'area_real', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m&sup2;">{getFloat(data?.area_real, 0)}</RightAlign> }] : [],
                     ...(true) ? [{ name: 'comp_real', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_real, 0)}</RightAlign> }] : [],
                     ...(true) ? [{ name: 'peso_bruto', header: 'Peso B.', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="kg">{getFloat(data?.peso_bruto, 0)}</RightAlign> }] : [],

@@ -76,6 +76,7 @@ const OrdemFabrico = React.lazy(() => import('./ordensfabrico/OrdemFabrico'));
 const OrdensFabricoList = React.lazy(() => import('./ordensfabrico/OrdensFabricoList'));
 
 const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
+const FormNewPaleteLine = lazy(() => import('./paletes/FormNewPaleteLine'));
 
 
 /* const OFDetails = lazy(() => import('./ordemFabrico/FormDetails')); */
@@ -177,6 +178,7 @@ const RenderRouter = () => {
                 { path: "planeamento/etapascortes", element: <Suspense fallback={<Spin />}><FormEtapasCortes /></Suspense> },
 
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
+                { path: "paletes/formnewpaleteline", element: <Suspense fallback={<Spin />}><FormNewPaleteLine /></Suspense> },
 
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
                 { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },

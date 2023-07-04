@@ -57,6 +57,7 @@ export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fi
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
+export const PALETES_WEIGHT = [{ key: 8, value: "8 kg" }, { key: 13, value: "13 kg" }];
 export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }, { key: 6, value: "Cantoneira Cartão Branco" }, { key: 7, value: "Etiqueta Cut Here" }];
 export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
 export const CONTENTORES_OPTIONS = [

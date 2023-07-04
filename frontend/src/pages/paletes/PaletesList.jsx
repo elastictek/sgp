@@ -41,7 +41,7 @@ import { ImArrowLeft } from 'react-icons/im';
 import { Cuba } from "../currentline/dashboard/commons/Cuba";
 import { Core, EstadoBobines, Largura } from "./commons";
 import Palete from './Palete';
-import FormCreatePalete from './FormCreatePalete';
+//import FormCreatePalete from './FormCreatePalete';
 import { MediaContext } from "../App";
 import OF from '../commons/OF';
 import { DestinoPaleteEditor } from 'components/tableEditors';
@@ -707,7 +707,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                //case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
@@ -987,10 +987,10 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         showModal();
     }
 
-    const onCreatePalete = () => {
-        setModalParameters({ content: "createpalete", type: "drawer", title: "Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
-        showModal();
-    }
+    // const onCreatePalete = () => {
+    //     setModalParameters({ content: "createpalete", type: "drawer", title: "Criar Palete (Selecionar Ordem de Fabrico)", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: {} });
+    //     showModal();
+    // }
 
     return (
         <>
@@ -1013,7 +1013,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 rowHeight={28}
                 rowClass={(row) => (row?.valid === 0 ? classes.notValid : undefined)}
                 leftToolbar={<Space>
-                    <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions>
+                    {/* <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions> */}
                     {/* <Permissions permissions={permission} action="editList">
                         {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
                         {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}

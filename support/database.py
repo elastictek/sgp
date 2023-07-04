@@ -935,7 +935,7 @@ class Filters:
                 self.__filters.append(f['filter'])
         return self
 
-    def auto(self, exclude=[], include=[], encloseColumns=True):
+    def auto(self, exclude=[], include=[], encloseColumns=True, typedb=TypeDB.MYSQL):
         baseData = {**self.filterData, **self.paramsSetValues}
         nData = {}
         if len(include) > 0:
@@ -944,7 +944,7 @@ class Filters:
             nData = {k: v for k, v in baseData.items() if k not in exclude}
         else:
             nData=baseData
-        a = FiltersParser(nData, self.paramsSetFields, encloseColumns)
+        a = FiltersParser(nData, self.paramsSetFields, encloseColumns, typedb)
         self.__autoFilters.extend(a['filters'])
         self.autoParamsSet.update(a['parameters'])
 
@@ -994,7 +994,7 @@ class Filters:
                 value=isNone
             else:
                 return None
-        pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
+        pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
         result = re.match(pattern, str(value), re.IGNORECASE)
         if not result:
             if compare is not None:
@@ -1009,9 +1009,9 @@ class Filters:
         if value is None: return None
         return value.upper()
 
-def FiltersParser(data, fields={}, encloseColumns=True):
+def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
     filters, parameters = [], {}
-    pattern = f'(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
+    pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
     for key, f in data.items():
 
         if f == None:
@@ -1029,9 +1029,16 @@ def FiltersParser(data, fields={}, encloseColumns=True):
         if op == '@:':
             filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
             parameters[f'auto_{key}'] = value
+        elif op == '===':
+            if typedb==TypeDB.MYSQL:
+                filters.append(f'{("" if not opNot else "not")} {field} <=> %(auto_{key})s')
+            elif  typedb==TypeDB.POSTGRES:
+                filters.append(f'{field} {("IS NOT DISTINCT FROM" if not opNot else "IS DISTINCT FROM")} %(auto_{key})s')
+            else:
+                filters.append(f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
+            parameters[f'auto_{key}'] = value
         elif op == '==':
-            filters.append(
-                f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
+            filters.append(f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
             parameters[f'auto_{key}'] = value
         elif op == '=':
             filters.append(
