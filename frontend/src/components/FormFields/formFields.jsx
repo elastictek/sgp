@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
-import { Form, Tooltip, Drawer, Modal, Button, Row, Col, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber, TimePicker } from "antd";
+import { Form, Tooltip, Drawer, Modal, Button, Row as AntRow, Col as AntCol, Input, Tag, AutoComplete, Select, Switch, Alert, Checkbox, Spin, DatePicker, InputNumber, TimePicker } from "antd";
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
@@ -16,7 +16,7 @@ import { AiOutlineFullscreen } from "react-icons/ai";
 import RangeDate from "../RangeDate";
 import RangeTime from "../RangeTime";
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
-import { Container as MainContainer } from 'react-grid-system';
+import { Container as MainContainer,Row,Col } from 'react-grid-system';
 import Selector from './Selector';
 
 
@@ -125,7 +125,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
             >
                 {schema && <Form form={form} name="search-form" layout="vertical" hideRequiredMark onKeyPress={(e) => { if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }}>
                     {schema.map((line, ridx) => (
-                        <Row key={`rf-${ridx}`} gutter={16}>
+                        <AntRow key={`rf-${ridx}`} gutter={16}>
                             {Object.keys(line).map((col, cidx) => {
                                 const span = ("span" in line[col]) ? line[col].span : 24;
                                 const itemWidth = ("itemWidth" in line[col]) ? { width: line[col].itemWidth } : {};
@@ -134,7 +134,7 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                 const field = ("field" in line[col]) ? line[col].field : { type: "input" };
                                 const initialValue = ("initialValue" in line[col]) ? line[col].initialValue : undefined;
                                 return (
-                                    <Col key={`cf-${cidx}`} span={span} style={{ paddingLeft: "1px", paddingRight: "1px" }}>
+                                    <AntCol key={`cf-${cidx}`} span={span} style={{ paddingLeft: "1px", paddingRight: "1px" }}>
                                         <Form.Item style={{ marginBottom: "0px" }} key={`fd-${col}`} name={`${col}`} label={label} {...(initialValue !== undefined && { initialValue: initialValue })} labelCol={{ style: { padding: "0px" } }}>
                                             {(typeof field === 'function') ? field() :
                                                 {
@@ -150,10 +150,10 @@ export const FilterDrawer = ({ schema, filterRules, width = 400, showFilter, set
                                             }
 
                                         </Form.Item>
-                                    </Col>
+                                    </AntCol>
                                 );
                             })}
-                        </Row>
+                        </AntRow>
                     ))}
                 </Form>
                 }
@@ -194,10 +194,14 @@ const StyledVerticalSpace = styled('div').withConfig({
     width: 100%;
 `;
 
-export const VerticalSpace = ({ margin = "0px", height = "12px", props }) => {
+export const VerticalSpace = ({ margin = "0px", height = "12px", ...props }) => {
     return (
         <StyledVerticalSpace height={height} {...props} />
     );
+}
+
+export const RowSpace = ({ margin = "0px", height = "12px", ...props}) => {
+    return(<Row nogutter style={{margin,height}} {...props}><Col></Col></Row>);
 }
 
 
@@ -293,7 +297,7 @@ export const TimeField = ({ value, ...rest }) => {
     );
 };
 
-export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size, onPressEnter, ...rest }, ref) => {
+export const AutoCompleteField = React.forwardRef(({ fetchOptions, debounceTimeout = 800, onChange, value, keyField, valueField, textField, optionsRender = false, size, onPressEnter, showArrow, ...rest }, ref) => {
     const [fetching, setFetching] = useState(false);
     const [options, setOptions] = useState([]);
     const fetchRef = useRef(0);
@@ -422,7 +426,7 @@ const _filterOptions = (arr1, arr2) => {
     let res = [];
     res = arr1.filter(el => {
         return !arr2.find(element => {
-            return element.value === el.value;
+            return element.value == el.value;
         });
     });
     return res;
@@ -936,8 +940,8 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? dayjsValue(value).format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
-                            if (labelInValue) {
-                                text = value?.label;
+                            if (labelInValue || (typeof value=="object" && textField in value)) {
+                                text = value?.[textField];
                             } else {
                                 const r = data.find(v => v[keyField] == value);
                                 if (r !== undefined) {

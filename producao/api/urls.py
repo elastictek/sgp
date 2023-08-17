@@ -101,7 +101,6 @@ urlpatterns = [
     re_path(r'^newcortes/$', views.NewCortes),
     re_path(r'^clearcortes/$', views.ClearCortes),
     re_path(r'^updatecortesordem/$', views.UpdateCortesOrdem),
-    re_path(r'^cortesordemlookup/$', views.CortesOrdemLookup),
     #End Cortes
     #Cargas
     re_path(r'^cargaslookup/$', views.CargasLookup),
@@ -218,7 +217,6 @@ urlpatterns = [
     #MATERIAS-PRIMAS
 
     #CURRENTSETTINGS
-    re_path(r'^stockcutoptimizer/$', currentsettings.StockCutOptimizer),
     re_path(r'^estadoproducao/$', currentsettings.EstadoProducao),
     re_path(r'^eventosproducao/$', currentsettings.EventosProducao),
     re_path(r'^auditcurrentsettingsget/$', currentsettings.AuditCurrentSettingsGet),

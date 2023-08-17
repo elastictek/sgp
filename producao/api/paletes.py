@@ -188,7 +188,7 @@ def Sql(request, format=None):
             func = globals()[method]
             response = func(request, format)
             return response
-    except Error as error:
+    except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response({})
@@ -220,6 +220,8 @@ def PaletesList(request, format=None):
         "peso_bruto": {"value": lambda v: Filters.getNumeric(v.get('fpeso_bruto')), "field": lambda k, v: f'sgppl.{k}'},
         "peso_liquido": {"value": lambda v: Filters.getNumeric(v.get('fpeso_liquido')), "field": lambda k, v: f'sgppl.{k}'},
         "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
+        "nok":{"value": lambda v: Filters.getNumeric(v.get('fnok')), "field": lambda k, v: f'{k}'},
+        "nok_estados":{"value": lambda v: Filters.getNumeric(v.get('fnok_estados')), "field": lambda k, v: f'{k}'},
         "cliente_nome": {"value": lambda v: v.get('fcliente').lower() if v.get('fcliente') is not None else None, "field": lambda k, v: f'lower(sgppl."{k}")'},
         "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'sgppl."{k}"'},
         "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
@@ -322,7 +324,7 @@ def PaletesList(request, format=None):
                 sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
                 sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
                 sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
-                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,
+                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,sgppl.nok,sgppl.nok_estados,
                 mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
             FROM mv_paletes sgppl
             LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
@@ -548,6 +550,7 @@ def PaletesStockAvailableList(request, format=None):
     f.where()
     f.auto([],[],True,DBSql(_c.alias).typeDB)
     f.add(f'sgppl.nbobines_real = sgppl.num_bobines', True)
+    f.add(f'sgppl.ordem_id = sgppl.ordem_id_original', True)
     f.value()
 
     f2 = filterMulti(request.data['filter'] if "filter" in request.data else {}, {
@@ -630,6 +633,19 @@ def AllowedOFChanges(request, format=None):
         ), cursor, parameters)
         return Response(response)
 
+def changePaleteOrdemFabrico(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = [filter.get("palete_id"), data.get("ordem_id"),request.user.id]
+                print(args)
+                cursor.callproc('change_palete_ordemfabrico',args)
+        return Response({"status": "success", "success":f"""Palete/Ordem atualizada com sucesso!"""})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 def UpdateDestinos(request, format=None):
     data = request.data.get("parameters")
@@ -693,7 +709,7 @@ def UpdateDestinos(request, format=None):
                 cursor.callproc('update_palete',args)
 
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
-    except Error as error:
+    except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 
@@ -705,9 +721,11 @@ def AddPaletesStock(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 args = [data.get("ordem_id"),json.dumps(data.get("rows"), ensure_ascii=False),request.user.id]
-                cursor.callproc('add_paletes_stock',args)
+                print("Rrrrrr")
+                print(args)
+                #cursor.callproc('add_paletes_stock',args)
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
-    except Error as error:
+    except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def DeletePaletesStock(request, format=None):
@@ -720,7 +738,7 @@ def DeletePaletesStock(request, format=None):
                 args = [data.get("ordem_id"),json.dumps(data.get("rows"), ensure_ascii=False),request.user.id]
                 cursor.callproc('delete_paletes_stock',args)
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
-    except Error as error:
+    except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def CreatePaleteLine(request, format=None):
@@ -729,7 +747,23 @@ def CreatePaleteLine(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),data.get("pesobruto"),data.get("palete_id"),data.get("pesopalete"),request.user.id]
+                checkonly=0
+                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),data.get("pesobruto"),data.get("palete_id"),data.get("pesopalete"),checkonly,request.user.id]
+                print(args)
+                cursor.callproc('create_palete',args)
+                cursor.execute("select * from tmp_paletecheck_report;")
+                report = fetchall(cursor)
+        return Response({"status": "success", "data":report, "title":None})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+    
+def CheckBobinesPaleteLine(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                checkonly=1
+                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),None,data.get("palete_id"),None,checkonly,None]
                 cursor.callproc('create_palete',args)
                 cursor.execute("select * from tmp_paletecheck_report;")
                 report = fetchall(cursor)

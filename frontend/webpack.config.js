@@ -59,7 +59,7 @@ module.exports = (env, argv) => {
             filename: isDevMode ? '[name].css' : '[name].[contenthash].css',
             chunkFilename: isDevMode ? '[id].css' : '[id].[contenthash].css',
             ignoreOrder: true
-        }),
+        })
         /*new AntdDayjsWebpackPlugin({
             replaceMoment: true, plugins: [
                 'isSameOrBefore',
@@ -87,7 +87,7 @@ module.exports = (env, argv) => {
         watchOptions: {
             aggregateTimeout: 200,
             poll: 1000,
-            ignored: ['node_modules/**', 'dist/**', 'static/**', "*.log", "*.lock", "*.code-workspace", "__pycache__/**"]
+            ignored: ['node_modules/**', 'dist/**', 'static/**', "*.log", "*.lock", "*.code-workspace", "__pycache__/**","templates/frontend/index.html"]
         },
         entry: {
             [`${appName}/index`]: [`./${baseFolder}/index.jsx`, ...(isDevMode ? [] : [])]
@@ -104,6 +104,8 @@ module.exports = (env, argv) => {
             alias: {
                 config: path.resolve(rootPath, "src", 'config'),
                 components: path.resolve(rootPath, "src", 'components'),
+                app: path.resolve(rootPath, "src", 'pages','App'),
+                gridlayout: path.resolve(rootPath, "src", 'pages','dashboard','GridLayout'),
                 assets: path.resolve(rootPath, "src", 'assets'),
                 'react/jsx-dev-runtime.js': path.resolve(rootPath, 'node_modules', 'react', 'jsx-dev-runtime.js'),
                 'react/jsx-runtime.js': path.resolve(rootPath, 'node_modules', 'react', 'jsx-runtime.js')

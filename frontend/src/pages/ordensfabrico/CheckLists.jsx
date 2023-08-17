@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -43,6 +42,7 @@ import { MediaContext, AppContext } from "../App";
 // import OF from '../commons/OF';
 import { MultiLine, FieldSelectEditor } from 'components/tableEditors';
 import { checklistStatus,Status,changeStatus } from './commons';
+import dayjs from 'dayjs';
 
 const focus = (el, h,) => { el?.focus(); };
 const schema = (options = {}) => {
@@ -210,7 +210,7 @@ export default ({ setFormTitle, ...props }) => {
 
     const columns = [
         { key: 'nome', name: 'Código Checklist', frozen: true, width: 160, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onChecklistClick(p.row)}>{p.row.nome}</Button> },
-        { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+        { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'agg_cod', width: 150, name: 'OF Agregada', formatter: p => p.row.agg_cod },
         { key: 'status', width: 110, name: 'Estado', formatter: p => <Status v={p.row.status} genre="f" onClick={()=>onChangeStatus(p.row)} /> },
         {

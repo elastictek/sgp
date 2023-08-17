@@ -2,14 +2,13 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -72,7 +71,9 @@ const rowSchema = (options = {}) => {
 }
 
 const loadFormulacao = async (params, primaryKey, signal) => {
+    //console.log("feoreeee")
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetFormulacao" }, signal });
+    //console.log("loadddddddddddddddddddddd", rows)
     if (rows && rows.length > 0) {
         let _v = json(rows[0]?.formulacao);
         if (!_v?.items) {
@@ -98,7 +99,7 @@ const menuOptions = ({ edit, joinbc, referenceDisabled = false }) => [
     ...(edit) ? [{ key: 6, label: <Space><Field name="joinbc" label={{ enabled: false }}><SwitchField /></Field><span>{joinbc ? "Desagrupar extrusora BC" : "Agrupar extrusora BC"}</span></Space> }] : []
 ];
 
-export default ({ setFormTitle, ...props }) => {
+export default ({ setFormTitle,enableAssociation=true, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "datagrid" });//Permissões Iniciais
@@ -134,7 +135,7 @@ export default ({ setFormTitle, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
-    
+
     const addToOFabrico = () => {
         const _filter = form.getFieldsValue(["artigo_id", "produto_id"]);
         setModalParameters({
@@ -283,7 +284,7 @@ export default ({ setFormTitle, ...props }) => {
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type"]);
+            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type","agg_of_id"]);
             inputParameters.current = paramsIn;
         }
         setFormDirty(false);
@@ -291,6 +292,9 @@ export default ({ setFormTitle, ...props }) => {
             form.setFieldsValue({ joinbc: 1, reference: 0 });
         } else {
             const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
+
+            console.log("loadddedddd",formulacao)
+
             dataAPI.setData({ rows: items, total: items?.length });
             form.setFieldsValue({
                 joinbc: 1, reference: 0, ...formulacao,
@@ -378,7 +382,7 @@ export default ({ setFormTitle, ...props }) => {
 
     }
     const vglobal = (extrusora, arranque) => {
-        console.log("vglobal-----",arranque,extrusora)
+        //console.log("vglobal-----", arranque, extrusora)
         return (parseFloat(arranque) * ponderacao(extrusora)).toFixed(2);
     }
 
@@ -475,8 +479,17 @@ export default ({ setFormTitle, ...props }) => {
                     }
                 });
                 if (response.data.status !== "error") {
-                    if ("formulacao_id" in inputParameters.current) {
-                        inputParameters.current = { formulacao_id: response.data.id };
+                    if (props?.postProcess){
+                        props.postProcess();
+                    }
+                    //A ordem dos if's é muito importante!!!!
+                    if ("cs_id" in inputParameters.current) {
+                        setMode(v => ({ ...v, datagrid: { edit: false, add: false } }));
+                        dataAPI.setAllRowsValid();
+                    } else if ("formulacao_id" in inputParameters.current) {
+                        if (response.data?.id){
+                            inputParameters.current = { formulacao_id: response.data.id };
+                        }
                         loadData();
                     } else if ("new" in inputParameters.current) {
                         inputParameters.current = { formulacao_id: response.data.id };
@@ -559,11 +572,11 @@ export default ({ setFormTitle, ...props }) => {
             case '6':
                 if (form.getFieldValue("joinbc") == 1) {
                     if (dataAPI.getData().rows) {
-                        let _itemsC =  dataAPI.getData().rows.filter(x => x?.extrusora === "C");
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x=> {
-                            let _x = {...x};
-                            let _c = _itemsC.find(v=>v.cuba==x.cuba && v.matprima_cod==x.matprima_cod);
-                            if (_c){
+                        let _itemsC = dataAPI.getData().rows.filter(x => x?.extrusora === "C");
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => {
+                            let _x = { ...x };
+                            let _c = _itemsC.find(v => v.cuba == x.cuba && v.matprima_cod == x.matprima_cod);
+                            if (_c) {
                                 let _doser = x?.doseador ? x?.["doseador"].split(',') : [];
                                 _doser.push(_c.doseador);
                                 _doser.sort();
@@ -578,21 +591,21 @@ export default ({ setFormTitle, ...props }) => {
                     }
                 } else {
                     if (dataAPI.getData().rows) {
-                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => { 
-                            let _x = {...x}
-                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v=>v.startsWith(x.extrusora));
+                        let _items = dataAPI.getData().rows.filter(x => x?.extrusora !== "C").map(x => {
+                            let _x = { ...x }
+                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v => v.startsWith(x.extrusora));
                             _dosers.sort();
                             _x["doseador"] = _dosers.filter(Boolean).join(',');
-                            return {..._x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque)}; 
+                            return { ..._x, vglobal: vglobal(getExtrusora(x.extrusora), x.arranque) };
                         });
-                        let _itemsC = dataAPI.getData().rows.filter(x => x?.extrusora === "B").map(x => { 
-                            let _x = {...x}
-                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v=>v.startsWith("C"));
+                        let _itemsC = dataAPI.getData().rows.filter(x => x?.extrusora === "B").map(x => {
+                            let _x = { ...x }
+                            let _dosers = (x?.doseador ? x?.["doseador"].split(',') : []).filter(v => v.startsWith("C"));
                             _dosers.sort();
                             _x["doseador"] = _dosers.filter(Boolean).join(',');
-                            return {..._x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque)}
+                            return { ..._x, extrusora: "C", [dataAPI.getPrimaryKey()]: `C-${uid(4)}`, vglobal: vglobal("C", x.arranque) }
                         });
-                        console.log("itemssssssssssss",[..._items, ..._itemsC])
+                        //console.log("itemssssssssssss", [..._items, ..._itemsC])
                         dataAPI.setData({ rows: [..._items, ..._itemsC], total: _items?.length + _itemsC?.length });
                         dataAPI.clearStatus();
                     }
@@ -668,7 +681,7 @@ export default ({ setFormTitle, ...props }) => {
                             moreFilters={false}
                             leftToolbar={
                                 <Space>
-                                    <Permissions permissions={permission} action="edit" forInput={[form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
+                                    <Permissions permissions={permission} action="edit" forInput={[enableAssociation,form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
                                     {(mode.datagrid.edit && inputParameters.current?.type !== "formulacao_dosers_change") && < Dropdown trigger={['click']} menu={{ onClick: menuClick, items: menuOptions({ edit: mode.datagrid.edit, joinbc: form.getFieldValue("joinbc"), referenceDisabled: inputParameters.current?.cs_id }) }}>
                                         <Button>
                                             <Space>

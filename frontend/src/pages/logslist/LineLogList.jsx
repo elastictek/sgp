@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
@@ -155,8 +155,8 @@ export default ({setFormTitle, ...props}) => {
     const primaryKeys = ['id'];
     const columns = [
         { key: 'type_desc', name: '', width: 40, frozen: true, formatter: p => <EventColumn v={p.row.type_desc} /> },
-        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => moment(props.row.inicio_ts).format(DATETIME_FORMAT) },
-        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => moment(props.row.fim_ts).format(DATETIME_FORMAT) },
+        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => dayjs(props.row.inicio_ts).format(DATETIME_FORMAT) },
+        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => dayjs(props.row.fim_ts).format(DATETIME_FORMAT) },
         { key: 'nome', name: 'Bobinagem', frozen: true, width: 100 },
         { key: 'diametro', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diametro} mm</div> },
         { key: 'metros', name: 'Comprimento', width: 110, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros} m</div> },

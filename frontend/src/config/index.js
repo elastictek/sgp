@@ -1,10 +1,13 @@
 import React from 'react';
-export const ROOT_URL = "http://192.168.0.16:81";
-//export const ROOT_URL = "http://localhost:8000";
+import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined } from '@ant-design/icons';
+
+//export const ROOT_URL = "http://192.168.0.16:81";
+export const ROOT_URL = "http://localhost:8000";
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
 export const API_URL = "/api";
+export const URL_EXPIRATION = 30; //minutes
 export const DOWNLOAD_URL = "/downloadfile";
 export const MEDIA_URL = "/media";
 export const DADOSBASE_URL = `${API_URL}/dadosbase`;
@@ -14,11 +17,11 @@ export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const DATE_ENGINE = "dayjs";
-//export const SOCKET = { url: 'ws://localhost:8000/ws' };
-export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
+export const SOCKET = { url: 'ws://localhost:8000/ws' };
+//export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
- export const bColors = (estado) => {
+export const bColors = (estado) => {
     if (estado === "G") {
         return { color: "#237804", fontColor: "#fff" };//"green";
     } else if (estado === "DM") {
@@ -36,11 +39,20 @@ export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
     }
 }
 
+export const HISTORY_DEFAULT = [
+    { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{fontSize:"14px"}}/> },
+    { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{fontSize:"14px"}} /> },
+    { label: "Ordens de Fabrico", key: "#/app/ofabrico/ordensfabricolist/", state: null, icon: <UnorderedListOutlined style={{fontSize:"14px"}} /> },
+    { type: 'divider' },
+    { label: "Retroceder", key: "back", state: null, icon: <LeftCircleFilled style={{fontSize:"14px"}}/> },
+    { type: 'divider' }
+];
+
 //APP DATA
-export const MODO_EXPEDICAO = [{value:"1",label:"CONTAINER"},{value:"3",label:"TRUCK"},{value:"4",label:"AIR"}];
-export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" },{ value: "Por Validar", label: "Por validar" },{ value: "Em Elaboração", label: "Em Elaboração" },{ value: "Na Produção", label: "Na Produção" },{ value: "Em Produção", label: "Em Produção" },{ value: "Finalizada", label: "Finalizada" }];
+export const MODO_EXPEDICAO = [{ value: "1", label: "CONTAINER" }, { value: "3", label: "TRUCK" }, { value: "4", label: "AIR" }];
+export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" }, { value: "Por Validar", label: "Por validar" }, { value: "Em Elaboração", label: "Em Elaboração" }, { value: "Na Produção", label: "Na Produção" }, { value: "Em Produção", label: "Em Produção" }, { value: "Finalizada", label: "Finalizada" }];
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
-export const JUSTIFICATION_OUT = [{ value: "" },{ value: "NÃO CONFORME" },{ value: "TROCA DE PRODUÇÃO" },{ value: "TROCA DE MATÉRIA PRIMA" }];
+export const JUSTIFICATION_OUT = [{ value: "" }, { value: "NÃO CONFORME" }, { value: "TROCA DE PRODUÇÃO" }, { value: "TROCA DE MATÉRIA PRIMA" }];
 //DOSERS
 export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES
@@ -57,7 +69,7 @@ export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fi
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
-export const PALETES_WEIGHT = [{ key: 8, value: "8 kg" }, { key: 13, value: "13 kg" }];
+export const PALETES_WEIGH = [{ key: 8, value: "8 kg" }, { key: 13, value: "13 kg" }];
 export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }, { key: 6, value: "Cantoneira Cartão Branco" }, { key: 7, value: "Etiqueta Cut Here" }];
 export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
 export const CONTENTORES_OPTIONS = [
@@ -93,7 +105,7 @@ const ponderacaoExtrusoras = () => {
     return p;
 }
 const ponderacaoExtrusorasV2 = () => {
-    const p = {A:0,BC:0,B:0,C:0};
+    const p = { A: 0, BC: 0, B: 0, C: 0 };
     //const p = [0, 0, 0, 0];
     for (const [index, value] of FORMULACAO_EXTRUSORAS_COD.entries()) {
         if (value === "A") {
@@ -148,11 +160,11 @@ export const ARTIGOS_SPECS = [
 ];
 
 //BOBINES
-export const BOBINE_ESTADOS = [{ value: 'G',label:"GOOD" }, { value: 'DM',label:"DM" }, { value: 'R',label:"REJEITADO" }, { value: 'BA',label:"BA" }, { value: 'LAB',label:"LAB" }, { value: 'IND',label:"INDUSTRIALIZAÇÃO" }, { value: 'HOLD',label:"HOLD" }, { value: 'SC' }];
+export const BOBINE_ESTADOS = [{ value: 'G', label: "GOOD" }, { value: 'DM', label: "DM" }, { value: 'R', label: "REJEITADO" }, { value: 'BA', label: "BA" }, { value: 'LAB', label: "LAB" }, { value: 'IND', label: "INDUSTRIALIZAÇÃO" }, { value: 'HOLD', label: "HOLD" }, { value: 'SC' }];
 export const BOBINE_DEFEITOS = [
     { value: 'troca_nw', label: 'Troca NW' }, { value: 'con', label: 'Cónico' }, { value: 'descen', label: 'Descentrada' }, { value: 'presa', label: 'Presa' },
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' },{ value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' },{value:'mpalete',label:"Marcas de Palete"}
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }, { value: 'mpalete', label: "Marcas de Palete" }
 ];

@@ -6,7 +6,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
-import { pickAll, useSizeMe, useSubmitting, getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
+import { pickAll, useSizeMe, useSubmitting, getFilterRangeValues, getFilterValue, secondstoDay, getInt } from "utils";
 import sizeMe from 'react-sizeme';
 //import { WrapperForm, TitleForm, FormLayout, Field, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -18,7 +18,7 @@ import MoreFilters from 'assets/morefilters.svg'
 import ResultMessage from 'components/resultMessage';
 import { Report } from "components/DownloadReports";
 import { uid } from 'uid';
-import Pagination from 'components/Paginator';
+import Pagination from 'components/PaginatorV2';
 import Spin from "./Spin";
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS } from 'config';
 import DataGrid, { Row as TableRow, SelectColumn } from 'react-data-grid';
@@ -32,6 +32,10 @@ import ReactDataGrid from '@inovua/reactdatagrid-enterprise';
 import PaginationToolbar from '@inovua/reactdatagrid-community/packages/PaginationToolbar';
 import '@inovua/reactdatagrid-enterprise/index.css';
 import { props } from 'ramda';
+
+
+
+
 
 const openNotification = (type, messages = []) => {
     if (messages.length > 0) {
@@ -67,7 +71,7 @@ const Table = styled(ReactDataGrid)`
 
 export const useTableStyles = createUseStyles({
     error: {
-        background: "#ff4d4f52 !important"
+        background: "rgb(255, 17, 0) !important"
     },
     warning: {
         background: "#ffec3d !important"
@@ -432,7 +436,7 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
 }
 
 const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid }) => {
-    const { enabled = false, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true, saveText = "Guardar", cancelText = "Cancelar", addText = "Novo", editText = "Editar" } = editable;
+    const { enabled = false, controls = true, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true, saveText = "Guardar", cancelText = "Cancelar", addText = "Novo", editText = "Editar" } = editable;
 
 
     const changeMode = async () => {
@@ -494,10 +498,10 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid
         <Space style={{ padding: "5px", ...editMode(editable) && { background: "#e6f7ff" } }}>
             {(dataAPI?.status()?.errors > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("error")}><Badge count={dataAPI?.status()?.errors} /></a>}
             {(dataAPI?.status()?.warnings > 0 && (addMode(editable) || editMode(editable))) && <a href="#" onClick={() => showMessages("warning")}><Badge count={dataAPI?.status()?.warnings} color="#faad14" /></a>}
-            {(enabled && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>{editText}</Button>}
+            {(enabled && controls && !editMode(editable) && !addMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={changeMode}>{editText}</Button>}
             {(add && showAddButton && !addMode(editable) && !editMode(editable)) && <Button style={{}} icon={<EditOutlined />} onClick={_onAdd}>{addText}</Button>}
-            {enabled && showCancelButton && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >{cancelText}</Button>}
-            {enabled && showSaveButton && ((editMode(editable) && dataAPI.dirtyRows().length > 0) || (editMode(editable) && dirty)) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >{saveText}</Button>}
+            {enabled && controls && showCancelButton && (editMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >{cancelText}</Button>}
+            {enabled && controls && showSaveButton && ((editMode(editable) && dataAPI.dirtyRows().length > 0) || (editMode(editable) && dirty)) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onSave} >{saveText}</Button>}
             {add && showCancelButton && (addMode(editable)) && <Button style={{}} icon={<RollbackOutlined />} onClick={changeMode} >{cancelText}</Button>}
             {add && showSaveButton && (addMode(editable) && dataAPI.dirtyRows().length > 0) && <Button type="primary" style={{}} icon={<EditOutlined />} onClick={onAddSave} >{saveText}</Button>}
         </Space>
@@ -505,7 +509,7 @@ const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid
     )
 }
 
-const PaginationTool = ({dataAPI,paginationProps,editable,toolbarFilters}) => {
+const PaginationTool = ({ dataAPI, paginationProps, editable, toolbarFilters, onPageChange, isLoading, showPaginationTotals }) => {
     const removeFilter = (k) => {
         const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
         dataAPI.setFilters(filterValues);
@@ -514,6 +518,17 @@ const PaginationTool = ({dataAPI,paginationProps,editable,toolbarFilters}) => {
         dataAPI.setAction("filter", true);
         dataAPI.update(true);
     }
+
+    const onPaging = (page) => {
+        dataAPI.currentPage(page, true);
+        if (typeof onPageChange === "function") {
+            onPageChange();
+        } else {
+            dataAPI.update(true);
+            //dataAPI.fetchPost();
+        }
+    }
+
     return (<Container fluid style={{ padding: "0px 5px" }}>
         <Row wrap="nowrap" nogutter style={{ borderTop: "1px solid #e4e3e2", display: "flex", flex: 1, alignItems: "center" }}>
             <ResponsiveItem
@@ -533,12 +548,26 @@ const PaginationTool = ({dataAPI,paginationProps,editable,toolbarFilters}) => {
                 <FilterTags dataAPI={dataAPI} removeFilter={removeFilter} />
             </ResponsiveItem>
             {/* <ResponsiveItem maxHeight={24} id="pag" button={<Button size="small">Filtros</Button>} containerProps={{ xs: 2, md: 6 }} n={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}><FilterTags dataAPI={dataAPI} removeFilter={removeFilter} /></ResponsiveItem> */}
-            <Col xs={10} md={6}><PaginationToolbar {...paginationProps} {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} {...paginationI18n} bordered={false} /></Col>
+            <Col xs={10} md={6}>
+
+                {/*           
+        totalCount,
+        siblingCount = 1,
+        // skip:currentPage,
+        // limit:pageSize,
+        isLoading,
+        debounceTimeout = 1000,
+        maxPage = true, */}
+
+
+                <Pagination isLoading={isLoading} showTotals={showPaginationTotals} rowsFromTo={dataAPI.getRowsFromTo()} onPageChange={onPaging} currentPage={dataAPI.getCurrentPage()} pageSize={dataAPI.getPageSize()} {...paginationProps} /* {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} */ {...paginationI18n} /* bordered={false} */ />
+                {/* <PaginationToolbar {...paginationProps} {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} {...paginationI18n} bordered={false} /> */}
+            </Col>
         </Row>
     </Container>);
 }
 
-export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, local = false, loading = false, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
+export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dynamicHeight = false, local = false, style, loading = false, rightToolbar, showPaginationTotals, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -572,7 +601,7 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
         const log = true;
         let dt = { data: [], count: 0 };
-        console.log("dataSourceeeeee",dataAPI.getPayload(true),dataAPI.getPayload(false))
+        console.log("dataSourceeeeee", dataAPI.getPayload(true), dataAPI.getPayload(false))
         if (dataAPI.getActions().includes("init")) {
             if (log) { console.log("LOG DATASOURCE - 1 ", dataAPI.getActions()); }
             submitting.trigger();
@@ -661,63 +690,72 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         }
     }, []);
 
-    const renderPaginationTool = useCallback(
+    const renderPaginationTool = //useCallback(
         (paginationProps) => {
-            const removeFilter = (k) => {
-                const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
-                dataAPI.setFilters(filterValues);
-                toolbarFilters?.form.setFieldsValue(fieldValues);
-                dataAPI.first();
-                dataAPI.setAction("filter", true);
-                dataAPI.update(true);
-            }
+            // const removeFilter = (k) => {
+            //     const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
+            //     dataAPI.setFilters(filterValues);
+            //     toolbarFilters?.form.setFieldsValue(fieldValues);
+            //     dataAPI.first();
+            //     dataAPI.setAction("filter", true);
+            //     dataAPI.update(true);
+            // }
 
-            return <PaginationTool paginationProps={paginationProps} dataAPI={dataAPI} editable={editable} toolbarFilters={toolbarFilters} />;
-        }, [])
+            return <PaginationTool paginationProps={paginationProps} showPaginationTotals={showPaginationTotals} dataAPI={dataAPI} editable={editable} toolbarFilters={toolbarFilters} onPageChange={onPageChange} isLoading={loading || submitting.state} />;
+        };//, [])
 
-    const renderPaginationToolbar = useCallback(
-        (paginationProps) => {
-            const removeFilter = (k) => {
-                const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
-                dataAPI.setFilters(filterValues);
-                toolbarFilters?.form.setFieldsValue(fieldValues);
-                dataAPI.first();
-                dataAPI.setAction("filter", true);
-                dataAPI.update(true);
-            }
+    // const renderPaginationToolbar = useCallback(
+    //     (paginationProps) => {
+    //         const removeFilter = (k) => {
+    //             const { fieldValues, filterValues } = fixRangeDates(null, { ...dataAPI.getFilter(true), [k]: undefined });
+    //             dataAPI.setFilters(filterValues);
+    //             toolbarFilters?.form.setFieldsValue(fieldValues);
+    //             dataAPI.first();
+    //             dataAPI.setAction("filter", true);
+    //             dataAPI.update(true);
+    //         }
 
-            return <Container fluid style={{ padding: "0px 5px" }}>
-                <Row wrap="nowrap" nogutter style={{ borderTop: "1px solid #e4e3e2", display: "flex", flex: 1, alignItems: "center" }}>
-                    <ResponsiveItem
-                        maxHeight={24}
-                        containerProps={{ style: {} }}
-                        colWidth={65}
-                        rowProps={{ style: { display: "flex" } }}
-                        colProps={{ style: { alignSelf: "end", marginBottom: "4px" } }}
-                        popover={
-                            <Popover trigger="click">
-                                <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI?.getAllFilter())).length}>
-                                    <Button size="small">Filtros</Button>
-                                </Badge>
-                            </Popover>
-                        }
-                    >
-                        <FilterTags dataAPI={dataAPI} removeFilter={removeFilter} />
-                    </ResponsiveItem>
-                    {/* <ResponsiveItem maxHeight={24} id="pag" button={<Button size="small">Filtros</Button>} containerProps={{ xs: 2, md: 6 }} n={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}><FilterTags dataAPI={dataAPI} removeFilter={removeFilter} /></ResponsiveItem> */}
-                    <Col xs={10} md={6}><PaginationToolbar {...paginationProps} {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} {...paginationI18n} bordered={false} /></Col>
-                </Row>
-            </Container>
-        }, [dataAPI?.getSkip(true), dataAPI?.updated(true)])
+    //         return <Container fluid style={{ padding: "0px 5px" }}>
+    //             <Row wrap="nowrap" nogutter style={{ borderTop: "1px solid #e4e3e2", display: "flex", flex: 1, alignItems: "center" }}>
+    //                 <ResponsiveItem
+    //                     maxHeight={24}
+    //                     containerProps={{ style: {} }}
+    //                     colWidth={65}
+    //                     rowProps={{ style: { display: "flex" } }}
+    //                     colProps={{ style: { alignSelf: "end", marginBottom: "4px" } }}
+    //                     popover={
+    //                         <Popover trigger="click">
+    //                             <Badge size='small' count={Object.keys(dataAPI.removeEmpty(dataAPI?.getAllFilter())).length}>
+    //                                 <Button size="small">Filtros</Button>
+    //                             </Badge>
+    //                         </Popover>
+    //                     }
+    //                 >
+    //                     <FilterTags dataAPI={dataAPI} removeFilter={removeFilter} />
+    //                 </ResponsiveItem>
+    //                 {/* <ResponsiveItem maxHeight={24} id="pag" button={<Button size="small">Filtros</Button>} containerProps={{ xs: 2, md: 6 }} n={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length}><FilterTags dataAPI={dataAPI} removeFilter={removeFilter} /></ResponsiveItem> */}
+    //                 <Col xs={10} md={6}><PaginationToolbar {...paginationProps} {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} {...paginationI18n} bordered={false} /></Col>
+    //             </Row>
+    //         </Container>
+    //     }, [dataAPI?.getSkip(true), dataAPI?.updated(true)])
 
     const onCellDoubleClick = () => {
         const grid = gridRef.current
+        if (!grid.computedActiveCell) {
+            return;
+        }
         let [rowIndex, colIndex] = grid.computedActiveCell
+
         if (!editMode(editable) && !addMode(editable) && typeof onCellAction === "function") {
             onCellAction(grid.data[rowIndex], grid.getColumnBy(colIndex), "DoubleClick");
         }
     }
     const onKeyDown = (event) => {
+        const src = event.target;
+        if (src.getAttribute('title') === 'Ir Para') {
+            //Input da caixa de texto ir para da navegação....
+            return;
+        }
         const grid = gridRef.current
         if (!grid.computedActiveCell) {
             return;
@@ -779,19 +817,19 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         }
         grid.setActiveCell([rowIndex, colIndex])
     }
-    const onSkipChange = (skip) => {
-        console.log("onSkipchange", dataAPI.getActions(), skip, dataAPI.getSkip())
-        if (action.current !== "editcomplete") {
-            action.current = "page";
-            dataAPI.currentPage((skip / dataAPI.getPageSize()) + 1);
-        }
-    }
+    // const onSkipChange = (skip) => {
+    //     console.log("onSkipchange", dataAPI.getActions(), skip, dataAPI.getSkip())
+    //     if (action.current !== "editcomplete") {
+    //         action.current = "page";
+    //         dataAPI.currentPage((skip / dataAPI.getPageSize()) + 1);
+    //     }
+    // }
     const onLimitChange = (limit) => {
         action.current = "pagesize";
         dataAPI.pageSize(limit, true);
     }
     const onSortChange = (sortInfo) => {
-        onSkipChange(dataAPI.getSkip(true)); //It's necessary, because every time we trigger the onSortChange event, also, the event onSkipChange is triggered too, in first place. This replace the original skip position.
+        //onSkipChange(dataAPI.getSkip(true)); //It's necessary, because every time we trigger the onSortChange event, also, the event onSkipChange is triggered too, in first place. This replace the original skip position.
         action.current = "sort";
         dataAPI.setSort(Array.isArray(sortInfo) ? sortInfo : [sortInfo], [], true);
     }
@@ -799,7 +837,7 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         action.current = "filter";
     }
     const onEditComplete = (v) => {
-        onSkipChange(dataAPI.getSkip(true));
+        //onSkipChange(dataAPI.getSkip(true));
         action.current = "editcomplete";
         if (typeof editable?.onEditComplete === "function") {
             editable?.onEditComplete(v);
@@ -823,6 +861,11 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
         }
         hideSettings();
     }
+
+    const computeHeight = useCallback(() => {
+        const _h = (dataAPI.getLength() * rowHeight) + dynamicHeight;
+        return { height: `${_h}px`, minHeight: `${_h}px` };
+    }, [dataAPI.getLength()]);
 
     return (<>
         {(moreFilters && toolbarFilters?.moreFilters) &&
@@ -856,6 +899,7 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
                 </Col>}
                 <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} modeAdd={addMode(editable)} />}</Col>
                 {/* {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end", marginBottom: "4px" }}><Badge count={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length} size="small"><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge></Col>} */}
+                {rightToolbar && <Col xs="content" style={{ alignSelf: "center" }}>{rightToolbar}</Col>}
                 {settings && <Col xs="content" style={{ alignSelf: "end", marginBottom: "4px" }}>
 
                     <Popover
@@ -895,18 +939,18 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, loc
                 columns={columns}
                 rowHeight={rowHeight}
                 dataSource={local ? localDatasource : dataSource}
-                style={gridStyle}
+                style={{ ...gridStyle, ...style, ...((dynamicHeight) && { ...computeHeight() }) }}
                 onKeyDown={onKeyDown}
                 onCellDoubleClick={onCellDoubleClick}
                 {...cellNavigation && { defaultActiveCell: DEFAULT_ACTIVE_CELL }}
-                onSkipChange={onSkipChange}
-                onLimitChange={onLimitChange}
+                /* onSkipChange={onSkipChange} */
+                /* onLimitChange={onLimitChange} */
+                /* limit={dataAPI?.getPageSize()} */
                 onSortInfoChange={onSortChange}
                 onEditComplete={onEditComplete}
                 rowClassName={rowClass}
                 /* filterValue={[{ ...dataAPI.getFilter(true) }]} */
                 onFilterValueChange={onFilterValueChange}
-                limit={dataAPI?.getPageSize()}
                 {...!local && { sortInfo: dataAPI?.getSort() }}
                 enableFiltering={false}
                 {...props}

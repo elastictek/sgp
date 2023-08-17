@@ -356,10 +356,13 @@ def MateriasPrimasLookup(request, format=None):
     if typ=='nonwovens':
         cfilter = f"""LOWER("ITMDES1_0") LIKE 'nonwo%%' AND LOWER("ITMDES1_0") LIKE '%%gsm%%' AND ("ACCCOD_0" = 'PT_MATPRIM')"""
     elif typ=='cores':
-        core = int(int(request.data['parameters']['core']) * 25.4)
-        largura = str(request.data['parameters']['largura'])[:-1]
-        #cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
-        cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x%%_%%mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+        if "core" in request.data['parameters']:   
+            core = int(int(request.data['parameters']['core']) * 25.4)
+            cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+        else:
+            #largura = str(request.data['parameters']['largura'])[:-1]
+            #cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%%% {core}%%x%%x{largura}_ mm%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
+            cfilter = f"""LOWER("ITMDES1_0") LIKE 'core%%' AND ("ACCCOD_0" = 'PT_EMBALAG')"""
     elif typ == 'all':
         cfilter=''
     else:

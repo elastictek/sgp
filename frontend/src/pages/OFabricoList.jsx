@@ -28,7 +28,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 
 const FormOFabricoValidar = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 const FormMenuActions = React.lazy(() => import('./currentline/FormMenuActions'));
-import { SocketContext } from './App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, Checkbox } from "antd";
@@ -517,21 +518,22 @@ const ColumnEstado = ({ record, onAction, showConfirm, setShowConfirm, showMenuA
 
 
 const TitleMenuActions = ({ aggCod }) => {
-    const v = useContext(SocketContext);
+/*     const v = useContext(SocketContext);
     const navigate = useNavigate();
 
-    useEffect(() => { }, [v?.data?.bobinagens]);
+    useEffect(() => {
+     }, [v?.data?.bobinagens]);
 
     const onValidate = () => {
         navigate('/app/validateReellings', { state: {} });
-    }
+    } */
 
     return (
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
                     <div><b style={{ textTransform: "capitalize" }}></b>{aggCod}</div>
-                    {v !== null && <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(v.data?.bobinagens).cnt}</span> Bobinagens por <Button size='small' style={{ paddingLeft: "0px" }} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />}
+                    {/* {v !== null && <Alert onClick={onValidate} style={{ cursor: "pointer", padding: "1px 15px" }} message={<div><span style={{ fontSize: "14px", fontWeight: 700 }}>{JSON.parse(v.data?.bobinagens).cnt}</span> Bobinagens por <Button size='small' style={{ paddingLeft: "0px" }} onClick={onValidate} type="link">Validar.</Button></div>} type="warning" showIcon />} */}
                 </Space>
             </div>
         </div>
@@ -813,7 +815,7 @@ export default () => {
                         iorder: { title: "Encomenda(s)", width: 130, ...common },
                         cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
                         /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-                        estado: { title: "", sort:false, width: 125, render: (v, r) => <ColumnEstado onValidar={onValidar} allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
+                        estado: { title: " ", sort:false, width: 125, render: (v, r) => <ColumnEstado onValidar={onValidar} allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
                         /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
                         //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
                         item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },

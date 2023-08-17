@@ -20,7 +20,6 @@ import { VerticalSpace } from 'components/FormFields';
 import { usePermission } from "utils/usePermission";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectDebounceField } from 'components/FormFields';
-import moment from 'moment';
 import { useSubmitting, noValue } from "utils";
 import Table from 'components/TableV2';
 import TitleCard from '../TitleCard';
@@ -144,7 +143,7 @@ const SelectData = ({ onView, onChangeContent, dataAPI }) => {
                 <Option value="2">Tabela</Option>
                 <Option value="3">Pivot</Option>
             </Select>
-            <DatePicker allowClear={false} format={DATE_FORMAT} defaultValue={noValue(moment(dataAPI.getFilter(true)?.date), moment())} onChange={(v) => onChangeContent(v, "date")} disabled={dataAPI.isLoading()} />
+            <DatePicker allowClear={false} format={DATE_FORMAT} defaultValue={noValue(dayjs(dataAPI.getFilter(true)?.date), dayjs())} onChange={(v) => onChangeContent(v, "date")} disabled={dataAPI.isLoading()} />
         </Space>
     );
 }
@@ -173,7 +172,7 @@ export default ({ record, card, parentReload }) => {
     const loadData = async ({ signal, field, value, init } = {}) => {
         switch (field) {
             case 'date':
-                dataAPI.addFilters({ ...(value && { date: moment(value).format(DATE_FORMAT) }) }, true, true);
+                dataAPI.addFilters({ ...(value && { date: dayjs(value).format(DATE_FORMAT) }) }, true, true);
                 break;
             case 'type':
                 dataAPI.addParameters({ type: value }, true, true);
@@ -199,7 +198,7 @@ export default ({ record, card, parentReload }) => {
             let categories = [];
             const rows = dataAPI.getData().rows;
             console.log("####################yeah----",rows);
-            //const { data: { rows } } = await fetchPost({ url: `${API_URL}/report/reciclado/`, filter: { ...(date && { date: moment(date).format(DATE_FORMAT) }) }, sort: [], signal });
+            //const { data: { rows } } = await fetchPost({ url: `${API_URL}/report/reciclado/`, filter: { ...(date && { date: dayjs(date).format(DATE_FORMAT) }) }, sort: [], signal });
 
             const weeks = rows.filter((e, i) => rows.findIndex(a => a.nweek === e.nweek) === i);
             const weeks_labels = weeks.map(v => `w${v.nweek}`);

@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -116,8 +116,8 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
             console.log(row)
             form.setFieldsValue({
                 ...row,
-                start_prev_date: row?.start_prev_date ? moment(row?.start_prev_date, DATETIME_FORMAT) : null,
-                end_prev_date: row?.end_prev_date ? moment(row?.end_prev_date, DATETIME_FORMAT) : null,
+                start_prev_date: row?.start_prev_date ? dayjs(row?.start_prev_date, DATETIME_FORMAT) : null,
+                end_prev_date: row?.end_prev_date ? dayjs(row?.end_prev_date, DATETIME_FORMAT) : null,
                 sentido_enrolamento: ENROLAMENTO_OPTIONS.find(v => v.value == row.sentido_enrolamento)
                 /* , nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) */
             });

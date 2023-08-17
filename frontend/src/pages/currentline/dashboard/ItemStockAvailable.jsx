@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -85,7 +84,7 @@ const AddOFsStockAvailable = ({ parentRef, closeParent, loadParentData }) => {
         const v = schemaAdd().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
         let { errors, warnings, value, ...status } = getStatus(v);
         // if (xxxxxx === 1 && errors === 0 && !values.zzzzzz) {
-        //     values.yyyyyyy = moment();
+        //     values.yyyyyyy = dayjs();
         // }
         // if (values.xxxxxxx <= values.yyyyyyy) {
         //     errors = 1;

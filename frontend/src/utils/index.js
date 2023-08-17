@@ -5,35 +5,59 @@ import dayjs from 'dayjs';
 import { DATE_ENGINE } from 'config';
 
 
+export const unique = (array, key) => {
+    const seen = new Set();
+    return array.filter((item) => {
+        const value = item[key];
+        if (!seen.has(value)) {
+            seen.add(value);
+            return true;
+        }
+        return false;
+    });
+}
+
+export const uniqueKeys = (array, key) => {
+    const seen = new Set();
+    return array.reduce((uniqueArray, item) => {
+        const value = item[key];
+        if (!seen.has(value)) {
+            seen.add(value);
+            uniqueArray.push(value);
+        }
+        return uniqueArray;
+    }, []);
+}
+
 export const dayjsValue = (value) => {
     if (!value) {
-      return null;
+        return null;
     }
     if (dayjs.isDayjs(value)) {
         return value;
     }
     if (moment.isMoment(value)) {
         return value;
-      }
-  
+    }
+
     let dayjsObj;
     if (value.includes('-')) {
-      // Date or datetime value
-      dayjsObj = DATE_ENGINE=="moment" ? moment(value) : dayjs(value);
+        // Date or datetime value
+        dayjsObj = DATE_ENGINE == "moment" ? moment(value) : dayjs(value);
     } else if (value.includes(':')) {
-      // Time value
-      const timeFormat = (value.split(':').length === 2) ? 'HH:mm' : 'HH:mm:ss';
-      dayjsObj = DATE_ENGINE=="moment" ? moment(`1970-01-01T${value}`, timeFormat) : dayjs(`1970-01-01T${value}`, { format: timeFormat });
+        // Time value
+        const timeFormat = (value.split(':').length === 2) ? 'HH:mm' : 'HH:mm:ss';
+        dayjsObj = DATE_ENGINE == "moment" ? moment(`1970-01-01T${value}`, timeFormat) : dayjs(`1970-01-01T${value}`, { format: timeFormat });
     } else {
-      return null; // Invalid format
+        return null; // Invalid format
     }
-  
+
     if (!dayjsObj.isValid()) {
-      return null;
+        return null;
     }
-  
+
     return dayjsObj;
-  };
+};
 
 export const containsAll = (a1, a2) => {
     for (let i = 0; i < a2.length; i++) {
@@ -245,14 +269,22 @@ export const groupBy = (xs, key) => {
 };
 
 
-
-export const pickAll = (names, obj) => {
+export const pickAll = (names, obj={}) => {
     var result = {};
     var idx = 0;
-    var len = names.length;
+    var len = Array.isArray(names) ? names.length : 0;
     while (idx < len) {
         var name = names[idx];
-        result[name] = obj[name];
+        if (typeof name == "object") {
+            const k = Object.keys(name)[0];
+            if (isObject(obj) && (k in obj)) {
+                result[name[k]] = obj[k];
+            }
+        } else {
+            if (isObject(obj) && (name in obj)) {
+                result[name] = obj[name];
+            }
+        }
         idx += 1;
     }
     return result;
@@ -304,7 +336,26 @@ export const getFloat = (value, fixed = null, ret = 0) => {
     }
 }
 
-export const lpadFloat = (number, length=2,char='0') => {
+export const getInt = (value, ret = 0) => {
+    let f = parseInt(value);
+    if (isNaN(f) || f === null || f === undefined) {
+        f = ret;
+    }
+    return f;
+}
+
+export const getPositiveInt = (value, ret = 0) => {
+    let f = parseInt(value);
+    if (isNaN(f) || f === null || f === undefined) {
+        f = ret;
+    }
+    if (f<0){
+        return ret
+    }
+    return f;
+}
+
+export const lpadFloat = (number, length = 2, char = '0') => {
     var str = number.toString();
     var parts = str.split('.');
     var integerPart = parts[0];
@@ -312,11 +363,11 @@ export const lpadFloat = (number, length=2,char='0') => {
     var integerLength = integerPart.length;
     var decimalLength = decimalPart.length;
     var zerosToAdd = length - integerLength - decimalLength;
-  
+
     if (zerosToAdd <= 0) {
-      return str;
+        return str;
     }
-  
+
     var zeros = new Array(zerosToAdd + 1).join(char);
     return zeros + str;
-  }
+}

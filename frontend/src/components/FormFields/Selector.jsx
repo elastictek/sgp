@@ -5,6 +5,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { useSubmitting } from "utils";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
+import {isObjectEmpty} from 'utils/object';
 import styled, { css } from "styled-components";
 import classNames from "classnames";
 import { createUseStyles } from 'react-jss';
@@ -165,7 +166,7 @@ const InternalForView = ({ forViewBorder, minHeight, forViewBackground, style, o
     );
 }
 
-export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear, style, ...rest }, ref) => {
+export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSearch, rowHeight, forView, type = "modal", keyField, /* valueField, */textField, detailText, search=true, size = "middle", title, popupWidth = 600, popupHeight = 400, params, toolbar, filters = {}, moreFilters = {}, columns, onChange, onSelect, value, allowClear, load, onClear, style,responsive, ...rest }, ref) => {
     const dataAPI = useDataAPI(params);
     const classes = useStyles();
     const [internalValue, setInternalValue] = useState();
@@ -265,7 +266,7 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
     }
 
     const onPopup = () => {
-        setModalParameters({ params, title, filters, moreFilters, columns, onSelect: onSelectRow, toolbar, rowHeight, type })
+        setModalParameters({ params, title, filters, moreFilters, search, columns, onSelect: onSelectRow, toolbar, rowHeight, type })
         showModal();
     }
 
@@ -286,7 +287,7 @@ export default React.forwardRef(({ data, onKeyDown, autoFocus = false, customSea
                     <InternalForView value={(internalValue && textField in internalValue) && internalValue[textField]} size={size} loading={(load && !loaded)} {...rest} /> :
                     customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: (internalValue && textField in internalValue) && internalValue[textField], size, ...rest, onClick: onPopup, onKeyDown: _onKeyDown }) :
                         <div className={classes.inputContainer}>
-                            <Input value={(internalValue && textField in internalValue) && internalValue[textField]} className={classes.input} style={{ cursor: "pointer" }} size={size} ref={ref ? ref : iRef} {...rest} onClick={onPopup} onKeyDown={_onKeyDown} readOnly /* {...(allowClear && internalValue && viewClear) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }} */
+                            <Input value={(internalValue && textField in internalValue) ? internalValue[textField] : null} className={classes.input} style={{ cursor: "pointer" }} size={size} ref={ref ? ref : iRef} {...rest} onClick={onPopup} onKeyDown={_onKeyDown} readOnly /* {...(allowClear && internalValue && viewClear) && { suffix: <CloseCircleOutlined onClick={clear} style={{ cursor: "pointer" }} /> }} */
                                 addonAfter={(load && !loaded) ? <LoadingOutlined /> : <SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
 
                             {(allowClear && internalValue) &&

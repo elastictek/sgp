@@ -5,7 +5,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -52,11 +52,7 @@ const schema = (options = {}) => {
 const ToolbarTable = ({ form, modeEdit, permission, submitting, changeMode, dirty, onSave, ...props }) => {
     const navigate = useNavigate();
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 
@@ -209,7 +205,7 @@ const loadPaletizacaoLookup = async (palete_id) => {
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const permission = usePermission({});
+    const permission = usePermission({permissions:props?.permissions});
     const [modeEdit, setModeEdit] = useState({ formPaletizacao: false });
     const [dirty, setDirty] = useState(false);
     const [fieldStatus, setFieldStatus] = useState({});
@@ -239,7 +235,7 @@ export default ({ setFormTitle, ...props }) => {
 
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
         const formValues = await loadPaletizacaoLookup(initFilters.palete_id);
-        //form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
+        //form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0) {
             form.setFieldsValue(json(formValues[0].paletizacao));
             //dataAPIArtigos.setRows(formValues[0].artigo);

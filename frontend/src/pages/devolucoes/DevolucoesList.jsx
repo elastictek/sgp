@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
@@ -147,7 +146,7 @@ export default (props) => {
         { key: 'largura', name: 'largura', width: 110, formatter: p => <Quantity v={p.row.largura} u="mm" /> },
         { key: 'comp_actual', name: 'Comp. Atual', width: 110, formatter: p => <Quantity v={p.row.comp_actual} u="m" /> },
         { key: 'comp', name: 'Comprimento', width: 110, formatter: p => <Quantity v={p.row.comp} u="m" /> },
-        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
+        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => dayjs(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
 
 
@@ -217,7 +216,7 @@ export default (props) => {
     const onSave = async (action) => {
         console.log(dataAPI.getData().rows.filter(v => v?.estado==='D'))
         //const rows = dataAPI.getData().rows.filter(v => v?.estado==='D').map(({ n_lote, vcr_num, t_stamp, qty_lote, qty_reminder, vcr_num_original, type_mov }) =>
-        //    ({ n_lote, vcr_num, t_stamp: moment.isMoment(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : moment(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
+        //    ({ n_lote, vcr_num, t_stamp: dayjs.isDayjs(t_stamp) ? t_stamp.format(DATETIME_FORMAT) : dayjs(t_stamp).format(DATETIME_FORMAT), qty_lote, qty_reminder, vcr_num_original, type_mov })
         //);
         submitting.trigger();
         try {

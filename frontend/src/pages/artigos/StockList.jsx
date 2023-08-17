@@ -28,7 +28,8 @@ import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, Us
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
-import { SocketContext, MediaContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
 
 
@@ -370,8 +371,8 @@ export default ({ type, data }) => {
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/stocklist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: { acs_id: data?.acs_id }, sort: [] } });
     const elFilterTags = document.getElementById('filter-tags');
-    const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
+/*     const { data: dataSocket } = useContext(SocketContext) || {};
+    const { windowDimension } = useContext(MediaContext); */
     const [typeList, setTypeList] = useState();
 
     useEffect(() => {

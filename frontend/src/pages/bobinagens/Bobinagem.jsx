@@ -3,7 +3,6 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -90,11 +89,7 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
 //     const navigate = useNavigate();
 
 //     const onChange = (v, field) => {
-//         /* if (field === "typelist") {
-//             navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-//         } else {
-//             form.submit();
-//         } */
+
 
 //     }
 
@@ -122,7 +117,7 @@ export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ name: "bobinagens", item: "details" });//Permissões Iniciais
+    const permission = usePermission({ name: "bobinagens"/* , item: "details" */ });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -195,35 +190,35 @@ export default (props) => {
                             {
                                 label: `Informação`,
                                 key: '1',
-                                children: <FormBobinagem {...{ parameters: props?.parameters, permission }} />,
+                                children: <FormBobinagem {...{ parameters: props?.parameters, permissions:permission.permissions  }} />,
                             },
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
                                 key: '6',
-                                children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permissions:permission.permissions }} />,
                             }, {
                                 label: `Bobines Originais`,
                                 key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permission }} />,
+                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permissions:permission.permissions }} />,
                             },
                             {
                                 label: `Histórico`,
                                 key: '8',
-                                children: <BobinagensHistoryList {...{ parameters: props?.parameters, permission }} />,
+                                children: <BobinagensHistoryList {...{ parameters: props?.parameters, permissions:permission.permissions }} />,
                             },
                         ]}
 

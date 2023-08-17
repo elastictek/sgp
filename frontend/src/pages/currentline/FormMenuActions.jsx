@@ -30,7 +30,6 @@ import { VerticalSpace } from 'components/formLayout';
 import ResponsiveModal from 'components/ResponsiveModal';
 import Modalv4 from 'components/Modalv4';
 import useModalv4 from 'components/useModalv4';
-import moment from 'moment';
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
 import { VscDebugStart } from 'react-icons/vsc';
@@ -39,7 +38,9 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 import { BiWindowOpen } from 'react-icons/bi';
 
 
-import { SocketContext, MediaContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
+
 const FormLotes = React.lazy(() => import('./FormLotes'));
 const FormFormulacao = React.lazy(() => import('./dashboard/FormFormulacaoUpsert'));
 const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoriaUpsert'));
@@ -177,7 +178,7 @@ const FormConfirmCreatePalete = ({ form, ofItem, paletizacao, forInput = true, c
     useEffect(() => {
         let t = paletizacao.paletizacao.findLast(v => v.item_id === 2);
         let o = ofItem.order_cod ? 1 : 0;
-        form.setFieldsValue({ cliente_cod: { value: ofItem.cliente_cod, label: ofItem.cliente_nome }, data: moment(), pos: { value: "bottom", label: "Palete Inferior" }, num_bobines: t.item_numbobines, enc: o, peso_palete: 13 });
+        form.setFieldsValue({ cliente_cod: { value: ofItem.cliente_cod, label: ofItem.cliente_nome }, data: dayjs(), pos: { value: "bottom", label: "Palete Inferior" }, num_bobines: t.item_numbobines, enc: o, peso_palete: 13 });
         console.log("ENTREIII-0", ofItem);
         console.log("ENTREIII-1", paletizacao);
     }, []);
@@ -200,7 +201,7 @@ const FormConfirmCreatePalete = ({ form, ofItem, paletizacao, forInput = true, c
         }
 
         const postdata = {
-            ...values, data: moment(data).format(DATE_FORMAT),
+            ...values, data: dayjs(data).format(DATE_FORMAT),
             order_cod: ofItem.order_cod, of_id: ofItem.of_id, of_cod: ofItem.of_cod, core: ofItem.artigo_core, lar: ofItem.artigo_lar, mdf,
             draft_of_id: ofItem.draft_of_id, produto_cod: ofItem.produto_cod, produto_id: ofItem.produto_id, artigo_des: ofItem.artigo_des
         };
@@ -681,7 +682,7 @@ const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReloa
         (async () => {
             let bobinagem = await lastBobinagem();
             if (bobinagem.length > 0) {
-                form.setFieldsValue({ date: bobinagem[0]["t_stamp"], fbobinagem: { key: bobinagem[0]["id"], value: bobinagem[0]["id"], label: <div key={`ls-${bobinagem[0]["id"]}`}><b>{bobinagem[0]["nome"]}</b> {moment(bobinagem[0]["t_stamp"]).format(DATETIME_FORMAT)}</div> } });
+                form.setFieldsValue({ date: bobinagem[0]["t_stamp"], fbobinagem: { key: bobinagem[0]["id"], value: bobinagem[0]["id"], label: <div key={`ls-${bobinagem[0]["id"]}`}><b>{bobinagem[0]["nome"]}</b> {dayjs(bobinagem[0]["t_stamp"]).format(DATETIME_FORMAT)}</div> } });
                 setLastId(bobinagem[0]["id"]);
                 setSubmitting(false);
             }
@@ -690,14 +691,14 @@ const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReloa
 
     const onValuesChange = (v) => {
         if ("fbobinagem" in v) {
-            form.setFieldsValue({ date: moment(v.fbobinagem.value) });
+            form.setFieldsValue({ date: dayjs(v.fbobinagem.value) });
         }
     }
 
     const onSubmit = async () => {
         setSubmitting(true);
         const { fbobinagem, date } = form.getFieldsValue(true);
-        const dt = moment.isMoment(date) ? date.format(DATETIME_FORMAT) : moment(date).format(DATETIME_FORMAT);
+        const dt = dayjs.isDayjs(date) ? date.format(DATETIME_FORMAT) : dayjs(date).format(DATETIME_FORMAT);
         const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { ...data, ig_id: fbobinagem.key, last: (lastId === fbobinagem.key ? true : false), date: dt } });
         parentReload();
         setSubmitting(false);
@@ -728,7 +729,7 @@ const FecharOrdemFabrico = ({ closeParent, parentDataAPI, parentRef, parentReloa
                             showArrow
                             allowClear
                             fetchOptions={fetchBobinagens}
-                            optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {moment(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
+                            optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {dayjs(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
                         />
                     </Field>
                 </FieldSet>

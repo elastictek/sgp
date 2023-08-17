@@ -44,7 +44,6 @@ import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, Us
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
-import { SocketContext, MediaContext } from '../App';
 import { FaLessThanEqual } from 'react-icons/fa';
 
 
@@ -296,8 +295,6 @@ export default () => {
         }
     });
     const elFilterTags = document.getElementById('filter-tags');
-    const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
     const [typeList, setTypeList] = useState('A');
 
     useEffect(() => {

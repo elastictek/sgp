@@ -16,7 +16,8 @@ import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, DatePicker, Select, Spin, Switch, Tag } from "antd";
 import { DATE_FORMAT, DATETIME_FORMAT, FORMULACAO_MANGUEIRAS, SOCKET, COLORS } from 'config';
 import useWebSocket from 'react-use-websocket';
-import { SocketContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 import ResponsiveModal from "components/ResponsiveModal";
 import TagButton from "components/TagButton";
 

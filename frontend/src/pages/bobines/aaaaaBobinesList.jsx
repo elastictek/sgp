@@ -20,7 +20,8 @@ import Icon, { SearchOutlined, LoadingOutlined, LeftOutlined, EllipsisOutlined }
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title, Text } = Typography;
-import { SocketContext, MediaContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 import { Wnd, ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
 import { useNavigate, useLocation } from "react-router-dom";
 import Reports, { downloadReport } from "components/DownloadReports";
@@ -85,11 +86,7 @@ const ToolbarTable = ({ form, dataAPI, typeListField, validField, typeField }) =
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        }
+
 
     }
 

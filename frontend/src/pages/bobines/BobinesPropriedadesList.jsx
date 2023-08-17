@@ -3,7 +3,6 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from "classnames";
 import Joi from 'joi';
-import moment from 'moment';
 import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -40,13 +39,13 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
 }
 
-export default ({ noEdit=true,noPrint=true, ...props }) => {
+export default ({ noEdit = true, noPrint = true, ...props }) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useEditorStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({});
+    const permission = usePermission({permissions:props?.permissions });
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
@@ -136,7 +135,6 @@ export default ({ noEdit=true,noPrint=true, ...props }) => {
                 nome: bobinagem_nome
             }
         })
-
         let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         palete_id = getFilterValue(palete_id, '==')
@@ -169,7 +167,7 @@ export default ({ noEdit=true,noPrint=true, ...props }) => {
                 //remove empty values
                 const _values = processFilters(type, values, defaultFilters);
                 dataAPI.addFilters(_values, true);
-                dataAPI.addParameters({});
+                dataAPI.addParameters({ ...defaultParameters });
                 dataAPI.first();
                 dataAPI.fetchPost({ rowFn: (dt) => postProcess(dt, submitting) });
                 break;
@@ -233,7 +231,7 @@ export default ({ noEdit=true,noPrint=true, ...props }) => {
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
                     {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                    <Permissions permissions={props?.permission} action="editList" forInput={!noEdit}>
+                    <Permissions permissions={permission} action="changeProperties" forInput={!noEdit}>
                         {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                         {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}

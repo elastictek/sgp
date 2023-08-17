@@ -35,11 +35,11 @@ import { usePermission, Permissions } from "utils/usePermission";
 
 
 const title = "Validar Bobinagem";
-const TitleForm = ({ data, onChange, level, auth, form }) => {
+const TitleForm = ({ data, auth, bobinagemNome }) => {
     return (<ToolbarTitle id={auth?.user} description={title} title={<>
         <Col>
             <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
-                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
+                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title} {bobinagemNome}</span></Col></Row></Col>
                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
             </Row>
 
@@ -140,11 +140,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 
@@ -417,6 +413,9 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                     response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: _rows, lar_bruta: _values.lar_bruta } });
                     if (response.data.status !== "error") {
                         dataAPI.update(true);
+                        props?.loadParentData();
+                        props?.closeSelf();
+                        console.log("xxxxxxxxxxxx",props)
                         openNotification(response.data.status, 'top', "Notificação", response.data.title);
                     } else {
                         openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
@@ -525,7 +524,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
     return (
         <YScroll>
-            {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
+            {!setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} level={location?.state?.level} form={formFilter}  *//>}
             <FormContainer id="form" form={form} wrapForm={true} wrapFormItem={true} fluid loading={submitting.state} style={{ padding: "0px" }} schema={schema} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} alert={{ tooltip: true, pos: "none" }}>
                 {/* <Row nogutter><Col><ToolbarTable {...props} submitting={submitting} /></Col></Row> */}
                 <Row>

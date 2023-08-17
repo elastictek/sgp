@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -100,11 +100,11 @@ export default (props) => {
                     setTaskId(_task.id);
                     _title = "Troca de Etiquetas";
                     const { parameters, ..._data } = _task;
-                    form.setFieldsValue({ ..._data, ...parameters, data_imputacao: moment(_task.parameters.data_imputacao), subtype: _task?.subtype });
+                    form.setFieldsValue({ ..._data, ...parameters, data_imputacao: dayjs(_task.parameters.data_imputacao), subtype: _task?.subtype });
                 }
                 else {
                     //default
-                    form.setFieldsValue({ data_imputacao: moment(), status: 1, subtype: subTypes[0].value, mode: 1 });
+                    form.setFieldsValue({ data_imputacao: dayjs(), status: 1, subtype: subTypes[0].value, mode: 1 });
                 }
                 props.setTitle({ title: _title });
                 break;
@@ -137,7 +137,7 @@ export default (props) => {
                     parameters: {
                         cliente: values.cliente,
                         artigo: { id: values.artigo.id, cod: values.artigo.cod, des: values.artigo.des, core: values.artigo.core, lar: values.artigo.lar },
-                        data_imputacao: moment(values.data_imputacao).format(DATE_FORMAT),
+                        data_imputacao: dayjs(values.data_imputacao).format(DATE_FORMAT),
                         obs: values?.obs
                     },
                     obs: values?.obs,
@@ -236,7 +236,7 @@ export default (props) => {
                     </Row>
 
                     <Row style={{}} gutterWidth={10}>
-                        <Col xs="content"><Field wrapFormItem={true} name="data_imputacao" label={{ enabled: true, text: "Data Imputação" }}><DatePicker format={DATE_FORMAT} size="small" showTime={false} disabledDate={(current) => current && current > moment()} /></Field></Col>
+                        <Col xs="content"><Field wrapFormItem={true} name="data_imputacao" label={{ enabled: true, text: "Data Imputação" }}><DatePicker format={DATE_FORMAT} size="small" showTime={false} disabledDate={(current) => current && current > dayjs()} /></Field></Col>
                         <Col xs="content"><Field name="mode" label={{ enabled: true, text: "Modo de interação" }}><SelectField style={{ width: "180px" }} size="small" keyField="value" textField="label" data={modes} /></Field></Col>
                         <Row style={{}} gutterWidth={10}>
                             <Col xs="content"><Field name="status" label={{ enabled: true, text: "Estado" }}><SelectField style={{ width: "180px" }} size="small" keyField="value" textField="label" data={taskStatus} /></Field></Col>

@@ -693,6 +693,8 @@ class Palete(models.Model):
     lvl_item_id = models.IntegerField(verbose_name="Indica o id do item no embalamento", null=True) #ADDED
     lvl = models.IntegerField(verbose_name="Indica a posição no embalamento", null=True) #ADDED
     nbobines_sem_destino = models.IntegerField(verbose_name="Indica o numero de bobines sem destino em estado DM", null=True) #ADDED
+    nok_estados = models.IntegerField(verbose_name="Indica se as bobines da palete de produto acabado estão apenas em LAB e G se sim nok=0 senão nok=1", null=True) #ADDED
+    nok = models.IntegerField(verbose_name="em conjugação com nok_estados mais o nº de bobines(se corresponde ao nbones defindo)", null=True) #ADDED
     def __str__(self):
         return self.nome
 
@@ -1097,7 +1099,8 @@ class EtiquetaPalete(models.Model):
     impressora = models.CharField(max_length=200, verbose_name="Impressora", null=True, blank=True, choices=IMP)
     num_copias = models.IntegerField(verbose_name="Nº de Cópias", unique=False, null=True, blank=True)
     estado_impressao = models.BooleanField(default=False, verbose_name="Imprimir")
-
+    bobines = models.JSONField(blank=True, null=True) #ADDED
+    to_sign = models.IntegerField(verbose_name="Assinar", unique=False, null=True, blank=True) #ADDED
     def __str__(self):
         return self.palete_nome
 

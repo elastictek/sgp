@@ -103,7 +103,7 @@ export default (props) => {
     const location = useLocation();
     const classes = useEditorStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({});
+    const permission = usePermission({permissions:props?.permissions});
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
@@ -169,7 +169,6 @@ export default (props) => {
                 nome: bobinagem_nome
             }
         })
-
         let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         palete_id = getFilterValue(palete_id, '==')
@@ -266,7 +265,7 @@ export default (props) => {
                     moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
                 }}
                 leftToolbar={<Space>
-                    <Permissions permissions={props?.permission} action="editList">
+                    <Permissions permissions={permission} action="editList">
                         {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                         {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}

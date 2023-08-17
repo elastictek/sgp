@@ -1,3 +1,14 @@
+export const nullIfEmpty = (obj) => {
+    if (isObjectEmpty(obj)){
+        return null;
+    }
+    return obj;
+}
+
+export const isObjectEmpty = (obj) => {
+    return Object.keys(obj).length === 0;
+}
+
 export const json = (obj,ret) => {
     try {
         let json = JSON.parse(obj);

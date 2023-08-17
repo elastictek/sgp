@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -165,7 +165,7 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
                         qty_item: parameters?.qty_item, ...values
                     }, iorder: parameters?.iorder, prf: parameters?.prf, ofabrico_cod: parameters?.ofabrico, ofabrico_id: parameters?.ofabrico_id, artigo_cod: parameters?.item,
                     cliente_cod: parameters?.cliente_cod, cliente_nome: parameters?.cliente_nome, produto_id: parameters?.produto_id, artigo_id: parameters?.item_id,
-                    start_date: moment(parameters?.start_date).format(DATETIME_FORMAT), end_date: moment(parameters?.start_date).format(DATETIME_FORMAT),
+                    start_date: dayjs(parameters?.start_date).format(DATETIME_FORMAT), end_date: dayjs(parameters?.start_date).format(DATETIME_FORMAT),
                     main_gtin: GTIN, method: "Validar"
                 };
 

@@ -14,7 +14,7 @@ import { AppContext } from '../pages/App';
 export const Permissions = ({ permissions, action = null, item = null, forInput = null, onPlace = null, clone, children, log, ...props }) => {
     return (
         <ConditionalWrapper
-            condition={!permissions.isOk({ action, item, forInput, onPlace, log })}
+            condition={!permissions || !permissions?.isOk({ action, item, forInput, onPlace, log })}
             wrapper={children => <></>}
         >
 
@@ -25,15 +25,15 @@ export const Permissions = ({ permissions, action = null, item = null, forInput 
     );
 }
 
-const loadPermissions = async ({ name, module }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/permissions/sql/`, pagination: { limit: 1 }, filter: { name, module }, parameters: { method: "PermissionsLookup" } });
+const loadPermissions = async ({ name, module,path }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/permissions/sql/`, pagination: { limit: 1 }, filter: { name, module,path }, parameters: { method: "PermissionsLookup" } });
     if (rows?.length > 0) {
         return rows[0];
     }
     return {};
 }
 
-export const usePermission = ({ allowed = {}, name, module = 'main', item: globalItem } = {}) => {
+export const usePermission = ({ load = true, allowed = {}, name, module = 'main', item: globalItem, permissions:objPermissions } = {}) => {
     const [permissions, setPermissions] = useState();
     const { auth } = useContext(AppContext);
     const userKeys = Object.keys(auth.permissions);
@@ -48,18 +48,31 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        console.log("isAdmin is commented, uncomment!!!!!")
-        console.log("Permissions Location/Name:", name ? name : loc.pathname.replace(/\:$/, ''), " module:", module)
-        const _perm = await loadPermissions({ name: name ? name : loc.pathname.replace(/\:$/, ''), module });
-        setPermissions(json(_perm?.permissions));
+        console.log("load-data");
+        if (objPermissions){
+            console.log("start--",objPermissions)
+            setPermissions(objPermissions);
+        }else if (load) {
+            console.log("isAdmin is commented, uncomment!!!!!")
+            console.log("Permissions Location/Name:", name ? name : loc.pathname.replace(/\:$/, ''), " module:", module)
+            const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
+            setPermissions(json(_perm?.permissions));
+        }
     }
 
-    const loadInstantPermissions = async ({ name, module="main", set = false }) => {
-        const _perm = await loadPermissions({ name: name ? name : loc.pathname.replace(/\:$/, ''), module });
+    const loadInstantPermissions = async ({ name, module = "main", set = false }) => {
+        const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
         if (set) {
             setPermissions(json(_perm?.permissions));
         }
         return json(_perm?.permissions);
+    }
+
+    const setInstantPermissions = async ({ objPermissions, set = false }) => {
+        if (set) {
+            setPermissions(objPermissions);
+        }
+        return json(objPermissions);
     }
 
     const isOk = ({ action = null, item = null, forInput = null, onPlace = null, log = null, instantPermissions = null }) => {
@@ -69,9 +82,9 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         const _permissions = (instantPermissions) ? instantPermissions : permissions;
         if (!item && globalItem) {
             item = globalItem;
-        }
-        if (!item && _permissions) {
-            item = Object.keys(_permissions)[0];
+        } else if (!item && _permissions) {
+            //deprecated (not needed)
+            //item = Object.keys(_permissions)[0];
         }
         if (Array.isArray(forInput)) {
             if (forInput.includes(false)) {
@@ -143,5 +156,5 @@ export const usePermission = ({ allowed = {}, name, module = 'main', item: globa
         return false;
     }
 
-    return { auth, allow, permissions, name: name ? name : loc.pathname, module, isOk,loadInstantPermissions };
+    return { auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
 }

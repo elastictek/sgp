@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import dayjs from 'dayjs';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-//import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -54,11 +53,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 
@@ -84,7 +79,7 @@ export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ name: "bobinagens", item: "details" });//Permissões Iniciais
+    const permission = usePermission({ permissions:props?.permissions });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -166,7 +161,7 @@ export default (props) => {
 
     return (
         <YScroll>
-            <ToolbarTable {...props} parameters={inputParameters.current} submitting={submitting} />
+            <ToolbarTable {...props} permission={permission} parameters={inputParameters.current} submitting={submitting} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <Row gutterWidth={10} style={{}}>
@@ -194,7 +189,7 @@ export default (props) => {
                             <Row style={{}} gutterWidth={10} key={`vof-${v.id}`}>
                                 <Col style={{ display: "flex" }}>
                                     <Field name={["ofs", i, "of_cod"]} label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>
-                                    <Field name={["ofs", i, "op"]} label={{ enabled: false, text: "" }}><Input style={{ width: "450px" }} size="small" /></Field>
+                                    <Field name={["ofs", i, "op"]} label={{ enabled: false, text: "" }}><Input /* style={{ width: "650px" }} */ size="small" /></Field>
                                 </Col>
                             </Row>
                         );

@@ -150,7 +150,10 @@ def Sql(request, format=None):
 def PermissionsLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.where()
-    f.add(f'lower(name) = lower(:name)', True)
+    if "name" in request.data['filter']:
+        f.add(f'lower(name) = lower(:name)', True)
+    elif "path" in request.data['filter']:
+        f.add(f'lower(`path`) = lower(:path)', True)
     f.add(f'lower(module) = lower(:module)', True)
     f.value("and")
     parameters = {**f.parameters}
@@ -165,4 +168,5 @@ def PermissionsLookup(request, format=None):
                 limit 1
             """
         ), cursor, parameters)
+        
         return Response(response)

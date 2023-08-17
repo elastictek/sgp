@@ -2,14 +2,13 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -45,9 +44,29 @@ const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
 
+const title = "Formulação";
+const TitleForm = ({ data, onChange, level, auth, form, showHistory }) => {
+    return (<ToolbarTitle id={auth?.user} description={title} showHistory={showHistory} title={<>
+        <Col>
+            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
+                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+            </Row>
+
+        </Col>
+    </>
+    }
+    />);
+}
 
 const loadFormulacao = async (params, primaryKey, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetFormulacao" }, signal });
+    let rows;
+    if (params?.formulacaoData) {
+        rows = [{ formulacao: params.formulacaoData }];
+    } else {
+        const { data } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetFormulacao" }, signal });
+        rows = data?.rows;
+    }
     if (rows && rows.length > 0) {
         let _v = json(rows[0]?.formulacao);
         if (!_v?.items) {
@@ -77,12 +96,12 @@ const loadFormulacao = async (params, primaryKey, signal) => {
     return {};
 }
 
-export default ({ setFormTitle, noDosers = false, form, ...props }) => {
+export default ({ setFormTitle, showTitle=true, noDosers = false, form:_form, header = true, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "readonly" });//Permissões Iniciais
     const inputParameters = useRef({});
-
+    const [form] = !_form ? Form.useForm() : [_form];
     const { openNotification } = useContext(AppContext);
     const location = useLocation();
     const navigate = useNavigate();
@@ -139,7 +158,7 @@ export default ({ setFormTitle, noDosers = false, form, ...props }) => {
         const controller = new AbortController();
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, []);
+    }, [props?.parameters?.formulacaoData, props?.parameters?.cs_id, props?.parameters?.formulacao_id, props?.parameters?.tstamp,props?.parameters?.audit_cs_id,props?.parameters?.new]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -147,9 +166,17 @@ export default ({ setFormTitle, noDosers = false, form, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new"]);
             inputParameters.current = paramsIn;
         }
-        const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
+        const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current, formulacaoData: props?.parameters?.formulacaoData }, dataAPI.getPrimaryKey(), signal);
         dataAPI.setData({ rows: items, total: items?.length });
-        if (form) {
+        if (header) {
+            console.log("#xxxx",{
+                formulacaoRO: {
+                    joinbc: 1, reference: 0, ...formulacao,
+                    cliente: { BPCNUM_0: formulacao?.cliente_cod, BPCNAM_0: formulacao?.cliente_nome },
+                    produto_id: formulacao?.produto_id,
+                    artigo_id: formulacao?.artigo_id
+                }
+            })
             form.setFieldsValue({
                 formulacaoRO: {
                     joinbc: 1, reference: 0, ...formulacao,
@@ -168,8 +195,9 @@ export default ({ setFormTitle, noDosers = false, form, ...props }) => {
 
     return (
         <>
-            <FormContainer id="form" fluid loading={submitting.state} wrapForm={false} {...form && { form: form }} wrapFormItem={true} forInput={false} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
-                {form && <Row style={{ marginBottom: "10px" }} gutterWidth={10} wrap="wrap">
+            {(!setFormTitle && showTitle) && <TitleForm showHistory={false} auth={permission.auth} data={dataAPI.getFilter(true)} level={location?.state?.level} />}
+            <FormContainer id="form" fluid loading={submitting.state} wrapForm={(!_form && header) ? true : false} form = {form} wrapFormItem={true} forInput={false} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
+                {header && <Row style={{ marginBottom: "10px" }} gutterWidth={10} wrap="wrap">
                     <Col xs={2} md={1}><Field name={["formulacaoRO", "versao"]} forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
                     <Col xs={4} md={2}><FormulacaoGroups name={["formulacaoRO", "group_name"]} label={{ enabled: true, text: "Grupo" }} /></Col>
                     <Col xs={4} md={2}><FormulacaoSubGroups name={["formulacaoRO", "subgroup_name"]} label={{ enabled: true, text: "SubGrupo" }} /></Col>
@@ -180,9 +208,10 @@ export default ({ setFormTitle, noDosers = false, form, ...props }) => {
                 </Row>}
             </FormContainer>
             <Table
-                style={{ fontSize: "10px", minHeight: "100%" }}
+                style={{ fontSize: "10px"/* , minHeight: "100%" */ }}
                 rowHeight={20}
                 headerHeight={20}
+                dynamicHeight={70}
                 cellNavigation={false}
                 loading={submitting.state}
                 idProperty={dataAPI.getPrimaryKey()}

@@ -16,6 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta, timezone
+from support.myUtils import download_file_stream
 #TO UNCOMMENT ON PRODUCTION
 try:
     import cups
@@ -61,8 +62,6 @@ dbmssql = DBSql(connections[connMssqlName].alias)
 @permission_classes([IsAuthenticated])
 def Sql(request, format=None):
     try:
-        print("eeeeeeeeeeeeeeeeeeeee")
-        print(request.data["parameters"])
         if "parameters" in request.data and "method" in request.data["parameters"]:
             method=request.data["parameters"]["method"]
             func = globals()[method]
@@ -87,6 +86,49 @@ def ExportFile(request, format=None):
         elif (p["export"] == "word"):
             resp['Content-Disposition'] = "inline; filename=list.docx"
         return resp
+
+def PrintNwsEtiquetas(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    data = request.data["parameters"]
+    tmp = tempfile.NamedTemporaryFile()
+    print(tmp)
+    print(tmp.name)
+    print("----")
+    print(data)
+    tstamp = datetime.now()
+
+    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":data.get("name"),
+        "path":data.get("path"),
+        "export":"pdf",
+        "data":{      
+            "tstamp":tstamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "ids":data.get("ids")
+        }
+    })
+    try:
+        if "download" in data:
+            return download_file_stream(fstream,"ETIQUETA-NW","application/pdf")
+        else:
+            print(tmp.name)
+            tmp.write(fstream.content)
+            #TO UNCOMMENT ON PRODUCTION
+            conn = cups.Connection()
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            # ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

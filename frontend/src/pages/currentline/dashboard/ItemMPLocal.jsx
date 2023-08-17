@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -205,7 +204,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'VCRNUM_0', name: 'Transação' },
         { key: 'QTYPCU_0', name: 'Qtd.', width: 110, formatter: p => <Quantity v={p.row.QTYPCU_0} u={p.row.PCU_0} /> },
         { key: 'LOC_0', name: 'Localização', width: 110 },
-        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => moment(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
+        { key: 'CREDATTIM_0', name: 'Data', width: 130, formatter: props => dayjs(props.row.CREDATTIM_0).format(DATETIME_FORMAT) }
     ];
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
         onOpen: () => console.log(`Connected to Web Socket`),

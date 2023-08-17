@@ -51,11 +51,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 

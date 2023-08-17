@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
@@ -262,7 +262,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         { key: 'peso', name: 'Peso', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso} kg</div> },
         { key: 'tara', name: 'Tara', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tara}</div> },
         { key: 'produto_granulado', name: 'Produto', minWidth: 150, width: 150 },
-        { key: 'timestamp', name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) }
+        { key: 'timestamp', name: 'Data', formatter: props => dayjs(props.row.timestamp).format(DATETIME_FORMAT) }
     ];
     const [showNewLoteModal, hideNewLoteModal] = useModal(({ in: open, onExited }) => {
         return <ResponsiveModal title="Novo Lote de Reciclado"

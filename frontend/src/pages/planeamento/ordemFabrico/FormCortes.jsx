@@ -55,7 +55,7 @@ const loadArtigosAggLookup = async ({ agg_id, token }) => {
 }
 
 const loadCortesOrdemLookup = async ({ cortes_id, token }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/cortesordemlookup/`, filter: { cortes_id }, sort: [], cancelToken: token });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters:{method:"CortesOrdemLookup"}, filter: { cortes_id }, sort: [], cancelToken: token });
     return rows;
 }
 

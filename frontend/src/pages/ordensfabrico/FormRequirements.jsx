@@ -8,9 +8,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { orderObjectKeys, json } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
@@ -21,20 +21,22 @@ const { TextArea } = Input;
 const { Title } = Typography;
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
-import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT,ENROLAMENTO_OPTIONS } from 'config';
+import Table from 'components/TableV3';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT, ENROLAMENTO_OPTIONS } from 'config';
 import uuIdInt from "utils/uuIdInt";
 import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
+import { Cores } from 'components/EditorsV3';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField } from 'components/FormFields';
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { Core, EstadoBobines, Largura } from "components/TableColumns";
-import { LeftToolbar, RightToolbar } from "./OrdemFabrico";
+import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
+
 
 const schema = (options = {}) => {
     return getSchema({
@@ -51,11 +53,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 
@@ -77,11 +75,11 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     );
 }
 
-export default (props) => {
+export default ({ operationsRef, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ name: "bobinagens", item: "details" });//Permissões Iniciais
+    const permission = usePermission({ permissions: props?.permissions });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -111,24 +109,26 @@ export default (props) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        console.log("inputtttt", inputParameters.current);
         // const formValues = await loadBobinagensLookup(inputParameters.current.bobinagem_id);
         // const v = formValues.length > 0 ? json(formValues[0].artigo)[0] : {};
         // const _ofs = formValues.length > 0 ? json(formValues[0].ofs) : [];
+
+        const _amostragem = pickAll(["sentido_enrolamento", "amostragem", "observacoes"], inputParameters.current?.rows[0]?.current);
+        _amostragem["sentido_enrolamento"] = ENROLAMENTO_OPTIONS.find(v => v.value == _amostragem?.sentido_enrolamento);
+        const _tipoEmenda = pickAll(["maximo", "tipo_emenda", "emendas_rolo", "paletes_contentor"], json(inputParameters.current?.rows[0]?.emendas?.emendas));
+        _tipoEmenda["tipo_emenda"] = TIPOEMENDA_OPTIONS.find(v => v.key == _tipoEmenda?.tipo_emenda);
+        const _artigo = pickAll([
+            "of_cod", "artigo_cod", "artigo_des", "artigo_produto", "cliente_nome", "order_cod", "prf_cod", "qty_encomenda",
+            "artigo_core", "artigo_gsm", "artigo_gtin", "artigo_lar", "artigo_thickness", "artigo_tipo"
+        ], inputParameters.current?.rows[0]?.of);
+        _artigo["core_cod"] = pickAll([{ core_cod: "ITMREF_0" }, { core_des: "ITMDES1_0" }], inputParameters.current?.rows[0]?.of)
         form.setFieldsValue({
-            ...pickAll([
-                "of_cod", "artigo_cod", "artigo_des", "artigo_produto", "cliente_nome", "order_cod", "prf_cod", "qty_encomenda",
-                "artigo_core", "artigo_gsm", "artigo_gtin", "artigo_lar", "artigo_thickness", "artigo_tipo", "core_cod", "core_des"
-            ], inputParameters.current?.rows[0]?.of),
+            ..._artigo,
             ...pickAll([
                 "start_prev_date", "end_prev_date", "inicio", "fim"
             ], inputParameters.current),
-            ...pickAll([
-                "sentido_enrolamento", "amostragem", "observacoes"
-            ], inputParameters.current?.rows[0]?.current),
-            ...pickAll([
-                "maximo", "tipo_emenda", "emendas_rolo","paletes_contentor"
-            ], json(inputParameters.current?.rows[0]?.emendas?.emendas)),
+            ..._amostragem,
+            ..._tipoEmenda,
             ...pickAll([
                 "num_paletes"
             ], inputParameters.current?.rows[0]?.total_planned)
@@ -171,11 +171,10 @@ export default (props) => {
         // submitting.end();
     }
 
-    const onValuesChange = (changedValues, values) => {
-        // if ("YYYY" in changedValues) {
-        //     //console.log(changedValues)
-        //     //form.setFieldsValue("YYYY", null);
-        // }
+
+
+    const forInput = (action, item = "edit") => {
+        return (props?.editParameters?.editKey === "information" && permission.isOk({ item, action }));
     }
 
 
@@ -183,12 +182,12 @@ export default (props) => {
         <YScroll>
             <ToolbarTable {...props} parameters={inputParameters.current} submitting={submitting} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
-            <FormContainer id="LAY-OFR" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
-                <Row><Col><HorizontalRule marginTop='0px' title="Artigo" /></Col></Row>
+            <FormContainer id="LAY-OFR" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={props?.onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
+                <Row><Col><HorizontalRule marginTop='0px' title="Artigo"/></Col></Row>
                 <Row gutterWidth={10} style={{}}>
                     <Col width={160}><Field name="of_cod" label={{ enabled: true, text: "Ordem Fabrico" }}><Input size='small' /></Field></Col>
                     <Col width={180}><Field name="artigo_cod" label={{ enabled: true, text: "Artigo Cód." }}><Input size='small' /></Field></Col>
-                    <Col width={390}><Field name="artigo_des" label={{ enabled: true, text: "Artigo Des." }}><Input size='small' /></Field></Col>
+                    <Col xs="content"><Field name="artigo_des" label={{ enabled: true, text: "Artigo Des." }}><Input size='small' /></Field></Col>
                     <Col width={350}><Field name="artigo_produto" label={{ enabled: true, text: "Produto" }}><Input size='small' /></Field></Col>
                 </Row>
                 <Row gutterWidth={10} style={{}}>
@@ -198,42 +197,44 @@ export default (props) => {
                     <Col width={120}><Field name="artigo_lar" label={{ enabled: true, text: "Largura" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
                     <Col width={120}><Field name="artigo_thickness" label={{ enabled: true, text: "Espessura" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>µ</b>} /></Field></Col>
                     <Col width={120}><Field name="artigo_core" label={{ enabled: true, text: "Core" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>''</b>} /></Field></Col>
-                    <Col width={180}><Field name="core_cod" label={{ enabled: true, text: "Core Cód." }}><Input size='small' /></Field></Col>
-                    <Col width={350}><Field name="core_des" label={{ enabled: true, text: "Core Des." }}><Input size='small' /></Field></Col>
+                    <Col width={350}>
+                        <Cores name="core_cod" core={form.getFieldValue("artigo_core")} largura={form.getFieldValue("artigo_lar")} forInput={forInput("core")} label={{ enabled: true, text: "Core Cód." }} />
+                    </Col>
                 </Row>
                 <Row><Col><HorizontalRule title="Encomenda" /></Col></Row>
                 <Row gutterWidth={10} style={{}}>
                     <Col width={160}><Field name="order_cod" label={{ enabled: true, text: "Encomenda" }}><Input size='small' /></Field></Col>
+                    <Col width={160}><Field name="prf_cod" label={{ enabled: true, text: "Prf" }}><Input size='small' /></Field></Col>
                     <Col width={120}><Field name="qty_encomenda" label={{ enabled: true, text: "Qtd." }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>m<sup>2</sup></b>} /></Field></Col>
-                    <Col width={160}><Field name="prf_cod" label={{ enabled: true, text: "Artigo Cód." }}><Input size='small' /></Field></Col>
-                    <Col width={350}><Field name="cliente_nome" label={{ enabled: true, text: "Artigo Des." }}><Input size='small' /></Field></Col>
+                    <Col xs="content"><Field name="cliente_nome" label={{ enabled: true, text: "Cliente" }}><Input size='small' /></Field></Col>
                 </Row>
-                <Row><Col><HorizontalRule title="Planificação" /></Col></Row>
+                <Row><Col><HorizontalRule title="Planificação"/></Col></Row>
                 <Row gutterWidth={10} style={{}}>
                     <Col width={170}><Field name="start_prev_date" label={{ enabled: true, text: "Início Previsto" }}><DatePicker size='small' style={{}} showTime={false} format={DATETIME_FORMAT} /></Field></Col>
                     <Col width={170}><Field name="end_prev_date" label={{ enabled: true, text: "Fim Previsto" }}><DatePicker size='small' style={{}} showTime={false} format={DATETIME_FORMAT} /></Field></Col>
-                    <Col width={120}><Field name="num_paletes" label={{ enabled: true, text: "N° Paletes" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} /></Field></Col>
+                    <Col width={120}><Field name="num_paletes" forInput={forInput("planificacao")} label={{ enabled: true, text: "N° Paletes" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} min={0} /></Field></Col>
                 </Row>
-                <Row><Col><HorizontalRule title="Emendas" /></Col></Row>
+                <Row><Col><HorizontalRule title="Emendas"/></Col></Row>
                 <Row gutterWidth={10} style={{}}>
-                    <Col width={180}><Field name="tipo_emenda" label={{ enabled: true, text: "Tipo emenda" }}><SelectField size="small" keyField="key" textField="value" data={TIPOEMENDA_OPTIONS} /></Field></Col>
-                    <Col width={120}><Field name="maximo" label={{ enabled: true, text: "Máximo" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>%</b>} /></Field></Col>
-                    <Col width={120}><Field name="emendas_rolo" label={{ enabled: true, text: "Emendas/Rolo" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} /></Field></Col>
-                    <Col width={120}><Field name="paletes_contentor" label={{ enabled: true, text: "Paletes/Contentor" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} /></Field></Col>
+                    <Col width={180}><Field name="tipo_emenda" forInput={forInput("emendas")} label={{ enabled: true, text: "Tipo emenda" }}><SelectField size="small" keyField="key" textField="value" data={TIPOEMENDA_OPTIONS} /></Field></Col>
+                    <Col width={120}><Field name="maximo" forInput={forInput("emendas")} label={{ enabled: true, text: "Máximo" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>%</b>} min={0} /></Field></Col>
+                    <Col width={120}><Field name="emendas_rolo" forInput={forInput("emendas")} label={{ enabled: true, text: "Emendas/Rolo" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }}  min={0}  /></Field></Col>
+                    <Col width={120}><Field name="paletes_contentor" forInput={forInput("emendas")} label={{ enabled: true, text: "Paletes/Contentor" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} min={0} /></Field></Col>
                 </Row>
                 <Row><Col><HorizontalRule title="Amostragem" /></Col></Row>
                 <Row gutterWidth={10} style={{}}>
-                    <Col width={180}><Field name="sentido_enrolamento" label={{ enabled: true, text: "Sentido enrolamento" }}><SelectField size="small" keyField="value" textField="label" data={ENROLAMENTO_OPTIONS} /></Field></Col>
-                    <Col width={120}><Field name="amostragem" label={{ enabled: true, text: "Amostragem" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} /></Field></Col>
+                    <Col width={180}><Field name="sentido_enrolamento" forInput={forInput("amostragem")} label={{ enabled: true, text: "Sentido enrolamento" }}><SelectField size="small" keyField="value" textField="label" data={ENROLAMENTO_OPTIONS} /></Field></Col>
+                    <Col width={120}><Field name="amostragem" forInput={forInput("amostragem")} label={{ enabled: true, text: "Amostragem" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} min={0}/></Field></Col>
                 </Row>
                 <Row gutterWidth={10} style={{}}>
-                    <Col xs={12} md={6}><Field name="obs" label={{ enabled: true, text: "Observações" }}><TextArea autoSize={{ minRows: 1, maxRows: 16 }} style={{ width: "100%" }} /></Field></Col>
+                    <Col xs={12} md={6}><Field name="obs" forInput={forInput("amostragem")} label={{ enabled: true, text: "Observações" }}><TextArea autoSize={{ minRows: 1, maxRows: 16 }} style={{ width: "100%" }} /></Field></Col>
                 </Row>
-                {/* <Row><Col><HorizontalRule title="Produção" /></Col></Row>
-                <Row gutterWidth={10} style={{}}>
-                    <Col width={170}><Field name="inicio" label={{ enabled: true, text: "Início" }}><DatePicker size='small' style={{}} showTime={false} format={DATETIME_FORMAT} /></Field></Col>
-                    <Col width={170}><Field name="fim" label={{ enabled: true, text: "Fim" }}><DatePicker size='small' style={{}} showTime={false} format={DATETIME_FORMAT} /></Field></Col>
-                </Row> */}
+
+                {(operationsRef && props?.activeTab=='1') && <Portal elId={operationsRef.current}>
+                    <Edit permissions={permission} item="edit" action="information" editable={[props?.editParameters?.isEditable(true)]} {...props?.editParameters} resetData={loadData} />
+                </Portal>
+                }
+
             </FormContainer>
         </YScroll>
     )

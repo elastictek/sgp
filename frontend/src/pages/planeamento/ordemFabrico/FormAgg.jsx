@@ -265,6 +265,7 @@ export default ({ /* changedValues */ }) => {
         /* const { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } = ctx; */
         /* if (newForm) { */
         setShowForm(prev => ({ ...prev, type: null, show: !prev.show, /* record: { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } */ }));
+        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",{ ...prev, type: null, show: !prev.show, /* record: { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } */ })
         /* } else { */
         //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(true) } }));
         /* } */

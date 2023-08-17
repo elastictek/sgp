@@ -39,7 +39,7 @@ def getCurrentSettingsId():
                 limit 1
             """), cursor, {})['rows']
 
-def getEstadoProducao(agg_of_id):
+def getEstadoProducao(agg_of_id,dumped=True):
     with connections["default"].cursor() as cursor:
         args = []
         cursor.callproc('list_materiaprima_inline',args)
@@ -97,7 +97,26 @@ def getEstadoProducao(agg_of_id):
         estadoproducao_bobines_retrabalhadas = fetchall(cursor)
         cursor.nextset()
         estadoproducao_events = fetchall(cursor)
-        dataEstadoProducao = json.dumps({
+  
+        # dataEstadoProducao = json.dumps({
+        #     "estado_producao": estadoproducao,
+        #     "estado_producao_bobines": estadoproducao_bobines,
+        #     "estado_producao_bobines_nopalete": estadoproducao_bobines_nopalete,
+        #     "estadoproducao_bobines_retrabalhadas": estadoproducao_bobines_retrabalhadas,
+        #     "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
+        #     "estado_producao_current": estadoproducao_current[0] if len(estadoproducao_current)>0 else {},
+        #     "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
+        #     "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
+        #     "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
+        #     "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
+        #     "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
+        #     "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else [],
+        #     "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
+        #     "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {},
+        #     "estado_producao_events":estadoproducao_events if len(estadoproducao_events)>0 else [],
+        # },default=str)
+
+        dataEstadoProducao = {
             "estado_producao": estadoproducao,
             "estado_producao_bobines": estadoproducao_bobines,
             "estado_producao_bobines_nopalete": estadoproducao_bobines_nopalete,
@@ -105,178 +124,198 @@ def getEstadoProducao(agg_of_id):
             "estado_producao_bobinagens": estadoproducao_bobinagens[0] if len(estadoproducao_bobinagens)>0 else {},
             "estado_producao_current": estadoproducao_current[0] if len(estadoproducao_current)>0 else {},
             "estado_producao_nws": estadoproducao_nws[0] if len(estadoproducao_nws)>0 else {},
-            "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
             "estado_producao_paletes": estadoproducao_paletes if len(estadoproducao_paletes)>0 else {},
             "estado_producao_status": estadoproducao_status if len(estadoproducao_status)>0 else {},
             "estado_producao_defeitos": estadoproducao_defeitos if len(estadoproducao_defeitos)>0 else [],
             "estado_producao_granulado_inline":estadoproducao_granulado_inline if len(estadoproducao_granulado_inline)>0 else [],
             "estado_producao_nw_queue":estadoproducao_nw_queue if len(estadoproducao_nw_queue)>0 else [],
-            "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {},
             "estado_producao_events":estadoproducao_events if len(estadoproducao_events)>0 else [],
-        },default=str)
-        return dataEstadoProducao
+        }
+        hash_estadoproducao=hashlib.md5(json.dumps(dataEstadoProducao,default=str).encode()).hexdigest()
+        dataEstadoProducao.update({
+            "estado_producao_params": estadoproducao_params[0] if len(estadoproducao_params)>0 else {},
+            "estado_producao_realtime": estadoproducao_realtime[0] if len(estadoproducao_realtime)>0 else {}
+        })
+        hash_estadoproducao_realtime=hashlib.md5(json.dumps(dataEstadoProducao,default=str).encode()).hexdigest()
+        return {"dataEstadoProducao":json.dumps(dataEstadoProducao,default=str) if dumped else dataEstadoProducao,"hash_estadoproducao":hash_estadoproducao,"hash_estadoproducao_realtime":hash_estadoproducao_realtime}
+
 
 def executeAlerts():
     group_name = 'broadcast'
     channel_layer = channels.layers.get_channel_layer()
-
-    rows = getCurrentSettingsId()
-    dataInProd = rows[0] if len(rows)>0 else {}
-
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
-    dataig_bobinagens = json.dumps(rows[0],default=str)
-
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
-    dataig_bobinagens = json.dumps(rows[0],default=str)
-
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
-    data = json.dumps(rows[0],default=str)
-
-    if dataInProd:
-        with connections["default"].cursor() as cursor:
-            rows = db.executeSimpleList(lambda: (f"""
-            SELECT avg(line_speed) over () avg_line_speed, 
-            STDDEV(line_speed) over () stdev_line_speed,
-            MIN(line_speed) over () min_line_speed,
-            MAX(line_speed) over () max_line_speed,
-            ig.* 
-            FROM ig_linelog_params ig where agg_of_id={dataInProd["agg_of_id"]} ORDER BY ID DESC limit 1"""
-            ), cursor, {})['rows']
-        datalinelog_params = json.dumps(rows[0] if len(rows)>0 else {},default=str)
-    else:
-        datalinelog_params=json.dumps({})
-    #with connections["default"].cursor() as cursor:
-    #    rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
-    #dataDosersSets = json.dumps(rows[0],default=str)
-
-    with connections["default"].cursor() as cursor:
-        rows = db.executeSimpleList(lambda: (f"""		
-                SELECT acs.id 
-                from audit_currentsettings acs
-                order by acs.id desc
-                limit 1
-         """), cursor, {})['rows']
-    dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
-
-    #if dataInProd:
-    #     with connections["default"].cursor() as cursor:
-    #         rows = db.executeSimpleList(lambda: (f"""
-    #                 with paletes as(
-    #                 SELECT
-    #                 sum(num_bobines_act) npaletes
-    #                 FROM planeamento_ordemproducao op
-    #                 join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
-    #                 where op.agg_of_id_id = {dataInProd["agg_of_id"]}
-    #                 ),
-    #                 bobines as(
-    #                 select 
-    #                 count(*) nbobines
-    #                 from producao_bobine pb
-    #                 where pb.agg_of_id = {dataInProd["agg_of_id"]}
-    #                 )
-    #                 select * 
-    #                 from paletes
-    #                 cross join bobines
-    #         """), cursor, {})['rows']
-    #     dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
-    # else:
-    #     dataEstadoProducao = json.dumps({},default=str)
+    
     dataEstadoProducao=getEstadoProducao(None)
-    dataInProd = json.dumps(dataInProd,default=str)
-
-    #with connections["default"].cursor() as cursor:
-    #    rows = db.executeSimpleList(lambda: (f"""		
-    #            select max(t_stamp) from lotesdosers limit 1
-    #     """), cursor, {})['rows']
-    #dataDosers = json.dumps(rows[0],default=str)
-
-    #with connections[connGatewayName].cursor() as cursor:
-    #    rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%') ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
-    #dataBuffer = json.dumps(rows[0],default=str)
-
-    #with connections["default"].cursor() as cursor:
-    #    rows = db.executeSimpleList(lambda: (f"""		
-    #        select SUM(t.qty_lote_available) available FROM (
-    #        SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
-    #        FROM (
-    #        select * from(
-    #            select
-    #            l.*,
-    #            l.t_stamp lt_stamp ,MAX(l.t_stamp) over (PARTITION BY l.artigo_cod,l.n_lote) max_t_stamp
-    #            FROM loteslinha l
-    #        ) t WHERE max_t_stamp=lt_stamp and `status`=1 and `group` is not null
-    #        ) LOTES
-    #        LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
-    #        WHERE DOSERS.status=1
-    #        ) t
-    #     """), cursor, {})['rows']
-    #dataLotesAvailability = json.dumps(rows[0],default=str)
-
+    
     async_to_sync(channel_layer.group_send)(group_name,{
         'type': "getAlerts", "data":{
-            "igbobinagens":dataig_bobinagens,
-            "bobinagens":data,
-            "auditcs":dataAuditCs,
-            #"buffer":dataBuffer,
-            "inproduction":dataInProd,
-            "estadoProducao":dataEstadoProducao,
-            #"datalinelog_params":datalinelog_params,
-            #"dosers":dataDosers,
-            #"availability":dataLotesAvailability, 
-            #"doserssets":dataDosersSets
+            "estadoProducao":dataEstadoProducao.get("dataEstadoProducao")
             }, 
             "hash":{
-                "hash_igbobinagens":hashlib.md5(dataig_bobinagens.encode()).hexdigest(),
-                "hash_bobinagens":hashlib.md5(data.encode()).hexdigest(),
-                "hash_auditcs":hashlib.md5(dataAuditCs.encode()).hexdigest(),
-                #"hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
-                "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
-                "hash_estadoproducao":hashlib.md5(dataEstadoProducao.encode()).hexdigest(),
-                "hash_linelog_params":hashlib.md5(datalinelog_params.encode()).hexdigest()
-                
-                #"hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
-                #"hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
-                #"hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
+                "hash_estadoproducao":dataEstadoProducao.get("hash_estadoproducao"),
+                "hash_estadoproducao_realtime":dataEstadoProducao.get("hash_estadoproducao_realtime"),
             }
     })
-    #self.send(text_data=json.dumps({"val":val},default=str))
     Timer(10,executeAlerts).start()
 executeAlerts()
+
+
+
+
+
+
+
+
+
+
+# def executeAlerts():
+#     group_name = 'broadcast'
+#     channel_layer = channels.layers.get_channel_layer()
+
+#     rows = getCurrentSettingsId()
+#     dataInProd = rows[0] if len(rows)>0 else {}
+
+#     with connections["default"].cursor() as cursor:
+#         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
+#     dataig_bobinagens = json.dumps(rows[0],default=str)
+
+#     with connections["default"].cursor() as cursor:
+#         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx FROM ig_bobinagens'), cursor, {})['rows']
+#     dataig_bobinagens = json.dumps(rows[0],default=str)
+
+#     with connections["default"].cursor() as cursor:
+#         rows = db.executeSimpleList(lambda: (f'SELECT MAX(id) mx, count(*) cnt FROM producao_bobinagem pbm where valid = 0'), cursor, {})['rows']
+#     data = json.dumps(rows[0],default=str)
+
+#     if dataInProd:
+#         with connections["default"].cursor() as cursor:
+#             rows = db.executeSimpleList(lambda: (f"""
+#             SELECT avg(line_speed) over () avg_line_speed, 
+#             STDDEV(line_speed) over () stdev_line_speed,
+#             MIN(line_speed) over () min_line_speed,
+#             MAX(line_speed) over () max_line_speed,
+#             ig.* 
+#             FROM ig_linelog_params ig where agg_of_id={dataInProd["agg_of_id"]} ORDER BY ID DESC limit 1"""
+#             ), cursor, {})['rows']
+#         datalinelog_params = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+#     else:
+#         datalinelog_params=json.dumps({})
+#     #with connections["default"].cursor() as cursor:
+#     #    rows = db.executeSimpleList(lambda: (f'SELECT MAX(ig_doseadores_ndx) mx FROM ig_doseadores'), cursor, {})['rows']
+#     #dataDosersSets = json.dumps(rows[0],default=str)
+
+#     with connections["default"].cursor() as cursor:
+#         rows = db.executeSimpleList(lambda: (f"""		
+#                 SELECT acs.id 
+#                 from audit_currentsettings acs
+#                 order by acs.id desc
+#                 limit 1
+#          """), cursor, {})['rows']
+#     dataAuditCs = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+
+#     #if dataInProd:
+#     #     with connections["default"].cursor() as cursor:
+#     #         rows = db.executeSimpleList(lambda: (f"""
+#     #                 with paletes as(
+#     #                 SELECT
+#     #                 sum(num_bobines_act) npaletes
+#     #                 FROM planeamento_ordemproducao op
+#     #                 join producao_palete pl on pl.ordem_id=op.id and pl.num_bobines_act=pl.num_bobines
+#     #                 where op.agg_of_id_id = {dataInProd["agg_of_id"]}
+#     #                 ),
+#     #                 bobines as(
+#     #                 select 
+#     #                 count(*) nbobines
+#     #                 from producao_bobine pb
+#     #                 where pb.agg_of_id = {dataInProd["agg_of_id"]}
+#     #                 )
+#     #                 select * 
+#     #                 from paletes
+#     #                 cross join bobines
+#     #         """), cursor, {})['rows']
+#     #     dataEstadoProducao = json.dumps(rows[0] if len(rows)>0 else {},default=str)
+#     # else:
+#     #     dataEstadoProducao = json.dumps({},default=str)
+#     dataEstadoProducao=getEstadoProducao(None)
+#     dataInProd = json.dumps(dataInProd,default=str)
+
+#     #with connections["default"].cursor() as cursor:
+#     #    rows = db.executeSimpleList(lambda: (f"""		
+#     #            select max(t_stamp) from lotesdosers limit 1
+#     #     """), cursor, {})['rows']
+#     #dataDosers = json.dumps(rows[0],default=str)
+
+#     #with connections[connGatewayName].cursor() as cursor:
+#     #    rows = dbgw.executeSimpleList(lambda:(f"""SELECT ST."UPDDATTIM_0" FROM "SAGE-PROD"."STOCK" ST Where ST."STOFCY_0" = 'E01' and ("LOC_0"='BUFFER' OR "ITMREF_0" LIKE 'R000%%') ORDER BY ST."UPDDATTIM_0" DESC LIMIT 1"""),cursor,{})['rows']
+#     #dataBuffer = json.dumps(rows[0],default=str)
+
+#     #with connections["default"].cursor() as cursor:
+#     #    rows = db.executeSimpleList(lambda: (f"""		
+#     #        select SUM(t.qty_lote_available) available FROM (
+#     #        SELECT qty_lote + SUM(DOSERS.qty_consumed) over (PARTITION BY LOTES.artigo_cod,LOTES.n_lote) qty_lote_available
+#     #        FROM (
+#     #        select * from(
+#     #            select
+#     #            l.*,
+#     #            l.t_stamp lt_stamp ,MAX(l.t_stamp) over (PARTITION BY l.artigo_cod,l.n_lote) max_t_stamp
+#     #            FROM loteslinha l
+#     #        ) t WHERE max_t_stamp=lt_stamp and `status`=1 and `group` is not null
+#     #        ) LOTES
+#     #        LEFT JOIN lotesdosers DOSERS ON LOTES.id=DOSERS.loteslinha_id  #and LOTES.`group`=DOSERS.group_id 
+#     #        WHERE DOSERS.status=1
+#     #        ) t
+#     #     """), cursor, {})['rows']
+#     #dataLotesAvailability = json.dumps(rows[0],default=str)
+
+#     async_to_sync(channel_layer.group_send)(group_name,{
+#         'type': "getAlerts", "data":{
+#             "igbobinagens":dataig_bobinagens,
+#             "bobinagens":data,
+#             "auditcs":dataAuditCs,
+#             #"buffer":dataBuffer,
+#             "inproduction":dataInProd,
+#             "estadoProducao":dataEstadoProducao,
+#             #"datalinelog_params":datalinelog_params,
+#             #"dosers":dataDosers,
+#             #"availability":dataLotesAvailability, 
+#             #"doserssets":dataDosersSets
+#             }, 
+#             "hash":{
+#                 "hash_igbobinagens":hashlib.md5(dataig_bobinagens.encode()).hexdigest(),
+#                 "hash_bobinagens":hashlib.md5(data.encode()).hexdigest(),
+#                 "hash_auditcs":hashlib.md5(dataAuditCs.encode()).hexdigest(),
+#                 #"hash_buffer":hashlib.md5(dataBuffer.encode()).hexdigest(),
+#                 "hash_inproduction":hashlib.md5(dataInProd.encode()).hexdigest(),
+#                 "hash_estadoproducao":hashlib.md5(dataEstadoProducao.encode()).hexdigest(),
+#                 "hash_linelog_params":hashlib.md5(datalinelog_params.encode()).hexdigest()
+                
+#                 #"hash_dosers":hashlib.md5(dataDosers.encode()).hexdigest(),
+#                 #"hash_lotes_availability":hashlib.md5(dataLotesAvailability.encode()).hexdigest(),
+#                 #"hash_doserssets":hashlib.md5(dataDosersSets.encode()).hexdigest()
+#             }
+#     })
+#     #self.send(text_data=json.dumps({"val":val},default=str))
+#     Timer(10,executeAlerts).start()
+# executeAlerts()
 
 class RealTimeAlerts(WebsocketConsumer):
 
     room_group_name = 'broadcast'
 
-    #def initAlerts(self,data):
-    #    pass
-        #self.executeAlerts()
-    
-   # def executeAlerts(self):
-   #     self.getNewBobinagens({})
-        #Timer(5,self.executeAlerts).start()
-
     def getAlerts(self, data):
-        #val = random.randint(100000, 999999)
-        #print(f"{val} - {self.channel_name}")
-        
-        #lotePicked = data['value']
-        #cs = data['cs']
-        #lotes = cache.get(f'lotes-{cs}')
-        #code = [d for d in lotes if d['LOT_0'] == lotePicked]
         self.send(text_data=json.dumps(data,default=str))
 
+    def _getEstadoProducao(self,data):
+        v = getEstadoProducao(data.get("value").get("aggId"),dumped=False)
+        self.send(text_data=json.dumps({"data":{"estadoProducao":v.get("dataEstadoProducao")},"hash":{"hash_estadoproducao":v.get("hash_estadoproducao"),"hash_estadoproducao_realtime":v.get("hash_estadoproducao_realtime")}},default=str))
+
+
     commands = {
-        #'getBobinagens':getNewBobinagens,
-        #'initAlerts':initAlerts
+        'getEstadoProducao':_getEstadoProducao
     }
 
     def connect(self):
         print("REALTIME SOCKET CONNECTED")
         #user = User.objects.get(username=self.scope['user']) # get Some User.
-        
         async_to_sync(self.channel_layer.group_add)(self.room_group_name,self.channel_name)
         self.accept()
 
@@ -419,8 +458,8 @@ class RealTimeGeneric(WebsocketConsumer):
             self.send(text_data=json.dumps({"rows":rows,"item":"checkcurrentsettings","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 
     def _getEstadoProducao(self,data):
-        v = getEstadoProducao(data.get("value").get("aggId"))
-        self.send(text_data=json.dumps({"data":{"estadoProducao":v},"hash":{"hash_estadoproducao":hashlib.md5(v.encode()).hexdigest()}},default=str))
+        v = getEstadoProducao(data.get("value").get("aggId"),dumped=False)
+        self.send(text_data=json.dumps({"data":{"estadoProducao":v.get("dataEstadoProducao")},"hash":{"hash_estadoproducao":v.get("hash_estadoproducao"),"hash_estadoproducao_realtime":v.get("hash_estadoproducao_realtime")}},default=str))
 
     commands = {
         'checkreciclado':checkReciclado,

@@ -18,8 +18,7 @@ import mimetypes
 from datetime import datetime, timedelta
 # import cups
 import os, tempfile
-from collections import Counter
-from producao.api.stock_cutter_1d import StockCutter1D
+
 
 
 
@@ -219,7 +218,16 @@ def updateCurrentSettings(id,type,data,user_id,cursor):
                     for item in data["items"]:
                         if "rowvalid" in item:
                             del item["rowvalid"]
+                    data.pop("type", None)
                     args = (id, json.dumps(data),type,user_id,0)                
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
+            if type.startswith('cores_plan'):
+                    args = (id, None,type,user_id,0)
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
+            if type.startswith('artigospecs_plan'):
+                    args = (id, None,type,user_id,0)
                     #print(args)
                     cursor.callproc('update_currentsettings',args)
         return Response({"status": "success", "id":id, "title": f'Definições atualizadas com sucesso', "subTitle":f""})
@@ -911,34 +919,4 @@ def ChangeCurrSettingsStatus(request, format=None):
     except Exception as error:
         return Response({"status": "error", "id":0, "title": f'Erro ao alterar estado.', "subTitle":str(error)})
     return Response({"status": "error", "id":0, "title": f'Já existe uma Ordem de Fabrico em Curso!', "subTitle":""})
-
-
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def StockCutOptimizer(request, format=None):
-    data = request.data.get("parameters")
-    try:
-        if "child_rolls" not in data or "parent_rolls" not in data:
-            raise Exception("Erro nos parametros de entrada!")
-        child_rolls =  data["child_rolls"]   #[[324, 120],[88, 150],[33, 75]]
-        parent_rolls = data["parent_rolls"] #[[10, 2100]] # 10 doesn't matter, itls not used at the moment
-        max_cutters = data["max_cutters"]
-        consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=True, max_cutters=max_cutters)
-        rolls = []
-        rolls={}
-        for idx, roll in enumerate(consumed_big_rolls):
-            hsh = hashlib.md5(json.dumps(roll[1], sort_keys=True).encode()).hexdigest()[ 0 : 16 ]
-            if hsh in rolls:
-                rolls[hsh]["n"]+=1
-            else:
-                rolls[hsh]={"cuts":roll[1],"cuts_count":dict(Counter(roll[1]).items()),"n":1,"largura_util":sum(roll[1])}        
-        return Response(list(rolls.values()))
-    except Exception as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response({"status": "error", "title": f'Erro Genérico', "subTitle":""})
-
 

@@ -127,7 +127,7 @@ export default ({ setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
-                case "parameters": return <LabArtigoSpecsParametersList parameters={modalParameters.parameters} />;
+                case "parameters": return <LabArtigoSpecsParametersList loadParentData={modalParameters?.loadParentData} parameters={modalParameters.parameters} />;
                 //case "content": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
@@ -138,7 +138,7 @@ export default ({ setFormTitle, ...props }) => {
         );
     }, [modalParameters]);
     const onOpenParameters = ({id, designacao, valid,artigo_id,cliente_cod}) => {
-        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadData, lazy: true, parameters: { id, valid,artigo_id,cliente_cod } });
+        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadParentData:()=>dataAPI.update(true), lazy: true, parameters: { id, valid,artigo_id,cliente_cod } });
         showModal();
     }
 
@@ -345,8 +345,8 @@ export default ({ setFormTitle, ...props }) => {
                     if (status.errors > 0) {
                         openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                     } else {
-                        //response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "DeleteLabMetodo" }, filter: { id: data["id"] } });
-                        if (response.data.status !== "error") {
+                        response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "DeleteLabArtigoSpecs" }, filter: { id: data["id"] } });
+                        if (response?.data?.status !== "error") {
                             const _rows = dataAPI.deleteRow({ [dataAPI.getPrimaryKey()]: data?.[dataAPI.getPrimaryKey()] }, [dataAPI.getPrimaryKey()]);
                             dataAPI.setAction("edit", true);
                             dataAPI.update(true);

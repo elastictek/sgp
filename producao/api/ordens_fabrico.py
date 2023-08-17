@@ -16,8 +16,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
+import pandas as pd
 # import cups
 import os, tempfile
+from collections import Counter
+from producao.api.stock_cutter_1d import StockCutter1D
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -42,6 +45,7 @@ import requests
 import psycopg2
 from decimal import Decimal
 from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings,changeStatus
+
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -219,12 +223,12 @@ def OrdensFabricoList(request, format=None):
 
     f.setParameters({
         "ativa":{"value": lambda v: Filters.getNumeric(v.get('fativa')), "field": lambda k, v: f'{k}'},
-        "ofabrico":{"value": lambda v: Filters.getLower(v.get('fofabrico')), "field": lambda k, v: f'{k}'},
-        "prf":{"value": lambda v: Filters.getLower(v.get('fprf')), "field": lambda k, v: f'{k}'},
-        "iorder":{"value": lambda v: Filters.getLower(v.get('fiorder')), "field": lambda k, v: f'{k}'},
-        "cod":{"value": lambda v: Filters.getLower(v.get('fcod')), "field": lambda k, v: f'{k}'},
-        "cliente_nome":{"value": lambda v: Filters.getLower(v.get('fcliente_nome')), "field": lambda k, v: f'{k}'},
-        "item":{"value": lambda v: Filters.getLower(v.get('fitem')), "field": lambda k, v: f'{k}'},
+        "ofabrico":{"value": lambda v: Filters.getLower(v.get('fofabrico')), "field": lambda k, v: f'lower({k})'},
+        "prf":{"value": lambda v: Filters.getLower(v.get('fprf')), "field": lambda k, v: f'lower({k})'},
+        "iorder":{"value": lambda v: Filters.getLower(v.get('fiorder')), "field": lambda k, v: f'lower({k})'},
+        "cod":{"value": lambda v: Filters.getLower(v.get('fcod')), "field": lambda k, v: f'lower({k})'},
+        "cliente_nome":{"value": lambda v: Filters.getLower(v.get('fcliente_nome')), "field": lambda k, v: f'lower({k})'},
+        "item":{"value": lambda v: Filters.getLower(v.get('fitem')), "field": lambda k, v: f'lower({k})'},
         "num_paletes_total":{"value": lambda v: Filters.getNumeric(v.get('fnum_paletes_total')), "field": lambda k, v: f'{k}'},
         "n_paletes_produzidas":{"value": lambda v: Filters.getNumeric(v.get('fn_paletes_produzidas')), "field": lambda k, v: f'{k}'},
         "n_paletes_stock_in":{"value": lambda v: Filters.getNumeric(v.get('fn_paletes_stock_in')), "field": lambda k, v: f'{k}'},
@@ -273,7 +277,6 @@ def OrdensFabricoList(request, format=None):
         {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-   
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -354,6 +357,39 @@ def OrdensFabricoOpen(request, format=None):
     ), connection, {})
     return Response(response)
 
+def GetPaleteCompatibleOrdensFabricoOpen(request,format=None):
+    cursor = connections["default"].cursor()
+    filter = request.data.get("filter")
+    f = Filters({"palete_id": filter['palete_id']})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'pp.id = :palete_id', True)
+    f.value("and")
+    response = db.executeSimpleList(lambda: (
+        f"""
+            with palete as(
+            select po.agg_of_id_id,pp.ordem_id id,pp.ordem_id_original,pp.largura_bobines,pp.num_bobines,pp.core_bobines,pa.cod artigo_cod
+            from producao_palete pp 
+            join planeamento_ordemproducao po on po.id=pp.ordem_id_original
+            join producao_artigo pa on po.artigo_id=pa.id
+            {f.text}
+            )
+            select t.* from (
+            select pa.cod artigo_cod, po.id,po.ofid,po.agg_of_id_id,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , ofc.artigo_lar, ofc.artigo_core,x.item_numbobines
+            from planeamento_ordemproducao po
+            join producao_artigo pa on po.artigo_id=pa.id
+            left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
+            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
+            join JSON_TABLE(pc.ofs,'$[*]' COLUMNS(of_id int path '$.of_id',artigo_cod varchar(30) path '$.artigo_cod',artigo_lar int path '$.artigo_lar',artigo_core int path '$.artigo_core')) ofc on ofc.of_id=po.id
+            join JSON_TABLE(pc.paletizacao,'$[*]' COLUMNS(of_id int path '$.of_id',items text path '$.paletizacao')) p on po.id=p.of_id,
+            JSON_TABLE(items->>'$.details','$[*]' COLUMNS(item_id int path '$.item_id',item_numbobines int path '$.item_numbobines')) x
+            where x.item_id=2 and x.item_numbobines>0 and po.ativa = 1 #and po.completa = 0
+            ) t
+            join palete pp on pp.id<>t.id and pp.agg_of_id_id = t.agg_of_id_id and pp.artigo_cod=t.artigo_cod /*pp.largura_bobines = t.artigo_lar and pp.core_bobines  = t.artigo_core*/ and pp.num_bobines = t.item_numbobines
+        """
+    ), cursor, f.parameters)
+    return Response(response)
+
 def ClienteExists(request, format=None):
     cursor = connections["default"].cursor()
     filter = request.data.get("filter")
@@ -418,8 +454,20 @@ def TempOrdemFabricoGet(request, format=None):
     return Response(response)
 
 def GetFormulacao(request, format=None):
-    connection = connections["default"].cursor()
+    #A ordem que são executados os if's é muito importante!!!!
+    cursor = connections["default"].cursor()
     filter = request.data['filter']
+    try:
+        response = _getFormulacao(filter)
+        if response==None:
+            return Response({"status": "success", "data":None})
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def _getFormulacao(filter):
+    cursor = connections["default"].cursor()
     f = Filters(filter)
     f.setParameters({}, False)
     f.where()
@@ -430,12 +478,10 @@ def GetFormulacao(request, format=None):
     elif ("formulacao_id" in filter):
         f.add(f'pfo.id = :formulacao_id',True)
     f.value()
-
-    dql = db.dql(request.data, False)
     if ("audit_cs_id" in filter):
-        sql = lambda: (f"""select fconvert_to_formulacaoV2(formulacaov2) formulacao from audit_currentsettings {f.text}""")
+        sql = lambda: (f"""select formulacaov2 formulacao from audit_currentsettings {f.text}""")
     elif ("cs_id" in filter):
-        sql = lambda: (f"""select fconvert_to_formulacaoV2(formulacaov2) formulacao from producao_currentsettings {f.text}""")
+        sql = lambda: (f"""select formulacaov2 formulacao from producao_currentsettings {f.text}""")
     elif ("formulacao_id" in filter):
         sql = lambda: (f"""
             SELECT            
@@ -443,7 +489,7 @@ def GetFormulacao(request, format=None):
             pfo.extr0,'extr0_val', pfo.extr0_val,'extr1', pfo.extr1,'extr1_val', pfo.extr1_val,'extr2', pfo.extr2,'extr2_val', 
             pfo.extr2_val,'extr3', pfo.extr3,'extr3_val', pfo.extr3_val,'extr4', pfo.extr4,'extr4_val', pfo.extr4_val,'id', 
             pfo.id,'produto_id', pfo.produto_id,'updated_date', pfo.updated_date,'versao', pfo.versao,'group_name',pfo.group_name,'subgroup_name',pfo.subgroup_name,
-            'reference',pfo.reference,'artigo_id',pfo.artigo_id,
+            'reference',pfo.reference,'artigo_id',pfo.artigo_id,'model',2,'joinbc',pfo.joinbc,
             'items',(
             SELECT JSON_ARRAYAGG(t) FROM (
             select 
@@ -471,16 +517,636 @@ def GetFormulacao(request, format=None):
             from producao_formulacao pfo {f.text}
         """)
     else:    
-        return Response({"status": "success", "data":None})
+        return None
         #sql = lambda: (f"""select formulacao from (
         #    select id,MAX(id) over (partition by ac.agg_of_id) maxid,formulacaov2 formulacao from audit_currentsettings ac where contextid = (select id from producao_currentsettings cs where status=3)
         #) t where id=maxid""")    
+    return db.executeSimpleList(sql, cursor, f.parameters)
+
+def ArtigosSpecsAvailableList(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        "valid": {"value": lambda v: Filters.getNumeric(1), "field": lambda k, v: f'pf.{k}'},
+        "status": {"value": lambda v: Filters.getNumeric(1), "field": lambda k, v: f'pf.{k}'},
+        "artigo_id": {"value": lambda v: Filters.getNumeric(v.get('fartigo_id')), "field": lambda k, v: f'pf.{k}'},
+        "cliente_cod": {"value": lambda v: Filters.getNumeric(v.get('fcliente_cod')), "field": lambda k, v: f'pf.{k}'},
+        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdesignacao')), "field": lambda k, v: f'pf.{k}'},
+        "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente_nome')), "field": lambda k, v: f'upper(pf.{k})'},
+        "metodo_designacao": {"value": lambda v: Filters.getUpper(v.get('fmetodo_designacao')), "field": lambda k, v: f'upper(pf.{k})'},
+        "reference": {"value": lambda v: Filters.getNumeric(v.get('freference')), "field": lambda k, v: f'pf.{k}'},
+        **rangeP(f.filterData.get('fdata_created'), 'pf.created_date', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('fdata_updated'), 'pf.updated_date', lambda k, v: f'{k}')
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+    print(request.data['filter'])
+    print(f.text)
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+
+    parameters = {**f.parameters, **f2['parameters']}
+    dql = db.dql(request.data, False,False)
+    cols = f'''pf.*,pa.cod,pa.des'''
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} 
+            FROM producao_lab_artigospecs pf
+            JOIN producao_cliente pc ON pc.cod=pf.cliente_cod
+            JOIN producao_artigo pa ON pa.id=pf.artigo_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)  
+
+def ArtigosSpecsPlanList(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'pap.draft_ordem_id = :of_id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    sql = lambda: (f"""
+            select 
+            pap.id,pap.idx,pap.observacoes,pap.lab_artigospecs_id,
+            pas.designacao,pas.reference,pas.lab_metodo_id,pas.cliente_nome,pas.cliente_cod,pas.artigo_id,pas.metodo_designacao,pas.aging,pas.owner
+            from producao_artigospecs_plan pap
+            join producao_lab_artigospecs pas on pas.id = pap.lab_artigospecs_id    
+            {f.text}
+        order by pap.idx
+    """)
     try:
         response = db.executeSimpleList(sql, connection, f.parameters)
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+def SaveArtigosSpecsPlan(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def checkOrdemFabrico(of_id,cursor):
+        f = Filters({"of_id": of_id})
+        f.where()
+        f.add(f'agg_of_id = (select agg_of_id from producao_tempordemfabrico pt where id = :of_id)', True )
+        f.add(f'`status` = 9', True )
+        f.value("and")
+        exists = db.exists("producao_currentsettings", f, cursor).exists
+        return exists
+
+    def _deleteSpecsPlan(of_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_artigospecs_plan',{"draft_ordem_id":Filters.getNumeric(of_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    
+    def _getCurrentSettings(temp_ofabrico,cursor):
+        f = Filters({"id":temp_ofabrico})
+        f.where()
+        f.add(f'id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f'SELECT id FROM producao_currentsettings pc where agg_of_id = (select agg_of_id from producao_tempordemfabrico {f.text})'), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0]["id"]
+        return None
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            isClosed = checkOrdemFabrico(filter.get("of_id"),cursor)
+            if (not isClosed):
+                if len(data.get("rows"))==0:
+                    return Response({"status": "error", "title": "Tem de ter pelo menos uma especificação selecionada!"})
+                else:
+                    _deleteSpecsPlan(filter.get("of_id"),cursor)
+                    for idx, v in enumerate(data.get("rows")):
+                            dml = db.dml(TypeDml.INSERT, {"lab_artigospecs_id":v.get("lab_artigospecs_id"),"draft_ordem_id":filter.get("of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_artigospecs_plan",None,None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                    cs_id = _getCurrentSettings(filter.get("of_id"),cursor)
+                    if cs_id is not None:
+                        return updateCurrentSettings(cs_id,"artigospecs_plan",None,request.user.id,cursor)
+                return Response({"status": "success", "title": "As especificações foram registadas com sucesso com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def CoresPlanList(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'draft_ordem_id = :of_id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    sql = lambda: (f"""
+        select * from producao_cores pcp
+        {f.text}
+        order by idx
+    """)
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def SaveCoresPlan(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def checkOrdemFabrico(of_id,cursor):
+        f = Filters({"of_id": of_id})
+        f.where()
+        f.add(f'agg_of_id = (select agg_of_id from producao_tempordemfabrico pt where id = :of_id)', True )
+        f.add(f'`status` = 9', True )
+        f.value("and")
+        exists = db.exists("producao_currentsettings", f, cursor).exists
+        return exists
+
+    def _deleteCoresPlan(of_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_cores',{"draft_ordem_id":Filters.getNumeric(of_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    
+    def _getCurrentSettings(temp_ofabrico,cursor):
+        f = Filters({"id":temp_ofabrico})
+        f.where()
+        f.add(f'id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f'SELECT id FROM producao_currentsettings pc where agg_of_id = (select agg_of_id from producao_tempordemfabrico {f.text})'), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0]["id"]
+        return None
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            isClosed = checkOrdemFabrico(filter.get("of_id"),cursor)
+            if (not isClosed):
+                if len(data.get("rows"))==0:
+                     return Response({"status": "error", "title": "Tem de ter pelo menos um core selecionado!"})
+                else:
+                    _deleteCoresPlan(filter.get("of_id"),cursor)
+                    for idx, v in enumerate(data.get("rows")):
+                            dml = db.dml(TypeDml.INSERT, {"core_cod":v.get("core_cod"),"core_des":v.get("core_des"),"draft_ordem_id":filter.get("of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_cores",None,None,False)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                    cs_id = _getCurrentSettings(filter.get("of_id"),cursor)
+                    if cs_id is not None:
+                        return updateCurrentSettings(cs_id,"cores_plan",None,request.user.id,cursor)
+                return Response({"status": "success", "title": "O plano de Cores foi registado com sucesso com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def StockCutOptimizer(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        if "child_rolls" not in data or "parent_rolls" not in data:
+            raise Exception("Erro nos parametros de entrada!")
+        child_rolls =  data["child_rolls"]   #[[324, 120],[88, 150],[33, 75]]
+        parent_rolls = data["parent_rolls"] #[[10, 2100]] # 10 doesn't matter, itls not used at the moment
+        max_cutters = data["max_cutters"]
+        consumed_big_rolls = StockCutter1D(child_rolls, parent_rolls, output_json=False, large_model=True, max_cutters=max_cutters)
+        rolls = []
+        rolls={}
+        for idx, roll in enumerate(consumed_big_rolls):
+            hsh = hashlib.md5(json.dumps(roll[1], sort_keys=True).encode()).hexdigest()[ 0 : 16 ]
+            if hsh in rolls:
+                rolls[hsh]["n"]+=1
+            else:
+                rolls[hsh]={"cuts":roll[1],"cuts_count":dict(Counter(roll[1]).items()),"n":1,"largura_util":sum(roll[1])}        
+        return Response(list(rolls.values()))
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def CortesOrdemLookup(request, format=None):
+    #conn = connections[connGatewayName].cursor()
+    cols = ['co.*,c.largura_json,c.largura_util']
+    f = Filters(request.data['filter'])
+    if "cortesOrdemId" in request.data['filter']:
+        f.setParameters({"id": {"value": lambda v: v.get('cortesOrdemId')}}, True)
+    else:
+        f.setParameters({"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
+    f.where()
+    if "cortesOrdemId" in request.data['filter']:
+        f.add(f'co.id = :id', lambda v:(v!=None))
+    else:
+        f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
+        f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_cortesordem co
+                join producao_cortes c on c.id=co.cortes_id
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        return Response(response)
+
+def CortesPlanList(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'agg_of_id = :agg_of_id',True)
+    f.value()
+    print(request.data['filter'])
+    dql = db.dql(request.data, False)
+    sql = ""
+    sql = lambda: (f"""
+        select pcp.id plan_id,pcp.idx,pcp.start,pcp.iterations,pcp.observacoes,pc.largura_json cortes,pc.largura_util,pco.id, pco.versao, pco.largura_ordem cortes_ordem,pco.designacao
+        from producao_cortes_plan pcp 
+        join producao_cortesordem pco on pco.id=pcp.cortesordem_id
+        join producao_cortes pc on pc.id=pco.cortes_id
+        {f.text}
+        order by pcp.idx
+    """)
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def GetCortesGeneration(request, format=None):
+    cursor = connections["default"].cursor()
+    filter = request.data['filter']
+
+    try:
+        cursor.execute("CALL list_estadoproducao_summary(%s,%s)", [filter.get("agg_of_id"),None])
+        results = fetchall(cursor)
+        df = pd.DataFrame(results)
+        paletes_stock_df = df[df['current_stock'] == 1].groupby(['id','largura', 'bobines_por_palete'])['current_num_paletes'].sum().reset_index()
+        paletes_stock_df.rename(columns={'current_num_paletes': 'paletes_stock'}, inplace=True)
+        paletes_stock_df=paletes_stock_df[['largura', 'bobines_por_palete','paletes_stock']]
+
+        rows_df = df.drop_duplicates(subset=['gid','largura', 'bobines_por_palete'])
+        rows_df['paletes'] = rows_df.groupby(['largura', 'bobines_por_palete'])['num_paletes'].transform('sum')
+        rows_df['bobines_palete'] = rows_df.groupby(['largura', 'bobines_por_palete'])['bobines_por_palete'].transform('sum')
+        rows_df = rows_df.drop_duplicates(subset=['largura', 'bobines_por_palete'])
+        rows_df = rows_df[['largura','bobines_por_palete', 'bobines_palete', 'paletes']]
+
+        if not paletes_stock_df.empty and not rows_df.empty:
+            result_df = pd.merge(paletes_stock_df, rows_df, on=['largura', 'bobines_por_palete'])
+        elif not paletes_stock_df.empty and rows_df.empty:
+            result_df = paletes_stock_df
+        else:
+            rows_df['paletes_stock'] = 0
+            result_df = rows_df
+        result_df["paletes_para_stock"] = 0
+        result_df['bobines_total'] = result_df.apply(lambda row: row['bobines_por_palete'] * row['paletes'], axis=1)
+        result_list = result_df.to_dict('records')
+        return Response(result_list)
+            
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def SaveCortesOrdem(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def _insertCortesOrdem(data, cursor):
+        id = None
+        f = Filters({"ordem_cod": data.get("ordem_cod"),"cortes_id": data.get("cortes_id")})
+        f.where()
+        f.add(f'ordem_cod = :ordem_cod', True )
+        f.add(f'cortes_id = :cortes_id', True )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (f"""select id from producao_cortesordem {f.text} limit 1"""), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            id = row[0]["id"]
+
+        fields = {
+            **data,
+            "versao":f"""(SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_cortesordem co where co.cortes_id={data.get("cortes_id")})""",
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }
+        if not id:
+            dml = db.dml(TypeDml.INSERT,fields,"producao_cortesordem",None,None,False,["versao"])
+            db.execute(dml.statement, cursor, dml.parameters)
+            return cursor.lastrowid
+        return id
+    
+    def _insertCortes(data, cursor):
+        id = None
+        
+        f = Filters({"largura_cod": data.get("largura_cod")})
+        f.where()
+        f.add(f'largura_cod = :largura_cod', True )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (f"""select id from producao_cortes {f.text} limit 1"""), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            id = row[0]["id"]
+        fields = {
+            **data,
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }
+        if not id:
+            dml = db.dml(TypeDml.INSERT,fields,"producao_cortes",None,None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return cursor.lastrowid
+        return id    
+    try:
+        with connections["default"].cursor() as cursor:
+            _cortes = json.dumps(json.loads(data.get("cortes")), ensure_ascii=False)
+            _cortesordem = '["' + '","'.join(map(str, json.loads(data.get("cortes_ordem")))) + '"]'
+            hash_cortes = hashlib.md5(_cortes.encode('utf-8')).hexdigest()[ 0 : 16 ] if data.get("cortes") else None
+            hash_cortesordem = hashlib.md5(_cortesordem.encode('utf-8')).hexdigest()[ 0 : 16 ] if data.get("cortes_ordem") else None
+            _cortes_id = _insertCortes({"largura_cod":hash_cortes,"largura_json":_cortes,"largura_util":data.get("largura_util")},cursor)
+            _cortesordem_id = _insertCortesOrdem({"designacao":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"largura_ordem":_cortesordem,"ordem_cod": hash_cortesordem,"cortes_id":_cortes_id},cursor)
+            return Response({"status": "success", "id":_cortesordem_id, "title": "Os Cortes foram registados com sucesso com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+
+def SaveCortesPlan(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def checkOrdemFabrico(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'agg_of_id = :agg_of_id', True )
+        f.add(f'`status` = 9', True )
+        f.value("and")
+        exists = db.exists("producao_currentsettings", f, cursor).exists
+        return exists
+    
+    def checkCortes(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'id = :agg_of_id', True )
+        f.add(f'cortes_id is not null', True )
+        f.add(f'cortesordem_id is not null', True )
+        f.value("and")
+        exists = db.exists("producao_tempaggordemfabrico", f, cursor).exists
+        return exists
+
+    def _deleteCortesPlan(agg_of_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_cortes_plan',{"agg_of_id":Filters.getNumeric(agg_of_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    
+    def _insertCortesOrdem(data, cursor):
+        id = None
+        
+        f = Filters({"ordem_cod": data.get("ordem_cod"),"cortes_id": data.get("cortes_id")})
+        f.where()
+        f.add(f'ordem_cod = :ordem_cod', True )
+        f.add(f'cortes_id = :cortes_id', True )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (f"""select id from producao_cortesordem {f.text} limit 1"""), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            id = row[0]["id"]
+
+        fields = {
+            **data,
+            "versao":f"""(SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_cortesordem co where co.cortes_id={data.get("cortes_id")})""",
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }
+        if not id:
+            dml = db.dml(TypeDml.INSERT,fields,"producao_cortesordem",None,None,False,["versao"])
+            db.execute(dml.statement, cursor, dml.parameters)
+            return cursor.lastrowid
+        return id
+    
+    def _insertCortes(data, cursor):
+        id = None
+        
+        f = Filters({"largura_cod": data.get("largura_cod")})
+        f.where()
+        f.add(f'largura_cod = :largura_cod', True )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (f"""select id from producao_cortes {f.text} limit 1"""), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            id = row[0]["id"]
+        fields = {
+            **data,
+            "created_date": datetime.now(),
+            "updated_date": datetime.now()
+        }
+        if not id:
+            dml = db.dml(TypeDml.INSERT,fields,"producao_cortes",None,None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return cursor.lastrowid
+        return id
+
+    try:
+        with connections["default"].cursor() as cursor:
+            isClosed = checkOrdemFabrico(filter.get("agg_of_id"),cursor)
+            if (not isClosed):
+                _deleteCortesPlan(filter.get("agg_of_id"),cursor)
+                for idx, v in enumerate(data.get("rows")):
+                    _cortes = json.dumps(json.loads(v.get("cortes")), ensure_ascii=False)
+                    _cortesordem = '["' + '","'.join(map(str, json.loads(v.get("cortes_ordem")))) + '"]'
+                    hash_cortes = hashlib.md5(_cortes.encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None
+                    hash_cortesordem = hashlib.md5(_cortesordem.encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes_ordem") else None
+                    _cortes_id = _insertCortes({"largura_cod":hash_cortes,"largura_json":_cortes,"largura_util":v.get("largura_util")},cursor)
+                    _cortesordem_id = _insertCortesOrdem({"designacao":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"largura_ordem":_cortesordem,"ordem_cod": hash_cortesordem,"cortes_id":_cortes_id},cursor)
+                    if ("plan_id" in v):
+                        dml = db.dml(TypeDml.INSERT, {"id":v.get("plan_id"),"idx":v.get("idx"),"agg_of_id":filter.get("agg_of_id"),"cortesordem_id":_cortesordem_id,"start":v.get("start"),"iterations":v.get("iterations"),"observacoes":v.get("observacoes"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_cortes_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    else:
+                        dml = db.dml(TypeDml.INSERT, {"idx":v.get("idx"),"agg_of_id":filter.get("agg_of_id"),"cortesordem_id":_cortesordem_id,"start":v.get("start"),"iterations":v.get("iterations"),"observacoes":v.get("observacoes"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_cortes_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    if (v.get("idx")==1):
+                        _id = cursor.lastrowid
+                        hasCortes = checkCortes(filter.get("agg_of_id"),cursor)
+                        if not hasCortes and _id:
+                            dml = db.dml(TypeDml.UPDATE, {"cortes_id":_cortes_id,"cortesordem_id":_cortesordem_id, "cortes_plan_id":_id}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "O plano de Cortes foi registado com sucesso com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def SaveCortes(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    def _getCortes(cortesOrdemId,cursor):
+        f = Filters({"id":cortesOrdemId})
+        f.where()
+        f.add(f'pco.id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f"""
+            SELECT 
+            pco.id,pco.cortes_id,
+            JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
+            ) cortes,
+            JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
+            pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
+            ) cortesordem
+            FROM producao_cortesordem pco join producao_cortes pc on pc.id=pco.cortes_id {f.text}
+        """), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0]
+        return None
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            #A ordem com que são executados os if's são muito importantes!!!!!!
+            _plan_id = data.get("cortes_plan").get("plan_id") if data.get("cortes_plan") is not None and data.get("cortes_plan").get("plan_id") is not None else None
+            _cortesordem_id = filter.get("cortesordem_id")
+            _cortes = _getCortes(_cortesordem_id,cursor)
+            if filter.get("cs_id") is not None:
+                if _plan_id is None:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': None,"type_op":"cortes_plan_none","cortes":_cortes.get("cortes"),"cortesordem":_cortes.get("cortesordem")}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+                elif _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': _plan_id,"type_op":"cortes_plan","cortes":_cortes.get("cortes"),"cortesordem":_cortes.get("cortesordem")}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+            elif filter.get("agg_of_id") is not None:
+                if _plan_id is None:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id':None,"cortes_id":_cortes.get("cortes_id"),"cortesordem_id":_cortes.get("id")}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+                elif _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': _plan_id,"cortes_id":_cortes.get("cortes_id"),"cortesordem_id":_cortes.get("id")}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def FormulacaoPlanList(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'agg_of_id = :agg_of_id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    sql = lambda: (f"""
+        select pfp.id plan_id,pfp.idx,pfp.observacoes,pf.* 
+        from producao_formulacao_plan pfp 
+        join producao_formulacao pf on pf.id=pfp.formulacao_id        
+        {f.text}
+        order by pfp.idx
+    """)
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def SaveFormulacaoPlan(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def checkOrdemFabrico(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'agg_of_id = :agg_of_id', True )
+        f.add(f'`status` = 9', True )
+        f.value("and")
+        exists = db.exists("producao_currentsettings", f, cursor).exists
+        return exists
+    
+    def checkFormulacao(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'id = :agg_of_id', True )
+        f.add(f'formulacao_id is not null', True )
+        f.value("and")
+        exists = db.exists("producao_tempaggordemfabrico", f, cursor).exists
+        return exists
+
+    def _deleteFormulacaoPlan(agg_of_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_formulacao_plan',{"agg_of_id":Filters.getNumeric(agg_of_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            isClosed = checkOrdemFabrico(filter.get("agg_of_id"),cursor)
+            if (not isClosed):
+                _deleteFormulacaoPlan(filter.get("agg_of_id"),cursor)
+                for idx, v in enumerate(data.get("rows")):
+                    if ("plan_id" in v):
+                        dml = db.dml(TypeDml.INSERT, {"id":v.get("plan_id"),"formulacao_id":v.get("id"),"agg_of_id":filter.get("agg_of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_formulacao_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    else:
+                        dml = db.dml(TypeDml.INSERT, {"formulacao_id":v.get("id"),"agg_of_id":filter.get("agg_of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_formulacao_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    if (v.get("idx")==1):
+                        _id = cursor.lastrowid
+                        hasFormulacao = checkFormulacao(filter.get("agg_of_id"),cursor)
+                        if not hasFormulacao and _id:
+                            dml = db.dml(TypeDml.UPDATE, {"formulacao_id":v.get("id"),"formulacao_plan_id":_id}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "O plano de formulações foi registado com sucesso com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+def FormulacoesAvailableList(request, format=None):
+    connection = connections["default"].cursor()    
+    f = Filters({**request.data['filter']})
+    f.setParameters({
+        "group_name": {"value": lambda v: Filters.getUpper(v.get('fgroup')), "field": lambda k, v: f'pf.{k}'},
+        "subgroup_name": {"value": lambda v: Filters.getUpper(v.get('fsubgroup')), "field": lambda k, v: f'pf.{k}'},
+        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdesignacao')), "field": lambda k, v: f'pf.{k}'},
+        "produto_cod": {"value": lambda v: Filters.getUpper(v.get('fproduto')), "field": lambda k, v: f'upper(pp.{k})'},
+        "produto_id": {"value": lambda v: Filters.getNumeric(v.get('fproduto_id')), "field": lambda k, v: f'pf.{k}'},
+        "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper(pf.{k})'},
+        "reference": {"value": lambda v: Filters.getNumeric(v.get('freference')), "field": lambda k, v: f'pf.{k}'},
+        **rangeP(f.filterData.get('fdata_created'), 'pf.created_date', lambda k, v: f'{k}'),
+        **rangeP(f.filterData.get('fdata_updated'), 'pf.updated_date', lambda k, v: f'{k}')
+    }, True)
+    f.where()
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
+    }, False, "and" if f.hasFilters else "and" ,False)
+
+    parameters = {**f.parameters, **f2['parameters']}
+    dql = db.dql(request.data, False,False)
+    cols = f'''pf.*,pp.produto_cod,pa.cod,pa.des'''
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} 
+            FROM producao_formulacao pf
+            LEFT JOIN producao_produtos pp ON pp.id=pf.produto_id
+            LEFT JOIN producao_artigo pa ON pa.id=pf.artigo_id
+            {f.text} {f2["text"]}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    response = db.executeList(sql, connection, parameters, [])
+    return Response(response)   
 
 def ListFormulacoes(request, format=None):
     connection = connections["default"].cursor()    
@@ -596,7 +1262,7 @@ def SaveFormulacao(request, format=None):
         "produto_id": data.get("produto_id").get("id") if type(data.get("produto_id")) is dict else data.get("produto_id"),
         "artigo_id": data.get("artigo_id").get("id") if type(data.get("artigo_id")) is dict else data.get("artigo_id")
     }
-    
+
     def _updateFormulacao(formulacao_id,data,versao,cursor):
         dml = db.dml(TypeDml.UPDATE, {
             'produto_id': data.get("produto_id"),
@@ -607,7 +1273,7 @@ def SaveFormulacao(request, format=None):
             "subgroup_name":data.get("subgroup_name"),
             "artigo_id":data.get("artigo_id"),
             "reference":data.get("reference"),
-            'versao': f'{versao}',
+            'versao': f'versao={versao}',
             'extr0': data.get('extr0'),
             'extr1': data.get('extr1'),
             'extr2': data.get('extr2'),
@@ -618,6 +1284,7 @@ def SaveFormulacao(request, format=None):
             'extr2_val': data.get('extr2_val'),
             'extr3_val': data.get('extr3_val'),
             'extr4_val': data.get('extr4_val'),
+            'joinbc': ifNull(data.get('joinbc'),1),
             "created_date": datetime.now(),
             "updated_date": datetime.now()
         }, "producao_formulacao",{"id":Filters.getNumeric(formulacao_id)},None,None,['versao'])
@@ -644,6 +1311,7 @@ def SaveFormulacao(request, format=None):
             'extr2_val': data.get('extr2_val'),
             'extr3_val': data.get('extr3_val'),
             'extr4_val': data.get('extr4_val'),
+            'joinbc': ifNull(data.get('joinbc'),1),
             "created_date": datetime.now(),
             "updated_date": datetime.now()
         }, "producao_formulacao",None,None,False,['versao'])
@@ -652,6 +1320,10 @@ def SaveFormulacao(request, format=None):
 
     def _insertFormulacaoItems(formulacao_id,cursor):
         for idx, v in enumerate(data.get("items")):
+            v.pop("rowid",None)
+            v.pop("rowvalid",None)
+            v.pop("rowadded",None)
+            v.pop("id", None)
             dml = db.dml(TypeDml.INSERT, {**v, 'formulacao_id':formulacao_id}, "producao_formulacaomateriasprimas",None,None,False)
             db.execute(dml.statement, cursor, dml.parameters)
     
@@ -660,13 +1332,44 @@ def SaveFormulacao(request, format=None):
         db.execute(dml.statement, cursor, dml.parameters)
     try:
         with connections["default"].cursor() as cursor:
-            if filter.get("new") is not None:
+            #A ordem com que são executados os if's são muito importantes!!!!!!
+            if "formulacao_plan" in data:
+                formulacao_plan = data.get("formulacao_plan")
+                if filter.get("cs_id") is not None:
+                    if formulacao_plan is None:
+                        dml = db.dml(TypeDml.UPDATE, {'formulacao_plan_id': None,"type_op":"formulacao_plan_none"}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "title": "Formulação planeada desassociada com Sucesso!"})
+                    elif "id" in formulacao_plan:
+                        #Update only if the id of formulacao is on formulacao_plan
+                        _formulacao = _getFormulacao({"formulacao_id":formulacao_plan.get("id")})
+                        if _formulacao.get("rows") and  len(_formulacao.get("rows"))>0:
+                            _formulacao = {**json.loads(_formulacao.get("rows")[0].get("formulacao")),"plan_id":formulacao_plan.get("plan_id")}
+                            return updateCurrentSettings(filter.get("cs_id"),"formulacao_formulation_change",_formulacao,request.user.id,cursor)
+                        else:
+                            return Response({"status": "error", "title": "Não foi encontrada a formulação associada ao plano selecionado!"})
+                else:
+                    if formulacao_plan is None:
+                        dml = db.dml(TypeDml.UPDATE, {'formulacao_plan_id': None}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "title": "Formulação planeada desassociada com Sucesso!"})
+                    elif "id" in formulacao_plan:
+                        #Update only if the id of formulacao is on formulacao_plan
+                        dml = db.dml(TypeDml.UPDATE, {'formulacao_plan_id': formulacao_plan.get("plan_id"), "formulacao_id":formulacao_plan.get("id")}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                        return Response({"status": "success", "title": "Formulação atribuída com Sucesso!"})
+            elif filter.get("new") is not None:
                 _id = _insertFormulacao(data,1,cursor)
                 _insertFormulacaoItems(_id,cursor)
                 return Response({"status": "success", "id":_id, "title": "A Formulação foi Registada com Sucesso!", "subTitle":f'Formulação {data.get("designacao")} [v1]'})
-            if filter.get("formulacao_id") is not None:
+            elif filter.get("cs_id") is not None:
+                print("current settings")
+                data.pop("method", None)
+                return updateCurrentSettings(filter.get("cs_id"),data.get("type"),data,request.user.id,cursor)
+            elif filter.get("formulacao_id") is not None:
+                print("formulacao....")
                 exists = checkFormulacao(data,filter.get("formulacao_id"),cursor)
-                inuse = checkFormulacaoIsInUse(filter.get("formulacao_id"),cursor)
+                inuse = checkFormulacaoIsInUse(filter.get("formulacao_id"),filter.get("agg_of_id"),cursor)
                 versao = getFormulacaoVersao(data,filter.get("formulacao_id"),cursor)
                 if (exists==1 and inuse==1) or exists==0:
                     _id = _insertFormulacao(data,versao,cursor)
@@ -676,9 +1379,7 @@ def SaveFormulacao(request, format=None):
                     _updateFormulacao(filter.get("formulacao_id"),data,versao,cursor)
                     _deleteFormulacaoItems(filter.get("formulacao_id"),cursor)
                     _insertFormulacaoItems(filter.get("formulacao_id"),cursor)
-            if filter.get("cs_id") is not None:
-                del data["method"]
-                return updateCurrentSettings(filter.get("cs_id"),data.get("type"),data,request.user.id,cursor)
+                    return Response({"status": "success", "title": "A Formulação foi alterada com Sucesso!", "subTitle":f'Formulação {data.get("designacao")} [v{versao}]'})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -706,19 +1407,46 @@ def SetOrdemFabricoFormulacao(request, format=None):
             return row[0]
         return None
     
-    def _updateAgg(aggid,formulacao_id,cursor):
+    def _updateAgg(agg_id,formulacao_id,cursor):
         dml = db.dml(TypeDml.UPDATE, {
-            'formulacao_id': formulacao_id,
-            "updated_date": datetime.now()
-        }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(aggid)},None,None,[])
+            'formulacao_id': formulacao_id
+        }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(agg_id)},None,None,[])
         db.execute(dml.statement, cursor, dml.parameters)
     
+    def _checkPlan(agg_id,cursor):
+        f = Filters({"id": agg_id})
+        f.where()
+        f.add(f'pf.id = :id', True )
+        f.add(f'pf.formulacao_plan_id is not null', True )
+        f.value("and")
+        exists = db.exists("producao_tempaggordemfabrico pf", f, cursor).exists
+        return exists
+    
+    def _addPlan(agg_id,formulacao_id,cursor):
+        plan_id = _checkPlan(agg_id,cursor)
+        dta = {
+        'agg_of_id':agg_id,
+        'formulacao_id': formulacao_id,
+        'idx': f"(select IFNULL(max(idx),0)+1 from producao_formulacao_plan pfp where agg_of_id={agg_id})",
+        'user_id':request.user.id,
+        't_stamp':datetime.now()
+        }
+        dml = db.dml(TypeDml.INSERT, dta, "producao_formulacao_plan",None,None,False,["idx"])
+        db.execute(dml.statement, cursor, dml.parameters)
+        lastid = cursor.lastrowid
+        if plan_id==0:
+            dml = db.dml(TypeDml.UPDATE, {
+            'formulacao_plan_id': lastid
+            }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(agg_id)},None,None,[])
+            db.execute(dml.statement, cursor, dml.parameters)
+
     try:
         with connections["default"].cursor() as cursor:
             row = _isAggInElaboration(filter.get("aggid"),cursor)
             if row is None:
-                return Response({"status": "error", "title": "Não é possível associar a formulação à ordem de fabrico selecionada! Só é possível com o estado 'Em elaboração'."})
+                return Response({"status": "error", "title": "Não é possível associar a formulação à ordem de fabrico selecionada! Só é possível no estado 'Em elaboração'."})
             _updateAgg(filter.get("aggid"),data.get("formulacao_id"),cursor)
+            _addPlan(filter.get("aggid"),data.get("formulacao_id"),cursor)
             return Response({"status": "success", "title": "A Formulação foi Associada com Sucesso!"})
     except Exception as error:
         print(str(error))
@@ -840,6 +1568,15 @@ def ClosePrf(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     
+    # def checkOrdemFabrico(agg_of_id,cursor):
+    #     f = Filters({"agg_of_id": agg_of_id})
+    #     f.where()
+    #     f.add(f'agg_of_id = :agg_of_id', True )
+    #     f.add(f'`status` = 9', True )
+    #     f.value("and")
+    #     exists = db.exists("producao_currentsettings", f, cursor).exists
+    #     return exists
+
     def getPrf(ofid,cursor):
         f = Filters({"id": ofid})
         f.where()
@@ -887,6 +1624,85 @@ def RevertToElaboration(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
+def Ungroup(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with connections["default"].cursor() as cursor:
+            args = [data.get("temp_ofabrico")]
+            cursor.callproc('ungroup_of',args)
+            updateMaterializedView()
+            return Response({"status": "success","title":"Ordem de fabrico desagregada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def DeleteElaborationData(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with connections["default"].cursor() as cursor:
+            args = [data.get("temp_ofabrico")]
+            cursor.callproc('delete_of_elaboration_data',args)
+            updateMaterializedView()
+            return Response({"status": "success","title":"Ordem de fabrico apagada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def ResyncOrderQtys(request, format=None):
+    data = request.data.get("parameters")
+
+    def getCurrentSettings(temp_ofabrico):
+        f = Filters({"id":temp_ofabrico})
+        f.where()
+        f.add(f'id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f'SELECT id,ofs FROM producao_currentsettings pc where agg_of_id = (select agg_of_id from producao_tempordemfabrico {f.text})'), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0]
+        
+    def getPaletizacaoId(temp_ofabrico):
+        f = Filters({"id":temp_ofabrico})
+        f.where()
+        f.add(f'id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f"""select paletizacao_id from producao_tempordemfabrico {f.text}"""), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0].get("paletizacao_id")
+
+    try:
+        with connections["default"].cursor() as cursor:
+            _cp = json.loads(db.executeSimpleList(lambda: (f"""select fcompute_linearmeters('{json.dumps({"artigo_diam":data.get("item_diam"),"artigo_thickness":data.get("item_thickness"),"artigo_lar":data.get("item_width"),"qty_encomenda":data.get("qty_prevista"),"artigo_core":data.get("item_core")}, ensure_ascii=False)}') c"""), cursor, {}).get("rows")[0].get("c"))
+            _paletizacao_id = getPaletizacaoId(data.get("temp_ofabrico"))
+            _current_settings = getCurrentSettings(data.get("temp_ofabrico"))
+            if _current_settings:
+                _ofs = json.loads(_current_settings.get("ofs"))
+                for item in _ofs:
+                    if item['of_id'] == data.get("temp_ofabrico"):
+                        item['qty_encomenda'] = data.get("qty_prevista")
+                        item['linear_meters'] = _cp.get("linear_meters")
+                        item['n_voltas'] = _cp.get("n_voltas")
+                        item['sqm_bobine'] = _cp.get("sqm_bobine")
+                dml = db.dml(TypeDml.UPDATE, {"type_op":"resync_qtys", "ofs":json.dumps(_ofs, ensure_ascii=False)}, "producao_currentsettings",{"id":Filters.getNumeric(_current_settings.get("id"))},None,None)
+                db.execute(dml.statement, cursor, dml.parameters)
+            _npaletes = None
+            if _paletizacao_id:
+                _npaletes = db.executeSimpleList(lambda: (f"""select fcompute_paletizacao(JSON_MERGE_PATCH(JSON_OBJECT("paletizacao_id",{_paletizacao_id}),'{json.dumps(_cp, ensure_ascii=False)}')) n_paletes"""), cursor, {}).get("rows")[0].get("n_paletes")
+                _npaletes = json.loads(_npaletes)
+                _npaletes = {
+                    "total": _npaletes[0]['total'],
+                    "items": [item['items'] for item in _npaletes]
+                }
+            dml = db.dml(TypeDml.UPDATE, {
+                "qty_encomenda": data.get("qty_prevista"),
+                "linear_meters": _cp.get("linear_meters"),
+                "n_voltas": _cp.get("n_voltas"),
+                "sqm_bobine": _cp.get("sqm_bobine"),
+                "n_paletes":json.dumps(_npaletes, ensure_ascii=False)
+            }, "producao_tempordemfabrico",{"id":Filters.getNumeric(data.get("temp_ofabrico"))},None,None)
+            db.execute(dml.statement, cursor, dml.parameters)
+            updateMaterializedView()
+            return Response({"status": "success","title":"Quantidades de encomenda na ordem de fabrico sincronizada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
 #region ESTADO PRODUCAO
 
 def GetEstadoProducao(request, format=None):
@@ -920,14 +1736,17 @@ def GetEstadoProducao(request, format=None):
         {"key":"current","st":"CALL list_estadoproducao_current(%s)","array":False}
     ]
     results={}
+    print(request.data.get("filter"))
     try:
         for item in calls:
             if item.get("key") in ["params","current"]:
                 cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id")])
+            elif item.get("key") in ["rows"]:
+                cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id")])
             elif item.get("key") in ["paletes"]:
-                cursor.execute(item.get("st"), [None,request.data.get("filter").get("ordem_id"),1])
+                cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id"),1])
             else:
-                cursor.execute(item.get("st"), [None,request.data.get("filter").get("ordem_id")])
+                cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id")])
             results[item.get("key")] = fetchall(cursor) if item.get("array") else fetchone(cursor)
         response = {"status": "success", "rows": results}
     except Error as error:
@@ -935,10 +1754,22 @@ def GetEstadoProducao(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
-
-
-
-
+def GetOrdemFabricoSettings(request, format=None):
+    cursor = connections["default"].cursor()
+    calls = [{"key":"settings","st":"CALL ordemfabrico_settings(%s,%s,%s)","array":False}]
+    results={}
+    try:
+        for item in calls:
+            if item.get("key") in ["settings"]:
+                print([request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id"),request.data.get("filter").get("draft_ordem_id")])
+                cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id"),request.data.get("filter").get("draft_ordem_id")])
+                #results[item.get("key")] = fetchall(cursor) if item.get("array") else fetchone(cursor)
+                results = fetchall(cursor) if item.get("array") else fetchone(cursor)
+        response = {"status": "success", "rows": results}
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 #endregion
 
@@ -983,13 +1814,20 @@ def checkFormulacao(data,formulacao_id,cursor):
     exists = db.exists("producao_formulacao pf", f, cursor).exists
     return exists
 
-def checkFormulacaoIsInUse(formulacao_id,cursor):
-    f = Filters({"id": formulacao_id})
+def checkFormulacaoIsInUse(formulacao_id,agg_of_id,cursor):
+    f = Filters({"id": formulacao_id,"agg_id":agg_of_id})
     f.where()
-    f.add(f'tagg.formulacao_id = :id', True )
+    f.add(f't.formulacao_id = :id', True )
+    if agg_of_id:
+         f.add(f't.id <> :agg_id', True )
     f.value("and")
-    exists = db.exists("producao_tempaggordemfabrico tagg", f, cursor).exists
-    return exists
+    exists1 = db.exists("producao_tempaggordemfabrico t", f, cursor).exists
+    if agg_of_id:
+        f.remove(1)
+        f.add(f't.agg_of_id <> :agg_id', True )
+        f.value("and")
+    exists2 = db.exists("producao_formulacao_plan t", f, cursor).exists
+    return exists1 and exists2       
 
 def checkAgg(ofabrico_id,ofabrico_cod,cursor):
     if ofabrico_id is None:

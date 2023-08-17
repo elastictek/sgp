@@ -37,7 +37,8 @@ import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, Us
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 const { Title } = Typography;
-import { SocketContext, MediaContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 
 const OFabricoTimeLineShortList = React.lazy(() => import('../OFabricoTimeLineShortList'));
 

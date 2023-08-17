@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -57,8 +56,8 @@ export default ({ record, card, parentReload }) => {
     const primaryKeys = ['id'];
     const columns = [
         { key: 'type_desc', name: '', width: 40, frozen: true, formatter: p => <EventColumn v={p.row.type_desc} /> },
-        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => moment(props.row.inicio_ts).format(DATETIME_FORMAT) },
-        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => moment(props.row.fim_ts).format(DATETIME_FORMAT) },
+        { key: 'inicio_ts', name: 'Início', width: 130, frozen: true, formatter: props => dayjs(props.row.inicio_ts).format(DATETIME_FORMAT) },
+        { key: 'fim_ts', name: 'Fim', width: 130, frozen: true, formatter: props => dayjs(props.row.fim_ts).format(DATETIME_FORMAT) },
         { key: 'nome', name: 'Bobinagem', frozen: true, width: 100 },
         { key: 'diametro', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diametro} mm</div> },
         { key: 'metros', name: 'Comprimento', width: 110, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros} m</div> },

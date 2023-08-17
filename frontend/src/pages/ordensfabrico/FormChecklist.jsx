@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -107,7 +107,7 @@ export default (props) => {
             const formValues = await loadChecklistLookup(_checklist_id);
             if (formValues.rows.length > 0) {
                 _title = `Checklist ${formValues.rows[0].nome}`;
-                form.setFieldsValue({ ...formValues.rows[0], timestamp: moment(formValues.rows[0].timestamp), agg: formValues.rows[0]?.agg_of_id });
+                form.setFieldsValue({ ...formValues.rows[0], timestamp: dayjs(formValues.rows[0].timestamp), agg: formValues.rows[0]?.agg_of_id });
                 setChecklistId(formValues.rows[0].id);
                 const _rows = formValues.tasks.rows.map(v => ({ ...v, parameters: json(v.parameters) }));
                 dataAPITasks.setRows(_rows);
@@ -285,7 +285,7 @@ export default (props) => {
                                                     { key: 'type', name: 'Tarefa', frozen: true, width: 150, formatter: p => <TypeChecklist v={p.row.type} onClick={() => onTaskClick(p.row)} /> },
                                                     { key: 'subtype', name: 'Tipo', frozen: true, width: 150, formatter: p => <SubType type={p.row.type} v={p.row.subtype} /> },
                                                     { key: 'status', width: 110, name: 'Estado', formatter: p => <Status v={p.row.status} genre="f" /> },
-                                                    { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+                                                    { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
                                                     { key: 'ofid', width: 140, name: 'Ordem Fabrico', formatter: p => p.row.ofid },
                                                     { key: 'cliente_nome', width: 200, name: 'Cliente', formatter: p => p.row.parameters?.cliente?.BPCNAM_0 },
                                                     { key: 'artigo_cod', width: 150, name: 'Artigo', formatter: p => p.row.parameters?.artigo?.cod },
@@ -332,7 +332,7 @@ export default (props) => {
                                         { key: 'type', name: 'Tarefa', frozen: true, width: 150, formatter: p => <ButtonTask s={p.row.status} t={p.row.type} onClick={() => onTaskClick(p.row)} /> },
                                         { key: 'subtype', width: 150, name: 'Tipo', formatter: p => <SubType type={p.row.type} v={p.row.subtype} /> },
                                         { key: 'status', width: 110, name: 'Estado', formatter: p => <ItemStatus v={p.row.status} /> },
-                                        { key: 'timestamp', width: 130, name: 'Data', formatter: p => moment(p.row.timestamp).format(DATETIME_FORMAT) },
+                                        { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
                                         { key: 'artigo_cod', width: 150, name: 'Artigo', formatter: p => json(p.row.parameters)?.artigo?.cod },
                                         { key: 'artigo_des', name: 'Artigo Des.', formatter: p => json(p.row.parameters)?.artigo?.des },
                                         { key: 'cliente_nome', name: 'Cliente', formatter: p => json(p.row.parameters)?.cliente?.BPCNAM_0 },

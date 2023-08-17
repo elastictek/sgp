@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -65,7 +65,11 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
     }
     />);
 }
-const useStyles = createUseStyles({});
+const useStyles = createUseStyles({
+    open:{
+        backgroundColor:"#d9f7be !important"
+    }
+});
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
@@ -159,8 +163,8 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Paletes Stock', key: 'op-stock', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
-        ...(data.ativa == 1 && data.ofabrico_status == 3) ? [
-            { label: 'Nova Palete Linha', key: 'op-newpalete', icon: <AppstoreAddOutlined style={{ fontSize: "18px" }} /> },
+        ...((allows?.allowNewPalete && data.ativa == 1 && data.ofabrico_status == 3) || (allows?.allowNewPalete && data.ativa == 1)) ? [
+            { label: 'Nova Palete de Produto Acabado', key: 'op-newpalete', icon: <AppstoreAddOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
         ...(allows?.allowPackingList && data.ofabrico_status >= 2) ? [
@@ -174,11 +178,20 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Reverter para elaboração', key: 'op-revert', icon: <UndoOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
-        ...(allows?.allowReopen && data.ativa == 0 && (data.ofabrico_status == 9 || data.ofabrico_status == 2)) ? [
+        ...((allows?.allowValidar && data.ofabrico_status >= 1 && data.ofabrico_status < 9) || (allows?.allowValidar && data.ativa == 1)) ? [
+            { label: 'Sincronizar quantidades (ERP)', key: 'op-resync-qtys', icon: <SyncOutlined style={{ fontSize: "18px" }} /> },
+            { type: 'divider' }
+        ] : [],
+        ...(allows?.allowValidar && data.ofabrico_status == 1) ? [
+            { label: 'Desagregar Ordem', key: 'op-ungroup', icon: <UngroupOutlined style={{ fontSize: "18px" }} /> },
+            { label: 'Apagar dados da ordem de fabrico', key: 'op-delete', icon: <DeleteOutlined style={{ fontSize: "18px" }} /> },
+            { type: 'divider' }
+        ] : [],
+        ...(allows?.allowReopen && data.ativa == 0 && (data.ofabrico_status == 9 || data.ofabrico_status == 2 || data.ofabrico_status == 3)) ? [
             { label: 'Abrir Proforma (PRF)', key: 'op-open', icon: <BsCircle style={{ fontSize: "10px" }} /> },
             { type: 'divider' }
         ] : [],
-        ...(allows?.allowReopen && data.ativa == 1 && (data.ofabrico_status == 9 || data.ofabrico_status == 2)) ? [
+        ...(allows?.allowReopen && data.ativa == 1 && (data.ofabrico_status == 9 || data.ofabrico_status == 2 || data.ofabrico_status == 3)) ? [
             { label: 'Fechar Proforma (PRF)', key: 'op-close', icon: <BsCircleFill style={{ fontSize: "10px" }} /> },
             { type: 'divider' }
         ] : [],
@@ -208,7 +221,7 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
 }
 
 
-export default ({ noid = true, setFormTitle, ...props }) => {
+export default ({ noid = false, setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "ordemfabrico", item: "list" });//Permissões Iniciais
@@ -448,8 +461,9 @@ export default ({ noid = true, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'iorder', header: 'Encomenda', filter: { show: "toolbar", op: "any" }, render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'cod', header: 'Agg', filter: { show: true, op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'ofabrico_status', header: 'Estado Produção', filter: { show: true, type: "select", field: { style: { width: "80px" }, options: OFABRICO_FILTER_STATUS } }, userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data)} /> }] : [],
-        ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 160, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 190, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item", header: "Artigo", filter: { show: true, op: "any" }, defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "item_nome", header: "Des.", filter: { show: true, op: "any" }, defaultWidth: 210, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item_nome?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</LeftAlign> }] : [],
 
         ...(true) ? [{ name: "n_paletes", header: "Total", filter: { show: true, type: "number", field: { style: { width: "70px" } } }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <LeftAlign style={{}}>{data?.n_paletes_total}/{data?.n_paletes}</LeftAlign> }] : [],
         ...(true) ? [{ name: "progress", header: "", filter: { show: false }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <Progress percent={getFloat(data?.progress, 0)} showInfo={true} trailColor="#dbdbdb" /> }] : [],
@@ -565,6 +579,15 @@ export default ({ noid = true, setFormTitle, ...props }) => {
             case "op-open":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "OpenPrf", data: { ofid: data.ofabrico_sgp }, content: `Tem a certeza que deseja abrir a Proforma (PRF) ${data?.prf}` });
                 break;
+            case "op-ungroup":
+                onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "Ungroup", data: { temp_ofabrico: data.temp_ofabrico }, content: `Tem a certeza que deseja desagrupar a ordem ${data?.ofabrico}` });
+                break;
+            case "op-delete":
+                onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "DeleteElaborationData", data: { temp_ofabrico: data.temp_ofabrico }, content: `Tem a certeza que deseja eliminar os dados da ordem ${data?.ofabrico}? Esta ação não pode ser revertida!` });
+                break;
+            case "op-resync-qtys":
+                onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ResyncOrderQtys", data, content: `Tem a certeza que deseja sincronizar as quantidades da encomenda na ordem ${data?.ofabrico}` });
+                break;
             case "op-close":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ClosePrf", data: { ofid: data.ofabrico_sgp }, content: `Tem a certeza que deseja Fechar a Proforma (PRF) ${data?.prf}` });
                 break;
@@ -577,7 +600,13 @@ export default ({ noid = true, setFormTitle, ...props }) => {
                 showModal();
                 break;
             case "op-newpalete":
-                navigate('/app/paletes/formnewpaleteline', { state: { id: data?.ofabrico_sgp, of: data?.ofabrico, tstamp: Date.now() }, replace: true });
+                navigate('/app/paletes/formnewpaleteline', {
+                    state: {
+                        id: data?.ofabrico_sgp, of: data?.ofabrico, tstamp: Date.now(),
+                        cliente_nome: data?.cliente_nome, iorder: data?.iorder, prf: data?.prf, artigo_cod: data?.item, artigo_des: data?.item_nome,
+                        artigo_largura: data?.item_width, artigo_core: data?.item_core
+                    }, replace: true
+                });
                 //setModalParameters({ content: "newpalete", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Nova Palete <span>de linha</span> <span style={{ fontSize: "12px", fontWeight: 400 }}>{data?.ofabrico}</span></div>, parameters: { filter: { id: data?.ofabrico_sgp, of: data?.ofabrico } } });
                 //showModal();
                 break;
@@ -615,12 +644,17 @@ export default ({ noid = true, setFormTitle, ...props }) => {
             showModal();
 
         }
-        if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
-            //navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
+        if ((data?.ofabrico_status === 1 || data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
+            ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            setModalParameters({ content: "viewordemfabrico", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, ...allows } });
-            showModal();
-
+            //setModalParameters({ content: "viewordemfabrico", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, ...allows } });
+            //showModal();
+            console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",data)
+            navigate('/app/ofabrico/ordemfabrico',{
+                state: {
+                    ...data, ...allows, tstamp: Date.now()
+                }, replace: true
+            });
         }
     }
 
@@ -774,9 +808,9 @@ export default ({ noid = true, setFormTitle, ...props }) => {
     }
 
     const rowClassName = ({ data }) => {
-        // if () {
-        //     return tableCls.error;
-        // }
+        if (data.ativa==1) {
+             return classes.open;
+        }
     }
 
     const onValuesChange = (changed, all) => {

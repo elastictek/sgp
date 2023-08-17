@@ -116,7 +116,7 @@ export default ({ changedValues }) => {
 
     return (
         <div style={{height:"calc(100vh - 350px)"}}>
-            <FormulacaoReadOnly noDosers form={form} parameters={{formulacao_id:form.getFieldValue("formulacao_id")}}/>
+            <FormulacaoReadOnly noDosers header={true} form={form} parameters={{formulacao_id:form.getFieldValue("formulacao_id")}}/>
         </div>
     );
 

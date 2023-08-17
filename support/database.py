@@ -934,6 +934,11 @@ class Filters:
             if test:
                 self.__filters.append(f['filter'])
         return self
+    
+    def remove(self,index):
+        if not filter:
+            return None
+        self.__filters.pop(index)
 
     def auto(self, exclude=[], include=[], encloseColumns=True, typedb=TypeDB.MYSQL):
         baseData = {**self.filterData, **self.paramsSetValues}
@@ -1007,7 +1012,7 @@ class Filters:
         return value.upper()
     def getLower(value):
         if value is None: return None
-        return value.upper()
+        return value.lower()
 
 def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
     filters, parameters = [], {}

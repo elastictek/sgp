@@ -16,7 +16,6 @@ import FormNonwovens from './FormNonwovens';
 import { dateTimeDiffValidator } from "utils/schemaValidator";
 import { OFabricoContext } from './FormOFabricoValidar';
 import { MediaContext } from '../../App';
-import moment from 'moment';
 import { getSchema } from "utils/schemaValidator";
 import useModalv4 from 'components/useModalv4';
 import Portal from "components/portal";
@@ -173,8 +172,8 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                     let sd = noValue(form.getFieldValue("start_prev_date"), ctx.start_prev_date);
                     let ed = noValue(form.getFieldValue("end_prev_date"), ctx.end_prev_date);
                     const plan = {
-                        start_prev_date: sd ? moment(sd, 'YYYY-MM-DD HH:mm') : null,
-                        end_prev_date: ed ? moment(ed, 'YYYY-MM-DD HH:mm') : null,
+                        start_prev_date: sd ? dayjs(sd, 'YYYY-MM-DD HH:mm') : null,
+                        end_prev_date: ed ? dayjs(ed, 'YYYY-MM-DD HH:mm') : null,
                         f_amostragem: (form.getFieldValue("amostragem")) ? form.getFieldValue("amostragem") : 4,
                         sentido_enrolamento: form.getFieldValue("sentido_enrolamento") ? parseInt(form.getFieldValue("sentido_enrolamento")) : 1,
                         observacoes: form.getFieldValue("observacoes") ? form.getFieldValue("observacoes") : ''

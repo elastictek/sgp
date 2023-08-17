@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -87,7 +86,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'peso', name: 'Peso', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.peso} kg</div> },
         //{ key: 'tara', name: 'Tara', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.tara}</div> },
         { key: 'produto_granulado', name: 'Produto' },
-        { key: 'timestamp', width: 140, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) }
+        { key: 'timestamp', width: 140, name: 'Data', formatter: props => dayjs(props.row.timestamp).format(DATETIME_FORMAT) }
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (

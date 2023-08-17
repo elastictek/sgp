@@ -445,7 +445,7 @@ const CreateEvent = ({ parentRef, closeParent, loadParentData }) => {
     );
 }
 
-export default ({ noid = false,setFormTitle, ...props }) => {
+export default ({ noid = false, setFormTitle, ...props }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const classes = useStyles();
@@ -615,12 +615,14 @@ export default ({ noid = false,setFormTitle, ...props }) => {
     }
 
     const onBobinagemClick = (row) => {
-        //if (row?.valid === 1) {
-        //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
-        //    showModal();
-        //} else {
-        navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
-        //}
+        if (row?.valid === 0) {
+            //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
+            //    showModal();
+            navigate("/app/bobinagens/formbobinagemvalidar", { state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        }
+        else {
+            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        }
     }
 
     useEffect(() => {
@@ -636,7 +638,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
             formFilter.setFieldsValue({ typelist, ...fieldValues });
             dataAPI.addFilters(filterValues, true, false);
             dataAPI.setSort(defaultSort);
-            dataAPI.addParameters({ ...defaultParameters,typelist }, true, false);
+            dataAPI.addParameters({ ...defaultParameters, typelist }, true, false);
             dataAPI.fetchPost({ signal });
 
             setAllowEdit({ datagrid: permission.allow() });
@@ -648,7 +650,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
         switch (type) {
             case "filter":
                 //remove empty values
-               // const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
+                // const { typelist, ...vals } = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
                 const { typelist, ...vals } = dataAPI.removeEmpty({ ...defaultFilters, ...values });
                 const _values = {
                     ...vals,
@@ -661,7 +663,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
                     fdestino: getFilterValue(vals?.fdestino, 'any'),
                 };
                 dataAPI.addFilters(dataAPI.removeEmpty(_values));
-                dataAPI.addParameters({...defaultParameters, typelist })
+                dataAPI.addParameters({ ...defaultParameters, typelist })
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -752,7 +754,7 @@ export default ({ noid = false,setFormTitle, ...props }) => {
                 editable={true}
                 clearSort={true}
                 rowHeight={formFilter.getFieldValue('typelist') === "C" ? 44 : 28}
-                rowClass={(row) => (row?.rowvalid === 0 ? classes.notValid : undefined)}
+                rowClass={(row) => ((row?.rowvalid === 0 || row?.valid==0) ? classes.notValid : undefined)}
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<Space>

@@ -186,7 +186,50 @@ def Sql(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response({})
-    
+
+def checkArtigosSpecsPlan(id,type,cursor):
+    #Check if specifications are in use...
+    if type is None:
+        f = Filters({"id": id})
+        f.where()
+        f.add(f'pap.lab_artigospecs_id = :id', True )
+        f.value("and")
+        exists = db.exists("producao_artigospecs_plan pap", f, cursor).exists
+        return exists
+    if type == "lab_metodo_id":
+        f = Filters({"id": id})
+        f.where()
+        f.add(f'lab_metodo_id = :id', lambda v:(v!=None) )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (
+        f"""
+            select id from producao_artigospecs_plan pap where lab_artigospecs_id in (
+                select id from producao_lab_artigospecs pla {f.text}
+            ) limit 1
+        """
+        ), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            return True
+        return False
+    if type == "parameter_id":
+        f = Filters({"id": id})
+        f.where()
+        f.add(f'parameter_id = :id', lambda v:(v!=None) )
+        f.value("and")
+        row = db.executeSimpleList(lambda: (
+        f"""
+            select id from producao_artigospecs_plan pap where lab_artigospecs_id in (
+            select id from producao_lab_artigospecs pla where pla.lab_metodo_id in (
+                select id from producao_lab_metodos plm2 where id in (select lab_metodo_id from producao_lab_metodoparameters plm)
+            )
+            ) limit 1
+        """
+        ), cursor, f.parameters)["rows"]
+        if row and len(row)>0:
+            return True
+        return False
+    return False
+
 def LabParametersUnitLookup(request, format=None):
     conn = connections["default"].cursor()
     cols = ['unit']
@@ -245,12 +288,16 @@ def NewLabBulkParameter(request, format=None):
         print(f"""Erro ao carregar registo(s)! {itm.get("designacao")} {str(error)} """)
         return Response({"status": "error", "title": f"""Erro ao carregar registo(s)! {itm.get("designacao")} {str(error)} """})
 
+#ok
 def UpdateLabParameter(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"parameter_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         id = item.get("id")
@@ -300,17 +347,21 @@ def ListLabParameters(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
+#ok
 def DeleteLabParameter(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
-            with connections["default"].cursor() as cursor:        
+            with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"parameter_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})     
                 dml = db.dml(TypeDml.DELETE,None,"producao_lab_parameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
     except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
+        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
 
 def ListLabMetodos(request, format=None):
     connection = connections["default"].cursor()    
@@ -385,12 +436,16 @@ def NewLabMetodo(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
 
+#ok
 def UpdateLabMetodo(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         id = item.get("id")
@@ -403,17 +458,21 @@ def UpdateLabMetodo(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
 
+#ok
 def DeleteLabMetodo(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
-            with connections["default"].cursor() as cursor:        
+            with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodos",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
     except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
+        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
 
 def ListLabMetodoParameters(request, format=None):
     connection = connections["default"].cursor()    
@@ -454,24 +513,32 @@ def ListLabMetodoParameters(request, format=None):
     response = db.executeList(sql, connection, parameters, [])
     return Response(response)
 
+#ok
 def DeleteLabMetodoParameter(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
-            with connections["default"].cursor() as cursor:        
+            with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})      
                 dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodoparameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
     except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eleminar registo! {str(error)}"})
+        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
 
+#ok
 def UpdateLabMetodoParameters(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 for idx, v in enumerate(data.get("rows")):
                     if v.get("rowadded")==1:
                         values ={"parameter_id":v.get("parameter_id"),"status":v.get("status"),"required":v.get("required"),"decisive":v.get("decisive"), "lab_metodo_id":filter.get("id"), "t_stamp":datetime.now(),"user_id":request.user.id}
@@ -587,12 +654,16 @@ def NewLabArtigoSpecs(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao criar especificação! {str(error)}"})
 
+#ok
 def UpdateLabArtigoSpecs(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         id = item.get("id")
@@ -602,6 +673,24 @@ def UpdateLabArtigoSpecs(request, format=None):
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
+
+#ok
+def DeleteLabArtigoSpecs(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_artigospecs_parameters",{"lab_artigospecs_id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_artigospecs",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
 
 def ListArtigoSpecsParameters(request, format=None):
     connection = connections["default"].cursor()    
@@ -637,12 +726,16 @@ def ListArtigoSpecsParameters(request, format=None):
     ), connection, f.parameters)
     return Response(response)
 
+#ok
 def UpdateArtigoSpecsParameters(request, format=None):
     data = request.data.get("parameters")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
+                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)
+                if inuse:
+                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         if item.get("value1") is None or item.get("value2") is None or item.get("value3") is None or item.get("value4") is None:
@@ -657,6 +750,20 @@ def UpdateArtigoSpecsParameters(request, format=None):
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
     except Exception as error:
         return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
+
+def CopyTo(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    print(data)
+    print(filter)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:        
+                args = [filter.get("id"),request.user.id]
+                cursor.callproc('copy_lab_artigospecs',args)
+                return Response({"status": "success", "title": "Especificações copiadas com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao copiar especificações! {str(error)}"})
 
 def ListLabBobinagensEssays(request, format=None):
     connection = connections["default"].cursor()    

@@ -3,7 +3,6 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -89,11 +88,7 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
 //     const navigate = useNavigate();
 
 //     const onChange = (v, field) => {
-//         /* if (field === "typelist") {
-//             navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-//         } else {
-//             form.submit();
-//         } */
+
 
 //     }
 

@@ -364,7 +364,6 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 if (status.errors > 0) {
                     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
                 } else {
-                    console.log("to submit", rows)
                     response = await fetchPost({ url: `${API_URL}/paletes/sql/`, parameters: { method: "AddPaletesStock", rows, ordem_id: inputParameters.current.id } });
                     if (response?.data?.status !== "error") {
                         dataAPI.update(true);

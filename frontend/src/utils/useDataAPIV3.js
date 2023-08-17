@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
-import { deepEqual, pickAll } from 'utils';
+import { deepEqual, pickAll, getInt } from 'utils';
+import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import { validateMessages } from './schemaValidator';
 
@@ -66,7 +67,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         data: (payload?.data) ? payload.data : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
-        ...getLocalStorage(id, useStorage)
+        ...getLocalStorage(id, useStorage),
+        totalRows: 0
     });
     const ref = useRef({
         initLoaded: payload?.initLoaded || false,
@@ -80,7 +82,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         parameters: payload?.parameters ? { ...payload.parameters } : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
-        ...getLocalStorage(id, useStorage)
+        ...getLocalStorage(id, useStorage),
+        totalRows: 0
     });
 
     const addAction = (type) => {
@@ -150,6 +153,43 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             });
         }
     }
+    const getSkip = (fromState) => {
+        console.log("----DEPRECATED----getSkip");
+        if (fromState) {
+            return (state.pagination.page - 1) * state.pagination.pageSize;
+        } else {
+
+            return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
+        }
+    };
+    const getRowsFromTo = () => {
+        const from = ((getInt(state.pagination.page, 1) - 1) * getInt(state.pagination.pageSize, 1)) + 1;
+        const nPagerows = ((state?.data?.rows && Array.isArray(state?.data?.rows)) ? getInt(state.data.rows?.length) <= 0 ? 0 : getInt(state.data.rows?.length) - 1 : 0);
+        const to = from + nPagerows;
+        return { from, to };
+    }
+
+    const getPagination = (fromState = false) => {
+        if (fromState) {
+            return { ...state.pagination };
+        } else {
+            return { ...ref.current.pagination };
+        }
+    };
+    const getPageSize = (fromState = false) => {
+        if (fromState) {
+            return state.pagination.pageSize;
+        } else {
+            return ref.current.pagination.pageSize;
+        }
+    };
+    const getCurrentPage = (fromState = false) => {
+        if (fromState) {
+            return getInt(state.pagination.page, 1);
+        } else {
+            return getInt(ref.current.pagination.page, 1);
+        }
+    };
 
 
     const setSort = (obj, defaultObj = [], updateStateData = false) => {
@@ -285,28 +325,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return ref.current;
         }
     }
-    const getSkip = (fromState) => {
-        if (fromState) {
-            return (state.pagination.page - 1) * state.pagination.pageSize;
-        } else {
-            return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
-        }
-    };
-    const getPagination = (fromState = false) => {
-        if (fromState) {
-            return { ...state.pagination };
-        } else {
-            return { ...ref.current.pagination };
-        }
-    };
-    const getPageSize = (fromState = false) => {
-        if (fromState) {
-            return state.pagination.pageSize;
-        } else {
-            return ref.current.pagination.pageSize;
-        }
-    };
-
     const getFilter = (fromState = false) => {
         if (fromState) {
             return { ...state.filter };
@@ -351,7 +369,17 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             if (payload?.url) { draft.url = payload?.url; }
 
         });
-        
+
+    }
+
+    const _totalRows = (rows, total) => {
+        if (total) {
+            return total;
+        }
+        if (rows && Array.isArray(rows)) {
+            return rows.length;
+        }
+        return 0;
     }
 
     const setData = (data, payload) => {
@@ -359,9 +387,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         if (payload?.update) {
             ref.current.updated = Date.now();
         }
+        ref.current.totalRows = _totalRows(data?.rows, data?.total);
         updateState(draft => {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
+            draft.totalRows = _totalRows(data?.rows, data?.total);
             if (payload?.update) {
                 draft.updated = ref.current.updated;
             }
@@ -400,18 +430,25 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 if (typeof cb === "function") {
                     _rows = cb(_rows);
                 }
+                const _total = _totalRows(_rows, ref.current.totalRows + 1);
+                ref.current.totalRows = _total;
                 updateState(draft => {
                     draft.tstamp = Date.now();
-                    draft.data = { rows: [..._rows], total: state.data.total + 1 };
+                    draft.data = { rows: [..._rows], total: _total };
+                    draft.totalRows = _total;
                 });
             }
         } else {
+            _rows = [{ ...row, rowadded: 1, rowvalid: 0 }];
+            const _total = _totalRows(_rows, 1);
+            ref.current.totalRows = _total;
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: [{ ...row, rowadded: 1, rowvalid: 0 }], total: 1 };
+                draft.data = { rows: _rows, total: _total };
+                draft.totalRows = _total;
             });
         }
     }
@@ -422,46 +459,140 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 _rows.splice(at, 0, rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
             } else {
                 _rows.push(...rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })));
-                console.log("adding xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", _rows)
             }
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
+            const _total = _totalRows(_rows, ref.current.totalRows + rows.length);
+            ref.current.totalRows = _total;
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: [..._rows], total: state.data.total + rows.length };
+                draft.data = { rows: [..._rows], total: _total };
+                draft.totalRows = _total;
             });
         } else {
-            console.log("adding rowsssssssssss 22222")
+            _rows = rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 }));
+            const _total = _totalRows(_rows, null);
+            ref.current.totalRows = _total;
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
             updateState(draft => {
                 draft.tstamp = Date.now();
-                draft.data = { rows: rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 })), total: rows.length };
+                draft.data = { rows: _rows, total: _total };
+                draft.totalRows = _total;
             });
         }
     }
     const setRows = (rows, total = null) => {
+        const _total = _totalRows(rows, (total === null) ? ref.current.totalRows : total);
+        ref.current.totalRows = _total;
         updateState(draft => {
             draft.tstamp = Date.now();
-            draft.data = { rows: [...rows], total: (total === null) ? state?.data?.total : total };
+            draft.data = { rows: [...rows], total: _total };
+            draft.totalRows = _total;
         });
     }
     const deleteRow = (data, keys) => {
+        if (state?.data?.rows && state.data.rows?.length>0) {
+            const _rows = produce(state?.data?.rows, (draftArray) => {
+                const idx = draftArray.findIndex(v => deepEqual(pickAll(keys, v), data));
+                if (idx >= 0) {
+                    draftArray.splice(idx, 1);
+                }
+            });
+            const _total = _totalRows(_rows, ref.current.totalRows - 1);
+            ref.current.totalRows = _total;
+            updateState(draft => {
+                draft.tstamp = Date.now();
+                draft.data = { rows: [..._rows], total: _total }
+                draft.totalRows = _total;
+            });
+            return _rows;
+        }
+        return state?.data?.rows
+    }
+    const deleteRowByIndex = (index, indexCol) => {
+        if (state?.data?.rows && index >= 0 && index < state.data.rows?.length) {
+            const _rows = produce(state?.data?.rows, (draftArray) => {
+                draftArray.splice(index, 1);
+                if (indexCol) {
+                    draftArray.forEach((draft, i) => {
+                        draft[indexCol] = i + 1
+                    });
+                }
+            });
+            const _total = _totalRows(_rows, ref.current.totalRows - 1);
+            ref.current.totalRows = _total;
+            updateState(draft => {
+                draft.tstamp = Date.now();
+                draft.data = { rows: [..._rows], total: _total }
+                draft.totalRows = _total;
+            });
+            return _rows;
+        }
+        return state?.data?.rows;
+    }
+    const setAllRowsValid = () => {
+        const _rows = produce(state?.data?.rows, (draftArray) => {
+            draftArray.forEach((draft) => {
+                draft["rowadded"] = 0;
+                draft["rowvalid"] = 1;
+            });
+        });
+        updateState(draft => {
+            draft.tstamp = Date.now();
+            draft.data = { rows: [..._rows] };
+        });
+        return _rows;
+    }
+
+
+
+    const moveRowUp = (index, indexCol) => {
         const _rows = [...state.data.rows];
         if (_rows) {
-            const idx = _rows.findIndex(v => deepEqual(pickAll(keys, v), data));
-            if (idx >= 0) {
-                _rows.splice(idx, 1);
+            if (index > 0 && index < _rows.length) {
+                if (indexCol) {
+                    const temp = { ..._rows[index - 1], [indexCol]: index + 1, rowvalid: 0 };
+                    _rows[index - 1] = { ..._rows[index], [indexCol]: index, rowvalid: 0 };
+                    _rows[index] = temp;
+                } else {
+                    const temp = _rows[index - 1];
+                    _rows[index - 1] = _rows[index];
+                    _rows[index] = temp;
+                }
                 updateState(draft => {
                     draft.tstamp = Date.now();
-                    draft.data = { rows: [..._rows], total: state.data.total - 1 }
+                    draft.data = { rows: [..._rows], total: draft.data.total }
                 });
             }
         }
         return _rows;
     }
+
+    const moveRowDown = (index, indexCol) => {
+        const _rows = [...state.data.rows];
+        if (_rows) {
+            if (index >= 0 && index < _rows.length - 1) {
+                if (indexCol) {
+                    const temp = { ..._rows[index + 1], [indexCol]: index + 1, rowvalid: 0 };
+                    _rows[index + 1] = { ..._rows[index], [indexCol]: index + 2, rowvalid: 0 };
+                    _rows[index] = temp;
+                } else {
+                    const temp = _rows[index + 1];
+                    _rows[index + 1] = _rows[index];
+                    _rows[index] = temp;
+                }
+                updateState(draft => {
+                    draft.tstamp = Date.now();
+                    draft.data = { rows: [..._rows], total: draft.data.total }
+                });
+            }
+        }
+        return _rows;
+    }
+
     //Update just one column
     const updateValue = (idx, column, value) => {
         let _rows = [...state.data.rows];
@@ -474,7 +605,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 ref.current.updated = Date.now();
                 updateState(draft => {
                     draft.updated = ref.current.updated;
-                    draft.data = { rows: [..._rows], total: state.data.total };
+                    draft.data = { rows: [..._rows], total: ref.current.totalRows };
                 });
             }
         }
@@ -496,16 +627,18 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 ref.current.updated = Date.now();
                 updateState(draft => {
                     draft.updated = ref.current.updated;
-                    draft.data = { rows: [..._rows], total: state.data.total };
+                    draft.data = { rows: [..._rows], total: ref.current.totalRows };
                 });
             }
         }
         return _rows;
     }
     const clearData = () => {
+        ref.current.totalRows = 0;
         updateState(draft => {
             draft.tstamp = Date.now();
             draft.data = {};
+            draft.totalRows = 0;
         });
     }
     const getData = () => {
@@ -584,7 +717,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         })();
     }
     const getPostRequest = ({ url, fromState = false } = {}) => {
-        return { ...getPayload(fromState),url: (url) ? url : ref.current.url };
+        return { ...getPayload(fromState), url: (url) ? url : ref.current.url };
     }
     const nav = ({ action = "", page = 1, onFetch } = {}) => {
         addAction('nav');
@@ -904,6 +1037,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return state.data.rows.findIndex(v => v?.[getPrimaryKey()] === row?.[getPrimaryKey()]);
     }
 
+    const getLength = () => {
+        return getInt(state?.data?.rows?.length, 0);
+    }
+
     return {
         first,
         previous,
@@ -918,6 +1055,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         addRow,
         addRows,
         deleteRow,
+        deleteRowByIndex,
+        setAllRowsValid,
         updateValue,
         updateValues,
         setData,
@@ -935,7 +1074,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getAllFilter,
         getTimeStamp,
         getPagination,
+        getCurrentPage,
         getPageSize,
+        getRowsFromTo,
         getPostRequest,
         getParameters,
         getSort,
@@ -951,7 +1092,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         fetchPost: _fetchPost,
         isLoading: () => _isLoading(),
         setIsLoading,
-        getTotalRows: () => (isNaN(state?.data?.total) || !state?.data?.total) ? 0 : state?.data?.total,
+        getTotalRows: (fromState = false) => (fromState) ? getInt(state?.totalRows) : ref.current.totalRows,
+        getLength,
         update,
         removeEmpty,
         setFilters,
@@ -968,7 +1110,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         clearStatus,
         getMessages,
         getFieldStatus,
-
+        moveRowDown,
+        moveRowUp,
         getPrimaryKey
     }
 }

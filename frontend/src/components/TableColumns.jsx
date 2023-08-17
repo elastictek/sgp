@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef, useLayoutEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined,PauseOutlined, SyncOutlined, CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone } from '@ant-design/icons';
-import { Tag, Button, Space, Badge } from "antd";
+import {
+    StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, PauseOutlined, SyncOutlined,
+    CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone, EllipsisOutlined, ArrowUpOutlined, ArrowDownOutlined
+} from '@ant-design/icons';
+import { Tag, Button, Space, Badge, Dropdown } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
@@ -15,10 +18,50 @@ import { IoCodeWorkingOutline } from 'react-icons/io5';
 import TagButton from "components/TagButton";
 
 
+const itemsIndexChange = ({ allowDelete, first = false, last = false }) => [
+    ...(!first) ? [{
+        label: 'Mover para cima',
+        key: '1',
+        icon: <ArrowUpOutlined />,
+    }] : [],
+    ...(!last) ? [{
+        label: 'Mover para baixo',
+        key: '2',
+        icon: <ArrowDownOutlined />,
+    }] : [],
+    ...(allowDelete) ? [{
+        label: 'Apagar',
+        key: '3',
+        icon: <CloseCircleOutlined />,
+        danger: true,
+    }] : []
+];
+
+
+export const IndexChange = ({ onUp, onDown, onDelete, allowDelete, value, modeEdit, cellProps }) => {
+    const onClick = (e) => {
+        switch (e.key) {
+            case "1": onUp(cellProps.rowIndex); break;
+            case "2": onDown(cellProps.rowIndex); break;
+            case "3": onDelete(cellProps.rowIndex); break;
+        }
+    }
+    return (<>{(modeEdit) ? <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", height: "100%", alignItems: "center" }}>
+        <Dropdown menu={{ items: itemsIndexChange({ allowDelete, first: cellProps.rowIndex == 0, last: cellProps.totalDataCount == (cellProps.rowIndex + 1) }), onClick: onClick }} trigger={["click"]}>
+            <Button size="small">
+                <Space>
+                    {value}
+                    <EllipsisOutlined />
+                </Space>
+            </Button>
+        </Dropdown>
+    </div> : <>{value}</>}</>);
+}
+
 
 export const BadgeNumber = ({ value, onClick, cellProps }) => {
     return (<>
-        {(!(cellProps?.inEdit) && value && value>0 ) ? <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", height: "100%", alignItems: "center" }}><Badge count={value} /></div> : <></>}
+        {(!(cellProps?.inEdit) && value && value > 0) ? <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", height: "100%", alignItems: "center" }}><Badge count={value} /></div> : <></>}
     </>
     )
 }
@@ -83,7 +126,7 @@ export const Core = ({ id, artigos, value, nome, onClick, cellProps }) => {
 const StyledBobine = styled.div`
     border:dashed 1px #000;
     background-color:${props => props.color};
-    color:${props => props.fontColor};
+    color:${props => props.$fontColor};
     border-radius:3px;
     margin-right:1px;
     text-align:center;
@@ -112,7 +155,7 @@ export const Bobines = ({ id, b, bm, setShow, onClick, align = "start", cellProp
     return (<>
         {!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", lineHeight: "12px", justifyContent: align }}>
             {b.map((v, i) => {
-                return (<StyledBobine onClick={() => onClick(v)} color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
+                return (<StyledBobine onClick={() => onClick(v)} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>}
     </>
@@ -172,7 +215,7 @@ export const Delete = ({ value, rowIndex, onClick, style, cellProps }) => {
 }
 
 export const Link = ({ value, onClick, style, cellProps, ...props }) => {
-    return (<>{!cellProps?.inEdit && <Button type='link' style={{ fontWeight: 700, ...style }} onClick={onClick}>{value}</Button>}</>);
+    return (<>{!cellProps?.inEdit && <Button type='link' style={{ fontWeight: 700, ...style }} onClick={onClick} {...props}>{value}</Button>}</>);
 }
 export const DateTime = ({ value, format = DATETIME_FORMAT, style, className, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ textAlign: "left", ...style }} {...className && { className }}>{(value && dayjs(value).isValid()) && dayjs(value).format(format)}</div>}</>);
@@ -226,7 +269,7 @@ const colors = [
 const StyledCuba = styled.div`
         border:dashed 1px #000;
         background-color:${props => props.color};
-        color:${props => props.fontColor};
+        color:${props => props.$fontColor};
         border-radius:3px;
         text-align:center;
         font-weight:700;
@@ -244,7 +287,7 @@ export const Cuba = ({ value, style }) => {
     const val = getValue(value);
     return (<>
         {value && <>
-            {(val !== null && val !== undefined) ? <StyledCuba style={{ ...style }} color={colors[value].color} fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" fontColor="#fff">{value}</StyledCuba>}
+            {(val !== null && val !== undefined) ? <StyledCuba style={{ ...style }} color={colors[value].color} $fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" $fontColor="#fff">{value}</StyledCuba>}
         </>}
     </>);
 }

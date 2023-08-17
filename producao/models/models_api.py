@@ -112,6 +112,8 @@ class BaseTempAggOrdemFabrico(models.Model):
     start_date = models.DateTimeField(verbose_name="Data Início", null=True, blank=True)
     end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
     horas_previstas_producao= models.DecimalField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True,decimal_places=2,max_digits=10)
+    formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
+    cortes_plan_id = models.IntegerField(verbose_name="Plano de Cortes", null=True)
     class Meta:
         abstract = True
 
@@ -127,6 +129,7 @@ class TempOrdemFabrico(models.Model):
     produto_alt = models.CharField(max_length=200,verbose_name="Designação de Produto Alternativo", null=True) #ADDED - Designação do Produto Alternativo
     item_cod = models.CharField(max_length=25,verbose_name="Código Artigo", null=True) #ADDED - CÓDIGO ARTIGO SAGE ID
     item_id = models.IntegerField(verbose_name="Id Artigo", null=True) #ADDED - Id ARTIGO
+    item_lar = models.IntegerField(verbose_name="Largura do artigo, aplica-se caso o artigo seja do tipo amostra (na tabela artigos é 0)", null=True)
     produto = models.ForeignKey('producao.Produtos',on_delete=models.PROTECT,verbose_name="Id Produto") #ADDED - ID PRODUTO
     qty_encomenda = models.DecimalField(verbose_name="Quantidade da Encomenda", max_digits=12, decimal_places=5, null=True)
     linear_meters = models.DecimalField(verbose_name="Metros lineares", max_digits=12, decimal_places=5, null=True)
@@ -181,6 +184,8 @@ class BaseCurrentSettings(models.Model):
     end_date = models.DateTimeField(verbose_name="Data Fim", null=True, blank=True)
     formulacaov2 = models.JSONField(blank=True, null=True)
     ignore_audit = models.IntegerField(verbose_name="No Log", null=True)
+    formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
+    cortes_plan_id = models.IntegerField(verbose_name="Plano de cortes", null=True)
     class Meta:
         abstract = True
 
@@ -289,7 +294,7 @@ class Formulacao(models.Model):
     extr2_val = models.DecimalField(verbose_name="Extrusora 2 Valor %", max_digits=4, decimal_places=1, default=45)
     extr3_val = models.DecimalField(verbose_name="Extrusora 3 Valor %", max_digits=4, decimal_places=1, default=22.5)
     extr4_val = models.DecimalField(verbose_name="Extrusora 4 Valor %", max_digits=4, decimal_places=1, default=5)
-
+    joinbc = models.SmallIntegerField(verbose_name="Join extrusora BC", null=True, default=1)
     class Meta:
         unique_together = (('produto_id', 'designacao'))
 

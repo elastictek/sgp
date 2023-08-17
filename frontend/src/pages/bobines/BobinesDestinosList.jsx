@@ -3,7 +3,6 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from "classnames";
 import Joi from 'joi';
-import moment from 'moment';
 import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -53,16 +52,20 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     const classes = useEditorStyles();
     const cls = useStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({});
+    const permission = usePermission({ permissions: props?.permissions });
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
-    const defaultParameters = {method: "BobinesList"};
+    const defaultParameters = { method: "BobinesList" };
     const [defaultFilters, setDefaultFilters] = useState({});
     const defaultSort = [{ column: 'posicao_palete', direction: 'ASC' }];
-    const dataAPI = useDataAPI({ fnPostProcess:(dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { 
-        ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 150 }
-    }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({
+        fnPostProcess: (dt) => postProcess(dt, submitting), payload: {
+            url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: {
+                ...props?.paging ? { enabled: true, page: 1, pageSize: 20 } : { limit: 150 }
+            }, filter: {}, sort: []
+        }
+    });
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
     const [lastPaleteTab, setLastPaleteTab] = useState('1');
@@ -82,26 +85,28 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         );
     }, [modalParameters]);
     const onPaleteClick = (row, level) => {
-        setModalParameters({ content: "palete", tab: lastPaleteTab, setTab:setLastPaleteTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row?.palete_id, nome: row?.palete_nome }, palete_id: row?.palete_id, palete_nome: row?.palete_nome } });
+        setModalParameters({ content: "palete", tab: lastPaleteTab, setTab: setLastPaleteTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ /* loadData: () => dataAPI.fetchPost() */ parameters: { palete: { id: row?.palete_id, nome: row?.palete_nome }, palete_id: row?.palete_id, palete_nome: row?.palete_nome } });
         showModal();
     }
 
     const editable = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            if (col === "destino"){return true;}
-        }
-        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            if (col === "trocaEtiquetas"){return true;}
+        if (props?.parameters?.palete) {
+            if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+                if (col === "destino") { return true; }
+            }
+            if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+                if (col === "trocaEtiquetas") { return true; }
+            }
         }
         return false;
     }
-    const editableClass = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            if (col === "destino"){return classes.edit;}
-        }else if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            if (col === "trocaEtiquetas"){return classes.edit;}
-        }else{
-            if (col === "destino" && row.destinos_has_obs>0) {
+    const editableClass = (row, col) => {       
+        if (props?.parameters?.palete && modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            if (col === "destino") { return classes.edit; }
+        } else if (props?.parameters?.palete && modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
+            if (col === "trocaEtiquetas") { return classes.edit; }
+        } else {
+            if (col === "destino" && row.destinos_has_obs > 0) {
                 return cls.hasObs;
             }
         }
@@ -114,10 +119,11 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         ...(props?.columns && 'palete_nome' in props?.columns) ? [{ key: 'palete_nome', sortable: false, name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row, 0)}>{p.row.palete_nome}</Button> }] : [],
         { key: 'posicao_palete', sortable: false, name: 'Pos.', width: 60, formatter: p => p.row.posicao_palete },
         { key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div> },
-        { key: 'troca_etiqueta', name: 'Troca Etiqueta', reportFormat: '0', width: 90, formatter: p => <div style={{}}><Checkbox checked={p.row.troca_etiqueta} disabled/></div> },
+        { key: 'troca_etiqueta', name: 'Troca Etiqueta', reportFormat: '0', width: 90, formatter: p => <div style={{}}><Checkbox checked={p.row.troca_etiqueta} disabled /></div> },
         {
             key: 'destino', width: 200, editable: true,
             headerRenderer: p => <CheckColumn id="destino" name="Destino" onChange={onCheckChange} defaultChecked={checkData?.destino} forInput={editable(p.row, 'destino')} />,
+            editable: p => editable(p.row, 'destino'),
             cellClass: r => editableClass(r, 'destino'),
             editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} forInputTroca={editable(p.row, 'trocaEtitquetas')} p={p} palete={props?.parameters?.palete} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
             editorOptions: { editOnClick: true, commitOnOutsideClick: false },
@@ -133,11 +139,15 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         { key: 'comp_actual', sortable: false, name: 'Comp. Atual', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
         { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.comp} m</div> },
         { key: 'defeitos', sortable: false, width: 250, name: "Outros Defeitos", formatter: (p) => <FieldDefeitos p={p} /> },
-        { key: 'prop_obs', sortable: false, 
+        {
+            key: 'prop_obs', sortable: false,
+            editable: p => editable(p.row, 'destino'),
             headerRenderer: p => <CheckColumn id="obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p.row, 'destino')} />,
-            formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>, editor(p) { return <ModalObsEditor forInput={false} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true } },
+            formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>, editor(p) { return <ModalObsEditor forInput={false} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> }, editorOptions: { editOnClick: true }
+        },
         {
             key: 'obs', sortable: false,
+            editable: p => editable(p.row, 'destino'),
             headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'destino')} />,
             formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>, editor: (p) => { return <ModalObsEditor forInput={false} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
             editorOptions: { editOnClick: true },
@@ -145,20 +155,20 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     ];
 
 
-    const onDestinoConfirm = async (p, destinos, destinoTxt, obs, prop_obs,troca_etiqueta) => {
+    const onDestinoConfirm = async (p, destinos, destinoTxt, obs, prop_obs, troca_etiqueta) => {
         const ids = dataAPI.getData().rows.map(v => v.id);
         const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
         const rowsObs = (checkData?.obs) ? ids : [p.row.id];
         const rowsPropObs = (checkData?.prop_obs) ? ids : [p.row.id];
-        const values = { destinos, destinoTxt, obs, prop_obs, ...permission.isOk({action: "trocaEtiquetas"}) && {troca_etiqueta} };
+        const values = { destinos, destinoTxt, obs, prop_obs, ...permission.isOk({ action: "trocaEtiquetas" }) && { troca_etiqueta } };
         const palete_id = p.row.palete_id;
 
         try {
             let response = await fetchPost({
                 url: `${API_URL}/paletes/paletessql/`, parameters: {
-                    method: "UpdateDestinos", ids, rowsDestinos, rowsObs, rowsPropObs, values, 
+                    method: "UpdateDestinos", ids, rowsDestinos, rowsObs, rowsPropObs, values,
                     troca: permission.isOk({ action: "trocaEtiquetas" }),
-                    destinos:permission.isOk({action: "changeDestinos"})
+                    destinos: permission.isOk({ action: "changeDestinos" })
                 }, filter: { palete_id }
             });
             if (response.data.status !== "error") {
@@ -186,16 +196,15 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 nome: bobinagem_nome
             }
         })
-
         let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id,fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
-        dataAPI.fetchPost({signal});
+        dataAPI.fetchPost({ signal });
 
     }
 
@@ -217,7 +226,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 //remove empty values
                 const _values = processFilters(type, values, defaultFilters);
                 dataAPI.addFilters(_values, true);
-                dataAPI.addParameters({});
+                dataAPI.addParameters({ ...defaultParameters });
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -265,7 +274,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 loading={submitting.state}
                 actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
                 frozenActionColumn
-                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}` }`}
+                reportTitle={parameters && `Bobines da ${(parameters?.palete) ? `Palete ${parameters.palete.nome}` : `Bobinagem ${parameters.bobinagem.nome}`}`}
                 loadOnInit={false}
                 columns={columns}
                 dataAPI={dataAPI}
@@ -281,12 +290,13 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
                     {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                    <Permissions permissions={props?.permission} action="editList" forInput={!noEdit}>
-                        {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                        {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
-                        {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
-                    </Permissions>
-
+                    {props?.parameters?.palete &&
+                        <Permissions permissions={permission} action="changeDestinos" forInput={!noEdit}>
+                            {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                            {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                            {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
+                        </Permissions>
+                    }
                 </Space>}
             />
         </>

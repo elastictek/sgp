@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -538,7 +538,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'matprima_des', sortable: false, name: `Designação`, frozen: true, formatter: p => <b>{p.row?.matprima_des ? p.row.matprima_des : p.row.artigo_des}</b> },
         { key: 'n_lote', sortable: false, name: `Lote`, frozen: true, formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'qty_lote', name: 'Quantidade', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote && `${parseFloat(p.row.qty_lote).toFixed(2)} kg`}</div> },
-        { key: 't_stamp', name: 'Data', width: 130, frozen: true, formatter: props => props.row.t_stamp && moment(props.row.t_stamp).format(DATETIME_FORMAT) }
+        { key: 't_stamp', name: 'Data', width: 130, frozen: true, formatter: props => props.row.t_stamp && dayjs(props.row.t_stamp).format(DATETIME_FORMAT) }
         /* { key: 'type_mov', width: 90, name: 'Movimento', froze: true, formatter: p => <MovGranuladoColumn value={p.row.type_mov} /> },
         { key: "group_id", sortable: false, name: "Cuba", frozen: true, minWidth: 55, width: 55, formatter: p => <Cuba value={p.row.group_id} /> },
         { key: 'dosers', width: 90, name: 'Doseadores', formatter: p => p.row.dosers },
@@ -547,7 +547,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'n_lote', width: 310, name: 'Lote', formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.qty_lote).toFixed(2)} kg</div>, editor: p => <InputNumber bordered={false} size="small" value={p.row.qty_lote} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qty_lote: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
         { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} kg</div> },
-        { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data', formatter: p => dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> } */
     ];
     const [mPas, setMPas] = useState();

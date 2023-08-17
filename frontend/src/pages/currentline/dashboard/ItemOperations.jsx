@@ -18,7 +18,6 @@ import { VerticalSpace } from 'components/FormFields';
 import { usePermission } from "utils/usePermission";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, SelectDebounceField } from 'components/FormFields';
-import moment from 'moment';
 import { useSubmitting, noValue } from "utils";
 import TitleCard from './TitleCard';
 
@@ -50,7 +49,7 @@ const ChangeStatus = ({ parameters, parentRef, closeParent }) => {
             setFooter(true);
             let bobinagem = await lastBobinagem({ signal });
             if (bobinagem.length > 0) {
-                form.setFieldsValue({ date: bobinagem[0]["t_stamp"], fbobinagem: { key: bobinagem[0]["id"], value: bobinagem[0]["id"], label: <div key={`ls-${bobinagem[0]["id"]}`}><b>{bobinagem[0]["nome"]}</b> {moment(bobinagem[0]["t_stamp"]).format(DATETIME_FORMAT)}</div> } });
+                form.setFieldsValue({ date: bobinagem[0]["t_stamp"], fbobinagem: { key: bobinagem[0]["id"], value: bobinagem[0]["id"], label: <div key={`ls-${bobinagem[0]["id"]}`}><b>{bobinagem[0]["nome"]}</b> {dayjs(bobinagem[0]["t_stamp"]).format(DATETIME_FORMAT)}</div> } });
                 setLastId(bobinagem[0]["id"]);
             }
         } catch (e) {
@@ -72,7 +71,7 @@ const ChangeStatus = ({ parameters, parentRef, closeParent }) => {
         console.log(parameters);
         try {
             const { fbobinagem, date } = form.getFieldsValue(true);
-            const dt = moment.isMoment(date) ? date.format(DATETIME_FORMAT) : moment(date).format(DATETIME_FORMAT);
+            const dt = dayjs.isDayjs(date) ? date.format(DATETIME_FORMAT) : dayjs(date).format(DATETIME_FORMAT);
             const response = await fetchPost({ url: `${API_URL}/changecurrsettings/`, parameters: { id: parameters.id, status: parameters.status, agg_of_id: parameters.agg_of_id, ig_id: fbobinagem?.key, last: (lastId === fbobinagem?.key ? true : false), date: dt } });
             if (response.data.status !== "error") {
                 Modal.success({ title: "Estado da ordem de fabrico alterado com sucesso!", onOk: () => { parameters.parentReload(); closeParent(); } });
@@ -106,7 +105,7 @@ const ChangeStatus = ({ parameters, parentRef, closeParent }) => {
 
     const onValuesChange = (changedValues, values) => {
         if ("fbobinagem" in v) {
-            form.setFieldsValue({ date: moment(v.fbobinagem.value) });
+            form.setFieldsValue({ date: dayjs(v.fbobinagem.value) });
         }
     }
 
@@ -127,7 +126,7 @@ const ChangeStatus = ({ parameters, parentRef, closeParent }) => {
                                     showArrow
                                     allowClear
                                     fetchOptions={fetchBobinagens}
-                                    optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {moment(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
+                                    optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {dayjs(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
                                 />
                             </Field>
                         </Col>

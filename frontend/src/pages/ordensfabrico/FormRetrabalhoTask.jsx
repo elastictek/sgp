@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -101,7 +101,7 @@ export default (props) => {
                 let _title = "Nova Troca de Etiquetas Sem Aletração do Lote";
                 if (_task) {
                     _title = "Troca de Etiquetas Sem Alteração do Lote";
-                    form.setFieldsValue({ ..._task?.parameters, data_imputacao: moment(_task.parameters.data_imputacao) });
+                    form.setFieldsValue({ ..._task?.parameters, data_imputacao: dayjs(_task.parameters.data_imputacao) });
                 }
                 props.setTitle({ title: _title });
                 break;
@@ -125,7 +125,7 @@ export default (props) => {
                     parameters: {
                         cliente: values.cliente,
                         artigo: { id: values.artigo.id, cod: values.artigo.cod, des: values.artigo.des, core: values.artigo.core, lar: values.artigo.lar },
-                        data_imputacao: moment(values.data_imputacao).format(DATE_FORMAT),
+                        data_imputacao: dayjs(values.data_imputacao).format(DATE_FORMAT),
                         obs: values?.obs
                     },
                     obs: values?.obs,
@@ -164,7 +164,7 @@ export default (props) => {
         <div style={{ height: "calc(100vh - 120px)" }}>
             <YScroll>
                 <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
-                <FormContainer initialValues={{data_imputacao:moment(),status:1}} id="LAY-CHKTASK" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={permission.isOk({ action: "createChecklist" })} alert={{ tooltip: true, pos: "none" }}>
+                <FormContainer initialValues={{data_imputacao:dayjs(),status:1}} id="LAY-CHKTASK" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={permission.isOk({ action: "createChecklist" })} alert={{ tooltip: true, pos: "none" }}>
                     <Row style={{}} gutterWidth={10}>
                         <Col width={400}>
                             <Field wrapFormItem={true} name="artigo" label={{ enabled: true, text: "Artigo <Para>" }}>
@@ -212,7 +212,7 @@ export default (props) => {
                         <Col xs={12} md={6}><Field name="obs" label={{ enabled: true, text: "Observações" }}><TextArea autoSize={{ minRows: 1, maxRows: 16 }} style={{ width: "100%" }} /></Field></Col>
                     </Row>
                     <Row style={{}} gutterWidth={10}>
-                        <Col xs="content"><Field wrapFormItem={true} name="data_imputacao" label={{ enabled: true, text: "Data Imputação" }}><DatePicker format={DATE_FORMAT} size="small" showTime={false} disabledDate={(current) => current && current > moment()} /></Field></Col>
+                        <Col xs="content"><Field wrapFormItem={true} name="data_imputacao" label={{ enabled: true, text: "Data Imputação" }}><DatePicker format={DATE_FORMAT} size="small" showTime={false} disabledDate={(current) => current && current > dayjs()} /></Field></Col>
                         <Col xs="content"><Field wrapFormItem={true} name="status" label={{ enabled: true, text: "Em execução" }}><SwitchField /></Field></Col>
                     </Row>
                 </FormContainer>

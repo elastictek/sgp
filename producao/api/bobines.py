@@ -225,16 +225,13 @@ def UpdateDefeitos(request, format=None):
                     bobine_values["furos"] = 1 if bobine_values['furos_pos'] is not None and len(bobine_values['furos_pos'])>0 else 0
                     bobine_values["buraco"] = 1 if bobine_values['buracos_pos'] is not None and len(bobine_values['buracos_pos'])>0 else 0
                     bobine_values["rugas"] = 1 if bobine_values['rugas_pos'] is not None and len(bobine_values['rugas_pos'])>0 else 0
+                    
                     dml = db.dml(TypeDml.UPDATE, bobine_values, "producao_bobine", {'id': f'=={v["id"]}'}, None, False)
                     db.execute(dml.statement, cursor, dml.parameters)
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Error as error:
         return Response({"status": "error", "title": str(error)})
     
-    
-    print(f)
-    print(request.data)
-    print("oiiiiiiiiiii")
 
 
 def BobinesGranuladoMPList(request,format=None):

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -136,7 +135,7 @@ export default ({ setFormTitle, ...props }) => {
             }
         >
             <YScroll>
-                <FormulacaoReadOnly parameters={props?.parameters} />
+                <FormulacaoReadOnly parameters={props?.parameters} header={false}/>
             </YScroll>
         </Card>
     );

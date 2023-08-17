@@ -98,7 +98,7 @@ export const bColors = (estado) => {
     }
 }
 
-export const Status = ({ b, onClick, height = "26px",column="estado",larguraColumn="largura" }) => {
+export const Status = ({ b, onClick, height = "26px", column = "estado", larguraColumn = "largura" }) => {
     const handleClick = () => {
         if (onClick) {
             onClick();
@@ -115,7 +115,7 @@ export const StatusBobineProducao = ({ b, onClick }) => {
     );
 }
 
-export const saveTrocaEtiqueta = async (row,value,submitting,parameters,loadData) =>{
+export const saveTrocaEtiqueta = async (row, value, submitting, parameters, loadData) => {
     submitting.trigger();
     const status = { error: [] };
     // for (let [i, r] of rows.entries()) {
@@ -164,9 +164,9 @@ export const saveTrocaEtiqueta = async (row,value,submitting,parameters,loadData
     //     rows[i]["rugas"] = (r.rugas_pos?.length > 0) ? 1 : 0;
     // }
 
-        
+
     try {
-        let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateTrocaEtiqueta", rows: [{id:row.id,troca_etiqueta:value}], ...parameters }, filter: {} });
+        let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateTrocaEtiqueta", rows: [{ id: row.id, troca_etiqueta: value }], ...parameters }, filter: {} });
         if (response.data.status !== "error") {
             //Modal.success({ title: "Registos alterados com sucesso!" })
             loadData();
@@ -181,32 +181,33 @@ export const saveTrocaEtiqueta = async (row,value,submitting,parameters,loadData
 
 }
 
-export const saveBobinesDefeitos = async (rows,submitting,parameters,loadData) =>{
+export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData) => {
     submitting.trigger();
     const status = { error: [] };
+    let _array = [];
     for (let [i, r] of rows.entries()) {
-
+        const _r = { ...r, defeitos: r?.defeitos ? r.defeitos : [] };
         if (r?.notValid) {
-            r.defeitos = (r?.defeitos ? r.defeitos : []);
-            const hasDefeitos = (r?.defeitos && r.defeitos.length > 0 || r.fc_pos?.length > 0 || r.ff_pos?.length > 0 || r.fc_pos?.length > 0 || r.furos_pos?.length > 0 || r.buracos_pos?.length > 0 || r.rugas_pos?.length > 0 || r.prop_obs?.length > 0 || r.obs?.length > 0) ? true : false;
-            const estado = r.estado;
-            // if ((r.estado_original === "HOLD")/*  && !permission.allow() */) {
-            //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
+            //r.defeitos = (r?.defeitos ? r.defeitos : []);
+            const hasDefeitos = (_r?.defeitos && _r.defeitos.length > 0 || _r.fc_pos?.length > 0 || _r.ff_pos?.length > 0 || _r.fc_pos?.length > 0 || _r.furos_pos?.length > 0 || _r.buracos_pos?.length > 0 || _r.rugas_pos?.length > 0 || _r.prop_obs?.length > 0 || _r.obs?.length > 0) ? true : false;
+            const estado = _r.estado;
+            // if ((_r.estado_original === "HOLD")/*  && !permission.allow() */) {
+            //     status.error.push({ message: <span><b>{_r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
             // }
             // if ((estado === "HOLD")/*  && !permission.allow() */) {
-            //     status.error.push({ message: <span><b>{r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
+            //     status.error.push({ message: <span><b>{_r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
             // }
             if ((estado === "R" || estado === "DM") && !hasDefeitos) {
-                status.error.push({ message: <span><b>{r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
+                status.error.push({ message: <span><b>{_r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
             }
-            if (r.defeitos.some(x => x.key === "fmp") && !r.obs?.length > 0) {
-                status.error.push({ message: <span><b>{r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
+            if (_r.defeitos.some(x => x.key === "fmp") && !_r.obs?.length > 0) {
+                status.error.push({ message: <span><b>{_r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
             }
-            if (r.defeitos.some(x => x.key === "esp") && !r.prop_obs?.length > 0) {
-                status.error.push({ message: <span><b>{r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+            if (_r.defeitos.some(x => x.key === "esp") && !_r.prop_obs?.length > 0) {
+                status.error.push({ message: <span><b>{_r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
             }
-            if (r.defeitos.some(x => x.key === "prop") && !r.prop_obs?.length > 0) {
-                status.error.push({ message: <span><b>{r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
+            if (_r.defeitos.some(x => x.key === "prop") && !_r.prop_obs?.length > 0) {
+                status.error.push({ message: <span><b>{_r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
             }
         }
         if (status.error.length > 0) {
@@ -222,16 +223,17 @@ export const saveBobinesDefeitos = async (rows,submitting,parameters,loadData) =
             return;
         }
 
-        rows[i]["prop"] = (r.prop_obs?.length > 0) ? 1 : 0;
-        rows[i]["fc"] = (r.fc_pos?.length > 0) ? 1 : 0;
-        rows[i]["ff"] = (r.ff_pos?.length > 0) ? 1 : 0;
-        rows[i]["furos"] = (r.furos_pos?.length > 0) ? 1 : 0;
-        rows[i]["buraco"] = (r.buracos_pos?.length > 0) ? 1 : 0;
-        rows[i]["rugas"] = (r.rugas_pos?.length > 0) ? 1 : 0;
+        _r["prop"] = (_r.prop_obs?.length > 0) ? 1 : 0;
+        _r["fc"] = (_r.fc_pos?.length > 0) ? 1 : 0;
+        _r["ff"] = (_r.ff_pos?.length > 0) ? 1 : 0;
+        _r["furos"] = (_r.furos_pos?.length > 0) ? 1 : 0;
+        _r["buraco"] = (_r.buracos_pos?.length > 0) ? 1 : 0;
+        _r["rugas"] = (_r.rugas_pos?.length > 0) ? 1 : 0;
+        _array.push(_r);
     }
 
     try {
-        let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateDefeitos", rows: rows.filter(v => v?.notValid === 1), ...parameters }, filter: {} });
+        let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateDefeitos", rows: _array.filter(v => v?.notValid === 1), ...parameters }, filter: {} });
         if (response.data.status !== "error") {
             //Modal.success({ title: "Registos alterados com sucesso!" })
             loadData();
@@ -337,7 +339,7 @@ export const toolbarFilters = (formFilter) => {
 
     return {
         form: formFilter, schema: schemaFilter,
-        filters: <ToolbarFilters/>,
+        filters: <ToolbarFilters />,
         moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 350, mask: true }
     };
 

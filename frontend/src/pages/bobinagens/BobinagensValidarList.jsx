@@ -20,7 +20,8 @@ import Icon, { SearchOutlined, LoadingOutlined, LeftOutlined, EllipsisOutlined }
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title, Text } = Typography;
-import { SocketContext, MediaContext } from '../App';
+import { SocketContext } from 'gridlayout';
+import { MediaContext } from 'app';
 //const BobinesValidarList = lazy(() => import('../bobines/BobinesValidarList'));
 import { Wnd, ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -321,7 +322,6 @@ export default (props) => {
     const dataAPI = useDataAPI({ id: "bobinagensL1list", payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
     const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
     const [title, setTitle] = useState({ title: "", subtitle: "" });
 
     useEffect(() => {

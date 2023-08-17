@@ -1,38 +1,63 @@
-import moment from 'moment';
 import dayjs from "dayjs";
-import { getFilterRangeValues,dayjsValue } from "utils";
+import { getFilterRangeValues, dayjsValue } from "utils";
+import CryptoJS from 'crypto-js';
+import {URL_EXPIRATION} from "config";
 
-export default (init, store = {}, props = {}, state = {}, fields) => {
-    let df = { ...init };
-    let _fields = (fields === null) ? Object.keys({...store, ...props, ...state}) : fields;
-    for (let v of _fields) {
-        if (store?.tstamp && state?.tstamp) {
-            if (store.tstamp > state.tstamp) {
-                if (props && props[v]) { df[v] = props[v]; }
-                if (state && state[v]) { df[v] = state[v]; }
-                if (store && store[v]) { df[v] = store[v]; }
-            } else {
-                if (props && props[v]) { df[v] = props[v]; }
-                if (store && store[v]) { df[v] = store[v]; }
-                if (state && state[v]) { df[v] = state[v]; }
-            }
-        } else {
-            if (store?.tstamp) {
-                if (props && props[v]) { df[v] = props[v]; }
-                if (store && store[v]) { df[v] = store[v]; }
-                if (state && state[v]) { df[v] = state[v]; }
-            } else {
-                if (props && props[v]) { df[v] = props[v]; }
-                if (store && store[v]) { df[v] = store[v]; }
-                if (state && state[v]) { df[v] = state[v]; }
-            }
-        }
-
+const customSort = (o1, o2) => {
+    if (o1 == null) {
+        o1 = { tstamp: null };
     }
-    return df;
+    if (o2 == null) {
+        o2 = { tstamp: null };
+    }
+    if ('tstamp' in o1 && 'tstamp' in o2) {
+        return o2.tstamp - o1.tstamp;
+    } else if ('tstamp' in o1) {
+        return -1;
+    } else if ('tstamp' in o2) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+const getQueryParameters = () => {
+    const queryString = window.location.search.substring(1); // Get the query string excluding the leading '?'
+    const params = new URLSearchParams(queryString);
+    // const queryParams = {};
+    // for (const [param, value] of params.entries()) {
+    //   queryParams[param] = value;
+    // }
+    //return queryParams;
+    return params;
+}
+
+export const newWindow = (url, data, name) => {
+    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(data), 'secret-key').toString();
+    const _url = `${url}?data=${encodeURIComponent(encryptedData)}`;
+    window.open(_url, name ? name : '_blank');
 }
 
 
+export default (init, store = {}, props = {}, state = {}, fields) => {
+    let query = {};
+    let df = { ...init };
+    let _fields = (fields === null) ? Object.keys({ ...store, ...props, ...state }) : fields;
+    const queryParams = getQueryParameters();
+    if (queryParams.size > 0) {
+        const encryptedData = queryParams.get('data');
+        const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, 'secret-key');
+        query = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
+    }
+    const _s = [props, store, state, query].sort(customSort).reverse();
+    for (let v of _fields) {
+        if (_s[0] && _s[0][v]!==null && _s[0][v]!==undefined ) { df[v] = _s[0][v]; }
+        if (_s[1] && _s[1][v]!==null && _s[1][v]!==undefined) { df[v] = _s[1][v]; }
+        if (_s[2] && _s[2][v]!==null && _s[2][v]!==undefined) { df[v] = _s[2][v]; }
+        if (_s[3] && _s[3][v]!==null && _s[3][v]!==undefined) { df[v] = _s[3][v]; }
+    }
+    return df;
+}
 
 export const fixRangeDates = (fields, values = {}) => {
     const _fieldValues = { ...values };
@@ -86,7 +111,7 @@ export const fixRangeDates = (fields, values = {}) => {
 //             for (let [i, x] of _fieldValues[v].entries()) {
 //                 if (x) {
 //                     let f = (i === 0) ? "startValue" : "endValue";
-//                     _fval[f] = moment(x.replace("=", '').replace("<", "").replace(">", ""));
+//                     _fval[f] = dayjs(x.replace("=", '').replace("<", "").replace(">", ""));
 //                     _fval.formatted = { ..._fval.formatted, [f]: x.replace("=", '').replace("<", "").replace(">", "") };
 //                     _flval[f] = x.replace("=", '').replace("<", "").replace(">", "");
 //                 }

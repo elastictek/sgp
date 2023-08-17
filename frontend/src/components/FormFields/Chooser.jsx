@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -91,12 +90,13 @@ export default ({ parameters, closeSelf, ...props }) => {
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, {}, payload?.payload?.filter, { ...location?.state }, null);//NO FILTERS IN????
+            const { tstamp, ...paramsIn } = loadInit({}, {}, payload?.payload?.filter, { /* ...location?.state */ }, null);//NO FILTERS IN????
             inputParameters.current = fixRangeDates(null, paramsIn);
         }
         let { filterValues, fieldValues } = inputParameters.current;
         formFilter.setFieldsValue({ ...fieldValues });
         dataAPI.addFilters({ ...filterValues }, true);
+        dataAPI.setBaseFilters(payload?.payload?.baseFilter);
         dataAPI.setSort(dataAPI.getSort(), defaultSort);
         if (data) {
             dataAPI.setData({ rows: data, total: data?.length });

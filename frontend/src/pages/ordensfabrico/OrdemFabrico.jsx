@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -11,6 +11,7 @@ import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
+import { json, includeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
 import Portal from "components/portal";
@@ -28,24 +29,33 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, VerticalSpace } from 'components/FormFields';
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { estadoProducaoData } from '../producao/WidgetEstadoProducao';
+import { AppContext } from 'app';
 const FormRequirements = React.lazy(() => import('./FormRequirements'));
-const FormSettings = React.lazy(() => import('./FormSettings'));
+const FormCoresPlan = React.lazy(() => import('./FormCoresPlan'));
+const FormCortesPlan = React.lazy(() => import('./FormCortesPlan'));
+const FormCortes = React.lazy(() => import('./FormCortes'));
+const FormArtigosSpecsPlan = React.lazy(() => import('./FormArtigosSpecsPlan'));
+const FormFormulacaoPlan = React.lazy(() => import('./FormFormulacaoPlan'));
+const FormFormulacao = React.lazy(() => import('./FormFormulacao'));
+const FormReport = React.lazy(() => import('./FormReport'));
 
+const title = "Ordem de fabrico";
+const TitleForm = ({ data, onChange, level, auth, form, ofabrico }) => {
+  return (<ToolbarTitle id={auth?.user} description={`${title} ${ofabrico}`} title={<>
+    <Col>
+      <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+        <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title} {ofabrico}</span></Col></Row></Col>
+        {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+      </Row>
 
-const TitleForm = ({ ofabrico }) => {
-  return (
-    <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center" }}>
-      <div><ExclamationCircleOutlined style={{ color: "#faad14" }} /></div>
-      <div style={{ fontSize: "14px", display: "flex", flexDirection: "column" }}>
-        <div style={{ fontWeight: 800 }}>Validar Ordem de Fabrico</div>
-        <div style={{ color: "#1890ff" }}>{ofabrico}</div>
-      </div>
-    </div>
-  );
+    </Col>
+  </>
+  }
+  />);
 }
 
 const schema = (options = {}) => {
@@ -85,11 +95,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
   const navigate = useNavigate();
 
   const onChange = (v, field) => {
-    /* if (field === "typelist") {
-        navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-    } else {
-        form.submit();
-    } */
+
 
   }
 
@@ -111,15 +117,30 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
   );
 }
 
+const loadOrdemFabrico = async (agg_of_id, ordem_id, draft_ordem_id) => {
+  const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { enabled: false }, filter: { agg_of_id, ordem_id, draft_ordem_id }, parameters: { method: "GetOrdemFabricoSettings" } });
+  return rows;
+}
 
-const loadEstadoProducao = async (agg_of_id, ordem_id) => {
+export const loadEstadoProducao = async (agg_of_id, ordem_id) => {
   const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { enabled: false }, filter: { agg_of_id, ordem_id }, parameters: { method: "GetEstadoProducao" } });
   return rows;
 }
 
-export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
+export const Edit = ({ editable, action, item, permissions, editKey, onEdit, onEndEdit, onCancelEdit, resetData, fn, ...props }) => {
+  return (
+    <Permissions permissions={permissions} item={item} action={action} forInput={editable}>
+      {editKey === null && <Button onClick={() => onEdit(action)} type="link" icon={<EditOutlined />}>Editar</Button>}
+      {editKey === action && <Button onClick={() => onCancelEdit(resetData)} type="link">Cancelar</Button>}
+      {editKey === action && <Button onClick={() => onEndEdit(fn)} type="primary" icon={<EditOutlined />}>Guardar</Button>}
+    </Permissions>
+  );
+}
+
+export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { openNotification } = useContext(AppContext);
   //const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
   //const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });//Se tem permissões para alterar (Edit)
   //const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false }); //Se tem permissões para alternar entre Mode Edit e View
@@ -127,7 +148,6 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
   const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
   const [form] = Form.useForm();
   const [formFilter] = Form.useForm();
-  const [formDirty, setFormDirty] = useState(false);
   const inputParameters = useRef({});
   const defaultFilters = {};
   const defaultSort = []; //{ column: "colname", direction: "ASC|DESC" }
@@ -138,9 +158,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
   const permission = usePermission({ name: "ordemfabrico" });
   const [estadoProducao, setEstadoProducao] = useState();
   const [ofExists, setOfExists] = useState(false);
-  const [activeTab, setActiveTab] = useState();
+  const [activeTab, setActiveTab] = useState('1');
+  const [editKey, setEditKey] = useState(null);
+  const [updated, setUpdated] = useState(null);
+  const [formDirty, setFormDirty] = useState(false);
   const primaryKeys = [];
-  const containerRef = useRef();
+  const operationsRef = useRef();
+
 
   useEffect(() => {
     const controller = new AbortController();
@@ -156,10 +180,20 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
       inputParameters.current = { ...paramsIn };
     }
     if (inputParameters.current.temp_ofabrico_agg) {
-      const _data = await loadEstadoProducao(inputParameters.current.temp_ofabrico_agg, inputParameters.current.ofabrico_sgp);
-      const _ep = estadoProducaoData({ data: _data }); //calcula os valores de cada estado de produção por of
-      inputParameters.current = { ...inputParameters.current, ..._ep };
+      const _data = await loadOrdemFabrico(inputParameters.current?.temp_ofabrico_agg, inputParameters.current?.ofabrico_sgp, inputParameters.current?.temp_ofabrico);
+      const formulacao_plan = includeObjectKeys(_data, ["fplan_%"]);
+      const cortes_plan = includeObjectKeys(_data, ["cplan_%"]);
+      //const _data = await loadEstadoProducao(inputParameters.current.temp_ofabrico_agg, inputParameters.current.ofabrico_sgp);
+      //const _ep = estadoProducaoData({ data: _data }); //calcula os valores de cada estado de produção por of
+      //console.log("---------------",_ep)
+      inputParameters.current = {
+        ...inputParameters.current, ...formulacao_plan, ...cortes_plan, cortesordem_id: json(_data?.cortesordem)?.id, cortes_id: json(_data?.cortes)?.id, formulacao_id: json(_data?.formulacao)?.id,
+        ...pickAll([{ id: "cs_id" }, "agg_of_id", "formulacao_plan_id", "fplan_", "cortes_plan_id", "cplan_"], _data)
+      };
+      setUpdated(Date.now());
       setOfExists(true);
+
+
       // setEstadoProducao(_ep);
       // const unique = Object.values(_ep.rows.reduce((lookup, v) => {
       //   lookup[v.of_cod] = ({
@@ -214,38 +248,130 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     setActiveTab(k);
   }
 
+  const onEdit = (key) => {
+    if (editKey !== null) {
+      openNotification("error", 'top', "Notificação", "Não é possível editar o registo. Existe uma edição em curso!");
+    } else {
+      setEditKey(key);
+      setFormDirty(false);
+    }
+  }
+
+  const onEndEdit = async (fn) => {
+    if (formDirty || typeof fn === "function") {
+      switch (editKey) {
+        case "planificacao": break;
+        case "formulacao":
+          if (typeof fn == "function") {
+            submitting.trigger();
+            await fn();
+            submitting.end();
+          }
+          break;
+        case "formulacao_plan":
+          if (typeof fn == "function") {
+            submitting.trigger();
+            await fn();
+            submitting.end();
+          }
+          break;
+        default:
+          if (typeof fn == "function") {
+            submitting.trigger();
+            await fn();
+            submitting.end();
+          }
+          break;
+      }
+    }
+    setEditKey(null);
+    setFormDirty(false);
+  }
+
+  const onCancelEdit = async (resetData) => {
+    await resetData();
+    setEditKey(null);
+    setFormDirty(false);
+  }
+
+  const isEditable = (allowOnPrfOpen = false, minStatus = 1) => {
+    if (allowOnPrfOpen) {
+      return ((inputParameters.current?.ofabrico_status >= minStatus && inputParameters.current?.ofabrico_status < 9) || (inputParameters.current?.ativa == 1));
+    } else {
+      return (inputParameters.current?.ofabrico_status >= minStatus && inputParameters.current?.ofabrico_status < 9);
+    }
+  }
+
   return (
-    <FormContainer id="lay-of" fluid wrapForm={false} style={{ padding: "0px", margin: "0px" }}>
-      <Row nogutter style={{ padding: "0px", margin: "0px 5px 0px 0px" }}>
-        <Col style={{ height: "calc(100vh - 130px)" }}>
-          {ofExists &&
-
-            <YScroll>
-
+    <>{(!setFormTitle && ofExists) && <TitleForm auth={permission.auth} ofabrico={inputParameters.current?.ofabrico} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} */ level={location?.state?.level} /* form={formFilter} */ />}
+      <FormContainer id="lay-of" fluid wrapForm={false} style={{ padding: "0px", margin: "0px" }}>
+        <Row nogutter style={{ padding: "0px", margin: "0px 5px 0px 0px" }}>
+          <Col style={{ height: "calc(100vh - 130px)" }}>
+            {ofExists &&
               <Tabs size='small' type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                tabBarExtraContent={<div ref={operationsRef}></div>}
                 items={[
                   {
                     label: `Informação`,
                     key: '1',
-                    children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormRequirements {...{ parameters: inputParameters.current, permission }} /></YScroll></div>,
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormRequirements activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
-                    label: `Definições`,
+                    label: `Cores`,
+                    key: '5',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCoresPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
+                    label: `Especificações`,
+                    key: '6',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormArtigosSpecsPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  }, {
+                    label: `Plan. Cortes`,
+                    key: '7',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCortesPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
+                    label: `Cortes`,
                     key: '2',
-                    children: <div style={{height:"calc(100vh - 230px)"}}><YScroll><FormSettings {...{ parameters: inputParameters.current, permission }} /></YScroll></div>,
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCortes activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
+                    label: `Plan. Formulações`,
+                    key: '3',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormFormulacaoPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
+                    label: `Formulação`,
+                    key: '4',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormFormulacao activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
+                    label: `Nonwovens`,
+                    key: '8',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
+                  },
+                  {
+                    label: `Paletização`,
+                    key: '9',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
+                  },
+                  {
+                    label: `Gama Operatória`,
+                    key: '10',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
+                  },
+                  {
+                    label: `Relatório`,
+                    key: '11',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormReport activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   }
+
                 ]}
-
               />
+            }
+          </Col>
 
-
-
-            </YScroll>
-
-          }
-        </Col>
-
-        {/* <Col xs="content" style={{ marginRight: "10px" }}>
+          {/* <Col xs="content" style={{ marginRight: "10px" }}>
           <Anchor
             getContainer={() => containerRef.current}
             items={itemsAnchor}
@@ -273,15 +399,16 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             ))}
           </YScroll>
         </Col> */}
-      </Row>
-      {extraRef && <Portal elId={extraRef.current}>
-        {permission.isOk({ item: "changeStatus", action: "validar" }) && <Space>
-          {/* <Button disabled={submitting.state} onClick={closeSelf}>Cancelar</Button>
+        </Row>
+        {extraRef && <Portal elId={extraRef.current}>
+          {permission.isOk({ item: "changeStatus", action: "validar" }) && <Space>
+            {/* <Button disabled={submitting.state} onClick={closeSelf}>Cancelar</Button>
                         <Button disabled={submitting.state} type="primary" onClick={onFinish}>Validar</Button> */}
-        </Space>}
-      </Portal>
-      }
-    </FormContainer>
+          </Space>}
+        </Portal>
+        }
+      </FormContainer>
+    </>
   )
 
 }

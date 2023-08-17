@@ -42,7 +42,7 @@ const ItemBobinagens = React.lazy(() => import('./ItemBobinagens'));
 //const ItemFormulacao = React.lazy(() => import('./ItemFormulacao'));
 
 const WidgetFormulacao = React.lazy(() => import('../../formulacao/WidgetFormulacao'));
-const WidgetEstadoProducao = React.lazy(() => import('../../producao/WidgetEstadoProducao'));
+/* const WidgetEstadoProducao = React.lazy(() => import('../../producao/WidgetEstadoProducao')); */
 
 const ItemNonwovens = React.lazy(() => import('./ItemNonwovens'));
 const ItemGamaOperatoria = React.lazy(() => import('./ItemGamaOperatoria'));
@@ -58,7 +58,7 @@ const ItemGranuladoInLine = React.lazy(() => import('./ItemGranuladoInLine'));
 const ItemMPLocal = React.lazy(() => import('./ItemMPLocal'));
 const ItemReportReciclado = React.lazy(() => import('./reports/ItemReportReciclado'));
 const ItemEstadoProducao01 = React.lazy(() => import('./ItemEstadoProducao01'));
-import { AppContext, MediaContext, SocketContext } from "../../App";
+import { AppContext, MediaContext, SocketContext } from "app";
 
 
 const useStyles = createUseStyles({
@@ -288,7 +288,7 @@ const baseItems = [
     { i: "stockavailable", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
     //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
     { i: "dataprod" },
-    { i: "dataprod#estado", x: 0, y: 0, w: 12, h: 19, minH: 19, minW: 12, fixed: true, static: true, pinnable: false, },
+    { i: "dataprod#estado", x: 0, y: 0, w: 12, h: 19, minH: 19, minW: 12, fixed: true, static: true, pinnable: false,onClick:(navigate)=>navigate("/app/producao/widgetestadoproducao",{}) },
     { i: "mp" },
     { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
     { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -515,6 +515,7 @@ const templateSizes = (breakpoint, dashboard) => {
 } */
 
 const ToolboxItem = ({ allItems, currentBreakpoint, item, onTakeItem }) => {
+    const navigate = useNavigate();
     const classes = useStyles();
     const toolItem = toolboxItems[item.i];
 
@@ -527,7 +528,11 @@ const ToolboxItem = ({ allItems, currentBreakpoint, item, onTakeItem }) => {
     const itemsClick = (i) => {
         const key = i.key;
         const _item = allItems[baseBreakpoint].find(v => v.i == key);
-        onTakeItem(_item);
+        if ("onClick" in _item){
+            _item.onClick(navigate);
+        }else{
+            onTakeItem(_item);
+        }
     }
 
     return (
@@ -1071,7 +1076,6 @@ export default (props) => {
         hideSettings();
     }
     const onPinItem = (item) => {
-        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         const _layouts = (layouts[baseBreakpoint] || []).map(v => {
             return (v.i === item.i ? { ...v, static: !v.static, fixed: !v.static } : v);
         });
@@ -1136,7 +1140,7 @@ export default (props) => {
                     placement="left"
                     closable={false}
                     onClose={onCloseDrawer}
-                    visible={drawerVisible}
+                    open={drawerVisible}
                 >
                    <YScroll>
                     <MainMenu dark />
@@ -1182,7 +1186,7 @@ export default (props) => {
                                 {v.i === "fichaprocesso#gamaoperatoria" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemGamaOperatoria card={{ title: "Gama Operatória" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {v.i === "fichaprocesso#specs" && <><PinItem value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemSpecs card={{ title: "Especificações" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>}
                                 {/* {v.i === "dataprod#estado" && <><PinItem color="#fff" background="#237804" value={v} onClick={() => onPinItem(v)} pinnable={v.pin} /><CloseItem color="#fff" background="#237804" closable={v?.closable} onClick={() => onPutItem(v)} /><Suspense fallback={<></>}><ItemEstadoProducao01 card={{ title: "Produção Atual" }} record={{ ...currentSettings }} parentReload={loadData} /></Suspense></>} */}
-                                {v.i === "dataprod#estado" && <Suspense fallback={<></>}><WidgetEstadoProducao card={{ title: "Produção" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{ currentSettings, cs_id: currentSettings.id, status: currentSettings?.status, ofs: currentSettings?.ofs, pinnable: v?.pin, closable: v?.closable, static: v?.static }} parentReload={loadData} /></Suspense>}
+                                {/* {v.i === "dataprod#estado" && <Suspense fallback={<></>}><WidgetEstadoProducao card={{ title: "Produção" }} onClose={() => onPutItem(v)} onPinItem={() => onPinItem(v)} parameters={{ currentSettings, cs_id: currentSettings.id, status: currentSettings?.status, ofs: currentSettings?.ofs, pinnable: v?.pin, closable: v?.closable, static: v?.static }} parentReload={loadData} /></Suspense>} */}
                             </CustomGridItemComponent>
                         );
                     })

@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -48,15 +48,11 @@ const loadPaleteLookup = async (palete_id) => {
     return rows;
 }
 
-const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permission }) => {
+const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode,parameters,misc, permission }) => {
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
-        /* if (field === "typelist") {
-            navigate("/app/validateReellings", { replace:true, state: { ...dataAPI.getAllFilter(), typelist: v, tstamp: Date.now() } });
-        } else {
-            form.submit();
-        } */
+
 
     }
 
@@ -70,7 +66,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, permi
 
     const rightContent = (
         <Space>
-            <RightToolbar permission={permission}/>
+            <RightToolbar permission={permission} parameters={parameters} misc={misc}/>
         </Space>
     );
     return (
@@ -88,6 +84,7 @@ export default (props) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [form] = Form.useForm();
+    const permission = usePermission({permissions:props?.permissions});
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
     const defaultSort = []; //{ column: "colname", direction: "ASC|DESC" }
@@ -111,7 +108,7 @@ export default (props) => {
 
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
         const formValues = await loadPaleteLookup(initFilters.palete_id);
-          form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: moment(formValues[0].timestamp), IPTDAT_0: moment(formValues[0].IPTDAT_0) } : {});
+        form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0 && formValues[0]?.artigo) {
             dataAPIArtigos.setRows(formValues[0].artigo);
         }
@@ -173,7 +170,7 @@ export default (props) => {
 
     return (
         <YScroll>
-            <ToolbarTable {...props} submitting={submitting} />
+            <ToolbarTable {...props} permission={permission} submitting={submitting} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>
@@ -189,7 +186,7 @@ export default (props) => {
                 {form.getFieldValue("cliente_id") && <><Row><Col><HorizontalRule title="Cliente" /></Col></Row>
                     <Row style={{}} gutterWidth={10}>
                         <Col width={400}><Field name="cliente_nome" label={{ enabled: true, text: "Cliente" }}><Input size="small" /></Field></Col>
-                        <Col width={120}><Field name="cliente_diamref" label={{ enabled: true, text: "Diâmetro Referência" }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
+                        <Col width={120}><Field name="cliente_diamref" label={{ enabled: true, text: "Diâm. Referência" }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
                         <Col width={120}><Field name="cliente_liminf" label={{ enabled: true, text: "Diâmetro Lim. Inf." }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
                         <Col width={120}><Field name="cliente_limsup" label={{ enabled: true, text: "Diâmetro Lim. Sup." }}><InputNumber style={{ width: "80px", textAlign: "right" }} size="small" addonAfter="mm" /></Field></Col>
                     </Row>
@@ -206,14 +203,14 @@ export default (props) => {
                     <Row style={{}} gutterWidth={10}>
                         <Col style={{ display: "flex" }}>
                             {form.getFieldValue("ofid") && <Field name="ofid" label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>}
-                            <Field name="op" label={{ enabled: false, text: "" }}><Input style={{ width: "450px" }} size="small" /></Field>
+                            <Field name="op" label={{ enabled: false, text: "" }}><Input size="small" /></Field>
                         </Col>
                     </Row>
                     <Row style={{}} gutterWidth={10}><Col><Label text="Ordem Fabrico Original" /></Col></Row>
                     <Row style={{}} gutterWidth={10}>
                         <Col style={{ display: "flex" }}>
                             {form.getFieldValue("ofid_original") && <Field name="ofid_original" label={{ enabled: false, text: "Ordem Fabrico" }}><Input style={{ width: "120px", marginRight: "10px" }} size="small" /></Field>}
-                            <Field name="op_original" label={{ enabled: false, text: "Ordem Fabrico Original" }}><Input style={{ width: "450px" }} size="small" /></Field>
+                            <Field name="op_original" label={{ enabled: false, text: "Ordem Fabrico Original" }}><Input size="small" /></Field>
                         </Col>
                     </Row></>}
 

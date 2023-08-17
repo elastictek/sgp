@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -453,7 +453,7 @@ export default ({ setFormTitle, ...props }) => {
         { key: 'qty_reminder', width: 110, name: 'Qtd. Restante', formatter: p => <div>{parseFloat(p.row.qty_reminder).toFixed(2)} m<sup>2</sup></div> },
         { key: 'largura', name: 'Largura', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.largura} mm</div> },
         { key: 'comp', name: 'Comp.', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{parseFloat(p.row.comp).toFixed(2)} m</div> },
-        { key: 't_stamp', width: 140, name: 'Data', formatter: p => moment(p.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data', formatter: p => dayjs(p.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'queue', width: 110,maxWidth:110, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
         { key: 'ofs', width: 140, name: 'Ordem Fabrico', formatter: p => <OfsColumn value={p.row.ofs && JSON.parse(p.row.ofs)} /> },
         { key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: p => <Button /* disabled={details?.status === 1} */ size="small" onClick={() => onDelete(p.row, p)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
@@ -464,7 +464,7 @@ export default ({ setFormTitle, ...props }) => {
         //{ key: 'itm_des', sortable: false, name: 'Artigo Des.', formatter: p => p.row.itm_des },
         //{ key: 'qtd', sortable: false, name: 'Quantidade', minWidth: 95, width: 95, formatter: p => parseFloat(p.row.qtd).toFixed(2), editor: p => <InputNumber bordered={false} size="small" value={p.row.qtd} ref={(el, h,) => { el?.focus(); }} onChange={(e) => p.onRowChange({ ...p.row, qtd: e === null ? 0 : e, notValid: 1 }, true)} min={0} /> },
         //{ key: 'unit', sortable: false, name: 'Unidade', minWidth: 95, width: 95, editor: p => <SelectField defaultOpen={true} bordered={false} style={{ width: "100%" }} value={p.row.unit} ref={(el, h,) => { el?.focus(); }} onChange={(v) => p.onRowChange({ ...p.row, unit: v, notValid: 1 }, true)} size="small" keyField="value" textField="label" data={[{ value: "m", label: "m" }, { value: "kg", label: "kg" }, { value: "m2", label: <div>m&sup2;</div> }]} /> },
-        //{ key: 'timestamp', sortable: false, name: 'Data', formatter: props => moment(props.row.timestamp).format(DATETIME_FORMAT) },
+        //{ key: 'timestamp', sortable: false, name: 'Data', formatter: props => dayjs(props.row.timestamp).format(DATETIME_FORMAT) },
         //{ key: 'delete', name: '', cellClass: classes.noOutline, minWidth: 45, width: 45, sortable: false, resizable: false, formatter: props => <Button disabled={details?.status === 1} size="small" onClick={() => onDelete(props.row, props)}><DeleteOutlined /* style={{ color: "#cf1322" }} */ /></Button> }
     ];
     const [record, setRecord] = useState();

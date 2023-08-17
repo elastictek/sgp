@@ -28,7 +28,6 @@ import Icon, { ExclamationCircleOutlined, InfoCircleOutlined, SearchOutlined, Us
 const ButtonGroup = Button.Group;
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED } from 'config';
 const { Title } = Typography;
-import { SocketContext, MediaContext } from '../App';
 import { Wnd, ColumnBobines, Bobines, typeListField } from "./commons";
 const FixSimulatorList = lazy(() => import('./FixSimulatorList'));
 const StockList = lazy(() => import('../artigos/StockList'));
@@ -267,8 +266,6 @@ export default () => {
     const [formFilter] = Form.useForm();
     const dataAPI = useDataAPI({ payload: { url: `${API_URL}/validarbobinagenslist/`, parameters: { feature: "fixconsumos" }, pagination: { enabled: true, page: 1, pageSize: 10 }, filter: {}, sort: [{ column: 'nome', direction: 'DESC' }] } });
     const elFilterTags = document.getElementById('filter-tags');
-    const { data: dataSocket } = useContext(SocketContext) || {};
-    const { windowDimension } = useContext(MediaContext);
     const [typeList, setTypeList] = useState('A');
 
     useEffect(() => {

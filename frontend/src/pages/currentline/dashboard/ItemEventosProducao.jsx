@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, CINTASPALETES_OPTIONS, PALETIZACAO_ITEMS, PALETE_SIZES, ARTIGOS_SPECS, GAMAOPERATORIA } from "config";
 import { useModal } from "react-modal-hook";
@@ -25,7 +24,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, CheckboxField } from 'components/FormFields';
 import TitleCard from './TitleCard';
 import { EventColumn, doserConsume } from '../../logslist/commons';
-import { SocketContext } from '../../App';
+import { SocketContext } from 'gridlayout';
 import { useSubmitting, noValue } from "utils";
 import { usePermission } from "utils/usePermission";
 import IconButton from "components/iconButton";
@@ -614,9 +613,9 @@ export default ({ record, card, parentReload }) => {
     }
 
     const onOpen = (component, data) => {
-        setModalParameters({ [component]: { ...data, title: <div style={{display:"flex",alignItems:"center"}}><FieldTimeOutlined style={{fontSize:"18px",marginRight:"5px"}}/>Ordem de Fabrico em <span style={{ marginLeft:"5px", fontWeight: 900 }}>{moment(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } });
+        setModalParameters({ [component]: { ...data, title: <div style={{display:"flex",alignItems:"center"}}><FieldTimeOutlined style={{fontSize:"18px",marginRight:"5px"}}/>Ordem de Fabrico em <span style={{ marginLeft:"5px", fontWeight: 900 }}>{dayjs(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } });
         showModal();
-        //setVisible(prev => ({...prev, [component]: {...data, title: <div>Ordem de Fabrico em <span style={{ fontWeight: 900 }}>{moment(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } }));
+        //setVisible(prev => ({...prev, [component]: {...data, title: <div>Ordem de Fabrico em <span style={{ fontWeight: 900 }}>{dayjs(data.timestamp).format(DATETIME_FORMAT)}</span></div>, open: true } }));
     }
 
     const onClose = (component) => {
@@ -641,7 +640,7 @@ export default ({ record, card, parentReload }) => {
                             return (<Row key={`evt-prod-${v.id}`} gutterWidth={5} wrap="nowrap" style={{ borderBottom: "solid 1px #d9d9d9", display: "flex", alignItems: "center", ...(dataAPI.getData().rows.length === (idx + 1) && { fontWeight: 800 }) }}>
                                 <Col xs="content">{idx}</Col>
                                 <Col><Status onClick={(e) => onOpen("drawer", v)} type_op={v.type_op} last={dataAPI.getData().rows.length === (idx + 1)} /></Col>
-                                <Col xs="content">{moment(v.timestamp).format(DATETIME_FORMAT)}</Col>
+                                <Col xs="content">{dayjs(v.timestamp).format(DATETIME_FORMAT)}</Col>
                             </Row>)
                         })}
                     </Container>

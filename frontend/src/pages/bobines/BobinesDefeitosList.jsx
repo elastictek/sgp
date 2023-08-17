@@ -3,13 +3,12 @@ import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from "classnames";
 import Joi from 'joi';
-import moment from 'moment';
 import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import { orderObjectKeys, json } from "utils/object";
 import { usePermission, Permissions } from "utils/usePermission";
 import loadInit, { fixRangeDates } from "utils/loadInit";
@@ -43,7 +42,7 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
 
 const applyToAllRows = (rows, col, currentIndex, added, removed) => {
     return rows.map((v, i) => {
-        if (i !== currentIndex) {
+        if (!v?.carga_id && i !== currentIndex) {
             let _d = v[col] || [];
             _d = _d.filter(a => !removed?.map(b => b.value).includes(a.value));
             _d = [..._d, ...added.filter(a => !_d?.map(b => b.value).includes(a.value))];
@@ -54,7 +53,7 @@ const applyToAllRows = (rows, col, currentIndex, added, removed) => {
 }
 const applyRangeToAllRows = (rows, col, currentIndex, added, removed) => {
     return rows.map((v, i) => {
-        if (i !== currentIndex) {
+        if (!v?.carga_id && i !== currentIndex) {
             let _d = v[col] || [];
             _d = _d.filter(a => !removed?.map(({ min, max }) => ({ min, max })).some(v => v.min === a.min && v.max === a.max));
             _d = [..._d, ...added.filter(a => !_d?.map(({ min, max }) => ({ min, max })).some(v => v.min === a.min && v.max === a.max))];
@@ -65,7 +64,7 @@ const applyRangeToAllRows = (rows, col, currentIndex, added, removed) => {
 }
 const applyValueToAllRows = (rows, col, currentIndex, value) => {
     return rows.map((v, i) => {
-        if (i !== currentIndex) {
+        if (!v?.carga_id && i !== currentIndex) {
             return { ...v, [col]: value, notValid: 1 };
         }
         return v;
@@ -78,7 +77,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     const location = useLocation();
     const classes = useEditorStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({});
+    const permission = usePermission({ permissions: props?.permissions });
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
@@ -116,15 +115,27 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     }
 
 
-    const editable = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            return (col === "generic") ? true : false;
+    const editable = (row, col = "generic") => {
+        if (props?.parameters?.palete) {
+            if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
+                return (col === "generic") ? true : false;
+            }
+        }else if (props?.parameters?.bobinagem) {
+            if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id) {
+                return (col === "generic") ? true : false;
+            }
         }
         return false;
     }
     const editableClass = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
-            return (col === "generic") ? classes.edit : undefined;
+        if (props?.parameters?.palete) {
+            if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
+                return (col === "generic") ? classes.edit : undefined;
+            }
+        }else if (props?.parameters?.bobinagem) {
+            if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id) {
+                return (col === "generic") ? classes.edit : undefined;
+            }
         }
     }
 
@@ -136,8 +147,9 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         { key: 'posicao_palete', sortable: false, name: 'Pos.', width: 60, formatter: p => p.row.posicao_palete },
         {
             key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85,
-            headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData?.estado} forInput={editable(p.row, 'generic')} />,
-            editor: p => <FieldEstadoEditor forInput={editable(p.row, 'generic')} p={p} />,
+            headerRenderer: p => <CheckColumn id="estado" name="Estado" onChange={onCheckChange} defaultChecked={checkData?.estado} forInput={editable(p, 'generic')} />,
+            editable,
+            editor: p => <FieldEstadoEditor forInput={true/* editable(p, 'generic') */} p={p} />,
             formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={p.row} /></div>,
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
@@ -146,41 +158,46 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.l_real} {row.l_real && "mm"}</div> },
         {
             key: 'fc_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />,
-            editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={editable(p.row, 'generic')} valid={1} /> },
+            editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={true/* editable(p, 'generic') */} valid={1} /> },
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
         {
             key: 'ff_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="ff_pos" name="Falha de Filme" onChange={onCheckChange} defaultChecked={checkData?.ff_pos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="ff_pos" name="Falha de Filme" onChange={onCheckChange} defaultChecked={checkData?.ff_pos} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />,
-            editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={editable(p.row, 'generic')} valid={1} /> },
+            editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={true/* editable(p, 'generic') */} valid={1} /> },
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
         {
             key: 'buracos_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="buracos_pos" name="Buracos" onChange={onCheckChange} defaultChecked={checkData?.buracos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="buracos_pos" name="Buracos" onChange={onCheckChange} defaultChecked={checkData?.buracos} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />,
-            editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={editable(p.row, 'generic')} valid={1} /> },
+            editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={true/* editable(p, 'generic') */} valid={1} /> },
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
         {
             key: 'furos_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="furos_pos" name="Furos" onChange={onCheckChange} defaultChecked={checkData?.furos_pos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="furos_pos" name="Furos" onChange={onCheckChange} defaultChecked={checkData?.furos_pos} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />,
-            editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={editable(p.row, 'generic')} valid={1} /> },
+            editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={true/* editable(p, 'generic') */} valid={1} /> },
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
         {
             key: 'rugas_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="rugas_pos" name="Rugas" onChange={onCheckChange} defaultChecked={checkData?.rugas_pos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="rugas_pos" name="Rugas" onChange={onCheckChange} defaultChecked={checkData?.rugas_pos} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />,
-            editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={editable(p.row, 'generic')} valid={1} /> },
+            editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={true/* editable(p, 'generic') */} valid={1} /> },
             editorOptions: { editOnClick: true },
             cellClass: r => editableClass(r, 'generic')
         },
@@ -188,7 +205,8 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         { key: 'comp', sortable: false, name: 'Comp. Original', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
         {
             key: 'defeitos', sortable: false,
-            headerRenderer: p => <CheckColumn id="defeitos" name="Outros Defeitos" onChange={onCheckChange} defaultChecked={checkData?.defeitos} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="defeitos" name="Outros Defeitos" onChange={onCheckChange} defaultChecked={checkData?.defeitos} forInput={editable(p, 'generic')} />,
+            editable,
             editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true },
             width: 250, formatter: (p) => <FieldDefeitos p={p} />,
             cellClass: r => editableClass(r, 'generic'),
@@ -196,17 +214,19 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         },
         {
             key: 'prop_obs', sortable: false,
-            headerRenderer: p => <CheckColumn id="prop_obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="prop_obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>,
-            editor(p) { return <ModalObsEditor forInput={editable(p.row, 'generic')} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
+            editor(p) { return <ModalObsEditor forInput={true/* editable(p, 'generic') */} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
             cellClass: r => editableClass(r, 'generic'),
             editorOptions: { editOnClick: true }
         },
         {
             key: 'obs', sortable: false,
-            headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'generic')} />,
+            headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p, 'generic')} />,
+            editable,
             formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>,
-            editor: (p) => { return <ModalObsEditor forInput={editable(p.row, 'generic')} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
+            editor: (p) => { return <ModalObsEditor forInput={true/* editable(p, 'generic') */} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
             cellClass: r => editableClass(r, 'generic'),
             editorOptions: { editOnClick: true },
         },
@@ -226,7 +246,6 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 nome: bobinagem_nome
             }
         })
-
         let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         palete_id = getFilterValue(palete_id, '==')
@@ -236,7 +255,6 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({ signal });
-
     }
 
     useEffect(() => {
@@ -324,7 +342,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 //remove empty values
                 const _values = processFilters(type, values, defaultFilters);
                 dataAPI.addFilters(_values, true);
-                dataAPI.addParameters({});
+                dataAPI.addParameters({ ...defaultParameters });
                 dataAPI.first();
                 dataAPI.fetchPost();
                 break;
@@ -363,12 +381,11 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
                     {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                    <Permissions permissions={props?.permission} action="editList" forInput={!noEdit}>
-                        {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                        {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
-                        {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
-                    </Permissions>
-
+                        <Permissions permissions={permission} action="changeDefeitos" forInput={!noEdit}>
+                            {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                            {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                            {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+                        </Permissions>
                 </Space>}
             />
         </>

@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys, arrayItem } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BorderOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, BorderOutlined, ExperimentOutlined, CopyOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -445,6 +445,25 @@ export default ({ setFormTitle, ...props }) => {
         };
     }
 
+    const onCopyTo = async () => {
+        submitting.trigger();
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "CopyTo" }, filter: { ...inputParameters.current } });
+            if (response.data.status !== "error") {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                props?.loadParentData();
+            } else {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            }
+        } catch (e) {
+            console.log(e)
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        } finally {
+            submitting.end();
+        };
+    }
+
     return (
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
@@ -493,6 +512,7 @@ export default ({ setFormTitle, ...props }) => {
                 }}
                 leftToolbar={
                     <Space>
+                        <Permissions permissions={permission} action="edit" forInput={[(!mode.datagrid.edit && !mode.datagrid.add)]}><Button icon={<CopyOutlined/>} onClick={onCopyTo}>Copiar</Button></Permissions>
                         <Permissions permissions={permission} action="edit" forInput={[(inputParameters.current.valid === 1), (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
                         <Permissions permissions={permission} action="edit" forInput={[mode.datagrid.edit]}><></></Permissions>
                         <Permissions permissions={permission} item="test" action="add" forInput={[!submitting.state, !mode.datagrid.edit, inputParameters.current?.valid ? true : false]}><Button icon={<ExperimentOutlined />} onClick={onDoTest}>Realizar Teste</Button></Permissions>

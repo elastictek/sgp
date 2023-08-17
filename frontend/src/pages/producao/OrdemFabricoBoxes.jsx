@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, 
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -23,7 +22,7 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined, UnorderedListOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined, MoreOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -40,7 +39,7 @@ import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, AutoCompleteField, SwitchField, Chooser } from 'components/FormFields';
 import YScroll from 'components/YScroll';
-import { MediaContext, AppContext, SocketContext } from "../App";
+import { MediaContext, AppContext } from "../App";
 import { usePermission, Permissions } from "utils/usePermission";
 // import { isPrivate, LeftUserItem } from './commons';
 import IconButton from "components/iconButton";
@@ -454,7 +453,7 @@ const BobinesTotais = ({ data }) => {
 
 
 
-export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveKeyChange */ boxWidth = 400, ...props }) => {
+export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveKeyChange */ boxWidth = 3, height, ...props }) => {
     const media = useContext(MediaContext);
     const permission = usePermission({ /* name: "widget", item: "estadoProducao" */ });//Permissões Iniciais
     const inputParameters = useRef({});
@@ -536,14 +535,21 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                             <Col style={{}}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}><ArtigoTitle data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes && onTogglePaletes(v)} /></div>
                                 {/**TOOLBOX */}
-                                <div style={{ display: "flex", justifyContent: "end", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
+                                <div>
+                                    <Space>
+                                        <Button type="primary" icon={<MoreOutlined/>} size="small" onClick={() => onPaletesStockClick(items[0])} title="Paletes de stock">Mais</Button>
+                                    </Space>
+                                    </div>
+                                    <div>
                                     <Space>
                                         <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<PaperClipOutlined />} title="Anexos" />
                                         <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost title="Paletização">Paletização</Button>
                                         <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
                                     </Space>
+                                    </div>
                                 </div>
-                                <div style={{ height: ofs.length <= 2 ? "400px" : "300px" }}>
+                                <div style={{ height: height ? height : (ofs.length <= 2 ? "400px" : "300px") }}>
                                     <YScroll>
                                         <div style={{}}>
 

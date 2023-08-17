@@ -19,7 +19,6 @@ import MoreFilters from 'assets/morefilters.svg';
 import { Outlet, useNavigate } from "react-router-dom";
 import YScroll from "components/YScroll";
 import { MdAdjust } from 'react-icons/md';
-import moment from 'moment';
 
 
 import { Alert, Input, Space, Typography, Form, Button, Menu, Dropdown, Switch, Select, Tag, Tooltip, Popconfirm, notification, Spin, Modal, InputNumber, Checkbox, Badge, DatePicker } from "antd";
@@ -57,7 +56,7 @@ export default ({ type, data, closeParent, parentDataAPI, parentRef }) => {
 
     const onValuesChange = (v) => {
         if ("fbobinagem" in v) {
-            form.setFieldsValue({ date: moment(v.fbobinagem.value) });
+            form.setFieldsValue({ date: dayjs(v.fbobinagem.value) });
         }
     }
 
@@ -72,12 +71,12 @@ export default ({ type, data, closeParent, parentDataAPI, parentRef }) => {
         let diff = {};
         const v = schema().custom((v, h) => {
             if (direction.value === "up") {
-                diff = dateTimeDiffValidator(v.date, moment(v.fbobinagem.value));
+                diff = dateTimeDiffValidator(v.date, dayjs(v.fbobinagem.value));
                 if (diff.errors == true) {
                     return h.message("A Data tem de ser maior que a data da bobinagem!", { key: "fbobinagem", label: "date" })
                 }
             }else{
-                diff = dateTimeDiffValidator(moment(v.fbobinagem.value),v.date);
+                diff = dateTimeDiffValidator(dayjs(v.fbobinagem.value),v.date);
                 if (diff.errors == true) {
                     return h.message("A Data tem de ser menor que a data da bobinagem!", { key: "fbobinagem", label: "date" })
                 }
@@ -89,7 +88,7 @@ export default ({ type, data, closeParent, parentDataAPI, parentRef }) => {
         }
         
 
-        const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { move_position: 1, direction: direction.value, ig_id: fbobinagem.key, idlinha: data.idlinha, date:moment(date).format(DATETIME_FORMAT) } });
+        const response = await fetchPost({ url: `${API_URL}/pickmanual/`, parameters: { move_position: 1, direction: direction.value, ig_id: fbobinagem.key, idlinha: data.idlinha, date:dayjs(date).format(DATETIME_FORMAT) } });
         setSubmitting(false);
         closeParent();
         parentDataAPI.fetchPost();
@@ -120,7 +119,7 @@ export default ({ type, data, closeParent, parentDataAPI, parentRef }) => {
                                 showArrow
                                 allowClear
                                 fetchOptions={fetchBobinagens}
-                                optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {moment(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
+                                optionsRender={(d, keyField, textField) => ({ label: <div><b>{d["nome"]}</b> {dayjs(d["t_stamp"]).format(DATETIME_FORMAT)}</div>, value: d["t_stamp"], key: d["id"] })}
 
                             />
                         </Field>

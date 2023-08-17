@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useContext } from 'rea
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi from 'joi';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
@@ -36,7 +36,6 @@ import { Status } from './commons';
 import { GoArrowUp } from 'react-icons/go';
 import { ImArrowUp, ImArrowDown, ImArrowRight, ImArrowLeft } from 'react-icons/im';
 import { MovColumn, PosColumn, QueueNwColumn } from "./commons";
-import dayjs from 'dayjs';
 import { MediaContext, AppContext } from "../App";
 
 const schema = (options = {}) => {
@@ -407,7 +406,7 @@ export default ({ setFormTitle, lastValue, setLastValue, parentRef, closeParent,
     const columns = [
         ...(true) ? [{ name: 'cuba', header: 'Cuba', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 90, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}><Cuba value={p.data?.cuba} /></div> }] : [],
         ...(true) ? [{ name: 'dosers', header: 'Doseador', userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 95, render: (p) => <div style={{ display: "flex", justifyContent: "center" }}>{p.data?.dosers}</div> }] : [],
-        ...(true) ? [{ name: 'baction', header: '', minWidth: 160, maxWidth: 160, render: ({ data }) => <ButtonIO data={data} onOutput={onOutput} onInputDoser={onInputDoser} onOutputDoser={onOutputDoser} /> }] : [],
+        ...(true) ? [{ name: 'baction', header: '', minWidth: 180, maxWidth: 180, render: ({ data }) => <ButtonIO data={data} onOutput={onOutput} onInputDoser={onInputDoser} onOutputDoser={onOutputDoser} /> }] : [],
         ...(true) ? [{ name: 'artigo_cod', header: 'Artigo', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.artigo_cod}</div> }] : [],
         ...(true) ? [{ name: 'n_lote', header: 'Lote', userSelect: true, showColumnMenuTool: false, minWidth: 170, flex: 1, render: (p) => <div style={{ fontWeight: 700 }}>{p.data?.n_lote}</div> }] : [],
         ...(true) ? [{ name: 'artigo_des', header: 'Designação', userSelect: true, showColumnMenuTool: false, flex: 2, minWidth: 170, render: (p) => <div style={{}}>{p.data?.artigo_des}</div> }] : [],

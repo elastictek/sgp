@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -75,7 +74,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'matprima_des', sortable: false, name: `Designação`, frozen: true, formatter: p => <b>{p.row.matprima_des}</b> },
         { key: 'n_lote', sortable: false, name: `Lote`, frozen: true, formatter: p => <b>{p.row.n_lote}</b> },
         { key: 'qty_lote', name: 'Quantidade', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote && `${parseFloat(p.row.qty_lote).toFixed(2)} kg`}</div> },
-        { key: 't_stamp', name: 'Data', width: 130, frozen: true, formatter: props => props.row.t_stamp && moment(props.row.t_stamp).format(DATETIME_FORMAT) }
+        { key: 't_stamp', name: 'Data', width: 130, frozen: true, formatter: props => props.row.t_stamp && dayjs(props.row.t_stamp).format(DATETIME_FORMAT) }
     ];
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => (

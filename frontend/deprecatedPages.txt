@@ -1,0 +1,4 @@
+\frontend\src\pages\currentline\FormMenuActions.jsx
+\frontend\src\pages\bobinagens\BobinagensValidarList.jsx
+\frontend\src\pages\LayoutPage.jsx
+

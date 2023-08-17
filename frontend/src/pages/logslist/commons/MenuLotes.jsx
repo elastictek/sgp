@@ -41,8 +41,6 @@ import { StopOutlined, LockOutlined } from '@ant-design/icons';
 import Icon, { EllipsisOutlined } from "@ant-design/icons";
 import { DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT, THICKNESS, BOBINE_ESTADOS, BOBINE_DEFEITOS, API_URL, GTIN, SCREENSIZE_OPTIMIZED, DOSERS } from 'config';
 
-import { SocketContext, MediaContext } from '../../App';
-
 const actionItems = [
     { label: 'Adicionar Lote Acima', key: 'up' },
     { label: 'Adicionar Lote Abaixo', key: 'down' },

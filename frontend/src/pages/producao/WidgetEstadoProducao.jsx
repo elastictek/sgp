@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef, useContext, Suspense, 
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
-//import moment from 'moment';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -10,7 +9,7 @@ import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep, lpadFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
-import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS } from "config";
+import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET, HISTORY_DEFAULT } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, getFloat } from "utils";
 import Portal from "components/portal";
@@ -23,13 +22,13 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined, UnorderedListOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
 import ReactECharts from 'components/ReactECharts';
 import Table, { useTableStyles } from 'components/TableV3';
-import ToolbarTitle from 'components/ToolbarTitleV3';
+import ToolbarTitle, { SimpleDropdownHistory } from 'components/ToolbarTitleV3';
 import WidgetTitle, { WidgetSimpleTitle } from 'components/WidgetTitle';
 import { InputNumberEditor, MateriasPrimasTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
@@ -38,9 +37,9 @@ import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, AutoCompleteField, SwitchField, Chooser } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, AutoCompleteField, SwitchField, Chooser, FormPrint, printersList } from 'components/FormFields';
 import YScroll from 'components/YScroll';
-import { MediaContext, AppContext, SocketContext } from "../App";
+import { MediaContext, AppContext } from "app";
 import { usePermission, Permissions } from "utils/usePermission";
 // import { isPrivate, LeftUserItem } from './commons';
 import IconButton from "components/iconButton";
@@ -55,36 +54,34 @@ import BobinesGroup from '../bobines/BobinesGroup';
 import BobinagensList from '../bobinagens/BobinagensList';
 import OrdemFabricoBoxes from './OrdemFabricoBoxes';
 const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'));
-
 const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
 const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
+import { downloadFile } from 'components/DownloadReports';
+import { uniqueKeys } from 'utils/index';
+import Logo from 'assets/logowhite.svg';
+import LogoWhite from 'assets/logowhite.svg';
+import MainMenu from '../currentline/dashboard/MainMenu';
+import { useImmer } from 'use-immer';
+import useWebSocket from 'react-use-websocket';
+
+import ListPaletesOf from './items/ListPaletesOf';
+import ListNwsQueue from './items/ListNwsQueue';
+import ListGranuladoInline from './Items/ListGranuladoInline';
+import ListBobinagens from './Items/ListBobinagens';
+import LineParameters from './Items/LineParameters';
 
 
-const Bobinagem = React.lazy(() => import('../bobinagens/Bobinagem'));
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 const GranuladoPick = React.lazy(() => import('../picking/GranuladoPick'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
 
+
 const PickNWList = lazy(() => import('../picking/PickNWList'));
 
 const title = "Produção";
 const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop'];
-
-const TitleForm = ({ data, onChange, level, auth, form }) => {
-    return (<ToolbarTitle id={auth?.user} description={title} title={<>
-        <Col>
-            <Row style={{ marginBottom: "3px" }} wrap="nowrap" nogutter>
-                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
-                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-            </Row>
-
-        </Col>
-    </>
-    }
-    />);
-}
 
 const StyledCollapse = styled(Collapse)`
 
@@ -102,6 +99,13 @@ const StyledCollapse = styled(Collapse)`
 
 
 const useStyles = createUseStyles({
+
+    link: {
+        color: '#fff',
+        '&:hover': {
+            color: '#003eb3',
+        },
+    },
 
     widgetTitle: {
         color: 'black',
@@ -155,102 +159,7 @@ const OfArtigoColumn = ({ data, cellProps }) => {
     );
 }
 
-const MiniGaugeVelocidade = ({ data, title, min = 0, max = 100, style, ...props }) => {
 
-    const option = {
-        title: {
-            left: 'center',
-            text: title,
-            textStyle: {
-                fontSize: 10,
-                fontWeight: 'bolder',
-                fontFamily: "Roboto,sans-serif"
-            }
-        },
-        series: [
-            {
-                type: 'gauge',
-                center: ['50%', '60%'],
-                startAngle: 200,
-                endAngle: -20,
-                radius: "75%",
-                min: min,
-                max: max,
-                splitNumber: 1,
-                itemStyle: {
-                    color: '#1677ff'
-                },
-                progress: {
-                    show: true,
-                    width: 10
-                },
-                pointer: {
-                    show: false
-                },
-                axisLine: {
-                    lineStyle: {
-                        width: 10
-                    }
-                },
-                axisTick: {
-                    show: false,
-                    distance: -45,
-                    splitNumber: 5,
-                    lineStyle: {
-                        width: 1,
-                        color: '#999'
-                    }
-                },
-                splitLine: {
-                    show: false,
-                    distance: -52,
-                    length: 14,
-                    lineStyle: {
-                        width: 3,
-                        color: '#999'
-                    }
-                },
-                axisLabel: {
-                    distance: 35,
-                    color: 'red',
-                    fontSize: 8,
-                    formatter: (value) => {
-                        if (value === max) {
-                            return value;
-                        }
-                        return '';
-                    }
-                },
-                anchor: {
-                    show: false
-                },
-                detail: {
-                    valueAnimation: true,
-                    width: '60%',
-                    lineHeight: 40,
-                    borderRadius: 8,
-                    offsetCenter: [0, '-15%'],
-                    fontSize: 12,
-                    fontWeight: 'bolder',
-                    formatter: '{value}',
-                    color: 'inherit'
-                },
-                title: {
-                    offsetCenter: [0, '20%'],
-                    fontSize: 10
-                },
-                data: [
-                    {
-                        value: data || 0,
-                        name: 'm/min'
-                    }
-                ]
-            }
-        ]
-    };
-
-    return (<ReactECharts option={option} style={{ ...style }} />);
-}
 
 
 const PaletePositionColumn = ({ data, cellProps }) => {
@@ -275,704 +184,15 @@ const PaletePositionColumn = ({ data, cellProps }) => {
 }
 
 
-const ListPaletesOf = ({ hash_estadoproducao, mini = false, data, ...props }) => {
-    const media = useContext(MediaContext);
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
-    const inputParameters = useRef({});
-    const { openNotification } = useContext(AppContext);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const classes = useStyles();
-    const tableCls = useTableStyles();
-    const [formFilter] = Form.useForm();
-    const defaultFilters = {};
-    const defaultParameters = {};
-    const defaultSort = [];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "palete_id", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
-    const submitting = useSubmitting(false);
 
-    const [lastTab, setLastTab] = useState('1');
 
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
-        const content = () => {
-            switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
 
-        return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
-    const onClickPalete = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
-        showModal();
-    }
 
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        // if (data?.group) {
-        //     return tableCls.right;
-        // }
-    };
 
 
-    const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
-    const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Palete', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
-        ...(true) ? [{ name: 'ofid', header: 'Ordem', userSelect: true, defaultLocked: false, defaultWidth: 115, headerAlign: "center", render: ({ cellProps, data }) => data?.ofid }] : [],
-        ...(true) ? [{ name: 'current_stock', header: 'Stock', userSelect: true, defaultLocked: false, defaultWidth: 53, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.current_stock} /> }] : [],
-        ...(true) ? [{ name: 'comp_real', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_real, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'area_real', header: 'Área.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m2">{getFloat(data?.area_real, 2)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'num_bobines', header: 'Total', group: "bobines", userSelect: true, defaultLocked: false, defaultWidth: 50, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps}>{getFloat(data?.num_bobines, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'nbobines_real', header: 'Atual', group: "bobines", userSelect: true, defaultLocked: false, defaultWidth: 50, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps}>{getFloat(data?.nbobines_real, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'nbobines_emendas', header: 'Emendas', group: "bobines", userSelect: true, defaultLocked: false, defaultWidth: 72, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps}>{getFloat(data?.nbobines_emendas, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'largura_bobines', header: "Largura", userSelect: true, defaultLocked: false, defaultWidth: 60, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.largura_bobines, 0)}</RightAlign> }] : [],
-        // ...(true) ? [{ name: 'matprima_des', header: 'Artigo', userSelect: true, defaultLocked: false, minWidth: 170, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <div style={{ fontWeight: 700 }}>{data?.matprima_des}</div> }] : [],
-        // ...(true) ? [{ name: 'densidade', header: 'Densidade', userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", render: (p) => <RightAlign>{p.data?.densidade}</RightAlign> }] : [],
-        // ...(true) ? [{ name: 'arranque', header: 'Arranque', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", render: (p) => <RightAlign unit="%">{p.data?.arranque}</RightAlign> }] : [],
-        // ...(true) ? [{ name: 'tolerancia', header: 'Tolerância', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", render: (p) => <RightAlign unit="%">{p.data?.tolerancia}</RightAlign> }] : [],
-        // ...(true) ? [{ name: 'vglobal', header: 'Global', group: "extrusora", userSelect: true, defaultLocked: false, width: 150, headerAlign: "center", render: (p) => <RightAlign unit="%">{p.data?.vglobal}</RightAlign> }] : []
-    ];
 
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const interval = loadData({ init: true, signal: controller.signal });
-        return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [hash_estadoproducao, data?.timestamp, data?.filter]);
-
-    const loadData = async ({ signal, init = false } = {}) => {
-        //submitting.trigger();
-        const _d = data?.paletes.filter(v => data?.filter.includes(v.ofid) && v.palete_id);
-        dataAPI.setData({ rows: _d, total: _d.length });
-        // if (parameters?.data?.rows) {
-
-        //     const _dj = Object.values(parameters?.data?.rows.reduce((acc, cur) => {
-        //         if (!acc[cur.gid]) {
-        //             acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
-        //         } else {
-        //             if (cur.current_stock == 1) {
-        //                 acc[cur.gid].stock = cur;
-        //             } else {
-        //                 //acc[cur.gid].a += cur.a;
-        //             }
-        //         }
-
-        //         //totals
-        //         acc[cur.gid].paletizacao = { ...parameters?.data?.paletizacao.find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        //         acc[cur.gid].bobines = parameters?.data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        //         acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
-        //         acc[cur.gid].total_planned = {
-        //             num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
-        //             num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
-        //         };
-        //         acc[cur.gid].total_current = {
-        //             num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
-        //             num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
-        //             num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines),
-        //             num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
-        //         }
-        //         acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
-        //         acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
-        //         acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
-        //         acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
-
-        //         return acc;
-        //     }, {}));
-        //     console.log(_dj)
-        //     setOfs([...new Set(_dj.map(obj => obj.of_cod))]);
-        //     dataAPI.setData({ rows: _dj, total: _dj.length });
-
-
-
-
-
-        //     // setOfsData(_dj);
-        //     // const _djd = parameters?.data?.rows.filter((obj, index, self) =>
-        //     //     index === self.findIndex((t) => (
-        //     //         t.of_cod === obj.of_cod
-        //     //     ))
-        //     // );
-        //     // setOfs(_djd);
-        // }
-        //submitting.end();
-    }
-
-    const onFilterFinish = (type, values) => { }
-    const onFilterChange = (changedValues, values) => { };
-    const rowClassName = ({ data }) => {
-        if (data?.nbobines_real != data?.num_bobines) {
-            return tableCls.warning;
-        }
-    }
-
-    return (<>
-        <Table
-            {...mini && { style: { fontSize: "10px", minHeight: "170px" } }}
-            {...mini && { rowHeight: 25 }}
-            //rowHeight={null}
-            headerHeight={25}
-            cellNavigation={false}
-            //enableSelection={false}
-            //showActiveRowIndicator={true}
-            //loading={submitting.state}
-            showLoading={false}
-            idProperty={dataAPI.getPrimaryKey()}
-            local={true}
-            onRefresh={loadData}
-            rowClassName={rowClassName}
-            groups={groups}
-            sortable={true}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            disableGroupByToolbar={true}
-            editable={{ enabled: false, add: false }}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-            leftToolbar={false}
-            toolbarFilters={false}
-            toolbar={false}
-        />
-    </>);
-}
-
-const ListNWsQueue = ({ hash_estadoproducao, data, ...props }) => {
-    const media = useContext(MediaContext);
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
-    const inputParameters = useRef({});
-    const { openNotification } = useContext(AppContext);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const classes = useStyles();
-    const tableCls = useTableStyles();
-    const [formFilter] = Form.useForm();
-    const defaultFilters = {};
-    const defaultParameters = {};
-    const defaultSort = [];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
-    const submitting = useSubmitting(false);
-
-    const [lastTab, setLastTab] = useState('1');
-
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
-        const content = () => {
-            switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
-
-        return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
-    const onClickPalete = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
-        showModal();
-    }
-
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        // if (data?.group) {
-        //     return tableCls.right;
-        // }
-    };
-
-
-    const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
-
-    const columns = [
-        ...(true) ? [{ name: 'type', header: '', userSelect: true, defaultLocked: false, defaultWidth: 50, headerAlign: "center", render: ({ cellProps, data }) => <PosColumn value={data.type} cellProps={cellProps} /> }] : [],
-        ...(true) ? [{ name: 'n_lote', header: 'Nonwoven', userSelect: true, defaultLocked: false, defaultWidth: 150, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <NwColumn data={data} cellProps={cellProps} /> }] : [],
-        //...(true) ? [{ name: 'artigo_cod', header: 'Cód', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_cod }] : [],
-        //...(true) ? [{ name: 'artigo_des', header: 'Artigo', userSelect: true, defaultLocked: false, defaultWidth: 140, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => data?.artigo_des.replace("Nonwoven ", "") }] : [],
-        ...(true) ? [{ name: 'queue', header: 'Fila', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <QueueNwColumn style={{ fontSize: "9px" }} value={data.queue} status={data.status} /> }] : [],
-        ...(true) ? [{ name: 't_stamp', header: 'Data', userSelect: true, defaultLocked: false, defaultWidth: 110, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.t_stamp} format={DATETIME_FORMAT} /> }] : [],
-        ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 55, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
-    ];
-
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const interval = loadData({ init: true, signal: controller.signal });
-        return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [hash_estadoproducao, data?.timestamp, data?.filter]);
-
-    const loadData = async ({ signal, init = false } = {}) => {
-        //submitting.trigger();
-        //const _d = data?.paletes.filter(v => data?.filter.includes(v.ofid) && v.palete_id);
-        dataAPI.setData({ rows: data?.nws_queue, total: data?.nws_queue?.length });
-        // if (parameters?.data?.rows) {
-
-        //     const _dj = Object.values(parameters?.data?.rows.reduce((acc, cur) => {
-        //         if (!acc[cur.gid]) {
-        //             acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
-        //         } else {
-        //             if (cur.current_stock == 1) {
-        //                 acc[cur.gid].stock = cur;
-        //             } else {
-        //                 //acc[cur.gid].a += cur.a;
-        //             }
-        //         }
-
-        //         //totals
-        //         acc[cur.gid].paletizacao = { ...parameters?.data?.paletizacao.find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        //         acc[cur.gid].bobines = parameters?.data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        //         acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
-        //         acc[cur.gid].total_planned = {
-        //             num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
-        //             num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
-        //         };
-        //         acc[cur.gid].total_current = {
-        //             num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
-        //             num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
-        //             num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines),
-        //             num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
-        //         }
-        //         acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
-        //         acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
-        //         acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
-        //         acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
-
-        //         return acc;
-        //     }, {}));
-        //     console.log(_dj)
-        //     setOfs([...new Set(_dj.map(obj => obj.of_cod))]);
-        //     dataAPI.setData({ rows: _dj, total: _dj.length });
-
-
-
-
-
-        //     // setOfsData(_dj);
-        //     // const _djd = parameters?.data?.rows.filter((obj, index, self) =>
-        //     //     index === self.findIndex((t) => (
-        //     //         t.of_cod === obj.of_cod
-        //     //     ))
-        //     // );
-        //     // setOfs(_djd);
-        // }
-        //submitting.end();
-    }
-
-    const onFilterFinish = (type, values) => { }
-    const onFilterChange = (changedValues, values) => { };
-    const rowClassName = ({ data }) => {
-        if (data?.nbobines_real != data?.num_bobines) {
-            return tableCls.warning;
-        }
-    }
-
-    return (<>
-        <Table
-            {...true && { style: { fontSize: "10px", minHeight: "160px" } }}
-            {...true && { rowHeight: 35 }}
-            //rowHeight={null}
-            headerHeight={25}
-            cellNavigation={false}
-            //enableSelection={false}
-            //showActiveRowIndicator={false}
-            //loading={submitting.state}
-            showLoading={false}
-            idProperty={dataAPI.getPrimaryKey()}
-            local={true}
-            onRefresh={loadData}
-            rowClassName={rowClassName}
-            groups={groups}
-            sortable={true}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            disableGroupByToolbar={true}
-            editable={{ enabled: false, add: false }}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-            leftToolbar={false}
-            toolbarFilters={false}
-            toolbar={false}
-        />
-    </>);
-}
-
-const ListGranuladoInline = ({ hash_estadoproducao, data, ...props }) => {
-    const media = useContext(MediaContext);
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
-    const inputParameters = useRef({});
-    const { openNotification } = useContext(AppContext);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const classes = useStyles();
-    const tableCls = useTableStyles();
-    const [formFilter] = Form.useForm();
-    const defaultFilters = {};
-    const defaultParameters = {};
-    const defaultSort = [];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
-    const submitting = useSubmitting(false);
-
-    const [lastTab, setLastTab] = useState('1');
-
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
-        const content = () => {
-            switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
-
-        return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
-    const onClickPalete = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
-        showModal();
-    }
-
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        // if (data?.group) {
-        //     return tableCls.right;
-        // }
-    };
-
-
-    const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
-
-    const columns = [
-        ...(true) ? [{
-            name: 'cuba', header: 'Pos.', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultLocked: true, width: 70, render: (p) => <div style={{ display: "flex", alignItems: "center", flexDirection: "column" }}>
-                <Cuba style={{ fontSize: "10px", height: "13px", lineHeight: 1.2 }} value={p.data?.cuba} />
-                {p.data?.dosers}
-            </div>
-        }] : [],
-        ...(true) ? [{
-            name: 'artigo_cod', header: 'Artigo', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 170, flex: 1, render: ({ data, cellProps }) => <ArtigoColumn data={data} cellProps={cellProps} />
-        }] : [],
-        ...(true) ? [{
-            name: 'n_lote', header: 'Lote', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 140, render: (p) =>
-                <div style={{ display: "flex", alignItems: "start", flexDirection: "column" }}>
-                    <div style={{ fontWeight: 700 }}>{p.data?.n_lote}</div>
-                    <RightAlign unit="kg">{p.data?.qty_lote}</RightAlign>
-                </div>
-        }] : [],
-        ...(true) ? [{ name: 'arranque', header: '%', headerAlign: "center", userSelect: true, showColumnMenuTool: false, width: 40, render: (p) => <RightAlign unit="%">{p.data?.arranque}</RightAlign> }] : [],
-        ...(true) ? [{ name: 't_stamp', header: 'Data', headerAlign: "center", userSelect: true, showColumnMenuTool: false, width: 120, render: (p) => <DateTime value={p.data?.t_stamp} format={DATETIME_FORMAT} cellProps={p.cellProps} /> }] : [],
-    ]
-
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const interval = loadData({ init: true, signal: controller.signal });
-        return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [hash_estadoproducao, data?.timestamp, data?.filter]);
-
-    const loadData = async ({ signal, init = false } = {}) => {
-        //submitting.trigger();
-        //const _d = data?.paletes.filter(v => data?.filter.includes(v.ofid) && v.palete_id);
-        dataAPI.setData({ rows: data?.granulado_inline, total: data?.granulado_inline?.length });
-        // if (parameters?.data?.rows) {
-
-        //     const _dj = Object.values(parameters?.data?.rows.reduce((acc, cur) => {
-        //         if (!acc[cur.gid]) {
-        //             acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
-        //         } else {
-        //             if (cur.current_stock == 1) {
-        //                 acc[cur.gid].stock = cur;
-        //             } else {
-        //                 //acc[cur.gid].a += cur.a;
-        //             }
-        //         }
-
-        //         //totals
-        //         acc[cur.gid].paletizacao = { ...parameters?.data?.paletizacao.find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        //         acc[cur.gid].bobines = parameters?.data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        //         acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
-        //         acc[cur.gid].total_planned = {
-        //             num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
-        //             num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
-        //         };
-        //         acc[cur.gid].total_current = {
-        //             num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
-        //             num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
-        //             num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines),
-        //             num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
-        //         }
-        //         acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
-        //         acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
-        //         acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
-        //         acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
-
-        //         return acc;
-        //     }, {}));
-        //     console.log(_dj)
-        //     setOfs([...new Set(_dj.map(obj => obj.of_cod))]);
-        //     dataAPI.setData({ rows: _dj, total: _dj.length });
-
-
-
-
-
-        //     // setOfsData(_dj);
-        //     // const _djd = parameters?.data?.rows.filter((obj, index, self) =>
-        //     //     index === self.findIndex((t) => (
-        //     //         t.of_cod === obj.of_cod
-        //     //     ))
-        //     // );
-        //     // setOfs(_djd);
-        // }
-        //submitting.end();
-    }
-
-    const onFilterFinish = (type, values) => { }
-    const onFilterChange = (changedValues, values) => { };
-    const rowClassName = ({ data }) => {
-        if (data?.nbobines_real != data?.num_bobines) {
-            return tableCls.warning;
-        }
-    }
-
-    return (<>
-        <Table
-            {...true && { style: { fontSize: "10px", minHeight: "313px" } }}
-            {...true && { rowHeight: 35 }}
-            //rowHeight={null}
-            headerHeight={25}
-            cellNavigation={false}
-            //enableSelection={false}
-            //showActiveRowIndicator={false}
-            //loading={submitting.state}
-            showLoading={false}
-            idProperty={dataAPI.getPrimaryKey()}
-            local={true}
-            onRefresh={loadData}
-            rowClassName={rowClassName}
-            groups={groups}
-            sortable={true}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            disableGroupByToolbar={true}
-            editable={{ enabled: false, add: false }}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-            leftToolbar={false}
-            toolbarFilters={false}
-            toolbar={false}
-        />
-    </>);
-}
-
-const ListBobinagens = ({ hash_estadoproducao, data, ...props }) => {
-    const media = useContext(MediaContext);
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
-    const inputParameters = useRef({});
-    const { openNotification } = useContext(AppContext);
-    const [formDirty, setFormDirty] = useState(false);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const classes = useStyles();
-    const tableCls = useTableStyles();
-    const [formFilter] = Form.useForm();
-    const defaultFilters = {};
-    const defaultParameters = { method: "BobinagensList" };
-    const defaultSort = [{ column: "id", direction: "DESC" }];
-    const dataAPI = useDataAPI({ id: props.id, payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false, limit: 10 }, filter: defaultFilters, sort: [...defaultSort] } });
-    const submitting = useSubmitting(false);
-
-    const [lastTab, setLastTab] = useState('1');
-    const [lastBobinagemTab, setLastBobinagemTab] = useState('1');
-
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
-        const content = () => {
-            switch (modalParameters.content) {
-                case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                case "bobinagem": return <Bobinagem /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
-
-        return (
-            <ResponsiveModal lazy={modalParameters?.lazy} title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
-    const onClickBobinagem = (row) => {
-        if (row?.valid == 0) {
-            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
-            showModal();
-        } else {
-            setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
-            showModal();
-        }
-    }
-
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        // if (data?.group) {
-        //     return tableCls.right;
-        // }
-    };
-
-    const onBobinesExpand = () => { }
-
-
-    const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
-
-    const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
-        ...(true) ? [{ name: 'inico', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.inico }] : [],
-        ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.fim }] : [],
-        ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.duracao }] : [],
-        ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'area', header: 'Área.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m2">{getFloat(data?.area, 2)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'diam', header: 'Diam.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam, 2)}</RightAlign> }] : []
-    ];
-
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const interval = loadData({ init: true, signal: controller.signal });
-        return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [hash_estadoproducao, data?.timestamp, data?.filter]);
-
-    const loadData = async ({ signal, init = false } = {}) => {
-        //submitting.trigger();
-        setFormDirty(false);
-        dataAPI.setAction("init", true);
-        dataAPI.update(true);
-        /* if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, null);
-            inputParameters.current = paramsIn;
-        }*/
-
-        /*let { filterValues, fieldValues } = fixRangeDates([], inputParameters.current);
-        formFilter.setFieldsValue({ ...fieldValues });
-        dataAPI.addFilters({ ...filterValues }, true);
-        dataAPI.setSort(dataAPI.getSort(), defaultSort);
-        dataAPI.addParameters({ ...defaultParameters }, true); */
-        //submitting.end();
-    }
-
-    const onFilterFinish = (type, values) => { }
-    const onFilterChange = (changedValues, values) => { };
-    const rowClassName = ({ data }) => {
-        if (data?.valid == 0) {
-            return tableCls.warning;
-        }
-    }
-
-    return (<>
-        <Table
-            {...true && { style: { fontSize: "10px", minHeight: "150px" } }}
-            {...true && { rowHeight: 25 }}
-            //rowHeight={null}
-            dirty={formDirty}
-            loadOnInit={false}
-            headerHeight={25}
-            cellNavigation={false}
-            //enableSelection={false}
-            //showActiveRowIndicator={false}
-            // loading={submitting.state}
-            showLoading={false}
-            idProperty={dataAPI.getPrimaryKey()}
-            local={false}
-            onRefresh={loadData}
-            rowClassName={rowClassName}
-            groups={groups}
-            sortable={true}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            disableGroupByToolbar={true}
-            editable={{ enabled: false, add: false }}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-            leftToolbar={false}
-            toolbarFilters={false}
-            toolbar={false}
-        />
-    </>);
-}
-
-const LineParameters = ({ data, onLineLogExpand }) => {
-    return (<>
-        <Row nogutter>
-            <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800/* , display: "flex", justifyContent: "center" */ }}>
-                <div><RealtimeData data={data?.realtime} onLineLogExpand={onLineLogExpand} /></div>
-            </Col>
-        </Row>
-        {/*         <Row nogutter>
-            <Col width={200} style={{ textAlign: "center" }}>{(getFloat(data?.realtime?.winder_speed, 1) - getFloat(data?.realtime?.line_speed, 1)).toFixed(1)} m/min</Col>
-        </Row> */}
-        <Row nogutter>
-            <Col>
-                <Row nogutter>
-                    <Col>
-                        <Row nogutter>
-                            <Col width={80}>
-                                <MiniGaugeVelocidade data={getFloat(data?.realtime?.winder_speed, 1)} title="V.Bobinadora" min={0} max={100} style={{ width: "80px", height: "70px" }} />
-                            </Col>
-                            <Col width={10} style={{ alignSelf: "center" }}>
-                                {(getFloat(data?.realtime?.winder_speed, 1) - getFloat(data?.realtime?.line_speed, 1)).toFixed(1)}
-                            </Col>
-                            <Col width={80}>
-                                <MiniGaugeVelocidade data={getFloat(data?.realtime?.line_speed, 1)} title="V. Linha" min={0} max={100} style={{ width: "80px", height: "70px" }} />
-                            </Col>
-                            <Col width={80}>
-                                <MiniGaugeVelocidade data={getFloat(data?.params?.avg_line_speed, 1)} title="V. Média" min={0} max={100} style={{ width: "80px", height: "70px" }} />
-                            </Col>
-                            <Col width={80}>
-                                <MiniGaugeVelocidade data={getFloat(data?.params?.max_line_speed, 1)} title="V. Máxima" min={0} max={100} style={{ width: "80px", height: "70px" }} />
-                            </Col>
-                            <Col width={80}>
-                                <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Capacity(current/set)</Col></Row>
-                                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>kg/h</Col></Row>
-                                <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.Qnet_PV, 1)}/{getFloat(data?.realtime?.Qnet_SP, 1)}</Col></Row>
-                            </Col>
-                        </Row>
-                    </Col>
-                </Row>
-                <Row nogutter>
-                    <Col width={80}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Thickness</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.spess_PV, 1)}/{getFloat(data?.realtime?.spess_MIS, 1)} &#181;m</Col></Row>
-                    </Col>
-                    <Col width={80}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film Density</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.density, 3)} g/cm&sup3;</Col></Row>
-                    </Col>
-                    <Col width={80}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}>Film gsm</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.grammage, 2)} g/m&sup2;</Col></Row>
-                    </Col>
-                    <Col width={80}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center", alignItems: "center" }}><TbMathAvg fontSize={"14px"} />Diameter</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.diametro_bobine, 1)} mm</Col></Row>
-                    </Col>
-                    <Col width={80}>
-                        <Row nogutter style={{}}><Col style={{ fontSize: "10px", fontWeight: "bolder", color: "#464646", display: "flex", justifyContent: "center" }}><CiRuler fontSize={"18px"} />Meters</Col></Row>
-                        <Row nogutter style={{}}><Col style={{ display: "flex", justifyContent: "center" }}>{getFloat(data?.realtime?.metros_bobine, 1)} m</Col></Row>
-                    </Col>
-                </Row>
-            </Col>
-            <Col width={120}>
-                <LastEvents data={data?.events} />
-            </Col>
-        </Row>
-    </>);
-}
 
 const BobinesDefeitos = ({ data, onDefeitosClick }) => {
     const [summedData, setSummedData] = useState({});
@@ -1213,100 +433,138 @@ const BobinesTotais = ({ data }) => {
     );
 }
 
-const LastEvents = ({ data }) => {
-    return (
-        <div style={{}}>
-            <div>
-                {data && data.map((item, index) => (
-                    <div key={`evt-${item.id}`} style={{ display: "flex" }}>
-                        <div style={{ /* border: "solid 1px #f0f0f0", */ height: "22px", margin: "0px 3px 0px 3px" }}><EventColumn v={item.type} title={item.t_stamp} /></div>
-                        <div style={{ /* border: "solid 1px #f0f0f0", */ fontSize: "10px" }}>{item.t_stamp}</div>
-                    </div>
-                ))}
-            </div>
-            {/*             <div style={{ fontSize: "10px" }}>{data && data[0].t_stamp}</div> */}
-        </div>
-    );
-}
 
-const RealtimeData = ({ data, onLineLogExpand }) => {
-    return (<div style={{ display: "flex", justifyContent: "space-between" }}>
-        {data && <>
-            <div></div>
-            <div>
-                <span style={{ fontSize: "10px", fontWeight: 400, marginRight: "10px" }}>Tempo restante</span>
-                <span style={{ fontWeight: 700, fontSize: "14px" }}>{data?.time_bobinagem?.split(':').map(num => num.padStart(2, '0')).join(':')}</span>
-            </div>
-            <div><Button type="primary" size="small" onClick={onLineLogExpand} ghost icon={<ExpandAltOutlined />} /></div>
-        </>}
-    </div>);
-}
+
+
 
 export const estadoProducaoData = ({ data }) => {
-    const _dj = Object.values(data?.rows.reduce((acc, cur) => {
-        if (!acc[cur.gid]) {
-            acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
+    let _acc = [];
+    for (let cur of data?.rows) {
+        let idx = _acc.findIndex(v => v.gid == cur.gid);
+        if (idx == -1) {
+            _acc.push({ ...cur, stock: cur.current_stock == 1 ? cur : {} });
+            idx = _acc.length - 1;
         } else {
             if (cur.current_stock == 1) {
-                acc[cur.gid].stock = cur;
-            } else {
-                //acc[cur.gid].a += cur.a;
+                _acc[idx].stock = cur;
             }
         }
-
         //totals
-        acc[cur.gid].timestamp = data?.timestamp;
-        acc[cur.gid].agg_cod = data?.current?.agg_cod;
-        acc[cur.gid].cortes = json(data?.current?.cortes);
-        acc[cur.gid].cortesordem = json(data?.current?.cortesordem);
-        acc[cur.gid].current = json(data?.current);
-        acc[cur.gid].nonwovens = json(data?.current?.nonwovens);
-        acc[cur.gid].paletizacao = { ...json(data?.current?.paletizacao).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        acc[cur.gid].emendas = { ...json(data?.current?.emendas).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        acc[cur.gid].of = { ...json(data?.current?.ofs).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
-        acc[cur.gid].bobines = data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        acc[cur.gid].bobines_nopalete = data?.bobines_nopalete?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        acc[cur.gid].bobines_retrabalhadas = data?.bobines_retrabalhadas?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        acc[cur.gid].paletes_m2_produzidas = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
-        acc[cur.gid].paletes_m2_produzidas_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
-        acc[cur.gid].paletes_m2_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
-        acc[cur.gid].qty_encomenda = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.qty_encomenda;
-        acc[cur.gid].defeitos = data?.defeitos?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
-        acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
-        acc[cur.gid].total_planned = {
-            num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
-            num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
+        _acc[idx].timestamp = data?.timestamp;
+        _acc[idx].agg_cod = data?.current?.agg_cod;
+        _acc[idx].cortes = json(data?.current?.cortes);
+        _acc[idx].cortesordem = json(data?.current?.cortesordem);
+        _acc[idx].current = json(data?.current);
+        _acc[idx].nonwovens = json(data?.current?.nonwovens);
+        _acc[idx].paletizacao = { ...json(data?.current?.paletizacao).find(v => v.of_cod == _acc[idx]?.of_cod) };
+        _acc[idx].emendas = { ...json(data?.current?.emendas).find(v => v.of_cod == _acc[idx]?.of_cod) };
+        _acc[idx].of = { ...json(data?.current?.ofs).find(v => v.of_cod == _acc[idx]?.of_cod) };
+        _acc[idx].bobines = data?.bobines?.filter(v => v.ofid == _acc[idx]?.of_cod);
+        _acc[idx].bobines_nopalete = data?.bobines_nopalete?.filter(v => v.ofid == _acc[idx]?.of_cod);
+        _acc[idx].bobines_retrabalhadas = data?.bobines_retrabalhadas?.filter(v => v.ofid == _acc[idx]?.of_cod);
+        _acc[idx].paletes_m2_produzidas = data?.paletes.find(v => v.ofid == _acc[idx]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
+        _acc[idx].paletes_m2_produzidas_total = data?.paletes.find(v => v.ofid == _acc[idx]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
+        _acc[idx].paletes_m2_total = data?.paletes.find(v => v.ofid == _acc[idx]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
+        _acc[idx].qty_encomenda = data?.paletes.find(v => v.ofid == _acc[idx]?.of_cod)?.qty_encomenda;
+        _acc[idx].defeitos = data?.defeitos?.filter(v => v.ofid == _acc[idx]?.of_cod);
+        _acc[idx].num_paletes_of_percentage = getFloat((100 * getFloat(_acc[idx].current_num_paletes_of)) / getFloat(_acc[idx].num_paletes_of), 0);
+        _acc[idx].total_planned = {
+            num_paletes: getFloat(_acc[idx].num_paletes) * json(_acc[idx].lvl).length,
+            num_bobines: getFloat(_acc[idx].num_bobines) * json(_acc[idx].lvl).length
         };
 
-        if (cur.current_stock == 1){
-            acc[cur.gid].total_current = {
-                num_paletes_line : acc[cur.gid].total_current?.["num_paletes_line"] ? acc[cur.gid].total_current["num_paletes_line"] : 0,
-                num_bobines_line: acc[cur.gid].total_current?.["num_bobines_line"] ? acc[cur.gid].total_current["num_bobines_line"] : 0,
-                ...acc[cur.gid].total_current,
-                num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
-                num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
+        if (cur.current_stock == 1) {
+            _acc[idx].total_current = {
+                num_paletes_line: _acc[idx].total_current?.["num_paletes_line"] ? _acc[idx].total_current["num_paletes_line"] : 0,
+                num_bobines_line: _acc[idx].total_current?.["num_bobines_line"] ? _acc[idx].total_current["num_bobines_line"] : 0,
+                ..._acc[idx].total_current,
+                num_paletes_stock: getFloat(_acc[idx]?.stock?.current_num_paletes),
+                num_bobines_stock: getFloat(_acc[idx]?.stock?.current_num_bobines)
             }
-        }else{
-            acc[cur.gid].total_current = {
-                num_paletes_stock : acc[cur.gid].total_current?.["num_paletes_stock"] ? acc[cur.gid].total_current["num_paletes_stock"] : 0,
-                num_bobines_stock: acc[cur.gid].total_current?.["num_bobines_stock"] ? acc[cur.gid].total_current["num_bobines_stock"] : 0,
-                ...acc[cur.gid].total_current,               
-                num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
-                num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines)
+        } else {
+            _acc[idx].total_current = {
+                num_paletes_stock: _acc[idx].total_current?.["num_paletes_stock"] ? _acc[idx].total_current["num_paletes_stock"] : 0,
+                num_bobines_stock: _acc[idx].total_current?.["num_bobines_stock"] ? _acc[idx].total_current["num_bobines_stock"] : 0,
+                ..._acc[idx].total_current,
+                num_paletes_line: getFloat(_acc[idx]?.current_num_paletes),
+                num_bobines_line: getFloat(_acc[idx]?.current_num_bobines)
             }
         }
-        acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
-        acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
-        acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
-        acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
+        _acc[idx].total_current["num_paletes"] = _acc[idx].total_current["num_paletes_line"] + _acc[idx].total_current["num_paletes_stock"];
+        _acc[idx].total_current["num_paletes_percentage"] = getFloat((100 * _acc[idx].total_current.num_paletes) / (_acc[idx].total_planned.num_paletes), 0);
+        _acc[idx].total_current["num_bobines"] = _acc[idx].total_current["num_bobines_line"] + _acc[idx].total_current["num_bobines_stock"];
+        _acc[idx].total_current["num_bobines_percentage"] = getFloat((100 * _acc[idx].total_current.num_bobines) / (_acc[idx].total_planned.num_bobines), 0);
 
-        return acc;
-    }, {}));
-    const _ofs = [...new Set(_dj.map(obj => obj.of_cod))];
-    return { ofs: _ofs, rows: _dj, total: _dj.length };
+
+
+
+    }
+
+
+    // const _dj = Object.values(data?.rows.reduce((acc, cur) => {
+    //     if (!acc[cur.gid]) {
+    //         acc[cur.gid] = { ...cur, stock: cur.current_stock == 1 ? cur : {} };
+    //     } else {
+    //         if (cur.current_stock == 1) {
+    //             acc[cur.gid].stock = cur;
+    //         } else {
+    //             //acc[cur.gid].a += cur.a;
+    //         }
+    //     }
+
+    //     //totals
+    //     acc[cur.gid].timestamp = data?.timestamp;
+    //     acc[cur.gid].agg_cod = data?.current?.agg_cod;
+    //     acc[cur.gid].cortes = json(data?.current?.cortes);
+    //     acc[cur.gid].cortesordem = json(data?.current?.cortesordem);
+    //     acc[cur.gid].current = json(data?.current);
+    //     acc[cur.gid].nonwovens = json(data?.current?.nonwovens);
+    //     acc[cur.gid].paletizacao = { ...json(data?.current?.paletizacao).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+    //     acc[cur.gid].emendas = { ...json(data?.current?.emendas).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+    //     acc[cur.gid].of = { ...json(data?.current?.ofs).find(v => v.of_cod == acc[cur.gid]?.of_cod) };
+    //     acc[cur.gid].bobines = data?.bobines?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+    //     acc[cur.gid].bobines_nopalete = data?.bobines_nopalete?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+    //     acc[cur.gid].bobines_retrabalhadas = data?.bobines_retrabalhadas?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+    //     acc[cur.gid].paletes_m2_produzidas = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos; //Calcula até ao nº de paletes planeados
+    //     acc[cur.gid].paletes_m2_produzidas_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_produzidos_total; //Calcula todas as paletes produzidas, mesmo passando o planeado
+    //     acc[cur.gid].paletes_m2_total = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.num_m2_total; //Calcula todas as paletes produzidas+stock, mesmo passando o planeado
+    //     acc[cur.gid].qty_encomenda = data?.paletes.find(v => v.ofid == acc[cur.gid]?.of_cod)?.qty_encomenda;
+    //     acc[cur.gid].defeitos = data?.defeitos?.filter(v => v.ofid == acc[cur.gid]?.of_cod);
+    //     acc[cur.gid].num_paletes_of_percentage = getFloat((100 * getFloat(acc[cur.gid].current_num_paletes_of)) / getFloat(acc[cur.gid].num_paletes_of), 0);
+    //     acc[cur.gid].total_planned = {
+    //         num_paletes: getFloat(acc[cur.gid].num_paletes) * json(acc[cur.gid].lvl).length,
+    //         num_bobines: getFloat(acc[cur.gid].num_bobines) * json(acc[cur.gid].lvl).length
+    //     };
+
+    //     if (cur.current_stock == 1) {
+    //         acc[cur.gid].total_current = {
+    //             num_paletes_line: acc[cur.gid].total_current?.["num_paletes_line"] ? acc[cur.gid].total_current["num_paletes_line"] : 0,
+    //             num_bobines_line: acc[cur.gid].total_current?.["num_bobines_line"] ? acc[cur.gid].total_current["num_bobines_line"] : 0,
+    //             ...acc[cur.gid].total_current,
+    //             num_paletes_stock: getFloat(acc[cur.gid]?.stock?.current_num_paletes),
+    //             num_bobines_stock: getFloat(acc[cur.gid]?.stock?.current_num_bobines)
+    //         }
+    //     } else {
+    //         acc[cur.gid].total_current = {
+    //             num_paletes_stock: acc[cur.gid].total_current?.["num_paletes_stock"] ? acc[cur.gid].total_current["num_paletes_stock"] : 0,
+    //             num_bobines_stock: acc[cur.gid].total_current?.["num_bobines_stock"] ? acc[cur.gid].total_current["num_bobines_stock"] : 0,
+    //             ...acc[cur.gid].total_current,
+    //             num_paletes_line: getFloat(acc[cur.gid]?.current_num_paletes),
+    //             num_bobines_line: getFloat(acc[cur.gid]?.current_num_bobines)
+    //         }
+    //     }
+    //     acc[cur.gid].total_current["num_paletes"] = acc[cur.gid].total_current["num_paletes_line"] + acc[cur.gid].total_current["num_paletes_stock"];
+    //     acc[cur.gid].total_current["num_paletes_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_paletes) / (acc[cur.gid].total_planned.num_paletes), 0);
+    //     acc[cur.gid].total_current["num_bobines"] = acc[cur.gid].total_current["num_bobines_line"] + acc[cur.gid].total_current["num_bobines_stock"];
+    //     acc[cur.gid].total_current["num_bobines_percentage"] = getFloat((100 * acc[cur.gid].total_current.num_bobines) / (acc[cur.gid].total_planned.num_bobines), 0);
+
+    //     return acc;
+    // }, {}));
+    const _ofs = uniqueKeys(_acc, "of_cod"); //[...new Set(_dj.map(obj => obj.of_cod))];
+    return { ofs: _ofs, rows: _acc, total: _acc.length };
 }
 
-const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
+const EstadoProducao = ({ hash, parameters, ...props }) => {
     const media = useContext(MediaContext);
     const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
     const inputParameters = useRef({});
@@ -1337,7 +595,8 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
                 case "linelogexpand": return <LineLogList parameters={modalParameters.parameters} />
-                case "nwspick": return <PickNWList {...modalParameters.parameters } />;
+                case "nwspick": return <PickNWList {...modalParameters.parameters} />;
+                case "nwsprint": return <FormPrint {...modalParameters.parameters} />;
             }
         }
 
@@ -1347,6 +606,69 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
+
+    const onDownloadComplete = async (response) => {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+        //downloadFile(response.data,"etiqueta_nw.pdf");
+    }
+
+    // const onNwsPrint = useCallback(() => {
+    //     let _nws = [];
+    //     if (selectedNws === true && parameters?.data?.nws_queue && parameters.data.nws_queue.length > 0) {
+    //         _nws = parameters?.data?.nws_queue.map(v => v.id);
+    //     } else {
+    //         _nws = Object.keys(selectedNws);
+    //     }
+    //     if (_nws.length > 0) {
+    //         setModalParameters({
+    //             width: "500px",
+    //             height: "200px",
+    //             content: "nwsprint", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiquetas de Nonwovens</div>,
+    //             parameters: {
+    //                 url: `${API_URL}/print/sql/`, printers: printersList?.CABS,
+    //                 onComplete: onDownloadComplete,
+    //                 parameters: {
+    //                     method: "PrintNwsEtiquetas",
+    //                     ids: _nws.join(','),
+    //                     name: "ETIQUETAS-NWS-AMOSTRA",
+    //                     path: "ETIQUETAS/NWS-AMOSTRA"
+    //                 }
+    //             }
+    //         });
+    //         showModal();
+    //     }
+    // }, [selectedNws]);
+
+    
+    const onNwsPrint = (selectedNws) => {
+        let _nws = [];
+        if (selectedNws === true && parameters?.data?.nws_queue && parameters.data.nws_queue.length > 0) {
+            _nws = parameters?.data?.nws_queue.map(v => v.id);
+        } else {
+            _nws = Object.keys(selectedNws);
+        }
+        if (_nws.length > 0) {
+            setModalParameters({
+                width: "500px",
+                height: "200px",
+                content: "nwsprint", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiquetas de Nonwovens</div>,
+                parameters: {
+                    url: `${API_URL}/print/sql/`, printers: printersList?.CABS,
+                    onComplete: onDownloadComplete,
+                    parameters: {
+                        method: "PrintNwsEtiquetas",
+                        ids: _nws.join(','),
+                        name: "ETIQUETAS-NWS-AMOSTRA",
+                        path: "ETIQUETAS/NWS-AMOSTRA"
+                    }
+                }
+            });
+            showModal();
+        }
+    };
+
     const onPaletesExpand = () => {
         setModalParameters({ content: "paletesexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `in:${ofs.join(",")}` } } });
         showModal();
@@ -1401,7 +723,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
         const controller = new AbortController();
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [hash_estadoproducao, parameters?.data?.timestamp, parameters?.isRunning, parameters?.isClosed]);
+    }, [hash.hash_estadoproducao, parameters?.data?.timestamp, parameters?.isRunning, parameters?.isClosed]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -1471,7 +793,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                     </Row>
                                     <Row nogutter>
                                         <Col>
-                                            <div style={{}}><ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /></div>
+                                            <div style={{}}><ListPaletesOf hash={hash} data={parameters?.data} filter={paletes} mini={true} /></div>
                                         </Col>
                                     </Row>
                                 </Col>}
@@ -1507,7 +829,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                 <Col style={{ display: "flex", flexDirection: "column" }}>
                                     <Row nogutter style={{ border: "solid 1px #595959", padding: "3px" }}>
                                         <Col>
-                                            <div style={{}}><LineParameters data={{ params: parameters?.data?.params, events: parameters?.data?.events, realtime: parameters?.data?.realtime }} onLineLogExpand={onLineLogExpand} /></div>
+                                            <div style={{}}><LineParameters hash={hash} data={parameters?.data} onLineLogExpand={onLineLogExpand} /></div>
                                         </Col>
                                     </Row>
                                     {/*                     <Row nogutter style={{ border: "solid 1px #595959", margin: "3px 0 0 0", padding: "3px" }}>
@@ -1533,7 +855,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                             </Row>
                                             <Row nogutter>
                                                 <Col>
-                                                    <div style={{}}><ListGranuladoInline data={parameters?.data} /></div>
+                                                    <div style={{}}><ListGranuladoInline hash={hash} data={parameters?.data} /></div>
                                                 </Col>
                                             </Row>
                                         </Col>
@@ -1579,7 +901,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
                                             </Row>
                                             <Row nogutter>
                                                 <Col>
-                                                    <div style={{}}><ListBobinagens data={parameters?.data} /></div>
+                                                    <div style={{}}><ListBobinagens hash={hash} data={parameters?.data} /></div>
                                                 </Col>
                                             </Row>
                                         </Col>
@@ -1611,26 +933,7 @@ const EstadoProducao = ({ hash_estadoproducao, parameters, ...props }) => {
 
 
                                     {/**NONWOVENS FILA */}
-                                    <Row nogutter style={{ border: "solid 1px #595959", padding: "3px", margin: "3px 0 0 0 " }}>
-                                        <Col >
-                                            <Row nogutter>
-                                                <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
-                                                    <div style={{}}>Nonwovens Fila</div>
-                                                    <div>
-                                                        <Space>
-                                                            <Button type="primary" size="small" icon={<TabletOutlined />} title="Entrada e saida de Nonwovens" onClick={onNwsPick} />
-                                                            <div><Button type="primary" size="small"/*  onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} /></div>
-                                                        </Space>
-                                                    </div>
-                                                </Col>
-                                            </Row>
-                                            <Row nogutter>
-                                                <Col>
-                                                    <div style={{}}><ListNWsQueue data={parameters?.data} /></div>
-                                                </Col>
-                                            </Row>
-                                        </Col>
-                                    </Row>
+                                    <ListNwsQueue hash={hash} data={parameters?.data} onNwsPick={onNwsPick} onNwsPrint={onNwsPrint}/*  selectedNws={selectedNws} setSelectedNws={setSelectedNws} */ />
 
 
 
@@ -1834,15 +1137,34 @@ const OrdemFabricoChooser = ({ parameters, onClick }) => {
     return (<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
 } */
 
+const StyledDrawer = styled(Drawer)`
+    .ant-drawer-wrapper-body{
+        background:#2a3142;
+    }    
+    .ant-drawer-content{
+        background:#2a3142;
+    }
+    .ant-drawer-header{
+        border-bottom:none;
+    }
+
+`;
 
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
-    const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} };
-    const { updateAggId } = useContext(AppContext);
-    const [dataParams, setDataParams] = useState({});
+    /*     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} }; */
+    /*     const { updateAggId } = useContext(AppContext); */
+    /*     const [dataParams, setDataParams] = useState({}); */
     const [dataEstadoProducao, setDataEstadoProducao] = useState([]);
-
-
+    const [hash, updateHash] = useImmer({ hash_estadoproducao: null, hash_estadoproducao_realtime: null, updated: null });
+    const { lastJsonMessage: wsMessageBroadcast, sendJsonMessage: wsSendMessageBroadcast } = useWebSocket(`${SOCKET.url}/realtimealerts`, {
+        onOpen: () => console.log(`Connected to Web Socket Broadcast`),
+        queryParams: { /* 'token': '123456' */ },
+        onError: (event) => { console.error(event); },
+        shouldReconnect: (closeEvent) => true,
+        reconnectInterval: 5000,
+        reconnectAttempts: 500
+    });
 
     const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
     const inputParameters = useRef({});
@@ -1858,6 +1180,7 @@ export default ({ setFormTitle, ...props }) => {
     const defaultSort = [];
     const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
     const submitting = useSubmitting(true);
+    const [drawerVisible, setDrawerVisible] = useState(false);
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
@@ -1974,40 +1297,58 @@ export default ({ setFormTitle, ...props }) => {
         const controller = new AbortController();
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [props?.parameters?.cs_id]);
+    }, [/* props?.parameters?.cs_id */]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["cs_id"]);
+            const { tstamp, ...paramsIn } = loadInit({}, {}, {}, { ...location?.state }, null/* ["cs_id"] */);
             inputParameters.current = paramsIn;
+            wsSendMessageBroadcast({ cmd: 'getEstadoProducao', value: {} });
+            // saveNavigation("Estado da Produção", permission.auth?.user, location);
         }
         submitting.end();
     }
 
     useEffect(() => {
-        if (estadoProducao) {
-            // setDataParams(json(estadoProducao)["estado_producao_params"]);
-            setDataEstadoProducao({
-                timestamp: Date.now(), rows: json(estadoProducao)["estado_producao"], bobines: json(estadoProducao)["estado_producao_bobines"],
-                bobines_nopalete: json(estadoProducao)["estado_producao_bobines_nopalete"],
-                bobines_retrabalhadas: json(estadoProducao)["estadoproducao_bobines_retrabalhadas"],
-                paletes: json(estadoProducao)["estado_producao_paletes"],
-                current: json(json(estadoProducao)["estado_producao_current"]),
-                status: json(estadoProducao)["estado_producao_status"][0],
-                bobinagens: json(estadoProducao)["estado_producao_bobinagens"],
-                params: json(estadoProducao)["estado_producao_params"],
-                defeitos: json(estadoProducao)["estado_producao_defeitos"],
-                nws_planeados: json(estadoProducao)["estado_producao_nws"],
-                nws_queue: json(estadoProducao)["estado_producao_nw_queue"],
-                granulado_inline: json(estadoProducao)["estado_producao_granulado_inline"],
-                realtime: json(estadoProducao)["estado_producao_realtime"],
-                events: json(estadoProducao)["estado_producao_events"]
-            });
-        } else {
-            setDataParams({});
-            setDataEstadoProducao({});
+        let updated = false;
+        if (wsMessageBroadcast?.hash?.hash_estadoproducao !== hash?.hash_estadoproducao || wsMessageBroadcast?.hash?.hash_estadoproducao_realtime !== hash?.hash_estadoproducao_realtime) {
+            updated = true;
         }
-    }, [hash_estadoproducao]);
+        updateHash(draft => {
+            draft.hash_estadoproducao = wsMessageBroadcast?.hash?.hash_estadoproducao;
+            draft.hash_estadoproducao_realtime = wsMessageBroadcast?.hash?.hash_estadoproducao_realtime;
+            if (updated) {
+                draft.updated = dayjs().valueOf();
+            }
+        });
+        if (updated) {
+            const _data = json(wsMessageBroadcast?.data?.estadoProducao, null);
+            if (_data) {
+                setDataEstadoProducao({
+                    timestamp: Date.now(),
+                    rows: _data["estado_producao"],
+                    bobines: _data["estado_producao_bobines"],
+                    bobines_nopalete: _data["estado_producao_bobines_nopalete"],
+                    bobines_retrabalhadas: _data["estadoproducao_bobines_retrabalhadas"],
+                    paletes: _data["estado_producao_paletes"],
+                    current: json(_data["estado_producao_current"]),
+                    status: _data["estado_producao_status"][0],
+                    bobinagens: _data["estado_producao_bobinagens"],
+                    params: _data["estado_producao_params"],
+                    defeitos: _data["estado_producao_defeitos"],
+                    nws_planeados: _data["estado_producao_nws"],
+                    nws_queue: _data["estado_producao_nw_queue"],
+                    granulado_inline: _data["estado_producao_granulado_inline"],
+                    realtime: _data["estado_producao_realtime"],
+                    events: _data["estado_producao_events"]
+                });
+
+            } else {
+                setDataEstadoProducao({});
+            }
+        }
+        console.log("MESSAGE BROADCAST", wsMessageBroadcast?.hash?.hash_estadoproducao, wsMessageBroadcast?.hash?.hash_estadoproducao_realtime)
+    }, [wsMessageBroadcast?.hash?.hash_estadoproducao, wsMessageBroadcast?.hash?.hash_estadoproducao_realtime]);
 
     const isClosed = () => {
         if (dataEstadoProducao?.status?.status === 9 || !dataEstadoProducao?.status?.status) {
@@ -2032,30 +1373,48 @@ export default ({ setFormTitle, ...props }) => {
     }
 
 
+    const onShowDrawer = () => {
+        setDrawerVisible(true);
+    };
+
+    const onCloseDrawer = () => {
+        setDrawerVisible(false);
+    };
 
 
-
-    return (
+    return (<>
+        <StyledDrawer
+            title={
+                <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                    <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                </div>
+            }
+            placement="left"
+            closable={false}
+            onClose={onCloseDrawer}
+            open={drawerVisible}
+        >
+            <YScroll>
+                <MainMenu dark />
+            </YScroll>
+        </StyledDrawer>
         <Card
             hoverable
             headStyle={{ padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" }}
             style={{ height: "100%", border: "1px solid #8c8c8c" }}
-            bodyStyle={{ height: "calc(100% - 61px)", padding: "0px 3px 3px 0px" }}
+            bodyStyle={{ height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
-                <WidgetSimpleTitle title={
-                    <Space>
-                        <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" />
-                        <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
-                    </Space>
-                } parameters={props?.parameters} onClose={props?.onClose} onPinItem={props?.onPinItem}>
-                    {/* <OrdemFabricoChooser parameters={{ data: dataEstadoProducao?.current }} onClick={onOrdemFabricoClick} /> */}
-
-                    {/* {props?.parameters?.ofs && <Space>
-                        <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_formulation_change")} icon={<EditOutlined />}>Alterar</Button>
-                        <Button disabled={!permission.isOk({ action: "inproduction", forInput: !isClosed() })} onClick={()=>onOpenFormulacao("formulacao_dosers_change")} icon={<EditOutlined />}>Doseadores</Button>
-                    </Space>} */}
-                </WidgetSimpleTitle>
+                <div style={{display:"flex",alignItems:"center"}}>
+                    <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedItems={HISTORY_DEFAULT} 
+                        center={
+                            <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
+                        }/>
+                    <div style={{width:"3px"}}></div>
+                    {/* <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{ fontSize: "8px" }}></div></div> */}
+                    {/* <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" /> */}
+                    
+                </div>
             }
         >
             <YScroll>
@@ -2066,13 +1425,14 @@ export default ({ setFormTitle, ...props }) => {
                 {/* <Row nogutter>
                         <Col> */}
 
-                <EstadoProducao hash_estadoproducao={hash_estadoproducao} parameters={{ data: dataEstadoProducao, isRunning: isRunning(), isClosed: isClosed() }} />
+                <EstadoProducao hash={hash} parameters={{ data: dataEstadoProducao, isRunning: isRunning(), isClosed: isClosed() }} />
                 {/*                         </Col>
                     </Row> */}
                 {/* <Row style={{ height: "10px" }}><Col></Col></Row> */}
                 {/*                 </Container> */}
             </YScroll>
         </Card>
+    </>
     );
 
 

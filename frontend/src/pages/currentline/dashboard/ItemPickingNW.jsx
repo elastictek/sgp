@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from 'dayjs';
 import Joi from 'joi';
-import moment from 'moment';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { API_URL, DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET } from "config";
 import { useModal } from "react-modal-hook";
@@ -106,7 +105,7 @@ export default ({ record, card, parentReload }) => {
         { key: 'n_lote', width: 110, name: 'Lote', formatter: p => p.row.n_lote },
         { key: 'type', width: 70, name: 'Posição', formatter: p => <PosColumn value={p.row.type} /> },
         { key: 'qty_lote', name: 'Qtd', minWidth: 95, width: 95, formatter: p => <div style={{ textAlign: "right" }}>{p.row.qty_lote} m<sup>2</sup></div> },
-        { key: 't_stamp', width: 140, name: 'Data', formatter: props => moment(props.row.t_stamp).format(DATETIME_FORMAT) },
+        { key: 't_stamp', width: 140, name: 'Data', formatter: props => dayjs(props.row.t_stamp).format(DATETIME_FORMAT) },
         { key: 'queue', width: 110,maxWidth:110, name: 'Fila', formatter: p => <QueueNwColumn value={p.row.queue} status={p.row.status} /> },
     ];
     const [modalParameters, setModalParameters] = useState({});
