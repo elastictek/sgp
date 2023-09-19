@@ -21,6 +21,10 @@ export const SOCKET = { url: 'ws://localhost:8000/ws' };
 //export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
+export const SAGE_ESTABELECIMENTOS = [{ value: "E01", label: "E01" }];
+export const SAGE_LOCS = [{ value: "ARM", label: "ARM" }];
+export const SAGE_STATUS = [{ value: "A", label: "A" }];
+
 export const bColors = (estado) => {
     if (estado === "G") {
         return { color: "#237804", fontColor: "#fff" };//"green";

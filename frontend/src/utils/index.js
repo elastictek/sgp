@@ -29,9 +29,9 @@ export const uniqueKeys = (array, key) => {
     }, []);
 }
 
-export const dayjsValue = (value) => {
+export const dayjsValue = (value,retValue=null) => {
     if (!value) {
-        return null;
+        return retValue;
     }
     if (dayjs.isDayjs(value)) {
         return value;
@@ -49,11 +49,11 @@ export const dayjsValue = (value) => {
         const timeFormat = (value.split(':').length === 2) ? 'HH:mm' : 'HH:mm:ss';
         dayjsObj = DATE_ENGINE == "moment" ? moment(`1970-01-01T${value}`, timeFormat) : dayjs(`1970-01-01T${value}`, { format: timeFormat });
     } else {
-        return null; // Invalid format
+        return retValue; // Invalid format
     }
 
     if (!dayjsObj.isValid()) {
-        return null;
+        return retValue;
     }
 
     return dayjsObj;

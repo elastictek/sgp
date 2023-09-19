@@ -147,6 +147,7 @@ class TempOrdemFabrico(models.Model):
     agg_ofid_original = models.IntegerField(verbose_name="Agg Original", null=True) #Apenas como referência, mas utilizado para os lookups...
     aggregated = models.SmallIntegerField(verbose_name="Ordem de Fabrico agregada (0/1)", default=0)
     typeofabrico = models.SmallIntegerField(verbose_name="Tipo de Ordem de Fabrico", null=True, default=0)
+    certificacoes = models.CharField(max_length=200,verbose_name="Certificações", null=True) #ADDED
     class Meta:
         unique_together = (('of_id', 'item_cod'))
 

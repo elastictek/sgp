@@ -695,6 +695,7 @@ class Palete(models.Model):
     nbobines_sem_destino = models.IntegerField(verbose_name="Indica o numero de bobines sem destino em estado DM", null=True) #ADDED
     nok_estados = models.IntegerField(verbose_name="Indica se as bobines da palete de produto acabado estão apenas em LAB e G se sim nok=0 senão nok=1", null=True) #ADDED
     nok = models.IntegerField(verbose_name="em conjugação com nok_estados mais o nº de bobines(se corresponde ao nbones defindo)", null=True) #ADDED
+    reported = models.IntegerField(verbose_name="Indica se a palete foi sincronizada com o SAGE", null=True) #ADDED
     def __str__(self):
         return self.nome
 

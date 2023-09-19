@@ -13,5 +13,6 @@ from exports import *
 from qualidade import *
 from cargas import *
 from print import *
+from sage import *
 from producao.api.urls import *
 

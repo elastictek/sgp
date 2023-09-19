@@ -261,10 +261,10 @@ class BaseSql:
                 rows = fetchall(cursor, ignore)
         else:
             execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
-            # print("2-###########################################################################")
-            # print(f'SQL--> {execSql["sql"]}')
-            # print(f'PARAMS--> {execSql["parameters"]}')
-            # print("###########################################################################")
+            #print("2-###########################################################################")
+            #print(f'SQL--> {execSql["sql"]}')
+            #print(f'PARAMS--> {execSql["parameters"]}')
+            #print("###########################################################################")
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
             rows = fetchall(connOrCursor, ignore)
         return {"rows": rows}

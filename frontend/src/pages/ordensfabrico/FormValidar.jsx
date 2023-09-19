@@ -102,6 +102,7 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
             let artigo = {
                 artigo_thickness: THICKNESS,
                 produto_cod: parameters?.item_nome?.substring(0, parameters?.item_nome.lastIndexOf(' L')),
+                artigo_certificacoes:parameters?.item_certificacoes,
                 artigo_gtin: null,
                 artigo_core: null,
                 artigo_formu: null,
@@ -162,15 +163,14 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
                     values: {
                         artigo_diam: parameters?.item_diam, artigo_thickness: parameters?.item_thickness,
                         artigo_core: parameters?.item_core, artigo_width: parameters?.item_width,
+                        artigo_certificacoes: parameters?.item_certificacoes,
                         qty_item: parameters?.qty_item, ...values
                     }, iorder: parameters?.iorder, prf: parameters?.prf, ofabrico_cod: parameters?.ofabrico, ofabrico_id: parameters?.ofabrico_id, artigo_cod: parameters?.item,
-                    artigo_nome:parameters?.item_nome,
+                    artigo_nome:parameters?.item_nome,artigo_certificacoes: parameters?.item_certificacoes,
                     cliente_cod: parameters?.cliente_cod, cliente_nome: parameters?.cliente_nome, produto_id: parameters?.produto_id, artigo_id: parameters?.item_id,
                     start_date: dayjs(parameters?.start_date).format(DATETIME_FORMAT), end_date: dayjs(parameters?.start_date).format(DATETIME_FORMAT),
                     main_gtin: GTIN, method: "Validar"
                 };
-                console.log("###############################################")
-                console.log("valss",vals)
 
                 if (!parameters?.produto_id && parameters?.ofabrico) {
                     const v = schema().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
@@ -258,7 +258,7 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
                     <Col>
                         <ul>
                             <li>Produto <b>{parameters?.produto_cod}</b></li>
-                            <li>Artigo <b>{parameters?.item}</b></li>
+                            <li>Artigo <b>{parameters?.item}</b> <span style={{fontSize:"10px"}}>{parameters?.item_certificacoes}</span></li>
                             <li>Des.Artigo <b>{parameters?.item_nome}</b></li>
                             {parameters?.iorder && <li>Encomenda <b>{parameters?.iorder}</b></li>}
                             {parameters?.iorder && <li>Cliente <b>{parameters?.cliente_nome}</b></li>}
@@ -284,7 +284,7 @@ export default ({ parameters, extraRef, closeSelf, loadParentData, ...props }) =
                     <Row>
                         <Col>
                             <ul>
-                                <li> Artigo <b>{parameters?.item}</b></li>
+                                <li> Artigo <b>{parameters?.item}</b> <span style={{fontSize:"10px"}}>{parameters?.item_certificacoes}</span></li>
                                 <li>Des.Artigo <b>{parameters?.item_nome}</b></li>
                                 {parameters?.iorder && <li>Encomenda <b>{parameters?.iorder}</b></li>}
                                 {parameters?.iorder && <li>Cliente <b>{parameters?.cliente_nome}</b></li>}

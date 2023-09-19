@@ -113,15 +113,17 @@ export default ({ operationsRef, ...props }) => {
         // const v = formValues.length > 0 ? json(formValues[0].artigo)[0] : {};
         // const _ofs = formValues.length > 0 ? json(formValues[0].ofs) : [];
 
-        const _amostragem = pickAll(["sentido_enrolamento", "amostragem", "observacoes"], inputParameters.current?.rows[0]?.current);
+        console.log("loadddddd",inputParameters.current)
+
+        const _amostragem = pickAll(["sentido_enrolamento", "amostragem", "observacoes"], inputParameters.current);
         _amostragem["sentido_enrolamento"] = ENROLAMENTO_OPTIONS.find(v => v.value == _amostragem?.sentido_enrolamento);
-        const _tipoEmenda = pickAll(["maximo", "tipo_emenda", "emendas_rolo", "paletes_contentor"], json(inputParameters.current?.rows[0]?.emendas?.emendas));
+        const _tipoEmenda = pickAll(["maximo", "tipo_emenda", "emendas_rolo", "paletes_contentor"], json(inputParameters.current.emendas));
         _tipoEmenda["tipo_emenda"] = TIPOEMENDA_OPTIONS.find(v => v.key == _tipoEmenda?.tipo_emenda);
         const _artigo = pickAll([
             "of_cod", "artigo_cod", "artigo_des", "artigo_produto", "cliente_nome", "order_cod", "prf_cod", "qty_encomenda",
             "artigo_core", "artigo_gsm", "artigo_gtin", "artigo_lar", "artigo_thickness", "artigo_tipo"
-        ], inputParameters.current?.rows[0]?.of);
-        _artigo["core_cod"] = pickAll([{ core_cod: "ITMREF_0" }, { core_des: "ITMDES1_0" }], inputParameters.current?.rows[0]?.of)
+        ], inputParameters.current.of);
+        //_artigo["core_cod"] = pickAll([{ core_cod: "ITMREF_0" }, { core_des: "ITMDES1_0" }], inputParameters.current?.rows[0]?.of)
         form.setFieldsValue({
             ..._artigo,
             ...pickAll([
@@ -130,8 +132,8 @@ export default ({ operationsRef, ...props }) => {
             ..._amostragem,
             ..._tipoEmenda,
             ...pickAll([
-                "num_paletes"
-            ], inputParameters.current?.rows[0]?.total_planned)
+                 "n_paletes"
+            ], inputParameters.current)
         });
         // if (formValues.length > 0 && formValues[0]?.artigo) {
         //     dataAPIArtigos.setRows(json(formValues[0].artigo));
@@ -197,9 +199,6 @@ export default ({ operationsRef, ...props }) => {
                     <Col width={120}><Field name="artigo_lar" label={{ enabled: true, text: "Largura" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
                     <Col width={120}><Field name="artigo_thickness" label={{ enabled: true, text: "Espessura" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>µ</b>} /></Field></Col>
                     <Col width={120}><Field name="artigo_core" label={{ enabled: true, text: "Core" }}><InputNumber size="small" style={{ width: "100%", textAlign: "right" }} addonAfter={<b>''</b>} /></Field></Col>
-                    <Col width={350}>
-                        <Cores name="core_cod" core={form.getFieldValue("artigo_core")} largura={form.getFieldValue("artigo_lar")} forInput={forInput("core")} label={{ enabled: true, text: "Core Cód." }} />
-                    </Col>
                 </Row>
                 <Row><Col><HorizontalRule title="Encomenda" /></Col></Row>
                 <Row gutterWidth={10} style={{}}>

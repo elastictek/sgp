@@ -41,7 +41,9 @@ const FormCortes = React.lazy(() => import('./FormCortes'));
 const FormArtigosSpecsPlan = React.lazy(() => import('./FormArtigosSpecsPlan'));
 const FormFormulacaoPlan = React.lazy(() => import('./FormFormulacaoPlan'));
 const FormFormulacao = React.lazy(() => import('./FormFormulacao'));
+const FormNwPlan = React.lazy(() => import('./FormNwPlan'));
 const FormReport = React.lazy(() => import('./FormReport'));
+const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
 
 const title = "Ordem de fabrico";
 const TitleForm = ({ data, onChange, level, auth, form, ofabrico }) => {
@@ -188,8 +190,12 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
       //console.log("---------------",_ep)
       inputParameters.current = {
         ...inputParameters.current, ...formulacao_plan, ...cortes_plan, cortesordem_id: json(_data?.cortesordem)?.id, cortes_id: json(_data?.cortes)?.id, formulacao_id: json(_data?.formulacao)?.id,
-        ...pickAll([{ id: "cs_id" }, "agg_of_id", "formulacao_plan_id", "fplan_", "cortes_plan_id", "cplan_"], _data)
+        paletizacao_id: json(json(_data.paletizacao))?.id,
+        ...pickAll([{ id: "cs_id" }, "sentido_enrolamento", "amostragem", "observacoes", "agg_of_id", "formulacao_plan_id", "fplan_", "cortes_plan_id", "cplan_"], _data),
+        of: json(_data.ofs), emendas: json(_data.emendas),
+        hasPaletizacao: json(json(_data.paletizacao))?.id ? true : false
       };
+      console.log("WWWWWWWWWWdddWWWWWWWWWWWW", json(json(_data.paletizacao)));
       setUpdated(Date.now());
       setOfExists(true);
 
@@ -317,6 +323,11 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormRequirements activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
+                    label: `Paletização`,
+                    key: '9',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormPaletizacao activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
+                  },
+                  {
                     label: `Cores`,
                     key: '5',
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCoresPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
@@ -327,11 +338,13 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormArtigosSpecsPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   }, {
                     label: `Plan. Cortes`,
+                    disabled: !inputParameters.current.hasPaletizacao,
                     key: '7',
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCortesPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
                     label: `Cortes`,
+                    disabled: !inputParameters.current.hasPaletizacao,
                     key: '2',
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormCortes activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
@@ -346,13 +359,13 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormFormulacao activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
-                    label: `Nonwovens`,
-                    key: '8',
-                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
+                    label: `Plan. Nonwovens`,
+                    key: '12',
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormNwPlan activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
-                    label: `Paletização`,
-                    key: '9',
+                    label: `Nonwovens`,
+                    key: '8',
                     children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
                   },
                   {

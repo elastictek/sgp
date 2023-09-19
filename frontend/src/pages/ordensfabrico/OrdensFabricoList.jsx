@@ -9,9 +9,9 @@ import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep, getFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
-import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, OFABRICO_FILTER_STATUS } from "config";
+import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, OFABRICO_FILTER_STATUS, SAGE_LOCS, SAGE_STATUS, SAGE_ESTABELECIMENTOS } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
-import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
+import { getFilterRangeValues, getFilterValue, secondstoDay, dayjsValue, pickAll } from "utils";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch, Progress } from "antd";
 const { TextArea } = Input;
@@ -66,8 +66,8 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
     />);
 }
 const useStyles = createUseStyles({
-    open:{
-        backgroundColor:"#d9f7be !important"
+    open: {
+        backgroundColor: "#d9f7be !important"
     }
 });
 const schema = (options = {}) => {
@@ -178,6 +178,10 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Reverter para elaboração', key: 'op-revert', icon: <UndoOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
+        ...(allows?.allowValidar && data?.was_in_production == 1) ? [
+            { label: 'Sincronizar Relatório de produção (ERP)', key: 'op-sync-wopr', icon: <SyncOutlined style={{ fontSize: "18px" }} /> },
+            { type: 'divider' }
+        ] : [],
         ...((allows?.allowValidar && data.ofabrico_status >= 1 && data.ofabrico_status < 9) || (allows?.allowValidar && data.ativa == 1)) ? [
             { label: 'Sincronizar quantidades (ERP)', key: 'op-resync-qtys', icon: <SyncOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
@@ -221,6 +225,115 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
 }
 
 
+const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentData, openNotification, ...props }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    //const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
+    //const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });//Se tem permissões para alterar (Edit)
+    //const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false }); //Se tem permissões para alternar entre Mode Edit e View
+    const [fieldStatus, setFieldStatus] = useState({});
+    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
+    const classes = useStyles();
+    const [form] = Form.useForm();
+    const [formFilter] = Form.useForm();
+    const defaultFilters = {};
+    const defaultSort = []; //{ column: "colname", direction: "ASC|DESC" }
+    const defaultParameters = {};
+    const dataAPI = useDataAPI({ /* id: "id", */ payload: { url: `${API_URL}/api_to_call/`, parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: defaultSort } });
+    const dataAPIArtigos = useDataAPI({ /* id: "id", */ payload: { parameters: {}, pagination: { enabled: false }, filter: {}, sort: [] } });
+    const submitting = useSubmitting(true);
+    const permission = usePermission({ name: "ordemfabrico" });
+    const [clienteExists, setClienteExists] = useState(false);
+    const primaryKeys = [];
+
+    useEffect(() => {
+        const controller = new AbortController();
+        loadData({ signal: controller.signal });
+        return (() => controller.abort());
+    }, []);
+
+    const loadData = async ({ signal } = {}) => {
+        form.setFieldsValue({ fcy: SAGE_ESTABELECIMENTOS[0], loc: SAGE_LOCS[0], sta: SAGE_STATUS[0], ip_date: dayjsValue(parameters?.data?.fim,dayjs()) });
+        submitting.end();
+    }
+
+    const onFinish = async (type = 'validar') => {
+        const values = form.getFieldsValue(true);
+        submitting.trigger();
+        let response = null;
+        try {
+            response = await fetchPost({
+                ...{
+                    url: `${API_URL}/sage/sql/`, parameters: {
+                        method: "SyncProductionReport",
+                        ...pickAll(["ofabrico", "temp_ofabrico", "ofabrico_sgp", "item"], parameters?.data),
+                        ip_date: dayjsValue(values?.ip_date,dayjs()).format(DATE_FORMAT_NO_SEPARATOR),
+                        fcy: values.fcy.value,
+                        loc: values.loc.value,
+                        sta: values.sta.value
+                    }
+                }
+            });
+            if (response.data.status !== "error") {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                loadParentData();
+            } else {
+                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            }
+        } catch (e) {
+            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        }
+        submitting.end();
+    }
+
+    const onValuesChange = (changedValues, values) => {
+        if ("YYYY" in changedValues) {
+            //console.log(changedValues)
+            //form.setFieldsValue("YYYY", null);
+        }
+    }
+
+    return (
+        <YScroll>
+            <FormContainer id="LAY-SYNCWOP" fluid forInput={true} loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} alert={{ tooltip: true, pos: "none" }}>
+                <Row>
+                    <Col width={200}>
+                        <Field name="fcy" label={{ enabled: true, text: "Estabelecimento" }}>
+                            <SelectField size="small" keyField="value" textField="label" data={SAGE_ESTABELECIMENTOS} />
+                        </Field>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col width={200}>
+                        <Field name="loc" label={{ enabled: true, text: "Localização" }}>
+                            <SelectField size="small" keyField="value" textField="label" data={SAGE_LOCS} />
+                        </Field>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col width={200}>
+                        <Field name="sta" label={{ enabled: true, text: "Estado" }}>
+                            <SelectField size="small" keyField="value" textField="label" data={SAGE_STATUS} />
+                        </Field>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col xs="content"><Field name="ip_date" label={{ enabled: true, text: "Data de Imputação", padding: "0px" }}><DatePicker showTime={false} format={DATE_FORMAT} /></Field></Col>
+                </Row>
+                {extraRef && <Portal elId={extraRef.current}>
+                    <Space>
+                        <Button disabled={submitting.state} onClick={closeSelf}>Cancelar</Button>
+                        <Button disabled={submitting.state} type="primary" onClick={onFinish}>Sincronizar</Button>
+                    </Space>
+                </Portal>
+                }
+            </FormContainer>
+        </YScroll>
+    )
+
+}
+
+
 export default ({ noid = false, setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
 
@@ -249,13 +362,15 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
-                case "validar": return <FormOrdemFabricoValidar parameters={modalParameters.parameters} />;
+                case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
                 case "viewordemfabrico": return <OrdemFabrico parameters={modalParameters.parameters} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
                 case "paletes": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />;
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
                 case "newpalete": return <FormNewPaleteLine parameters={modalParameters.parameters} />
+                case "syncProductionReport": return <FormSyncProductionReport loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} openNotification={openNotification} />
+
                 //case "content": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
@@ -464,6 +579,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 190, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item", header: "Artigo", filter: { show: true, op: "any" }, defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item_nome", header: "Des.", filter: { show: true, op: "any" }, defaultWidth: 210, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item_nome?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "item_certificacoes", header: "Certificações", filter: { show: true, op: "any" }, defaultWidth: 210, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item_certificacoes}</LeftAlign> }] : [],
 
         ...(true) ? [{ name: "n_paletes", header: "Total", filter: { show: true, type: "number", field: { style: { width: "70px" } } }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <LeftAlign style={{}}>{data?.n_paletes_total}/{data?.n_paletes}</LeftAlign> }] : [],
         ...(true) ? [{ name: "progress", header: "", filter: { show: false }, defaultWidth: 80, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => data?.ofabrico_status > 1 && <Progress percent={getFloat(data?.progress, 0)} showInfo={true} trailColor="#dbdbdb" /> }] : [],
@@ -475,7 +591,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'end_prev_date', header: 'Fim Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.end_prev_date} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'inicio', header: 'Início', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.inicio} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.fim} format={DATETIME_FORMAT} /> }] : [],
-        ...(true) ? [{ name: 'ativa', header: 'Prf Estado', filter: { show: "toolbar", type: "select", field: { style: { width: "90px" }, options: [{ value: 0, label: "Fechada" }, { value: 1, label: "Aberta" }] } }, userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.ativa} style={data?.ativa ? { color: "#fff", backgroundColor: "green" } : {}} /> }] : [],
+        //...(true) ? [{ name: 'ativa', header: 'Prf Estado', filter: { show: "toolbar", type: "select", field: { style: { width: "90px" }, options: [{ value: 0, label: "Fechada" }, { value: 1, label: "Aberta" }] } }, userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.ativa} style={data?.ativa ? { color: "#fff", backgroundColor: "green" } : {}} /> }] : [],
         // ...(allows?.allowChangeStatus) ? [{
         //     name: 'bstatus', header: 'Produção', filter: { show: false }, userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <Operations parameters={{ status: data?.ofabrico_status }} onClick={(status) => changeStatus(data, status)} />, rowspan: ({ data, value, dataSourceArray, rowIndex, column }) => {
         //         let rowspan = 1;
@@ -588,6 +704,12 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             case "op-resync-qtys":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ResyncOrderQtys", data, content: `Tem a certeza que deseja sincronizar as quantidades da encomenda na ordem ${data?.ofabrico}` });
                 break;
+            case "op-sync-wopr":
+                setModalParameters({ content: "syncProductionReport", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Sincronizar Relatório de Produção <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { data: { ...data, ip_date: dayjs(data?.fim).format(DATE_FORMAT_NO_SEPARATOR) } } });
+                showModal();
+
+                //onConfirm({ url: `${API_URL}/sage/sql/`, method: "SyncProductionReport", data: { ...data, ip_date: dayjs(data?.fim).format(DATE_FORMAT_NO_SEPARATOR) }, content: `Tem a certeza que deseja sincronizar o relatório de produção da ordem ${data?.ofabrico}` });
+                break;
             case "op-close":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ClosePrf", data: { ofid: data.ofabrico_sgp }, content: `Tem a certeza que deseja Fechar a Proforma (PRF) ${data?.prf}` });
                 break;
@@ -640,7 +762,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         e.stopPropagation();
         if (data?.ofabrico_status === 0 && allows?.allowChangeStatus && allows?.allowValidar) {
             //Validar
-            setModalParameters({ content: "validar", type: "drawer", width: "95%"/* , title: "Entrada/Saída de granulado em linha" */, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data } });
+            setModalParameters({ content: "validar", type: "drawer", width: "95%"/* , title: "Entrada/Saída de granulado em linha" */, lazy: true, push: false, loadParentData: loadData, parameters: { ...data } });
             showModal();
 
         }
@@ -649,8 +771,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             //Validar
             //setModalParameters({ content: "viewordemfabrico", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, ...allows } });
             //showModal();
-            console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",data)
-            navigate('/app/ofabrico/ordemfabrico',{
+            console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", data)
+            navigate('/app/ofabrico/ordemfabrico', {
                 state: {
                     ...data, ...allows, tstamp: Date.now()
                 }, replace: true
@@ -808,8 +930,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     }
 
     const rowClassName = ({ data }) => {
-        if (data.ativa==1) {
-             return classes.open;
+        if (data.ativa == 1) {
+            return classes.open;
         }
     }
 

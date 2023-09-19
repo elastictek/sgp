@@ -10,7 +10,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 import { uid } from 'uid';
-import { API_URL, ROOT_URL } from "config";
+import { API_URL,ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { orderObjectKeys, json } from "utils/object";
@@ -35,13 +35,15 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import { ObsTableEditor } from 'components/TableEditorsV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
-import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Favourite, IndexChange, TextAreaViewer, MetodoOwner, MetodoAging, Status } from "components/TableColumns";
+import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Favourite, IndexChange, TextAreaViewer } from "components/TableColumns";
 import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { MediaContext, AppContext } from 'app';
+import FormulacaoReadOnly from '../formulacao/FormulacaoReadOnly';
+const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 
-const EDITKEY = "specs_plan";
-const PERMISSION = { item: "edit", action: "specs_plan" };
+const EDITKEY = "nw_plan";
+const PERMISSION = { item: "edit", action: "nw_plan" };
 
 const schema = (options = {}) => {
     return getSchema({
@@ -75,8 +77,8 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     );
 }
 
-export const loadSpecsPlan = async ({ of_id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { of_id }, sort: [], parameters: { method: "ArtigosSpecsPlanList" }, signal });
+export const loadFormulacaoPlan = async ({ agg_of_id }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { agg_of_id }, sort: [], parameters: { method: "NwPlanList" }, signal });
     if (rows && rows.length > 0) {
         return rows;
     }
@@ -108,7 +110,13 @@ export default ({ operationsRef, ...props }) => {
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
-                case "specs": return <Chooser parameters={modalParameters.parameters} />;
+                case "formulacoes": return <Chooser parameters={modalParameters.parameters} />;
+                case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />;
+                //case "palete": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
+                // case "parameters": return <LabArtigoSpecsParametersList parameters={modalParameters.parameters} />;
+                // case "load": return <LoadEssay parameters={modalParameters.parameters} />;
+                //case "paletesstock": return <Chooser parameters={modalParameters.parameters} />;
             }
         }
         return (
@@ -118,58 +126,38 @@ export default ({ operationsRef, ...props }) => {
         );
     }, [modalParameters]);
 
-    const rowClassName = ({ data }) => {
-        // if () {
-        //     return tableCls.error;
-        // }
+    const onOpenFormulacao = (e,formulacao_id) => {
+        e.stopPropagation();
+        newWindow(`${ROOT_URL}/app/ofabrico/formulacaoreadonly`,{formulacao_id},"formulacao");
+        //setModalParameters({ content: "formulacao", type: "drawer", width: "95%", title: "Formulação", push: false, loadData: () => dataAPI.fetchPost(), parameters: { ...formulacao_id ? { formulacao_id } : { new: true } } });
+        //showModal();
     }
-    const columnEditable = (v, { data, name }) => {
-        if (["observacoes"].includes(name) && mode.datagrid.edit) {
-            return true;
-        }
-        return false;
-    }
-
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        // if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
-        //     return tableCls.error;
-        // }
-        if (["observacoes"].includes(name) && mode.datagrid.edit) {
-            return tableCls.edit;
-        }
-    };
-
-    const columns = [
-        ...(true) ? [{ name: 'designacao', header: 'Designação', cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center", render: ({ data, cellProps }) => <Link cellProps={cellProps} onClick={() => onOpenParameters(data)} value={data?.designacao} /> }] : [],
-        ...(true) ? [{ name: 'lab_metodo', header: 'Método', cellProps: { className: columnClass }, render: ({ cellProps, data }) => data?.metodo_designacao, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'des', header: 'Artigo', cellProps: { className: columnClass }, render: ({ cellProps, data }) => <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</span></div>, userSelect: true, defaultLocked: false, defaultWidth: 350, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', cellProps: { className: columnClass }, render: ({ cellProps, data }) => data?.cliente_nome, userSelect: true, defaultLocked: false, defaultWidth: 350, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'owner', header: 'Owner', render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'aging', header: 'Aging', render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 't_stamp', header: 'Data', render: ({ cellProps, data }) => <DateTime value={data?.t_stamp} format={DATETIME_FORMAT} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
-    ];
-
-    const tableColumns = [
-        ...(true) ? [{ name: 'idx', header: 'Index', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 70, render: ({ data, cellProps }) => <IndexChange onDelete={onDelete} onUp={onUp} onDown={onDown} value={data?.idx} modeEdit={mode.datagrid.edit} allowDelete cellProps={cellProps} /> }] : [],
-        ...columns,
-        ...(true) ? [{ name: "observacoes", header: "Observações", headerAlign: "center", userSelect: true, defaultLocked: false, defaultWidth: 400, editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass } }] : [],
-
-    ];
-
-    const onSelectSpecs = () => {
-        const _filter = { fcliente_cod: props?.parameters?.cliente_cod, fartigo_id: props?.parameters?.item_id };
+    const onSelectFormulacao = () => {
+        const _filter = { fproduto_id: props.parameters.produto_id };
         setModalParameters({
-            content: "specs", responsive: true, type: "drawer", width: "85%", title: "Especificações disponíveis", push: false, loadData: () => { }, parameters: {
+            content: "formulacoes", responsive: true, type: "drawer", width: "85%", title: "Formulações disponíveis", push: false, loadData: () => { }, parameters: {
                 offsetHeight: "200px",
                 multipleSelection: true,
-                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "ArtigosSpecsAvailableList" }, pagination: { enabled: true, pageSize: 20 }, baseFilter: _filter, sort: [] } },
+                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "FormulacoesAvailableList" }, pagination: { enabled: true, pageSize: 20 }, baseFilter: _filter, sort: [] } },
                 toolbar: true,
                 pagination: true,
-                columns: [...columns],
+                columns: [
+                    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, defaultWidth: 390, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e,data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
+                    ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, defaultWidth: 170 }] : [],
+                    ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, defaultWidth: 170 }] : [],
+                    ...(true) ? [{ name: 'versao', header: 'Versão', userSelect: true, defaultLocked: false, defaultWidth: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
+                    ...(true) ? [{ name: 'cliente_nome', header: 'Cliente', userSelect: true, defaultLocked: false, defaultWidth: 190, render: (p) => <div style={{}}>{p.data?.cliente_nome}</div> }] : [],
+                    ...(true) ? [{ name: 'produto_cod', header: 'Produto', userSelect: true, defaultLocked: false, defaultWidth: 190, render: (p) => <div style={{}}>{p.data?.produto_cod}</div> }] : [],
+                    ...(true) ? [{ name: 'cod', header: 'Artigo', userSelect: true, defaultLocked: false, defaultWidth: 170, render: (p) => <div style={{}}>{p.data?.cod}</div> }] : [],
+                    ...(true) ? [{ name: 'des', header: 'Artigo Des.', userSelect: true, defaultLocked: false, defaultWidth: 170, render: (p) => <div style={{}}>{p.data?.des}</div> }] : [],
+                    ...(true) ? [{ name: 'reference', header: 'Referência', userSelect: true, defaultLocked: false, width: 90, render: ({ data }) => <Favourite value={data?.reference} /> }] : [],
+                    ...(true) ? [{ name: 'created_date', header: 'Data Criação', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.created_date).format(DATETIME_FORMAT)}</div> }] : [],
+                    ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.updated_date).format(DATETIME_FORMAT)}</div> }] : []
+                ],
                 onSelect: async ({ data, rows, close }) => {
                     const _current = dataAPI.getData().rows.map(v => v?.id);
                     const idxstart = _current.length;
-                    const _rows = rows.map((r, idx) => ({ ...r, idx: idxstart + idx + 1, lab_artigospecs_id: r.id/* , [dataAPI.getPrimaryKey()]: `id_${uid(4)}`  */ }));
+                    const _rows = rows.map((r, idx) => ({ ...r, idx: idxstart + idx + 1/* , [dataAPI.getPrimaryKey()]: `id_${uid(4)}`  */ }));
                     dataAPI.addRows(_rows);
                     dataAPI.setAction("edit", true);
                     dataAPI.update(true);
@@ -196,13 +184,46 @@ export default ({ operationsRef, ...props }) => {
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, ["temp_ofabrico", "temp_ofabrico_agg", "agg_of_id"]);
-            inputParameters.current = { ...pickAll([{ temp_ofabrico: "of_id" }, "temp_ofabrico_agg", "agg_of_id"], paramsIn) };
+            const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
+            inputParameters.current = { ...paramsIn };
         }
-        const _rows = await loadSpecsPlan({ of_id: inputParameters.current.of_id }, signal);
+        const _rows = await loadFormulacaoPlan({ agg_of_id: inputParameters.current.agg_of_id }, signal);
         dataAPI.setData({ rows: _rows, total: _rows.length });
         submitting.end();
     }
+
+
+    const rowClassName = ({ data }) => {
+        // if () {
+        //     return tableCls.error;
+        // }
+    }
+    const columnEditable = (v, { data, name }) => {
+        if (["observacoes"].includes(name) && mode.datagrid.edit) {
+            return true;
+        }
+        return false;
+    }
+
+    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
+        // if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
+        //     return tableCls.error;
+        // }
+        if (["observacoes"].includes(name) && mode.datagrid.edit) {
+            return tableCls.edit;
+        }
+    };
+
+    const columns = [
+        ...(true) ? [{ name: 'idx', header: 'Index', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 70, render: ({ data, cellProps }) => <IndexChange onDelete={onDelete} onUp={onUp} onDown={onDown} value={data?.idx} modeEdit={mode.datagrid.edit} allowDelete cellProps={cellProps} /> }] : [],
+        ...(true) ? [{ name: 'versao', header: 'Versão', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
+        ...(true) ? [{ name: 'designacao', header: 'Designação', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 390, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e,data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
+        ...(true) ? [{ name: 'inf_des', header: 'Nonwoven Inferior', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'sup_des', header: 'Nonwoven Superior', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: "observacoes", header: "Observações", headerAlign: "center", userSelect: true, defaultLocked: false, defaultWidth: 420, editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass } }] : [],
+        ...(true) ? [{ name: 'created_date', header: 'Data Criação', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.created_date).format(DATETIME_FORMAT)}</div> }] : [],
+        ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.updated_date).format(DATETIME_FORMAT)}</div> }] : []
+    ];
 
     const postProcess = async (dt, submitting) => { }
 
@@ -237,9 +258,9 @@ export default ({ operationsRef, ...props }) => {
     const onSave = async () => {
         let response = null;
         try {
-            response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...pickAll(["of_id", "agg_of_id"], inputParameters.current) }, parameters: { method: "SaveArtigosSpecsPlan", rows: dataAPI.getData().rows } });
+            response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { agg_of_id: inputParameters.current.agg_of_id }, parameters: { method: "SaveFormulacaoPlan", rows: dataAPI.getData().rows } });
             if (response.data.status !== "error") {
-                loadData();
+                props.loadParentData();
                 openNotification(response.data.status, 'top', "Notificação", response.data.title);
             } else {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
@@ -281,7 +302,7 @@ export default ({ operationsRef, ...props }) => {
                                 //defaultLimit={20}
                                 //rowHeight={40}
                                 enableColumnAutosize={true}
-                                columns={tableColumns}
+                                columns={columns}
                                 dataAPI={dataAPI}
                                 moreFilters={false}
                                 sortable={false}
@@ -303,7 +324,7 @@ export default ({ operationsRef, ...props }) => {
                                     modeKey: "datagrid", /* setMode, */ mode: { datagrid: { edit: mode.datagrid.edit } }, onEditComplete
                                 }}
                                 leftToolbar={<Space style={{ alignSelf: "center" }}>
-                                    <Permissions permissions={permission} {...PERMISSION} forInput={[mode.datagrid.edit, props?.editParameters?.isEditable(false)]}><Button onClick={onSelectSpecs}>Adicionar Especificação</Button></Permissions>
+                                    <Permissions permissions={permission} {...PERMISSION} forInput={[mode.datagrid.edit, props?.editParameters?.isEditable(false)]}><Button onClick={onSelectFormulacao}>Adicionar Formulação</Button></Permissions>
                                 </Space>}
 
 
@@ -316,7 +337,7 @@ export default ({ operationsRef, ...props }) => {
 
                         {/* <ListFormulacaoPlan parameters={inputParameters.current} permissions={props?.permissions} editable={props?.editParameters?.isEditable(false)} editKey={props?.editParameters?.editKey}/> */}</Col>
                 </Row>
-                {(operationsRef && props?.activeTab == '6') && <Portal elId={operationsRef.current}>
+                {(operationsRef && props?.activeTab == '12') && <Portal elId={operationsRef.current}>
                     <Edit permissions={permission} {...PERMISSION} editable={props?.editParameters?.isEditable(false)} {...props?.editParameters} resetData={loadData} fn={onSave} />
                 </Portal>
                 }

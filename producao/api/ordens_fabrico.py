@@ -50,6 +50,8 @@ from producao.api.currentsettings import checkCurrentSettings,updateCurrentSetti
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
 dbgw = DBSql(connections[connGatewayName].alias)
+sgpAlias = dbgw.dbAlias.get("sgp")
+sageAlias = dbgw.dbAlias.get("sage")
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
 mv_ofabrico_list = "mv_ofabrico_listv2"
@@ -262,8 +264,6 @@ def OrdensFabricoList(request, format=None):
     parameters = {**f.parameters, **f2['parameters']}
 
     dql = dbgw.dql(request.data, False)
-    sgpAlias = dbgw.dbAlias.get("sgp")
-    sageAlias = dbgw.dbAlias.get("sage")
     cols = f"""*"""
     sql = lambda p, c, s: (
         f"""
@@ -1034,6 +1034,30 @@ def SaveCortes(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
+def NwPlanList(request, format=None):
+    connection = connections["default"].cursor()
+    filter = request.data['filter']
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'agg_of_id = :agg_of_id',True)
+    f.value()
+
+    dql = db.dql(request.data, False)
+    sql = lambda: (f"""
+        select pnp.id plan_id,pnp.idx,pnp.observacoes,pn.* 
+        from producao_nw_plan pnp 
+        join producao_artigononwovens pn on pn.id=pnp.nw_id
+        {f.text}
+        order by pnp.idx
+    """)
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
 def FormulacaoPlanList(request, format=None):
     connection = connections["default"].cursor()
     filter = request.data['filter']
@@ -1452,28 +1476,69 @@ def SetOrdemFabricoFormulacao(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
-def GetPaletizacao(request, format=None):
-    connection = connections["default"].cursor()
-    filter = request.data['filter']
+# def GetPaletizacao(request, format=None):
+#     connection = connections["default"].cursor()
+#     filter = request.data['filter']
 
-    f = Filters(filter)
-    f.setParameters({}, False)
+#     f = Filters(filter)
+#     f.setParameters({}, False)
+#     f.where()
+#     f.add(f'po.id = :id',True)
+#     f.value()
+
+#     dql = db.dql(request.data, False)
+#     sql = lambda: (f"""
+#         select pa.paletizacao,pl.designacao 
+#         from planeamento_ordemproducao po
+#         join producao_currentsettings pc on pc.agg_of_id =po.agg_of_id_id
+#         JOIN JSON_TABLE(JSON_EXTRACT(fix_json(pc.paletizacao),'$'),'$[*]' COLUMNS(of_id INT PATH '$.of_id',	details JSON PATH '$.paletizacao')) pa on pa.of_id=po.id
+#         JOIN producao_paletizacao pl on pl.id=pa.paletizacao->>'$.id'
+#         {f.text}
+#     """)   
+#     try:
+#         response = db.executeSimpleList(sql, connection, f.parameters)
+#     except Error as error:
+#         print(str(error))
+#         return Response({"status": "error", "title": str(error)})
+#     return Response(response)
+
+def GetPaletizacao(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "id": {"value": lambda v: Filters.getNumeric(v.get("id")), "field": lambda k, v: f'ppz.{k}'},
+        "of_id": {"value": lambda v: Filters.getNumeric(v.get("of_id")), "field": lambda k, v: f'tof.id'},
+        "po_id": {"value": lambda v: Filters.getNumeric(v.get("po_id")), "field": lambda k, v: f'po.id'},
+    }, True)
     f.where()
-    f.add(f'po.id = :id',True)
+    f.auto()
     f.value()
 
-    dql = db.dql(request.data, False)
+    parameters={**f.parameters}
+    dql = dbgw.dql(request.data, False)
     sql = lambda: (f"""
-        select pa.paletizacao,pl.designacao 
-        from planeamento_ordemproducao po
-        join producao_currentsettings pc on pc.agg_of_id =po.agg_of_id_id
-        JOIN JSON_TABLE(JSON_EXTRACT(fix_json(pc.paletizacao),'$'),'$[*]' COLUMNS(of_id INT PATH '$.of_id',	paletizacao JSON PATH '$.paletizacao')) pa on pa.of_id=po.id
-        JOIN producao_paletizacao pl on pl.id=pa.paletizacao->>'$.id'
+        with tof AS(
+        select tof.id, tof.of_id,tof.core_cod,tof.core_des,tof.item_id,tof.item_cod,tof.order_cod,tof.cliente_nome,tof.cliente_cod,
+        tof.linear_meters,tof.n_paletes,tof.n_paletes_total,tof.qty_encomenda,tof.sqm_bobine, tof.paletizacao_id,tof.emendas_id,tof.agg_of_id from
+        {sgpAlias}.producao_tempordemfabrico tof
+        --where 
+        --not exists (select 1 from {sgpAlias}.planeamento_ordemproducao po where po.draft_ordem_id=tof.id )
+        )
+        select t.* from (
+        SELECT
+        (select json_agg(pd) x from {sgpAlias}.producao_paletizacaodetails pd where tof.paletizacao_id=pd.paletizacao_id) details,
+        ppz.*
+        from tof
+        join {sgpAlias}.producao_tempaggordemfabrico tofa on tofa.id=tof.agg_of_id --and tofa.status = 0
+        left join {sgpAlias}.producao_paletizacao ppz on ppz.id=tof.paletizacao_id
+        left join {sgpAlias}.producao_emendas pe on pe.id=tof.emendas_id
+        left join {sgpAlias}.producao_artigo pa on pa.id=tof.item_id
         {f.text}
-    """)   
+        ) t
+    """)
     try:
-        response = db.executeSimpleList(sql, connection, f.parameters)
-    except Error as error:
+        response = dbgw.executeSimpleList(sql, connection, parameters)
+    except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
@@ -1583,7 +1648,7 @@ def ClosePrf(request, format=None):
         f.add(f'id = :id', True )
         f.value("and")
         response = db.executeSimpleList(lambda: (f"""        
-            select ativa,num_paletes_produzidas,num_paletes_produzir,num_paletes_stock_in,num_paletes_stock from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
+            select ativa,num_paletes_produzidas,num_paletes_produzir,num_paletes_stock_in,num_paletes_stock,was_in_production from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
         """), cursor, f.parameters)
         if len(response["rows"])>0:
             return response["rows"][0]
@@ -1596,7 +1661,7 @@ def ClosePrf(request, format=None):
                 raise Exception("A Prf não existe!")
             if _prf.get("ativa")==0:
                 raise Exception("A Prf não não pode ser fechada!")
-            if _prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock"):
+            if _prf.get("was_in_production")==1 and (_prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock")):
                 raise Exception("Número de paletes da Prf insuficiente!")
             dml = db.dml(TypeDml.UPDATE, {
                 "fim": datetime.now(),
@@ -1604,7 +1669,7 @@ def ClosePrf(request, format=None):
                 "num_paletes_stock":_prf.get("num_paletes_stock_in"),
                 "num_paletes_produzir":_prf.get("num_paletes_produzidas"),
                 "ativa":0,
-                "completa":1
+                "completa": 0 if (_prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock")) else 1
                 }, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
             db.execute(dml.statement, cursor, dml.parameters)
             updateMaterializedView()
@@ -1992,6 +2057,7 @@ def addTempOrdemFabrico(data,agg_id,typeofabrico,cliente_id,artigo_id,produto_id
         'order_cod': data.get('iorder'),
         'prf_cod':data.get('prf'),
         'item_cod': data.get('artigo_cod'),
+        'certificacoes': data.get('artigo_certificacoes'),
         'item_id': artigo_id,
         'produto_id': produto_id,
         'typeofabrico':typeofabrico,
@@ -2123,6 +2189,8 @@ def Validar(request, format=None):
     connection = connections["default"].cursor()
     data = request.data['parameters']
     values = data['values']
+    print(data)
+    print(values)
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -2145,6 +2213,7 @@ def Validar(request, format=None):
                 if (agg_id is None):
                     raise Exception("A ordem de fabrico não foi registada!")
                 id = addTempOrdemFabrico(data,agg_id,values.get('typeofabrico'),cliente_id,artigo_id,produto_id,cp,cursor)
+                updateMaterializedView()
         return Response({"status": "success", "success":f"""Ordem de fabrico validada com sucesso!"""})
     except Error as error:
         print(error)

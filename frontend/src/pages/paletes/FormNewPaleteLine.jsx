@@ -101,7 +101,7 @@ const useStyles = createUseStyles({
 const loadPaletizacao = async (params, signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetPaletizacao" }, signal });
     if (rows && rows.length > 0) {
-        const j = json(rows[0]?.paletizacao);
+        const j = json(rows[0]?.details);
         const cintas_option = CINTASPALETES_OPTIONS.find(v => v.value == j.cintas_palete)?.label;
         return { ...j, designacao: `${j.contentor_id}`, /* designacao: `${j.contentor_id} ${rows[0].designacao}`, */ cintas_option, folha_identificativa: j?.folha_identificativa ? 1 : 0 };
     }

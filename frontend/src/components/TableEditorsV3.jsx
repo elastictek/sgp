@@ -877,7 +877,28 @@ export const LabMetodosTableEditor = ({ ...props }) => {
     />)
 }
 
-export const NwTableEditor = ({ filters, ...props }) => {
+export const NwTableEditor = ({ ...props }) => {
+
+    return (<FieldSelectorEditor
+        {...props}
+        selectorProps={{
+            value: { artigo_id: props?.cellProps?.data?.artigo_id, des: props?.cellProps?.data?.des, cod: props?.cellProps?.data?.cod },
+            title: "Nonwovens",
+            params: { payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup" }, pagination: { enabled: true }, filter: {type:"nonwovens"}, sort: [] } },
+            keyField: ["id"],
+            textField: "des",
+            // detailText={r => r?.cod}
+            columns: [
+                { key: 'cod', name: 'Cód', width: 160 },
+                { key: 'des', name: 'Nome' }
+            ],
+            filters: { fartigo: { type: "any", width: 150, text: "Artigo", autoFocus: true } },
+            moreFilters: {}
+        }}
+    />)
+}
+
+export const NwQueueTableEditor = ({ filters, ...props }) => {
     return (
         <FieldSelectorEditor {...props}
             selectorProps={{
