@@ -347,12 +347,12 @@ const source = (v) => {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput = true }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput = true, ...props }) => {
     const location = useLocation();
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [formFilter] = Form.useForm();
-    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/recicladoloteslist/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { reciclado_id: location?.state?.id }, sort: [] } });
+    const dataAPI = useDataAPI({ payload: { url: `${API_URL}/recicladoloteslist/`, parameters: {}, pagination: { enabled: false, limit: 200 }, filter: { reciclado_id: (props?.parameters?.id) ? props.parameters.id : location?.state?.id }, sort: [] } });
     /*     const [selectedRows, setSelectedRows] = useState(() => new Set());
         const [newRows, setNewRows] = useState([]); */
     const [details, setDetails] = useState();
@@ -418,7 +418,8 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
 
 
     const loadData = async ({ signal } = {}) => {
-        const _details = await loadRecicladoLookup(location?.state?.id, signal);
+        const _id = (props?.parameters?.id) ? props.parameters.id : location?.state?.id; 
+        const _details = await loadRecicladoLookup(_id, signal);
         if (_details.length > 0) {
             setDetails(_details[0]);
             submitting.end();

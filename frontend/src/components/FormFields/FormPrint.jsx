@@ -13,7 +13,8 @@ export const printersList = {
     ADMINISTRATIVO: [{ value: "Canon_iR-ADV_C3720_UFR_II", label: "Canon C3720" }],
     ARMAZEM: [{ value: "PRINTER-ARMAZEM-CANON", label: "Canon Armazém" }],
     SQUIX: [{ value: "cab_SQUIX_6.3_200", label: "SQUIX Armazém" }],
-    BUFFER: [{ value: 'PRINTER-BUFFER', label: 'BUFFER' }]
+    BUFFER: [{ value: 'PRINTER-BUFFER', label: 'BUFFER' }],
+    PRODUCAO: [{ value: "Canon_iR-ADV_C3720_UFR_II", label: "Canon C3720" }]
 };
 
 
@@ -54,7 +55,7 @@ export default ({ v, parentRef, closeParent, printers, url, parameters, numCopia
                     <Space>
                         <Button onClick={closeParent}>Cancelar</Button>
                         {allowDownload && <Button onClick={() => onClick("download")}>Download</Button>}
-                        <Button type="primary" onClick={onClick}>Imprimir</Button>
+                        <Button type="primary" onClick={()=>onClick()}>Imprimir</Button>
                     </Space>
                 </Col>
             </Row>

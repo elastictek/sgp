@@ -1217,6 +1217,7 @@ class Reciclado(models.Model):
     peso = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Peso")
     obs = models.TextField(max_length=500, null=True, blank=True, verbose_name="Observações")
     status = models.PositiveIntegerField(verbose_name="Estado", default=0) #ADDED
+    reported = models.IntegerField(verbose_name="Indica se o reciclado foi sincronizado com o SAGE", null=True) #ADDED
     def __str__(self):
         return self.lote
 

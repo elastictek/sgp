@@ -196,6 +196,8 @@ def Sql(request, format=None):
 
 def PaletesList(request, format=None):
     connection = connections[connGatewayName].cursor()
+    print("filter")
+    print(request.data['filter'])
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
@@ -311,7 +313,7 @@ def PaletesList(request, format=None):
 
 
     parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
-    dql = dbgw.dql(request.data, False)
+    dql = dbgw.dql(request.data, False,False)
     cols = f"""*"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
@@ -324,7 +326,7 @@ def PaletesList(request, format=None):
                 sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
                 sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
                 sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
-                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,sgppl.nok,sgppl.nok_estados,
+                sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,sgppl.nok,sgppl.nok_estados,sgppl.lvl,
                 mol.prf,mol.data_encomenda,mol.item,mol.iorder,mol.matricula,mol.matricula_reboque,mol.modo_exp
             FROM mv_paletes sgppl
             LEFT JOIN mv_ofabrico_list mol on mol.ofabrico=sgppl.ofid
@@ -679,9 +681,10 @@ def UpdateDestinos(request, format=None):
         return None
 
     destinos_has_obs = 0
-    for v in data["values"]["destinos"]["destinos"]:
-        if v["obs"]:
-            destinos_has_obs += 1
+    if data["values"]["destinos"]:
+        for v in data["values"]["destinos"]["destinos"]:
+            if v["obs"]:
+                destinos_has_obs += 1
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
@@ -693,13 +696,19 @@ def UpdateDestinos(request, format=None):
                 ids_o = ','.join(str(x) for x in data["rowsObs"]) 
                 ids_po = ','.join(str(x) for x in data["rowsPropObs"])                    
  
-                dml = db.dml(TypeDml.UPDATE,{
-                    "estado":data["values"].get("destinos").get("estado").get("value"),
-                    "destinos":json.dumps(data["values"]["destinos"]),
-                    "destino":data["values"]["destinoTxt"],
-                    "destinos_has_obs":destinos_has_obs
+                if data["values"]["destinos"]:
+                    dml = db.dml(TypeDml.UPDATE,{
+                        "estado":data["values"].get("destinos").get("estado").get("value"),
+                        "destinos":json.dumps(data["values"]["destinos"]),
+                        "destino":data["values"]["destinoTxt"],
+                        "destinos_has_obs":destinos_has_obs
+                        }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                else:
+                    dml = db.dml(TypeDml.UPDATE,{
+                        "destino":data["values"]["destinoTxt"]
                     }, "producao_bobine",{"id":f'in:{ids_d}'},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
+                    db.execute(dml.statement, cursor, dml.parameters)
 
                 dml = db.dml(TypeDml.UPDATE,{"obs":data["values"]["obs"]},"producao_bobine",{"id":f'in:{ids_o}'},None,False)
                 db.execute(dml.statement, cursor, dml.parameters)
@@ -743,27 +752,28 @@ def DeletePaletesStock(request, format=None):
 
 def CreatePaleteLine(request, format=None):
     data = request.data.get("parameters")
-
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 checkonly=0
-                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),data.get("pesobruto"),data.get("palete_id"),data.get("pesopalete"),checkonly,request.user.id]
+                args = [data.get("action"), json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),data.get("pesobruto"),data.get("palete_id"),data.get("pesopalete"),checkonly,request.user.id]
                 print(args)
                 cursor.callproc('create_palete',args)
+                row = cursor.fetchone()
                 cursor.execute("select * from tmp_paletecheck_report;")
                 report = fetchall(cursor)
-        return Response({"status": "success", "data":report, "title":None})
+        return Response({"status": "success", "data":report, "palete":{"id":row[0],"nome":row[1]}, "title":None})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
-    
+       
 def CheckBobinesPaleteLine(request, format=None):
     data = request.data.get("parameters")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 checkonly=1
-                args = [json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),None,data.get("palete_id"),None,checkonly,None]
+                args = [data.get("action"),json.dumps(data.get("bobines"), ensure_ascii=False), data.get("id"), data.get("nbobines"),data.get("lvl"),None,data.get("palete_id"),None,checkonly,None]
+                print(args)
                 cursor.callproc('create_palete',args)
                 cursor.execute("select * from tmp_paletecheck_report;")
                 report = fetchall(cursor)

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { PALETE_SIZES } from 'config';
 import { isValue } from 'utils';
 import styled from 'styled-components';
+import { produce } from 'immer';
+import { useImmer } from "use-immer";
 
 export const SvgPalete = ({ key, pos, text }) => {
     const { x = 0, y = 20 } = pos;
@@ -27,21 +29,125 @@ export const SvgBobine = ({ key, pos = {} }) => {
 
 }
 
-export const SvgPlacaPlastico = ({ key, pos }) => {
+// export const SvgPlacaPlastico = ({ key, pos }) => {
+//     const { x = 0, y = 20 } = pos;
+//     return (
+//         <g key={key} transform={`translate(${x},${y})`}>
+//             <title>Placa de Plástico</title>
+//             <ellipse stroke="#000000" ry="9.00012" rx="74.50103" cy="9.50082" cx="75.00207" fill="#ffffff" />
+//             <text transform="matrix(1 0 0 1 75 13)" textAnchor="middle">Placa de Plástico</text>
+//         </g>
+//     );
+// }
+
+export const SvgPlacaPlastico = ({ key, pos, text = "Placa de Plástico", ...props }) => {
     const { x = 0, y = 20 } = pos;
+    const objProps = {
+        height: props.height,
+        width: 150,
+        gap: 5,
+        x: 0.25,
+        y: 0.25,
+        strokeWidth: 1
+    }
+
     return (
         <g key={key} transform={`translate(${x},${y})`}>
-            <title>Placa de Plástico</title>
-            <ellipse stroke="#000000" ry="9.00012" rx="74.50103" cy="9.50082" cx="75.00207" fill="#ffffff" />
-            <text transform="matrix(1 0 0 1 75 13)" textAnchor="middle">Placa de Plástico</text>
+            <g>
+                <rect
+                    style={{ display: "inline", fill: "#d9d9d9", fillOpacity: 1, stroke: "#000000", strokeWidth: objProps.strokeWidth, strokeDasharray: "none", strokeOpacity: 1 }}
+                    id="rect2"
+                    width={objProps.width}
+                    height={objProps.height}
+                    x={objProps.x}
+                    y={objProps.y}
+                />
+                <text textAnchor="middle" dominantBaseline="middle" x={objProps.x + objProps.width / 2} y={objProps.y + objProps.height / 2}>Placa de Plástico</text>
+            </g>
         </g>
     );
 }
 
-export const SvgBobines = ({ key, pos, filmeEstiravel = 0, bobinesTxt, onClick, npalete, nbobines }) => {
+
+// export const SvgBobines = ({ key, pos, filmeEstiravel = 0, bobinesTxt, onClick, npalete, nbobines }) => {
+//     const { x = 0, y = 20 } = pos;
+//     return (
+//         <React.Fragment key={key}>
+//             <g transform={`translate(${x},${y})`} style={{ ...onClick && { cursor: "pointer" } }} onClick={() => onClick && onClick(npalete, nbobines)}>
+//                 <title>Bobines</title>
+//                 <path fill="#ffffff" stroke="#000" strokeWidth="2" d="m148.95834,66.83333c0,3.63588 -33.14959,6.58334 -74.04168,6.58334m74.04168,-6.58334l0,0c0,3.63588 -33.14959,6.58334 -74.04168,6.58334c-40.89208,0 -74.04166,-2.94746 -74.04166,-6.58334m0,0l0,0c0,-3.63587 33.14958,-6.58333 74.04166,-6.58333c40.89209,0 74.04168,2.94746 74.04168,6.58333l0,26.33335c0,3.63587 -33.14959,6.58332 -74.04168,6.58332c-40.89208,0 -74.04166,-2.94745 -74.04166,-6.58332l0,-26.33335z" />
+//                 <path fill="#ffffff" stroke="#000" strokeWidth="2" d="m148.95834,36.95833c0,3.63588 -33.14959,6.58334 -74.04168,6.58334m74.04168,-6.58334l0,0c0,3.63588 -33.14959,6.58334 -74.04168,6.58334c-40.89208,0 -74.04166,-2.94746 -74.04166,-6.58334m0,0l0,0c0,-3.63587 33.14958,-6.58333 74.04166,-6.58333c40.89209,0 74.04168,2.94746 74.04168,6.58333l0,26.33335c0,3.63587 -33.14959,6.58332 -74.04168,6.58332c-40.89208,0 -74.04166,-2.94745 -74.04166,-6.58332l0,-26.33335z" />
+//                 <path fill="#ffffff" stroke="#000" strokeWidth="2" d="m148.95834,7.58333c0,3.63588 -33.14959,6.58334 -74.04167,6.58334m74.04167,-6.58334l0,0c0,3.63588 -33.14959,6.58334 -74.04167,6.58334c-40.89208,0 -74.04166,-2.94746 -74.04166,-6.58334m0,0l0,0c0,-3.63587 33.14958,-6.58333 74.04166,-6.58333c40.89208,0 74.04167,2.94746 74.04167,6.58333l0,26.33335c0,3.63587 -33.14959,6.58332 -74.04167,6.58332c-40.89208,0 -74.04166,-2.94745 -74.04166,-6.58332l0,-26.33335z" />
+//                 {bobinesTxt && <text transform="matrix(1 0 0 1 75 60)" textAnchor="middle" fontWeight={800} fontSize="18px">{bobinesTxt}</text>}
+//             </g>
+//             {filmeEstiravel === 1 &&
+//                 <g transform={`translate(${x + 160},${y})`}>
+//                     <title>Filme Estirável</title>
+//                     <line y2="100" x2="10" y1="0" x1="10" stroke="#000000" fill="none" />
+//                     <line y2="0.5007" x2="10.37618" y1="0.5007" x1="0.00104" stroke="#000000" fill="none" />
+//                     <line y2="99.50207" x2="9.75" y1="99.50207" x1="0.00104" stroke="#000000" fill="none" />
+//                     <text transform="matrix(1 0 0 1 55 50)" textAnchor="middle">Filme Estirável</text>
+//                 </g>
+//             }
+//         </React.Fragment>
+//     );
+// }
+
+
+
+export const SvgBobines = ({ key, pos, filmeEstiravel = 0, bobinesTxt, onClick, npalete, nbobines, ...props }) => {
     const { x = 0, y = 20 } = pos;
+    const objProps = {
+        height: props.height / 3, //three elements
+        width: 150,
+        gap: 3,
+        x: 0.25,
+        y: 0.25,
+        strokeWidth: 1
+    }
     return (
         <React.Fragment key={key}>
+
+            <g transform={`translate(${x},${y})`} style={{ ...onClick && { cursor: "pointer" } }} onClick={() => onClick && onClick(npalete, nbobines)}>
+                <g>
+                    <rect
+                        style={{ display: "inline", fill: "#ffffff", fillOpacity: 1, stroke: "#000000", strokeWidth: objProps.strokeWidth, strokeDasharray: "none", strokeOpacity: 1 }}
+                        id="rect1"
+                        width={objProps.width}
+                        height={objProps.height}
+                        x={objProps.x}
+                        y={objProps.y} />
+                    <rect
+                        style={{ display: "inline", fill: "#ffffff", fillOpacity: 1, stroke: "#000000", strokeWidth: objProps.strokeWidth, strokeDasharray: "none", strokeOpacity: 1 }}
+                        id="rect2"
+                        width={objProps.width}
+                        height={objProps.height}
+                        x={objProps.x}
+                        y={objProps.y + (objProps.height) + (objProps.gap)} />
+                    {bobinesTxt && <text textAnchor="middle" dominantBaseline="middle" fontWeight={800} fontSize="18px" x={objProps.x + objProps.width / 2} y={(objProps.y + (objProps.height) + (objProps.gap)) + objProps.height / 2}>{bobinesTxt}</text>}
+                    <rect
+                        style={{ display: "inline", fill: "#ffffff", fillOpacity: 1, stroke: "#000000", strokeWidth: objProps.strokeWidth, strokeDasharray: "none", strokeOpacity: 1 }}
+                        id="rect3"
+                        width={objProps.width}
+                        height={objProps.height}
+                        x={objProps.x}
+                        y={objProps.y + (objProps.height * 2) + (objProps.gap * 2)} />
+                    {/*       <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.7625px;line-height:0;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';stroke-width:0.264583"
+         x="5.4253268"
+         y="12.838924"
+         id="text1969"><tspan
+           id="tspan1967"
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.7625px;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';stroke-width:0.264583"
+           x="5.4253268"
+           y="12.838924">9 Bobines</tspan></text> */}
+                </g>
+            </g>
+
+
+
+            {/* 
             <g transform={`translate(${x},${y})`} style={{ ...onClick && { cursor: "pointer" } }} onClick={() => onClick && onClick(npalete, nbobines)}>
                 <title>Bobines</title>
                 <path fill="#ffffff" stroke="#000" strokeWidth="2" d="m148.95834,66.83333c0,3.63588 -33.14959,6.58334 -74.04168,6.58334m74.04168,-6.58334l0,0c0,3.63588 -33.14959,6.58334 -74.04168,6.58334c-40.89208,0 -74.04166,-2.94746 -74.04166,-6.58334m0,0l0,0c0,-3.63587 33.14958,-6.58333 74.04166,-6.58333c40.89209,0 74.04168,2.94746 74.04168,6.58333l0,26.33335c0,3.63587 -33.14959,6.58332 -74.04168,6.58332c-40.89208,0 -74.04166,-2.94745 -74.04166,-6.58332l0,-26.33335z" />
@@ -57,7 +163,7 @@ export const SvgBobines = ({ key, pos, filmeEstiravel = 0, bobinesTxt, onClick, 
                     <line y2="99.50207" x2="9.75" y1="99.50207" x1="0.00104" stroke="#000000" fill="none" />
                     <text transform="matrix(1 0 0 1 55 50)" textAnchor="middle">Filme Estirável</text>
                 </g>
-            }
+            } */}
         </React.Fragment>
     );
 }
@@ -79,7 +185,7 @@ export const SvgPlacaCartao = ({ key, pos, text = "Placa de Cartão" }) => {
         <g key={key} transform={`translate(${x},${y})`}>
             <title>Placa de Cartão</title>
             <rect stroke="null" height="2" width="150" y="9" x="0" fill="#000000" />
-            {text && <text transform={`matrix(1 0 0 1 -50 13)`} /* fontWeight="bold" */ textAnchor="middle">{text}</text>}
+            {text && <text transform={`matrix(1 0 0 1 -50 13)`} textAnchor="middle">{text}</text>}
         </g>
     );
 }
@@ -141,9 +247,14 @@ const Group = styled.g`
     }
 `;
 
-export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, width = "100%", height, heightPercentage = 1, viewBox, reverse = false, onClick }) => {
-    const [elements, setElements] = useState([]);
-    const [totalHeight, setTotalHeight] = useState(0);
+export default ({ vGap = 2, data, changedValues, x = 200, width = "100%", height, heightPercentage = 1, viewBox, reverse = false, onClick }) => {
+    // const [elements, setElements] = useState([]);
+    // const [totalHeight, setTotalHeight] = useState(0);
+    const [state, updateState] = useImmer({
+        totalHeight: 0,
+        elements: [],
+        paletes_sobrepostas: 0
+    });
 
     const compute = (els, currentPosY = 0) => {
         for (const v of els) {
@@ -155,36 +266,7 @@ export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, wid
     }
 
     useEffect(() => {
-        let data = {};
-        if (_data){
-            data = _data;
-        }else if (items) {
-            // let itms;
-            // if ("paletizacao" in items) {
-            //     if ("details" in items?.paletizacao) {
-            //         itms = items?.paletizacao?.details.sort((a, b) => b.item_order - a.item_order);
-            //         data = {
-            //             paletizacao: itms, cintas: items?.paletizacao.cintas, ncintas: items?.paletizacao.ncintas, filmeestiravel_bobines: items?.paletizacao.filmeestiravel_bobines,
-            //             filmeestiravel_exterior: items?.paletizacao.filmeestiravel_exterior
-            //         }
-            //     } else {
-            //         itms = items?.paletizacao?.sort((a, b) => b.item_order - a.item_order);
-            //         data = { paletizacao: itms, cintas: items.cintas, ncintas: items.ncintas, filmeestiravel_bobines: items.filmeestiravel_bobines, filmeestiravel_exterior: items.filmeestiravel_exterior }
-            //     }
-
-            // } else {
-            //     itms = items?.details?.sort((a, b) => b.item_order - a.item_order);
-            //     data = { paletizacao: itms, cintas: items.cintas, ncintas: items.ncintas, filmeestiravel_bobines: items.filmeestiravel_bobines, filmeestiravel_exterior: items.filmeestiravel_exterior }
-            // }
-
-        } else {
-            console.log(form.getFieldsValue(true));
-            data = { ...form.getFieldsValue(true) };
-            //data = { paletizacao: !form.getFieldValue(["paletizacao"]), cintas: form.getFieldValue(["cintas"]), ncintas: form.getFieldValue(["ncintas"]), filmeestiravel_bobines: form.getFieldValue(["filmeestiravel_bobines"]), filmeestiravel_exterior: form.getFieldValue(["filmeestiravel_exterior"]) }
-        }
-        if (!data.details) {
-            setElements([]);
-        } else {
+        if (data?.details) {
             let els = [];
             let npaletes = 0;
             const cintas = isValue(data.cintas, undefined, 0);
@@ -201,7 +283,7 @@ export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, wid
                         groupsLvl[groupsLvl.length - 1].push({ obj: SvgPalete, x, height: 25, text: `Palete ${PALETE_SIZES.find(p => p.key == v.item_paletesize).value}`, item_order: v.item_order, item_id: v.item_id });
                         break;
                     case 2:
-                        groupsLvl[groupsLvl.length - 1].push({ obj: SvgBobines, x, height: 100, filmeEstiravel: isValue(data.filmeestiravel_bobines, undefined, 0), item_numbobines:v.item_numbobines, bobinesTxt: `${v.item_numbobines} Bobine(s)`, item_order: v.item_order, item_id: v.item_id });
+                        groupsLvl[groupsLvl.length - 1].push({ obj: SvgBobines, x, height: 70, filmeEstiravel: isValue(data.filmeestiravel_bobines, undefined, 0), item_numbobines: v.item_numbobines, bobinesTxt: `${v.item_numbobines} Bobine(s)`, item_order: v.item_order, item_id: v.item_id });
                         break;
                     case 3:
                         groupsLvl[groupsLvl.length - 1].push({ obj: SvgPlacaCartao, x, height: 15, item_order: v.item_order, item_id: v.item_id });
@@ -210,7 +292,7 @@ export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, wid
                         groupsLvl[groupsLvl.length - 1].push({ obj: SvgPlacaMDF, x, height: 5, item_order: v.item_order, item_id: v.item_id });
                         break;
                     case 5:
-                        groupsLvl[groupsLvl.length - 1].push({ obj: SvgPlacaPlastico, x, height: 10, item_order: v.item_order, item_id: v.item_id });
+                        groupsLvl[groupsLvl.length - 1].push({ obj: SvgPlacaPlastico, x, height: 15, item_order: v.item_order, item_id: v.item_id });
                         break;
                     case 6:
                         groupsLvl[groupsLvl.length - 1].push({ obj: SvgCantoneira, x, height: 10, item_order: v.item_order, item_id: v.item_id });
@@ -218,13 +300,6 @@ export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, wid
                     case 7:
                         groupsLvl[groupsLvl.length - 1].push({ obj: SvgCutHere, x, height: 10, item_order: v.item_order, item_id: v.item_id });
                         break;
-                }
-            }
-            if (form) {
-                if (npaletes > 1) {
-                    form.setFieldsValue({ paletes_sobrepostas: 1 });
-                } else {
-                    form.setFieldsValue({ paletes_sobrepostas: 0 });
                 }
             }
             let _posY = 0;
@@ -235,23 +310,27 @@ export default ({ vGap = 2, form, items, data:_data, changedValues, x = 200, wid
                     g.reverse();
                 }
             }
-            setTotalHeight(_posY);
-            setElements(groupsLvl);
+            updateState(draft => {
+                draft.totalHeight = _posY;
+                draft.elements = groupsLvl;
+                draft.paletes_sobrepostas = (npaletes > 1) ? 1 : 0;
+            });
         }
-    }, [changedValues, JSON.stringify(items)]);
+    }, []);
+
     return (
-        <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : (totalHeight * heightPercentage) + 50} viewBox={viewBox ? viewBox : `0 0 480 ${(totalHeight * heightPercentage) + 50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
-            {isValue((items) ? items.filmeestiravel_exterior : form.getFieldValue("filmeestiravel_exterior"), undefined, 0) === 1 && <g transform={`translate(${x - 100},${0})`}>
+        <svg preserveAspectRatio="xMidYMid meet" width={width} height={height ? height : (state.totalHeight * heightPercentage) + 50} viewBox={viewBox ? viewBox : `0 0 480 ${(state.totalHeight * heightPercentage) + 50}`} id="svg" xmlns="http://www.w3.org/2000/svg">
+            {state.paletes_sobrepostas === 1 && <g transform={`translate(${x - 100},${0})`}>
                 <title>Filme Estirável</title>
-                <line id="svg_10" y2={(totalHeight)} x2="300" y1="-10" x1="300" stroke="#000000" fill="none" />
+                <line id="svg_10" y2={(state.totalHeight)} x2="300" y1="-10" x1="300" stroke="#000000" fill="none" />
                 <line id="svg_11" y2="-10.5007" x2="300" y1="-10.5007" x1="290" stroke="#000000" fill="none" />
-                <line id="svg_12" y2={(totalHeight)} x2="300" y1={(totalHeight)} x1="290" stroke="#000000" fill="none" />
-                <text x="311" y={(totalHeight) / 2} transform={`rotate(90, 311, ${(totalHeight) / 2})`} strokeWidth="2" textAnchor="middle">Filme Estirável</text>
+                <line id="svg_12" y2={(state.totalHeight)} x2="300" y1={(state.totalHeight)} x1="290" stroke="#000000" fill="none" />
+                <text x="311" y={(state.totalHeight) / 2} transform={`rotate(90, 311, ${(state.totalHeight) / 2})`} strokeWidth="2" textAnchor="middle">Filme Estirável</text>
             </g>
             }
-            {elements.map((v, i) => <Group key={`gsvg-${i}`} {...onClick && { onClick: () => onClick(v,elements.length - i) }}>
+            {state.elements.map((v, i) => <Group key={`gsvg-${i}`} {...onClick && { onClick: () => onClick(v, state.elements.length - i) }}>
 
-                {v.map((x, k) => x.obj({ key: `svg-${k}`, ...x, elements, idx: k }))}
+                {v.map((x, k) => x.obj({ key: `svg-${k}`, ...x, elements: state.elements, idx: k }))}
 
 
             </Group>

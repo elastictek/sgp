@@ -10,7 +10,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 import { uid } from 'uid';
-import { API_URL,ROOT_URL } from "config";
+import { API_URL, ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { orderObjectKeys, json } from "utils/object";
@@ -23,7 +23,7 @@ const { Title } = Typography;
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT, ENROLAMENTO_OPTIONS } from 'config';
+import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT, ENROLAMENTO_OPTIONS, DATE_FORMAT_NO_SEPARATOR } from 'config';
 import uuIdInt from "utils/uuIdInt";
 import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";
@@ -32,12 +32,11 @@ import { Cores } from 'components/EditorsV3';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { ObsTableEditor } from 'components/TableEditorsV3';
+import { ObsTableEditor, NwTableEditor,InputTableEditor } from 'components/TableEditorsV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
-import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Favourite, IndexChange, TextAreaViewer } from "components/TableColumns";
+import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Favourite, IndexChange, TextAreaViewer, NwColumn } from "components/TableColumns";
 import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
-import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { MediaContext, AppContext } from 'app';
 import FormulacaoReadOnly from '../formulacao/FormulacaoReadOnly';
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
@@ -75,6 +74,20 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     return (
         <Toolbar left={leftContent} right={rightContent} />
     );
+}
+
+const rowSchema = (options = {}) => {
+    return getSchema({
+        // "matprima_des":
+        //     Joi.alternatives(
+        //         Joi.string(),
+        //         Joi.object().keys({
+        //             ITMREF_0: Joi.string().label("Matéria Prima").required()//alternatives().try(Joi.string(), Joi.number(), Joi.boolean())
+        //         }).unknown(true)).label("Matéria Prima").required(),
+        //"designacao": Joi.string().label("Designação").required(),
+        //"cliente_nome": Joi.string().label("Cliente").required(),
+        //"des": Joi.string().label("Artigo").required()
+    }, options).unknown(true);
 }
 
 export const loadFormulacaoPlan = async ({ agg_of_id }, signal) => {
@@ -126,9 +139,9 @@ export default ({ operationsRef, ...props }) => {
         );
     }, [modalParameters]);
 
-    const onOpenFormulacao = (e,formulacao_id) => {
+    const onOpenFormulacao = (e, formulacao_id) => {
         e.stopPropagation();
-        newWindow(`${ROOT_URL}/app/ofabrico/formulacaoreadonly`,{formulacao_id},"formulacao");
+        newWindow(`${ROOT_URL}/app/ofabrico/formulacaoreadonly`, { formulacao_id }, "formulacao");
         //setModalParameters({ content: "formulacao", type: "drawer", width: "95%", title: "Formulação", push: false, loadData: () => dataAPI.fetchPost(), parameters: { ...formulacao_id ? { formulacao_id } : { new: true } } });
         //showModal();
     }
@@ -142,7 +155,7 @@ export default ({ operationsRef, ...props }) => {
                 toolbar: true,
                 pagination: true,
                 columns: [
-                    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, defaultWidth: 390, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e,data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
+                    ...(true) ? [{ name: 'designacao', header: 'Designação', userSelect: true, defaultLocked: true, defaultWidth: 390, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e, data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
                     ...(true) ? [{ name: 'group_name', header: 'Grupo', userSelect: true, defaultLocked: false, defaultWidth: 170 }] : [],
                     ...(true) ? [{ name: 'subgroup_name', header: 'SubGrupo', userSelect: true, defaultLocked: false, defaultWidth: 170 }] : [],
                     ...(true) ? [{ name: 'versao', header: 'Versão', userSelect: true, defaultLocked: false, defaultWidth: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
@@ -199,7 +212,7 @@ export default ({ operationsRef, ...props }) => {
         // }
     }
     const columnEditable = (v, { data, name }) => {
-        if (["observacoes"].includes(name) && mode.datagrid.edit) {
+        if (["observacoes", "nw_inf", "nw_sup","designacao"].includes(name) && mode.datagrid.edit) {
             return true;
         }
         return false;
@@ -209,7 +222,7 @@ export default ({ operationsRef, ...props }) => {
         // if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
         //     return tableCls.error;
         // }
-        if (["observacoes"].includes(name) && mode.datagrid.edit) {
+        if (["observacoes", "nw_inf", "nw_sup","designacao"].includes(name) && mode.datagrid.edit) {
             return tableCls.edit;
         }
     };
@@ -217,12 +230,12 @@ export default ({ operationsRef, ...props }) => {
     const columns = [
         ...(true) ? [{ name: 'idx', header: 'Index', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 70, render: ({ data, cellProps }) => <IndexChange onDelete={onDelete} onUp={onUp} onDown={onDown} value={data?.idx} modeEdit={mode.datagrid.edit} allowDelete cellProps={cellProps} /> }] : [],
         ...(true) ? [{ name: 'versao', header: 'Versão', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 90, render: (p) => <div style={{}}>{p.data?.versao}</div> }] : [],
-        ...(true) ? [{ name: 'designacao', header: 'Designação', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 390, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e,data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
-        ...(true) ? [{ name: 'inf_des', header: 'Nonwoven Inferior', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'sup_des', header: 'Nonwoven Superior', editable: columnEditable, renderEditor: (props) => <ArtigosTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => cellProps.inEdit ? <></> : <div>{data?.cod} <span style={{ fontWeight: 700 }}>{data?.des}</span></div>, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'designacao', header: 'Designação', headerAlign: "center", userSelect: true, defaultLocked: true, defaultWidth: 390, editable: columnEditable, cellProps: { className: columnClass }, renderEditor: (props) => <InputTableEditor inputProps={{}} {...props} />, render: ({ data }) => <Link onClick={(e) => onOpenFormulacao(e, data?.id)} /* onClick={() => navigate('/app/ofabrico/formulacao', { state: { formulacao_id: data?.id, tstamp: Date.now() } })} */ value={data?.designacao} /> }] : [],
+        ...(true) ? [{ name: 'nw_inf', header: 'Nonwoven Inferior', editable: columnEditable, renderEditor: (props) => <NwTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ data, cellProps }) => <NwColumn data={{ artigo_cod: data?.nw_cod_inf, artigo_des: data?.nw_des_inf }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'nw_sup', header: 'Nonwoven Superior', editable: columnEditable, renderEditor: (props) => <NwTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, render: ({ data, cellProps }) => <NwColumn data={{ artigo_cod: data?.nw_cod_sup, artigo_des: data?.nw_des_sup }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 2, headerAlign: "center" }] : [],
         ...(true) ? [{ name: "observacoes", header: "Observações", headerAlign: "center", userSelect: true, defaultLocked: false, defaultWidth: 420, editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass } }] : [],
-        ...(true) ? [{ name: 'created_date', header: 'Data Criação', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.created_date).format(DATETIME_FORMAT)}</div> }] : [],
-        ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: (p) => <div style={{}}>{dayjs(p.data?.updated_date).format(DATETIME_FORMAT)}</div> }] : []
+        ...(true) ? [{ name: 'created_date', header: 'Data Criação', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: ({ data, cellProps }) => <DateTime cellProps={cellProps} value={data?.created_date} /> }] : [],
+        ...(true) ? [{ name: 'updated_date', header: 'Data Alteração', headerAlign: "center", userSelect: true, defaultLocked: false, minWidth: 170, render: ({ data, cellProps }) => <DateTime cellProps={cellProps} value={data?.updated_date} /> }] : []
     ];
 
     const postProcess = async (dt, submitting) => { }
@@ -242,8 +255,20 @@ export default ({ operationsRef, ...props }) => {
         const index = rowIndex;
         if (index >= 0) {
             let _rows = [];
-            _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
+            if (columnId === "nw_inf") {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.ITMREF_0, nw_cod_inf: value?.ITMREF_0, nw_des_inf: value?.ITMDES1_0 });
+                console.log("xxxxxxx->", _rows)
+            } else if (columnId === "nw_sup") {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value?.ITMREF_0, nw_cod_sup: value?.ITMREF_0, nw_des_sup: value?.ITMDES1_0 });
+            } else {
+                _rows = dataAPI.updateValues(index, columnId, { [columnId]: value });
+            }
+            dataAPI.validateRows(rowSchema, {}, {}, _rows);
         }
+    }
+    const onEditCancel = async () => {
+        await loadData();
+        return false;
     }
 
     const onCellAction = (data, column, key) => {
@@ -255,22 +280,73 @@ export default ({ operationsRef, ...props }) => {
         }
     }
 
-    const onSave = async () => {
-        let response = null;
-        try {
-            response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { agg_of_id: inputParameters.current.agg_of_id }, parameters: { method: "SaveFormulacaoPlan", rows: dataAPI.getData().rows } });
-            if (response.data.status !== "error") {
-                props.loadParentData();
-                openNotification(response.data.status, 'top', "Notificação", response.data.title);
-            } else {
-                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
-            }
-        }
-        catch (e) {
-            console.log(e)
-            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+
+    const onSave = async (type) => {
+        //const rows = dataAPI.dirtyRows().map(({ id, group }) => ({ artigo_id: id, group }));
+        const rows = dataAPI.dirtyRows();
+        if (rows && rows.length > 0) {
+            submitting.trigger();
+            let response = null;
+            try {
+                const status = dataAPI.validateRows(rowSchema); //Validate all rows
+                const msg = dataAPI.getMessages();
+                if (status.errors > 0) {
+                    openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
+                } else {
+                    response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { agg_of_id: inputParameters.current.agg_of_id }, parameters: { method: "SaveNwsPlan", rows: dataAPI.getData().rows } });
+                    if (response.data.status !== "error") {
+                        props.loadParentData();
+                        openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                    } else {
+                        openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                    }
+                }
+            } catch (e) {
+                console.log(e)
+                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            } finally {
+                submitting.end();
+            };
         }
     }
+
+    const onAddSave = async (type) => {
+        const rows = dataAPI.dirtyRows();
+        if (rows && rows.length > 0) {
+            submitting.trigger();
+            let response = null;
+            try {
+                // const status = dataAPI.validateRows(rowSchema); //Validate all rows
+                // const msg = dataAPI.getMessages();
+                // if (status.errors > 0) {
+                //     openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
+                // } else {
+                //     if (bulkLoad.current === true) {
+                //         response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabBulkParameter", rows } });
+                //     } else {
+                //         response = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "NewLabParameter", data: excludeObjectKeys(rows[0], ["id", "rowadded", "rowvalid"]) } });
+                //     }
+                //     if (response.data.status !== "error") {
+                //         dataAPI.setAction("load", true);
+                //         dataAPI.update(true);
+                //         setMode((prev) => ({ ...prev, datagrid: { ...mode?.datagrid, add: false } }));
+                //         openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                //     } else {
+                //         openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                //     }
+                // }
+            } catch (e) {
+                console.log(e)
+                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            } finally {
+                submitting.end();
+            };
+        }
+    }
+    const onAdd = (cols) => {
+        dataAPI.addRow({ ...cols, idx: dataAPI.getLength() + 1 }, null);
+    }
+
 
 
     return (
@@ -317,14 +393,17 @@ export default ({ operationsRef, ...props }) => {
                                 // }}
                                 editable={{
                                     enabled: permission.isOk({ forInput: [!submitting.state, props?.editParameters?.isEditable(false)], ...PERMISSION }),
-                                    add: false,
+                                    add: permission.isOk({ forInput: [!submitting.state], action: "edit" }),
+                                    onAdd: onAdd, onAddSave: onAddSave,
+                                    onSave: () => onSave("update"), onCancel: onEditCancel,
+                                    modeKey: "datagrid", setMode, mode, onEditComplete,
                                     controls: false,
                                     /* onAdd: onAdd, onAddSave: onAddSave, */
                                     //onSave: () => onSave("update"), onCancel: onEditCancel,
                                     modeKey: "datagrid", /* setMode, */ mode: { datagrid: { edit: mode.datagrid.edit } }, onEditComplete
                                 }}
                                 leftToolbar={<Space style={{ alignSelf: "center" }}>
-                                    <Permissions permissions={permission} {...PERMISSION} forInput={[mode.datagrid.edit, props?.editParameters?.isEditable(false)]}><Button onClick={onSelectFormulacao}>Adicionar Formulação</Button></Permissions>
+                                    <Permissions permissions={permission} {...PERMISSION} forInput={[mode.datagrid.edit, props?.editParameters?.isEditable(false)]}><Button onClick={() => onAdd({})}>Adicionar</Button></Permissions>
                                 </Space>}
 
 

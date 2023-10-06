@@ -130,6 +130,49 @@ def PrintNwsEtiquetas(request,format=None):
         #os.unlink(tmp.name)
     return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
+def PrintPaleteEtiqueta(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    data = request.data["parameters"]
+    tmp = tempfile.NamedTemporaryFile()
+    print(tmp)
+    print(tmp.name)
+    print("----")
+    print(data)
+    tstamp = datetime.now()
+
+    fstream = requests.post('http://localhost:8080/ReportsGW/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":data.get("name"),
+        "path":data.get("path"),
+        "export":"pdf",
+        "data":{      
+            "tstamp":tstamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "palete_id":67823 #data.get("id")
+        }
+    })
+    try:
+        if "download" in data:
+            return download_file_stream(fstream,f"""PALETE-{data.get("palete_nome")}""","application/pdf")
+        else:
+            print(tmp.name)
+            tmp.write(fstream.content)
+            #TO UNCOMMENT ON PRODUCTION
+            conn = cups.Connection()
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            # ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -299,5 +342,3 @@ def PrintReciclado(request,format=None):
     return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
 
-
-#endregion

@@ -158,29 +158,31 @@ export const getFilters = ({ columns, filterdrawer = false }) => {
     if (!columns) return [];
     const _toolbar = (v) => (!filterdrawer && (v?.filter?.show === 'toolbar'));
     const _morefilters = (v) => (filterdrawer && !(v?.filter?.show === false));
-    return columns?.map(v =>
-    (
-        <React.Fragment key={`tf-${v?.name ? v?.name : v?.id}`}>
-            {(_morefilters(v) || _toolbar(v)) && <Col xs={v?.filter?.width ? v?.filter?.width : "content"} style={{ marginRight: "2px" }}>
-                <Field name={`f${v?.name ? v?.name : v?.id}`} label={{ enabled: true, text: v?.header, pos: "top", padding: "0px", ...v?.filter?.label }}>
-                    {(typeof v?.filter?.type === 'function') ? v.filter.type() :
-                        {
-                            autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            number: <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />,
-                            inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                            datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />
-                        }[v?.filter?.type] || <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />
+    return columns?.map(v => {
+        const name = `${(!v?.filter?.prefix && v?.filter?.prefix !== '') ? 'f' : ''}${v?.filter?.alias ? v?.filter?.alias : (v?.name ? v?.name : v?.id)}`;
+        return (
+            <React.Fragment key={`tf-${name}`}>
+                {(_morefilters(v) || _toolbar(v)) && <Col xs={v?.filter?.width ? v?.filter?.width : "content"} style={{ marginRight: "2px" }}>
+                    <Field name={`${name}`} label={{ enabled: true, text: v?.header, pos: "top", padding: "0px", ...v?.filter?.label }}>
+                        {(typeof v?.filter?.type === 'function') ? v.filter.type() :
+                            {
+                                autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                number: <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />,
+                                inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
+                                datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />
+                            }[v?.filter?.type] || <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />
 
-                    }
+                        }
 
-                </Field>
-            </Col>}
-        </React.Fragment>)
+                    </Field>
+                </Col>}
+            </React.Fragment>);
+    }
     );
 }
 export const getMoreFilters = ({ columns }) => getFilters({ columns, filterdrawer: true });
@@ -194,7 +196,7 @@ export const getFiltersValues = ({ columns, values, server = false }) => {
         //{"value": lambda v: Filters.getNumeric(v.get('fdiam_avg')), "field": lambda k, v: f'sgppl.{k}'},
 
         columns.forEach((v) => {
-            const fname = `f${v?.name ? v?.name : v?.id}`;
+            const fname = `${(!v?.filter?.prefix && v?.filter?.prefix !== '') ? 'f' : ''}${v?.filter?.alias ? v?.filter?.alias : (v?.name ? v?.name : v?.id)}`;
             const name = v?.name ? v?.name : v?.id;
             switch (v?.filter?.type) {
                 case "number": console.log(`"${name}":{"value": lambda v: Filters.getNumeric(v.get('${fname}')), "field": lambda k, v: f'{k}'},`); break;
@@ -212,7 +214,7 @@ export const getFiltersValues = ({ columns, values, server = false }) => {
     }
 
     columns.forEach((v) => {
-        const fname = `f${v?.name ? v?.name : v?.id}`;
+        const fname = `${(!v?.filter?.prefix && v?.filter?.prefix !== '') ? 'f' : ''}${v?.filter?.alias ? v?.filter?.alias : (v?.name ? v?.name : v?.id)}`;
         if (!v?.filter?.op && !(["rangetime", "rangedate", "rangedatetime"].includes(v?.filter?.type))) {
             return;
         }

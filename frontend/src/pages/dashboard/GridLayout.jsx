@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Suspense, lazy, useContext } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
-import { API_URL, ROOT_URL, SOCKET } from "config";
+import { API_URL, ROOT_URL, SOCKET, LOGIN_URL, LOGOUT_URL } from "config";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import dayjs from 'dayjs';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -1049,9 +1049,9 @@ export default (props) => {
                     break;
                 case 'logout':
                     try {
-                        let response = await fetchPost({ url: `${ROOT_URL}/users/logout-/`, parameters: {} });
+                        let response = await fetchPost({ url: LOGOUT_URL, parameters: {} });
                         if (response.status === 200) {
-                            window.location.href = `${ROOT_URL}/users/login/`;
+                            window.location.href = LOGIN_URL;
                         }
                     } catch (e) {
                         Modal.error({

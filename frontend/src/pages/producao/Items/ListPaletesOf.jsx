@@ -164,7 +164,7 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
 
     return (<>
         <Table
-            {...mini && { style: { fontSize: "10px", minHeight: "170px" } }}
+            {...mini && { style: { fontSize: "10px", minHeight: "192px" } }}
             {...mini && { rowHeight: 25 }}
             //rowHeight={null}
             headerHeight={25}

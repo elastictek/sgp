@@ -706,6 +706,7 @@ def BobinesLookup(request, format=None):
     f.setParameters({
         "id": {"value": lambda v: v.get('bobine_id'), "field": lambda k, v: f'mb.{k}'},
         "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get("fbobinagemid")), "field": lambda k, v: f'mb.{k}'},
+        "palete_id": {"value": lambda v: Filters.getNumeric(v.get("fpaleteid")), "field": lambda k, v: f'mb.{k}'},
         "comp_actual": {"value": lambda v: '>0', "field": lambda k, v: f'mb.{k}'},
         "recycle": {"value": lambda v: '==0', "field": lambda k, v: f'mb.{k}'},
         **({} if type_list =='C' else {}),

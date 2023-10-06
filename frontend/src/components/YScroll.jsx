@@ -1,10 +1,13 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled,{css} from 'styled-components';
 
 const YScroll = styled.div`
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
-    height:100%;
+    /*height:100%;*/
+    ${props => props.maxHeight && css`max-height: ${props.maxHeight};`}
+    ${props => props.height && css`height: ${props.height};`}
+    ${props => props.width && css`width: ${props.width};`}
     overflow-y:auto;
     overflow-x:hidden;
     -webkit-mask-image:linear-gradient(180deg,rgba(255,0,0,.1) 0 7.5px calc(100%-7.5px),rgba(255,0,0,.1));
@@ -30,6 +33,6 @@ const YScroll = styled.div`
     }    
 `;
 
-export default React.forwardRef(({ children }, ref) => (
-  <YScroll ref={ref}>{children}</YScroll>
+export default React.forwardRef(({ children, ...props }, ref) => (
+  <YScroll ref={ref} {...props} >{children}</YScroll>
 ));

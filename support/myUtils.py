@@ -30,11 +30,9 @@ def download_file_stream(stream,prefix,mime_type):
     dt = datetime.now().strftime("%Y%m%d-%H%M%S")
     filename = f'{prefix}_{dt}'
     response =  FileResponse(stream, content_type=mime_type)
-    # print("uuuuuuuuuuu")
-    # print(response)
-    # with open("c:\\PESSOAL\\teste.pdf", 'wb') as file:
-    #     for chunk in response.streaming_content:
-    #         file.write(chunk)
+    #with open("c:\\PESSOAL\\teste.pdf", 'wb') as file:
+    #    for chunk in response.streaming_content:
+    #        file.write(chunk)
     # # Set the HTTP header for sending to browser
     response['Content-Disposition'] = "inline; filename=%s" % filename
     return response

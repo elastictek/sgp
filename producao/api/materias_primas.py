@@ -289,48 +289,82 @@ def GetGranuladoLoteQuantity(request, format=None):
     else:
         return Response({"status": "error", "title": "O lote de Granulado não se enconta em buffer!", "subTitle":f'{None}',"row":{"qty_lote":0, "unit":values[3], "n_lote":values[1]}})
 
+def GetGranuladoLoteQuantityV2(request, format=None):
+    conngw = connections[connGatewayName].cursor()
+    sageAlias = dbgw.dbAlias.get("sage")
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    vcr = request.data['filter'].get("value")
+    artigo_cod = request.data['filter'].get("artigo_cod")
+    rows = dbgw.executeSimpleList(lambda:(f"""
+        with GRP as(
+            select grp."group",grp.artigo_cod from "SGP-PROD".group_materiasprimas grp where grp."group" in (
+                select tmp."group" from "SGP-PROD".group_materiasprimas tmp where tmp.artigo_cod = '{artigo_cod}'
+            )
+        )
+        SELECT t.*,gmp.group FROM(
+        SELECT
+            ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",mprima."ITMDES1_0" artigo_des,
+            LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) "QTYPCU_0",
+            --SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+            ST."PCU_0",mprima."ITMDES1_0"
+            FROM {sageAlias}."STOCK" STK
+            JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            WHERE ST."LOC_0" = 'BUFFER' AND ST."QTYPCU_0" > 0 AND ST."VCRNUM_0"='{vcr}'
+        ) t
+        left join GRP gmp on gmp.artigo_cod=t."ITMREF_0"
+        where ("QTYPCU_0" > 0)        
+        AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesgranuladolinha ll where ll.vcr_num = t."VCRNUM_0")
+    """),conngw,{})["rows"]
+    if len(rows)>0:
+        if rows[0].get("group")==None and rows[0].get("ITMREF_0")!=artigo_cod:
+            return Response({"status": "error", "title": "O lote não pode ser utilizado em linha!", "row":{}})
+        return Response({"status": "success","row":{"lote_id":rows[0]["lote_id"],"date":rows[0]["CREDATTIM_0"], "artigo_des":rows[0]["artigo_des"], "artigo_cod":rows[0]["ITMREF_0"], "qty_lote":rows[0]["QTYPCU_0"], "vcr_num": rows[0]["VCRNUM_0"], "unit":rows[0]["PCU_0"], "n_lote":rows[0]["LOT_0"] }})
+    else:
+        return Response({"status": "error", "title": "O lote não pode ser utilizado em linha!", "row":{}})
+
 def AddGranuladoToLine(request, format=None):
-    filter = request.data['filter']
+    f = request.data['parameters'].get("row") if request.data['filter'].get("artigo_cod") is None else request.data['filter']
     try:
         with connections["default"].cursor() as cursor:
-            filter["t_stamp"]=datetime.now()
-            args = (filter["t_stamp"], filter["artigo_cod"], filter["artigo_des"], filter["vcr_num"], filter["n_lote"], filter["qty_lote"], filter["lote_id"],filter["group_id"] if "group_id" in filter and filter["group_id"] is not None else None,request.user.id,0)
+            f["t_stamp"]=datetime.now()
+            args = (f["t_stamp"], f["artigo_cod"], f["artigo_des"], f["vcr_num"], f["n_lote"], f["qty_lote"], f["lote_id"],f["group_id"] if "group_id" in f and f["group_id"] is not None else None,request.user.id,0)
             cursor.callproc('add_granulado_to_line',args)
             return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def RemoveGranuladoFromLine(request, format=None):
-    filter = request.data['filter']
+    f = request.data['parameters'].get("row") if request.data['filter'].get("vcr_num") is None else request.data['filter']
     try:
         with connections["default"].cursor() as cursor:
-            filter["t_stamp"]=datetime.now()
-            args = (filter["t_stamp"],filter["vcr_num"],filter["qty_reminder"] if "qty_reminder" in filter else 0,filter["obs"] if "obs" in filter else None,request.user.id, 0)
+            f["t_stamp"]=datetime.now()
+            args = (f["t_stamp"],f["vcr_num"],f["qty_reminder"] if "qty_reminder" in f else 0,f["obs"] if "obs" in f else None,request.user.id, 0)
             cursor.callproc('output_granulado_from_line',args)
             return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def RemoveDoserFromLine(request, format=None):
-    filter = request.data['filter']
+    f = request.data['parameters'].get("row") if request.data['filter'].get("vcr_num") is None else request.data['filter']
     try:
         with connections["default"].cursor() as cursor:
-            filter["t_stamp"]=datetime.now()
-            for v in filter.get("dosers").split(","):
-                filter["t_stamp"]=datetime.now()
-                args = (filter.get("t_stamp"), filter.get("artigo_cod"),filter["vcr_num"],filter["n_lote"],filter.get("cuba"),v,request.user.id)
+            f["t_stamp"]=datetime.now()
+            for v in f.get("dosers").split(","):
+                f["t_stamp"]=datetime.now()
+                args = (f.get("t_stamp"), f.get("artigo_cod"),f["vcr_num"],f["n_lote"],f.get("cuba"),v,request.user.id)
                 cursor.callproc('remove_doser_from_line',args)
             return Response({"status": "success","title":"Saída de doseador efetuado com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def AddDoserToLine(request, format=None):
-    filter = request.data['filter']
+    f = request.data['parameters'].get("row") if request.data['filter'].get("artigo_cod") is None else request.data['filter']
     try:
         with connections["default"].cursor() as cursor:
-            filter["t_stamp"]=datetime.now()
-            for v in filter.get("dosers").split(","):
-                args = (filter.get("t_stamp"), filter.get("artigo_cod"),filter.get("cuba"),v,request.user.id)
+            f["t_stamp"]=datetime.now()
+            for v in f.get("dosers").split(","):
+                args = (f.get("t_stamp"), f.get("artigo_cod"),f.get("cuba"),v,request.user.id)
                 cursor.callproc('add_doser_to_line',args)
             return Response({"status": "success","title":"Entrada de doseador efetuado com sucesso." })
     except Exception as error:
@@ -344,7 +378,7 @@ def MateriasPrimasLookup(request, format=None):
     f.setParameters({}, False)
     f.where()
     f.value("and")
-    
+
     f2 = filterMulti(request.data['filter'], {
         'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'mprima.'}
     }, False, "and" if f.hasFilters else "where" ,False)
@@ -455,6 +489,31 @@ def inProduction(data,cursor):
             return response["rows"][0]
         return None
 
+def GetNWLoteQuantity(request, format=None):
+    conngw = connections[connGatewayName].cursor()
+    sageAlias = dbgw.dbAlias.get("sage")
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    vcr = request.data['filter'].get("value")
+    
+    rows = dbgw.executeSimpleList(lambda:(f"""
+        SELECT t.* FROM(
+        SELECT
+            ST."ROWID" lote_id,ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",mprima."ITMDES1_0" artigo_des,
+            LAST_VALUE(ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST."ROWID" RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) "QTYPCU_0",
+            --SUM (ST."QTYPCU_0") OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0") QTY_SUM,
+            ST."PCU_0",mprima."ITMDES1_0", mprima."TSICOD_3" largura
+            FROM {sageAlias}."STOCK" STK
+            JOIN {sageAlias}."STOJOU" ST ON ST."ITMREF_0"=STK."ITMREF_0" AND ST."LOT_0"=STK."LOT_0" AND ST."LOC_0"=STK."LOC_0"
+            JOIN {sageAlias}."ITMMASTER" mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            WHERE ST."LOC_0" = 'BUFFER' AND ST."QTYPCU_0" > 0 AND ST."VCRNUM_0"='{vcr}'
+        ) t
+        where ("QTYPCU_0" > 0)        
+        AND NOT EXISTS (SELECT 1 FROM {sgpAlias}.lotesnwlinha ll where ll.vcr_num = t."VCRNUM_0")
+    """),conngw,{})["rows"]
+    if len(rows)>0:
+        return Response({"status": "success","row":{"lote_id":rows[0]["lote_id"],"date":rows[0]["CREDATTIM_0"], "artigo_des":rows[0]["artigo_des"], "artigo_cod":rows[0]["ITMREF_0"], "qty_lote":rows[0]["QTYPCU_0"], "largura":int(rows[0]["largura"]), "comp":round(float(rows[0]["QTYPCU_0"])/(int(rows[0]["largura"])/1000),2), "vcr_num": rows[0]["VCRNUM_0"], "unit":rows[0]["PCU_0"], "n_lote":rows[0]["LOT_0"] }})
+    else:
+        return Response({"status": "error", "title": "O lote de Nonwoven não pode ser utilizado em linha!", "row":{}})
 
 
 
@@ -544,7 +603,6 @@ def MateriasPrimasList(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
     if lookup:
@@ -731,6 +789,24 @@ def SaveNWItems(request, format=None):
     except Exception as error:
 
         return Response({"status": "error", "title": str(error)})
+
+
+def AddNWToLine(request, format=None):
+    data = request.data.get("parameters")
+    def saveItems(data,cursor):
+        if "rows" in data:
+            for idx, item in enumerate(data.get("rows")):
+                args = (datetime.now(),item["artigo_cod"],item["artigo_des"],item["vcr_num"],item["n_lote"],item["qty_lote"],item["largura"],item["comp"],item["lote_id"],item["pos"],0,request.user.id,0)
+                cursor.callproc('add_nw_to_line',args)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                saveItems(data,cursor)
+                return Response({"status": "success", "title": "Entradas efetuadas com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+
+        return Response({"status": "error", "title": str(error)})
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])

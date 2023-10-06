@@ -1,8 +1,8 @@
 import React from 'react';
-import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined } from '@ant-design/icons';
+import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined } from '@ant-design/icons';
 
 //export const ROOT_URL = "http://192.168.0.16:81";
-export const ROOT_URL = "http://localhost:8000";
+export const ROOT_URL = "http://192.168.0.59:8000";
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
@@ -17,7 +17,9 @@ export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const DATE_ENGINE = "dayjs";
-export const SOCKET = { url: 'ws://localhost:8000/ws' };
+export const SOCKET = { url: 'ws://192.168.0.59:8000/ws' };
+export const LOGIN_URL = `${ROOT_URL}/users/login/`;
+export const LOGOUT_URL = `${ROOT_URL}/users/logout-/`;
 //export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
@@ -40,6 +42,8 @@ export const bColors = (estado) => {
         return { color: "#0050b3", fontColor: "#fff" };//"blue";
     } else if (estado === "HOLD") {
         return { color: "#391085", fontColor: "#fff" };//"purple";
+    } else {
+        return { color: "#fff", fontColor: "#000" };
     }
 }
 
@@ -51,12 +55,18 @@ export const HISTORY_DEFAULT = [
     { label: "Retroceder", key: "back", state: null, icon: <LeftCircleFilled style={{fontSize:"14px"}}/> },
     { type: 'divider' }
 ];
+export const HISTORY_DEFAULT_FOOTER = [
+    { type: 'divider' },
+    { label: <div style={{fontWeight:700}}>Logout</div>, key: `logout`, icon: <LogoutOutlined style={{fontSize:"14px"}}/> },
+    { type: 'divider' }
+];
 
 //APP DATA
 export const MODO_EXPEDICAO = [{ value: "1", label: "CONTAINER" }, { value: "3", label: "TRUCK" }, { value: "4", label: "AIR" }];
 export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" }, { value: "Por Validar", label: "Por validar" }, { value: "Em Elaboração", label: "Em Elaboração" }, { value: "Na Produção", label: "Na Produção" }, { value: "Em Produção", label: "Em Produção" }, { value: "Finalizada", label: "Finalizada" }];
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
 export const JUSTIFICATION_OUT = [{ value: "" }, { value: "NÃO CONFORME" }, { value: "TROCA DE PRODUÇÃO" }, { value: "TROCA DE MATÉRIA PRIMA" }];
+export const JUSTIFICATION_OUT_V2 = ["NÃO CONFORME","TROCA DE PRODUÇÃO","TROCA DE MATÉRIA PRIMA"];
 //DOSERS
 export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES

@@ -25,7 +25,7 @@ from django.conf.urls import handler500
 
 urlpatterns = [
     re_path(r'^admin/', admin.site.urls),
-    re_path(r'^users/', include(users_urls)),
+    re_path(r'^users/', include(users_urls, namespace='users')),
     re_path(r'^producao/', include('producao.urls', namespace='producao')),
     re_path(r'^planeamento/', include('planeamento.urls', namespace='planeamento')),
     re_path(r'^$', TemplateView.as_view(template_name='index.html'), name='home'),

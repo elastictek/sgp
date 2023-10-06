@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from 'styled-components';
-import { Button, Breadcrumb, Drawer, Dropdown, Space } from "antd";
+import { Button, Breadcrumb, Drawer, Dropdown, Space, Modal } from "antd";
+import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined } from '@ant-design/icons';
 import { Row, Col } from 'react-grid-system';
 import { Container as FormContainer } from 'components/FormFields';
@@ -10,7 +11,7 @@ import LogoWhite from 'assets/logowhite.svg';
 import LogoWhiteNoText from 'assets/logowhite_notext.svg';
 
 import { getSchema } from "utils/schemaValidator";
-import { DASHBOARD_URL, HISTORY_DEFAULT } from 'config';
+import { DASHBOARD_URL, HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER, LOGIN_URL, LOGOUT_URL } from 'config';
 import YScroll from "components/YScroll";
 
 const schema = (options = {}) => { return getSchema({}, options).unknown(true); };
@@ -149,7 +150,7 @@ export const SimpleDropdownHistory = ({ fixedItems, right, center, details, desc
     );
 }
 
-export default ({ title, right, details, description, id, showHistory = true }) => {
+export default ({ title, leftTitle, right, rightHeader, details, description, id, showHistory = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -172,8 +173,8 @@ export default ({ title, right, details, description, id, showHistory = true }) 
         setDrawerVisible(false);
     };
 
-    const onNavigate = (url, action) => {
-        if (action !== "back") {
+    const onNavigate = async (url, action) => {
+        if (action !== "back" && action !== "logout") {
             let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
             path = path.startsWith("#") ? path.slice(1) : path;
             let _old = history.find(v => v.key === path);
@@ -189,6 +190,21 @@ export default ({ title, right, details, description, id, showHistory = true }) 
             setHistory(_h);
             saveToLS(_h, id);
             navigate(_t.key, { replace: true, state: _t?.state });
+        } else if (action == "logout") {
+            try {
+                let response = await fetchPost({ url: LOGOUT_URL, parameters: {} });
+                if (response.status === 200) {
+                    window.location.href = LOGIN_URL;
+                }
+            } catch (e) {
+                Modal.error({
+                    centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Logout', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
+                        <YScroll>
+                            {e.message}
+                        </YScroll>
+                    </div></div>
+                });
+            };
         }
     }
 
@@ -216,15 +232,16 @@ export default ({ title, right, details, description, id, showHistory = true }) 
                             <Col xs="content">
                                 <Button type='link' icon={<MenuOutlined />} onClick={onShowDrawer} />
                             </Col>
-                            <Col>
-                                <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history].find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                            <Col style={{ display: "flex", alignItems: "center" }}>
+                                <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
                                     <a onClick={(e) => e.preventDefault()}>
                                         <Space>
-                                            <HistoryOutlined style={{color:"#000 !important"}}/>
-                                            <CaretDownFilled style={{color:"#000 !important"}}/>
+                                            <HistoryOutlined style={{ color: "#000 !important" }} />
+                                            <CaretDownFilled style={{ color: "#000 !important" }} />
                                         </Space>
                                     </a>
                                 </Dropdown>
+                                {leftTitle && <div style={{ marginLeft:"10px", alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }}>{leftTitle}</div>}
                                 {/* <Breadcrumb>
                                     {history.length > 0 && <>
                                         {history.length > 1 && <Breadcrumb.Item><Button onClick={(e) => onNavigate(null, "back")} title='Retroceder' size="small" type="link" icon={<CaretLeftOutlined />} /> </Breadcrumb.Item>}
@@ -247,6 +264,11 @@ export default ({ title, right, details, description, id, showHistory = true }) 
                                     </Breadcrumb.Item>
                                 </Breadcrumb> */}
                             </Col>
+                            {rightHeader && <Col xs="content" style={{ alignItems: "center" }}>
+                                <Row gutterWidth={2} justify='end'>
+                                    {rightHeader}
+                                </Row>
+                            </Col>}
                         </Row>}
                         {title && <Row style={{ alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }} gutterWidth={5}>
                             {title}

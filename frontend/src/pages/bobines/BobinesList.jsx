@@ -563,6 +563,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted)
                 };
+                console.log("RRRRRRRRRRRRRRRRRR",_values)
                 dataAPI.addFilters(_values, true);
                 dataAPI.addParameters(defaultParameters);
                 dataAPI.first();

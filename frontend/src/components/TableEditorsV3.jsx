@@ -878,21 +878,20 @@ export const LabMetodosTableEditor = ({ ...props }) => {
 }
 
 export const NwTableEditor = ({ ...props }) => {
-
     return (<FieldSelectorEditor
         {...props}
         selectorProps={{
             value: { artigo_id: props?.cellProps?.data?.artigo_id, des: props?.cellProps?.data?.des, cod: props?.cellProps?.data?.cod },
             title: "Nonwovens",
-            params: { payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup" }, pagination: { enabled: true }, filter: {type:"nonwovens"}, sort: [] } },
-            keyField: ["id"],
-            textField: "des",
+            params: { payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { type:"nonwovens", method: "MateriasPrimasLookup" }, pagination: { enabled: true }, filter: {}, sort: [] } },
+            keyField: ["ITMREF_0"],
+            textField: "ITMDES1_0",
             // detailText={r => r?.cod}
             columns: [
-                { key: 'cod', name: 'Cód', width: 160 },
-                { key: 'des', name: 'Nome' }
+                { key: 'ITMREF_0', name: 'Cód', width: 160 },
+                { key: 'ITMDES1_0', name: 'Nome' }
             ],
-            filters: { fartigo: { type: "any", width: 150, text: "Artigo", autoFocus: true } },
+            filters: { fmulti_artigo: { type: "any", width: 150, text: "Artigo", autoFocus: true } },
             moreFilters: {}
         }}
     />)

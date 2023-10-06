@@ -344,17 +344,24 @@ def OrdensFabricoInElaborationAllowed(request, format=None):
     return Response(response)
 
 def OrdensFabricoOpen(request, format=None):
+    filter = request.data.get("filter")
     connection = connections["default"].cursor()
+    f = Filters(filter)
+    f.where(False,"and")
+    f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
+    f.add(f'(po.id = :id)',lambda v:(v!=None) )
+    f.value("and")
     response = db.executeSimpleList(lambda: (
         f"""
-            select esquema,po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , po.bobines_por_palete
+            select esquema,po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , t1.artigo_des, po.bobines_por_palete, po.was_in_production, po.`status` ofabrico_status
             from planeamento_ordemproducao po 
             left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
+            left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
             left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
-            where po.ativa = 1 and po.completa = 0 order by po.ofid is null,po.ofid
+            where po.ativa = 1 {f.text} order by po.ofid is null,po.ofid
         """
-    ), connection, {})
+    ), connection, {**f.parameters})
     return Response(response)
 
 def GetPaleteCompatibleOrdensFabricoOpen(request,format=None):
@@ -634,7 +641,7 @@ def SaveArtigosSpecsPlan(request, format=None):
                     cs_id = _getCurrentSettings(filter.get("of_id"),cursor)
                     if cs_id is not None:
                         return updateCurrentSettings(cs_id,"artigospecs_plan",None,request.user.id,cursor)
-                return Response({"status": "success", "title": "As especificações foram registadas com sucesso com Sucesso!"})
+                return Response({"status": "success", "title": "As especificações foram registadas com sucesso!"})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -702,7 +709,7 @@ def SaveCoresPlan(request, format=None):
                     cs_id = _getCurrentSettings(filter.get("of_id"),cursor)
                     if cs_id is not None:
                         return updateCurrentSettings(cs_id,"cores_plan",None,request.user.id,cursor)
-                return Response({"status": "success", "title": "O plano de Cores foi registado com sucesso com Sucesso!"})
+                return Response({"status": "success", "title": "O plano de Cores foi registado com sucesso!"})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -876,7 +883,7 @@ def SaveCortesOrdem(request, format=None):
             hash_cortesordem = hashlib.md5(_cortesordem.encode('utf-8')).hexdigest()[ 0 : 16 ] if data.get("cortes_ordem") else None
             _cortes_id = _insertCortes({"largura_cod":hash_cortes,"largura_json":_cortes,"largura_util":data.get("largura_util")},cursor)
             _cortesordem_id = _insertCortesOrdem({"designacao":datetime.now().strftime("%Y-%m-%d %H:%M:%S"),"largura_ordem":_cortesordem,"ordem_cod": hash_cortesordem,"cortes_id":_cortes_id},cursor)
-            return Response({"status": "success", "id":_cortesordem_id, "title": "Os Cortes foram registados com sucesso com Sucesso!"})
+            return Response({"status": "success", "id":_cortesordem_id, "title": "Os Cortes foram registados com sucesso!"})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -978,7 +985,7 @@ def SaveCortesPlan(request, format=None):
                         if not hasCortes and _id:
                             dml = db.dml(TypeDml.UPDATE, {"cortes_id":_cortes_id,"cortesordem_id":_cortesordem_id, "cortes_plan_id":_id}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
                             db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "title": "O plano de Cortes foi registado com sucesso com Sucesso!"})
+            return Response({"status": "success", "title": "O plano de Cortes foi registado com sucesso!"})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -1058,6 +1065,125 @@ def NwPlanList(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+def SaveNwsPlan(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+    
+    def checkOrdemFabrico(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'agg_of_id = :agg_of_id', True )
+        f.add(f'`status` = 9', True )
+        f.value("and")
+        exists = db.exists("producao_currentsettings", f, cursor).exists
+        return exists
+    
+    def checkFormulacao(agg_of_id,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'id = :agg_of_id', True )
+        f.add(f'formulacao_id is not null', True )
+        f.value("and")
+        exists = db.exists("producao_tempaggordemfabrico", f, cursor).exists
+        return exists
+
+    def _getExistingNws(agg_of_id,rows,cursor):
+        f = Filters({"agg_of_id": agg_of_id})
+        f.where()
+        f.add(f'pt.agg_of_id = :agg_of_id', True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f"""
+            WITH tmp as(
+                select produto_id from producao_tempordemfabrico pt {f.text} limit 1
+            )
+            SELECT an.*
+            FROM producao_artigononwovens an 
+            join tmp t on t.produto_id = an.produto_id
+            where {" or ".join(f"(an.nw_cod_sup='{item['nw_cod_sup']}' and an.nw_cod_inf='{item['nw_cod_inf']}')" for item in rows)}
+        """), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows
+        return None
+
+    def _deleteNwsPlan(agg_of_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_nw_plan',{"agg_of_id":Filters.getNumeric(agg_of_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    
+    # def _addNwsPlan(agg_of_id,cursor):
+    #     dta = {
+    #     'agg_of_id':agg_id,
+    #     'formulacao_id': formulacao_id,
+    #     'idx': f"(select IFNULL(max(idx),0)+1 from producao_formulacao_plan pfp where agg_of_id={agg_id})",
+    #     'user_id':request.user.id,
+    #     't_stamp':datetime.now()
+    #     }
+    #     dml = db.dml(TypeDml.INSERT, dta, "producao_formulacao_plan",None,None,False,["idx"])
+    #     db.execute(dml.statement, cursor, dml.parameters)
+    #     lastid = cursor.lastrowid
+    #     if plan_id==0:
+    #         dml = db.dml(TypeDml.UPDATE, {
+    #         'formulacao_plan_id': lastid
+    #         }, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(agg_id)},None,None,[])
+    #         db.execute(dml.statement, cursor, dml.parameters)
+
+    def _addNwsCombination(agg_id,row,cursor):
+        dta = {
+            "designacao": row.get("designacao"),
+            "versao": f"""(
+                SELECT IFNULL(max(versao),0)+1 versao
+                FROM producao_artigononwovens an
+                where (an.nw_cod_sup='{row.get("nw_cod_sup")}' and an.nw_cod_inf='{row.get("nw_cod_inf")}') and 
+                produto_id = (select produto_id from producao_tempordemfabrico pt where agg_of_id = {agg_id} and agg_of_id = agg_ofid_original))
+            """,
+            'produto_id': f"(select produto_id from producao_tempordemfabrico pt where agg_of_id = {agg_id} and agg_of_id = agg_ofid_original)",
+            "nw_cod_inf":row.get("nw_cod_inf"),
+            "nw_des_inf":row.get("nw_des_inf"),
+            "nw_cod_sup":row.get("nw_cod_sup"),
+            "nw_des_sup":row.get("nw_des_sup"),
+            #'user_id':request.user.id,
+            'created_date':datetime.now(),
+            'updated_date':datetime.now()
+        }
+        dml = db.dml(TypeDml.INSERT, dta, "producao_artigononwovens",None,None,False,["versao","produto_id"])
+        db.execute(dml.statement, cursor, dml.parameters)
+        lastid = cursor.lastrowid
+        return lastid
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            isClosed = checkOrdemFabrico(filter.get("agg_of_id"),cursor)
+            print(isClosed)
+            if (not isClosed):
+                _deleteNwsPlan(filter.get("agg_of_id"),cursor)
+                nws = _getExistingNws(filter.get("agg_of_id"),data.get("rows"),cursor)
+                for idx, v in enumerate(data.get("rows")):
+                    match = next((item for item in nws if item['nw_cod_inf'] == v['nw_cod_inf'] and item['nw_cod_sup'] == v['nw_cod_sup']), None)
+                    nws_id = None
+                    if match:
+                        nws_id = match.get("id")
+                        if v.get("designacao") and match.get("designacao") != v.get("designacao"):
+                            nws_id = _addNwsCombination(filter.get("agg_of_id"),v,cursor)
+                    else:
+                        if not v.get("designacao"):
+                            v["designacao"] = f"NW{datetime.now().strftime('%Y%m%d_%H%M')}"
+                        nws_id = _addNwsCombination(filter.get("agg_of_id"),v,cursor)
+                    if ("plan_id" in v):
+                        dml = db.dml(TypeDml.INSERT, {"id":v.get("plan_id"),"nw_id":nws_id,"agg_of_id":filter.get("agg_of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_nw_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+                    else:
+                        dml = db.dml(TypeDml.INSERT, {"nw_id":nws_id,"agg_of_id":filter.get("agg_of_id"),"observacoes":v.get("observacoes"),"idx":v.get("idx"),"t_stamp":datetime.today(), "user_id":request.user.id}, "producao_nw_plan",None,None,False)
+                        db.execute(dml.statement, cursor, dml.parameters)
+            #         if (v.get("idx")==1):
+            #             _id = cursor.lastrowid
+            #             hasFormulacao = checkFormulacao(filter.get("agg_of_id"),cursor)
+            #             if not hasFormulacao and _id:
+            #                 dml = db.dml(TypeDml.UPDATE, {"formulacao_id":v.get("id"),"formulacao_plan_id":_id}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+            #                 db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "O plano de Nonwovens foi registado com sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
 def FormulacaoPlanList(request, format=None):
     connection = connections["default"].cursor()
     filter = request.data['filter']
@@ -1126,7 +1252,7 @@ def SaveFormulacaoPlan(request, format=None):
                         if not hasFormulacao and _id:
                             dml = db.dml(TypeDml.UPDATE, {"formulacao_id":v.get("id"),"formulacao_plan_id":_id}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
                             db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "title": "O plano de formulações foi registado com sucesso com Sucesso!"})
+            return Response({"status": "success", "title": "O plano de formulações foi registado com sucesso!"})
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

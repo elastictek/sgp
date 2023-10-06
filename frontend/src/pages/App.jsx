@@ -94,6 +94,14 @@ export const AppContext = React.createContext({});
 import { Field, Container } from 'components/FormFields';
 import { Row, Col } from 'react-grid-system';
 import WidgetEstadoProducao from './producao/WidgetEstadoProducao';
+import FormPickGranuladoIn from './picking/FormPickGranuladoIn';
+import FormPickGranuladoOut from './picking/FormPickGranuladoOut';
+const MainPicking = lazy(() => import('./picking/MainPicking'));
+const FormPickNonwovensIn = lazy(() => import('./picking/FormPickNonwovensIn'));
+const FormPickNewPaleteLine = lazy(() => import('./picking/FormPickNewPaleteLine'));
+const FormPickRedoPaleteLine = lazy(() => import('./picking/FormPickRedoPaleteLine'));
+const FormPickWeighPalete = lazy(() => import('./picking/FormPickWeighPalete'));
+const FormPickDeletePalete = lazy(() => import('./picking/FormPickDeletePalete'));
 
 
 const loadAuthUser = async ({ }, signal) => {
@@ -196,6 +204,15 @@ const RenderRouter = () => {
                 { path: "ofabrico/ordensfabricolist", element: <Suspense fallback={<Spin />}><OrdensFabricoList /></Suspense> },
 
                 { path: "producao/widgetestadoproducao", element: <Suspense fallback={<Spin />}><WidgetEstadoProducao /></Suspense> },
+                { path: "picking/main", element: <Suspense fallback={<Spin />}><MainPicking /></Suspense> },
+                { path: "picking/nonwovensin", element: <Suspense fallback={<Spin />}><FormPickNonwovensIn /></Suspense> },
+                { path: "picking/granuladoin", element: <Suspense fallback={<Spin />}><FormPickGranuladoIn /></Suspense> },
+                { path: "picking/granuladoout", element: <Suspense fallback={<Spin />}><FormPickGranuladoOut /></Suspense> },
+                { path: "picking/newpaleteline", element: <Suspense fallback={<Spin />}><FormPickNewPaleteLine /></Suspense> },
+                { path: "picking/redopaleteline", element: <Suspense fallback={<Spin />}><FormPickRedoPaleteLine /></Suspense> },
+                { path: "picking/weighpalete", element: <Suspense fallback={<Spin />}><FormPickWeighPalete /></Suspense> },
+                { path: "picking/deletepalete", element: <Suspense fallback={<Spin />}><FormPickDeletePalete /></Suspense> },
+               
                 
                 { path: "bobinagens/formbobinagemvalidar", element: <Suspense fallback={<Spin />}><FormBobinagemValidar /></Suspense> },
 

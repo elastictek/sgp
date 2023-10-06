@@ -17,6 +17,7 @@ from producao.api import artigos
 from producao.api import qualidade
 from producao.api import cargas
 from producao.api import sage
+from producao.api import reciclado
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
 
@@ -272,6 +273,7 @@ urlpatterns = [
     re_path(r'^cargas/sql/$',cargas.Sql),
     re_path(r'^print/sql/$',print.Sql),
     re_path(r'^sage/sql/$',sage.Sql),
+    re_path(r'^reciclado/sql/$',reciclado.Sql),
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),
     re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
     re_path(r'^qualidade/sql/$',qualidade.Sql),

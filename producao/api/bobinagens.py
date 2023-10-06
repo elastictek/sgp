@@ -175,8 +175,6 @@ def export(sql, db_parameters, parameters,conn_name):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsAuthenticated])
 def Sql(request, format=None):
-    print("sqlllll")
-    print(request.data)
     try:
         if "parameters" in request.data and "method" in request.data["parameters"]:
             method=request.data["parameters"]["method"]
@@ -369,39 +367,7 @@ def BobinagensList(request, format=None):
         """
     )
 
-    print(
-f""" 
-            SELECT
-            {f'{dql.columns}'}
-            from(
-                select pbm.*
-                {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
-                (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
-                ''' if feature=='fixconsumos' else ''}
-                {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
-                      ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
-                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
-                ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
-                ,JSON_EXTRACT(acs.ofs, '$[*].cliente_nome') clientes
-                ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
-                acs.agg_of_id
-                FROM producao_bobinagem pbm
-                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
-                {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
-                {f.text} {f2["text"]}
-                {fText01}
-                {fText02}
-                {dql.sort} {dql.paging} {dql.limit}
-            ) pbm
-            join producao_bobine pb on pb.bobinagem_id = pbm.id
-            where 1=1 {f3.text}
-            {f' and no_lotes>0' if feature=='fixconsumos' else ''}
-            group by pbm.id,pb.core {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
-            {dql.sort}
-        """
-
-    )
-    
+   
     # sqlCount = f""" 
     #         SELECT count(*) FROM (
     #             SELECT

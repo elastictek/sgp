@@ -114,6 +114,7 @@ class BaseTempAggOrdemFabrico(models.Model):
     horas_previstas_producao= models.DecimalField(default=0, verbose_name="Horas previstas de produção", null=True, blank=True,decimal_places=2,max_digits=10)
     formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
     cortes_plan_id = models.IntegerField(verbose_name="Plano de Cortes", null=True)
+    nw_plan_id = models.IntegerField(verbose_name="Plano de Nonwovens", null=True)
     class Meta:
         abstract = True
 
@@ -187,6 +188,7 @@ class BaseCurrentSettings(models.Model):
     ignore_audit = models.IntegerField(verbose_name="No Log", null=True)
     formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
     cortes_plan_id = models.IntegerField(verbose_name="Plano de cortes", null=True)
+    nw_plan_id = models.IntegerField(verbose_name="Plano de Nonwovens", null=True)
     class Meta:
         abstract = True
 

@@ -16,8 +16,8 @@ import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch, Progress } from "antd";
 const { TextArea } = Input;
 const { Title } = Typography;
-import { json, excludeObjectKeys } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
+import { json, excludeObjectKeys, xmlToJSON } from "utils/object";
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, GatewayOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -244,6 +244,7 @@ const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentD
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "ordemfabrico" });
     const [clienteExists, setClienteExists] = useState(false);
+    const [calls, setCalls] = useState();
     const primaryKeys = [];
 
     useEffect(() => {
@@ -253,11 +254,24 @@ const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentD
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        form.setFieldsValue({ fcy: SAGE_ESTABELECIMENTOS[0], loc: SAGE_LOCS[0], sta: SAGE_STATUS[0], ip_date: dayjsValue(parameters?.data?.fim,dayjs()) });
+        form.setFieldsValue({ fcy: SAGE_ESTABELECIMENTOS[0], loc: SAGE_LOCS[0], sta: SAGE_STATUS[0], ip_date: dayjsValue(parameters?.data?.fim, dayjs()) });
         submitting.end();
     }
 
-    const onFinish = async (type = 'validar') => {
+    const xmlTagToJson = (xml, tagName, attributeKey) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xml, "text/xml");
+        const obj = {};
+        for (const node of xmlDoc.children) {
+            for (const child of node.children) {
+                obj[child.getAttribute(attributeKey)] = child.textContent
+            }
+
+        }
+        return obj;
+    }
+
+    const onFinish = async (type = 'run') => {
         const values = form.getFieldsValue(true);
         submitting.trigger();
         let response = null;
@@ -265,9 +279,10 @@ const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentD
             response = await fetchPost({
                 ...{
                     url: `${API_URL}/sage/sql/`, parameters: {
-                        method: "SyncProductionReport",
+                        method: "SyncProdutoAcabadoProductionReport",
+                        run: type === "run" ? 1 : 0,
                         ...pickAll(["ofabrico", "temp_ofabrico", "ofabrico_sgp", "item"], parameters?.data),
-                        ip_date: dayjsValue(values?.ip_date,dayjs()).format(DATE_FORMAT_NO_SEPARATOR),
+                        // ip_date: dayjsValue(values?.ip_date,dayjs()).format(DATE_FORMAT_NO_SEPARATOR),
                         fcy: values.fcy.value,
                         loc: values.loc.value,
                         sta: values.sta.value
@@ -275,8 +290,18 @@ const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentD
                 }
             });
             if (response.data.status !== "error") {
-                openNotification(response.data.status, 'top', "Notificação", response.data.title);
-                loadParentData();
+                const _calls = [];
+                for (const [key, value] of Object.entries(json(response.data.calls))) {
+                    const _details = [];
+                    for (const v of value.bodyd)
+                        _details.push(xmlTagToJson(v, "FLD", "NAME"));
+                    _calls.push({ data: key, header: xmlTagToJson(value.bodyh, "FLD", "NAME"), details: _details })
+                }
+                setCalls(_calls)
+                if (type == "run") {
+                    openNotification(response.data.status, 'top', "Notificação", response.data.title);
+                    loadParentData();
+                }
             } else {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
             }
@@ -297,33 +322,87 @@ const FormSyncProductionReport = ({ parameters, extraRef, closeSelf, loadParentD
         <YScroll>
             <FormContainer id="LAY-SYNCWOP" fluid forInput={true} loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} alert={{ tooltip: true, pos: "none" }}>
                 <Row>
-                    <Col width={200}>
-                        <Field name="fcy" label={{ enabled: true, text: "Estabelecimento" }}>
-                            <SelectField size="small" keyField="value" textField="label" data={SAGE_ESTABELECIMENTOS} />
-                        </Field>
+                    <Col width={220}>
+                        <Row>
+                            <Col width={200}>
+                                <Field name="fcy" label={{ enabled: true, text: "Estabelecimento" }}>
+                                    <SelectField size="small" keyField="value" textField="label" data={SAGE_ESTABELECIMENTOS} />
+                                </Field>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col width={200}>
+                                <Field name="loc" label={{ enabled: true, text: "Localização" }}>
+                                    <SelectField size="small" keyField="value" textField="label" data={SAGE_LOCS} />
+                                </Field>
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col width={200}>
+                                <Field name="sta" label={{ enabled: true, text: "Estado" }}>
+                                    <SelectField size="small" keyField="value" textField="label" data={SAGE_STATUS} />
+                                </Field>
+                            </Col>
+                        </Row>
                     </Col>
+                    {calls &&
+                        <Col>
+                            <Row>
+                                <Col style={{ fontWeight: 700, fontSize: "14px" }}>
+                                    Relatório de Produção
+                                </Col>
+                            </Row>
+                            <Row>
+                                <Col>
+                                    <YScroll>
+                                        {calls && calls.map(v => {
+
+                                            return <React.Fragment key={`h-${v.data}`}>
+                                                {/*HEADER*/}
+                                                <div style={{ display: "flex" }}>{Object.keys(v.header).map((h, i) => {
+
+                                                    return <React.Fragment key={`h-${v.data}.${i}`}>
+                                                        {i == 0 && <div style={{ marginRight: "5px" }}>
+                                                            <div style={{ fontWeight: 700, height: "10px" }}></div>
+                                                            <div style={{}}>#{v.details.length}</div>
+                                                        </div>
+                                                        }
+                                                        <div style={{ marginRight: "5px" }}>
+                                                            <div style={{ fontWeight: 700, height: "10px" }}></div>
+                                                            <div style={{ fontWeight: 700 }}>{v.header[h]}</div>
+                                                        </div>
+                                                    </React.Fragment>
+                                                })}</div>
+                                                {/*DETAILS*/}
+                                                <div style={{ paddingLeft: "10px" }}>{v.details.map((d, i) => {
+                                                    return <React.Fragment key={`dh-${v.data}-${i}`}>
+
+                                                        <div style={{ display: "flex" }}>{Object.keys(d).map(h => {
+                                                            return <div key={`dh-${v.data}-${i}-${h}`} style={{ marginRight: "5px" }}>
+                                                                <div>{d[h]}</div>
+                                                            </div>
+                                                        })}</div>
+
+                                                    </React.Fragment>
+                                                })}</div>
+
+                                            </React.Fragment>
+
+                                        })}
+                                    </YScroll>
+                                </Col>
+                            </Row>
+                        </Col>
+                    }
                 </Row>
-                <Row>
-                    <Col width={200}>
-                        <Field name="loc" label={{ enabled: true, text: "Localização" }}>
-                            <SelectField size="small" keyField="value" textField="label" data={SAGE_LOCS} />
-                        </Field>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col width={200}>
-                        <Field name="sta" label={{ enabled: true, text: "Estado" }}>
-                            <SelectField size="small" keyField="value" textField="label" data={SAGE_STATUS} />
-                        </Field>
-                    </Col>
-                </Row>
-                <Row>
+                {/* <Row>
                     <Col xs="content"><Field name="ip_date" label={{ enabled: true, text: "Data de Imputação", padding: "0px" }}><DatePicker showTime={false} format={DATE_FORMAT} /></Field></Col>
-                </Row>
+                </Row> */}
                 {extraRef && <Portal elId={extraRef.current}>
                     <Space>
                         <Button disabled={submitting.state} onClick={closeSelf}>Cancelar</Button>
-                        <Button disabled={submitting.state} type="primary" onClick={onFinish}>Sincronizar</Button>
+                        <Button disabled={submitting.state} onClick={() => onFinish("simulation")} icon={<GatewayOutlined />}>Simular</Button>
+                        <Button disabled={submitting.state} type="primary" onClick={() => onFinish("run")}>Sincronizar</Button>
                     </Space>
                 </Portal>
                 }
@@ -671,6 +750,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const onAction = (action, data, rowIndex) => {
         switch (action.key) {
             case "pl-pdf":
+                console.log("pdf---",data)
                 setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, ...data } });
                 showModal();
                 break;

@@ -464,6 +464,33 @@ def GetCurrentSettings(request, format=None):
         ), cursor, parameters)
         return Response(response)
 
+def GetCurrentFormulation(request, format=None):
+    cols = ['''`formulacaov2` `formulacao`''']
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "st": {"value": 3, "field": lambda k, v: f'{k}'},
+    }, False)
+    f.where()
+    f.add(f'agg_of_id = :aggId', lambda v:(v!=None))
+    f.add(f'status = :st',lambda v:"aggId" not in request.data['filter'])
+    f.value("and")
+    parameters = {**f.parameters}
+    
+
+    dql = db.dql(request.data, False, False)
+    dql.columns = encloseColumn(cols,False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                {dql.columns}
+                from producao_currentsettings cs
+                {f.text}
+                limit 1
+            """
+        ), cursor, parameters)
+        return Response(response)
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])

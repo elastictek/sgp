@@ -69,7 +69,7 @@ import ListNwsQueue from './items/ListNwsQueue';
 import ListGranuladoInline from './Items/ListGranuladoInline';
 import ListBobinagens from './Items/ListBobinagens';
 import LineParameters from './Items/LineParameters';
-
+import ListReciclado from './items/ListReciclado';
 
 const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -641,7 +641,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     //     }
     // }, [selectedNws]);
 
-    
+
     const onNwsPrint = (selectedNws) => {
         let _nws = [];
         if (selectedNws === true && parameters?.data?.nws_queue && parameters.data.nws_queue.length > 0) {
@@ -935,6 +935,8 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     {/**NONWOVENS FILA */}
                                     <ListNwsQueue hash={hash} data={parameters?.data} onNwsPick={onNwsPick} onNwsPrint={onNwsPrint}/*  selectedNws={selectedNws} setSelectedNws={setSelectedNws} */ />
 
+                                    {/**Reciclado */}
+                                    <ListReciclado hash={hash} data={parameters?.data} />
 
 
                                 </Col>
@@ -1405,15 +1407,15 @@ export default ({ setFormTitle, ...props }) => {
             bodyStyle={{ height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
-                <div style={{display:"flex",alignItems:"center"}}>
-                    <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedItems={HISTORY_DEFAULT} 
+                <div style={{ display: "flex", alignItems: "center" }}>
+                    <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedItems={HISTORY_DEFAULT}
                         center={
                             <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
-                        }/>
-                    <div style={{width:"3px"}}></div>
+                        } />
+                    <div style={{ width: "3px" }}></div>
                     {/* <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{ fontSize: "8px" }}></div></div> */}
                     {/* <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" /> */}
-                    
+
                 </div>
             }
         >

@@ -66,6 +66,11 @@ export const BadgeNumber = ({ value, onClick, cellProps }) => {
     )
 }
 
+export const OF = ({ id, ofid, of_des }) => {
+    return (
+        <>{ofid ? <Tag style={{ fontWeight: 600 }}>{ofid}</Tag> : of_des}</>
+    );
+}
 
 export const OFabricoStatus = ({ data, onClick, cellProps }) => {
     return (
@@ -173,6 +178,12 @@ export const EstadoBobine = ({ id, nome, onClick, align, largura, estado, cellPr
     </>);
 }
 
+export const EstadoReciclado = ({ id, nome, onClick, estado, cellProps, style = {} }) => {
+    return (<>
+        {(!cellProps?.inEdit) && <StyledBobine onClick={(v) => onClick && onClick("estado", id, nome, v)} color={bColors(estado).color} $fontColor={bColors(estado).fontColor}><b>{estado === 'HOLD' ? 'HLD' : estado}</b></StyledBobine>}
+    </>);
+}
+
 export const QueueNwColumn = ({ value, status, cellProps, style = {} }) => {
 
     const getValue = () => {
@@ -197,15 +208,22 @@ export const ArtigoColumn = ({ data, cellProps }) => {
 }
 
 export const NwColumn = ({ data, cellProps, style }) => {
-    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column", ...style }}>
-        <div><span style={{ fontWeight: 700 }}>{data?.artigo_cod}</span> {data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
-        <div style={{ fontWeight: 700 }}>{data?.n_lote}</div>
-    </div>}</>)
+    if (!data?.n_lote){
+        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column",lineHeight:1.2, ...style }}>
+            <div>{data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
+            <div style={{ fontWeight: 700 }}>{data?.artigo_cod}</div>
+        </div>}</>)
+    }else{
+        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column",lineHeight:1.2, ...style }}>
+            <div><span style={{ fontWeight: 700 }}>{data?.artigo_cod}</span> {data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
+            <div style={{ fontWeight: 700 }}>{data?.n_lote}</div>
+        </div>}</>)
+    }
 }
 
 export const PosColumn = ({ value, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-        {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
+        {value === 1 ? <ImArrowUp/> : <ImArrowDown />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
     </div>}</>);
 }
