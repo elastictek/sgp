@@ -158,6 +158,12 @@ export default ({ hash, data, ...props }) => {
     const onFilterFinish = (type, values) => { }
     const onFilterChange = (changedValues, values) => { };
     const rowClassName = ({ data }) => {
+        if (data.arranque == null){
+            return tableCls.error;
+        }
+        if (data.n_lote == null){
+            return tableCls.error;
+        }
         // if (data?.nbobines_real != data?.num_bobines) {
         //     return tableCls.warning;
         // }

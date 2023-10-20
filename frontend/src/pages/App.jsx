@@ -106,6 +106,7 @@ import FormAttachements from './ordensfabrico/FormAttachements';
 import FormPickAttachements from './picking/FormPickAttachements';
 
 const MainPicking = lazy(() => import('./picking/MainPicking'));
+const FormPickNonwovensPrint = lazy(() => import('./picking/FormPickNonwovensPrint'));
 const FormPickNonwovensIn = lazy(() => import('./picking/FormPickNonwovensIn'));
 const FormPickNewPaleteLine = lazy(() => import('./picking/FormPickNewPaleteLine'));
 const FormPickRedoPaleteLine = lazy(() => import('./picking/FormPickRedoPaleteLine'));
@@ -226,6 +227,7 @@ const RenderRouter = () => {
 
                 { path: "producao/widgetestadoproducao", element: <Suspense fallback={<Spin />}><WidgetEstadoProducao /></Suspense> },
                 { path: "picking/main", element: <Suspense fallback={<Spin />}><MainPicking /></Suspense> },
+                { path: "picking/nonwovensprint", element: <Suspense fallback={<Spin />}><FormPickNonwovensPrint /></Suspense> },
                 { path: "picking/nonwovensin", element: <Suspense fallback={<Spin />}><FormPickNonwovensIn /></Suspense> },
                 { path: "picking/nonwovensout", element: <Suspense fallback={<Spin />}><FormPickNonwovensOut /></Suspense> },
                 { path: "picking/nonwovensqueue", element: <Suspense fallback={<Spin />}><FormPickNonwovensQueue /></Suspense> },

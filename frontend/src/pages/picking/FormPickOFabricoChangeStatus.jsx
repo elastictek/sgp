@@ -45,7 +45,7 @@ const FormCortes = lazy(() => import('./FormCortes'));
 
 //const title = "";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading, title, subTitle }) => {
-    return (<ToolbarTitle id={auth?.user} description={`${title}/${subTitle}`} details={<span style={{ fontSize: "16px", marginLeft: "70px" }}>{subTitle}</span>}
+    return (<ToolbarTitle id={auth?.user} description={`${title}/${subTitle}`} details={<span style={{ fontSize: "16px", marginLeft: "90px" }}>{subTitle}</span>}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }

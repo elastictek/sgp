@@ -96,6 +96,9 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
 
     const loadData = async ({ signal, init = false } = {}) => {
         //submitting.trigger();
+        if (!data?.paletes){
+            return;
+        }
         const _d = data?.paletes.filter(v => filter.includes(v.ofid) && v.palete_id);
         dataAPI.setData({ rows: _d, total: _d.length });
         // if (parameters?.data?.rows) {

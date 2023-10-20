@@ -275,6 +275,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 </StyledButton>
                                             </Col>
                                             }
+                                            {allows?.materiasPrimas?.printnw && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/nonwovensprint")}>
+                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Imp. Amostras<br />Nonwovens</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
                                             {allows?.materiasPrimas?.printbuffer && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/printbuffer")}>
                                                     <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>

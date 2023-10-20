@@ -9,7 +9,7 @@ import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep, lpadFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
-import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET,  HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER } from "config";
+import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET, HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, getFloat } from "utils";
 import Portal from "components/portal";
@@ -22,7 +22,7 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined, ControlOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -70,6 +70,7 @@ import ListGranuladoInline from './Items/ListGranuladoInline';
 import ListBobinagens from './Items/ListBobinagens';
 import LineParameters from './Items/LineParameters';
 import ListReciclado from './items/ListReciclado';
+import { newWindow } from 'utils/loadInitV3';
 
 const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -799,7 +800,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                         {/**CORTES */}
                         <Col lg={12} xl={5}>
                             <Row nogutter>
-                                <Col style={{ border: "solid 1px #595959", padding: "3px",height:"227px" }}>
+                                <Col style={{ border: "solid 1px #595959", padding: "3px", height: "227px" }}>
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
@@ -1403,7 +1404,7 @@ export default ({ setFormTitle, ...props }) => {
             bodyStyle={{ height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }}
             size="small"
             title={
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedTopItems={HISTORY_DEFAULT} fixedFooterItems={HISTORY_DEFAULT_FOOTER}
                         center={
                             <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
@@ -1411,7 +1412,11 @@ export default ({ setFormTitle, ...props }) => {
                     <div style={{ width: "3px" }}></div>
                     {/* <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}><Logo onClick={onShowDrawer} style={{ width: "100px", height: "24px", marginLeft: "5px", paddingRight: "10px", cursor: "pointer" }} /><div style={{ fontSize: "8px" }}></div></div> */}
                     {/* <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" /> */}
-
+                    <div>
+                        <Space>
+                            <Button ghost onClick={() => newWindow("/app/picking/main/", {}, "mainpicking")} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
+                        </Space>
+                    </div>
                 </div>
             }
         >
