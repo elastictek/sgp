@@ -62,10 +62,10 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc
 
     return (
         <Space>
-            <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button>
+            {/* <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button> */}
             <Button disabled={!permission.isOk({ action: "changeOrdem" })} onClick={onAction}>Alterar Ordem de Fabrico</Button>
-            <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
-            <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button>
+{/*             <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
+            <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button> */}
         </Space>
     );
 }

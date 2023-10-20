@@ -2,10 +2,10 @@ import React from 'react';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined,ControlOutlined } from '@ant-design/icons';
 
 
-export const SERVER_PORT = "81";
-export const SERVER = "192.168.0.16";
-//export const SERVER_PORT = "8000";
-//export const SERVER = "localhost";
+//export const SERVER_PORT = "81";
+//export const SERVER = "192.168.0.16";
+export const SERVER_PORT = "8000";
+export const SERVER = "localhost";
 export const ROOT_URL = `http://${SERVER}:${SERVER_PORT}`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
