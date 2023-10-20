@@ -30,7 +30,7 @@ const Drawer = ({ showWrapper, setShowWrapper, parentReload }) => {
             /* style={{ maginTop: "48px" }} */
             setVisible={onVisible}
             visible={showWrapper.show}
-            width={800}
+            width={1000}
             bodyStyle={{ height: "450px" /*  paddingBottom: 80 *//* , overflowY: "auto", minHeight: "350px", maxHeight: "calc(100vh - 50px)" */ }}
             footer={<div ref={iref} id="form-wrapper" style={{ textAlign: 'right' }}></div>}
         >
@@ -153,7 +153,7 @@ export default ({ changedValues }) => {
                             style={{ width: "100%" }}
                             left={
                                 <FieldSet>
-                                    <Field name="gamaoperatoria_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Gama Operatória", pos: "left" }} addons={{
+                                    <Field name="gamaoperatoria_id" layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, text: "Gama Operatória", pos: "left",width:"160px" }} addons={{
                                         ...(form.getFieldValue("gamaoperatoria_id") && { right: <Button onClick={() => onShowForm(false, true)} style={{ marginLeft: "3px" }} size="small"><EditOutlined style={{ fontSize: "16px" }} /></Button> })
                                     }}>
                                         <SelectField allowClear size="small" data={gamasOperatorias} keyField="id" textField="designacao"

@@ -618,7 +618,7 @@ class Carga(models.Model):
     STATUS=(('I', 'I'), ('C', 'C'))
     TIPO=(('CONTENTOR', 'CONTENTOR'), ('CAMIÃO', 'CAMIÃO'))
     user=models.ForeignKey(User, on_delete = models.PROTECT, verbose_name = "Username")
-    enc=models.ForeignKey(Encomenda, on_delete = models.PROTECT, verbose_name = "Encomenda")
+    enc=models.ForeignKey(Encomenda, on_delete = models.SET_NULL, verbose_name = "Encomenda",null=True)
     timestamp=models.DateTimeField(auto_now_add = True)
     data=models.DateField(auto_now_add = False, auto_now = False, default = datetime.date.today, verbose_name = "Data")
     carga=models.CharField(max_length = 200, unique = True, verbose_name = "Carga")
@@ -633,7 +633,10 @@ class Carga(models.Model):
     hora_expedicao=models.TimeField(auto_now_add = False, auto_now = False, verbose_name = "Hora de expedição", null = True, blank =True)
     data_prevista=models.DateField(null = True, blank = True, verbose_name = "Data prevista de expedição")
     expedida=models.BooleanField(default = False, verbose_name = "Expedida")
-
+    eef=models.CharField(max_length = 17, null = True, verbose_name = "Encomenda") #ADDED
+    artigos = models.JSONField(blank=True, null=True) #ADDED
+    prf=models.CharField(max_length = 17, null = True, verbose_name = "prf") #ADDED
+    cliente=models.CharField(max_length = 255, null = True, verbose_name = "cliente") #ADDED
     def __str__(self):
         return self.carga
 

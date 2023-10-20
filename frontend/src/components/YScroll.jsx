@@ -4,7 +4,7 @@ import styled,{css} from 'styled-components';
 const YScroll = styled.div`
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
-    /*height:100%;*/
+    ${props => !props.height && css`height: 100%;`}
     ${props => props.maxHeight && css`max-height: ${props.maxHeight};`}
     ${props => props.height && css`height: ${props.height};`}
     ${props => props.width && css`width: ${props.width};`}

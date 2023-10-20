@@ -266,6 +266,7 @@ export default ({ vGap = 2, data, changedValues, x = 200, width = "100%", height
     }
 
     useEffect(() => {
+        console.log("schemaaaaaaaa",data)
         if (data?.details) {
             let els = [];
             let npaletes = 0;

@@ -32,6 +32,7 @@ import ReactDataGrid from '@inovua/reactdatagrid-enterprise';
 import PaginationToolbar from '@inovua/reactdatagrid-community/packages/PaginationToolbar';
 import '@inovua/reactdatagrid-enterprise/index.css';
 import { props } from 'ramda';
+import { cols } from 'utils/useMedia';
 
 
 
@@ -159,6 +160,7 @@ export const getFilters = ({ columns, filterdrawer = false }) => {
     const _toolbar = (v) => (!filterdrawer && (v?.filter?.show === 'toolbar'));
     const _morefilters = (v) => (filterdrawer && !(v?.filter?.show === false));
     return columns?.map(v => {
+        const { style = {}, ...fieldOptions } = v?.filter?.field || {};
         const name = `${(!v?.filter?.prefix && v?.filter?.prefix !== '') ? 'f' : ''}${v?.filter?.alias ? v?.filter?.alias : (v?.name ? v?.name : v?.id)}`;
         return (
             <React.Fragment key={`tf-${name}`}>
@@ -166,16 +168,16 @@ export const getFilters = ({ columns, filterdrawer = false }) => {
                     <Field name={`${name}`} label={{ enabled: true, text: v?.header, pos: "top", padding: "0px", ...v?.filter?.label }}>
                         {(typeof v?.filter?.type === 'function') ? v.filter.type() :
                             {
-                                autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                number: <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />,
-                                inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} />,
-                                datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} />
-                            }[v?.filter?.type] || <Input size="small" allowClear {...v?.filter?.field && v.filter.field} />
+                                autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                rangedate: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                rangetime: <RangeTimeField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                number: <Input size="small" allowClear {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                select: <SelectField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
+                                datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />
+                            }[v?.filter?.type] || <Input size="small" allowClear {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />
 
                         }
 
@@ -272,16 +274,19 @@ const RenderChildren = sizeMe({ monitorHeight: true, noPlaceholder: true, refres
     )
 })
 
-const MeasuredParent = sizeMe({ monitorHeight: true, noPlaceholder: true, refreshRate: 500 })(({ id, containerProps = {}, children, maxHeight, setIsOverflow, isOverflow, checkHeight, ...props }) => {
+const MeasuredParent = sizeMe({ monitorHeight: true, noPlaceholder: true, refreshRate: 500 })(({ id, responsiveToolbar = true, containerProps = {}, children, maxHeight, setIsOverflow, isOverflow, checkHeight, ...props }) => {
     const { width, height } = props.size;
     const [childrenSize, setChildrenSize] = useState({ width: null, height: null });
 
     const _overflow = () => {
-        if (checkHeight) {
-            return (childrenSize.width > width || childrenSize.height > height);
-        } else {
-            return (childrenSize.width > width);
+        if (responsiveToolbar) {
+            if (checkHeight) {
+                return (childrenSize.width > width || childrenSize.height > height);
+            } else {
+                return (childrenSize.width > width);
+            }
         }
+        return false;
     }
 
     useEffect(() => {
@@ -305,12 +310,12 @@ const MeasuredParent = sizeMe({ monitorHeight: true, noPlaceholder: true, refres
     )
 })
 
-const ResponsiveItem = ({ id, containerProps, children, maxHeight = 24, colWidth = 25, rowProps, colProps = {}, popover, defaultCol, checkHeight = true }) => {
+const ResponsiveItem = ({ id, containerProps, children, maxHeight = 24, colWidth = 25, rowProps, colProps = {}, popover, defaultCol, checkHeight = true, responsiveToolbar = true }) => {
     const [isOverflow, setIsOverflow] = useState(null);
     return (
         <Col>
             <Row nogutter {...rowProps} style={{ ...rowProps?.style }} wrap="nowrap">
-                <MeasuredParent id={id} containerProps={containerProps} maxHeight={maxHeight} setIsOverflow={setIsOverflow} isOverflow={isOverflow} checkHeight={checkHeight}>
+                <MeasuredParent id={id} containerProps={containerProps} maxHeight={maxHeight} setIsOverflow={setIsOverflow} isOverflow={isOverflow} checkHeight={checkHeight} responsiveToolbar={responsiveToolbar}>
 
                     {children}
 
@@ -324,7 +329,7 @@ const ResponsiveItem = ({ id, containerProps, children, maxHeight = 24, colWidth
     );
 }
 
-const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content, modeEdit, modeAdd }) => {
+const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initialValues, filters, content, modeEdit, modeAdd, responsiveToolbar = true }) => {
     const countFilters = Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length;
     return (
         <Form style={{}} form={form} name={`f-ltf`} onFinish={(values) => { onFinish("filter", values); }} onValuesChange={onValuesChange} onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") { onFinish("filter", form.getFieldsValue(true)); } }} initialValues={initialValues}>
@@ -332,7 +337,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
                 <Row gutterWidth={2} style={{}} >
                     <ResponsiveItem
                         checkHeight={false}
-
+                        responsiveToolbar={responsiveToolbar}
                         containerProps={{ style: { maxHeight: "56px", display: "flex", justifyContent: "end" } }}
                         colWidth={25}
                         rowProps={{ style: { display: "flex" } }}
@@ -569,7 +574,7 @@ const PaginationTool = ({ dataAPI, paginationProps, editable, toolbarFilters, on
     </Container>);
 }
 
-export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dynamicHeight = false, local = false, style, loading = false, rightToolbar, showPaginationTotals, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
+export default ({ dataAPI, columns, gridRef: _gridRef, setGridRef: _setGridRef, rowSelect = true, editOnClick = false, cellNavigation = true, dynamicHeight = false, responsiveToolbar = true, local = false, style, loading = false, rightToolbar, showPaginationTotals, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -580,6 +585,10 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dyn
     const action = useRef(null);
     const initialized = useRef(false);
     const submitting = useSubmitting(false);
+
+    const getGridRef = () => {
+        return (_gridRef) ? _gridRef : gridRef;
+    }
 
 
     const rowClass = ({ data }) => {
@@ -741,24 +750,14 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dyn
     //         </Container>
     //     }, [dataAPI?.getSkip(true), dataAPI?.updated(true)])
 
-    const onCellDoubleClick = () => {
-        const grid = gridRef.current
-        if (!grid.computedActiveCell) {
-            return;
-        }
-        let [rowIndex, colIndex] = grid.computedActiveCell
 
-        if (!editMode(editable) && !addMode(editable) && typeof onCellAction === "function") {
-            onCellAction(grid.data[rowIndex], grid.getColumnBy(colIndex), "DoubleClick");
-        }
-    }
     const onKeyDown = (event) => {
         const src = event.target;
         if (src.getAttribute('title') === 'Ir Para') {
             //Input da caixa de texto ir para da navegação....
             return;
         }
-        const grid = gridRef.current
+        const grid = getGridRef().current
         if (!grid.computedActiveCell) {
             return;
         }
@@ -864,6 +863,30 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dyn
         hideSettings();
     }
 
+    const cellDOMProps = (cellProps) => {
+        return {
+            onClick: () => {
+                gridRef.current.startEdit({ columnId: cellProps.id, rowIndex: cellProps.rowIndex })
+            }
+        }
+    }
+
+    const onCellDoubleClick = () => {
+        const grid = getGridRef().current
+        if (!grid.computedActiveCell) {
+            return;
+        }
+        let [rowIndex, colIndex] = grid.computedActiveCell
+
+        if (!editMode(editable) && !addMode(editable) && typeof onCellAction === "function") {
+            onCellAction(grid.data[rowIndex], grid.getColumnBy(colIndex), "DoubleClick");
+        }
+    }
+
+    const _columns = (_cols) => {
+        return _cols.map(v => ({ ...v, cellDOMProps }));
+    }
+
     const computeHeight = useCallback(() => {
         const _h = (dataAPI.getLength() * rowHeight) + dynamicHeight;
         return { height: `${_h}px`, minHeight: `${_h}px` };
@@ -889,17 +912,17 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dyn
                     <Row><Col>{title}</Col></Row>
                     <Row><Col style={{ display: "flex" }}>
                         {startToolbar && startToolbar}
-                        <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
+                        <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={getGridRef()} />
                         {leftToolbar && leftToolbar}
                     </Col></Row>
                 </Col>
                 }
                 {!title && <Col xs="content" style={{ alignSelf: "end", display: "flex" }}>
                     {startToolbar && startToolbar}
-                    <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={gridRef} />
+                    <EditControls dataAPI={dataAPI} editable={editable} columns={columns} idProperty={idProperty} dirty={dirty} grid={getGridRef()} />
                     {leftToolbar && leftToolbar}
                 </Col>}
-                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} modeAdd={addMode(editable)} />}</Col>
+                <Col style={{ overflow: "hidden" }}>{toolbarFilters && <ToolbarFilters dataAPI={dataAPI} {...toolbarFilters} modeEdit={editMode(editable)} modeAdd={addMode(editable)} responsiveToolbar={responsiveToolbar} />}</Col>
                 {/* {search && <Col xs="content" style={{ padding: "0px", alignSelf: "end", marginBottom: "4px" }}><Badge count={Object.keys(dataAPI.removeEmpty(dataAPI.getFilter(true))).length} size="small"><Button onClick={() => (toolbarFilters?.form) && toolbarFilters.onFinish("filter", toolbarFilters.form.getFieldsValue(true))} size="small" icon={<SearchOutlined />} /></Badge></Col>} */}
                 {rightToolbar && <Col xs="content" style={{ alignSelf: "center" }}>{rightToolbar}</Col>}
                 {settings && <Col xs="content" style={{ alignSelf: "end", marginBottom: "4px" }}>
@@ -937,8 +960,8 @@ export default ({ dataAPI, columns, rowSelect = true, cellNavigation = true, dyn
                 renderPaginationToolbar={renderPaginationTool}
                 filterRowHeight={40}
                 headerHeight={headerHeight}
-                handle={setGridRef}
-                columns={columns}
+                handle={(_gridRef) ? _setGridRef : setGridRef}
+                columns={editOnClick ? _columns(columns) : columns}
                 rowHeight={rowHeight}
                 dataSource={local ? localDatasource : dataSource}
                 style={{ ...gridStyle, ...style, ...((dynamicHeight) && { ...computeHeight() }) }}

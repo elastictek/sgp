@@ -55,6 +55,7 @@ dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
 
+reportServer = AppSettings.reportServer["default"]
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -76,7 +77,7 @@ def Sql(request, format=None):
 def ExportFile(request, format=None):
     p = request.data["parameters"]
     req = {**p}
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json=req)
+    fstream = requests.post(f'{reportServer}/run', json=req)
     if (fstream.status_code==200):
         resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
         if (p["export"] == "pdf"):
@@ -97,7 +98,7 @@ def PrintNwsEtiquetas(request,format=None):
     print(data)
     tstamp = datetime.now()
 
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
+    fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
         "name":data.get("name"),
@@ -134,13 +135,9 @@ def PrintPaleteEtiqueta(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
     data = request.data["parameters"]
     tmp = tempfile.NamedTemporaryFile()
-    print(tmp)
-    print(tmp.name)
-    print("----")
-    print(data)
     tstamp = datetime.now()
 
-    fstream = requests.post('http://localhost:8080/ReportsGW/run', json={
+    fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
         "name":data.get("name"),
@@ -173,6 +170,60 @@ def PrintPaleteEtiqueta(request,format=None):
         #os.unlink(tmp.name)
     return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
 
+def PrintMPBufferEtiqueta(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    tmp = tempfile.NamedTemporaryFile()
+    print(tmp)
+    print(tmp.name)
+
+    #UTC TO LISBON TIME
+    tzutc = pytz.timezone('UTC')
+    tz = pytz.timezone('Europe/Lisbon')
+    cdate = datetime.fromisoformat(request.data["parameters"]["CREDATTIM_0"])
+    utc_time = tzutc.localize(cdate)
+    ###################
+
+    fstream = requests.post(f'{reportServer}/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":"ETIQUETAS-BUFFER",
+        "path":"ETIQUETAS/MP-BUFFER",
+        "export":"pdf",
+        "data":{      
+            "artigo_cod":request.data["parameters"]["ITMREF_0"],
+            "n_lote":request.data["parameters"]["LOT_0"],
+            "artigo_des":request.data["parameters"]["ITMDES1_0"],
+            "unit":request.data["parameters"]["PCU_0"],
+            "qty":float(request.data["parameters"]["QTYPCU_0"]),
+            "vcr_num":request.data["parameters"]["VCRNUM_0"],
+            "loc":request.data["parameters"]["LOC_0"],
+            "obs":request.data["parameters"]["obs"] if "obs" in request.data["parameters"] else None,
+            "data_buffer":utc_time.astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")            
+        }
+    })
+    try:
+        if "download" in request.data["parameters"]:
+            return download_file_stream(fstream,f"""MP-{request.data["parameters"].get("LOT_0")}""","application/pdf")
+        else:
+            print(tmp.name)
+            tmp.write(fstream.content)
+            #TO UNCOMMENT ON PRODUCTION
+            conn = cups.Connection()
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
+
+
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
 @authentication_classes([SessionAuthentication])
@@ -190,7 +241,7 @@ def PrintMPBuffer(request,format=None):
     utc_time = tzutc.localize(cdate)
     ###################
 
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
+    fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
         "name":"ETIQUETAS-BUFFER",
@@ -303,7 +354,7 @@ def PrintReciclado(request,format=None):
     tmp = tempfile.NamedTemporaryFile()
     print(tmp)
     print(tmp.name)
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json={
+    fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
         "name":"ETIQUETAS-RECICLADO",

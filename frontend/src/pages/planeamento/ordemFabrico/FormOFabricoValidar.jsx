@@ -47,7 +47,7 @@ const LoadOFabricoTemp = async (record, token) => {
 
 
 
-export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput=true }) => {
+export default ({ record, setFormTitle, parentRef, closeParent, parentReload, forInput=true, loadParentData }) => {
     /*     const { temp_ofabrico_agg, temp_ofabrico, item_id, produto_id, produto_cod, ofabrico } = record; */
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
@@ -133,7 +133,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         if (!submitting.init()) { return; }
 
         const forproduction = submitForProduction.current;
-        submitForProduction.current = false;
         const status = { error: [], warning: [], info: [], success: [] };
         const msgKeys = ["start_prev_date", "end_prev_date"];
         const { cliente_cod, cliente_nome, iorder, item, ofabrico, produto_id, produto_cod, item_id, temp_ofabrico,prf } = record;
@@ -177,16 +176,22 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
             const response = await fetchPost({ url: `${API_URL}/savetempordemfabrico/`, parameters: { ...values, ofabrico_cod: ofabrico, ofabrico_id: temp_ofabrico, forproduction, qty_item: record.qty_item, start_prev_date: start_prev_date.format('YYYY-MM-DD HH:mm:ss'), /* end_prev_date: end_prev_date.format('YYYY-MM-DD HH:mm:ss'), */ cliente_cod, cliente_nome, iorder, prf, item, item_id, core_cod, core_des, produto_id, produto_cod, cortes_id/* , cortesordem_id */ } });
             setResultMessage(response.data);
             if (forproduction) {
-                parentReload();
+                loadParentData();
             }
+        }else{
+            submitForProduction.current = false;
         }
         setFieldStatus(diff.fields);
         setFormStatus(status);
     };
 
     const onSuccessOK = () => {
-        submitting.end();
-        setResultMessage({ status: "none" });
+        if (submitForProduction.current){
+            onClose();
+        }else{
+            submitting.end();
+            setResultMessage({ status: "none" });
+        }
     }
 
     const onErrorOK = () => {
@@ -198,11 +203,11 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         closeParent();
     }
 
-    const onSubmitForProduction = useCallback(() => {
+    const onSubmitForProduction = () => {
         submitting.trigger();//setSubmitting(true);
         submitForProduction.current = true;
         form.submit();
-    }, []);
+    };
 
     const onSubmit = useCallback(() => {
         submitting.trigger();

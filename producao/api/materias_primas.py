@@ -183,9 +183,8 @@ def Sql(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response({})
-    
 
-def GetGranuladoInLine(request, format=None):
+def GetNonwovensInLine(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
 
@@ -195,6 +194,35 @@ def GetGranuladoInLine(request, format=None):
     f.value()
     parameters = {**f.parameters}
     dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""
+            select * from lotesnwlinha l where `status`=1 order by queue asc, `type` asc
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    try:
+        response = db.executeList(sql, connection, parameters)
+    except Exception as error:
+        print(error)
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+def _getGranuladoInLine(data):
+    filter=data["filter"]
+    connection = connections["default"].cursor()
+    f = Filters({"st":3,**filter})
+    f.setParameters({}, False)
+    f.where()
+    f.add(f'cs.id = :cs_id', lambda v:(v!=None))
+    if "cs_id" not in filter:
+        f.add(f'cs.status = :st', True)
+    f.value()
+    parameters = {**f.parameters}
+    dql = db.dql(data, False)
     cols = f"""ROW_NUMBER() OVER () id,t.cuba,IL.vcr_num,IFNULL(IL.artigo_cod,t.matprima_cod) artigo_cod ,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,
             IFNULL(IL.artigo_des,t.matprima_des) artigo_des,group_concat(distinct t.doser order by t.doser) dosers,IL.mp_group,IL.max_in"""
     dql.columns=encloseColumn(cols,False)
@@ -220,7 +248,7 @@ def GetGranuladoInLine(request, format=None):
             FORMULACAO AS(
             select formulacaov2
             from producao_currentsettings cs
-            where status=3
+            {f.text}
             ),
             FORMULACAO_DOSERS AS(
             SELECT doser,matprima_cod, arranque,cuba,matprima_des
@@ -235,24 +263,26 @@ def GetGranuladoInLine(request, format=None):
             ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
             (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
             FROM INLINE IL
-            LEFT JOIN FORMULACAO_DOSERS FR ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+            LEFT JOIN FORMULACAO_DOSERS FR ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser AND IL.group_id =FR.cuba
             UNION
             SELECT IFNULL(FR.cuba,IL.group_id) cuba,IFNULL(FR.matprima_cod,IL.artigo_cod) matprima_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(FR.matprima_des,IL.artigo_des) matprima_des,IFNULL(FR.doser,IL.doser) doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
             ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
             (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
             FROM FORMULACAO_DOSERS FR
-            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser
+            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser AND IL.group_id =FR.cuba
             WHERE IL.id is null
             ) t
-            LEFT JOIN INLINE IL ON (IL.artigo_cod=t.matprima_cod or IL.mp_group=t.mp_group) AND IL.doser=t.doser
+            LEFT JOIN INLINE IL ON (IL.artigo_cod=t.matprima_cod or IL.mp_group=t.mp_group) AND IL.doser=t.doser AND IL.group_id = t.cuba
             group by t.formulation, t.cuba,IFNULL(IL.artigo_cod,t.matprima_cod),IL.vcr_num,IL.mp_group,IL.max_in,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(IL.artigo_des,t.matprima_des)
             {s(dql.sort)}
         """
     )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
+    return db.executeList(sql, connection, parameters)
+
+
+def GetGranuladoInLine(request, format=None):
     try:
-        response = db.executeList(sql, connection, parameters)
+        response = _getGranuladoInLine(request.data)
     except Exception as error:
         print(error)
         return Response({"status": "error", "title": str(error)})
@@ -344,6 +374,50 @@ def RemoveGranuladoFromLine(request, format=None):
             return Response({"status": "success","title":"Saída de Granulado efetuada com sucesso." })
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
+
+def RemoveNonwovenFromLine(request, format=None):
+    f = request.data['parameters'].get("row") if request.data['filter'].get("vcr_num") is None else request.data['filter']
+    try:
+        with connections["default"].cursor() as cursor:
+            f["t_stamp"]=datetime.now()
+            args = (f["t_stamp"],f["vcr_num"],f["qty_reminder"] if "qty_reminder" in f else 0,f["obs"] if "obs" in f else None,request.user.id, 0)
+            cursor.callproc('output_nw_from_line_v2',args)
+            return Response({"status": "success","title":"Saída de Nonwoven efetuada com sucesso." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def AdjustNwQueue(request, format=None):
+    f = request.data['parameters'].get("row") if request.data['filter'].get("vcr_num") is None else request.data['filter']
+
+    def checkQueue(_list,_type, cursor):
+        f = Filters({"status": 1,"type":_type})
+        f.where()
+        f.add(f'status = :status', True)
+        f.add(f'type = :type', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""select id from lotesnwlinha {f.text}"""), cursor, f.parameters)
+        queue_ids=[]
+        if len(response["rows"])>0:
+            queue_ids = [item['id'] for item in response["rows"]]
+        list_ids = [item['id'] for item in _list]
+        return set(list_ids) == set(queue_ids)    
+        
+    try:
+        with connections["default"].cursor() as cursor:
+            if checkQueue(f["listInf"],0,cursor) and checkQueue(f["listSup"],1,cursor):
+
+                # for idx,v in enumerate(f["listInf"]):
+                #     dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
+                #     db.execute(dml.statement, cursor, dml.parameters)
+                # for idx,v in enumerate(f["listSup"]):
+                #     dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
+                #     db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success","title":"Filas atualizadas com sucesso." })
+            else:
+                return Response({"status": "error","title":"Não é possível atuializar as filas de nonwoven." })
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+ 
 
 def RemoveDoserFromLine(request, format=None):
     f = request.data['parameters'].get("row") if request.data['filter'].get("vcr_num") is None else request.data['filter']
@@ -514,6 +588,132 @@ def GetNWLoteQuantity(request, format=None):
         return Response({"status": "success","row":{"lote_id":rows[0]["lote_id"],"date":rows[0]["CREDATTIM_0"], "artigo_des":rows[0]["artigo_des"], "artigo_cod":rows[0]["ITMREF_0"], "qty_lote":rows[0]["QTYPCU_0"], "largura":int(rows[0]["largura"]), "comp":round(float(rows[0]["QTYPCU_0"])/(int(rows[0]["largura"])/1000),2), "vcr_num": rows[0]["VCRNUM_0"], "unit":rows[0]["PCU_0"], "n_lote":rows[0]["LOT_0"] }})
     else:
         return Response({"status": "error", "title": "O lote de Nonwoven não pode ser utilizado em linha!", "row":{}})
+
+
+def ListMateriasPrimas(request, format=None):
+    connection = connections[connMssqlName].cursor()    
+    #connection = connections[connGatewayName].cursor()    
+    type = int(request.data['filter']['type'] if 'type' in request.data['filter'] else -1)
+    loc = request.data['filter']['loc'] if 'loc' in request.data['filter'] and request.data['filter']['loc']!="-1" else None
+    lookup = request.data["parameters"]["lookup"] if "parameters" in request.data and "lookup" in request.data["parameters"] else False
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        # "picked": {"value": lambda v: None if "fpicked" not in v or v.get("fpicked")=="ALL" else f'=={v.get("fpicked")}' , "field": lambda k, v: f'{k}'},
+        "ITMREF_0": {"value": lambda v: v.get('fitm'), "field": lambda k, v: f'ST."{k}"'},
+        "VCRNUM_0": {"value": lambda v: v.get('fvcr'), "field": lambda k, v: f'ST."{k}"'},
+        "LOT_0": {"value": lambda v: v.get('flote'), "field": lambda k, v: f'ST."{k}"'},
+        "LOC_0": {"value": lambda v: v.get('floc'), "field": lambda k, v: f'ST."{k}"'},
+        "QTYPCU_0": {"value": lambda v: v.get('fqty_lote'), "field": lambda k, v: f'"{k}"'},
+        **rangeP(f.filterData.get('fdate'), 't_stamp', lambda k, v: f'CONVERT(date, ST."CREDATTIM_0")')
+        # "qty_lote_available": {"value": lambda v: v.get('fqty_lote_available'), "field": lambda k, v: f'{k}'},
+        # "qty_artigo_available": {"value": lambda v: v.get('fqty_artigo_available'), "field": lambda k, v: f'{k}'},
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value("and")
+
+    f2 = filterMulti(request.data['filter'], {
+        'fartigo': {"keys": ['ITMREF_0', 'ITMDES1_0'], "table":"mprima"}
+    }, False, "and" if f.hasFilters else "and")    
+
+    def filterLocationMultiSelect(data,name,field,hasFilters=False):
+        f = Filters(data)
+        fP = {}
+        #v = [{"value":"ARM"},{"value":"BUFFER"}] if name not in data else data[name]
+        v = [] if name not in data else data[name]
+        dt = [o['value'] for o in v if o["value"] is not None]
+        if len(dt) > 0:
+            value = None if len(v)==0 else 'in:' + ','.join(f"{w}" for w in dt)
+            fP[field] = {"key": field, "value": value, "field": lambda k, v: f'{k}'}
+        f.setParameters({**fP}, True)
+        f.auto()
+        f.where(False, hasFilters)
+        f.value()
+        return f
+    #flocation = filterLocationMultiSelect(request.data['filter'],'fmulti_location','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
+    flocation = filterLocationMultiSelect({"loc":[{"value":loc}]},'loc','"LOC_0"',"and" if f.hasFilters or f2["hasFilters"] else "and")
+
+    parameters = {**f.parameters, **flocation.parameters, **f2['parameters']}
+    dql = dbmssql.dql(request.data, False,False,[{"column":"CREDATTIM_0", "direction":"DESC"}])
+    
+    sgpAlias = dbmssql.dbAlias.get("sgp")
+    sageAlias = dbmssql.dbAlias.get("sage")
+
+    typeFilter=""
+    if type==1:
+        typeFilter = f""" and (LOWER(mprima."ITMDES1_0") LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") LIKE '%%gsm%%' AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) """
+    elif type==2:
+        typeFilter = f""" and (LOWER(mprima."ITMDES1_0") LIKE 'core%%' AND (mprima."ACCCOD_0" = 'PT_EMBALAG')) """
+    elif type==3:
+        typeFilter = f""" and ((LOWER(mprima."ITMDES1_0") NOT LIKE 'nonwo%%' AND LOWER(mprima."ITMDES1_0") NOT LIKE 'core%%') AND (mprima."ACCCOD_0" = 'PT_MATPRIM')) """
+    elif type==4:
+        typeFilter = f""" and (ST."ITMREF_0" LIKE 'R000%%' and LOWER(mprima."ITMDES1_0") LIKE 'reciclado%%') """
+
+    cols = f"""*"""
+    sql = lambda p, c, s: (
+        f"""
+            SELECT {c(f'{cols}')} FROM(
+            SELECT DISTINCT ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
+            SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
+            LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
+            ST."PCU_0",mprima."ITMDES1_0",mprima."TSICOD_3"
+            FROM ELASTICTEK.STOCK STK
+            JOIN ELASTICTEK.STOJOU ST ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
+            JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            --LEFT JOIN (select * from openquery([SGP-PROD], 'select distinct vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
+            WHERE ST.VCRTYP_0 NOT IN (28)
+            {typeFilter}
+            {f.text} {f2["text"]}
+            ) t
+            where (QTYPCU_0 > 0 AND QTY_SUM>0)
+            {flocation.text}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+
+    print(
+
+        f"""
+            SELECT {f'{cols}'} FROM(
+            SELECT DISTINCT ST."ROWID",ST."CREDATTIM_0",ST."ITMREF_0",ST."LOT_0",ST."LOC_0",ST."VCRNUM_0",    
+            SUM(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0",ST."LOC_0") QTY_SUM,    
+            LAST_VALUE(ST.QTYPCU_0) OVER (PARTITION BY ST."ITMREF_0",ST."LOT_0",ST."VCRNUM_0" ORDER BY ST.ROWID RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) QTYPCU_0,
+            ST."PCU_0",mprima."ITMDES1_0",mprima."TSICOD_3"
+            --FROM ELASTICTEK.STOCK STK
+            FROM ELASTICTEK.STOJOU ST --ON ST.ITMREF_0=STK.ITMREF_0 AND ST.LOT_0=STK.LOT_0 AND ST.LOC_0=STK.LOC_0
+            JOIN ELASTICTEK.ITMMASTER mprima on ST."ITMREF_0"= mprima."ITMREF_0"
+            --LEFT JOIN (select * from openquery([SGP-PROD], 'select distinct vcr_num from lotesgranuladolinha')) GRN on GRN.vcr_num=ST."VCRNUM_0"
+            WHERE ST.VCRTYP_0 NOT IN (28)
+            {typeFilter}
+            {f.text} {f2["text"]}
+            ) t
+            where (QTYPCU_0 > 0 AND QTY_SUM>0)
+            {flocation.text}
+        """
+    )
+    print(parameters)
+
+    if ("export" in request.data["parameters"]):
+        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sage"])
+    if lookup:
+        response = dbmssql.executeSimpleList(sql(lambda v:v,lambda v:v,lambda v:v), connection, parameters, [])
+    else:
+        response = dbmssql.executeList(sql, connection, parameters, [])
+    return Response(response)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

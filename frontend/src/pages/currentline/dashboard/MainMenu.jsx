@@ -93,10 +93,11 @@ export default ({ dark = false }) => {
             </Permissions>
             <Permissions permissions={permission} item="planeamento" key="2" clone>
                 <Panel header={<b>Planeamento</b>} key="2">
-                    <Permissions permissions={permission} item="planeamento" action="A"><Button size='small' type="link" onClick={() => navigate('/app/ofabricolist', {})} title="A">Ordens de Fabrico</Button></Permissions>
+                    <Permissions permissions={permission} item="planeamento" action="A"><Button size='small' type="link" onClick={() => navigate('/app/ofabrico/ordensfabricolist/', {})} title="A">Ordens de Fabrico</Button></Permissions>
                     <Permissions permissions={permission} item="planeamento" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame('/producao/perfil/list/', 'Perfis de Bobinagem')} title="B">Perfis de Bobinagem</Button></Permissions>
                     <Permissions permissions={permission} item="planeamento" action="C"><Button size='small' type="link" onClick={() => navigate('/app/ofabrico/checklists', {})} title="C">CheckLists</Button></Permissions>
                     <Permissions permissions={permission} item="planeamento" action="E"><Button size='small' type="link" onClick={() => navigate('/app/ofabrico/formulacaolist', {})} title="E">Formulações</Button></Permissions>
+                    <Permissions permissions={permission} item="planeamento" action="F"><Button size='small' type="link" onClick={() => navigate('/app/ofabrico/paletizacoeslist', {})} title="F">Paletizações</Button></Permissions>
                     <Permissions permissions={permission} item="planeamento" action="D"><Button size='small' type="link" onClick={() => navigate('/app/artigos/artigoscompativeis', {})} title="D">Artigos Compatíveis</Button></Permissions>
                     {/*                 <Button size='small' type="link" onClick={() => { }}>Formulação</Button>
                 <Button size='small' type="link" onClick={() => { }}>Gama Operatória</Button>
@@ -118,7 +119,7 @@ export default ({ dark = false }) => {
                 <Panel header={<b>Linha de Produção</b>} key="3">
                     <Permissions permissions={permission} item="linhaproducao" action="A"><Button size='small' type="link" onClick={() => navigate('/app/bobinagens/reellings', {})} title="A">Bobinagens</Button></Permissions>
                     <Permissions permissions={permission} item="linhaproducao" action="E"><Button size='small' type="link" onClick={() => navigate('/app/bobines/bobineslist', {})} title="A">Bobines</Button></Permissions>
-                    <Permissions permissions={permission} item="linhaproducao" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/paletelist/`, 'Paletes')} title="B">Paletes</Button></Permissions>
+                    {/* <Permissions permissions={permission} item="linhaproducao" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/paletelist/`, 'Paletes')} title="B">Paletes</Button></Permissions> */}
                     <Permissions permissions={permission} item="linhaproducao" action="C"><Button size='small' type="link" onClick={() => navigate('/app/paletes/paleteslist', {})} title="C">Paletes</Button></Permissions>
                     <Permissions permissions={permission} item="linhaproducao" action="D"><Button size='small' type="link" onClick={() => navigate('/app/logslist/lineloglist', {})} title="D">Eventos da Linha</Button></Permissions>
                 </Panel>

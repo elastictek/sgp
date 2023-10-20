@@ -230,6 +230,20 @@ def updateCurrentSettings(id,type,data,user_id,cursor):
                     args = (id, None,type,user_id,0)
                     #print(args)
                     cursor.callproc('update_currentsettings',args)
+            if type.startswith('nonwovens'):
+                    data.pop("type", None)
+                    args = (id, json.dumps(data),type,user_id,0)
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
+            if type.startswith('cortes'):
+                    data.pop("type", None)
+                    args = (id, json.dumps(data),type,user_id,0)
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
+            if type.startswith('status'):
+                    args = (id, None,type,user_id,0)
+                    #print(args)
+                    cursor.callproc('update_currentsettings',args)
         return Response({"status": "success", "id":id, "title": f'Definições atualizadas com sucesso', "subTitle":f""})
     except Exception as error:
         return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
@@ -239,9 +253,9 @@ def changeStatus(id,type,data,user_id,cursor):
     try:
         with cursor:
             if type == 'status':
-                args = (id, json.dumps(data),type,user_id,0)                
-                #print(args)
-                #cursor.callproc('update_currentsettings',args)
+                args = (id, json.dumps(data),type,user_id,0)
+                print(args)
+                cursor.callproc('update_currentsettings',args)
         return Response({"status": "success", "id":id, "title": f'Estado atualizado com sucesso', "subTitle":f""})
     except Exception as error:
         return Response({"status": "error", "id":id, "title": str(error), "subTitle":str(error)})
@@ -444,8 +458,8 @@ def GetCurrentSettings(request, format=None):
         "st": {"value": 3, "field": lambda k, v: f'{k}'},
     }, False)
     f.where()
-    f.add(f'agg_of_id = :aggId', lambda v:(v!=None))
-    f.add(f'status = :st',lambda v:"aggId" not in request.data['filter'])
+    f.add(f'agg_of_id = :aggid', lambda v:(v!=None))
+    f.add(f'status = :st',lambda v:"aggid" not in request.data['filter'])
     f.value("and")
     parameters = {**f.parameters}
     

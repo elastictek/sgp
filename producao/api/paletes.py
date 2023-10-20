@@ -732,7 +732,7 @@ def AddPaletesStock(request, format=None):
                 args = [data.get("ordem_id"),json.dumps(data.get("rows"), ensure_ascii=False),request.user.id]
                 print("Rrrrrr")
                 print(args)
-                #cursor.callproc('add_paletes_stock',args)
+                cursor.callproc('add_paletes_stock',args)
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
@@ -749,6 +749,37 @@ def DeletePaletesStock(request, format=None):
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
+    
+def DeletePalete(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        def _checkPalete(palete_id):
+            if not palete_id:
+                return 0
+            connection = connections[connGatewayName].cursor()
+            f = Filters({"id":palete_id})
+            f.where()
+            f.add(f'sgppl.id = :id', True)
+            f.value("and")
+            response = dbgw.executeSimpleList(lambda: (f"""
+            SELECT sgppl.id
+            FROM mv_paletes sgppl
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            {f.text} and mv."SDHNUM_0" is null and sgppl.carga_id is null
+            """), connection, f.parameters)
+            if len(response["rows"])>0:
+                return response["rows"][0]
+            return None
+
+        if _checkPalete(data.get("palete_id")) is not None:
+            return Response({"status": "error", "title": "A palete já foi expedida ou pertence a uma carga!"})
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                args = [data.get("palete_id")]
+                cursor.callproc('delete_palete',args)
+        return Response({"status": "success", "data":{}, "title":None})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 def CreatePaleteLine(request, format=None):
     data = request.data.get("parameters")
@@ -762,6 +793,8 @@ def CreatePaleteLine(request, format=None):
                 row = cursor.fetchone()
                 cursor.execute("select * from tmp_paletecheck_report;")
                 report = fetchall(cursor)
+                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                print(row)
         return Response({"status": "success", "data":report, "palete":{"id":row[0],"nome":row[1]}, "title":None})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})

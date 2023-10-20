@@ -200,21 +200,22 @@ export const QueueNwColumn = ({ value, status, cellProps, style = {} }) => {
     return (<>{!cellProps?.inEdit && getValue(value)}</>);
 }
 
-export const ArtigoColumn = ({ data, cellProps }) => {
-    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column" }}>
+export const ArtigoColumn = ({ data, cellProps, style, onClick }) => {
+    return (<>{!cellProps?.inEdit && <div {...onClick && { onClick: () => onClick(data) }} style={{ display: "flex", alignItems: "start", flexDirection: "column", ...style }}>
+        {data?.n_paletes_total && <div style={{ color: "#000" }}><b>{data?.n_paletes_total}</b> <span>Paletes</span> {data?.qtd && <span><b>{data.qtd}</b> m2</span>}</div>}
         <div style={{ fontWeight: 700 }}>{data?.artigo_cod}</div>
         <div style={{}}>{data?.artigo_des}</div>
     </div>}</>)
 }
 
 export const NwColumn = ({ data, cellProps, style }) => {
-    if (!data?.n_lote){
-        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column",lineHeight:1.2, ...style }}>
+    if (!data?.n_lote) {
+        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column", lineHeight: 1.2, ...style }}>
             <div>{data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
             <div style={{ fontWeight: 700 }}>{data?.artigo_cod}</div>
         </div>}</>)
-    }else{
-        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column",lineHeight:1.2, ...style }}>
+    } else {
+        return (<>{!cellProps?.inEdit && <div style={{ display: "flex", alignItems: "start", flexDirection: "column", lineHeight: 1.2, ...style }}>
             <div><span style={{ fontWeight: 700 }}>{data?.artigo_cod}</span> {data?.artigo_des?.replace(/nonwoven/gi, '')}</div>
             <div style={{ fontWeight: 700 }}>{data?.n_lote}</div>
         </div>}</>)
@@ -223,7 +224,7 @@ export const NwColumn = ({ data, cellProps, style }) => {
 
 export const PosColumn = ({ value, cellProps }) => {
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-        {value === 1 ? <ImArrowUp/> : <ImArrowDown />}
+        {value === 1 ? <ImArrowUp /> : <ImArrowDown />}
         <div style={{ marginRight: "5px" }}>{value === 1 ? "SUP" : "INF"}</div>
     </div>}</>);
 }
@@ -267,9 +268,16 @@ export const ArrayColumn = ({ value, distinct = true, onClick, style, cellProps,
     }
 
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", fontSize: "11px" }}>
-        {value && getValue(value).map((v, i) => <div key={`${cellProps?.name}-${i}`}>{v}</div>)}
+        {value && getValue(value).map((v, i) => <div key={`${cellProps?.name}-${i}`} style={{...style}}>{v}</div>)}
     </div>}</>);
 }
+
+export const ArrayObjectColumn = ({ value, onClick, style, children, cellProps, ...props }) => {
+    return (<>{!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "column", fontSize: "11px", ...style }}>
+        {value && value.map((v, i) => <div key={`${cellProps?.name}-${i}`}>{React.cloneElement(children, { data: v, cellProps })}</div>)}
+    </div>}</>);
+}
+
 
 const colors = [
     { color: "#237804", fontColor: "#fff" },

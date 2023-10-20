@@ -9,7 +9,7 @@ import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep, lpadFloat } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
-import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET, HISTORY_DEFAULT } from "config";
+import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET,  HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, getFloat } from "utils";
 import Portal from "components/portal";
@@ -71,7 +71,7 @@ import ListBobinagens from './Items/ListBobinagens';
 import LineParameters from './Items/LineParameters';
 import ListReciclado from './items/ListReciclado';
 
-const FormCortes = React.lazy(() => import('../currentline/FormCortes'));
+const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 const GranuladoPick = React.lazy(() => import('../picking/GranuladoPick'));
@@ -734,10 +734,6 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
             setOfs(v.ofs);
             dataAPI.setData({ rows: v.rows, total: v.total });
 
-
-
-
-
             // setOfsData(_dj);
             // const _djd = parameters?.data?.rows.filter((obj, index, self) =>
             //     index === self.findIndex((t) => (
@@ -784,7 +780,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                         {/**PALETES */}
                         <Col lg={12} xl={7}>
                             <Row nogutter>
-                                {paletes.length > 0 && <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "3px" }}>
+                                <Col /* width={650} */ style={{ border: "solid 1px #595959", padding: "3px" }}>
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Paletes</div>
@@ -796,24 +792,24 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                             <div style={{}}><ListPaletesOf hash={hash} data={parameters?.data} filter={paletes} mini={true} /></div>
                                         </Col>
                                     </Row>
-                                </Col>}
+                                </Col>
                             </Row>
                         </Col>
 
                         {/**CORTES */}
                         <Col lg={12} xl={5}>
                             <Row nogutter>
-                                <Col style={{ border: "solid 1px #595959", padding: "3px" }}>
+                                <Col style={{ border: "solid 1px #595959", padding: "3px",height:"227px" }}>
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
-                                            <div><Button type="primary" size="small" /* onClick={onPaletesExpand} */ ghost icon={<EditOutlined />} /></div>
+                                            {/* <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<EditOutlined />} /></div> */}
                                         </Col>
                                     </Row>
                                     <Row nogutter>
                                         <Col>
                                             <div style={{}}>
-                                                <Suspense fallback={<></>}><FormCortes forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </div>
                                         </Col>
@@ -845,10 +841,10 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                                     <div style={{}}>Granulado em linha</div>
                                                     <div>
                                                         <Space>
-                                                            <Button type="primary" size="small" ghost title="Alterar formulação" disabled={!permission.isOk({ item: "formulacao", action: "inproduction", forInput: !parameters?.isClosed })} onClick={() => onOpenFormulacao("formulacao_formulation_change")}>Formulação</Button>
+                                                            {/* <Button type="primary" size="small" ghost title="Alterar formulação" disabled={!permission.isOk({ item: "formulacao", action: "inproduction", forInput: !parameters?.isClosed })} onClick={() => onOpenFormulacao("formulacao_formulation_change")}>Formulação</Button>
                                                             <Button type="primary" size="small" ghost title="Alterar doseadores" disabled={!permission.isOk({ item: "formulacao", action: "inproduction", forInput: !parameters?.isClosed })} onClick={() => onOpenFormulacao("formulacao_dosers_change")}>Doseadores</Button>
                                                             <Button type="primary" size="small" icon={<TabletOutlined />} title="Entrada e saida de granulado da linha" onClick={onGranuladoPick} />
-                                                            <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} title="Ver movimentos de granulado na linha" />
+                                                            <Button type="primary" size="small" onClick={onBobinagensExpand} ghost icon={<ExpandAltOutlined />} title="Ver movimentos de granulado na linha" /> */}
                                                         </Space>
                                                     </div>
                                                 </Col>
@@ -914,7 +910,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                             <Row nogutter>
                                                 <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Nonwovens planeados</div>
-                                                    <div><Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<EditOutlined />} /></div>
+                                                    {/* <div><Button type="primary" size="small" onClick={onBobinagensExpand} ghost icon={<EditOutlined />} /></div> */}
                                                 </Col>
                                             </Row>
                                             <Row gutterWidth={5} style={{ display: "flex", fontSize: "11px" }}>
@@ -1408,7 +1404,7 @@ export default ({ setFormTitle, ...props }) => {
             size="small"
             title={
                 <div style={{ display: "flex", alignItems: "center" }}>
-                    <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedItems={HISTORY_DEFAULT}
+                    <SimpleDropdownHistory description="Dashboard Produção Linha 1" id={permission.auth?.user} fixedTopItems={HISTORY_DEFAULT} fixedFooterItems={HISTORY_DEFAULT_FOOTER}
                         center={
                             <div /* onClick={onOrdemFabricoClick} */ className={classes.widgetTitle}>{dataEstadoProducao?.current?.agg_cod}</div>
                         } />

@@ -61,7 +61,7 @@ const StyledFile = styled.div`
 
 const StyledDragger = styled(Dragger)`
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: space-around;
     align-items: center;
     border-top: 1px solid gray;
@@ -75,9 +75,10 @@ const StyledDragger = styled(Dragger)`
         margin: 20px;
     }
     .ant-upload-list{
+        width: 100%;
         border-radius: 2px;
         padding: 10px;
-        border:solid 1px red;
+        /*border:solid 1px gray;*/
     }
 `;
 
@@ -132,10 +133,15 @@ const AttachmentsList = ({ attachments, setLoading, loadData }) => {
     }
 
     const urlAttachemnt = (p)=>{
-        console.log(" ---- ",p,`${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`);
-        console.log(API_URL," -- ", MEDIA_URL," --- ",p.path.split("/").slice(1).join('/'))
+        if (p.id === null) {
+            return `${ROOT_URL}${MEDIA_URL}/${encodeURI(p.path)}`;
+        } else {
+            return `${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`;
+        }
+        //console.log(" ---- ",p,`${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`);
+        //console.log(API_URL," -- ", MEDIA_URL," --- ",p.path.split("/").slice(1).join('/'))
         //${MEDIA_URL}/${v.path.split("/").slice(1).join('/')}
-        return `${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`;
+        //return `${ROOT_URL}${API_URL}${DOWNLOAD_URL}/?i=${p.of_id}&t=${encodeURI(p.tipo_doc)}&f=${encodeURI(p.path.split("/").slice(1).join('/'))}`;
     }
 
     return (
@@ -305,10 +311,10 @@ export default ({ record, setFormTitle }) => {
                                 <File originNode={originNode} file={file} currFileList={currFileList} onRemove={onRemove} attachmentType={attachmentType} setAttachmentType={setAttachmentType} />
                             )}
                             >
-                            <p className="ant-upload-drag-icon">
-                                <InboxOutlined style={{ color: "green" }} />
-                            </p>
-                            <p className="ant-upload-text">Drag files to upload</p>
+                            <div className="ant-upload-drag-icon">
+                                <InboxOutlined style={{ /* color: "green" */ }} />
+                            </div>
+                            <div className="ant-upload-text">Arraste os Ficheiros a submeter</div>
                         </StyledDragger>
 
                         {/* <Upload

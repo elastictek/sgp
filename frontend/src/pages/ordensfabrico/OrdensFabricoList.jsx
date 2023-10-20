@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys, xmlToJSON } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, GatewayOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, GatewayOutlined, LockOutlined, RollbackOutlined, PlusOutlined,PaperClipOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -35,11 +35,14 @@ import { IoCreateOutline, IoTimeOutline } from 'react-icons/io5';
 import { BsFillStopFill, BsPauseCircleFill, BsStopCircleFill, BsPlayCircleFill, BsCircleFill, BsCircle } from 'react-icons/bs';
 
 const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
-const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
+const OrdemFabrico = React.lazy(() => import('../planeamento/ordemFabrico/FormOFabricoValidar'));
+const OrdemFabricoView = React.lazy(() => import('../planeamento/ordemFabrico/FormViewOrdemFabrico'));
+//const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
 const FormPackingList = React.lazy(() => import('../ordensfabrico/FormPackingList'));
 const PaletesList = React.lazy(() => import('../paletes/PaletesList'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
 const FormNewPaleteLine = React.lazy(() => import('../paletes/FormNewPaleteLine'));
+const FormAttachements = React.lazy(() => import('./FormAttachements'));
 
 
 const Operations = ({ parameters }) => {
@@ -163,9 +166,12 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
             { label: 'Paletes Stock', key: 'op-stock', icon: <ProfileOutlined style={{ fontSize: "18px" }} /> },
             { type: 'divider' }
         ] : [],
-        ...((allows?.allowNewPalete && data.ativa == 1 && data.ofabrico_status == 3) || (allows?.allowNewPalete && data.ativa == 1)) ? [
-            { label: 'Nova Palete de Produto Acabado', key: 'op-newpalete', icon: <AppstoreAddOutlined style={{ fontSize: "18px" }} /> },
-            { type: 'divider' }
+        // ...((allows?.allowNewPalete && data.ativa == 1 && data.ofabrico_status == 3) || (allows?.allowNewPalete && data.ativa == 1)) ? [
+        //     { label: 'Nova Palete de Produto Acabado', key: 'op-newpalete', icon: <AppstoreAddOutlined style={{ fontSize: "18px" }} /> },
+        //     { type: 'divider' }
+        // ] : [],
+        ...(true) ? [
+            { label: 'Anexos', key: 'op-attachments', icon: <PaperClipOutlined style={{ fontSize: "18px" }} /> },
         ] : [],
         ...(allows?.allowPackingList && data.ofabrico_status >= 2) ? [
             { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
@@ -442,11 +448,13 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
-                case "viewordemfabrico": return <OrdemFabrico parameters={modalParameters.parameters} />;
+                case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
                 case "paletes": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />;
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
+                case "attachments": return <FormAttachements parameters={modalParameters.parameters} />
                 case "newpalete": return <FormNewPaleteLine parameters={modalParameters.parameters} />
                 case "syncProductionReport": return <FormSyncProductionReport loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} openNotification={openNotification} />
 
@@ -706,7 +714,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         console.log(inputParameters.current)
         let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
         formFilter.setFieldsValue({ ...fieldValues });
-        dataAPI.addFilters({ ...filterValues }, true);
+
+        dataAPI.addFilters({ ...dataAPI.getFilter(), ...filterValues }, true);
         dataAPI.setSort(dataAPI.getSort(), defaultSort);
         const instantPermissions = await permission.loadInstantPermissions({ name: "ordemfabrico", module: "main" });
         const allowChangeStatus = permission.isOk({ item: "changeStatus", instantPermissions });
@@ -750,7 +759,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const onAction = (action, data, rowIndex) => {
         switch (action.key) {
             case "pl-pdf":
-                console.log("pdf---",data)
+                console.log("pdf---", data)
                 setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, ...data } });
                 showModal();
                 break;
@@ -784,6 +793,11 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             case "op-resync-qtys":
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ResyncOrderQtys", data, content: `Tem a certeza que deseja sincronizar as quantidades da encomenda na ordem ${data?.ofabrico}` });
                 break;
+            case "op-attachments":
+                console.log(data)
+                setModalParameters({ content: "attachments", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Anexos <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { draft_id:data.temp_ofabrico } });
+                showModal();
+                break;
             case "op-sync-wopr":
                 setModalParameters({ content: "syncProductionReport", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Sincronizar Relatório de Produção <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { data: { ...data, ip_date: dayjs(data?.fim).format(DATE_FORMAT_NO_SEPARATOR) } } });
                 showModal();
@@ -801,17 +815,17 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 setModalParameters({ content: "paletes", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `==${data?.ofabrico}` } } });
                 showModal();
                 break;
-            case "op-newpalete":
-                navigate('/app/paletes/formnewpaleteline', {
-                    state: {
-                        id: data?.ofabrico_sgp, of: data?.ofabrico, tstamp: Date.now(),
-                        cliente_nome: data?.cliente_nome, iorder: data?.iorder, prf: data?.prf, artigo_cod: data?.item, artigo_des: data?.item_nome,
-                        artigo_largura: data?.item_width, artigo_core: data?.item_core
-                    }, replace: true
-                });
-                //setModalParameters({ content: "newpalete", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Nova Palete <span>de linha</span> <span style={{ fontSize: "12px", fontWeight: 400 }}>{data?.ofabrico}</span></div>, parameters: { filter: { id: data?.ofabrico_sgp, of: data?.ofabrico } } });
-                //showModal();
-                break;
+            // case "op-newpalete":
+            //     navigate('/app/paletes/formnewpaleteline', {
+            //         state: {
+            //             id: data?.ofabrico_sgp, of: data?.ofabrico, tstamp: Date.now(),
+            //             cliente_nome: data?.cliente_nome, iorder: data?.iorder, prf: data?.prf, artigo_cod: data?.item, artigo_des: data?.item_nome,
+            //             artigo_largura: data?.item_width, artigo_core: data?.item_core
+            //         }, replace: true
+            //     });
+            //     //setModalParameters({ content: "newpalete", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Nova Palete <span>de linha</span> <span style={{ fontSize: "12px", fontWeight: 400 }}>{data?.ofabrico}</span></div>, parameters: { filter: { id: data?.ofabrico_sgp, of: data?.ofabrico } } });
+            //     //showModal();
+            //     break;
 
         }
     }
@@ -846,18 +860,30 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             showModal();
 
         }
-        if ((data?.ofabrico_status === 1 || data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
+        if ((data?.ofabrico_status === 1)) {
             ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            //setModalParameters({ content: "viewordemfabrico", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { ...data, ...allows } });
-            //showModal();
+            setModalParameters({ content: "ordemfabricoinelaboration", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+            showModal();
             console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", data)
-            navigate('/app/ofabrico/ordemfabrico', {
-                state: {
-                    ...data, ...allows, tstamp: Date.now()
-                }, replace: true
-            });
+            // navigate('/app/ofabrico/ordemfabrico', {
+            //     state: {
+            //         ...data, ...allows, tstamp: Date.now()
+            //     }, replace: true
+            // });
         }
+        if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
+            ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
+            //Validar
+            setModalParameters({ content: "ordemfabricoview", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+            showModal();
+            // navigate('/app/ofabrico/ordemfabrico', {
+            //     state: {
+            //         ...data, ...allows, tstamp: Date.now()
+            //     }, replace: true
+            // });
+        }
+
     }
 
     const onFilterFinish = (type, values) => {

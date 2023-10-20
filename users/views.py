@@ -25,7 +25,7 @@ def LoginView(request):
             if user is not None:
                 # Login the user
                 login(request, user)
-                return redirect("/app")
+                return redirect(option)
                 #return render(request, 'success.html', {'option': option})
             #else:
             #    return render(request, 'failure.html')

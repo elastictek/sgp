@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import styled from 'styled-components';
 import { Button, Breadcrumb, Drawer, Dropdown, Space, Modal } from "antd";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined } from '@ant-design/icons';
+import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined, LeftCircleFilled } from '@ant-design/icons';
 import { Row, Col } from 'react-grid-system';
 import { Container as FormContainer } from 'components/FormFields';
 import MainMenu from '../pages/currentline/dashboard/MainMenu';
@@ -62,7 +62,7 @@ export const saveNavigation = (description, id, location) => {
     }
 }
 
-export const SimpleDropdownHistory = ({ fixedItems, right, center, details, description, id }) => {
+export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -72,6 +72,7 @@ export const SimpleDropdownHistory = ({ fixedItems, right, center, details, desc
         const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
         let _h = getFromLS(id).filter(v => v.key !== path);
         _h.push({ label: description, key: path, state: location?.state });
+        _h = _h.slice(-15);
         setHistory(_h);
         saveToLS(_h, id);
     }, []);
@@ -85,19 +86,54 @@ export const SimpleDropdownHistory = ({ fixedItems, right, center, details, desc
         setDrawerVisible(false);
     };
 
-    const onNavigate = (url, key) => {
-        if (!url && key) {
-            let _p = key.endsWith("/") ? key : `${key}/`;
-            _p = _p.startsWith("#") ? _p.slice(1) : _p;
-            navigate(_p, { replace: true });
-        } else {
-            const path = url.key.endsWith("/") ? url.key : `${url.key}/`;
+    // const onNavigate = (url, key) => {
+    //     if (!url && key) {
+    //         let _p = key.endsWith("/") ? key : `${key}/`;
+    //         _p = _p.startsWith("#") ? _p.slice(1) : _p;
+    //         navigate(_p, { replace: true });
+    //     } else {
+    //         const path = url.key.endsWith("/") ? url.key : `${url.key}/`;
+    //         let _old = history.find(v => v.key === path);
+    //         let _h = history.filter(v => v.key !== path);
+    //         _h.push({ state: _old?.state, label: url?.label, key: path });
+    //         setHistory(_h);
+    //         saveToLS(_h, id);
+    //         navigate(url.key, { replace: true, state: _old?.state });
+    //     }
+    // }
+
+    const onNavigate = async (url, action) => {
+        if (action !== "back" && action !== "logout") {
+            let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
+            path = path.startsWith("#") ? path.slice(1) : path;
             let _old = history.find(v => v.key === path);
             let _h = history.filter(v => v.key !== path);
             _h.push({ state: _old?.state, label: url?.label, key: path });
             setHistory(_h);
             saveToLS(_h, id);
-            navigate(url.key, { replace: true, state: _old?.state });
+            navigate(path, { replace: true, state: _old?.state });
+        } else if (action == "back") {
+            const _h = [...history];
+            _h.pop();
+            const _t = _h[_h.length - 1];
+            setHistory(_h);
+            saveToLS(_h, id);
+            navigate(_t.key, { replace: true, state: _t?.state });
+        } else if (action == "logout") {
+            try {
+                let response = await fetchPost({ url: LOGOUT_URL, parameters: {} });
+                if (response.status === 200) {
+                    window.location.href = LOGIN_URL;
+                }
+            } catch (e) {
+                Modal.error({
+                    centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Logout', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
+                        <YScroll>
+                            {e.message}
+                        </YScroll>
+                    </div></div>
+                });
+            };
         }
     }
 
@@ -127,7 +163,8 @@ export const SimpleDropdownHistory = ({ fixedItems, right, center, details, desc
                             </Col>
                             {center && <Col xs="content" style={{ display: "flex" }}>{center}</Col>}
                             <Col width={25} style={{ textAlign: "right" }}>
-                                <Dropdown menu={{ items: [...fixedItems, ...history], onClick: (e) => (history && history.length > 0) && onNavigate(history.find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                                <Dropdown menu={{ items: [...fixedTopItems, ...history, ...fixedFooterItems], onClick: (e) => onNavigate(e.key == "back" ? null : [...fixedTopItems, ...history, ...fixedFooterItems].find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                                    {/* <Dropdown menu={{ items: [...fixedItems, ...history], onClick: (e) => (history && history.length > 0) && onNavigate(history.find(v => v.key === e.key), e.key) }} trigger={['click']}> */}
                                     <Button ghost style={{ border: "0px" }} icon={<MenuOutlined style={{/* fontSize:"24px" */ }} />} onClick={(e) => e.preventDefault()} />
                                 </Dropdown>
                             </Col>
@@ -160,6 +197,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
         const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
         let _h = getFromLS(id).filter(v => v.key !== path);
         _h.push({ label: description, key: path, state: location?.state });
+        _h = _h.slice(-15);
         setHistory(_h);
         saveToLS(_h, id);
     }, []);
@@ -233,6 +271,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                                 <Button type='link' icon={<MenuOutlined />} onClick={onShowDrawer} />
                             </Col>
                             <Col style={{ display: "flex", alignItems: "center" }}>
+                                <div><LeftCircleFilled onClick={() => onNavigate(null, "back")} style={{ fontSize: "16px", cursor: "pointer",marginRight:"5px",color:"#8c8c8c" }} /></div>
                                 <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
                                     <a onClick={(e) => e.preventDefault()}>
                                         <Space>
@@ -241,7 +280,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                                         </Space>
                                     </a>
                                 </Dropdown>
-                                {leftTitle && <div style={{ marginLeft:"10px", alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }}>{leftTitle}</div>}
+                                {leftTitle && <div style={{ marginLeft: "10px", alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }}>{leftTitle}</div>}
                                 {/* <Breadcrumb>
                                     {history.length > 0 && <>
                                         {history.length > 1 && <Breadcrumb.Item><Button onClick={(e) => onNavigate(null, "back")} title='Retroceder' size="small" type="link" icon={<CaretLeftOutlined />} /> </Breadcrumb.Item>}

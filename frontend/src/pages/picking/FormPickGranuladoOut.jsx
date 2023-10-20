@@ -36,8 +36,8 @@ import { MdOutlineOutput, MdOutlineInput } from 'react-icons/md';
 
 
 const title = "Saída de Granulado da Linha";
-const TitleForm = ({ level, auth, onSave, loading }) => {
-    return (<ToolbarTitle id={auth?.user} description={title}
+const TitleForm = ({ level, auth, onSave, loading, showHistory }) => {
+    return (<ToolbarTitle id={auth?.user} description={title} showHistory={showHistory}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }
@@ -50,8 +50,8 @@ export const loadQuantity = async ({ value, artigo_cod }, signal) => {
     return null;
 }
 
-export const loadGranuladoInLine = async ({ }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, sort: [], parameters: { method: "GetGranuladoInLine" }, signal });
+export const loadGranuladoInLine = async ({cs_id}, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {cs_id}, sort: [], parameters: { method: "GetGranuladoInLine" }, signal });
     if (rows && rows.length > 0) {
         return rows;
     }
@@ -96,7 +96,8 @@ const GranuladoList = ({ openNotification, next, list, setList, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { tstamp: Date.now() }, props?.parameters, null, null);
             inputParameters.current = { ...paramsIn };
         }
-        const _items = await loadGranuladoInLine({}, signal);
+        console.log("granuladolist",inputParameters,props?.parameters);
+        const _items = await loadGranuladoInLine({cs_id:inputParameters.current?.cs_id}, signal);
         setList(_items);
         submitting.end();
     }
@@ -125,7 +126,7 @@ const GranuladoList = ({ openNotification, next, list, setList, ...props }) => {
 
 
 
-export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -155,7 +156,6 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { tstamp: Date.now() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-
         submitting.end();
     }
 
@@ -248,14 +248,14 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 },
             }}
         >
-            <TitleForm auth={permission.auth} level={location?.state?.level} onSave={onSave} loading={submitting.state} />
+            <TitleForm auth={permission.auth} level={location?.state?.level} onSave={onSave} loading={submitting.state} showHistory={showHistory} />
             <Container>
                 <Row>
                     <Col>
-                        <Steps current={step} items={steps} direction="horizontal" onChange={onStepChange} style={{ flexDirection: "row" }} />
+                        <Steps type='inline' current={step} items={steps} direction="horizontal" onChange={onStepChange} style={{ flexDirection: "row" }} />
                         <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                             <Row nogutter>
-                                {step == 0 && <Col><GranuladoList openNotification={openNotification} next={next} setList={setList} list={list} /></Col>}
+                                {step == 0 && <Col><GranuladoList openNotification={openNotification} next={next} setList={setList} list={list} parameters={props?.parameters} /></Col>}
                                 {step == 1 && <Col>
                                     <Row nogutter>
                                         <Col>
@@ -322,10 +322,11 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         </Col>
                                     </Row>
                                     {option && <Row style={{ marginTop: "15px" }} nogutter>
-                                        <Col style={{ display: "flex", justifyContent: "center" }}>
+                                        <Col style={{ /* display: "flex", justifyContent: "center" */ }}>
                                             {option === "1" && <>
                                                 <Row nogutter style={{ alignItems: "center", justifyContent: "center" }}><Col xs="content"><InputNumber value={qtd} placeholder='Qtd. Restante' style={{ width: "180px" }} min={0} max={pos?.qty_lote} addonAfter="Kg" onChange={onQtdChange} /></Col></Row>
                                                 <Row nogutter style={{ alignItems: "center", justifyContent: "center" }}>
+                                                    <Col></Col>
                                                     <Col>
                                                         <Divider orientation="center">Justificação da saída</Divider>
                                                         {!justificacao && <List
@@ -347,6 +348,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                             )}
                                                         />}
                                                     </Col>
+                                                    <Col></Col>
                                                 </Row>
                                                 {((justificacao && qtd !== null && qtd >= 0 && option == "1")) && <Row style={{ alignItems: "center", justifyContent: "center", marginTop: "15px" }}>
                                                     <Col xs="content"><Button disabled={submitting.state} size="large" type="primary" onClick={onSave} icon={<CheckOutlined />}>Submeter</Button></Col>

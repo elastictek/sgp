@@ -255,7 +255,7 @@ export default ({ /* record, form, guides, schema, */ changedValues, /* nonwoven
                         </FieldSet>
                         <VerticalSpace /> */}
                         <HorizontalRule title="2. Planificação" />
-                        <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "130px" } }}>
+                        <FieldSet field={{ wide: [3, 3, 4], label: { pos: "top", wrap: true, ellipsis: false, width: "160px" } }}>
                             <Field required={true} label={{ text: "Data Prevista Início" }} name="start_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></Field>
                             <Field forInput={false} required={true} label={{ text: "Data Prevista Fim" }} name="end_prev_date"><DatePicker showTime size="small" format="YYYY-MM-DD HH:mm" /></Field>
                             <AlertsContainer style={{ alignSelf: "end", paddingBottom: "6px" }} main={true} />

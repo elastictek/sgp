@@ -11,7 +11,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import { usePermission, Permissions } from "utils/usePermission";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates,newWindow } from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
@@ -20,7 +20,7 @@ const { TextArea } = Input;
 import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined, PrinterOutlined, LockOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons';
 import { CgCloseO } from 'react-icons/cg';
 import Table from 'components/TableV2';
-import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, DATETIME_FORMAT } from 'config';
+import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, DATETIME_FORMAT,ROOT_URL } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -189,8 +189,9 @@ export default (props) => {
     }, []);
 
     const onBobineClick = (row) => {
-        setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
-        showModal();
+        newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);
+        //setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
+        //showModal();
     }
 
     const onFilterFinish = (type, values) => {

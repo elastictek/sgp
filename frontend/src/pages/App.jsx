@@ -73,11 +73,17 @@ const LabMetodosList = lazy(() => import('./qualidade/LabMetodosList'));
 const LabArtigosSpecsList = lazy(() => import('./qualidade/LabArtigosSpecsList'));
 const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssaysList'));
 
+
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoReadOnly = lazy(() => import('./formulacao/FormulacaoReadOnly'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
-const OrdemFabrico = React.lazy(() => import('./ordensfabrico/OrdemFabrico'));
+
+//const OrdemFabrico = React.lazy(() => import('./ordensfabrico/OrdemFabrico'));
+/*OLD*/
+const OrdemFabrico = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
+/****/
 const OrdensFabricoList = React.lazy(() => import('./ordensfabrico/OrdensFabricoList'));
+const PaletizacoesList = lazy(() => import('./paletizacoes/PaletizacoesList'));
 
 const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
 const FormNewPaleteLine = lazy(() => import('./paletes/FormNewPaleteLine'));
@@ -96,13 +102,26 @@ import { Row, Col } from 'react-grid-system';
 import WidgetEstadoProducao from './producao/WidgetEstadoProducao';
 import FormPickGranuladoIn from './picking/FormPickGranuladoIn';
 import FormPickGranuladoOut from './picking/FormPickGranuladoOut';
+import FormAttachements from './ordensfabrico/FormAttachements';
+import FormPickAttachements from './picking/FormPickAttachements';
+
 const MainPicking = lazy(() => import('./picking/MainPicking'));
 const FormPickNonwovensIn = lazy(() => import('./picking/FormPickNonwovensIn'));
 const FormPickNewPaleteLine = lazy(() => import('./picking/FormPickNewPaleteLine'));
 const FormPickRedoPaleteLine = lazy(() => import('./picking/FormPickRedoPaleteLine'));
 const FormPickWeighPalete = lazy(() => import('./picking/FormPickWeighPalete'));
 const FormPickDeletePalete = lazy(() => import('./picking/FormPickDeletePalete'));
-
+const FormPickPrePicking = lazy(() => import('./picking/FormPickPrePicking'));
+const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
+const FormPickPrintPalete = lazy(() => import('./picking/FormPickPrintPalete'));
+const FormPickOFabricoChangeStatus = lazy(() => import('./picking/FormPickOFabricoChangeStatus'));
+const FormPickOFabricoFormulacao = lazy(() => import('./picking/FormPickOFabricoFormulacao'));
+const FormPickOFabricoCortes = lazy(() => import('./picking/FormPickOFabricoCortes'));
+const FormPickOFabricoNonwovens = lazy(() => import('./picking/FormPickOFabricoNonwovens'));
+const FormPickOFabricoDoseadores = lazy(() => import('./picking/FormPickOFabricoDoseadores'));
+const FormPickNonwovensOut = lazy(() => import('./picking/FormPickNonwovensOut'));
+const FormPickNonwovensQueue = lazy(() => import('./picking/FormPickNonwovensQueue'));
+const FormPickPrintBuffer = lazy(() => import('./picking/FormPickPrintBuffer'));
 
 const loadAuthUser = async ({ }, signal) => {
     let response;
@@ -198,22 +217,37 @@ const RenderRouter = () => {
                 { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },
 
                 { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
+                { path: "ofabrico/attachements", element: <Suspense fallback={<Spin />}><FormAttachements /></Suspense> },
                 { path: "ofabrico/formulacaoreadonly", element: <Suspense fallback={<Spin />}><FormulacaoReadOnly /></Suspense> },
                 { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },
                 { path: "ofabrico/ordemfabrico", element: <Suspense fallback={<Spin />}><OrdemFabrico /></Suspense> },
                 { path: "ofabrico/ordensfabricolist", element: <Suspense fallback={<Spin />}><OrdensFabricoList /></Suspense> },
+                { path: "ofabrico/paletizacoeslist", element: <Suspense fallback={<Spin />}><PaletizacoesList /></Suspense> },
 
                 { path: "producao/widgetestadoproducao", element: <Suspense fallback={<Spin />}><WidgetEstadoProducao /></Suspense> },
                 { path: "picking/main", element: <Suspense fallback={<Spin />}><MainPicking /></Suspense> },
                 { path: "picking/nonwovensin", element: <Suspense fallback={<Spin />}><FormPickNonwovensIn /></Suspense> },
+                { path: "picking/nonwovensout", element: <Suspense fallback={<Spin />}><FormPickNonwovensOut /></Suspense> },
+                { path: "picking/nonwovensqueue", element: <Suspense fallback={<Spin />}><FormPickNonwovensQueue /></Suspense> },
                 { path: "picking/granuladoin", element: <Suspense fallback={<Spin />}><FormPickGranuladoIn /></Suspense> },
                 { path: "picking/granuladoout", element: <Suspense fallback={<Spin />}><FormPickGranuladoOut /></Suspense> },
                 { path: "picking/newpaleteline", element: <Suspense fallback={<Spin />}><FormPickNewPaleteLine /></Suspense> },
                 { path: "picking/redopaleteline", element: <Suspense fallback={<Spin />}><FormPickRedoPaleteLine /></Suspense> },
                 { path: "picking/weighpalete", element: <Suspense fallback={<Spin />}><FormPickWeighPalete /></Suspense> },
+                { path: "picking/printetiquetapalete", element: <Suspense fallback={<Spin />}><FormPickPrintPalete /></Suspense> },
                 { path: "picking/deletepalete", element: <Suspense fallback={<Spin />}><FormPickDeletePalete /></Suspense> },
-               
-                
+                { path: "picking/prepicking", element: <Suspense fallback={<Spin />}><FormPickPrePicking /></Suspense> },
+                { path: "picking/validatebobinagem", element: <Suspense fallback={<Spin />}><FormPickValidateBobinagem /></Suspense> },
+                { path: "picking/ofabricochangestatus", element: <Suspense fallback={<Spin />}><FormPickOFabricoChangeStatus /></Suspense> },
+                { path: "picking/ofabricoformulacao", element: <Suspense fallback={<Spin />}><FormPickOFabricoFormulacao /></Suspense> },
+                { path: "picking/ofabricodoseadores", element: <Suspense fallback={<Spin />}><FormPickOFabricoDoseadores /></Suspense> },
+                { path: "picking/ofabricoattachements", element: <Suspense fallback={<Spin />}><FormPickAttachements /></Suspense> },
+                { path: "picking/ofabricononwovens", element: <Suspense fallback={<Spin />}><FormPickOFabricoNonwovens /></Suspense> },
+                { path: "picking/ofabricocortes", element: <Suspense fallback={<Spin />}><FormPickOFabricoCortes /></Suspense> },
+                { path: "picking/printbuffer", element: <Suspense fallback={<Spin />}><FormPickPrintBuffer /></Suspense> },
+
+
+
                 { path: "bobinagens/formbobinagemvalidar", element: <Suspense fallback={<Spin />}><FormBobinagemValidar /></Suspense> },
 
                 { path: "comercial/salespricelist", element: <Suspense fallback={<Spin />}><SalesPriceList /></Suspense> },
@@ -273,10 +307,10 @@ const App = () => {
         //sendJsonMessage({ cmd: 'initAlerts' });
     }, []);
 
-/*     useEffect(() => {
-            setEstadoProducao(wsMessageBroadcast);
-            console.log("MESSAGE BROADCAST",wsMessageBroadcast?.hash?.hash_estadoproducao,wsMessageBroadcast?.hash?.hash_estadoproducao_realtime)
-    }, [wsMessageBroadcast?.hash?.hash_estadoproducao]); */
+    /*     useEffect(() => {
+                setEstadoProducao(wsMessageBroadcast);
+                console.log("MESSAGE BROADCAST",wsMessageBroadcast?.hash?.hash_estadoproducao,wsMessageBroadcast?.hash?.hash_estadoproducao_realtime)
+        }, [wsMessageBroadcast?.hash?.hash_estadoproducao]); */
 
     const updateAggId = (_aggId) => {
         /* if (_aggId) {
@@ -297,21 +331,21 @@ const App = () => {
                 <AppContext.Provider value={{ auth,/*  estadoProducao,  */openNotification: openNotification(api), updateAggId }}>
                     {contextHolder}
                     {/* <SocketContext.Provider value={estadoProducao}> */}
-                        <ModalProvider>
-                            <ConfigProvider
-                                theme={{
-                                    token: {
-                                        borderRadius:3,
-                                        //sizeStep:2,
-                                        //sizeUnit:2,
-                                        fontSize:12,
-                                        controlHeight:28
-                                    },
-                                }}>
-                                {auth?.isAuthenticated && <RenderRouter />}
-                            </ConfigProvider>
-                        </ModalProvider>
-                   {/*  </SocketContext.Provider> */}
+                    <ModalProvider>
+                        <ConfigProvider
+                            theme={{
+                                token: {
+                                    borderRadius: 3,
+                                    //sizeStep:2,
+                                    //sizeUnit:2,
+                                    fontSize: 12,
+                                    controlHeight: 28
+                                },
+                            }}>
+                            {auth?.isAuthenticated && <RenderRouter />}
+                        </ConfigProvider>
+                    </ModalProvider>
+                    {/*  </SocketContext.Provider> */}
                 </AppContext.Provider>
             </MediaContext.Provider>
         </BrowserRouter>

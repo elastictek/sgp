@@ -60,6 +60,8 @@ const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 const GranuladoPick = React.lazy(() => import('../picking/GranuladoPick'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
+const FormAttachements = React.lazy(() => import('../ordensfabrico/FormAttachements'));
+const FormPaletizacao = React.lazy(() => import('../ordensfabrico/FormPaletizacao'));
 
 const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop'];
 
@@ -480,6 +482,8 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                 case "bobines": return <BobinesGroup tab={modalParameters.tab} setTab={modalParameters.setLastTab} parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "bobinagensexpand": return <BobinagensList parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />
+                case "attachments": return <FormAttachements parameters={modalParameters.parameters} />
+                case "paletizacao": return <FormPaletizacao parameters={modalParameters.parameters} />
                 case "granuladopick": return <GranuladoPick parameters={modalParameters.parameters} />
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
                 case "linelogexpand": return <LineLogList parameters={modalParameters.parameters} />
@@ -506,6 +510,17 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
 
     const onPaletesStockClick = (data) => {
         setModalParameters({ content: "paletesstock", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Paletes de Stock {data?.of_cod}</div>, parameters: { ativa: data?.ativa, id: data.id, cliente_cod: data?.cliente_cod, artigo_cod: data?.artigo_cod, filter: { fordem_id: `==${data?.id}` } } });
+        showModal();
+    }
+
+    const onAttachmentsClick = (data) => {
+        console.log("$$$$",data)
+        setModalParameters({ content: "attachments", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Anexos {data?.of_cod}</div>, parameters: { draft_id:data.of.draft_of_id } });
+        showModal();
+    }
+
+    const onPaletizacaoClick = (data) => {
+        setModalParameters({ content: "paletizacao", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Esquema de Paletização {data?.of_cod}</div>, parameters: { temp_ofabrico:data.of.draft_of_id } });
         showModal();
     }
 
@@ -538,13 +553,13 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
                                 <div>
                                     <Space>
-                                        <Button type="primary" icon={<MoreOutlined/>} size="small" onClick={() => onPaletesStockClick(items[0])} title="Paletes de stock">Mais</Button>
+                                        {/* <Button type="primary" icon={<MoreOutlined/>} size="small" onClick={() => onPaletesStockClick(items[0])} title="Paletes de stock">Mais</Button> */}
                                     </Space>
                                     </div>
                                     <div>
                                     <Space>
-                                        <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost icon={<PaperClipOutlined />} title="Anexos" />
-                                        <Button type="primary" size="small" /* onClick={onBobinagensExpand} */ ghost title="Paletização">Paletização</Button>
+                                        <Button type="primary" size="small" onClick={() => onAttachmentsClick(items[0])} ghost icon={<PaperClipOutlined />} title="Anexos" />
+                                        <Button type="primary" size="small" onClick={() => onPaletizacaoClick(items[0])} ghost title="Paletização">Paletização</Button>
                                         <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
                                     </Space>
                                     </div>

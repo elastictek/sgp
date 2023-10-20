@@ -141,6 +141,7 @@ export default ({ operationsRef, ...props }) => {
             inputParameters.current = { ...paramsIn };
         }
         form.setFieldsValue({ cortes_plan: !("cortes_plan_id" in inputParameters.current) ? null : nullIfEmpty({ ...pickAll([{ cortes_plan_id: "plan_id" }, { cplan_designacao: "designacao" }, { cplan_idx: "idx" }], inputParameters.current) }) });
+        console.log("loaddddddddddddd",inputParameters.current)
         setCortes({ ...inputParameters.current, tstamp: Date.now() });
         submitting.end();
     }

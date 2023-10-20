@@ -8,10 +8,10 @@ import { useImmer } from 'use-immer';
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import { API_URL, DATETIME_FORMAT } from "config";
+import { API_URL, DATETIME_FORMAT, ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 import { usePermission } from "utils/usePermission";
-import loadInit from "utils/loadInit";
+import loadInit, { newWindow } from "utils/loadInit";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
@@ -830,8 +830,9 @@ export default (props) => {
     }, []);
 
     const onBobineClick = (row) => {
-        setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
-        showModal();
+        newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);
+        //setModalParameters({ src: `/producao/bobine/details/${row.id}/`, title: `Bobine ${row.nome}` });
+        //showModal();
     }
 
     useEffect(() => {

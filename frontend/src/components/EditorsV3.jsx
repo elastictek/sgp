@@ -106,6 +106,36 @@ export const CortesPlanSelect = ({ name, label, forInput = null, forViewBorder =
     );
 }
 
+export const Nonwovens = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,core,largura, ...props }) => {
+    return (
+        <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
+            <Selector
+                title="Nonwovens"
+                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup",type:"nonwovens" }, pagination: { enabled: true, pageSize: 15 }, filter: {}, sort: [] } }}
+                keyField={["ITMREF_0"]}
+                textField="ITMDES1_0"
+                detailText={r => r?.ITMREF_0}
+                style={{ fontWeight: 700 }}
+                columns={[
+                    { key: 'ITMREF_0', name: 'Cód', width: 160 },
+                    { key: 'ITMDES1_0', name: 'Nome' }
+                ]}
+                filters={{ fmulti_artigo: { type: "any", width: 150, text: "Nonwoven", autoFocus: true } }}
+                moreFilters={{}}
+                {...props}
+            />
+
+
+            {/*  <SelectField size="small" data={coresLookup} keyField="ITMREF_0" textField="ITMDES1_0"
+                                    optionsRender={(d, keyField, textField) => ({ label: `${d[textField]}`, value: d[keyField] })}
+                                    showSearch
+                                    labelInValue
+                                    filterOption={(input, option) => option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+                                /> */}
+        </Field>
+    );
+}
+
 export const Cores = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,core,largura, ...props }) => {
     return (
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>

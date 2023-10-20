@@ -131,7 +131,7 @@ class PaleteCreateForm(ModelForm):
         num = palete.num
         # destino = palete.destino
         super(PaleteCreateForm, self).__init__(*args, **kwargs)
-        self.fields['ordem'].queryset = OrdemProducao.objects.filter(Q(ativa=True) & Q(completa=False))
+        self.fields['ordem'].queryset = OrdemProducao.objects.filter(Q(ativa=True) & Q(completa=False)  & Q(agg_of_id_id__isnull=True))
         self.fields['num_bobines'].initial = num_bobines
         self.fields['largura_bobines'].initial = largura_bobines
         self.fields['core_bobines'].initial = core_bobines

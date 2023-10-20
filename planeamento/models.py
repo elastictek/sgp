@@ -150,6 +150,7 @@ class OrdemProducao(models.Model):
     was_in_production       = models.BooleanField(default=False, verbose_name="Esteve em produção")
     certificacoes           = models.CharField(max_length=200,verbose_name="Certificações", null=True) #ADDED
     reported_paletes        = models.IntegerField(verbose_name="Indica se o relatório de produção foi sincronizada com o SAGE", null=True) #ADDED
+    eef                     = models.CharField(max_length = 17, null = True, verbose_name = "Encomenda") #ADDED
     class Meta:
         verbose_name_plural = "Ordens de Produção"
         

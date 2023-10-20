@@ -435,6 +435,7 @@ class RealTimeGeneric(WebsocketConsumer):
                 WHERE (ST."LOC_0"='BUFFER' OR ST."LOC_0"='ARM') AND ST."QTYPCU_0">0 AND ST.VCRTYP_0 NOT IN (28) AND ST."CREUSR_0"='PDA1' ORDER BY ST."ROWID" DESC
             
             """),cursor,{})['rows']
+            print(rows)
             hsh = json.dumps(rows,default=str)
             self.send(text_data=json.dumps({"rows":rows,"item":"checkbufferin","hash":hashlib.md5(hsh.encode()).hexdigest()},default=str))
 

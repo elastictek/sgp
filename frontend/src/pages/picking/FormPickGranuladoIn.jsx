@@ -34,8 +34,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 const title = "Entrada de Granulado em Linha";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
-    return (<ToolbarTitle id={auth?.user} description={title}
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, showHistory }) => {
+    return (<ToolbarTitle id={auth?.user} description={title} showHistory={showHistory}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }
@@ -49,9 +49,10 @@ export const loadQuantity = async ({ value, artigo_cod }, signal) => {
 }
 
 export const loadFormulation = async ({ }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/currentsettings/sql/`, filter: {}, sort: [], parameters: { method: "GetCurrentFormulation" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, sort: [], parameters: { method: "GetGranuladoInLine" /* "GetCurrentFormulation" */ }, signal });
     if (rows && Object.keys(rows).length > 0) {
-        const _rows = groupByMateriaPrima(json(json(rows[0])?.formulacao)?.items);
+        const _rows = groupByMateriaPrima(rows.filter(v => v.arranque !== null));
+        //const _rows = groupByMateriaPrima(json(json(rows[0])?.formulacao)?.items);
         return _rows;
     }
     return null;
@@ -61,19 +62,21 @@ const groupByMateriaPrima = (items) => {
     const grouped = {};
 
     items.forEach(item => {
-        const { matprima_cod, matprima_des, doseador, cuba } = item;
+        const { artigo_cod, artigo_des, dosers, cuba, n_lote, arranque } = item;
 
-        const key = `${matprima_cod}_${cuba}`;
+        const key = `${artigo_cod}_${cuba}`;
 
         if (!grouped[key]) {
             grouped[key] = {
                 cuba,
-                dosers: [doseador],
-                matprima_cod,
-                matprima_des
+                dosers: [dosers],
+                artigo_cod,
+                artigo_des,
+                n_lote,
+                arranque
             };
         } else {
-            grouped[key].dosers.push(doseador);
+            grouped[key].dosers.push(dosers);
         }
     });
 
@@ -133,14 +136,14 @@ const FormulacaoList = ({ openNotification, next, ...props }) => {
             itemLayout="horizontal"
             dataSource={items}
             renderItem={(item, index) => (
-                <ListItem onClick={() => next(item)}>
+                <ListItem onClick={() => next(item)} style={{ ...(item?.arranque && !item?.n_lote) && { backgroundColor: "rgb(245,34,45,0.45)" } }}>
                     <List.Item.Meta
                         avatar={<div style={{ width: "70px", maxWidth: "80px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                             <Cuba style={{ fontSize: "12px"/* , lineHeight: 1.2 */ }} value={item.cuba} />
                             <div style={{ fontWeight: 700 }}>{item?.dosers?.join(",")}</div>
                         </div>}
-                        title={item.matprima_des}
-                        description={item.matprima_cod}
+                        title={item.artigo_des}
+                        description={<div><span>{item.arranque}%</span><span style={{ marginLeft: "10px" }}>{item.artigo_cod}</span></div>}
                     />
                 </ListItem>
             )}
@@ -149,7 +152,7 @@ const FormulacaoList = ({ openNotification, next, ...props }) => {
     </YScroll>);
 }
 
-export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -195,7 +198,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 submitting.trigger();
                 let _values = (v.startsWith("000026") ? v.replace("000026", "") : v.startsWith("\\000026") ? v.replace("\\000026", "") : v).split(";");
                 let _value = _values.length > 4 ? _values[4] : v; //vcrnum_0
-                const _row = await loadQuantity({ value: _value, artigo_cod: pos.matprima_cod });
+                const _row = await loadQuantity({ value: _value, artigo_cod: pos.artigo_cod });
                 if (_row) {
                     const _obs = (_values.length > 5) ? _values[5] === 'null' ? null : _values[5] : null;
                     dataAPI.setData({ rows: [{ ..._row, group_id: pos.cuba, obs: _obs, rowadded: 1, rowvalid: 0 }], total: 1 })
@@ -256,9 +259,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         setStep(step + 1);
         const timeout = setTimeout(() => {
             if (inputRef.current) {
-              inputRef.current.focus({cursor:"all"});
+                inputRef.current.focus({ cursor: "all" });
             }
-          }, 500);
+        }, 500);
     };
 
     const prev = () => {
@@ -285,11 +288,11 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
     return (
         <>
-            <TitleForm auth={permission.auth} level={location?.state?.level} hasEntries={hasEntries} onSave={onSave} loading={submitting.state} />
+            <TitleForm auth={permission.auth} level={location?.state?.level} hasEntries={hasEntries} onSave={onSave} loading={submitting.state} showHistory={showHistory} />
             <Container>
                 <Row>
                     <Col>
-                        <Steps current={step} items={steps} direction="horizontal" onChange={onStepChange} style={{ flexDirection: "row" }} />
+                        <Steps type='inline' current={step} items={steps} direction="horizontal" onChange={onStepChange} style={{ flexDirection: "row" }} />
                         <Container fluid style={{ lineHeight: "60px", borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                             <Row>
                                 {step == 0 && <Col><div><FormulacaoList openNotification={openNotification} next={next} /></div></Col>}
@@ -309,8 +312,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                                 <Cuba style={{ fontSize: "12px"/* , lineHeight: 1.2 */ }} value={item.cuba} />
                                                                 <div style={{ fontWeight: 700 }}>{item?.dosers?.join(",")}</div>
                                                             </div>}
-                                                            title={item.matprima_des}
-                                                            description={item.matprima_cod}
+                                                            title={item.artigo_des}
+                                                            description={item.artigo_cod}
                                                         />
                                                     </List.Item>
                                                 )}

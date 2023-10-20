@@ -21,12 +21,19 @@ import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, RangeTimeField, SelectDebounceField, CheckboxField } from 'components/FormFields';
 import { ColumnBobines, Ofs, Bobines, typeListField, typeField, validField } from "./commons";
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import { TbCircles } from "react-icons/tb";
 import BobinesPopup from './commons/BobinesPopup';
 import { usePermission } from "utils/usePermission";
 import YScroll from 'components/YScroll';
 import dayjs from 'dayjs';
+
+const FormBobinagemValidar = React.lazy(() => import('./FormValidar'));
+const Bobinagem = React.lazy(() => import('./Bobinagem'));
+
+
+const title = "Bobinagens";
+
 
 const focus = (el, h,) => { el?.focus(); };
 
@@ -107,10 +114,10 @@ const useStyles = createUseStyles({
     }
 });
 
-const TitleForm = ({ data, onChange, form }) => {
+const TitleForm = ({ data, onChange, form, auth }) => {
     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
-    return (<ToolbarTitle title={<>
-        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>Bobinagens</span></Col>
+    return (<ToolbarTitle  id={auth?.user} description={title}  title={<>
+        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
         <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
     </>} right={
         <Col xs="content">
@@ -478,17 +485,21 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
-            switch (modalParameters.type) {
+            switch (modalParameters.content) {
                 case "bobines": return <BobinesPopup record={{ ...modalParameters }} />
                 case "details": return <IFrame src={modalParameters.src} />;
                 case "delete": return <DeleteContent loadParentData={modalParameters.loadData} record={modalParameters.record} />;
                 case "create": return <CreateContent loadParentData={modalParameters.loadData} />;
                 case "createevent": return <CreateEvent loadParentData={modalParameters.loadData} />;
+
+
+                case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "bobinagem": return <Bobinagem /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
 
         return (
-            <ResponsiveModal title={modalParameters.title} onCancel={hideModal} width={modalParameters.width ? modalParameters.width : 600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
+            <ResponsiveModal lazy={modalParameters?.lazy} type={modalParameters?.type} title={modalParameters.title} onCancel={hideModal} width={modalParameters.width ? modalParameters.width : 600} height={modalParameters.height ? modalParameters.height : 250} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -605,24 +616,33 @@ export default ({ noid = false, setFormTitle, ...props }) => {
 
 
     const onBobinesPopup = (row) => {
-        setModalParameters({ type: 'bobines', title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        setModalParameters({ content: 'bobines', title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
         showModal();
     }
 
     const onBobineClick = (v) => {
-        setModalParameters({ type: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
+        setModalParameters({ content: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
         showModal();
     }
 
     const onBobinagemClick = (row) => {
-        if (row?.valid === 0) {
-            //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
-            //    showModal();
-            navigate("/app/bobinagens/formbobinagemvalidar", { state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        if (row?.valid == 0) {
+            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            showModal();
+        } else {
+            console.log(row,"axxxxxxx")
+            setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            showModal();
         }
-        else {
-            navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
-        }
+
+        // if (row?.valid === 0) {
+        //     //    setModalParameters({ src:`/producao/bobinagem/${row.id}/`,title:`Bobinagem ${row.nome}`  });
+        //     //    showModal();
+        //     navigate("/app/bobinagens/formbobinagemvalidar", { state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        // }
+        // else {
+        //     navigate("/app/bobines/validarlist", { state: { bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+        // }
     }
 
     useEffect(() => {
@@ -681,7 +701,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const onAction = (item, row) => {
         switch (item.key) {
             case "delete":
-                setModalParameters({ type: item.key, width: 300, height: 100, title: <div>Apagar Bobinagem <b>{row.nome}</b></div>, loadData: () => dataAPI.fetchPost(), record: row });
+                setModalParameters({ content: item.key, width: 300, height: 100, title: <div>Apagar Bobinagem <b>{row.nome}</b></div>, loadData: () => dataAPI.fetchPost(), record: row });
                 showModal();
                 break;
         }
@@ -726,17 +746,17 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     }
 
     const onCreate = async () => {
-        setModalParameters({ type: "create", width: 800, height: 400, title: <div>Criar Bobinagem</div>, loadData: () => dataAPI.fetchPost() });
+        setModalParameters({ content: "create", width: 800, height: 400, title: <div>Criar Bobinagem</div>, loadData: () => dataAPI.fetchPost() });
         showModal();
     }
     const onCreateEvent = async () => {
-        setModalParameters({ type: "createevent", width: 800, height: 400, title: <div>Criar Evento Troca de Bobinagem!!</div>, loadData: () => dataAPI.fetchPost() });
+        setModalParameters({ content: "createevent", width: 800, height: 400, title: <div>Criar Evento Troca de Bobinagem!!</div>, loadData: () => dataAPI.fetchPost() });
         showModal();
     }
 
     return (
         <>
-            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
+            {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
             {/* <TitleForm data={dataAPI.getFilter(true)} onChange={onFilterChange} form={formFilter} /> */}
             <Table
                 loading={submitting.state}

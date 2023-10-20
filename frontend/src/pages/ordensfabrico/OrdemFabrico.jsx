@@ -44,6 +44,7 @@ const FormFormulacao = React.lazy(() => import('./FormFormulacao'));
 const FormNwPlan = React.lazy(() => import('./FormNwPlan'));
 const FormReport = React.lazy(() => import('./FormReport'));
 const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
+const FormGamaOperatoria = React.lazy(() => import('./FormGamaOperatoria'));
 
 const title = "Ordem de fabrico";
 const TitleForm = ({ data, onChange, level, auth, form, ofabrico }) => {
@@ -139,6 +140,22 @@ export const Edit = ({ editable, action, item, permissions, editKey, onEdit, onE
   );
 }
 
+export const load = async (current) => {
+  const _data = await loadOrdemFabrico(current?.temp_ofabrico_agg, current?.ofabrico_sgp, current?.temp_ofabrico);
+  const formulacao_plan = includeObjectKeys(_data, ["fplan_%"]);
+  const cortes_plan = includeObjectKeys(_data, ["cplan_%"]);
+  //const _data = await loadEstadoProducao(inputParameters.current.temp_ofabrico_agg, inputParameters.current.ofabrico_sgp);
+  //const _ep = estadoProducaoData({ data: _data }); //calcula os valores de cada estado de produção por of
+  //console.log("---------------",_ep)
+  return {
+    ...current, ...formulacao_plan, ...cortes_plan, cortesordem_id: json(_data?.cortesordem)?.id, cortes_id: json(_data?.cortes)?.id, formulacao_id: json(_data?.formulacao)?.id,
+    paletizacao_id: json(json(_data.paletizacao))?.id,
+    ...pickAll([{ id: "cs_id" }, "sentido_enrolamento", "amostragem", "observacoes", "agg_of_id", "formulacao_plan_id", "fplan_", "cortes_plan_id", "cplan_"], _data),
+    of: json(_data.ofs), emendas: json(_data.emendas),
+    hasPaletizacao: json(json(_data.paletizacao))?.id ? true : false
+  };
+}
+
 export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -181,20 +198,10 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
       const { tstamp, ...paramsIn } = loadInit({}, { /* ...dataAPI.getAllFilter(), */ tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
       inputParameters.current = { ...paramsIn };
     }
+    
+    
     if (inputParameters.current.temp_ofabrico_agg) {
-      const _data = await loadOrdemFabrico(inputParameters.current?.temp_ofabrico_agg, inputParameters.current?.ofabrico_sgp, inputParameters.current?.temp_ofabrico);
-      const formulacao_plan = includeObjectKeys(_data, ["fplan_%"]);
-      const cortes_plan = includeObjectKeys(_data, ["cplan_%"]);
-      //const _data = await loadEstadoProducao(inputParameters.current.temp_ofabrico_agg, inputParameters.current.ofabrico_sgp);
-      //const _ep = estadoProducaoData({ data: _data }); //calcula os valores de cada estado de produção por of
-      //console.log("---------------",_ep)
-      inputParameters.current = {
-        ...inputParameters.current, ...formulacao_plan, ...cortes_plan, cortesordem_id: json(_data?.cortesordem)?.id, cortes_id: json(_data?.cortes)?.id, formulacao_id: json(_data?.formulacao)?.id,
-        paletizacao_id: json(json(_data.paletizacao))?.id,
-        ...pickAll([{ id: "cs_id" }, "sentido_enrolamento", "amostragem", "observacoes", "agg_of_id", "formulacao_plan_id", "fplan_", "cortes_plan_id", "cplan_"], _data),
-        of: json(_data.ofs), emendas: json(_data.emendas),
-        hasPaletizacao: json(json(_data.paletizacao))?.id ? true : false
-      };
+      inputParameters.current = load(inputParameters.current);
       console.log("WWWWWWWWWWdddWWWWWWWWWWWW", json(json(_data.paletizacao)));
       setUpdated(Date.now());
       setOfExists(true);
@@ -371,7 +378,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                   {
                     label: `Gama Operatória`,
                     key: '10',
-                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll></YScroll></div>,
+                    children: <div style={{ height: "calc(100vh - 150px)" }}><YScroll><FormGamaOperatoria activeTab={activeTab} {...{ parameters: inputParameters.current, permissions: permission.permissions, parentUpdated: updated }} onValuesChange={onValuesChange} editParameters={{ isEditable, editKey, onEdit, onEndEdit, onCancelEdit, formDirty, setFormDirty }} operationsRef={operationsRef} loadParentData={loadData} /></YScroll></div>,
                   },
                   {
                     label: `Relatório`,

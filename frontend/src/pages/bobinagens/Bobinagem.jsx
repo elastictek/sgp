@@ -163,6 +163,7 @@ export default (props) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
+        console.log("aaaaaaaa",inputParameters.current)
         const formValues = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);

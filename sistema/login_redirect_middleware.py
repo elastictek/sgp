@@ -12,7 +12,7 @@ class LoginRedirectMiddleware:
         print(request.data)
         
         if request.user.is_authenticated: #and hasattr(request.user, 'tp'):
-            return redirect("/app/")
+            return redirect("/app/this_middleware_is_not_in_use")
             # tp = request.user.tp
             # if tp == 1:
             #     return redirect(reverse('app_view_name'))

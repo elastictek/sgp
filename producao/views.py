@@ -2840,6 +2840,7 @@ def carga_create(request):
                     "-" + str(encomenda.cliente.abv)
 
         instance.carga = carga
+        instance.eef = enc
         instance.save()
 
         encomenda.num_cargas_actual += 1

@@ -8,8 +8,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInitV3";
-import { API_URL, PALETES_WEIGH } from "config";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
+import { API_URL, PALETES_WEIGH, ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { json, includeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
@@ -51,8 +51,15 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
 //     return null;
 // }
 
-export const loadOrdensFabrico = async ({ id }, signal) => {
+export const loadOrdensFabricoOpen = async ({ id }, signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
+    if (rows && Object.keys(rows).length > 0) {
+        return rows;
+    }
+    return null;
+}
+export const loadOrdensFabrico = async ({ id }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }
@@ -112,7 +119,7 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { tstamp: Date.now() }, props?.parameters, null, null);
             inputParameters.current = { ...paramsIn };
         }
-        const _items = await loadOrdensFabrico({}, signal);
+        const _items = await loadOrdensFabricoOpen({}, signal);
         setItems(_items);
         submitting.end();
     }
@@ -159,7 +166,7 @@ const SelectPalete = ({ openNotification, next, data, onSelect, ...props }) => {
     }, []);
 
     const loadData = async ({ signal, init = false } = {}) => {
-        console.log("RRRRRRRRRRRRRR", json(json(data?.esquema).paletizacao));
+
     }
 
     return (
@@ -180,12 +187,12 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
                     inputRef.current.focus({ cursor: 'all' });
                 }
             }, 500);
-            /**TOREMOVE */
-            updateState(draft => {
-                draft.picked = 7;
-                draft.bobines = [{ lote: "20230720-10-14" }, { lote: "20230720-10-13" }, { lote: "20230720-10-12" }, { lote: "20230720-10-11" }, { lote: "20230720-10-10" }, { lote: "20230720-10-07" }, { lote: "20230720-10-06" }];
-                draft.bobinesOk = 0;
-            });
+            // /**TOREMOVE */
+            // updateState(draft => {
+            //     draft.picked = 7;
+            //     draft.bobines = [{ lote: "20230720-10-14" }, { lote: "20230720-10-13" }, { lote: "20230720-10-12" }, { lote: "20230720-10-11" }, { lote: "20230720-10-10" }, { lote: "20230720-10-07" }, { lote: "20230720-10-06" }];
+            //     draft.bobinesOk = 0;
+            // });
             return (() => { clearTimeout(timeout); });
         }
     }, []);
@@ -462,18 +469,25 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         submitting.trigger();
         inputParameters.current = { ...location?.state };
         window.history.replaceState({}, document.title, window.location.pathname);
-        //To remove
-        inputParameters.current = {
-            "action": "delete",
-            "palete_id": 68696,
-            "palete_nome": "P5062-2023",
-            "ordem_id": 1632,
-            "num_bobines": 7,
-            "lvl": 2
-        };
+        // //To remove
+        // inputParameters.current = {
+        //     // "action": "delete",
+        //     // "palete_id": 68696,
+        //     // "palete_nome": "P5062-2023",
+        //     // "ordem_id": 1632,
+        //     // "num_bobines": 7,
+        //     // "lvl": 2
+        // };
         if (["weigh", "redo", "delete"].includes(inputParameters.current?.action)) {
             const _action = inputParameters.current?.action;
-            const _items = await loadOrdensFabrico({ id: inputParameters.current?.ordem_id }, signal);
+            const _items = inputParameters.current?.ordem_id ? await loadOrdensFabrico({ id: inputParameters.current?.ordem_id }, signal) : [{ esquema: null }];
+            if (_items[0].esquema == null) {
+                if (!["delete"].includes(inputParameters.current?.action)) {
+                    newWindow(`${ROOT_URL}/producao/palete/${inputParameters.current?.palete_id}/`, {}, `palete-${inputParameters.current?.palete_id}`);
+                    window.history.back();
+                    return;
+                }
+            }
             let _step = null;
             let _bobines = null;
             switch (_action) {
@@ -569,15 +583,14 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         submitting.trigger();
         let response = null;
         try {
-            //response = await fetchPost({ url: `${API_URL}/paletes/sql/`, parameters: { method: "CreatePaleteLine", ...{ action: state.action, checkonly: 0, id: state.pos.id, nbobines: state.nbobines, lvl: state.lvl, ..._values, bobines: state.bobines.map(item => item.lote), palete_id: state.palete_id } } });
+            response = await fetchPost({ url: `${API_URL}/paletes/sql/`, parameters: { method: "DeletePalete", ...{ palete_id: state.palete_id } } });
             if (response && response?.data?.status !== "error") {
                 if (response.data?.data) {
                     updateState(draft => {
-                        draft.report = response.data.data;
                         draft.deleted = 1;
                     });
                 } else {
-                    openNotification(response?.data?.status, 'top', "Notificação", "Erro ao verifcar bobines picadas na palete! Não foram retornados registos.", null);
+                    openNotification(response?.data?.status, 'top', "Notificação", "Erro ao apagar a palete! Não foram retornados registos.", null);
                 }
             } else {
                 openNotification("error", 'top', "Notificação", response?.data?.title, null);
@@ -589,12 +602,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     }
 
     const next = (item) => {
+        console.log("nextttttt", state, item)
         updateState(draft => {
             if (state.step === 0) {
                 draft.pos = item;
             }
             if (draft.action === "weigh" && state.step === 1) {
-                draft.pos = item;
+                // draft.pos = item;
                 draft.step = 3;
             } else {
                 draft.step = state.step + 1;
@@ -604,7 +618,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     };
 
     const prev = (v = null) => {
-        if (v === 0 && state.palete_id) {
+        if ((v === 0 && state.palete_id && state.deleted == 0)) {
             return;
         }
         if (state.maxStep === 4 && v !== 0) {
@@ -630,6 +644,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
     const onSelectSchema = (paletes, index) => {
         const nbobines = paletes.filter(x => x.item_id == 2).reduce((acc, cur) => acc + cur.item_numbobines, 0);
+        console.log("onschema", state)
         if (state.palete_id && state.palete_num_bobines != nbobines) {
             openNotification("error", 'top', "Notificação", "O número de bobines selecionadas não corresponde ao número de bobines da palete a refazer!", null)
             return;
@@ -743,7 +758,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         icon={<CheckOutlined />}
                                     >Pesar</Button>}
                                     {((state.step == 4 && state.palete && !submitting.state) || (state.action == "delete" && state.deleted == 1 && !submitting.state)) && <Button
-                                        onClick={() => { _cancelPalete(); if (!state.palete_id) { prev(0); } }}
+                                        onClick={() => { _cancelPalete(); if (!state.palete_id || state.deleted == 1) { prev(0); } }}
                                         type="primary"
                                     >Nova Palete</Button>}
                                     {(state.action == "delete" && state.deleted == 0 && !submitting.state) && <Button
@@ -756,7 +771,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                         {["delete"].includes(state.action) && <Row nogutter>
                             <Col>
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
-                                    <Row>
+                                    {state.deleted == 1 && <Row><Col style={{ fontSize: "18px", textAlign: "center" }}>A palete <span style={{ fontWeight: 900 }}>{state.palete_nome}</span> foi apagada com sucesso!</Col></Row>}
+                                    <Row style={{ justifyContent: "center" }}>
                                         <PickBobines disabled noStatus state={state} updateState={updateState} next={next} cancel={_cancelPalete} />
                                     </Row>
                                 </Container>

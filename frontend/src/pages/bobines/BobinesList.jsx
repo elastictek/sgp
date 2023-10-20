@@ -8,8 +8,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
-import { API_URL, DOSERS } from "config";
+import loadInit, { fixRangeDates,newWindow } from "utils/loadInit";
+import { API_URL, DOSERS,ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -324,8 +324,9 @@ export default ({ setFormTitle, noid=false, ...props }) => {
     }
 
     const onBobineClick = (row) => {
-        setModalParameters({ content: "bobine", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome }, bobine_id: row.id, bobine_nome: row.nome } });
-        showModal();
+        newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);
+        //setModalParameters({ content: "bobine", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome }, bobine_id: row.id, bobine_nome: row.nome } });
+        //showModal();
     }
 
     const onClickRetrabalho = (row) => {

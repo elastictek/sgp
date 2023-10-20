@@ -165,7 +165,7 @@ export default ({ hash, data, ...props }) => {
 
     return (<>
         <Table
-            {...true && { style: { fontSize: "10px", minHeight: "313px" } }}
+            {...true && { style: { fontSize: "10px", minHeight: "446px" } }}
             {...true && { rowHeight: 35 }}
             //rowHeight={null}
             headerHeight={25}

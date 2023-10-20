@@ -183,7 +183,7 @@ export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
     let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
     val = (val === undefined || val === null) ? val : `${val}`;
     if (val !== '' && val !== undefined) {
-        const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull)(.*)', 'i');
+        const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
         const matches = val.toString().match(re);
         if (matches !== null && matches.length > 0) {
             return `${val}`;
@@ -197,6 +197,7 @@ export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
                 case '>': return `>${val.replaceAll('==', '')}`;
                 case '<=': return `<=${val.replaceAll('==', '')}`;
                 case '>=': return `>=${val.replaceAll('==', '')}`;
+                case '@': return `@${val.replaceAll('==', '')}`;
                 case 'exact': return `${val}`;
                 default: return `==${val.replaceAll('==', '').replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
             }

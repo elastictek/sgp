@@ -68,9 +68,9 @@ const ToolbarTable = ({ form, modeEdit, permission, submitting, changeMode, dirt
 
     const leftContent = (<>
         <Space>
-            {modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={() => changeMode('formPaletizacao')} />}
+            {/* {modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={() => changeMode('formPaletizacao')} />}
             {!modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<EditOutlined />} onClick={() => changeMode('formPaletizacao')}>Editar</Button>}
-            {(modeEdit?.formPaletizacao && dirty) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+            {(modeEdit?.formPaletizacao && dirty) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
         </Space>
         <LeftToolbar />
     </>);
@@ -172,7 +172,7 @@ const FormPaletizacao = ({ record, form, forInput = false }) => {
             </Row>
             <Row gutterWidth={5}>
                 <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Altura Máx. Palete", pos: "right", width: "150px" }} name={["palete_maxaltura"]}><InputNumber size="small" min={1} max={150} addonAfter="m" /></Field></Col>
-                <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Etiqueta do Lote da Palete", pos: "right", width: "150px" }} name={["netiquetas_lote"]}><InputNumber size="small" min={1} max={10} /></Field></Col>
+                <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Etiqueta da Palete", pos: "right", width: "150px" }} name={["netiquetas_lote"]}><InputNumber size="small" min={1} max={10} /></Field></Col>
                 <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Filme Estirável Exterior", pos: "right", width: "170px" }} name={["filmeestiravel_exterior"]}><CheckboxField /></Field></Col>
             </Row>
             <Row gutterWidth={5}>
@@ -197,7 +197,7 @@ const FormPaletizacao = ({ record, form, forInput = false }) => {
                         }
                     </Form.Item>
                 </Col>
-                <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Folha Identificativa da Palete", pos: "left", width: "180px" }} name={["folha_identificativa"]}><InputNumber size="small" min={0} max={10} /></Field></Col>
+                <Col xs={4}><Field forInput={forInput} forViewBackground={forViewBackground} label={{ text: "Folha Identificativa", pos: "left", width: "180px" }} name={["folha_identificativa"]}><InputNumber size="small" min={0} max={10} /></Field></Col>
             </Row>
         </Container>
     );
@@ -249,9 +249,8 @@ export default ({ setFormTitle, operationsRef, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        if (inputParameters.current?.paletizacao_id) {
+        if (inputParameters.current?.paletizacao_id || inputParameters.current?.temp_ofabrico) {
             const _rows = await loadPaletizacao({ of_id: inputParameters.current?.temp_ofabrico, id: inputParameters.current?.paletizacao_id });
-            console.log("zzzzzzzzzzzzzzzzzzzzzzz", _rows)
             if (_rows && _rows.length > 0) {
                 form.setFieldsValue({ ..._rows[0] });
             }
@@ -351,7 +350,7 @@ export default ({ setFormTitle, operationsRef, ...props }) => {
             <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>
                     <Col width={800} >
-                        <FormPaletizacao form={form} forInput={mode.form.edit} /* record={_values[index].paletizacao} */ />
+                        <FormPaletizacao form={form} forInput={false} /* record={_values[index].paletizacao} */ />
                     </Col>
                 </Row>
                 <Row style={{}} gutterWidth={10}>

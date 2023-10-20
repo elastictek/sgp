@@ -153,12 +153,54 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
 
+def updateMaterializedView(mv):
+    conngw = connections[connGatewayName]
+    cgw = conngw.cursor()
+    cgw.execute(f"REFRESH MATERIALIZED VIEW public.{mv};")
+    conngw.commit()
+
+def CreateCarga(request, format=None):
+    data = request.data.get("parameters")
+
+    def checkOrder(eef):
+        c = connections[connGatewayName].cursor()
+        f = Filters({"eef":eef})
+        f.where(False,"and")
+        f.value("and")
+        response = dbgw.executeSimpleList(lambda: (f"""select id from mv_openorders oo where oo.status_enc=1 {f.text}"""), c, f.parameters)
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
+
+    try:
+        open = checkOrder(data.get("values").get("eef"))
+        if not open or open is None:
+            return Response({"status": "error", "title": "A encomenda já se encontra fechada!"})
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                data.get("values")["artigos"] = json.dumps(data.get("values").get("artigos"), ensure_ascii=False)
+                args = [*[value for value in data.get("values").values()],request.user.id]
+                print(data)
+                print(args)
+                cursor.callproc('create_carga',args)
+                rows = fetchall(cursor)
+                updateMaterializedView("mv_cargas")
+                #row = cursor.fetchone()
+                #cursor.execute("select * from tmp_paletecheck_report;")
+                #report = fetchall(cursor)
+        return Response({"status": "success", "data":rows, "title":None})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+
 def CargasLookup(request, format=None):
     cols = ['*']
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
-    f.add(f'enc.eef = :enc', True)
+    f.add(f'carga.eef = :enc', lambda v:(v!=None))
+    f.add(f'carga.eef = :feef', lambda v:(v!=None))
+    f.add(f'carga.prf = :fprf', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
@@ -167,12 +209,199 @@ def CargasLookup(request, format=None):
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
-                select carga.id,carga.carga
-                from  producao_carga carga
-                join producao_encomenda enc on carga.enc_id=enc.id
-                {f.text}
+                select distinct * from(
+                    select 
+                    carga.*,
+                    case when p.id is null then 0 else count(*) over (partition by carga.id) end npaletes,
+                    sum(p.nbobines_emendas) over (partition by carga.id) nbobines_emendas,
+                    sum(p.nbobines_real) over (partition by carga.id) nbobines_real,
+                    IFNULL(sum(case when p.nbobines_real = 0 then 0 else p.nbobines_emendas/p.nbobines_real end) over (partition by carga.id),0) perc_nbobines_emendas,
+                    sum(p.area_real) over (partition by carga.id) area_real
+                    from producao_carga carga
+                    left join producao_palete p on p.carga_id=carga.id
+                    {f.text}
+                ) t
                 {dql.sort}
             """
         ), cursor, parameters)
-
         return Response(response)
+
+def CargasList(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    print("filter")
+    print(request.data['filter'])
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "expedicao": {"value": lambda v: Filters.getNumeric(v.get('fdispatched')), "field": lambda k, v: f'me.{k}'},
+    #    **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
+    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+    #    "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "nbobines_real": {"value": lambda v: Filters.getNumeric(v.get('fnbobinesreal')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nbobines_emendas": {"value": lambda v: Filters.getNumeric(v.get('fnbobines_emendas')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nbobines_sem_destino": {"value": lambda v: Filters.getNumeric(v.get('fnbobines_sem_destino')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"j->>'{k}'"},
+    #    "area_real": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "comp_real": {"value": lambda v: Filters.getNumeric(v.get('fcomp')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
+    #    "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
+    #    "diam_avg": {"value": lambda v: Filters.getNumeric(v.get('fdiam_avg')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "diam_max": {"value": lambda v: Filters.getNumeric(v.get('fdiam_max')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "diam_min": {"value": lambda v: Filters.getNumeric(v.get('fdiam_min')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "destino": {"value": lambda v: v.get('fdestinoold').lower() if v.get('fdestinoold') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "peso_bruto": {"value": lambda v: Filters.getNumeric(v.get('fpeso_bruto')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "peso_liquido": {"value": lambda v: Filters.getNumeric(v.get('fpeso_liquido')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nok":{"value": lambda v: Filters.getNumeric(v.get('fnok')), "field": lambda k, v: f'{k}'},
+    #    "nok_estados":{"value": lambda v: Filters.getNumeric(v.get('fnok_estados')), "field": lambda k, v: f'{k}'},
+    #    "cliente_nome": {"value": lambda v: v.get('fcliente').lower() if v.get('fcliente') is not None else None, "field": lambda k, v: f'lower(sgppl."{k}")'},
+    #    "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'sgppl."{k}"'},
+    #    "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
+    #    "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
+    #    "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+    #    "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+       
+    #    "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+
+
+       #mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0"
+
+    #    "fof": {"value": lambda v: v.get('fof')},
+    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    parameters = {**f.parameters}
+    dql = dbgw.dql(request.data, False,False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""            
+        with expedicoes as(
+            select distinct on(me."LOT_0") me.* 
+            from mv_expedicoes me
+        )  
+        select {c(f'{dql.columns}')} from(
+            select 
+            distinct on(mc.id) mc.*,
+            me.expedicao,me."IPTDAT_0" data_expedicao,
+            case when mp.id is null then 0 else count(*) over (partition by mc.id) end npaletes,
+            sum(mp.nbobines_emendas) over (partition by mc.id) nbobines_emendas,
+            sum(mp.nbobines_real) over (partition by mc.id) nbobines_real,
+            coalesce(sum(case when mp.nbobines_real = 0 then 0 else mp.nbobines_emendas/mp.nbobines_real end) over (partition by mc.id),0) perc_nbobines_emendas,
+            sum(mp.area_real) over (partition by mc.id) area_real
+            from mv_cargas mc
+            left join mv_paletes mp on mp.carga_id=mc.id
+            left join expedicoes me on me.carga_id = mc.id and me."LOT_0" = mp.nome
+            {f.text}
+        ) t 
+        {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+    try:
+        response = dbgw.executeList(sql, connection, parameters,[],None,None)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def OpenOrdersList(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    print("filter")
+    print(request.data['filter'])
+    f = Filters(request.data['filter'])
+    
+    f.setParameters({
+        "prf": {"value": lambda v: Filters.getLower(v.get('fprf')), "field": lambda k, v: f'lower(oo.{k})'},
+        "eef": {"value": lambda v: Filters.getLower(v.get('feef')), "field": lambda k, v: f'lower(oo.{k})'},
+        "cliente": {"value": lambda v: Filters.getLower(v.get('fcliente')), "field": lambda k, v: f'lower(oo.{k})'},
+    #    "expedicao": {"value": lambda v: Filters.getNumeric(v.get('fdispatched')), "field": lambda k, v: f'me.{k}'},
+    #    **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
+    #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
+    #    **rangeP(f.filterData.get('fdataout'), 'out_t', lambda k, v: f'DATE(out_t)'),
+    #    "diff": {"value": lambda v: '>0' if "fdataout" in v and v.get("fdataout") is not None else None, "field": lambda k, v: f'TIMESTAMPDIFF(second,in_t,out_t)'},
+    #    "nome": {"value": lambda v: v.get('flote').lower() if v.get('flote') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "carga": {"value": lambda v: v.get('fcarganome').lower() if v.get('fcarganome') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "nbobines_real": {"value": lambda v: Filters.getNumeric(v.get('fnbobinesreal')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nbobines_emendas": {"value": lambda v: Filters.getNumeric(v.get('fnbobines_emendas')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nbobines_sem_destino": {"value": lambda v: Filters.getNumeric(v.get('fnbobines_sem_destino')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "lar": {"value": lambda v: Filters.getNumeric(v.get('flargura')), "field": lambda k, v: f"j->>'{k}'"},
+    #    "area_real": {"value": lambda v: Filters.getNumeric(v.get('farea')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "comp_real": {"value": lambda v: Filters.getNumeric(v.get('fcomp')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "mes": {"value": lambda v: Filters.getNumeric(v.get('fmes')), "field": lambda k, v: f'mv.{k}'},
+    #    "disabled": {"value": lambda v: Filters.getNumeric(v.get('fdisabled')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "ano": {"value": lambda v: Filters.getNumeric(v.get('fano')), "field": lambda k, v: f'mv.{k}'},
+    #    "diam_avg": {"value": lambda v: Filters.getNumeric(v.get('fdiam_avg')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "diam_max": {"value": lambda v: Filters.getNumeric(v.get('fdiam_max')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "diam_min": {"value": lambda v: Filters.getNumeric(v.get('fdiam_min')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "destino": {"value": lambda v: v.get('fdestinoold').lower() if v.get('fdestinoold') is not None else None, "field": lambda k, v: f'lower(sgppl.{k})'},
+    #    "peso_bruto": {"value": lambda v: Filters.getNumeric(v.get('fpeso_bruto')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "peso_liquido": {"value": lambda v: Filters.getNumeric(v.get('fpeso_liquido')), "field": lambda k, v: f'sgppl.{k}'},
+    #    "carga_id": {"value": lambda v: v.get('fcarga'), "field": lambda k, v: f'sgppl.{k}'},
+    #    "nok":{"value": lambda v: Filters.getNumeric(v.get('fnok')), "field": lambda k, v: f'{k}'},
+    #    "nok_estados":{"value": lambda v: Filters.getNumeric(v.get('fnok_estados')), "field": lambda k, v: f'{k}'},
+    #    "cliente_nome": {"value": lambda v: v.get('fcliente').lower() if v.get('fcliente') is not None else None, "field": lambda k, v: f'lower(sgppl."{k}")'},
+    #    "ofid": {"value": lambda v: v.get('fof').upper() if v.get('fof') is not None else None, "field": lambda k, v: f'sgppl."{k}"'},
+    #    "ISSDHNUM_0": {"value": lambda v: v.get('fdispatched'), "field": lambda k, v: f' mv."SDHNUM_0"'},
+    #    "SDHNUM_0": {"value": lambda v: v.get('fsdh').lower() if v.get('fsdh') is not None else None, "field": lambda k, v: f'lower(mv."SDHNUM_0")'},
+    #    "BPCNAM_0": {"value": lambda v: v.get('fclienteexp').lower() if v.get('fclienteexp') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+    #    "EECICT_0": {"value": lambda v: v.get('feec').lower() if v.get('feec') is not None else None, "field": lambda k, v: f'lower(mv."{k}")'},
+       
+    #    "matricula": {"value": lambda v: v.get('fmatricula').lower() if v.get('fmatricula') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "matricula_reboque": {"value": lambda v: v.get('fmatricula_reboque').lower() if v.get('fmatricula_reboque') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "prf": {"value": lambda v: v.get('fprf').lower() if v.get('fprf') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+    #    "iorder": {"value": lambda v: v.get('forder').lower() if v.get('forder') is not None else None, "field": lambda k, v: f'lower(mol.{k})'},
+
+
+       #mv."BPCNAM_0",mv."ITMREF_0",mv."ITMDES1_0",mv."EECICT_0"
+
+    #    "fof": {"value": lambda v: v.get('fof')},
+    #    "vcr_num": {"value": lambda v: v.get('fvcr')},
+    #    "qty_lote": {"value": lambda v: v.get('fqty'), "field": lambda k, v: f'{k}'},
+    #    "qty_reminder": {"value": lambda v: v.get('fqty_reminder'), "field": lambda k, v: f'{k}'},
+    #    "type_mov": {"value": lambda v: v.get('ftype_mov'), "field": lambda k, v: f'{k}'}
+    }, True)
+    f.where(False,"and")
+    f.auto()
+    f.value()
+
+    parameters = {**f.parameters}
+    dql = dbgw.dql(request.data, False,False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""            
+            select {c(f'{dql.columns}')} from (
+            select distinct on(eef,prf) id,data_create,data_expedicao,eef,prf,cliente,cliente_abr,
+            json_agg(json_build_object('artigo_cod',artigo_cod,'artigo_des',artigo_des,'n_paletes_total',n_paletes_total,'qtd',qtd)) over (partition by eef,prf) details
+            from mv_openorders oo 
+            where oo.status_enc=1 {f.text}
+            ) t
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+    try:
+        response = dbgw.executeList(sql, connection, parameters,[],None,None)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)

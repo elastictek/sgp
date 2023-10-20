@@ -113,8 +113,8 @@ export default ({ hash, data, onNwsPick, onNwsPrint, ...props }) => {
                         <div>
                             <Space>
                                 <Button type="primary" size="small" icon={<PrinterOutlined />} title="Imprimir etiquetas de nonwovens" onClick={()=>onNwsPrint(selectedNws)}>Imprimir</Button>
-                                <Button type="primary" size="small" icon={<TabletOutlined />} title="Entrada e saida de Nonwovens" onClick={onNwsPick} />
-                                <div><Button type="primary" size="small"/*  onClick={onBobinagensExpand} */ ghost icon={<ExpandAltOutlined />} /></div>
+                                {/* <Button type="primary" size="small" icon={<TabletOutlined />} title="Entrada e saida de Nonwovens" onClick={onNwsPick} />
+                                <div><Button type="primary" size="small"  onClick={onBobinagensExpand}  ghost icon={<ExpandAltOutlined />} /></div> */}
                             </Space>
                         </div>
                     </Col>

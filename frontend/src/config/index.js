@@ -1,8 +1,9 @@
 import React from 'react';
-import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined } from '@ant-design/icons';
+import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined,ControlOutlined } from '@ant-design/icons';
 
 //export const ROOT_URL = "http://192.168.0.16:81";
-export const ROOT_URL = "http://192.168.0.59:8000";
+export const SERVER = "localhost";
+export const ROOT_URL = `http://${SERVER}:8000`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
@@ -17,7 +18,7 @@ export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const DATE_ENGINE = "dayjs";
-export const SOCKET = { url: 'ws://192.168.0.59:8000/ws' };
+export const SOCKET = { url: `ws://${SERVER}:8000/ws` };
 export const LOGIN_URL = `${ROOT_URL}/users/login/`;
 export const LOGOUT_URL = `${ROOT_URL}/users/logout-/`;
 //export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
@@ -50,6 +51,7 @@ export const bColors = (estado) => {
 export const HISTORY_DEFAULT = [
     { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{fontSize:"14px"}}/> },
     { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{fontSize:"14px"}} /> },
+    { label: "Painel de Controlo", key: "#/app/picking/main/", state: null, icon: <ControlOutlined style={{fontSize:"14px"}} /> },
     { label: "Ordens de Fabrico", key: "#/app/ofabrico/ordensfabricolist/", state: null, icon: <UnorderedListOutlined style={{fontSize:"14px"}} /> },
     { type: 'divider' },
     { label: "Retroceder", key: "back", state: null, icon: <LeftCircleFilled style={{fontSize:"14px"}}/> },
@@ -62,6 +64,7 @@ export const HISTORY_DEFAULT_FOOTER = [
 ];
 
 //APP DATA
+export const LOCALIZACOES = [{ value: "-1", label: "Todas as Localizações" },{ value: "ARM", label: "Armazém" },{ value: "ARM2", label: "Armazém 2" },{ value: "BUFFER", label: "Buffer" },{ value: "DM12", label: "DM12" },{ value: "EPIS", label: "EPIS" },{ value: "INT", label: "Int" }];
 export const MODO_EXPEDICAO = [{ value: "1", label: "CONTAINER" }, { value: "3", label: "TRUCK" }, { value: "4", label: "AIR" }];
 export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" }, { value: "Por Validar", label: "Por validar" }, { value: "Em Elaboração", label: "Em Elaboração" }, { value: "Na Produção", label: "Na Produção" }, { value: "Em Produção", label: "Em Produção" }, { value: "Finalizada", label: "Finalizada" }];
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };

@@ -296,19 +296,12 @@ export default ({ /* changedValues */ }) => {
                         wide: 16, margin: "2px", layout: "horizontal", overflow: false
                     }}
                 >
-                    <FieldSet margin={false}>
+                    {/* <FieldSet margin={false}>
                         <Toolbar
                             style={{ width: "100%" }}
-                            /* left={<FieldSet>
-                                <Field name="thikness" wide={11} layout={{ center: "align-self:center;", right: "align-self:center;" }} label={{ enabled: true, width: "100px", text: "Espessura", pos: "left" }}>
-                                    <SelectField size="small" data={THICKNESS} keyField="t" textField="t"
-                                        optionsRender={(d, keyField, textField) => ({ label: <div style={{ display: "flex" }}><div style={{ minWidth: "100px" }}><b>{d[textField]} &#x00B5;</b></div></div>, value: d[keyField] })}
-                                    />
-                                </Field>
-                            </FieldSet>} */
                             right={<Button onClick={() => onShowForm()}>Agrupar</Button>}
                         />
-                    </FieldSet>
+                    </FieldSet> */}
 
                     <FieldSet margin={false}>
                         {aggId &&

@@ -25,7 +25,7 @@ import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, OFabricoStatus } from 'components/TableColumns';
 import uuIdInt from "utils/uuIdInt";
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -99,7 +99,7 @@ const menuOptions = ({ edit, joinbc, referenceDisabled = false }) => [
     ...(edit) ? [{ key: 6, label: <Space><Field name="joinbc" label={{ enabled: false }}><SwitchField /></Field><span>{joinbc ? "Desagrupar extrusora BC" : "Agrupar extrusora BC"}</span></Space> }] : []
 ];
 
-export default ({ setFormTitle,enableAssociation=true, ...props }) => {
+export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "datagrid" });//Permissões Iniciais
@@ -139,18 +139,20 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
     const addToOFabrico = () => {
         const _filter = form.getFieldsValue(["artigo_id", "produto_id"]);
         setModalParameters({
-            content: "ordensfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico em Elaboração", push: false, loadData: () => { }, parameters: {
-                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "of_id", parameters: { method: "OrdensFabricoInElaborationAllowed" }, pagination: { enabled: false, limit: 50 }, filter: { ..._filter }, sort: [] } },
+            content: "ordensfabrico", responsive: true, type: "drawer", width: 1200, title: "Ordens de Fabrico", push: false, loadData: () => { }, parameters: {
+                payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "of_id", parameters: { method: "OrdensFabricoAllowed" }, pagination: { enabled: false, limit: 50 }, filter: { ..._filter }, sort: [] } },
                 toolbar: false,
                 //pt.status,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao, pt2.cliente_nome
                 columns: [
                     { name: 'cod', header: 'Agg.', defaultWidth: 160 },
                     { name: 'of_id', header: 'Ordem', defaultWidth: 160 },
-                    { name: 'cliente_nome', header: 'Cliente', defaultWidth: 160 },
-                    { name: 'designacao', header: 'Formulação Des.', defaultWidth: 260 },
-                    { name: 'group_name', header: 'Formulação Grupo', defaultWidth: 160 },
-                    { name: 'subgroup_name', header: 'Formulação Subgrupo', defaultWidth: 160 },
-                    { name: 'versao', header: 'Versão', width: 90 },
+                    { name: 'ofabrico_status', header: 'Estado', defaultWidth: 160, render: ({ data, cellProps }) => <OFabricoStatus cellProps={{}} data={data} /> },
+                    { name: 'cliente_nome', header: 'Cliente', minWidth: 260, flex: 1 },
+                    { name: 'artigo_cod', header: 'Artigo', minWidth: 160 }
+                    // { name: 'designacao', header: 'Formulação Des.', defaultWidth: 260 },
+                    // { name: 'group_name', header: 'Formulação Grupo', defaultWidth: 160 },
+                    // { name: 'subgroup_name', header: 'Formulação Subgrupo', defaultWidth: 160 },
+                    // { name: 'versao', header: 'Versão', width: 90 },
                 ],
                 onSelect: onSelectOrdemFabrico
                 // filters: { fofabrico: { type: "any", width: 150, text: "Ordem", autoFocus: true } },
@@ -171,7 +173,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
             }
         } catch (e) {
-            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            openNotification("error", 'top', "Notificação", e.message, null);
         } finally {
         };
     }
@@ -284,7 +286,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type","agg_of_id"]);
+            const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type", "agg_of_id"]);
             inputParameters.current = paramsIn;
         }
         setFormDirty(false);
@@ -293,7 +295,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
         } else {
             const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
 
-            console.log("loadddedddd",formulacao)
+            console.log("loadddedddd", formulacao)
 
             dataAPI.setData({ rows: items, total: items?.length });
             form.setFieldsValue({
@@ -417,7 +419,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                     openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
                 }
             } catch (e) {
-                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+                openNotification("error", 'top', "Notificação", e.message, null);
             } finally {
                 submitting.end();
             };
@@ -479,7 +481,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                     }
                 });
                 if (response.data.status !== "error") {
-                    if (props?.postProcess){
+                    if (props?.postProcess) {
                         props.postProcess();
                     }
                     //A ordem dos if's é muito importante!!!!
@@ -487,7 +489,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                         setMode(v => ({ ...v, datagrid: { edit: false, add: false } }));
                         dataAPI.setAllRowsValid();
                     } else if ("formulacao_id" in inputParameters.current) {
-                        if (response.data?.id){
+                        if (response.data?.id) {
                             inputParameters.current = { formulacao_id: response.data.id };
                         }
                         loadData();
@@ -504,7 +506,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
             }
         } catch (e) {
             console.log(e)
-            openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+            openNotification("error", 'top', "Notificação", e.message, null);
         } finally {
             submitting.end();
         };
@@ -630,7 +632,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
             <FormContainer id="form" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onValuesChange={onValuesChange} wrapFormItem={true} forInput={mode.datagrid.edit} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
-                <Row style={{}} gutterWidth={10}>
+                {!noHeader && <Row style={{}} gutterWidth={10}>
                     <Col xs={2} md={1}><Field name="versao" forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
                     <Col xs={4} md={2}><FormulacaoGroups name="group_name" label={{ enabled: true, text: "Grupo" }} /></Col>
                     <Col xs={4} md={2}><FormulacaoSubGroups name="subgroup_name" label={{ enabled: true, text: "SubGrupo" }} /></Col>
@@ -639,10 +641,11 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                     <Col xs={12} md={6} lg={4}><Artigos name="artigo_id" allowClear label={{ enabled: true, text: "Artigo" }} load /></Col>
                     <Col xs={12} md={6} lg={4}><Clientes name="cliente" allowClear label={{ enabled: true, text: "Cliente" }} /></Col>
 
-                </Row>
+                </Row>}
                 <Row style={{}} nogutter>
                     <Col>
                         <Table
+                            editOnClick={true}
                             dirty={formDirty}
                             loading={submitting.state}
                             offsetHeight="270px"
@@ -681,7 +684,7 @@ export default ({ setFormTitle,enableAssociation=true, ...props }) => {
                             moreFilters={false}
                             leftToolbar={
                                 <Space>
-                                    <Permissions permissions={permission} action="edit" forInput={[enableAssociation,form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
+                                    <Permissions permissions={permission} action="edit" forInput={[enableAssociation, form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
                                     {(mode.datagrid.edit && inputParameters.current?.type !== "formulacao_dosers_change") && < Dropdown trigger={['click']} menu={{ onClick: menuClick, items: menuOptions({ edit: mode.datagrid.edit, joinbc: form.getFieldValue("joinbc"), referenceDisabled: inputParameters.current?.cs_id }) }}>
                                         <Button>
                                             <Space>

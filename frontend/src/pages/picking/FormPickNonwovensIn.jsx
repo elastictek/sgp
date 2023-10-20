@@ -34,8 +34,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 const title = "Entrada de Nonwovens em Linha";
-const TitleForm = ({ level, auth, loading }) => {
-    return (<ToolbarTitle id={auth?.user} description={title}
+const TitleForm = ({ level, auth, loading,showHistory }) => {
+    return (<ToolbarTitle id={auth?.user} description={title} showHistory={showHistory}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }
@@ -49,7 +49,7 @@ export const loadQuantity = async ({ value }, signal) => {
 }
 
 
-export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -189,7 +189,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 },
             }}
         >
-            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} />
+            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} showHistory={showHistory}/>
             <Container style={{ lineHeight: "60px", borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                 <Row style={{ marginTop: "10px" }}>
                     <Col></Col>
@@ -232,7 +232,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Col>
                         <Table
                             cellNavigation={false}
-                            offsetHeight={"250px"}
+                            offsetHeight={"350px"}
                             dirty={false}
                             loading={submitting.state}
                             idProperty={dataAPI.getPrimaryKey()}

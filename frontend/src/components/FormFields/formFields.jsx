@@ -8,7 +8,7 @@ import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
 import { debounce, dayjsValue } from "utils";
-import { validate, getSchema, pick, getStatus,validateMessages } from "utils/schemaValidator";
+import { validate, getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { LoadingOutlined, CheckSquareOutlined, BorderOutlined } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
 import { BsBoxArrowInDownRight } from "react-icons/bs";
@@ -16,7 +16,7 @@ import { AiOutlineFullscreen } from "react-icons/ai";
 import RangeDate from "../RangeDate";
 import RangeTime from "../RangeTime";
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
-import { Container as MainContainer,Row,Col } from 'react-grid-system';
+import { Container as MainContainer, Row, Col } from 'react-grid-system';
 import Selector from './Selector';
 
 
@@ -174,14 +174,14 @@ font-weight: 500;
 font-size: 10px;
 `;
 
-export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, right, ...props }) => {
+export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, right, hr = true, style, ...props }) => {
     //const parentProps = useContext(ParentContext);
     //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
     /* const classes = useFieldStyles(myProps); */
     //const { refMainAlertContainer } = parentProps;
     return (
         <>
-            {title && <StyledHRuleTitle style={{ padding, marginTop, display: "flex", justifyContent: "space-between" }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}<StyledHorizontalRule style={{ marginBottom }} />
+            {title && <StyledHRuleTitle style={{ padding, marginTop, display: "flex", justifyContent: "space-between", ...style }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}{hr && <StyledHorizontalRule style={{ marginBottom }} />}
         </>
     );
 }
@@ -200,8 +200,8 @@ export const VerticalSpace = ({ margin = "0px", height = "12px", ...props }) => 
     );
 }
 
-export const RowSpace = ({ margin = "0px", height = "12px", ...props}) => {
-    return(<Row nogutter style={{margin,height}} {...props}><Col></Col></Row>);
+export const RowSpace = ({ margin = "0px", height = "12px", ...props }) => {
+    return (<Row nogutter style={{ margin, height }} {...props}><Col></Col></Row>);
 }
 
 
@@ -398,7 +398,7 @@ export const SelectDebounceField = React.forwardRef(({ clearOptionsOnNull = true
     );
 });
 
-export const SelectField = React.forwardRef(({ data, keyField, /* valueField, */ textField, showSearch = false, optionsRender, ...rest }, ref) => {
+export const SelectField = React.forwardRef(({ data, keyField = "value", /* valueField, */ textField = "label", showSearch = false, optionsRender, ...rest }, ref) => {
     //const options = data.map((d,i) => <Option disabled={(i<5) ? true :false} key={d[keyField]} value={valueField ? d[valueField] : d[keyField]}>111{d[textField]}</Option>);
     const _optionsRender = (optionsRender) ? optionsRender : d => ({ label: d[textField], value: d[keyField] });
     const options = data ? data.map((d) => _optionsRender(d, keyField, textField)) : [];
@@ -625,6 +625,19 @@ export const Field = ({ children, forInput = null, forViewBorder = true, forView
     );
 }
 
+export const FieldItem = ({ children, ...props }) => {
+    return (
+        <Field noItemWrap={true} {...props}>{children}</Field>
+    );
+}
+
+export const Item = ({ children = <></>, ...props }) => {
+    return (
+        <Form.Item noStyle {...props}>
+            {children}
+        </Form.Item>
+    );
+}
 
 const InnerField = ({ children, alert, ...props }) => {
     /* const classes = useFieldStyles(props); */
@@ -940,7 +953,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                             return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? dayjsValue(value).format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
-                            if (labelInValue || (typeof value=="object" && textField in value)) {
+                            if (labelInValue || (value !== null && typeof value == "object" && textField in value)) {
                                 text = value?.[textField];
                             } else {
                                 const r = data.find(v => v[keyField] == value);
@@ -954,7 +967,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                         case 'InputNumber':
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
                                 return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
-                                    <div style={{ flex: 1, display: "flex",alignItems: "center" }}>
+                                    <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
                                         {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                         <div>{value}</div>
                                         {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}
@@ -965,7 +978,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                         default:
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
                                 return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
-                                    <div style={{ flex: 1, display: "flex" ,alignItems: "center"}}>
+                                    <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
                                         {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                         <div>{value}</div>
                                         {("addonAfter" in children.props) && <div style={{ marginLeft: "2px" }}>{children.props.addonAfter}</div>}

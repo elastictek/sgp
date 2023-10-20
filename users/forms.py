@@ -2,9 +2,10 @@ from django import forms
 
 class LoginForm(forms.Form):
     OPTIONS = [
-        ('1', 'Option 1'),
-        ('2', 'Option 2'),
-        ('3', 'Option 3'),
+        ('/app/producao/widgetestadoproducao', 'Produção linha 1'),
+        ('/app/picking/main', 'PDA'),
+        ('/app/ofabrico/ordensfabricolist', 'Ordens de fabrico'),
+        ('/app', 'Dashboards'),
     ]
 
     username = forms.CharField(max_length=100, label='Username')

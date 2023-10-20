@@ -16,6 +16,9 @@ class AppSettings:
             "sage":f'"SAGE-PROD"'
         }
     }
+    reportServer = {
+        "default":"http://192.168.0.16:8080/ReportsGW"
+    }
     reportConn = {
         "sage":"MSSQL-SAGE",
         "sgp":"MYSQL-SGP-PROD",

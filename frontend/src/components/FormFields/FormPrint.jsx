@@ -7,6 +7,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 
 import { Space, Typography, Button, Select, Modal, InputNumber, Checkbox, Badge } from "antd";
 import { API_URL } from 'config';
+import TextArea from 'antd/es/input/TextArea';
 
 export const printersList = {
     CABS: [{ value: 'Bobinadora_CAB_A4_200', label: 'BOBINADORA' }, { value: 'DM12_CAB_A4_200', label: 'DM12' }],
@@ -18,12 +19,12 @@ export const printersList = {
 };
 
 
-export default ({ v, parentRef, closeParent, printers, url, parameters, numCopiasMax = 3, printer = "Bobinadora_CAB_A4_200", numCopias = 1, allowDownload = true,onComplete }) => {
+export default ({ v, parentRef, closeParent, printers, url, parameters, numCopiasMax = 3, printer = "Bobinadora_CAB_A4_200", numCopias = 1, allowDownload = true, onComplete, obs }) => {
     const [values, setValues] = useState({ impressora: printer, num_copias: numCopias })
     const onClick = async (download) => {
         const response = (download) ? await fetchPostBlob({ url, parameters: { ...parameters, ...values, ...download && { download } } }) : await fetchPost({ url, parameters: { ...parameters, ...values, ...download && { download } } });
         if (response.data.status !== "error") {
-            if (onComplete){
+            if (onComplete) {
                 onComplete(response);
             }
             closeParent();
@@ -33,11 +34,25 @@ export default ({ v, parentRef, closeParent, printers, url, parameters, numCopia
     }
 
     const onChange = (t, v) => {
-        setValues(prev => ({ ...prev, [t]: v }));
+        if (t==="obs"){
+            setValues(prev => ({ ...prev, [t]: v.target.value }));
+        }else{
+            setValues(prev => ({ ...prev, [t]: v }));
+        }
     }
 
     return (<>
         <Container>
+
+            {obs && <>
+                <Row>
+                    <Col><b>Observações:</b></Col>
+                </Row>
+                <Row>
+                    <Col><TextArea onChange={(v) => onChange("obs", v)} /></Col>
+                </Row>
+            </>}
+
             <Row>
                 <Col><b>Cópias:</b></Col>
             </Row>
@@ -55,7 +70,7 @@ export default ({ v, parentRef, closeParent, printers, url, parameters, numCopia
                     <Space>
                         <Button onClick={closeParent}>Cancelar</Button>
                         {allowDownload && <Button onClick={() => onClick("download")}>Download</Button>}
-                        <Button type="primary" onClick={()=>onClick()}>Imprimir</Button>
+                        <Button type="primary" onClick={() => onClick()}>Imprimir</Button>
                     </Space>
                 </Col>
             </Row>

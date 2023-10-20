@@ -372,6 +372,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "picking" });
+    const [load, setLoad] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -384,6 +385,11 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
             inputParameters.current = paramsIn;
+            if (inputParameters.current?.id) {
+                onSelectionChange({ data: inputParameters.current });
+            } else {
+                setLoad(true);
+            }
         }
         submitting.end();
     }
@@ -395,18 +401,19 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        console.log(v)
         navigate("/app/picking/newpaleteline", { state: { action: "weigh", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines, lvl: v.data.lvl } });
     }
 
     return (
         <>
-            <PaletesChoose
-                title="Pesar Palete"
-                onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}
-                defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }}
-            />
+            {load &&
+                <PaletesChoose
+                    title="Pesar Palete"
+                    onFilterChange={onFilterChange} onSelect={onSelectionChange}
+                    defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}
+                    defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }}
+                />
+            }
         </>
     )
 

@@ -92,6 +92,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "picking" });
+    const [load, setLoad] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -104,6 +105,11 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
             inputParameters.current = paramsIn;
+            if (inputParameters.current?.id) {
+                onSelectionChange({ data: inputParameters.current });
+            } else {
+                setLoad(true);
+            }
         }
         submitting.end();
     }
@@ -120,12 +126,13 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
 
     return (
         <>
-            <PaletesChoose
+            {load && <PaletesChoose
                 title="Apagar Palete"
                 onFilterChange={onFilterChange} onSelect={onSelectionChange}
                 defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}
                 defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }}
             />
+            }
         </>
     )
 

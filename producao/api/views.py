@@ -236,7 +236,7 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
 def ExportFile(request, format=None):
     p = request.data["parameters"]
     req = {**p}
-    fstream = requests.post('http://192.168.0.16:8080/ReportsGW/run', json=req)
+    fstream = requests.post(f'{reportServer}/run', json=req)
     if (fstream.status_code==200):
         resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
         if (p["export"] == "pdf"):
@@ -3122,7 +3122,24 @@ def OfAttachmentsChange(request, format=None):
                             dml = db.dml(TypeDml.UPDATE, {"tipo_doc":value}, "producao_attachments",{"id":key},None,None)
                             db.execute(dml.statement, cursor, dml.parameters)
                     elif request.data.get("type") == "remove":
-                            dml = db.dml(TypeDml.DELETE, {}, "producao_attachments",{"id":request.data.get("id")},None,None)
+                            if request.data.get("id") is None and request.data.get("ordem_id") is not None :
+                                dt = None
+                                if request.data.get("tipo_doc") ==  "Ficha de Processo":
+                                    dt={"ficha_processo":None}
+                                if request.data.get("tipo_doc") ==  "Ficha Técnica":
+                                    dt={"ficha_tecnica":None}
+                                if request.data.get("tipo_doc") ==  "Resumo de Produção":
+                                    dt={"res_prod":None}
+                                if request.data.get("tipo_doc") ==  "Ordem de Fabrico":
+                                    dt={"of":None}
+                                if request.data.get("tipo_doc") ==  "Orientação Qualidade":
+                                    dt={"ori_qua":None}
+                                if request.data.get("tipo_doc") ==  "Packing List":
+                                    dt={"pack_list":None}
+                                if dt is not None:
+                                    dml = db.dml(TypeDml.UPDATE, dt, "planeamento_ordemproducao",{"id":request.data.get("ordem_id")},None,None)    
+                            if request.data.get("id") is not None:
+                                dml = db.dml(TypeDml.DELETE, {}, "producao_attachments",{"id":request.data.get("id")},None,None)
                             db.execute(dml.statement, cursor, dml.parameters)
             return Response({"status": "success", "title": "Anexo(s) alterado(s) com Sucesso!", "subTitle":''})
         except Error:
@@ -3293,6 +3310,7 @@ def getSageEncomenda(cod):
 
 def sgpSaveEncomendaCliente(clienteId,encomendaId,clientCod,orderCod,userId,cursor):
     print(f"FORPRODUCTION---{userId} -- ")
+    eef=orderCod
     if clienteId is None:
         #INSERIR CLIENTE NO SGP (não existe)
         sage_cliente = getSageCliente(clientCod)
@@ -3300,6 +3318,7 @@ def sgpSaveEncomendaCliente(clienteId,encomendaId,clientCod,orderCod,userId,curs
     if encomendaId is None:
         #INSERIR ENCOMENDA NO SGP (Não existe)
         sage_order = getSageEncomenda(orderCod)
+        eef = sage_order["SOHNUM_0"] if sage_order is not None else None
         if sage_order is not None:
             dta={
                 "timestamp": datetime.now(),
@@ -3323,7 +3342,7 @@ def sgpSaveEncomendaCliente(clienteId,encomendaId,clientCod,orderCod,userId,curs
             dml = db.dml(TypeDml.INSERT, dta, "producao_encomenda")
             db.execute(dml.statement, cursor, dml.parameters)
             encomendaId = cursor.lastrowid
-    return {"clienteId":clienteId,"encomendaId":encomendaId}
+    return {"clienteId":clienteId,"encomendaId":encomendaId,"eef":eef}
 
 def sgpForProduction(data,aggid,user,cursor):
     #Funcção que retorna todas as OF Planeadas da Agg
@@ -3557,6 +3576,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 "etiqueta_final":_paletizacao["netiquetas_final"],
                 "artigo_id":_artigo["id"],
                 "enc_id":vals["encomendaId"],
+                "eef":vals["eef"],
                 "user_id":user.id,
                 "tipo_emenda":tipoemendas[_emendas["tipo_emenda"]],
                 "cliente_id":vals["clienteId"],
@@ -4038,7 +4058,7 @@ def SaveTempOrdemFabrico(request, format=None):
                     id = upsertTempOrdemFabrico(data,aggid,produto_id,cp, cpp, cursor)
                     sgpForProduction(data,aggid,request.user,cursor)
         if 'forproduction' in data and data['forproduction']==True:
-            mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LIST")
+            mv_ofabrico_list = AppSettings.materializedViews.get("MV_OFABRICO_LISTV2")
             conngw = connections[connGatewayName]
             cgw = conngw.cursor()
             cgw.execute(f"REFRESH MATERIALIZED VIEW public.{mv_ofabrico_list};")
