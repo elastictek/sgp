@@ -197,7 +197,7 @@ export default ({ onChangeCortesOrdem, record, larguras:_larguras, cortesOrdemId
             <div style={{display:"flex"}}><div style={{fontWeight:700}}>{largurasTxt}</div><div style={{marginLeft:"20px"}}>Largura Útil:</div><div style={{marginLeft:"2px",fontWeight:700}}>{larguraTotal}mm</div></div>
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap:"wrap" }}>
-                    {bobines.map((v, i) => {
+                    {bobines && bobines.map((v, i) => {
                         return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height}/>);
                     })}
                 </div>
