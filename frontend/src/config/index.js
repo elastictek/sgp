@@ -1,9 +1,12 @@
 import React from 'react';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined,ControlOutlined } from '@ant-design/icons';
 
-//export const ROOT_URL = "http://192.168.0.16:81";
-export const SERVER = "localhost";
-export const ROOT_URL = `http://${SERVER}:8000`;
+
+export const SERVER_PORT = "81";
+export const SERVER = "192.168.0.16";
+//export const SERVER_PORT = "8000";
+//export const SERVER = "localhost";
+export const ROOT_URL = `http://${SERVER}:${SERVER_PORT}`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
 export const MAX_UPLOAD_SIZE = 5; //MB
@@ -18,10 +21,9 @@ export const TIME_FORMAT = 'HH:mm';
 export const DATE_FORMAT_NO_SEPARATOR = 'YYYYMMDD';
 export const PAGE_TOOLBAR_HEIGHT = "45px";
 export const DATE_ENGINE = "dayjs";
-export const SOCKET = { url: `ws://${SERVER}:8000/ws` };
+export const SOCKET = { url: `ws://${SERVER}:${SERVER_PORT}/ws` };
 export const LOGIN_URL = `${ROOT_URL}/users/login/`;
 export const LOGOUT_URL = `${ROOT_URL}/users/logout-/`;
-//export const SOCKET = { url: 'ws://192.168.0.16:81/ws' };
 export const SCREENSIZE_OPTIMIZED = { width: 1920, height: 1080 }
 
 export const SAGE_ESTABELECIMENTOS = [{ value: "E01", label: "E01" }];
