@@ -148,9 +148,9 @@ export default ({ onChangeCortesOrdem, record, larguras:_larguras, cortesOrdemId
                 // form.setFieldsValue({ designacao: cortesOrdem.designacao });
                 // _larguraTotal = _cortesOrdem.reduce((sum, v) => Number(sum) + Number(v));
             } */
-            //setBobines(record.cortes_ordem);
-            //setLarguraTotal(record.largura_util);
-            //setIdx(record?.idx);
+            setBobines(record?.cortes_ordem);
+            setLarguraTotal(record?.largura_util);
+            setIdx(record?.idx);
         }
     }
 

@@ -212,6 +212,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
             inputParameters.current = { showPlan: true, ...paramsIn };
         }
         const _base = await loadGenerationCortes(inputParameters.current.agg_of_id);
+        console.log("aaa",_base)
         let _cortes = [];
         if (inputParameters.current?.data && inputParameters.current.data.length > 0) {
             _cortes = inputParameters.current.data.map((v, idx) => {
@@ -281,7 +282,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
                 a.cortes[idx - 1].largura_util = _lar_util;
                 a.cortes[idx - 1].bobines_total = _n_bobines_total;
                 if (l.idx === selected?.idx || !inputParameters.current.showPlan) {
-                    if (!inputParameters.current.showPlan || JSON.stringify(l.n_cortes) !== JSON.stringify(selected.n_cortes)) {
+                    if (!inputParameters.current?.showPlan || JSON.stringify(l?.n_cortes) !== JSON.stringify(selected?.n_cortes)) {
                         const _cortes_ordem = [];
                         for (let x of larguras) {
                             _cortes_ordem.push(...(new Array(l.n_cortes[x])).fill(x));

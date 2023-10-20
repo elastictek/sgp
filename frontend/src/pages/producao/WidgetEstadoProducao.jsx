@@ -66,9 +66,9 @@ import useWebSocket from 'react-use-websocket';
 
 import ListPaletesOf from './items/ListPaletesOf';
 import ListNwsQueue from './items/ListNwsQueue';
-import ListGranuladoInline from './Items/ListGranuladoInline';
-import ListBobinagens from './Items/ListBobinagens';
-import LineParameters from './Items/LineParameters';
+import ListGranuladoInline from './items/ListGranuladoInline';
+import ListBobinagens from './items/ListBobinagens';
+import LineParameters from './items/LineParameters';
 import ListReciclado from './items/ListReciclado';
 import { newWindow } from 'utils/loadInitV3';
 

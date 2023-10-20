@@ -1150,7 +1150,9 @@ def GetCortesGeneration(request, format=None):
 
         rows_df = df.drop_duplicates(subset=['gid','largura', 'bobines_por_palete'])
         rows_df['paletes'] = rows_df.groupby(['largura', 'bobines_por_palete'])['num_paletes'].transform('sum')
+        #rows_df.loc[:, 'paletes'] = rows_df['paletes']
         rows_df['bobines_palete'] = rows_df.groupby(['largura', 'bobines_por_palete'])['bobines_por_palete'].transform('sum')
+        #rows_df.loc[:, 'bobines_palete'] = rows_df['bobines_palete']
         rows_df = rows_df.drop_duplicates(subset=['largura', 'bobines_por_palete'])
         rows_df = rows_df[['largura','bobines_por_palete', 'bobines_palete', 'paletes']]
 
