@@ -1143,10 +1143,12 @@ def GetCortesGeneration(request, format=None):
     try:
         cursor.execute("CALL list_estadoproducao_summary(%s,%s)", [filter.get("agg_of_id"),None])
         results = fetchall(cursor)
+        print(results)
         df = pd.DataFrame(results)
         paletes_stock_df = df[df['current_stock'] == 1].groupby(['id','largura', 'bobines_por_palete'])['current_num_paletes'].sum().reset_index()
         paletes_stock_df.rename(columns={'current_num_paletes': 'paletes_stock'}, inplace=True)
         paletes_stock_df=paletes_stock_df[['largura', 'bobines_por_palete','paletes_stock']]
+
 
         rows_df = df.drop_duplicates(subset=['gid','largura', 'bobines_por_palete'])
         rows_df['paletes'] = rows_df.groupby(['largura', 'bobines_por_palete'])['num_paletes'].transform('sum')
@@ -1157,7 +1159,13 @@ def GetCortesGeneration(request, format=None):
         rows_df = rows_df[['largura','bobines_por_palete', 'bobines_palete', 'paletes']]
 
         if not paletes_stock_df.empty and not rows_df.empty:
-            result_df = pd.merge(paletes_stock_df, rows_df, on=['largura', 'bobines_por_palete'])
+            result_left = paletes_stock_df.merge(rows_df, on=['largura', 'bobines_por_palete'], how='left').fillna(0)
+            result_right = rows_df.merge(paletes_stock_df, on=['largura', 'bobines_por_palete'], how='right').fillna(0)
+            # Combine the results using a logical OR operation
+            result_df = result_left.combine_first(result_right)
+            #result_df = pd.merge(paletes_stock_df, rows_df, on=['largura', 'bobines_por_palete'], how='left').fillna({'paletes_stock': 0})
+            #result_df = pd.merge(paletes_stock_df, rows_df, on=['largura', 'bobines_por_palete'])
+            result_df = rows_df.merge(paletes_stock_df, on=['largura', 'bobines_por_palete'], how='left').fillna(0)
         elif not paletes_stock_df.empty and rows_df.empty:
             result_df = paletes_stock_df
         else:
