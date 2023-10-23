@@ -38,7 +38,7 @@ import { MdOutlineOutput, MdOutlineInput } from 'react-icons/md';
 
 const title = "Imprimir Etiquetas de Nonwovens";
 const TitleForm = ({ level, auth, onSave, loading }) => {
-    return (<ToolbarTitle id={auth?.user} description={title} details={<span style={{ fontSize: "16px", marginLeft: "90px" }}>Para Amostras</span>}
+    return (<ToolbarTitle id={auth?.user} description={title} details={<span style={{ fontSize: "16px", marginLeft: "135px" }}>Para Amostras</span>}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }

@@ -116,7 +116,7 @@ const GranuladoList = ({ openNotification, next, list, setList, ...props }) => {
                                 <div style={{ fontWeight: 700 }}>{item?.dosers}</div>
                             </div>}
                             title={<div>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div>}
-                            description={<div>{item?.arranque ? <span>{item.arranque}%</span> : <span>---%</span>}<span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>}
+                            description={<div>{item?.arranque ? <span>{item.arranque}%</span> : <span></span>}<span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>}
                         />
                     </ListItem>
                 )}

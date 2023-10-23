@@ -1,5 +1,5 @@
 import React from 'react';
-import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined,ControlOutlined } from '@ant-design/icons';
+import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined } from '@ant-design/icons';
 
 
 export const SERVER_PORT = "81";
@@ -51,27 +51,30 @@ export const bColors = (estado) => {
 }
 
 export const HISTORY_DEFAULT = [
-    { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{fontSize:"14px"}}/> },
-    { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{fontSize:"14px"}} /> },
-    { label: "Painel de Controlo", key: "#/app/picking/main/", state: null, icon: <ControlOutlined style={{fontSize:"14px"}} /> },
-    { label: "Ordens de Fabrico", key: "#/app/ofabrico/ordensfabricolist/", state: null, icon: <UnorderedListOutlined style={{fontSize:"14px"}} /> },
+    { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{ fontSize: "14px" }} /> },
+    { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Painel de Controlo", key: "#/app/picking/main/", state: { newWindow: "controlpanel" }, icon: <ControlOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Ordens de Fabrico", key: "#/app/ofabrico/ordensfabricolist/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Paletes", key: "#/app/paletes/paleteslist/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Bobinagens", key: "#/app/bobinagens/reellings/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Bobines", key: "#/app/bobines/bobineslist/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
     { type: 'divider' },
-    { label: "Retroceder", key: "back", state: null, icon: <LeftCircleFilled style={{fontSize:"14px"}}/> },
+    { label: "Retroceder", key: "back", state: null, icon: <LeftCircleFilled style={{ fontSize: "14px" }} /> },
     { type: 'divider' }
 ];
 export const HISTORY_DEFAULT_FOOTER = [
     { type: 'divider' },
-    { label: <div style={{fontWeight:700}}>Logout</div>, key: `logout`, icon: <LogoutOutlined style={{fontSize:"14px"}}/> },
+    { label: <div style={{ fontWeight: 700 }}>Logout</div>, key: `logout`, icon: <LogoutOutlined style={{ fontSize: "14px" }} /> },
     { type: 'divider' }
 ];
 
 //APP DATA
-export const LOCALIZACOES = [{ value: "-1", label: "Todas as Localizações" },{ value: "ARM", label: "Armazém" },{ value: "ARM2", label: "Armazém 2" },{ value: "BUFFER", label: "Buffer" },{ value: "DM12", label: "DM12" },{ value: "EPIS", label: "EPIS" },{ value: "INT", label: "Int" }];
+export const LOCALIZACOES = [{ value: "-1", label: "Todas as Localizações" }, { value: "ARM", label: "Armazém" }, { value: "ARM2", label: "Armazém 2" }, { value: "BUFFER", label: "Buffer" }, { value: "DM12", label: "DM12" }, { value: "EPIS", label: "EPIS" }, { value: "INT", label: "Int" }];
 export const MODO_EXPEDICAO = [{ value: "1", label: "CONTAINER" }, { value: "3", label: "TRUCK" }, { value: "4", label: "AIR" }];
 export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" }, { value: "Por Validar", label: "Por validar" }, { value: "Em Elaboração", label: "Em Elaboração" }, { value: "Na Produção", label: "Na Produção" }, { value: "Em Produção", label: "Em Produção" }, { value: "Finalizada", label: "Finalizada" }];
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
 export const JUSTIFICATION_OUT = [{ value: "" }, { value: "NÃO CONFORME" }, { value: "TROCA DE PRODUÇÃO" }, { value: "TROCA DE MATÉRIA PRIMA" }];
-export const JUSTIFICATION_OUT_V2 = ["NÃO CONFORME","TROCA DE PRODUÇÃO","TROCA DE MATÉRIA PRIMA"];
+export const JUSTIFICATION_OUT_V2 = ["NÃO CONFORME", "TROCA DE PRODUÇÃO", "TROCA DE MATÉRIA PRIMA"];
 //DOSERS
 export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES

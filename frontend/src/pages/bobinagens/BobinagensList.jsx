@@ -5,10 +5,9 @@ import Joi from 'joi';
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, getFilterRangeValues, getFilterValue, isValue } from "utils";
-import { API_URL } from "config";
+import { API_URL, ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { includeObjectKeys, excludeObjectKeys } from "utils/object";
-import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker } from "antd";
@@ -27,6 +26,7 @@ import BobinesPopup from './commons/BobinesPopup';
 import { usePermission } from "utils/usePermission";
 import YScroll from 'components/YScroll';
 import dayjs from 'dayjs';
+import loadInit, { fixRangeDates,newWindow } from "utils/loadInitV3";
 
 const FormBobinagemValidar = React.lazy(() => import('./FormValidar'));
 const Bobinagem = React.lazy(() => import('./Bobinagem'));
@@ -114,45 +114,86 @@ const useStyles = createUseStyles({
     }
 });
 
-const TitleForm = ({ data, onChange, form, auth }) => {
-    const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
-    return (<ToolbarTitle  id={auth?.user} description={title}  title={<>
-        <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
-        <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
-    </>} right={
-        <Col xs="content">
-            <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
-                <Col style={{ alignItems: "center" }}>
-                    <Row gutterWidth={2} justify='end'>
-                        <Col xs="content">
-                            <Field name="typelist" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "A", label: "Estado Bobines" },
-                                    { value: "B", label: "Consumo Bobinagem" },
-                                    { value: "C", label: "Ordens de Fabrico" }]} />
-                            </Field>
-                        </Col>
-                        <Col xs="content">
-                            <Field name="type" label={{ enabled: false }}>
-                                <SelectField size="small" keyField="value" textField="label" data={
-                                    [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
-                                    { value: "-1", label: "Todas as Bobinagens" }]} />
-                            </Field>
-                        </Col>
-                        <Col xs="content">
-                            <Field name="valid" label={{ enabled: false }}>
-                                <SelectField style={{ width: "100px" }} size="small" keyField="value" textField="label" data={
-                                    [{ value: "0", label: "Por validar" },
-                                    { value: "1", label: "Validadas" },
-                                    { value: "-1", label: " " }
-                                    ]} /></Field>
-                        </Col>
-                    </Row>
-                </Col>
-            </FormContainer>
-        </Col>
-    } />);
+
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, data, onChange, form }) => {
+    return (<ToolbarTitle id={auth?.user} description={title}
+        leftTitle={<span style={{}}>{title}</span>}
+        right={
+            <Col xs="content">
+                <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
+                    <Col style={{ alignItems: "center" }}>
+                        <Row gutterWidth={2} justify='end'>
+                            <Col xs="content">
+                                <Field name="typelist" label={{ enabled: false }}>
+                                    <SelectField size="small" keyField="value" textField="label" data={
+                                        [{ value: "A", label: "Estado Bobines" },
+                                        { value: "B", label: "Consumo Bobinagem" },
+                                        { value: "C", label: "Ordens de Fabrico" }]} />
+                                </Field>
+                            </Col>
+                            <Col xs="content">
+                                <Field name="type" label={{ enabled: false }}>
+                                    <SelectField size="small" keyField="value" textField="label" data={
+                                        [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
+                                        { value: "-1", label: "Todas as Bobinagens" }]} />
+                                </Field>
+                            </Col>
+                            <Col xs="content">
+                                <Field name="valid" label={{ enabled: false }}>
+                                    <SelectField style={{ width: "100px" }} size="small" keyField="value" textField="label" data={
+                                        [{ value: "0", label: "Por validar" },
+                                        { value: "1", label: "Validadas" },
+                                        { value: "-1", label: " " }
+                                        ]} /></Field>
+                            </Col>
+                        </Row>
+                    </Col>
+                </FormContainer>
+            </Col>
+        }
+    />);
 }
+
+
+// const TitleForm = ({ data, onChange, form, auth }) => {
+//     const st = (parseInt(data?.type) === -1 || !data?.ofs) ? null : JSON.stringify(data?.ofs).replaceAll(/[\[\]\"]/gm, "").replaceAll(",", " | ");
+//     return (<ToolbarTitle id={auth?.user} description={title} title={<>
+//         <Col xs='content' style={{}}><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col>
+//         <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col>
+//     </>} right={
+//         <Col xs="content">
+//             <FormContainer id="frm-title" form={form} wrapForm={true} wrapFormItem={true} schema={schema} label={{ enabled: false }} onValuesChange={onChange} fluid>
+//                 <Col style={{ alignItems: "center" }}>
+//                     <Row gutterWidth={2} justify='end'>
+//                         <Col xs="content">
+//                             <Field name="typelist" label={{ enabled: false }}>
+//                                 <SelectField size="small" keyField="value" textField="label" data={
+//                                     [{ value: "A", label: "Estado Bobines" },
+//                                     { value: "B", label: "Consumo Bobinagem" },
+//                                     { value: "C", label: "Ordens de Fabrico" }]} />
+//                             </Field>
+//                         </Col>
+//                         <Col xs="content">
+//                             <Field name="type" label={{ enabled: false }}>
+//                                 <SelectField size="small" keyField="value" textField="label" data={
+//                                     [{ value: "1", label: "Bobinagens da Ordem de Fabrico" },
+//                                     { value: "-1", label: "Todas as Bobinagens" }]} />
+//                             </Field>
+//                         </Col>
+//                         <Col xs="content">
+//                             <Field name="valid" label={{ enabled: false }}>
+//                                 <SelectField style={{ width: "100px" }} size="small" keyField="value" textField="label" data={
+//                                     [{ value: "0", label: "Por validar" },
+//                                     { value: "1", label: "Validadas" },
+//                                     { value: "-1", label: " " }
+//                                     ]} /></Field>
+//                         </Col>
+//                     </Row>
+//                 </Col>
+//             </FormContainer>
+//         </Col>
+//     } />);
+// }
 
 const IFrame = ({ src }) => {
     return <div dangerouslySetInnerHTML={{ __html: `<iframe frameBorder="0" onload="this.width=screen.width;this.height=screen.height;" src='${src}'/>` }} />;
@@ -616,23 +657,26 @@ export default ({ noid = false, setFormTitle, ...props }) => {
 
 
     const onBobinesPopup = (row) => {
-        setModalParameters({ content: 'bobines', title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        setModalParameters({ content: 'bobines',type: "drawer", title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
         showModal();
     }
 
     const onBobineClick = (v) => {
-        setModalParameters({ content: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
-        showModal();
+        newWindow(`${ROOT_URL}/producao/bobine/details/${v.id}/`, {}, `bobine-${v.nome}`);
+        //setModalParameters({ content: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
+        //showModal();
     }
 
     const onBobinagemClick = (row) => {
         if (row?.valid == 0) {
-            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
-            showModal();
+            navigate("/app/bobinagens/formbobinagemvalidar", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+
+            //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            //showModal();
         } else {
-            console.log(row,"axxxxxxx")
-            setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
-            showModal();
+            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+            //setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            //showModal();
         }
 
         // if (row?.valid === 0) {
@@ -774,7 +818,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 editable={true}
                 clearSort={true}
                 rowHeight={formFilter.getFieldValue('typelist') === "C" ? 44 : 28}
-                rowClass={(row) => ((row?.rowvalid === 0 || row?.valid==0) ? classes.notValid : undefined)}
+                rowClass={(row) => ((row?.rowvalid === 0 || row?.valid == 0) ? classes.notValid : undefined)}
                 //selectedRows={selectedRows}
                 //onSelectedRowsChange={setSelectedRows}
                 leftToolbar={<Space>

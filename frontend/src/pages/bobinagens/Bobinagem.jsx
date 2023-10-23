@@ -27,7 +27,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector } from 'components/FormFields';
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { MediaContext } from "../App";
@@ -46,6 +46,12 @@ import FormPrint from "../commons/FormPrint";
 
 export const Context = React.createContext({});
 
+const title = "Bobinagem";
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "" }) => {
+    return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
+        leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
+    />);
+}
 
 export const LeftToolbar = ({ form, dataAPI, permission }) => {
     return (<>
@@ -151,7 +157,6 @@ export default (props) => {
 
     useEffect(() => {
 
-        props.setFormTitle({ title: `Bobinagem ${props?.parameters?.bobinagem?.nome}` }); //Set main Title
         const controller = new AbortController();
         loadData({ signal: controller.signal, init: true });
         return (() => controller.abort());
@@ -163,7 +168,11 @@ export default (props) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        console.log("aaaaaaaa",inputParameters.current)
+        if (props?.setFormTitle) {
+            props.setFormTitle({ title: `Bobinagem ${inputParameters.current?.bobinagem?.nome}` }); //Set main Title
+        } else {
+
+        }
         const formValues = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);
@@ -183,50 +192,53 @@ export default (props) => {
 
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
-        <div style={{ height: "calc(100vh - 130px)" }}>
-            <YScroll>
-                {bobinagemExists &&
-                    <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                        items={[
-                            {
-                                label: `Informação`,
-                                key: '1',
-                                children: <FormBobinagem {...{ parameters: props?.parameters, permissions:permission.permissions  }} />,
-                            },
-                            {
-                                label: `Bobines`,
-                                key: '3',
-                                children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
-                            }, {
-                                label: `Bobines Defeitos`,
-                                key: '4',
-                                children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
-                            },
-                            {
-                                label: `Bobines Destinos`,
-                                key: '5',
-                                children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions:permission.permissions, columns:{palete_nome:"palete_nome"} }} />,
-                            },
-                            {
-                                label: `MP Granulado (Lotes)`,
-                                key: '6',
-                                children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permissions:permission.permissions }} />,
-                            }, {
-                                label: `Bobines Originais`,
-                                key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permissions:permission.permissions }} />,
-                            },
-                            {
-                                label: `Histórico`,
-                                key: '8',
-                                children: <BobinagensHistoryList {...{ parameters: props?.parameters, permissions:permission.permissions }} />,
-                            },
-                        ]}
+        <>
+            {!props?.setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} level={location?.state?.level} form={formFilter}  */ />}
+            <div style={{ height: "calc(100vh - 130px)" }}>
+                <YScroll>
+                    {bobinagemExists &&
+                        <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                            items={[
+                                {
+                                    label: `Informação`,
+                                    key: '1',
+                                    children: <FormBobinagem {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                },
+                                {
+                                    label: `Bobines`,
+                                    key: '3',
+                                    children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                }, {
+                                    label: `Bobines Defeitos`,
+                                    key: '4',
+                                    children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                },
+                                {
+                                    label: `Bobines Destinos`,
+                                    key: '5',
+                                    children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                },
+                                {
+                                    label: `MP Granulado (Lotes)`,
+                                    key: '6',
+                                    children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                }, {
+                                    label: `Bobines Originais`,
+                                    key: '7',
+                                    children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                },
+                                {
+                                    label: `Histórico`,
+                                    key: '8',
+                                    children: <BobinagensHistoryList {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                },
+                            ]}
 
-                    />}
-                {(!bobinagemExists && !submitting.state) && <Empty description="A Bobinagem não foi encontrada!" />}
-            </YScroll>
-        </div>
+                        />}
+                    {(!bobinagemExists && !submitting.state) && <Empty description="A Bobinagem não foi encontrada!" />}
+                </YScroll>
+            </div>
+        </>
         // </Context.Provider>
     )
 

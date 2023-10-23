@@ -140,7 +140,7 @@ export default ({ noEdit = true, noPrint = true, ...props }) => {
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, filter: inputFilter, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...inputFilter && { filter: inputFilter }, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...inputFilter && { filter: inputFilter }, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id, fcompactual: ">=0", frecycle: ">=0" }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({

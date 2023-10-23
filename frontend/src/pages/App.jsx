@@ -72,6 +72,7 @@ const LabParametersList = lazy(() => import('./qualidade/LabParametersList'));
 const LabMetodosList = lazy(() => import('./qualidade/LabMetodosList'));
 const LabArtigosSpecsList = lazy(() => import('./qualidade/LabArtigosSpecsList'));
 const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssaysList'));
+const Bobinagem = lazy(() => import('./bobinagens/Bobinagem'));
 
 
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
@@ -169,6 +170,7 @@ const RenderRouter = () => {
             element: <MainLayout />,
             children: [
                 { path: "bobinagens/reellings", element: <Suspense fallback={<Spin />}><BobinagensList /></Suspense> },
+                { path: "bobinagens/formbobinagem", element: <Suspense fallback={<Spin />}><Bobinagem /></Suspense> },
                 /* { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> }, //TO REMOVE */
                 { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },

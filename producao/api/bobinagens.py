@@ -432,6 +432,39 @@ def Validar(request, format=None):
         return Response({"status": "error", "title": f"Erro ao validar a bobinagem! {str(error)}"})
 
 
+def BobinagemLookup(request, format=None):
+    connection = connections["default"].cursor()
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        "id": {"value": lambda v: Filters.getNumeric(v.get('fid')), "field": lambda k, v: f'pbm.{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
+
+    dql = db.dql(request.data, False)
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (
+        f"""  
+            select 
+            {f'{dql.columns}'}
+            from producao_bobinagem pbm
+            {f.text}
+            limit 1
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=f.parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, f.parameters)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
 def BobinagensLookup(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])

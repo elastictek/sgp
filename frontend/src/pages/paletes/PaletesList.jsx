@@ -46,6 +46,7 @@ import { MediaContext,AppContext } from "app";
 import OF from '../commons/OF';
 import { DestinoPaleteEditor } from 'components/tableEditors';
 import {changeOf} from './Palete';
+import BobinesPopup from '../bobinagens/commons/BobinesPopup';
 
 
 const focus = (el, h,) => { el?.focus(); };
@@ -86,19 +87,25 @@ const schemaIn = (options = {}) => {
 
 
 const title = "Paletes";
-const TitleForm = ({ data, onChange, level, auth, form }) => {
-    return (<ToolbarTitle id={auth?.user} description={title} title={<>
-        <Col>
-            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
-                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
-                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-            </Row>
-
-        </Col>
-    </>
-    }
+const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
+    return (<ToolbarTitle id={auth?.user} description={title}
+        leftTitle={<span style={{}}>{title}</span>}
     />);
 }
+
+// const TitleForm = ({ data, onChange, level, auth, form }) => {
+//     return (<ToolbarTitle id={auth?.user} description={title} title={<>
+//         <Col>
+//             <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+//                 <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
+//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+//             </Row>
+
+//         </Col>
+//     </>
+//     }
+//     />);
+// }
 
 
 const ToolbarFilters = ({ dataAPI, ...props }) => {
@@ -239,6 +246,12 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, permission, ...props 
     ];
     return (<Menu items={items()} onClick={v => { hide(); onClick(v, props.row); }} />);
 }
+
+const loadBobinesLookup = async ({palete_id,sort}) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, sort, filter: { fpaleteid: `==${palete_id}` }, parameters: { method: "BobinesLookup" } });
+    return rows;
+}
+
 // const loadMovimentosLookup = async (p, value) => {
 //     const { data: { rows } } = await fetchPost({ url: `${API_URL}/stocklistbuffer/`, pagination: { limit: 15 }, filter: { floc: 'BUFFER', fitm: p.row.artigo_cod, flote: `%${value.replaceAll(' ', '%%')}%` }, parameters: { lookup: true } });
 //     return rows;
@@ -735,6 +748,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
             switch (modalParameters.content) {
                 case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 case "changeof": return <Chooser parameters={modalParameters.parameters} />
+                case "bobines": return <BobinesPopup record={{ ...modalParameters }} />
                 //case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
@@ -758,6 +772,15 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         if (col === "destino" && row.destinos_has_obs > 0) {
             return classes.hasObs;
         }
+    }
+
+    const onBobinesPopup = async (row) => {
+        const _bobines = await loadBobinesLookup({palete_id:row.id,sort:[{column:"mb.posicao_palete",direction:"ASC"},{column:"mb.nome",direction:"ASC"}]});
+        console.log("rowwwwww",_bobines);
+        setModalParameters({ content: 'bobines',type: "drawer", title: <div>Palete <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines:_bobines });
+        showModal();
+        //setModalParameters({ content: 'bobines',type: "drawer", title: <div>Palete <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        //showModal();
     }
 
     // const formatterClass = (row, col) => {
@@ -800,9 +823,9 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     // }
 
     const columns = [
-        { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <div style={{ fontWeight: 700 }}>{p.row.nome}</div> },
+        { key: 'nome', name: 'Lote', frozen: true, width: 130, formatter: p => <Button size="small" type="link" onClick={() => onClickDetails("all", p.row)}>{p.row.nome}</Button> },
         {
-            key: 'baction', name: '', minWidth: 45, maxWidth: 45, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onClickDetails("all", p.row)} />,
+            key: 'baction', name: '', minWidth: 45, maxWidth: 45, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onBobinesPopup(p.row)} />,
         },
         { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
         { key: 'nbobines_real', name: 'Bobines', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{String(p.row.nbobines_real).padStart(2, '0')}/{String(p.row.num_bobines).padStart(2, '0')}</div> },

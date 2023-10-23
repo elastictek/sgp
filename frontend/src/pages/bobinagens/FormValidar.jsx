@@ -35,19 +35,24 @@ import { usePermission, Permissions } from "utils/usePermission";
 
 
 const title = "Validar Bobinagem";
-const TitleForm = ({ data, auth, bobinagemNome }) => {
-    return (<ToolbarTitle id={auth?.user} description={title} title={<>
-        <Col>
-            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
-                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title} {bobinagemNome}</span></Col></Row></Col>
-                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-            </Row>
-
-        </Col>
-    </>
-    }
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome }) => {
+    return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
+        leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
     />);
 }
+// const TitleForm = ({ data, auth, bobinagemNome }) => {
+//     return (<ToolbarTitle id={auth?.user} description={title} title={<>
+//         <Col>
+//             <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+//                 <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title} {bobinagemNome}</span></Col></Row></Col>
+//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+//             </Row>
+
+//         </Col>
+//     </>
+//     }
+//     />);
+// }
 const useStyles = createUseStyles({});
 const schema = (options = {}) => {
     return getSchema({
@@ -133,6 +138,10 @@ const Actions = ({ data, rowIndex, onAction }) => {
 
 const loadBobinesLookup = async (bobinagem_id) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, parameters: { method: "BobinesLookup" } });
+    return rows;
+}
+const loadBobinagemLookup = async (bobinagem_id) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: {}, filter: { fid: `==${bobinagem_id}` }, parameters: { method: "BobinagemLookup" } });
     return rows;
 }
 
@@ -255,7 +264,15 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, null);
             inputParameters.current = { ...paramsIn };
-            console.log("IN--->", paramsIn);
+        }
+        const _bobinagem = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
+        if (!_bobinagem || _bobinagem?.length==0){
+            window.history.go(-1);
+            return;
+        }
+        console.log("1111111111111111111",inputParameters.current.bobinagem_id,_bobinagem[0])
+        if (_bobinagem[0]?.valid==1){
+            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { ...inputParameters.current } });
         }
         const _bobines = (await loadBobinesLookup(inputParameters.current.bobinagem_id)).map(v => {
             return {
@@ -268,6 +285,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         });
 
         inputParameters.current = { ...inputParameters.current, produto: _bobines[0]?.produto, agg_of_id: _bobines[0]?.agg_of_id, largura_bobinagem: _bobines[0]?.largura_bobinagem };
+        console.log(console.log("INxxxxxxxxxzzzzzzz--->",_bobines))
         //console.log("AFTER--->", _bobines)
         setFormDirty(false);
         dataAPI.setData({ rows: _bobines, total: _bobines?.length });
@@ -321,8 +339,12 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 }
                 let response = await fetchPost({ url: `${API_URL}/api_to_call/`, filter: { ...vals }, parameters: {} });
                 if (response.data.status !== "error") {
-                    loadParentData();
-                    closeParent();
+                    if (loadParentData) {
+                        loadParentData();
+                        closeParent();
+                    } else {
+                        window.history.go(-1);
+                    }
                     Modal.success({ title: `Sucesso...` })
                 } else {
                     status.formStatus.error.push({ message: response.data.title });
@@ -413,9 +435,12 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                     response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: _rows, lar_bruta: _values.lar_bruta } });
                     if (response.data.status !== "error") {
                         dataAPI.update(true);
-                        props?.loadParentData();
-                        props?.closeSelf();
-                        console.log("xxxxxxxxxxxx",props)
+                        if (props?.loadParentData) {
+                            props?.loadParentData();
+                            props?.closeSelf();
+                        } else {
+                            window.history.go(-1);
+                        }
                         openNotification(response.data.status, 'top', "Notificação", response.data.title);
                     } else {
                         openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
@@ -524,7 +549,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
     return (
         <YScroll>
-            {!setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} level={location?.state?.level} form={formFilter}  *//>}
+            {!setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} level={location?.state?.level} form={formFilter}  */ />}
             <FormContainer id="form" form={form} wrapForm={true} wrapFormItem={true} fluid loading={submitting.state} style={{ padding: "0px" }} schema={schema} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} alert={{ tooltip: true, pos: "none" }}>
                 {/* <Row nogutter><Col><ToolbarTable {...props} submitting={submitting} /></Col></Row> */}
                 <Row>
@@ -548,7 +573,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                             dirty={true}
                             loading={submitting.state}
                             offsetHeight="180px"
-                            {...true && { rowHeight: 35 }}
+                            {...true && { rowHeight: 30 }}
                             idProperty={dataAPI.getPrimaryKey()}
                             local={true}
                             onRefresh={loadData}

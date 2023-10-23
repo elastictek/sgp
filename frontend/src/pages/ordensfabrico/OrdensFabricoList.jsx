@@ -55,19 +55,27 @@ const Operations = ({ parameters }) => {
 }
 
 const title = "Ordens de Fabrico";
-const TitleForm = ({ data, onChange, level, auth, form }) => {
-    return (<ToolbarTitle id={auth?.user} description={title} title={<>
-        <Col>
-            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
-                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
-                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-            </Row>
-
-        </Col>
-    </>
-    }
+const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
+    return (<ToolbarTitle id={auth?.user} description={title}
+        leftTitle={<span style={{}}>{title}</span>}
     />);
 }
+
+// const TitleForm = ({ data, onChange, level, auth, form }) => {
+//     return (<ToolbarTitle id={auth?.user} description={title} title={<>
+//         <Col>
+//             <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+//                 <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
+//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+//             </Row>
+
+//         </Col>
+//     </>
+//     }
+//     />);
+// }
+
+
 const useStyles = createUseStyles({
     open: {
         backgroundColor: "#d9f7be !important"
@@ -658,9 +666,9 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     ]
     const columns = [
         ...(true) ? [{ name: 'baction', header: '', filter: { show: false }, headerAlign: "center", userSelect: true, defaultLocked: true, width: 45, render: ({ data, rowIndex }) => <Actions data={data} rowIndex={rowIndex} allows={allows} onAction={(action) => onAction(action, data, rowIndex)} /> }] : [],
-        ...(true) ? [{ name: 'ofabrico', header: 'O. Fabrico', filter: { show: "toolbar", op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.ofabrico}</LeftAlign> }] : [],
-        ...(true) ? [{ name: 'prf', header: 'Prf', filter: { show: "toolbar", op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.prf}</LeftAlign> }] : [],
-        ...(true) ? [{ name: 'iorder', header: 'Encomenda', filter: { show: "toolbar", op: "any" }, render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'ofabrico', header: 'O. Fabrico', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.ofabrico}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'prf', header: 'Prf', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.prf}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'iorder', header: 'Encomenda', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'cod', header: 'Agg', filter: { show: true, op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'ofabrico_status', header: 'Estado Produção', filter: { show: true, type: "select", field: { style: { width: "80px" }, options: OFABRICO_FILTER_STATUS } }, userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data)} /> }] : [],
         ...(true) ? [{ name: "cliente_nome", filter: { show: true, op: "any" }, header: "Cliente", defaultWidth: 190, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],

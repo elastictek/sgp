@@ -8,8 +8,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates,newWindow } from "utils/loadInit";
-import { API_URL, DOSERS,ROOT_URL } from "config";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInit";
+import { API_URL, DOSERS, ROOT_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
@@ -28,7 +28,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, SwitchField } from 'components/FormFields';
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { TbCircles } from "react-icons/tb";
@@ -51,21 +51,10 @@ const schema = (options = {}) => {
 }
 
 const title = "Bobines";
-const TitleForm = ({ data, onChange }) => {
-
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, data, onChange }) => {
     useEffect(() => { }, [data?.type]);
-
-    // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
-    return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
-        <Col>
-            <Row style={{ marginBottom: "5px" }}>
-                <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
-                {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-            </Row>
-
-        </Col>
-    </>
-    }
+    return (<ToolbarTitle id={auth?.user} description={title}
+        leftTitle={<span style={{}}>{title}</span>}
         right={<Col xs="content" style={{ padding: "5px" }}>
             <SelectField value={data?.type} onChange={(v) => onChange(v, "type")} size="small" keyField="value" textField="label"
                 data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }, { value: "C", label: "Dados de Expedição" }]} />
@@ -73,6 +62,30 @@ const TitleForm = ({ data, onChange }) => {
         }
     />);
 }
+
+
+// const TitleForm = ({ data, onChange }) => {
+
+//     useEffect(() => { }, [data?.type]);
+
+//     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
+//     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
+//         <Col>
+//             <Row style={{ marginBottom: "5px" }}>
+//                 <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
+//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+//             </Row>
+
+//         </Col>
+//     </>
+//     }
+//         right={<Col xs="content" style={{ padding: "5px" }}>
+//             <SelectField value={data?.type} onChange={(v) => onChange(v, "type")} size="small" keyField="value" textField="label"
+//                 data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }, { value: "C", label: "Dados de Expedição" }]} />
+//         </Col>
+//         }
+//     />);
+// }
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
         <Col xs='content'>
@@ -141,7 +154,7 @@ const moreFiltersSchema = ({ form }) => [
     { fpalete: { label: "Palete", field: { type: 'input', size: 'small' } } },
     { flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 4 }, fcore: { label: "Core", field: { type: 'input', size: 'small' }, span: 4 } },
     { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS }, span: 10 } },
-    { fartigo: { label: "Artigo Cod.", field: { type: 'input', size: 'small' }, span:12 },fartigodes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span:12 } },
+    { fartigo: { label: "Artigo Cod.", field: { type: 'input', size: 'small' }, span: 12 }, fartigodes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
     { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
     {
         farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
@@ -245,7 +258,7 @@ const applyValueToAllRows = (rows, col, currentIndex, value) => {
     });
 }
 
-export default ({ setFormTitle, noid=false, ...props }) => {
+export default ({ setFormTitle, noid = false, ...props }) => {
     const media = useContext(MediaContext);
     const location = useLocation();
     const navigate = useNavigate();
@@ -259,7 +272,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "BobinesList" };
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...(!noid && {id: "lst-bobines"}), fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const dataAPI = useDataAPI({ ...(!noid && { id: "lst-bobines" }), fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTabPalete, setLastTabPalete] = useState('1');
     const [lastTabBobine, setLastTabBobine] = useState('1');
@@ -564,7 +577,7 @@ export default ({ setFormTitle, noid=false, ...props }) => {
                     // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
                     // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted)
                 };
-                console.log("RRRRRRRRRRRRRRRRRR",_values)
+                console.log("RRRRRRRRRRRRRRRRRR", _values)
                 dataAPI.addFilters(_values, true);
                 dataAPI.addParameters(defaultParameters);
                 dataAPI.first();

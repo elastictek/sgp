@@ -645,7 +645,6 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
                 <Row style={{}} nogutter>
                     <Col>
                         <Table
-                            editOnClick={false}
                             dirty={formDirty}
                             loading={submitting.state}
                             offsetHeight="270px"
@@ -655,6 +654,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
                             rowClassName={rowClassName}
                             groups={groups}
                             sortable={false}
+                            editStartEvent={"click"}
                             reorderColumns={false}
                             showColumnMenuTool={false}
                             disableGroupByToolbar={true}

@@ -45,7 +45,7 @@ const FormCortes = lazy(() => import('./FormCortes'));
 
 //const title = "";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading, title, subTitle }) => {
-    return (<ToolbarTitle id={auth?.user} description={`${title}/${subTitle}`} details={<span style={{ fontSize: "16px", marginLeft: "90px" }}>{subTitle}</span>}
+    return (<ToolbarTitle id={auth?.user} description={`${title}/${subTitle}`} details={<span style={{ fontSize: "16px", marginLeft: "135px" }}>{subTitle}</span>}
         leftTitle={<span style={{}}>{title}</span>}
     />);
 }
@@ -464,8 +464,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                                     title={
                                                                         <>
                                                                             {item.type_data == "granulado" && <>
-                                                                                <div style={{textAlign:"left"}}>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span>
-                                                                                </div>
+                                                                                {/* <div style={{ textAlign: "left" }}>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div> */}
                                                                             </>}
                                                                             {item.type_data == "cortes" && <></>}
                                                                             {item.type_data == "formulacao" && <></>}
@@ -476,20 +475,56 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
                                                                             {item.type_data == "nonwovens" && <></>}
                                                                             {item.type_data == "granulado" &&
-                                                                                <div style={{ display: "Flex" }}>
-                                                                                    <div style={{ width: "70px", maxWidth: "80px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                                                                        <Cuba style={{ fontSize: "12px"/* , lineHeight: 1.2 */ }} value={item.cuba} />
-                                                                                        <div style={{ fontWeight: 700 }}>{item?.dosers}</div>
+                                                                                <>
+                                                                                    <div style={{ display: "Flex" }}>
+                                                                                        <>
+                                                                                            {(item.arranque == null) && <Alert banner style={{ width: "100%", textAlign: "left" }}
+                                                                                                message={
+                                                                                                    <>
+                                                                                                        <div style={{ textAlign: "left" }}>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div>
+                                                                                                        <div style={{ display: "flex" }}>
+                                                                                                            <div style={{ width: "70px", maxWidth: "80px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                                                                                                <Cuba style={{ fontSize: "12px"/* , lineHeight: 1.2 */ }} value={item.cuba} />
+                                                                                                                <div style={{ fontWeight: 700 }}>{item?.dosers}</div>
+                                                                                                            </div>
+                                                                                                            <div style={{ textAlign: "left" }}>{item?.arranque ? <span>{item.arranque}%</span> : <span></span>}<span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>
+                                                                                                        </div>
+                                                                                                    </>
+                                                                                                }
+                                                                                                description={<ul style={{ fontWeight: 900, fontSize: "14px" }}>
+                                                                                                    <li>O artigo não faz parte da formulação.</li>
+                                                                                                    <li>A cuba/doseador(es), para este artigo, não estão corretamente atribuídos.</li>
+                                                                                                </ul>}
+                                                                                                type="warning"
+                                                                                                showIcon
+                                                                                            />}
+                                                                                            {(item.n_lote == null) &&
+
+                                                                                                <Alert banner style={{ width: "100%", textAlign: "left" }}
+                                                                                                    message={
+                                                                                                        <>
+                                                                                                            <div style={{ textAlign: "left" }}>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div>
+                                                                                                            <div style={{ display: "flex" }}>
+                                                                                                                <div style={{ width: "70px", maxWidth: "80px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                                                                                                    <Cuba style={{ fontSize: "12px"/* , lineHeight: 1.2 */ }} value={item.cuba} />
+                                                                                                                    <div style={{ fontWeight: 700 }}>{item?.dosers}</div>
+                                                                                                                </div>
+                                                                                                                <div style={{ textAlign: "left" }}>{item?.arranque ? <span>{item.arranque}%</span> : <span></span>}<span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>
+                                                                                                            </div>
+                                                                                                        </>
+                                                                                                    }
+                                                                                                    description={
+                                                                                                        <ul style={{ fontWeight: 900, fontSize: "14px" }}>
+                                                                                                            <li>O artigo faz parte da formulação e não se encontra em linha.</li>
+                                                                                                            <li>A cuba/doseador(es), para este artigo, não estão corretamente atribuídos.</li>
+                                                                                                        </ul>
+                                                                                                    }
+                                                                                                    type="warning"
+                                                                                                    showIcon
+                                                                                                />}
+                                                                                        </>
                                                                                     </div>
-                                                                                    <div>
-                                                                                        <div style={{textAlign:"left"}}>{item?.arranque ? <span>{item.arranque}%</span> : <span>---%</span>}<span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>
-                                                                                        <div>
-                                                                                        {(item.arranque == null) && <div style={{ fontWeight: 400, color: "orange", fontSize:"16px" }}>O artigo não faz parte da formulação, ou não pertence à cuba/doseadores definidos!</div>}
-                                                                                        {(item.n_lote == null) && <div style={{ fontWeight: 400, color: "orange", fontSize:"16px" }}>O artigo faz parte da formulação e não se encontra em linha ou a cuba/doseadores não estão bem atribuídos!</div>}
-                                                                                    </div>
-                                                                                    </div>
-                                                                
-                                                                                </div>
+                                                                                </>
                                                                             }
                                                                             {item.type_data == "cortes" && <></>}
                                                                             {item.type_data == "formulacao" && <div>

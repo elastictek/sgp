@@ -11,7 +11,7 @@ import { useSubmitting } from "utils";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { orderObjectKeys, json } from "utils/object";
 import { usePermission, Permissions } from "utils/usePermission";
-import loadInit, { fixRangeDates,newWindow } from "utils/loadInit";
+import loadInit, { fixRangeDates,newWindow } from "utils/loadInitV3";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
@@ -116,9 +116,9 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
 
 
     const editable = (row, col = "generic") => {
-        if (!modeEdit.datagrid){
-            return true;
-        }
+        // if (!modeEdit.datagrid){
+        //     return true;
+        // }
         if (props?.parameters?.palete) {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
                 return (col === "generic") ? true : false;
@@ -160,7 +160,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
         { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.l_real} {row.l_real && "mm"}</div> },
         {
-            key: 'fc_pos', sortable: false, width: 85,
+            key: 'fc_pos', sortable: false, width: 90,
             headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p, 'generic')} />,
             editable,
             formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />,
@@ -169,8 +169,8 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
             cellClass: r => editableClass(r, 'generic')
         },
         {
-            key: 'ff_pos', sortable: false, width: 85,
-            headerRenderer: p => <CheckColumn id="ff_pos" name="Falha de Filme" onChange={onCheckChange} defaultChecked={checkData?.ff_pos} forInput={editable(p, 'generic')} />,
+            key: 'ff_pos', sortable: false, width: 90,
+            headerRenderer: p => <CheckColumn id="ff_pos" name="Falha Filme" onChange={onCheckChange} defaultChecked={checkData?.ff_pos} forInput={editable(p, 'generic')} />,
             editable,
             formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />,
             editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={true/* editable(p, 'generic') */} valid={1} /> },
@@ -254,7 +254,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         palete_id = getFilterValue(palete_id, '==')
         bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
-        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
+        dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id, fcompactual: ">=0", frecycle: ">=0" }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
         dataAPI.fetchPost({ signal });

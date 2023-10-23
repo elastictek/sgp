@@ -1414,7 +1414,7 @@ export default ({ setFormTitle, ...props }) => {
                     {/* <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" /> */}
                     <div>
                         <Space>
-                            <Button ghost onClick={() => newWindow("/app/picking/main/", {}, "mainpicking")} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
+                            <Button ghost onClick={() => newWindow("/app/picking/main/", {}, "controlpanel")} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
                         </Space>
                     </div>
                 </div>
