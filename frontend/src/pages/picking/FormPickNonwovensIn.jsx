@@ -15,7 +15,9 @@ import { json, includeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Anchor, Segmented, Avatar, ConfigProvider, FloatButton } from "antd";
+import { produce } from 'immer';
+import { useImmer } from "use-immer";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Anchor, Segmented, Avatar, ConfigProvider, FloatButton, Steps } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -32,9 +34,10 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
+import AggChoose, { TitleAgg, ContentAgg } from './AggChoose';
 
 const title = "Entrada de Nonwovens em Linha";
-const TitleForm = ({ level, auth, loading,showHistory }) => {
+const TitleForm = ({ level, auth, loading, showHistory }) => {
     return (<ToolbarTitle id={auth?.user} description={title} showHistory={showHistory}
         leftTitle={<span style={{}}>{title}</span>}
     />);
@@ -48,8 +51,16 @@ export const loadQuantity = async ({ value }, signal) => {
     return null;
 }
 
+const steps = [
+    {
+        title: 'Ordens'
+    },
+    {
+        title: 'Entrada'
+    },
+];
 
-export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -65,16 +76,23 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
     const inputOk = useRef(false);
     const inputRef = useRef();
 
+    const [state, updateState] = useImmer({
+        action: null,
+        maxStep: null,
+        step: 1,
+        item: null,
+    });
+
     useEffect(() => {
         const controller = new AbortController();
         const timeout = setTimeout(() => {
             if (inputRef.current) {
-              inputRef.current.focus({ cursor: 'all' });
+                inputRef.current.focus({ cursor: 'all' });
             }
-          }, 500);
+        }, 500);
         loadData({ signal: controller.signal, init: true });
 
-        return (() => {controller.abort();clearTimeout(timeout)});
+        return (() => { controller.abort(); clearTimeout(timeout) });
     }, []);
 
     const loadData = async ({ signal, init = false } = {}) => {
@@ -154,7 +172,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
     const onSave = async () => {
         let response = null;
         try {
-            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "AddNWToLine", rows: dataAPI.getData().rows } });
+            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "AddNWToLine", cs_id: state.item.items[0].cs_id, rows: dataAPI.getData().rows } });
             if (response.data.status !== "error") {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title);
                 navigate("/app/picking/main/");
@@ -179,6 +197,35 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
         ...(true) ? [{ name: 'qty_lote', header: 'Qtd.', userSelect: true, defaultLocked: false, defaultWidth: 100, headerAlign: "center", render: ({ data, cellProps }) => <RightAlign unit={data?.unit} style={{}}>{data?.qty_lote}</RightAlign> }] : [],
     ];
 
+    const next = (item) => {
+        updateState(draft => {
+            if (state.step === 0) {
+                draft.item = item;
+            }
+            draft.step = state.step + 1;
+            draft.maxStep = (draft.step > draft.maxStep) ? draft.step : draft.maxStep;
+        });
+    };
+
+    const prev = (v = null) => {
+        updateState(draft => {
+            draft.item = null;
+            draft.step = (v !== null) ? v : draft.step - 1;
+        });
+    };
+
+    const onStepChange = (value) => {
+        //if (value == 0) {
+        //    prev(0);
+        //}
+        prev(value);
+    }
+
+
+    const onSelectOrdem = (item, index, load, allowInit) => {
+        next(item);
+    }
+
     return (
         <ConfigProvider
             theme={{
@@ -189,69 +236,97 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
                 },
             }}
         >
-            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} showHistory={showHistory}/>
-            <Container style={{ lineHeight: "60px", borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
-                <Row style={{ marginTop: "10px" }}>
-                    <Col></Col>
-                    <Col style={{ textAlign: "center" }}>
+            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} showHistory={showHistory} />
 
-                        <Segmented
-                            defaultChecked={false}
-                            value={pos}
-                            onChange={onPosSelect}
-                            options={[
-                                {
-                                    label: (
-                                        <div style={{ padding: 4 }}>
-                                            <Avatar style={{ /* backgroundColor: '#87d068' */ }} icon={<CaretDownOutlined />} />
-                                            <div>Inferior</div>
-                                        </div>
-                                    ),
-                                    value: 'INF'
-                                },
-                                {
-                                    label: (
-                                        <div style={{ padding: 4 }}>
-                                            <Avatar style={{ /* backgroundColor: '#87d068' */ }} icon={<CaretUpOutlined />} />
-                                            <div>Superior</div>
-                                        </div>
-                                    ),
-                                    value: 'SUP'
-                                }
-                            ]}
-                        /></Col>
-                    <Col style={{display:"flex",alignSelf:"center",justifyContent:"right"}}>{hasEntries() && <Button disabled={submitting.state} size="large" type="primary" onClick={onSave} icon={<CheckOutlined />}>Submeter</Button>}</Col>
-                </Row>
-                <Row style={{ marginTop: "10px" }}>
-                    <Col style={{ display: "flex" }}>
-                        <Input size='large' disabled={submitting.state} onPressEnter={onInputOk} onChange={onInputChange} value={value} ref={inputRef} suffix={value && <Button type='link' size="small" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} />} />
-                        {/*                         <Button size="large" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} /> */}
-                    </Col>
-                </Row>
+            <Container>
                 <Row>
                     <Col>
-                        <Table
-                            cellNavigation={false}
-                            offsetHeight={"350px"}
-                            dirty={false}
-                            loading={submitting.state}
-                            idProperty={dataAPI.getPrimaryKey()}
-                            local={true}
-                            settings={false}
-                            sortable={false}
-                            reorderColumns={false}
-                            showColumnMenuTool={false}
-                            loadOnInit={false}
-                            pagination={false}
-                            defaultLimit={20}
-                            columns={columns}
-                            dataAPI={dataAPI}
-                            moreFilters={false}
-                            toolbar={false}
-                        />
+
+                        <Steps type='inline' current={state.step} items={steps} direction="horizontal" onChange={onStepChange} style={{ flexDirection: "row", color: "#000" }} />
+                        <Container fluid style={{ lineHeight: "60px", borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
+
+                            {state.step == 0 && <Col><AggChoose openNotification={openNotification} onClick={onSelectOrdem} /></Col>}
+
+                            {state.step == 1 && <>
+                                {state.item && <Row style={{}}>
+                                    <Col style={{lineHeight:1.8}}>
+                                        <TitleAgg item={state.item} />
+                                        <ContentAgg item={state.item} />
+                                    </Col>
+                                </Row>
+                                }
+                                <Row style={{ marginTop: "2px" }}>
+                                    <Col></Col>
+                                    <Col style={{ textAlign: "center" }}>
+
+                                        <Segmented
+                                            defaultChecked={false}
+                                            value={pos}
+                                            onChange={onPosSelect}
+                                            options={[
+                                                {
+                                                    label: (
+                                                        <div style={{ padding: 4 }}>
+                                                            <Avatar style={{ /* backgroundColor: '#87d068' */ }} icon={<CaretDownOutlined />} />
+                                                            <div>Inferior</div>
+                                                        </div>
+                                                    ),
+                                                    value: 'INF'
+                                                },
+                                                {
+                                                    label: (
+                                                        <div style={{ padding: 4 }}>
+                                                            <Avatar style={{ /* backgroundColor: '#87d068' */ }} icon={<CaretUpOutlined />} />
+                                                            <div>Superior</div>
+                                                        </div>
+                                                    ),
+                                                    value: 'SUP'
+                                                }
+                                            ]}
+                                        /></Col>
+                                    <Col style={{ display: "flex", alignSelf: "center", justifyContent: "right" }}>{hasEntries() && <Button disabled={submitting.state} size="large" type="primary" onClick={onSave} icon={<CheckOutlined />}>Submeter</Button>}</Col>
+                                </Row>
+                                <Row style={{ marginTop: "10px" }}>
+                                    <Col style={{ display: "flex" }}>
+                                        <Input size='large' disabled={submitting.state} onPressEnter={onInputOk} onChange={onInputChange} value={value} ref={inputRef} suffix={value && <Button type='link' size="small" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} />} />
+                                        {/*                         <Button size="large" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} /> */}
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col>
+                                        <Table
+                                            cellNavigation={false}
+                                            style={{ minHeight: "150px" }}
+                                            dirty={false}
+                                            loading={submitting.state}
+                                            idProperty={dataAPI.getPrimaryKey()}
+                                            local={true}
+                                            settings={false}
+                                            sortable={false}
+                                            reorderColumns={false}
+                                            showColumnMenuTool={false}
+                                            loadOnInit={false}
+                                            pagination={false}
+                                            defaultLimit={20}
+                                            columns={columns}
+                                            dataAPI={dataAPI}
+                                            moreFilters={false}
+                                            toolbar={false}
+                                        />
+                                    </Col>
+                                </Row>
+                            </>}
+                        </Container>
+
+
                     </Col>
                 </Row>
             </Container>
+
+
+
+
+
             {/*             {(hasEntries() && !submitting.state) && <FloatButton
                 description="Submeter"
                 onClick={onSave}

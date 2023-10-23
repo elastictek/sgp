@@ -15,11 +15,11 @@ import { json, includeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Anchor, Card } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Anchor, Card, Dropdown } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined,PaperClipOutlined, AppstoreTwoTone, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PrinterTwoTone } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, PaperClipOutlined, AppstoreTwoTone, UnorderedListOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PrinterTwoTone } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV3';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, THICKNESS, GTIN } from 'config';
@@ -45,6 +45,7 @@ const StyledButton = styled(Button)`
         line-height:1;
     }
 `;
+
 
 export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const location = useLocation();
@@ -95,12 +96,19 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Col xs={12} md={4}>
                         <Row>
                             {allows?.ordensFabrico?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Ordens de Fabrico</span>} style={{ width: "100%" }}>
+                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Ordens de Fabrico</span>} style={{ width: "100%" }} extra={
+                                    <Space.Compact block>
+                                        <Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >
+                                            Lista
+                                        </Button>
+                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                    </Space.Compact>
+                                }>
                                     <Container fluid style={{ padding: "0px", margin: "0px" }}>
                                         <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                        {allows?.ordensFabrico?.attachements && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                            {allows?.ordensFabrico?.attachements && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/ofabricoattachements")}>
-                                                    <div><PaperClipOutlined style={{ fontSize: "22px",color:"rgb(22, 119, 255)" }} /></div>
+                                                    <div><PaperClipOutlined style={{ fontSize: "22px", color: "rgb(22, 119, 255)" }} /></div>
                                                     <div className='txt'>Anexos</div>
                                                 </StyledButton>
                                             </Col>
@@ -154,7 +162,14 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
 
                             {allows?.paletes?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Paletes</span>} style={{ width: "100%" }}>
+                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Paletes</span>} style={{ width: "100%" }} extra={
+                                    <Space.Compact block>
+                                        <Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link">
+                                            Lista
+                                        </Button>
+                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                    </Space.Compact>
+                                }>
                                     <Container fluid style={{ padding: "0px", margin: "0px" }}>
                                         <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
                                             {allows?.paletes?.newline && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
@@ -285,7 +300,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                             {allows?.materiasPrimas?.printbuffer && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/printbuffer")}>
                                                     <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Imprimir<br/>Etiqueta Buffer</div>
+                                                    <div className='txt'>Imprimir<br />Etiqueta Buffer</div>
                                                 </StyledButton>
                                             </Col>
                                             }

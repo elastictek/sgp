@@ -54,6 +54,28 @@ const ListItem = styled(List.Item)`
     }
 `;
 
+export const TitleAgg = ({ item }) => {
+    return (<div>{item.agg_cod}<OFabricoStatus data={item.items[0]} cellProps={{}} /></div>);
+}
+
+export const ContentAgg = ({ item }) => {
+    return (
+        <>
+            {item.items.map(v => {
+                return (
+                    <div key={v.ofid} style={{ display: "flex" }}>
+                        <div>
+                            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{v.ofid}</div>
+                            <div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div>
+                            <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des}</span></div>
+                        </div>
+                    </div>
+                );
+            })}
+        </>
+    );
+}
+
 export default ({ openNotification, next, actionsContent, actions, onClick, ...props }) => {
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
@@ -117,21 +139,9 @@ export default ({ openNotification, next, actionsContent, actions, onClick, ...p
                                 // avatar={<div style={{ width: "90px", maxWidth: "90px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                                 //     <OFabricoStatus data={item} cellProps={{}} />
                                 // </div>}
-                                title={<div>{item.agg_cod}<OFabricoStatus data={item.items[0]} cellProps={{}} /></div>}
+                                title={<TitleAgg item={item} />}
                                 description={
-                                    <>
-                                        {item.items.map(v => {
-                                            return (
-                                                <div key={v.ofid} style={{ display: "flex" }}>
-                                                    <div>
-                                                        <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{v.ofid}</div>
-                                                        <div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div>
-                                                        <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des}</span></div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </>
+                                    <ContentAgg item={item} />
                                 }
                             />
                         </ListItem>

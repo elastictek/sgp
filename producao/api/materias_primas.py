@@ -996,8 +996,8 @@ def AddNWToLine(request, format=None):
     def saveItems(data,cursor):
         if "rows" in data:
             for idx, item in enumerate(data.get("rows")):
-                args = (datetime.now(),item["artigo_cod"],item["artigo_des"],item["vcr_num"],item["n_lote"],item["qty_lote"],item["largura"],item["comp"],item["lote_id"],item["pos"],0,request.user.id,0)
-                cursor.callproc('add_nw_to_line',args)
+                args = (data.get("cs_id"),datetime.now(),item["artigo_cod"],item["artigo_des"],item["vcr_num"],item["n_lote"],item["qty_lote"],item["largura"],item["comp"],item["lote_id"],item["pos"],0,request.user.id,0)
+                cursor.callproc('add_nw_to_line_v2',args)
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:

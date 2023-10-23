@@ -127,6 +127,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     return (
         <>
             {load && <PaletesChoose
+                noid={false}
                 title="Apagar Palete"
                 onFilterChange={onFilterChange} onSelect={onSelectionChange}
                 defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}

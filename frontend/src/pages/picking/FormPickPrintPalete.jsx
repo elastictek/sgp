@@ -167,6 +167,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         <>
             {load &&
                 <PaletesChoose
+                    noid={false}
                     title="Imprimir Etiqueta"
                     onFilterChange={onFilterChange} onSelect={onSelectionChange}
                     defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}

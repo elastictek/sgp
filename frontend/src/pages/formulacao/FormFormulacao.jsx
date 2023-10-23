@@ -645,7 +645,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
                 <Row style={{}} nogutter>
                     <Col>
                         <Table
-                            editOnClick={true}
+                            editOnClick={false}
                             dirty={formDirty}
                             loading={submitting.state}
                             offsetHeight="270px"

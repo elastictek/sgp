@@ -98,6 +98,19 @@ const ListItem = styled(List.Item)`
     }
 `;
 
+const TitleOF = ({ item }) => {
+    return (<div>{item.ofid}<OFabricoStatus data={item} cellProps={{}} /></div>);
+}
+
+const ContentOF = ({ item }) => {
+    return (
+        <div>
+            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{item.cliente_nome}</div>
+            <div><span>{item.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{item.artigo_des}</span></div>
+        </div>
+    );
+}
+
 const OrdensFabricoList = ({ openNotification, next, ...props }) => {
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
@@ -136,11 +149,8 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
                         // avatar={<div style={{ width: "90px", maxWidth: "90px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         //     <OFabricoStatus data={item} cellProps={{}} />
                         // </div>}
-                        title={<div>{item.ofid}<OFabricoStatus data={item} cellProps={{}} /></div>}
-                        description={<div>
-                            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{item.cliente_nome}</div>
-                            <div><span>{item.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{item.artigo_des}</span></div>
-                        </div>}
+                        title={<TitleOF item={item} />}
+                        description={<ContentOF item={item} />}
                     />
                 </ListItem>
             )}
@@ -602,7 +612,6 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     }
 
     const next = (item) => {
-        console.log("nextttttt", state, item)
         updateState(draft => {
             if (state.step === 0) {
                 draft.pos = item;
@@ -781,6 +790,14 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                         {!["delete"].includes(state.action) && <Row nogutter>
                             <Col>
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
+                                    {(state.step > 0 && state.pos) &&
+                                        <Row>
+                                            <Col style={{lineHeight:1.8}}>
+                                                <TitleOF item={state.pos}/>
+                                                <ContentOF item={state.pos}/>
+                                            </Col>
+                                        </Row>
+                                    }
                                     <Row>
                                         {state.step == 0 && <Col><OrdensFabricoList openNotification={openNotification} next={onSelectOrdem} /></Col>}
                                         {state.step == 1 && <Col>

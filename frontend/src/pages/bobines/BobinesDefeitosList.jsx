@@ -116,6 +116,9 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
 
 
     const editable = (row, col = "generic") => {
+        if (!modeEdit.datagrid){
+            return true;
+        }
         if (props?.parameters?.palete) {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
                 return (col === "generic") ? true : false;

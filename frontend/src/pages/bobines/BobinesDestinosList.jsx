@@ -90,6 +90,9 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     }
 
     const editable = (row, col) => {
+        if (!modeEdit.datagrid){
+            return true;
+        }
         if (props?.parameters?.palete) {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDestino" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0 && props?.parameters?.palete?.nome.startsWith('D')) {
                 if (col === "destino") { return true; }
@@ -149,7 +152,8 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
             key: 'obs', sortable: false,
             editable: p => editable(p.row, 'destino'),
             headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'destino')} />,
-            formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>, editor: (p) => { return <ModalObsEditor forInput={false} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
+            formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>, 
+            editor: (p) => { return <ModalObsEditor forInput={false} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
             editorOptions: { editOnClick: true },
         },
     ];

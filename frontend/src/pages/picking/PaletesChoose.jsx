@@ -376,7 +376,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
     //const defaultFilters = { fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" };
     const defaultParameters = { method: "PaletesList" };
     //const defaultSort = [{ column: `t.timestamp`, direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...(!noid && { id: "paleteslist" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
+    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "lst-paletes" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
 
 
 
@@ -392,6 +392,15 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
             const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
             inputParameters.current = paramsIn;
         }
+        let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
+        formFilter.setFieldsValue(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']));
+        console.log("aaaaa", dataAPI.getFilter(), filterValues);
+        dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
+        dataAPI.setSort(dataAPI.getSort(), defaultSort);
+
+        dataAPI.addParameters({ ...defaultParameters }, true);
+        dataAPI.setAction("init", true);
+        dataAPI.update(true);
         submitting.end();
     }
 
@@ -484,7 +493,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             sortable
                             reorderColumns={false}
                             showColumnMenuTool
-                            loadOnInit={true}
+                            loadOnInit={false}
                             //editStartEvent={"click"}
                             pagination="remote"
                             defaultLimit={20}

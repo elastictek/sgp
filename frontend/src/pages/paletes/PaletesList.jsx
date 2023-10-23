@@ -31,7 +31,7 @@ import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeD
 
 import { BadgeNumber } from 'components/TableColumns';
 
-import ToolbarTitle from 'components/ToolbarTitle';
+import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { Status } from './commons';
@@ -68,13 +68,29 @@ const schemaIn = (options = {}) => {
         t_stamp: Joi.any().label("Data de Entrada").required()
     }, options).unknown(true);
 }
+// const title = "Paletes";
+// const TitleForm = ({ data, onChange, record, level, form }) => {
+//     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
+//     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
+//         <Col>
+//             <Row style={{ marginBottom: "5px" }}>
+//                 <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
+//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
+//             </Row>
+
+//         </Col>
+//     </>
+//     }
+//     />);
+// }
+
+
 const title = "Paletes";
-const TitleForm = ({ data, onChange, record, level, form }) => {
-    // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
-    return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
+const TitleForm = ({ data, onChange, level, auth, form }) => {
+    return (<ToolbarTitle id={auth?.user} description={title} title={<>
         <Col>
-            <Row style={{ marginBottom: "5px" }}>
-                <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
+            <Row style={{ marginBottom: "5px" }} wrap="nowrap" nogutter>
+                <Col xs='content' style={{}}><Row nogutter><Col title={title} style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}><span style={{}}>{title}</span></Col></Row></Col>
                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
             </Row>
 
@@ -83,6 +99,8 @@ const TitleForm = ({ data, onChange, record, level, form }) => {
     }
     />);
 }
+
+
 const ToolbarFilters = ({ dataAPI, ...props }) => {
     return (<>
         <Col xs='content'>
@@ -706,7 +724,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "PaletesList" };
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...(!noid && { id: "lst-paletes" }), payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid===false) && { id: "lst-paletes" }), payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTab, setLastTab] = useState('1');
 
