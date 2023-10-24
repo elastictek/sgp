@@ -238,7 +238,6 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     const loadData = async ({ signal } = {}) => {
         const { palete, bobinagem, ..._parameters } = props?.parameters || {};
         let { palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
-
         setParameters({
             palete: {
                 id: palete_id,

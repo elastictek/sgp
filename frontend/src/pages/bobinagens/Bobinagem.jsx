@@ -42,14 +42,22 @@ import BobinesOriginaisList from '../bobines/BobinesOriginaisList';
 import { FaWeightHanging } from 'react-icons/fa';
 import FormBobinagem from './FormBobinagem';
 import FormPrint from "../commons/FormPrint";
+import { load } from '../ordensfabrico/OrdemFabrico';
 
 
 export const Context = React.createContext({});
 
 const title = "Bobinagem";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "" }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "", loadData, stepNavigation }) => {
     return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
-        leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
+        leftTitle={<div>
+            <span style={{}}>{`${title} ${bobinagemNome}`}</span>
+           {/*  {(loadData && stepNavigation) && <>
+                <Button onClick={() => loadData({ stepDir: -1 })}>Anterior</Button>
+                <Button onClick={() => loadData({ stepDir: 1 })}>Seguinte</Button>
+            </>
+            } */}
+        </div>}
     />);
 }
 
@@ -114,8 +122,8 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
 //     );
 // }
 
-const loadBobinagemLookup = async (bobinagem_id) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: { limit: 1 }, filter: { bobinagem_id: `==${bobinagem_id}` }, parameters: { method: "BobinagensLookup" } });
+const loadBobinagemLookup = async ({ bobinagem_id, stepNavigation }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: { limit: 1 }, filter: { bobinagem_id: `==${bobinagem_id}` }, parameters: { method: "BobinagensLookup", stepNavigation } });
     return rows;
 }
 
@@ -162,7 +170,7 @@ export default (props) => {
         return (() => controller.abort());
     }, []);
 
-    const loadData = async ({ signal, init = false } = {}) => {
+    const loadData = async ({ signal, init = false, stepDir=null } = {}) => {
         setFormDirty(false);
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
@@ -173,7 +181,8 @@ export default (props) => {
         } else {
 
         }
-        const formValues = await loadBobinagemLookup(inputParameters.current.bobinagem_id);
+        const stepNavigation = inputParameters.current?.stepNavigation;
+        const formValues = await loadBobinagemLookup({ bobinagem_id: inputParameters.current.bobinagem_id, ...(stepDir && stepNavigation) && { stepNavigation: { stepDir, ...stepNavigation } } });
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);
         }
@@ -193,7 +202,7 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-            {!props?.setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} /* data={dataAPI.getFilter(true)} */ /* onChange={onFilterChange} level={location?.state?.level} form={formFilter}  */ />}
+            {!props?.setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} loadData={loadData} stepNavigation={inputParameters.current.stepNavigation} />}
             <div style={{ height: "calc(100vh - 130px)" }}>
                 <YScroll>
                     {bobinagemExists &&
@@ -202,35 +211,35 @@ export default (props) => {
                                 {
                                     label: `Informação`,
                                     key: '1',
-                                    children: <FormBobinagem {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                    children: <FormBobinagem {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
                                 },
                                 {
                                     label: `Bobines`,
                                     key: '3',
-                                    children: <BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesPropriedadesList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 }, {
                                     label: `Bobines Defeitos`,
                                     key: '4',
-                                    children: <BobinesDefeitosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesDefeitosList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 },
                                 {
                                     label: `Bobines Destinos`,
                                     key: '5',
-                                    children: <BobinesDestinosList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesDestinosList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 },
                                 {
                                     label: `MP Granulado (Lotes)`,
                                     key: '6',
-                                    children: <BobinesMPGranuladoList {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                    children: <BobinesMPGranuladoList {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
                                 }, {
                                     label: `Bobines Originais`,
                                     key: '7',
-                                    children: <BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                    children: <BobinesOriginaisList {...{ parameters: inputParameters.current, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
                                 },
                                 {
                                     label: `Histórico`,
                                     key: '8',
-                                    children: <BobinagensHistoryList {...{ parameters: props?.parameters, permissions: permission.permissions }} />,
+                                    children: <BobinagensHistoryList {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
                                 },
                             ]}
 

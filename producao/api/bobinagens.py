@@ -467,6 +467,14 @@ def BobinagemLookup(request, format=None):
 
 def BobinagensLookup(request, format=None):
     connection = connections["default"].cursor()
+    data = request.data['parameters']
+    if data.get("stepNavigation"):
+        sn = data.get("stepNavigation")
+        for idx, x in enumerate(sn.get("sort")):
+            fs = Filters()
+            print(idx, x)
+            print("DATAAAAAAAAA")
+            print(data)
     f = Filters(request.data['filter'])
     f.setParameters({
     #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),

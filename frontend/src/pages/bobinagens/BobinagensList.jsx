@@ -674,7 +674,11 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         } else {
-            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+            console.log("SORT->",dataAPI.getSort())
+            console.log("CURRENTRECORD->",row)
+            console.log(dataAPI.getSort().map(v=>row[v.column]));
+            
+            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now(),stepNavigation:{sort:dataAPI.getSort(),values:dataAPI.getSort().map(v=>row[v.column])} } });
             //setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         }
