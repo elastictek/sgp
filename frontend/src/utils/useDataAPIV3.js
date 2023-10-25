@@ -56,6 +56,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const [isLoading, setIsLoading] = useState(false);
     const action = useRef([]);
     const [state, updateState] = useImmer({
+        init:false,
         initLoaded: payload?.initLoaded || false,
         update: Date.now(),
         pagination: payload?.pagination || { enabled: false, pageSize: 10 },
@@ -72,6 +73,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         totalRows: 0
     });
     const ref = useRef({
+        init:false,
         initLoaded: payload?.initLoaded || false,
         update: null,
         primaryKey: payload?.primaryKey || null,
@@ -86,6 +88,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         ...getLocalStorage(id, useStorage),
         totalRows: 0
     });
+
+    useEffect(()=>{
+        ref.current.init=true;
+        updateState(draft => {
+            draft.init = true;
+        });
+    },[]);
 
     const setPayload = (payload) => {
         updateState(payload);
@@ -1051,6 +1060,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         if (fromState) {
             return state.primaryKey;
         } else {
+            console.log("----------------------------------------",ref.current)
             return ref.current.primaryKey;
         }
     }
@@ -1064,6 +1074,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     }
 
     return {
+        init:()=>state.init,
         first,
         previous,
         next,

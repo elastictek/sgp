@@ -79,7 +79,7 @@ export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ permissions: props?.permissions });//Permissões Iniciais
+    const permission = usePermission({ name:"bobinagens", permissions: props?.permissions });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });

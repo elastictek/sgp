@@ -379,7 +379,6 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
     const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "lst-paletes" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
 
 
-
     useEffect(() => {
         const controller = new AbortController();
         loadData({ signal: controller.signal, init: true });

@@ -48,7 +48,6 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        console.log("load-data");
         if (objPermissions){
             console.log("start--",objPermissions)
             setPermissions(objPermissions);

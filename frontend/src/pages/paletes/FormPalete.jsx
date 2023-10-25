@@ -56,7 +56,6 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
 
 
     }
-    console.log("RRRRRRRRRRper",permission)
     const leftContent = (<>
         {/* <Space>
             {modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={()=>changeMode('formPalete')} />}

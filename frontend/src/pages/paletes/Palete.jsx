@@ -47,14 +47,14 @@ import { FaWeightHanging } from 'react-icons/fa';
 export const Context = React.createContext({});
 
 const title = "Palete";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting }) => {
     return (<ToolbarTitle id={auth?.user} description={`${title} ${paleteNome}`}
         leftTitle={<span style={{}}>{`${title} ${paleteNome}`}</span>}
         actions={
             <Space.Compact style={{marginLeft:"5px"}}>
                 {(loadData && nav) && <>
-                <Button style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: -1 })}/>
-                <Button style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: 1 })}/>
+                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: -1 })}/>
+                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: 1 })}/>
             </>
             }
             </Space.Compact>
@@ -69,7 +69,6 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
 }
 
 export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc, ...props }) => {
-    console.log("permissions",permission)
     const onAction = () => {
         changeOf({ openNotification: misc?.openNotification, row: { id: parameters?.palete?.id,nome:parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: {key:"changeof"} });
     }
@@ -213,7 +212,7 @@ export default (props) => {
             Modal.error({ content: "Não tem permissões!" });
             return;
         } */
-
+        submitting.trigger();
         setFormDirty(false);
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
@@ -320,7 +319,7 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-        {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm auth={permission.auth} paleteNome={dataAPI.getData().rows[0].nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
+        {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
         <div style={{ height: "calc(100vh - 130px)" }}>
             <YScroll>
                 {dataAPI.hasData() &&
