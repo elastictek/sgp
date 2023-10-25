@@ -49,14 +49,15 @@ import dayjs from 'dayjs';
 export const Context = React.createContext({});
 
 const title = "Bobinagem";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "", loadData, nav = false, submitting }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "", loadData, nav = false, submitting, sort }) => {
+    const reverseDirection = (sort && sort.length > 0 && sort[0].direction == "DESC") ? true : false;
     return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
         leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
         actions={
             <Space.Compact style={{marginLeft:"5px"}}>
                 {(loadData && nav) && <>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: -1 })}/>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: 1 })}/>
+                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: reverseDirection ? 1 : -1 })}/>
+                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: reverseDirection ? -1 : 1 })}/>
             </>
             }
             </Space.Compact>
@@ -230,7 +231,7 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} bobinagemNome={dataAPI.getData().rows[0].nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
+            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} sort={dataAPI.getSort()} bobinagemNome={dataAPI.getData().rows[0].nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
             <div style={{ height: "calc(100vh - 130px)" }}>
                 <YScroll>
                     {dataAPI.hasData() &&

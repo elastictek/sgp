@@ -18,7 +18,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, CaretLeftFilled,CaretRightFilled  } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, CaretLeftFilled, CaretRightFilled } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS } from 'config';
@@ -28,7 +28,7 @@ import { useStyles } from 'components/commons/styleHooks';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector,Chooser } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Chooser } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -47,16 +47,17 @@ import { FaWeightHanging } from 'react-icons/fa';
 export const Context = React.createContext({});
 
 const title = "Palete";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting, sort }) => {
+    const reverseDirection = (sort && sort.length > 0 && sort[0].direction == "DESC") ? true : false;
     return (<ToolbarTitle id={auth?.user} description={`${title} ${paleteNome}`}
         leftTitle={<span style={{}}>{`${title} ${paleteNome}`}</span>}
         actions={
-            <Space.Compact style={{marginLeft:"5px"}}>
+            <Space.Compact style={{ marginLeft: "5px" }}>
                 {(loadData && nav) && <>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: -1 })}/>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: 1 })}/>
-            </>
-            }
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: reverseDirection ? 1 : -1 })} />
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: reverseDirection ? -1 : 1 })} />
+                </>
+                }
             </Space.Compact>
         }
     />);
@@ -70,14 +71,14 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
 
 export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc, ...props }) => {
     const onAction = () => {
-        changeOf({ openNotification: misc?.openNotification, row: { id: parameters?.palete?.id,nome:parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: {key:"changeof"} });
+        changeOf({ openNotification: misc?.openNotification, row: { id: parameters?.palete?.id, nome: parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: { key: "changeof" } });
     }
 
     return (
-        <Space style={{marginRight:"5px"}}>
+        <Space style={{ marginRight: "5px" }}>
             {/* <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button> */}
             <Button disabled={!permission.isOk({ action: "changeOrdem" })} onClick={onAction}>Alterar Ordem de Fabrico</Button>
-{/*             <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
+            {/*             <Button disabled={!permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
             <Button disabled={!permission.isOk({ action: "pesarPalete" })} icon={<FaWeightHanging />} onClick={() => { }}>Pesar Palete</Button> */}
         </Space>
     );
@@ -153,7 +154,7 @@ export const changeOf = ({ setModalParameters, showModal, openNotification, item
 //     );
 // }
 
-const loadPaleteLookup = async ({palete_id}) => {
+const loadPaleteLookup = async ({ palete_id }) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/paletes/paletessql/`, pagination: { limit: 1 }, filter: { palete_id: `==${palete_id}` }, parameters: { method: "PaletesLookup" } });
     return rows;
 }
@@ -196,11 +197,11 @@ export default (props) => {
 
     useEffect(() => {
         const controller = new AbortController();
-        loadData({ signal: controller.signal, init:true });
+        loadData({ signal: controller.signal, init: true });
         return (() => controller.abort());
     }, []);
 
-    const loadData = async ({ signal,  init = false, navDirection = null } = {}) => {
+    const loadData = async ({ signal, init = false, navDirection = null } = {}) => {
         // const _allowEdit = {
         //     formPalete: permission.allow({ producao: 100 }),
         //     formPaletizacao: permission.allow({ planeamento: 100, producao: 300 }),
@@ -241,7 +242,7 @@ export default (props) => {
         if (props?.setFormTitle) {
             props.setFormTitle({ title: `Palete ${inputParameters.current?.palete_nome}` }); //Set main Title
         }
-  
+
         const formValues = await loadPaleteLookup({ palete_id: inputParameters.current.palete_id });
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setPaleteExists(true);
@@ -319,56 +320,56 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-        {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
-        <div style={{ height: "calc(100vh - 130px)" }}>
-            <YScroll>
-                {dataAPI.hasData() &&
-                    <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                        items={[
-                            {
-                                label: `Informação`,
-                                key: '1',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPalete {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions, misc:{setModalParameters,showModal,openNotification} }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
-                            },
-                            {
-                                label: `Embalamento`,
-                                key: '2',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPaletizacao {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
-                            },
-                            {
-                                label: `Bobines`,
-                                key: '3',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
-                            }, {
-                                label: `Bobines Defeitos`,
-                                key: '4',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDefeitosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
-                            },
-                            {
-                                label: `Bobines Destinos`,
-                                key: '5',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDestinosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
-                            },
-                            {
-                                label: `MP Granulado (Lotes)`,
-                                key: '6',
-                                children: <BobinesMPGranuladoList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
-                            }, {
-                                label: `Bobines Originais`,
-                                key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
-                            },
-                            {
-                                label: `Histórico`,
-                                key: '8',
-                                children: <PaletesHistoryList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
-                            },
-                        ]}
+            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} sort={dataAPI.getSort()} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
+            <div style={{ height: "calc(100vh - 130px)" }}>
+                <YScroll>
+                    {dataAPI.hasData() &&
+                        <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                            items={[
+                                {
+                                    label: `Informação`,
+                                    key: '1',
+                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPalete {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions, misc: { setModalParameters, showModal, openNotification } }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
+                                },
+                                {
+                                    label: `Embalamento`,
+                                    key: '2',
+                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPaletizacao {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
+                                },
+                                {
+                                    label: `Bobines`,
+                                    key: '3',
+                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                }, {
+                                    label: `Bobines Defeitos`,
+                                    key: '4',
+                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDefeitosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                },
+                                {
+                                    label: `Bobines Destinos`,
+                                    key: '5',
+                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDestinosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                },
+                                {
+                                    label: `MP Granulado (Lotes)`,
+                                    key: '6',
+                                    children: <BobinesMPGranuladoList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
+                                }, {
+                                    label: `Bobines Originais`,
+                                    key: '7',
+                                    children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                },
+                                {
+                                    label: `Histórico`,
+                                    key: '8',
+                                    children: <PaletesHistoryList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
+                                },
+                            ]}
 
-                    />}
-                {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
-            </YScroll>
-        </div>
+                        />}
+                    {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
+                </YScroll>
+            </div>
         </>
     )
 
