@@ -1,5 +1,5 @@
 import React from 'react';
-import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined } from '@ant-design/icons';
+import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined, MenuOutlined } from '@ant-design/icons';
 
 
 export const SERVER_PORT = "81";
@@ -51,6 +51,7 @@ export const bColors = (estado) => {
 }
 
 export const HISTORY_DEFAULT = [
+    { label: <div style={{textAlign:"center"}}><MenuOutlined style={{ fontSize: "14px",color:"#1677ff" }} /></div>, key: `mainmenu` },
     { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{ fontSize: "14px" }} /> },
     { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{ fontSize: "14px" }} /> },
     { label: "Painel de Controlo", key: "#/app/picking/main/", state: { newWindow: "controlpanel" }, icon: <ControlOutlined style={{ fontSize: "14px" }} /> },

@@ -287,23 +287,22 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
     }
 
     const loadData = async ({ signal } = {}) => {
-        const { palete, bobinagem, ..._parameters } = props?.parameters || {};
-        let { palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
-
+        const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
+        //let { palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+        const palete_id = paramsIn?.palete?.id;
+        const bobinagem_id = paramsIn?.bobinagem?.id;
         setParameters({
             palete: {
-                id: palete_id,
-                nome: palete_nome
+                id: paramsIn?.palete?.id,
+                nome: paramsIn?.palete?.nome
             },
             bobinagem: {
-                id: bobinagem_id,
-                nome: bobinagem_nome
+                id: paramsIn?.bobinagem?.id,
+                nome: paramsIn?.bobinagem?.nome
             }
         })
-        let { filterValues, fieldValues } = fixRangeDates([], initFilters);
+        let { filterValues, fieldValues } = fixRangeDates([], paramsIn);
         formFilter.setFieldsValue({ ...fieldValues });
-        palete_id = getFilterValue(palete_id, '==')
-        bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
         dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id,fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id }) }, true, true);
         dataAPI.setSort(defaultSort);
@@ -317,7 +316,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         loadData({ signal: controller.signal });
         return (() => controller.abort());
 
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const onBobineClick = (row) => {
         newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);

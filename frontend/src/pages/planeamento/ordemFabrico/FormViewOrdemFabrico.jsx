@@ -330,7 +330,7 @@ const FormAgg = ({ record, form }) => {
 }
 
 
-const FormEsquema = ({ record, form }) => {
+export const FormEsquema = ({ record, form }) => {
 
     useEffect(() => {
         if (record.ofs.length > 0) {
@@ -417,7 +417,7 @@ const FormAnexos = ({ record, form }) => {
     );
 }
 
-const FormPaletizacao = ({ record, field, form }) => {
+export const FormPaletizacao = ({ record, field, form }) => {
     return (
         <Container fluid style={{ padding: "0px" }}>
             <Row gutterWidth={5}>
@@ -458,7 +458,7 @@ const FormPaletizacao = ({ record, field, form }) => {
     );
 }
 
-const FormPaletizacaoSchema = ({ record, field, form, forInput = false }) => {
+export const FormPaletizacaoSchema = ({ record, field, form, forInput = false }) => {
 
     const getItem = (item) => {
         return form.getFieldValue(["ofs", field.name, `paletizacao`, "details", item.name, "item_id"]);

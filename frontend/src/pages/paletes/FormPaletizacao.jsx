@@ -10,9 +10,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, CINTASPALETES_OPTIONS, PALETIZACAO_ITEMS, PALETE_SIZES } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
@@ -40,8 +40,9 @@ import { Core, EstadoBobines, Largura } from "./commons";
 import { LeftToolbar, RightToolbar } from "./Palete";
 import IconButton from "components/iconButton";
 import { CgArrowDownO, CgArrowUpO, CgCloseO } from 'react-icons/cg';
-import SvgSchema from '../currentline/ordemfabrico/paletizacaoSchema/SvgSchema';
+//import SvgSchema from '../currentline/ordemfabrico/paletizacaoSchema/SvgSchema';
 import { json } from "utils/object";
+import { FormEsquema } from '../planeamento/ordemFabrico/FormViewOrdemFabrico';
 
 const schema = (options = {}) => {
     return getSchema({
@@ -67,16 +68,16 @@ const ToolbarTable = ({ form, modeEdit, permission, submitting, changeMode, dirt
 
     const leftContent = (<>
         <Space>
-            {modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={() => changeMode('formPaletizacao')} />}
+            {/*  {modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={() => changeMode('formPaletizacao')} />}
             {!modeEdit?.formPaletizacao && <Button disabled={(!edit() || submitting.state)} icon={<EditOutlined />} onClick={() => changeMode('formPaletizacao')}>Editar</Button>}
-            {(modeEdit?.formPaletizacao && dirty) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+            {(modeEdit?.formPaletizacao && dirty) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}
         </Space>
         <LeftToolbar />
     </>);
 
     const rightContent = (
         <Space>
-            <RightToolbar permission={permission} edit={(!props?.parameters?.palete?.SDHNUM_0 && !props?.parameters?.palete?.carga_id)} />
+            {/* <RightToolbar permission={permission} edit={(!props?.parameters?.palete?.SDHNUM_0 && !props?.parameters?.palete?.carga_id)} /> */}
         </Space>
     );
     return (
@@ -145,7 +146,7 @@ const FormPaletizacaoSchema = ({ record, form, forInput = false }) => {
                                 </Container>
                             </Col>
                             <Col>
-                                <SvgSchema form={form} items={form.getFieldsValue(true)} />
+                                {/* <SvgSchema form={form} items={form.getFieldsValue(true)} /> */}
                             </Col>
                         </Row>
                     </Container>
@@ -205,7 +206,7 @@ const loadPaletizacaoLookup = async (palete_id) => {
 export default ({ setFormTitle, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const permission = usePermission({permissions:props?.permissions});
+    const permission = usePermission({ name: "paletes", permissions: props?.permissions });
     const [modeEdit, setModeEdit] = useState({ formPaletizacao: false });
     const [dirty, setDirty] = useState(false);
     const [fieldStatus, setFieldStatus] = useState({});
@@ -225,7 +226,7 @@ export default ({ setFormTitle, ...props }) => {
         const controller = new AbortController();
         loadData({ signal: controller.signal });
         return (() => controller.abort());
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const loadData = async ({ signal } = {}) => {
         /*if (!permission.allow()) {
@@ -234,13 +235,13 @@ export default ({ setFormTitle, ...props }) => {
         } */
 
         const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
-        const formValues = await loadPaletizacaoLookup(initFilters.palete_id);
+        const formValues = await loadPaletizacaoLookup(initFilters.palete.id);
         //form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0) {
             form.setFieldsValue(json(formValues[0].paletizacao));
             //dataAPIArtigos.setRows(formValues[0].artigo);
         }
-        console.log("FORMPALETIZACAO####", json(formValues[0].paletizacao), initFilters);
+        console.log("FORMPALETIZACAO####", formValues[0], initFilters);
         /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         dataAPI.addFilters({ ...filterValues }, true, false);
@@ -314,18 +315,18 @@ export default ({ setFormTitle, ...props }) => {
         <>
             <ToolbarTable {...props} submitting={submitting} permission={permission} changeMode={changeMode} modeEdit={modeEdit} dirty={dirty} onSave={onFinish} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
-            <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
+            {/* <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>
                     <Col width={800} >
-                        <FormPaletizacao form={form} forInput={modeEdit?.formPaletizacao && permission.isOk({ item: "embalamento", action: "edit" })} /* record={_values[index].paletizacao} */ />
+                        <FormPaletizacao form={form} forInput={modeEdit?.formPaletizacao && permission.isOk({ item: "embalamento", action: "edit" })} />
                     </Col>
                 </Row>
                 <Row style={{}} gutterWidth={10}>
                     <Col width={800}>
-                        <FormPaletizacaoSchema form={form} forInput={modeEdit?.formPaletizacao && permission.isOk({ item: "embalamento", action: "edit" })} /* record={_values[index].paletizacao} */ />
+                        <FormPaletizacaoSchema form={form} forInput={modeEdit?.formPaletizacao && permission.isOk({ item: "embalamento", action: "edit" })} />
                     </Col>
                 </Row>
-            </FormContainer>
+            </FormContainer> */}
         </>
     );
 

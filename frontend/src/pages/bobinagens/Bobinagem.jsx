@@ -9,7 +9,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined,CaretLeftFilled, CaretRightFilled } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS } from 'config';
@@ -43,21 +43,24 @@ import { FaWeightHanging } from 'react-icons/fa';
 import FormBobinagem from './FormBobinagem';
 import FormPrint from "../commons/FormPrint";
 import { load } from '../ordensfabrico/OrdemFabrico';
+import dayjs from 'dayjs';
 
 
 export const Context = React.createContext({});
 
 const title = "Bobinagem";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "", loadData, stepNavigation }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "", loadData, nav = false }) => {
     return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
-        leftTitle={<div>
-            <span style={{}}>{`${title} ${bobinagemNome}`}</span>
-           {/*  {(loadData && stepNavigation) && <>
-                <Button onClick={() => loadData({ stepDir: -1 })}>Anterior</Button>
-                <Button onClick={() => loadData({ stepDir: 1 })}>Seguinte</Button>
+        leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
+        actions={
+            <Space.Compact style={{marginLeft:"5px"}}>
+                {(loadData && nav) && <>
+                <Button style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: -1 })}/>
+                <Button style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: 1 })}/>
             </>
-            } */}
-        </div>}
+            }
+            </Space.Compact>
+        }
     />);
 }
 
@@ -122,8 +125,13 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
 //     );
 // }
 
-const loadBobinagemLookup = async ({ bobinagem_id, stepNavigation }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: { limit: 1 }, filter: { bobinagem_id: `==${bobinagem_id}` }, parameters: { method: "BobinagensLookup", stepNavigation } });
+const loadBobinagemLookup = async ({ bobinagem_id }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: { limit: 1 }, filter: { bobinagem_id: `==${bobinagem_id}` }, parameters: { method: "BobinagensLookup" } });
+    return rows;
+}
+
+const stepBobinagem = async ({ filter = {}, stepNavigation }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: { limit: 1 }, filter: { ...filter }, parameters: { method: "GetBobinagem", stepNavigation } });
     return rows;
 }
 
@@ -170,19 +178,38 @@ export default (props) => {
         return (() => controller.abort());
     }, []);
 
-    const loadData = async ({ signal, init = false, stepDir=null } = {}) => {
+    const loadData = async ({ signal, init = false, navDirection = null } = {}) => {
         setFormDirty(false);
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
+            if (inputParameters.current?.dataAPI) {
+                dataAPI.setPayload(inputParameters.current?.dataAPI);
+                dataAPI.pageSize(1, false);
+                dataAPI.currentPage(inputParameters.current?.dataAPI.offset + 1);
+            }
         }
-        if (props?.setFormTitle) {
-            props.setFormTitle({ title: `Bobinagem ${inputParameters.current?.bobinagem?.nome}` }); //Set main Title
-        } else {
 
+        if (navDirection && inputParameters.current?.dataAPI) {
+            if (navDirection == 1) {
+                dataAPI.next();
+            } else {
+                dataAPI.previous();
+            }
+            const dt = await dataAPI.fetchPost();
+            if (inputParameters.current.bobinagem && dt.rows.length > 0) {
+                inputParameters.current.bobinagem_id = dt.rows[0].id;
+                inputParameters.current.bobinagem_nome = dt.rows[0].nome;
+            }
+        } else {
+            dataAPI.setData({ rows: [{ ...inputParameters.current?.bobinagem }], total: 1 });
         }
-        const stepNavigation = inputParameters.current?.stepNavigation;
-        const formValues = await loadBobinagemLookup({ bobinagem_id: inputParameters.current.bobinagem_id, ...(stepDir && stepNavigation) && { stepNavigation: { stepDir, ...stepNavigation } } });
+
+        if (props?.setFormTitle) {
+            props.setFormTitle({ title: `Bobinagem ${inputParameters.current?.bobinagem_nome}` }); //Set main Title
+        }
+
+        const formValues = await loadBobinagemLookup({ bobinagem_id: inputParameters.current.bobinagem_id });
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);
         }
@@ -202,49 +229,49 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-            {!props?.setFormTitle && <TitleForm auth={permission.auth} bobinagemNome={inputParameters.current.bobinagem_nome} loadData={loadData} stepNavigation={inputParameters.current.stepNavigation} />}
+            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm auth={permission.auth} bobinagemNome={dataAPI.getData().rows[0].nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
             <div style={{ height: "calc(100vh - 130px)" }}>
                 <YScroll>
-                    {bobinagemExists &&
+                    {dataAPI.hasData() &&
                         <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
                             items={[
                                 {
                                     label: `Informação`,
                                     key: '1',
-                                    children: <FormBobinagem {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
+                                    children: <FormBobinagem {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
                                 },
                                 {
                                     label: `Bobines`,
                                     key: '3',
-                                    children: <BobinesPropriedadesList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesPropriedadesList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 }, {
                                     label: `Bobines Defeitos`,
                                     key: '4',
-                                    children: <BobinesDefeitosList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesDefeitosList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 },
                                 {
                                     label: `Bobines Destinos`,
                                     key: '5',
-                                    children: <BobinesDestinosList {...{ parameters: inputParameters.current, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesDestinosList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 },
                                 {
                                     label: `MP Granulado (Lotes)`,
                                     key: '6',
-                                    children: <BobinesMPGranuladoList {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
+                                    children: <BobinesMPGranuladoList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
                                 }, {
                                     label: `Bobines Originais`,
                                     key: '7',
-                                    children: <BobinesOriginaisList {...{ parameters: inputParameters.current, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                    children: <BobinesOriginaisList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
                                 },
                                 {
                                     label: `Histórico`,
                                     key: '8',
-                                    children: <BobinagensHistoryList {...{ parameters: inputParameters.current, permissions: permission.permissions }} />,
+                                    children: <BobinagensHistoryList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
                                 },
                             ]}
 
                         />}
-                    {(!bobinagemExists && !submitting.state) && <Empty description="A Bobinagem não foi encontrada!" />}
+                    {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Bobinagem não foi encontrada!" />}
                 </YScroll>
             </div>
         </>

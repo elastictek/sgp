@@ -87,6 +87,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         totalRows: 0
     });
 
+    const setPayload = (payload) => {
+        updateState(payload);
+        ref.current={...payload};
+    }
+
     const addAction = (type) => {
         if (!action.current.includes(type))
             action.current.push(type);
@@ -163,6 +168,22 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
         }
     };
+    const getRowOffset = (row,fromState) => {
+        if (typeof row == 'number') {
+            if (getPagination(fromState).enabled) {
+                return (getCurrentPage(fromState) - 1) * getPageSize(fromState) + row;
+            } else {
+                return row;
+            }
+        } else {
+            if (getPagination(fromState).enabled) {
+                return (getCurrentPage(fromState) - 1) * getPageSize(fromState) + getIndex(row)
+            }else{
+                return getIndex(row);
+            }
+        }
+
+    }
     const getRowsFromTo = () => {
         const from = ((getInt(state.pagination.page, 1) - 1) * getInt(state.pagination.pageSize, 1)) + 1;
         const nPagerows = ((state?.data?.rows && Array.isArray(state?.data?.rows)) ? getInt(state.data.rows?.length) <= 0 ? 0 : getInt(state.data.rows?.length) - 1 : 0);
@@ -495,7 +516,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         });
     }
     const deleteRow = (data, keys) => {
-        if (state?.data?.rows && state.data.rows?.length>0) {
+        if (state?.data?.rows && state.data.rows?.length > 0) {
             const _rows = produce(state?.data?.rows, (draftArray) => {
                 const idx = draftArray.findIndex(v => deepEqual(pickAll(keys, v), data));
                 if (idx >= 0) {
@@ -1061,7 +1082,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         updateValue,
         updateValues,
         setData,
-        hasData: () => (state.data.rows !== undefined && state.data.rows!=null),
+        hasData: () => (state.data.rows !== undefined && state.data.rows != null),
         setSort,
         addSort,
         updated,
@@ -1077,6 +1098,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getPagination,
         getCurrentPage,
         getPageSize,
+        getRowOffset,
         getRowsFromTo,
         getPostRequest,
         getParameters,
@@ -1084,6 +1106,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getData,
         sortOrder,
         initLoaded,
+        setPayload,
         nav,
         url,
         setAction,

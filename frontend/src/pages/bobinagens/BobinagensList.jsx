@@ -26,7 +26,7 @@ import BobinesPopup from './commons/BobinesPopup';
 import { usePermission } from "utils/usePermission";
 import YScroll from 'components/YScroll';
 import dayjs from 'dayjs';
-import loadInit, { fixRangeDates,newWindow } from "utils/loadInitV3";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 
 const FormBobinagemValidar = React.lazy(() => import('./FormValidar'));
 const Bobinagem = React.lazy(() => import('./Bobinagem'));
@@ -510,7 +510,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
  */
     const [formFilter] = Form.useForm();
     const submitting = useSubmitting(true);
-    const dataAPI = useDataAPI({ ...(!noid && { id: "bobinagensL1list" }), payload: { url: `${API_URL}/bobinagens/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
+    const dataAPI = useDataAPI({ ...(!noid && { id: "bobinagensL1list" }), payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "id", parameters: {}, pagination: { enabled: true, page: 1, pageSize: 15 }, filter: {}, sort: [] } });
     const defaultParameters = { typelist: "A", method: "BobinagensList" };
     const defaultFilters = { type: "-1", valid: "-1" };
     const defaultSort = [{ column: 'nome', direction: 'DESC' }];
@@ -610,7 +610,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     }
 
     const columns = [
-        { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> },
+        { key: 'nome', name: 'Bobinagem', width: 115, frozen: true, formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row, p)}>{p.row.nome}</Button> },
         { key: 'baction', name: '', minWidth: 45, maxWidth: 45, frozen: true, formatter: p => <Button icon={<TbCircles />} size="small" onClick={() => onBobinesPopup(p.row)} /> },
         { key: 'inico', name: 'Início', width: 90 },
         { key: 'fim', name: 'Fim', width: 90 },
@@ -657,7 +657,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
 
 
     const onBobinesPopup = (row) => {
-        setModalParameters({ content: 'bobines',type: "drawer", title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
+        setModalParameters({ content: 'bobines', type: "drawer", title: <div>Bobinagem <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
         showModal();
     }
 
@@ -667,18 +667,14 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         //showModal();
     }
 
-    const onBobinagemClick = (row) => {
+    const onBobinagemClick = (row, p) => {
         if (row?.valid == 0) {
             navigate("/app/bobinagens/formbobinagemvalidar", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
 
             //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         } else {
-            console.log("SORT->",dataAPI.getSort())
-            console.log("CURRENTRECORD->",row)
-            console.log(dataAPI.getSort().map(v=>row[v.column]));
-            
-            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now(),stepNavigation:{sort:dataAPI.getSort(),values:dataAPI.getSort().map(v=>row[v.column])} } });
+            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now(), dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() } } });
             //setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         }

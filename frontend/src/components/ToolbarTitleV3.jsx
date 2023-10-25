@@ -114,7 +114,7 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
             setHistory(_h);
             saveToLS(_h, id);
             if (url?.state && url?.state?.newWindow) {
-                newWindow(path, {..._old?.state}, url?.state?.newWindow);
+                newWindow(path, { ..._old?.state }, url?.state?.newWindow);
             } else {
                 navigate(path, { replace: true, state: _old?.state });
             }
@@ -193,7 +193,7 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
     );
 }
 
-export default ({ title, leftTitle, right, rightHeader, details, description, id, showHistory = true }) => {
+export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -218,7 +218,10 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
     };
 
     const onNavigate = async (url, action) => {
-        if (action !== "back" && action !== "logout") {
+        if (action == "mainmenu"){
+            onShowDrawer();
+        }
+        else if (action !== "back" && action !== "logout") {
             let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
             path = path.startsWith("#") ? path.slice(1) : path;
             let _old = history.find(v => v.key === path);
@@ -226,9 +229,9 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
             _h.push({ state: _old?.state, label: url?.label, key: path });
             setHistory(_h);
             saveToLS(_h, id);
-            
+
             if (url?.state && url?.state?.newWindow) {
-                newWindow(path, {..._old?.state}, url?.state?.newWindow);
+                newWindow(path, { ..._old?.state }, url?.state?.newWindow);
             } else {
                 navigate(path, { replace: true, state: _old?.state });
             }
@@ -278,24 +281,31 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                 <Row style={{ marginBottom: "5px" }}>
                     <Col style={{ paddingTop: "5px" }}>
                         {showHistory && <Row align='center' nogutter>
-                            <Col xs="content">
+                            {/* <Col xs="content">
                                 <Button type='link' icon={<MenuOutlined />} onClick={onShowDrawer} />
+                            </Col> */}
+                            <Col xs="content" style={{marginRight:"2px"}}>
+                                <Button onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px", background: "#f0f0f0",border:"0px" }}>
+                                    <div style={{ display: "flex", alignItems: "center" }}>
+                                        <LeftCircleFilled style={{ marginRight: "5px" /* fontSize: "16px", cursor: "pointer", color: "#8c8c8c" */ }} />
+                                        <div>Voltar</div>
+                                    </div>
+                                </Button>
                             </Col>
+                            <Col xs="content">
+                                <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                                    <Button type='link' icon={<MenuOutlined />} style={{ background: "#f0f0f0" }} />
+                                </Dropdown>
+                            </Col>
+                            <Col xs="content">
+                                {actions && actions}
+                            </Col>
+
                             <Col style={{ display: "flex", alignItems: "center" }}>
 
-                                <Space.Compact>
-                                    <Button onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px" }}>
-                                        <div style={{ display: "flex", alignItems: "center" }}>
-                                            <LeftCircleFilled style={{ marginRight: "5px" /* fontSize: "16px", cursor: "pointer", color: "#8c8c8c" */ }} />
-                                            <div>Voltar</div>
-                                        </div>
-                                    </Button>
-                                    <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
-                                        <Button style={{ padding: "0px 5px" }}>
-                                            <HistoryOutlined style={{ color: "#000 !important" }} />
-                                        </Button>
-                                    </Dropdown>
-                                </Space.Compact>
+                                {/* <Space.Compact> */}
+
+                                {/*  </Space.Compact> */}
 
 
                                 {/* <div><LeftCircleFilled onClick={() => onNavigate(null, "back")} style={{ fontSize: "16px", cursor: "pointer",marginRight:"5px",color:"#8c8c8c" }} /></div> */}

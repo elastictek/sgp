@@ -10,7 +10,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import { useDataAPI } from "utils/useDataAPI";
 import { usePermission, Permissions } from "utils/usePermission";
-import loadInit, { fixRangeDates,newWindow } from "utils/loadInit";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
@@ -19,7 +19,7 @@ const { TextArea } = Input;
 import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined, PrinterOutlined, LockOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons';
 import { CgCloseO } from 'react-icons/cg';
 import Table from 'components/TableV2';
-import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS,ROOT_URL } from 'config';
+import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, ROOT_URL } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -45,7 +45,7 @@ export default ({ noEdit = true, noPrint = true, ...props }) => {
     const location = useLocation();
     const classes = useEditorStyles();
     const [formFilter] = Form.useForm();
-    const permission = usePermission({permissions:props?.permissions });
+    const permission = usePermission({ permissions: props?.permissions });
     const [modeEdit, setModeEdit] = useState({ datagrid: false });
     const [parameters, setParameters] = useState();
     const [checkData, setCheckData] = useImmer({ destino: false });
@@ -122,23 +122,22 @@ export default ({ noEdit = true, noPrint = true, ...props }) => {
 
 
     const loadData = async ({ signal } = {}) => {
-        const { palete, bobinagem, ..._parameters } = props?.parameters || {};
-
-        let { filter: inputFilter, palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+        const { tstamp, filter: inputFilter, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
+        //let { palete_id, palete_nome, bobinagem_id, bobinagem_nome, ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, _parameters, location?.state, [...Object.keys(location?.state ? location?.state : {}), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys(_parameters ? _parameters : {})]);
+        const palete_id = paramsIn?.palete?.id;
+        const bobinagem_id = paramsIn?.bobinagem?.id;
         setParameters({
             palete: {
-                id: palete_id,
-                nome: palete_nome
+                id: paramsIn?.palete?.id,
+                nome: paramsIn?.palete?.nome
             },
             bobinagem: {
-                id: bobinagem_id,
-                nome: bobinagem_nome
+                id: paramsIn?.bobinagem?.id,
+                nome: paramsIn?.bobinagem?.nome
             }
         })
-        let { filterValues, fieldValues } = fixRangeDates([], initFilters);
+        let { filterValues, fieldValues } = fixRangeDates([], paramsIn);
         formFilter.setFieldsValue({ ...fieldValues });
-        palete_id = getFilterValue(palete_id, '==')
-        bobinagem_id = getFilterValue(bobinagem_id, '==')
         setDefaultFilters(prev => ({ ...prev, filter: inputFilter, palete_id, bobinagem_id }));
         dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...inputFilter && { filter: inputFilter }, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id, fcompactual: ">=0", frecycle: ">=0" }) }, true, true);
         dataAPI.setSort(defaultSort);
@@ -154,7 +153,7 @@ export default ({ noEdit = true, noPrint = true, ...props }) => {
         loadData({ signal: controller.signal });
         return (() => controller.abort());
 
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const onBobineClick = (row) => {
         newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);

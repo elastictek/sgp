@@ -873,7 +873,6 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             //Validar
             setModalParameters({ content: "ordemfabricoinelaboration", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
             showModal();
-            console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE", data)
             // navigate('/app/ofabrico/ordemfabrico', {
             //     state: {
             //         ...data, ...allows, tstamp: Date.now()

@@ -7,9 +7,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, DOSERS } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -168,14 +168,14 @@ export default ({ setFormTitle, ...props }) => {
         const controller = new AbortController();
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props, {}, [...Object.keys(dataAPI.getAllFilter())]);
             let { filterValues, fieldValues } = fixRangeDates([], initFilters);
             formFilter.setFieldsValue({ ...fieldValues });
-            const bobinagem_id = props?.parameters?.bobinagem_id;
+            const bobinagem_id = props?.parameters?.bobinagem?.id;
             dataAPI.addFilters({ ...filterValues, ...(bobinagem_id && { bobinagem_id }) }, true, false);
             dataAPI.setSort(defaultSort);
             dataAPI.addParameters(defaultParameters, true, true);

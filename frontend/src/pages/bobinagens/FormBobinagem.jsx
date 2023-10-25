@@ -10,7 +10,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 import Toolbar from "components/toolbar";
 import { orderObjectKeys, json } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -79,7 +79,7 @@ export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const permission = usePermission({ permissions:props?.permissions });//Permissões Iniciais
+    const permission = usePermission({ permissions: props?.permissions });//Permissões Iniciais
     const [mode, setMode] = useState({ datagrid: { edit: true, add: false } });
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -101,15 +101,15 @@ export default (props) => {
         const controller = new AbortController();
         loadData({ signal: controller.signal, init: true });
         return (() => controller.abort());
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         setFormDirty(false);
-        if (init) {
-            const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
-            inputParameters.current = { ...paramsIn };
-        }
-        const formValues = await loadBobinagensLookup(inputParameters.current.bobinagem_id);
+        //if (init) {
+        const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
+        inputParameters.current = { ...paramsIn };
+        //}
+        const formValues = await loadBobinagensLookup(paramsIn?.bobinagem?.id);
         const v = formValues.length > 0 ? json(formValues[0].artigo)[0] : {};
         const _ofs = formValues.length > 0 ? json(formValues[0].ofs) : [];
         form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], core: v?.core, ofs: _ofs, timestamp: dayjs(formValues[0].timestamp) } : {});

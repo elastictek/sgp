@@ -366,8 +366,6 @@ def BobinagensList(request, format=None):
             {s(dql.sort)}
         """
     )
-
-   
     # sqlCount = f""" 
     #         SELECT count(*) FROM (
     #             SELECT
@@ -465,16 +463,97 @@ def BobinagemLookup(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+# def stepNav(data,lop,fixedFilter):
+#     if data.get("stepNavigation"):
+#         sn = data.get("stepNavigation")
+#         f_data = {k: v for d in sn.get("values") for k, v in d.items()}
+#         navparameters = {}
+#         navfilters = []   
+#         for idx, x in enumerate(sn.get("values")):
+#             fs = Filters(f_data)
+#             for i in range(0, idx+1):
+#                 op="="
+#                 if i<=idx:
+#                     op = "<" if sn.get("stepDir") == -1 else ">"
+#                 fs.add(f'{list(sn.get("values")[i].keys())[0]} {op} :{list(sn.get("values")[i].keys())[0]}',True)
+#             fs.where(False, "" if idx==0 else "or")
+#             fs.value()
+#             navfilters.append(fs.text)
+#             navparameters={**navparameters,**fs.parameters}
+
+#         for idx, x in enumerate(sn.get("sort")):
+#             sort = []
+#             # if sn.get("stepDir") == -1:
+#             for x in sn.get("sort"):
+#                 sort.append({
+#                     **x,
+#                     "direction":"ASC" if x.get("direction") == "DESC" else "DESC",
+#                     "dir":1 if x.get("dir") == -1 else -1
+#                 })
+#             # else:
+#             #     sort = sn.get("sort")
+#                 print("SORTTTT")
+#                 print(sort)
+#         mainFilter = f'({"or".join(navfilters)})'
+#         if fixedFilter:
+#             mainFilter = f"{fixedFilter.text} and {mainFilter}" if mainFilter else fixedFilter.text
+#             navparameters={**navparameters,**fs.parameters}
+#         mainFilter = f"{lop} ({mainFilter})"
+#         return {"enabled":True, "sort":sort,"filters":navfilters,"parameters":navparameters,"filter":mainFilter}
+#     return {"enabled":False, "sort":None,"filters":None,"parameters":{},"filter":""}
+
+# def GetBobinagem(request, format=None):
+#     #A ordem que são executados os if's é muito importante!!!!
+#     cursor = connections["default"].cursor()
+#     print("RRWwwwww")
+#     print(request.data)
+#     filter = request.data['filter']
+#     sort = request.data.get("sort")
+#     parameters = request.data.get("parameters")
+#     try:
+#         response = _getBobinagem(filter,sort,parameters)
+#         if response==None:
+#             return Response({"status": "success", "data":None})
+#     except Error as error:
+#         print(str(error))
+#         return Response({"status": "error", "title": str(error)})
+#     return Response(response)
+
+# def _getBobinagem(filter,sort="",data={}):
+#     cursor = connections["default"].cursor()
+#     f = Filters(filter)
+#     f.setParameters({
+#         "nome":{"value": lambda v: v.get('fnome'), "field": lambda k, v: f'{k}'},
+#     }, True)
+#     f.auto()
+#     f.where()
+#     f.value()
+      
+#     step_data = stepNav(data,"and" if f.hasFilters else "where",None)
+#     print(step_data)
+#     parameters = {**f.parameters,**step_data.get("parameters")}
+#     print("aaaaabaaaaaa")
+#     if step_data.get("enabled"):
+#         dql = db.dql({"sort":step_data.get("sort")}, False)
+#         sort = dql.sort
+#     sql=lambda: (f"""
+#         select * from producao_bobinagem {f.text} {step_data.get("filter")} {sort} limit 1
+#     """)
+#     print("xiiiiiiiiii")
+#     print(f"""
+#         select * from producao_bobinagem {f.text} {step_data.get("filter")} {sort} limit 1
+#     """)
+#     print(parameters)
+
+#     return db.executeSimpleList(sql, cursor, parameters)
+
+
+
+
 def BobinagensLookup(request, format=None):
     connection = connections["default"].cursor()
-    data = request.data['parameters']
-    if data.get("stepNavigation"):
-        sn = data.get("stepNavigation")
-        for idx, x in enumerate(sn.get("sort")):
-            fs = Filters()
-            print(idx, x)
-            print("DATAAAAAAAAA")
-            print(data)
+    data = request.data.get('parameters')
+    
     f = Filters(request.data['filter'])
     f.setParameters({
     #    **rangeP(f.filterData.get('fdata'), 't_stamp', lambda k, v: f'DATE(t_stamp)'),
@@ -501,12 +580,14 @@ def BobinagensLookup(request, format=None):
     fid.auto()
     fid.value()
 
-    f2 = filterMulti(request.data['filter'], {
-        # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
-    }, False, "and" if f.hasFilters else "and" ,False)
-    parameters = {**f.parameters,**fid.parameters, **f2['parameters']}
+    # f2 = filterMulti(request.data['filter'], {
+    #     # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}
+    # }, False, "and" if f.hasFilters else "and" ,False)
+
+    parameters = {**f.parameters}
 
     dql = db.dql(request.data, False)
+
     cols = f"""
             lnw0.artigo_cod nwcodinf,
             lnw1.artigo_cod nwcodsup,
@@ -522,7 +603,7 @@ def BobinagensLookup(request, format=None):
             select JSON_ARRAYAGG(v) from (
             select JSON_OBJECT("id",pa.id,"cod",pa.cod,"des",pa.des,"core",pa.core,"lar",pa.lar,"estado",pb.estado) v
             from producao_bobine pb join producao_artigo pa on pa.id=pb.artigo_id 
-            {fid.text}
+            where (pb.bobinagem_id = pbm.id)
             GROUP BY pa.id, pa.cod, pa.des, pa.core, pa.lar, pb.estado
             ) t
             ) artigo
@@ -537,7 +618,7 @@ def BobinagensLookup(request, format=None):
             LEFT JOIN producao_perfil pf on pf.id=pbm.perfil_id
             LEFT JOIN lotesnwlinha lnw0 on lnw0.vcr_num=pbm.vcr_num_inf
             LEFT JOIN lotesnwlinha lnw1 on lnw1.vcr_num=pbm.vcr_num_sup
-            {f.text} {f2["text"]}
+            {f.text}
             {dql.sort} {dql.limit}
         """
     )

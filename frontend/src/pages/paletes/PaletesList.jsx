@@ -9,7 +9,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL, DOSERS } from "config";
-import { useDataAPI } from "utils/useDataAPI";
+import { useDataAPI } from "utils/useDataAPIV3";
 //import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
@@ -1016,8 +1016,9 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     }
 
     const onClickDetails = (type, row) => {
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
-        showModal();
+        navigate("/app/paletes/formpalete", { replace: true, state: { palete: row, palete_id: row.id, palete_nome: row.nome, tstamp: Date.now(), dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() } } });
+        //setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: () => dataAPI.fetchPost(), parameters: { palete: row, palete_id: row.id, palete_nome: row.nome } });
+        //showModal();
     }
 
     const rowClassName = (data) => {

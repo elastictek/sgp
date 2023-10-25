@@ -11,6 +11,7 @@ import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInit";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPI";
+import { json } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
 import Portal from "components/portal";
@@ -48,14 +49,14 @@ const loadPaleteLookup = async (palete_id) => {
     return rows;
 }
 
-const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode,parameters,misc, permission }) => {
+const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, parameters, misc, permission }) => {
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
 
 
     }
-
+    console.log("RRRRRRRRRRper",permission)
     const leftContent = (<>
         {/* <Space>
             {modeEdit?.formPalete && <Button disabled={(!allowEdit.formPalete || submitting.state)} icon={<LockOutlined title="Modo de Leitura" />} onClick={()=>changeMode('formPalete')} />}
@@ -66,7 +67,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode,parame
 
     const rightContent = (
         <Space>
-            <RightToolbar permission={permission} parameters={parameters} misc={misc}/>
+            <RightToolbar permission={permission} parameters={parameters} misc={misc} />
         </Space>
     );
     return (
@@ -77,6 +78,8 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode,parame
 export default (props) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const [formDirty, setFormDirty] = useState(false);
+    const inputParameters = useRef({});
     //const permission = usePermission({ allowed: { producao: 100, planeamento: 100 } });//Permissões Iniciais
     //const [allowEdit, setAllowEdit] = useState({ form: false, datagrid: false });//Se tem permissões para alterar (Edit)
     //const [modeEdit, setModeEdit] = useState({ form: false, datagrid: false }); //Se tem permissões para alternar entre Mode Edit e View
@@ -84,7 +87,7 @@ export default (props) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [form] = Form.useForm();
-    const permission = usePermission({permissions:props?.permissions});
+    const permission = usePermission({name: "paletes", permissions: props?.permissions });
     const [formFilter] = Form.useForm();
     const defaultFilters = {};
     const defaultSort = []; //{ column: "colname", direction: "ASC|DESC" }
@@ -98,20 +101,29 @@ export default (props) => {
         const controller = new AbortController();
         loadData({ signal: controller.signal });
         return (() => controller.abort());
-    }, []);
+    }, [props?.parameters?.tstamp, location?.state?.tstamp]);
 
     const loadData = async ({ signal } = {}) => {
         /*if (!permission.allow()) {
             Modal.error({ content: "Não tem permissões!" });
             return;
         } */
-
-        const { ...initFilters } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, { ...props?.parameters }, location?.state, [...Object.keys({ ...location?.state }), ...Object.keys(dataAPI.getAllFilter()), ...Object.keys({ ...props?.parameters })]);
-        const formValues = await loadPaleteLookup(initFilters.palete_id);
+        
+        setFormDirty(false);
+        //if (init) {
+        const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
+        inputParameters.current = { ...paramsIn };
+        //}
+        const formValues = await loadPaleteLookup(paramsIn?.palete?.id);
         form.setFieldsValue(formValues.length > 0 ? { ...formValues[0], timestamp: dayjs(formValues[0].timestamp), IPTDAT_0: dayjs(formValues[0].IPTDAT_0) } : {});
         if (formValues.length > 0 && formValues[0]?.artigo) {
-            dataAPIArtigos.setRows(formValues[0].artigo);
+            dataAPIArtigos.setRows(json(formValues[0].artigo));
         }
+        submitting.end();
+
+
+
+
         /*let { filterValues, fieldValues } = fixRangeDates([], initFilters);
         formFilter.setFieldsValue({ ...fieldValues });
         dataAPI.addFilters({ ...filterValues }, true, false);
