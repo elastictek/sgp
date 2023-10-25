@@ -122,6 +122,9 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
             const _h = [...history];
             _h.pop();
             const _t = _h[_h.length - 1];
+            if (!_t?.key){
+                return;
+            }
             setHistory(_h);
             saveToLS(_h, id);
             navigate(_t.key, { replace: true, state: _t?.state });
@@ -239,6 +242,9 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
             const _h = [...history];
             _h.pop();
             const _t = _h[_h.length - 1];
+            if (!_t?.key){
+                return;
+            }
             setHistory(_h);
             saveToLS(_h, id);
             navigate(_t.key, { replace: true, state: _t?.state });
