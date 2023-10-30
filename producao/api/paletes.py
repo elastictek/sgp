@@ -69,6 +69,12 @@ def download_file(request):
     response['Content-Disposition'] = "inline; filename=%s" % filename
     return response
 
+def updateMaterializedView(mv):
+    conngw = connections[connGatewayName]
+    cgw = conngw.cursor()
+    cgw.execute(f"REFRESH MATERIALIZED VIEW public.{mv};")
+    conngw.commit()
+
 def filterMulti(data, parameters, forceWhere=True, overrideWhere=False, encloseColumns=True, logicOperator="and"):
     p = {}
     txt = ''
@@ -794,8 +800,7 @@ def CreatePaleteLine(request, format=None):
                 row = cursor.fetchone()
                 cursor.execute("select * from tmp_paletecheck_report;")
                 report = fetchall(cursor)
-                print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-                print(row)
+                updateMaterializedView("mv_paletes")
         return Response({"status": "success", "data":report, "palete":{"id":row[0],"nome":row[1]}, "title":None})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})

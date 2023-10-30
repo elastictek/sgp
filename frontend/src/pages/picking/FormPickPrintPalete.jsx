@@ -156,11 +156,13 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         //navigate("/app/picking/newpaleteline", { state: { action: "weigh", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines, lvl: v.data.lvl } });
     }
 
-    const onDownloadComplete = async (response) => {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        //downloadFile(response.data,"etiqueta_nw.pdf");
+    const onDownloadComplete = async (response,download) => {
+        if (download=="download"){
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(blob);
+            window.open(pdfUrl, '_blank');
+            //downloadFile(response.data,"etiqueta_nw.pdf");
+        }
     }
 
     return (

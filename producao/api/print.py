@@ -145,7 +145,7 @@ def PrintPaleteEtiqueta(request,format=None):
         "export":"pdf",
         "data":{      
             "tstamp":tstamp.strftime("%Y-%m-%d %H:%M:%S"),
-            "palete_id":67823 #data.get("id")
+            "palete_id":data.get("id")
         }
     })
     try:
