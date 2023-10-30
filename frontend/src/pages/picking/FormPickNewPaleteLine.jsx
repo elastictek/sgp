@@ -99,7 +99,7 @@ const ListItem = styled(List.Item)`
 `;
 
 const TitleOF = ({ item }) => {
-    return (<div><span style={{fontSize:"14px"}}>{item.ofid}</span><OFabricoStatus data={item} cellProps={{}} /></div>);
+    return (<div><span style={{ fontSize: "14px" }}>{item.ofid}</span><OFabricoStatus data={item} cellProps={{}} /></div>);
 }
 
 const ContentOF = ({ item }) => {
@@ -211,7 +211,26 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
         //console.log("RRRRRRRRRRRRRR", json(json(data?.esquema).paletizacao));
     }
 
-    const onInputOk = (v, idx) => {
+    const onInputOk = (v, idx, keyPressed) => {
+        if (keyPressed) {
+
+            if (keyPressed === 'Enter') {
+                //e.preventDefault(); // Prevent the default Tab behavior
+                const inputs = document.querySelectorAll('[tabindex]');
+                console.log("inputs", inputs)
+                const nextInput = Array.from(inputs).find((el) => el.tabIndex === idx + 2);
+                console.log(nextInput);
+                // const currentTabIndex = event.target.tabIndex;
+                // const nextInput = Array.from(inputs).find(
+                //   (el) => el.tabIndex === currentTabIndex + 1
+                // );
+
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            }
+
+        }
         const _r = produce(state?.bobines, (draftArray) => {
             draftArray[idx].lote = v;
         });
@@ -264,7 +283,7 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
                             description={
 
                                 <div style={{ display: "flex" }}>
-                                    <div><Input disabled={disabled} {...index === 0 && { ref: inputRef }} tabIndex={index + 1} size='small' value={item.lote} onChange={(e) => onInputOk(e.target.value, index)} onPressEnter={(e) => onInputOk(e.target.value, index)} /></div>
+                                    <div><Input disabled={disabled} {...index === 0 && { ref: inputRef }} tabIndex={index + 1} size='small' value={item.lote} onChange={(e) => onInputOk(e.target.value, index)} onKeyDown={(e) => onInputOk(e.target.value, index, e.key)} /></div>
                                     {(state.report && !noStatus) && <>
                                         <Hidden xs sm md lg>
                                             <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].artigo_ok == 1 ? "green" : "#ff4d4f" }}></div>
@@ -792,9 +811,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                                     {(state.step > 0 && state.pos) &&
                                         <Row>
-                                            <Col style={{lineHeight:1.8}}>
-                                                <TitleOF item={state.pos}/>
-                                                <ContentOF item={state.pos}/>
+                                            <Col style={{ lineHeight: 1.8 }}>
+                                                <TitleOF item={state.pos} />
+                                                <ContentOF item={state.pos} />
                                             </Col>
                                         </Row>
                                     }
