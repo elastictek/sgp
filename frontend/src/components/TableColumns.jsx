@@ -156,11 +156,10 @@ export const Bobines = ({ id, b, bm, setShow, onClick, align = "start", cellProp
     const handleClick = () => {
         //setShow({ show: true, data: { bobinagem_id: bm.id, bobinagem_nome: bm.nome } });
     };
-
     return (<>
         {!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", lineHeight: "12px", justifyContent: align }}>
             {b.map((v, i) => {
-                return (<StyledBobine onClick={() => onClick(v)} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
+                return (<StyledBobine style={{...style && style}} onClick={() => onClick(v)} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>}
     </>
@@ -174,7 +173,7 @@ export const EstadoBobines = ({ id, artigos, nome, onClick, align, cellProps, st
 }
 export const EstadoBobine = ({ id, nome, onClick, align, largura, estado, cellProps, style = {} }) => {
     return (<>
-        {(!cellProps?.inEdit) && <Bobines align={align} id={id} onClick={(v) => onClick && onClick("estado", id, nome, v)} b={[{ estado: estado, lar: largura }]} />}
+        {(!cellProps?.inEdit) && <Bobines style={style} align={align} id={id} onClick={(v) => onClick && onClick("estado", id, nome, v)} b={[{ estado: estado, lar: largura }]} />}
     </>);
 }
 

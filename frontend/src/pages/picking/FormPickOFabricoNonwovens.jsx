@@ -69,7 +69,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "picking" });
+    const permission = usePermission({ name: "controlpanel" });
     const [title, setTitle] = useState("Ordens de Fabrico");
     const [subTitle, setSubTitle] = useState("Nonwovens");
 

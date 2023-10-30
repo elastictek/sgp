@@ -218,6 +218,7 @@ export default (props) => {
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
+            console.log("DATAAPI....",inputParameters.current?.dataAPI)
             if (inputParameters.current?.dataAPI) {
                 dataAPI.setPayload(inputParameters.current?.dataAPI);
                 dataAPI.pageSize(1, false);

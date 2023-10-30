@@ -664,6 +664,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
         return _rows;
     }
+   
     const clearData = () => {
         ref.current.totalRows = 0;
         updateState(draft => {
@@ -1060,7 +1061,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         if (fromState) {
             return state.primaryKey;
         } else {
-            console.log("----------------------------------------",ref.current)
             return ref.current.primaryKey;
         }
     }

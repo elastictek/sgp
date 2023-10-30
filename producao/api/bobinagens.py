@@ -249,7 +249,7 @@ def BobinagensList(request, format=None):
     f.where()
     f.auto()
     f.value()
-    
+
     f2 = filterMulti(request.data['filter'], {}, False if f.hasFilters else True, "and",False)
     
     f3 = Filters(request.data['filter'])
@@ -430,8 +430,24 @@ def Validar(request, format=None):
         return Response({"status": "error", "title": f"Erro ao validar a bobinagem! {str(error)}"})
 
 
+def FixBobinagem(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                try:
+                    args = [data.get("values").get("id"),data.get("values").get("comp"),data.get("values").get("diam"),data.get("values").get("largura_bruta"),json.dumps(data.get("values").get("lote_nwsup"), ensure_ascii=False),json.dumps(data.get("values").get("lote_nwinf"), ensure_ascii=False),data.get("values").get("nwsup"),data.get("values").get("nwinf"), request.user.id]
+                    print(args)
+                    cursor.callproc('fix_bobinagem',args)
+                except Exception as error:
+                    return Response({"status": "error", "title": str(error)})
+                return Response({"status": "success", "title": "Bobinagem atualizada com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao atualizar a bobinagem! {str(error)}"})
+
 def BobinagemLookup(request, format=None):
     connection = connections["default"].cursor()
+    data = request.data.get("parameters")
     f = Filters(request.data['filter'])
     f.setParameters({
         "id": {"value": lambda v: Filters.getNumeric(v.get('fid')), "field": lambda k, v: f'pbm.{k}'},
@@ -441,7 +457,7 @@ def BobinagemLookup(request, format=None):
     f.value()
 
     dql = db.dql(request.data, False)
-    cols = f"""*"""
+    cols = f"""pbm.*{",(select count(*) from producao_bobine pb where pb.bobinagem_id=pbm.id and pb.palete_id is not null) nbobines_in_paletes" if data.get("checkBobinesInPalete")==True else ""} """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  
@@ -452,6 +468,8 @@ def BobinagemLookup(request, format=None):
             limit 1
         """
     )
+    print(f.text)
+    print(f.parameters)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -810,19 +828,29 @@ def CreateBobinagem(request, format=None):
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
 def DeleteBobinagem(request, format=None):
     data = request.data.get("parameters")
-    filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                args = (data["id"],data["ig_bobinagem"] if "ig_bobinagem" in data else 0,0)
-                cursor.callproc('delete_bobinagem',args)
+                args = [data.get("ig_id"),data.get("id")]
+                cursor.callproc('delete_bobinagem_from_ig',args)
         return Response({"status": "success", "title": "Bobinagem eliminada com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def NewBobinagem(request, format=None):
+    data = request.data.get("parameters")
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if "ig_id" not in data:
+                    return Response({"status": "error", "title":"Tem de indicar o Evento de linha!"})
+                args = [data.get("ig_id"),data.get("acs_id")]
+                print(args)
+                cursor.callproc('create_bobinagem_from_ig_v3',args)
+                row = cursor.fetchone()
+        return Response({"status": "success", "title": "Bobinagem criada com sucesso!","bobinagem":{"id":row[0],"nome":row[1]}})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 

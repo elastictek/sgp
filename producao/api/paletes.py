@@ -338,6 +338,7 @@ def PaletesList(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
+    
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""

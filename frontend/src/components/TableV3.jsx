@@ -610,9 +610,9 @@ export default ({ dataAPI, columns, gridRef: _gridRef, setGridRef: _setGridRef, 
     }
 
     const dataSource = useCallback(async ({ skip, limit, sortInfo, ...rest }) => {
-        const log = true;
+        const log = false;
         let dt = { data: [], count: 0 };
-        console.log("dataSourceeeeee", dataAPI.getPayload(true), dataAPI.getPayload(false))
+        //console.log("dataSourceeeeee", dataAPI.getPayload(true), dataAPI.getPayload(false))
         if (dataAPI.getActions().includes("init")) {
             if (log) { console.log("LOG DATASOURCE - 1 ", dataAPI.getActions()); }
             submitting.trigger();

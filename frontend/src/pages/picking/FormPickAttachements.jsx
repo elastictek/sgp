@@ -51,8 +51,8 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
 //     return null;
 // }
 
-export const loadOrdensFabricoOpen = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
+export const loadOrdensFabricoOpen = async ({ id,was_in_production }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }

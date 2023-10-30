@@ -441,9 +441,10 @@ def OrdensFabricoOpen(request, format=None):
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
             left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
-            where po.ativa = 1 {f.text} order by po.ofid is null,po.ofid
+            where po.ativa = 1 and po.stock=0 {f.text} order by po.ofid is null,po.ofid
         """
     ), connection, {**f.parameters})
+
     return Response(response)
 
 def OrdensFabricoInProduction(request, format=None):

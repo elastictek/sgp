@@ -737,7 +737,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     const defaultFilters = {};
     const defaultParameters = { method: "PaletesList" };
     const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid===false) && { id: "lst-paletes" }), payload: { url: `${API_URL}/paletes/paletessql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
+    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid===false) && { id: "lst-paletes" }), payload: { url: `${API_URL}/paletes/paletessql/`, primaryKey:"id", parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
     const submitting = useSubmitting(true);
     const [lastTab, setLastTab] = useState('1');
 
@@ -776,7 +776,6 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
     const onBobinesPopup = async (row) => {
         const _bobines = await loadBobinesLookup({palete_id:row.id,sort:[{column:"mb.posicao_palete",direction:"ASC"},{column:"mb.nome",direction:"ASC"}]});
-        console.log("rowwwwww",_bobines);
         setModalParameters({ content: 'bobines',type: "drawer", title: <div>Palete <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines:_bobines });
         showModal();
         //setModalParameters({ content: 'bobines',type: "drawer", title: <div>Palete <span style={{ fontWeight: 900 }}>{row.nome}</span></div>, bobines: JSON.parse(row.bobines) });
@@ -898,7 +897,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
     const loadData = async ({ init = false, signal } = {}) => {
         if (init) {
             const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, {}, null);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
+            let { filterValues, filter = {}, fieldValues } = fixRangeDates(['fdata'], {...initFilters,...filter});
             formFilter.setFieldsValue({ ...fieldValues });
             dataAPI.addFilters({ ...filterValues }, true, false);
             dataAPI.setSort(defaultSort);
@@ -1040,7 +1039,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
 
     return (
         <>
-            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
+            {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getAllFilter()} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
             <Table
                 loading={submitting.state}
                 actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} permission={permission} />}
@@ -1051,6 +1050,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 dataAPI={dataAPI}
                 toolbar={true}
                 search={true}
+                height="80vh"
                 moreFilters={true}
                 rowSelection={false}
                 primaryKeys={primaryKeys}

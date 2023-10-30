@@ -25,7 +25,6 @@ export const transformFormulacaoData = ({ items, formulacao }) => {
 }
 
 export const transformFormulacaoDataList = (formulacao) => {
-    console.log("-------------------------->",formulacao)
     const rows = [];
     const eA = [];
     const eB = [];

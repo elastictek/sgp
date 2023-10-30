@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { getFilterRangeValues, dayjsValue } from "utils";
 import CryptoJS from 'crypto-js';
-import {URL_EXPIRATION} from "config";
+import {URL_EXPIRATION,ROOT_URL} from "config";
 
 const customSort = (o1, o2) => {
     if (o1 == null) {
@@ -32,8 +32,9 @@ const getQueryParameters = () => {
     return params;
 }
 
-export const newWindow = (url, data, name) => {
-    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(data), 'secret-key').toString();
+export const newWindow = (url, data, name, expires = URL_EXPIRATION) => {
+    const expirationTime = Date.now() + expires * 60 * 1000; // 5 minutes from now (adjust as needed)
+    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify({ ...data, expirationTime }), 'secret-key').toString();
     const _url = `${url}?data=${encodeURIComponent(encryptedData)}`;
     window.open(_url, name ? name : '_blank');
 }
@@ -45,9 +46,15 @@ export default (init, store = {}, props = {}, state = {}, fields) => {
     let _fields = (fields === null) ? Object.keys({ ...store, ...props, ...state }) : fields;
     const queryParams = getQueryParameters();
     if (queryParams.size > 0) {
+        const currentTime = Date.now();
         const encryptedData = queryParams.get('data');
         const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, 'secret-key');
         query = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
+        if (currentTime > query.expirationTime) {
+            query = {};
+            window.location.href = `${ROOT_URL}/app/linkexpired`;
+        }
+        _fields.push(...Object.keys({ ...query }));
     }
     const _s = [props, store, state, query].sort(customSort).reverse();
     for (let v of _fields) {

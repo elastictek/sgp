@@ -229,7 +229,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
     const onSave = async (values) => {
         submitting.trigger();
         if (props?.onSelectPlan && typeof props.onSelectPlan == "function") {
-            props?.onSelectPlan(form.getFieldsValue(true));
+            props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
         }
         submitting.end();
     }
@@ -242,7 +242,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
             if (_n_cuts==0){
                 openNotification("error", 'top', "Notificação", "O nº de cortes não pode ser zero!");
             }else{
-                props?.onSelectPlan(form.getFieldsValue(true));
+                props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
             }
         }
         submitting.end();

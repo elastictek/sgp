@@ -97,7 +97,6 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
         const cancelFetch = cancelToken();
         setFormTitle({ title: `Ordem de Fabrico ${record.ofabrico}`, subTitle: `${record.item} - ${record.item_nome}` });
         (async () => {
-            console.log("plannninggggg",forInput)
             let [oFabricoTemp] = await LoadOFabricoTemp(record, cancelFetch);
             oFabricoTemp = { ...oFabricoTemp /* core_cod: { key: oFabricoTemp?.core_cod, value: oFabricoTemp?.core_cod, label: oFabricoTemp?.core_des } */ };
             form.setFieldsValue({ ...oFabricoTemp, nbobines: (record.qty_item / oFabricoTemp.sqm_bobine).toFixed(2) });

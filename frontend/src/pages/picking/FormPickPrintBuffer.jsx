@@ -201,7 +201,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "picking" });
+    const permission = usePermission({ name: "controlpanel" });
     const [load, setLoad] = useState(false);
 
     const tableCls = useTableStyles();

@@ -122,7 +122,7 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
             const _h = [...history];
             _h.pop();
             const _t = _h[_h.length - 1];
-            if (!_t?.key){
+            if (!_t?.key) {
                 return;
             }
             setHistory(_h);
@@ -196,19 +196,21 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
     );
 }
 
-export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true }) => {
+export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
     const location = useLocation();
 
     useEffect(() => {
-        const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
-        let _h = getFromLS(id).filter(v => v.key !== path);
-        _h.push({ label: description, key: path, state: location?.state });
-        _h = _h.slice(-15);
-        setHistory(_h);
-        saveToLS(_h, id);
+            const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+            let _h = getFromLS(id).filter(v => v.key !== path);
+            if (save) {
+                _h.push({ label: description, key: path, state: location?.state });
+                _h = _h.slice(-15);
+            }
+            setHistory(_h);
+            saveToLS(_h, id);
     }, []);
 
 
@@ -221,7 +223,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
     };
 
     const onNavigate = async (url, action) => {
-        if (action == "mainmenu"){
+        if (action == "mainmenu") {
             onShowDrawer();
         }
         else if (action !== "back" && action !== "logout") {
@@ -242,7 +244,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
             const _h = [...history];
             _h.pop();
             const _t = _h[_h.length - 1];
-            if (!_t?.key){
+            if (!_t?.key) {
                 return;
             }
             setHistory(_h);
@@ -290,8 +292,8 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                             {/* <Col xs="content">
                                 <Button type='link' icon={<MenuOutlined />} onClick={onShowDrawer} />
                             </Col> */}
-                            <Col xs="content" style={{marginRight:"2px"}}>
-                                <Button onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px", background: "#f0f0f0",border:"0px" }}>
+                            <Col xs="content" style={{ marginRight: "2px" }}>
+                                <Button onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px", background: "#f0f0f0", border: "0px" }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
                                         <LeftCircleFilled style={{ marginRight: "5px" /* fontSize: "16px", cursor: "pointer", color: "#8c8c8c" */ }} />
                                         <div>Voltar</div>

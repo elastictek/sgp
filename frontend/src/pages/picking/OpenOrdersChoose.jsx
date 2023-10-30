@@ -92,7 +92,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "picking" });
+    const permission = usePermission({ name: "controlpanel" });
 
     const tableCls = useTableStyles();
     const [formFilter] = Form.useForm();

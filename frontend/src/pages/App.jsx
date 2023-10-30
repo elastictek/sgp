@@ -107,6 +107,9 @@ import FormPickGranuladoOut from './picking/FormPickGranuladoOut';
 import FormAttachements from './ordensfabrico/FormAttachements';
 import FormPickAttachements from './picking/FormPickAttachements';
 
+
+const FormFixBobinagem = lazy(() => import('./bobinagens/FormFixBobinagem'));
+
 const MainPicking = lazy(() => import('./picking/MainPicking'));
 const FormPickNonwovensPrint = lazy(() => import('./picking/FormPickNonwovensPrint'));
 const FormPickNonwovensIn = lazy(() => import('./picking/FormPickNonwovensIn'));
@@ -115,7 +118,8 @@ const FormPickRedoPaleteLine = lazy(() => import('./picking/FormPickRedoPaleteLi
 const FormPickWeighPalete = lazy(() => import('./picking/FormPickWeighPalete'));
 const FormPickDeletePalete = lazy(() => import('./picking/FormPickDeletePalete'));
 const FormPickPrePicking = lazy(() => import('./picking/FormPickPrePicking'));
-const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
+const FormPickFixBobinagem = lazy(() => import('./picking/FormPickFixBobinagem'));
+const FormPickDeleteBobinagem = lazy(() => import('./picking/FormPickDeleteBobinagem'));
 const FormPickPrintPalete = lazy(() => import('./picking/FormPickPrintPalete'));
 const FormPickOFabricoChangeStatus = lazy(() => import('./picking/FormPickOFabricoChangeStatus'));
 const FormPickOFabricoFormulacao = lazy(() => import('./picking/FormPickOFabricoFormulacao'));
@@ -125,6 +129,9 @@ const FormPickOFabricoDoseadores = lazy(() => import('./picking/FormPickOFabrico
 const FormPickNonwovensOut = lazy(() => import('./picking/FormPickNonwovensOut'));
 const FormPickNonwovensQueue = lazy(() => import('./picking/FormPickNonwovensQueue'));
 const FormPickPrintBuffer = lazy(() => import('./picking/FormPickPrintBuffer'));
+const FormPickNewBobinagemLine = lazy(() => import('./picking/FormPickNewBobinagemLine'));
+const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
+const FormValidateBobinagem = lazy(() => import('./picking/FormValidarV2'));
 
 const loadAuthUser = async ({ }, signal) => {
     let response;
@@ -172,6 +179,9 @@ const RenderRouter = () => {
             children: [
                 { path: "bobinagens/reellings", element: <Suspense fallback={<Spin />}><BobinagensList /></Suspense> },
                 { path: "bobinagens/formbobinagem", element: <Suspense fallback={<Spin />}><Bobinagem /></Suspense> },
+                { path: "bobinagens/fixbobinagem", element: <Suspense fallback={<Spin />}><FormFixBobinagem /></Suspense> },
+                { path: "bobinagens/validatebobinagem", element: <Suspense fallback={<Spin />}><FormValidateBobinagem /></Suspense> },
+
                 /* { path: "validateReellings", element: <Suspense fallback={<Spin />}><BobinagensValidarList /></Suspense> }, //TO REMOVE */
                 { path: "bobines/validarlist", element: <Suspense fallback={<Spin />}><BobinesValidarList /></Suspense> },
                 { path: "ofabricolist", element: <Suspense fallback={<Spin />}><OFabricoList /></Suspense> },
@@ -238,12 +248,15 @@ const RenderRouter = () => {
                 { path: "picking/granuladoin", element: <Suspense fallback={<Spin />}><FormPickGranuladoIn /></Suspense> },
                 { path: "picking/granuladoout", element: <Suspense fallback={<Spin />}><FormPickGranuladoOut /></Suspense> },
                 { path: "picking/newpaleteline", element: <Suspense fallback={<Spin />}><FormPickNewPaleteLine /></Suspense> },
+                { path: "picking/newbobinagemline", element: <Suspense fallback={<Spin />}><FormPickNewBobinagemLine /></Suspense> },
+                { path: "picking/validatebobinagem", element: <Suspense fallback={<Spin />}><FormPickValidateBobinagem /></Suspense> },
                 { path: "picking/redopaleteline", element: <Suspense fallback={<Spin />}><FormPickRedoPaleteLine /></Suspense> },
                 { path: "picking/weighpalete", element: <Suspense fallback={<Spin />}><FormPickWeighPalete /></Suspense> },
                 { path: "picking/printetiquetapalete", element: <Suspense fallback={<Spin />}><FormPickPrintPalete /></Suspense> },
                 { path: "picking/deletepalete", element: <Suspense fallback={<Spin />}><FormPickDeletePalete /></Suspense> },
                 { path: "picking/prepicking", element: <Suspense fallback={<Spin />}><FormPickPrePicking /></Suspense> },
-                { path: "picking/validatebobinagem", element: <Suspense fallback={<Spin />}><FormPickValidateBobinagem /></Suspense> },
+                { path: "picking/fixbobinagem", element: <Suspense fallback={<Spin />}><FormPickFixBobinagem /></Suspense> },
+                { path: "picking/deletebobinagem", element: <Suspense fallback={<Spin />}><FormPickDeleteBobinagem /></Suspense> },
                 { path: "picking/ofabricochangestatus", element: <Suspense fallback={<Spin />}><FormPickOFabricoChangeStatus /></Suspense> },
                 { path: "picking/ofabricoformulacao", element: <Suspense fallback={<Spin />}><FormPickOFabricoFormulacao /></Suspense> },
                 { path: "picking/ofabricodoseadores", element: <Suspense fallback={<Spin />}><FormPickOFabricoDoseadores /></Suspense> },

@@ -33,15 +33,19 @@ const colors = [
 const useStyles = createUseStyles({
     bobine: {
         ...(props) => props.forInput && { cursor: "move" },
-        border: "solid 1px #bfbfbf",
-        height: (props)=> props.height ? props.height : "120px",
-        boxShadow: "2px 1px 2px #f0f0f0",
-        margin: "3px",
-        borderRadius: "3px",
+        height: (props) => props.height ? props.height : "120px",
+        padding: "3px",
         width: (props) => `${props.width}%`,
-        '&:hover': {
-            backgroundColor: "#e6f7ff"
-        }
+        minWidth:"34px",
+        '& .inner': {
+            border: "solid 1px #bfbfbf",
+            boxShadow: "2px 1px 2px #f0f0f0",
+            borderRadius: "3px",
+            height:"100%",
+            '&:hover': {
+                backgroundColor: "#e6f7ff"
+            }
+        },
     }
 })
 
@@ -92,16 +96,18 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, lar
     drag(ref);
     drop(ref);
     return (
-        <div ref={ref} className={classes.bobine} style={{ opacity, background: color.bcolor, color: color.color }} data-handler-id={handlerId}>
-            <div style={{ fontSize: "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
-            <div style={{
-                color: color.color,
-                fontStyle: "italic",
-                height: "70%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
-            }}>{value}</div>
+        <div ref={ref} className={classes.bobine} data-handler-id={handlerId}>
+            <div className="inner" style={{ opacity, background: color.bcolor, color: color.color }}>
+                <div style={{ fontSize: "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
+                <div style={{
+                    color: color.color,
+                    fontStyle: "italic",
+                    height: "70%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}>{value}</div>
+            </div>
         </div>
     );
 }
@@ -111,7 +117,7 @@ const loadCortesOrdemLookup = async ({ cortesOrdemId, signal }) => {
     return rows;
 }
 
-export default ({ onChangeCortesOrdem, record, larguras:_larguras, cortesOrdemId, forInput = true, height }) => {
+export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemId, forInput = true, height }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -119,18 +125,18 @@ export default ({ onChangeCortesOrdem, record, larguras:_larguras, cortesOrdemId
     const [bobines, setBobines] = useImmer([]);
     const [larguraTotal, setLarguraTotal] = useState(0);
     const [idx, setIdx] = useState();
-    const [larguras,setLarguras] = useState(_larguras);
-    const [largurasTxt,setLargurasTxt] = useState();
+    const [larguras, setLarguras] = useState(_larguras);
+    const [largurasTxt, setLargurasTxt] = useState();
 
 
     const init = async () => {
+        console.log("cortesordem", cortesOrdemId)
         if (cortesOrdemId) {
             const _rows = await loadCortesOrdemLookup({ cortesOrdemId });
-            console.log("####$$",cortesOrdemId)
             setBobines(json(_rows[0].largura_ordem));
             setLarguraTotal(_rows[0].largura_util);
             setIdx(null);
-            setLargurasTxt(_rows[0].largura_json.replace("{","[").replace("}","]").replace(":","x"));
+            setLargurasTxt(_rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x"));
             setLarguras(Object.keys(json(_rows[0].largura_json)).map(Number));
         } else {
             /* const { cortesOrdem, ...rest } = record;
@@ -194,11 +200,11 @@ export default ({ onChangeCortesOrdem, record, larguras:_larguras, cortesOrdemId
     return (
         <>
             <AlertMessages formStatus={formStatus} />
-            <div style={{display:"flex"}}><div style={{fontWeight:700}}>{largurasTxt}</div><div style={{marginLeft:"20px"}}>Largura Útil:</div><div style={{marginLeft:"2px",fontWeight:700}}>{larguraTotal}mm</div></div>
+            <div style={{ display: "flex" }}><div style={{ fontWeight: 700 }}>{largurasTxt}</div><div style={{ marginLeft: "20px" }}>Largura Útil:</div><div style={{ marginLeft: "2px", fontWeight: 700 }}>{larguraTotal}mm</div></div>
             <DndProvider backend={HTML5Backend}>
-                <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap:"wrap" }}>
+                <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap: "wrap" }}>
                     {bobines && bobines.map((v, i) => {
-                        return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height}/>);
+                        return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
                     })}
                 </div>
             </DndProvider>

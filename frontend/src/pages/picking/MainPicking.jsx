@@ -314,7 +314,16 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Col xs={12} md={4}>
                         <Row>
                             {allows?.bobinagens?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Bobinagens</span>} style={{ width: "100%", fontWeight: 900 }}>
+                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Bobinagens</span>} style={{ width: "100%", fontWeight: 900 }}
+                                    extra={
+                                        <Space.Compact block>
+                                            <Button onClick={() => navigate("/app/bobinagens/reellings", { noid: false })} icon={<UnorderedListOutlined />} type="link">
+                                                Lista
+                                            </Button>
+                                            <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                        </Space.Compact>
+                                    }
+                                >
                                     <Container fluid style={{ padding: "0px", margin: "0px" }}>
                                         <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
                                             {allows?.bobinagens?.validate && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
@@ -325,21 +334,21 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                             </Col>
                                             }
                                             {allows?.bobinagens?.delete && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/xxxxxxxx")}>
+                                                <StyledButton onClick={() => navigate("/app/picking/deletebobinagem")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
                                                     <div className='txt'>Apagar<br />Bobinagem</div>
                                                 </StyledButton>
                                             </Col>
                                             }
                                             {allows?.bobinagens?.new && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/xxxxxxxx")}>
+                                                <StyledButton onClick={() => navigate("/app/picking/newbobinagemline")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Criar<br />Bobinagem</div>
+                                                    <div className='txt'>Nova<br />Bobinagem</div>
                                                 </StyledButton>
                                             </Col>
                                             }
                                             {allows?.bobinagens?.fix && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/xxxxxxxx")}>
+                                                <StyledButton onClick={() => navigate("/app/picking/fixbobinagem")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
                                                     <div className='txt'>Corrigir<br />Bobinagem</div>
                                                 </StyledButton>

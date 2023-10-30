@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting, sleep, lpadFloat } from "utils";
-import loadInit, { fixRangeDates } from "utils/loadInit";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORMAT_NO_SEPARATOR, FORMULACAO_PONDERACAO_EXTRUSORAS, bColors, BOBINE_DEFEITOS, BOBINE_ESTADOS, DASHBOARD_URL, SOCKET, HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER } from "config";
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, getFloat } from "utils";
@@ -22,7 +22,7 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined, ControlOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined, ControlOutlined, ExportOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -70,7 +70,6 @@ import ListGranuladoInline from './items/ListGranuladoInline';
 import ListBobinagens from './items/ListBobinagens';
 import LineParameters from './items/LineParameters';
 import ListReciclado from './items/ListReciclado';
-import { newWindow } from 'utils/loadInitV3';
 
 const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -671,16 +670,18 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     };
 
     const onPaletesExpand = () => {
-        setModalParameters({ content: "paletesexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `in:${ofs.join(",")}` } } });
-        showModal();
+        newWindow("/app/paletes/paleteslist", ofs ? {} : { filter: { fof: `in:${ofs.join(",")}` } }, "paletes", 120);
+        //setModalParameters({ content: "paletesexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `in:${ofs.join(",")}` } } });
+        //showModal();
     }
     const onLineLogExpand = () => {
         setModalParameters({ content: "linelogexpand", lazy: true, type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Eventos da Linha</div>, parameters: {} });
         showModal();
     }
     const onBobinagensExpand = () => {
-        setModalParameters({ content: "bobinagensexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobinagens</div>, parameters: { filter: { fofabrico: `in:${ofs.join(",")}` } } });
-        showModal();
+        newWindow("/app/bobinagens/reellings", ofs ? {} : { filter: { fofabrico: `in:${ofs.join(",")}` } }, "bobinagens", 120);
+        //setModalParameters({ content: "bobinagensexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobinagens</div>, parameters: { filter: { fofabrico: `in:${ofs.join(",")}` } } });
+        //showModal();
     }
     const onDefeitosClick = (data, item) => {
         setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
@@ -771,9 +772,9 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     return (<>
         <Container fluid style={{ padding: "0px" }}>
             <Row nogutter>
-                <Col width={ofs.length < 2 ? 360 : 720}>
+                {ofs.length>0 && <Col width={ofs.length < 2 ? 360 : 720}>
                     <OrdemFabricoBoxes onTogglePaletes={onTogglePaletes} paletes={paletes} boxWidth={ofs.length < 2 ? 12 : 6} dataAPI={dataAPI} />
-                </Col>
+                </Col>}
 
 
                 <Col>
@@ -785,7 +786,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Paletes</div>
-                                            <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<ExpandAltOutlined />} /></div>
+                                            <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<ExportOutlined />} /></div>
                                         </Col>
                                     </Row>
                                     <Row nogutter>
@@ -810,7 +811,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     <Row nogutter>
                                         <Col>
                                             <div style={{}}>
-                                                <Suspense fallback={<></>}><FormCortesOrdem height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem  forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </div>
                                         </Col>
@@ -875,7 +876,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                             <Row nogutter>
                                                 <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                                     <div style={{}}>Últimas bobinagens</div>
-                                                    <div><Button type="primary" size="small" onClick={onBobinagensExpand} ghost icon={<ExpandAltOutlined />} /></div>
+                                                    <div><Button type="primary" size="small" onClick={onBobinagensExpand} ghost icon={<ExportOutlined />} /></div>
                                                 </Col>
                                             </Row>
                                             <Row gutterWidth={5} style={{ display: "flex", fontSize: "11px" }}>

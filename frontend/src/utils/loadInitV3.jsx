@@ -1,7 +1,7 @@
 import { getFilterRangeValues, dayjsValue } from "utils";
 import dayjs from 'dayjs';
 import CryptoJS from 'crypto-js';
-import {URL_EXPIRATION, ROOT_URL } from "config";
+import { URL_EXPIRATION, ROOT_URL } from "config";
 
 const customSort = (o1, o2) => {
     if (o1 == null) {
@@ -32,9 +32,9 @@ const getQueryParameters = () => {
     return params;
 }
 
-export const newWindow = (url, data, name) => {
-    const expirationTime = Date.now() + URL_EXPIRATION * 60 * 1000; // 5 minutes from now (adjust as needed)
-    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify({...data,expirationTime}), 'secret-key').toString();
+export const newWindow = (url, data, name, expires = URL_EXPIRATION) => {
+    const expirationTime = Date.now() + expires * 60 * 1000; // 5 minutes from now (adjust as needed)
+    const encryptedData = CryptoJS.AES.encrypt(JSON.stringify({ ...data, expirationTime }), 'secret-key').toString();
     const _url = `${url}?data=${encodeURIComponent(encryptedData)}`;
     window.open(_url, name ? name : '_blank');
 }
@@ -51,16 +51,17 @@ export default (init, store = {}, props = {}, state = {}, fields) => {
         const decryptedBytes = CryptoJS.AES.decrypt(encryptedData, 'secret-key');
         query = JSON.parse(decryptedBytes.toString(CryptoJS.enc.Utf8));
         if (currentTime > query.expirationTime) {
-            query={};
+            query = {};
             window.location.href = `${ROOT_URL}/app/linkexpired`;
-        }        
+        }
+        _fields.push(...Object.keys({ ...query }));
     }
     const _s = [props, store, state, query].sort(customSort).reverse();
     for (let v of _fields) {
-        if (_s[0] && _s[0][v]!==null && _s[0][v]!==undefined ) { df[v] = _s[0][v]; }
-        if (_s[1] && _s[1][v]!==null && _s[1][v]!==undefined) { df[v] = _s[1][v]; }
-        if (_s[2] && _s[2][v]!==null && _s[2][v]!==undefined) { df[v] = _s[2][v]; }
-        if (_s[3] && _s[3][v]!==null && _s[3][v]!==undefined) { df[v] = _s[3][v]; }
+        if (_s[0] && _s[0][v] !== null && _s[0][v] !== undefined) { df[v] = _s[0][v]; }
+        if (_s[1] && _s[1][v] !== null && _s[1][v] !== undefined) { df[v] = _s[1][v]; }
+        if (_s[2] && _s[2][v] !== null && _s[2][v] !== undefined) { df[v] = _s[2][v]; }
+        if (_s[3] && _s[3][v] !== null && _s[3][v] !== undefined) { df[v] = _s[3][v]; }
     }
     return df;
 }

@@ -99,7 +99,7 @@ const ListItem = styled(List.Item)`
 `;
 
 const TitleOF = ({ item }) => {
-    return (<div>{item.ofid}<OFabricoStatus data={item} cellProps={{}} /></div>);
+    return (<div><span style={{fontSize:"14px"}}>{item.ofid}</span><OFabricoStatus data={item} cellProps={{}} /></div>);
 }
 
 const ContentOF = ({ item }) => {
@@ -372,7 +372,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "picking" });
+    const permission = usePermission({ name: "controlpanel" });
     const [title, setTitle] = useState("Nova Palete");
 
     const [form_W] = Form.useForm();

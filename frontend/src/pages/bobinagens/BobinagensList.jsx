@@ -261,7 +261,7 @@ const DeleteContent = ({ record, parentRef, closeParent, loadParentData }) => {
         //setFormStatus({ ...status.formStatus });
         if (errors === 0) {
             try {
-                let response = await fetchPost({ url: `${API_URL}/deletebobinagem/`, filter: {}, parameters: { ig_bobinagem: values?.ig_bobinagem, id: record?.id } });
+                let response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: {}, parameters: { method: "DeleteBobinagem", ig_id: values?.ig_bobinagem, id: record?.id } });
                 if (response.data.status !== "error") {
                     loadParentData();
                     closeParent();
@@ -697,8 +697,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     }, [location?.state?.typelist, location?.state?.type, location?.state?.valid]);
     const loadData = ({ init = false, signal }) => {
         if (init) {
-            const { typelist, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, location?.state, null);
-            let { filterValues, fieldValues } = fixRangeDates(null, initFilters);
+            const { typelist, filter = {}, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, location?.state, null);
+            let { filterValues, fieldValues } = fixRangeDates(null, {...initFilters,...filter});
             formFilter.setFieldsValue({ typelist, ...fieldValues });
             dataAPI.addFilters(filterValues, true, false);
             dataAPI.setSort(defaultSort);
@@ -813,6 +813,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 toolbar={true}
                 search={true}
                 moreFilters={true}
+                height="80vh"
                 rowSelection={false}
                 primaryKeys={primaryKeys}
                 editable={true}

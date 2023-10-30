@@ -34,29 +34,29 @@ import { MultiLine } from 'components/tableEditors';
 
 const focus = (el, h,) => { el?.focus(); };
 
-export const FormulacaoPlanSelect = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,agg_of_id, ...props }) => {
+export const FormulacaoPlanSelect = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, agg_of_id, ...props }) => {
     return (
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
             <Selector
                 title="Formulações"
-                params={{ payload: { url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "FormulacaoPlanList" }, pagination: { enabled: false, limit:100 }, filter: {agg_of_id}, sort: [] } }}
+                params={{ payload: { url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "FormulacaoPlanList" }, pagination: { enabled: false, limit: 100 }, filter: { agg_of_id }, sort: [] } }}
                 keyField={["plan_id"]}
                 textField="designacao"
-                detailText={r => <div style={{display:"flex"}}>
-                    <div>{r?.idx}<Divider type='vertical'/></div>
-                    {r?.group_name && <div>{r?.group_name}<Divider type='vertical'/></div>}
-                    {r?.subgroup_name && <div>{r?.subgroup_name}<Divider type='vertical'/></div>}
-                    {r?.cliente_nome && <div>{r?.cliente_nome}<Divider type='vertical'/></div>}
+                detailText={r => <div style={{ display: "flex" }}>
+                    <div>{r?.idx}<Divider type='vertical' /></div>
+                    {r?.group_name && <div>{r?.group_name}<Divider type='vertical' /></div>}
+                    {r?.subgroup_name && <div>{r?.subgroup_name}<Divider type='vertical' /></div>}
+                    {r?.cliente_nome && <div>{r?.cliente_nome}<Divider type='vertical' /></div>}
                 </div>}
                 style={{ fontWeight: 700 }}
                 columns={[
-                    { key: 'idx', name: 'Index', width: 40,frozen: true },
-                    { key: 'versao', name: 'Versão',width:40,frozen: true },
-                    { key: 'designacao', name: 'Designação',width:320,frozen: true },                    
-                    { key: 'group_name', name: 'Grupo',width:200 },
-                    { key: 'subgroup_name', name: 'SubGrupo',width:200 },
+                    { key: 'idx', name: 'Index', width: 40, frozen: true },
+                    { key: 'versao', name: 'Versão', width: 40, frozen: true },
+                    { key: 'designacao', name: 'Designação', width: 320, frozen: true },
+                    { key: 'group_name', name: 'Grupo', width: 200 },
+                    { key: 'subgroup_name', name: 'SubGrupo', width: 200 },
                     { key: 'observacoes', name: 'Observações' },
-                    
+
                 ]}
                 popupWidth="95%"
                 type="drawer"
@@ -70,29 +70,29 @@ export const FormulacaoPlanSelect = ({ name, label, forInput = null, forViewBord
     );
 }
 
-export const CortesPlanSelect = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,agg_of_id, ...props }) => {
+export const CortesPlanSelect = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, agg_of_id, ...props }) => {
     return (
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
             <Selector
                 title="Cortes"
-                params={{ payload: { url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesPlanList" }, pagination: { enabled: false, limit:100 }, filter: {agg_of_id}, sort: [] } }}
+                params={{ payload: { url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesPlanList" }, pagination: { enabled: false, limit: 100 }, filter: { agg_of_id }, sort: [] } }}
                 keyField={["plan_id"]}
                 textField="designacao"
-                detailText={r => <div style={{display:"flex"}}>
-                    <div>{r?.idx}<Divider type='vertical'/></div>
-                    {r?.cortes && <div style={{ color: "#1890ff", fontWeight: 600 }}>{r.cortes.replaceAll('"', ' ')}<Divider type='vertical'/></div>}
-                    {r?.cortes_ordem && <div style={{ color: "#1890ff", fontWeight: 600 }}>{r.cortes_ordem.replaceAll('"', ' ')}<Divider type='vertical'/></div>}
+                detailText={r => <div style={{ display: "flex" }}>
+                    <div>{r?.idx}<Divider type='vertical' /></div>
+                    {r?.cortes && <div style={{ color: "#1890ff", fontWeight: 600 }}>{r.cortes.replaceAll('"', ' ')}<Divider type='vertical' /></div>}
+                    {r?.cortes_ordem && <div style={{ color: "#1890ff", fontWeight: 600 }}>{r.cortes_ordem.replaceAll('"', ' ')}<Divider type='vertical' /></div>}
                 </div>}
                 style={{ fontWeight: 700 }}
                 columns={[
-                    { key: 'idx', name: 'Index', width: 40,frozen: true },
-                    { key: 'versao', name: 'Versão',width:40,frozen: true },
-                    { key: 'designacao', name: 'Designação',width:180,frozen: true },
-                    { key: 'cortes', name: 'Cortes', formatter:p => <div style={{ color: "#1890ff", fontWeight: 600 }}>{p.row.cortes.replaceAll('"', ' ')}</div> },
-                    { key: 'cortes_ordem', name: 'Posicionamento', formatter:p => <div style={{ color: "#1890ff", fontWeight: 600 }}>{p.row.cortes_ordem.replaceAll('"', ' ')}</div> },
+                    { key: 'idx', name: 'Index', width: 40, frozen: true },
+                    { key: 'versao', name: 'Versão', width: 40, frozen: true },
+                    { key: 'designacao', name: 'Designação', width: 180, frozen: true },
+                    { key: 'cortes', name: 'Cortes', formatter: p => <div style={{ color: "#1890ff", fontWeight: 600 }}>{p.row.cortes.replaceAll('"', ' ')}</div> },
+                    { key: 'cortes_ordem', name: 'Posicionamento', formatter: p => <div style={{ color: "#1890ff", fontWeight: 600 }}>{p.row.cortes_ordem.replaceAll('"', ' ')}</div> },
                     { key: 'largura_util', name: 'Largura Útil', width: 80 },
-                    { key: 'observacoes', width:200,name: 'Observações' }
-                    
+                    { key: 'observacoes', width: 200, name: 'Observações' }
+
                 ]}
                 popupWidth="95%"
                 type="drawer"
@@ -106,12 +106,12 @@ export const CortesPlanSelect = ({ name, label, forInput = null, forViewBorder =
     );
 }
 
-export const Nonwovens = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,core,largura, ...props }) => {
+export const Nonwovens = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, core, largura, ...props }) => {
     return (
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
             <Selector
                 title="Nonwovens"
-                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup",type:"nonwovens" }, pagination: { enabled: true, pageSize: 15 }, filter: {}, sort: [] } }}
+                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup", type: "nonwovens" }, pagination: { enabled: true, pageSize: 15 }, filter: {}, sort: [] } }}
                 keyField={["ITMREF_0"]}
                 textField="ITMDES1_0"
                 detailText={r => r?.ITMREF_0}
@@ -136,12 +136,36 @@ export const Nonwovens = ({ name, label, forInput = null, forViewBorder = true, 
     );
 }
 
-export const Cores = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert,core,largura, ...props }) => {
+export const NonwovensLotes = ({ name, label, title="Lotes de Nonwovens", forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, core, largura, filters={}, ...props }) => {
+    return (
+        <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
+            <Selector
+                title={title}
+                popupWidth={700}
+                //value: { vcr_num: (filters?.type == 0) ? props?.cellProps?.data?.vcr_num_inf : props?.cellProps?.data?.vcr_num_sup, n_lote: (filters?.type == 0) ? props?.cellProps?.data?.lotenwinf : props?.cellProps?.data?.lotenwsup },
+                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "ListNwQueue" }, pagination: { enabled: true, limit: 15 }, filter: { ...filters }, sort: [] } }}
+                keyField={["vcr_num"]}
+                textField="n_lote"
+                columns={[
+                    { key: 'artigo_cod', name: 'Artigo', width: 160 },
+                    { key: 'artigo_des', name: 'Designação', width: 260 },
+                    { key: 'n_lote', name: 'Lote', width: 160 },
+                    { key: 'vcr_num', name: 'Movimento', width: 160 }
+                ]}
+                filters={{}}
+                moreFilters={{}}
+                {...props}
+            />
+        </Field>
+    )
+}
+
+export const Cores = ({ name, label, forInput = null, forViewBorder = true, forViewBackground = true, wrapFormItem = null, alert, core, largura, ...props }) => {
     return (
         <Field name={name} label={label} forInput={forInput} forViewBorder={forViewBorder} forViewBackground={forViewBackground} wrapFormItem={wrapFormItem} alert={alert}>
             <Selector
                 title="Cores"
-                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup",type:"cores", ...core && {core}, ...largura && {largura} }, pagination: { enabled: true, pageSize: 15 }, filter: {}, sort: [] } }}
+                params={{ payload: { url: `${API_URL}/materiasprimas/sql/`, parameters: { method: "MateriasPrimasLookup", type: "cores", ...core && { core }, ...largura && { largura } }, pagination: { enabled: true, pageSize: 15 }, filter: {}, sort: [] } }}
                 keyField={["ITMREF_0"]}
                 textField="ITMDES1_0"
                 detailText={r => r?.ITMREF_0}

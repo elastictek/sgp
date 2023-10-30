@@ -111,6 +111,13 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
             const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
             inputParameters.current = paramsIn;
         }
+        let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
+        formFilter.setFieldsValue(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']));
+        dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
+        dataAPI.setSort(defaultSort);
+        dataAPI.setBaseFilters(defaultFilters);
+        dataAPI.setAction("init", true);
+        dataAPI.update(true);
         submitting.end();
     }
 
@@ -199,7 +206,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             sortable
                             reorderColumns={false}
                             showColumnMenuTool
-                            loadOnInit={true}
+                            loadOnInit={false}
                             //editStartEvent={"click"}
                             pagination="remote"
                             defaultLimit={20}

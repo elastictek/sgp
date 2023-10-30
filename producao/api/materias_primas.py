@@ -153,11 +153,7 @@ def export(sql, db_parameters, parameters,conn_name):
             **parameters
         }
         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://localhost:8080/ReportsGW/{wService}', json=req)
-
-        print(req)
-        print("xxxxxxxxxxxxxxxxxxxx")
-        print(f'http://localhost:8080/ReportsGW/{wService}')
+        fstream = requests.post(f'http:/192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
@@ -191,8 +187,9 @@ def Sql(request, format=None):
 def GetNonwovensInLine(request, format=None):
     connection = connections["default"].cursor()
     f = Filters(request.data['filter'])
-
-    f.setParameters({}, True)
+    f.setParameters({
+        "queue": {"value": lambda v: Filters.getNumeric(v.get('queue')), "field": lambda k, v: f'{k}'},
+    }, True)
     f.where(False,"and")
     f.auto()
     f.value()
@@ -202,7 +199,7 @@ def GetNonwovensInLine(request, format=None):
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (
         f"""
-            select * from lotesnwlinha l where `status`=1 order by queue asc, `type` asc
+            select * from lotesnwlinha l where `status`=1 {f.text} order by queue asc, `type` asc
         """
     )
     if ("export" in request.data["parameters"]):
@@ -529,9 +526,12 @@ def ListNwQueue(request,format=None):
          "type": {"value": lambda v: Filters.getNumeric(v.get('type')), "field": lambda k, v: f'{k}'},
          "queue": {"value": lambda v: Filters.getNumeric(v.get('queue')), "field": lambda k, v: f'{k}'},
          "status": {"value": lambda v: Filters.getNumeric(v.get('status')), "field": lambda k, v: f'{k}'},
+         "t_stamp": {"value": lambda v: v.get('t_stamp'), "field": lambda k, v: f'{k}'},
+         "c_t_stamp_out": {"value": lambda v: v.get('custom_t_stamp_out'), "field": lambda k, v: f'{k}'},
     }, True)
     f.where()
-    f.auto()
+    f.add(f'(t_stamp_out > :c_t_stamp_out or t_stamp_out is null)',lambda v:(v!=None) )
+    f.auto(exclude=["c_t_stamp_out"])
     f.value("and")
     parameters = {**f.parameters}
     dql = db.dql(request.data, False)

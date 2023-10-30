@@ -393,7 +393,6 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
         }
         let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
         formFilter.setFieldsValue(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']));
-        console.log("aaaaa", dataAPI.getFilter(), filterValues);
         dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
         dataAPI.setSort(dataAPI.getSort(), defaultSort);
 

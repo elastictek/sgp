@@ -41,6 +41,7 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, cor
     const classes = useStyles({ width });
     const ref = useRef(null);
     const color = cortes.find(v => v.item_lar == value);
+    console.log("cortesssssssssssss",cortes)
     const style = {
         color: color.color,
         fontStyle: "italic",

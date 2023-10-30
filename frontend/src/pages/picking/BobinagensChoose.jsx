@@ -22,7 +22,7 @@ const { Title } = Typography;
 import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, CaretDownOutlined, CaretUpOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, DeleteTwoTone, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, UserOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, DateTime, OFabricoStatus, StatusProduction, PosColumn, EstadoBobines, Largura, OF } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, DateTime, OFabricoStatus, StatusProduction, PosColumn, EstadoBobines, Largura, OF, EstadoBobine } from 'components/TableColumns';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, THICKNESS, GTIN } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
@@ -82,20 +82,28 @@ const moreFilters = ({ form, columns }) => [
 ];
 
 
-export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, ...props }) => {
+export const postProcess = async (dt, submitting) => {
+    for (let [i, v] of dt.rows.entries()) {
+        dt.rows[i]["bobines"] = json(dt.rows[i]["bobines"]).sort((a, b) => a.nome - b.nome);
+    }
+    submitting.end();
+    return dt;
+}
+
+export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, refresh, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "picking" });
+    const permission = usePermission({ name: "controlpanel" });
 
     const tableCls = useTableStyles();
     const [formFilter] = Form.useForm();
     //const defaultFilters = { fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" };
     const defaultParameters = { method: "BobinagensList" };
     //const defaultSort = [{ column: `t.timestamp`, direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...(!noid && { id: "bobinagenslist" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
+    const dataAPI = useDataAPI({ ...(!noid && { id: "bobinagenslist" }), fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobinagens/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
 
 
 
@@ -105,21 +113,42 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
         return (() => controller.abort());
     }, []);
 
+    useEffect(() => {
+        if (refresh) {
+            (async () => await dataAPI.update(true))();
+        }
+    }, [refresh]);
+
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
             inputParameters.current = paramsIn;
         }
+        let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
+        formFilter.setFieldsValue(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']));
+        dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
+        dataAPI.setSort(defaultSort);
+        dataAPI.setBaseFilters(defaultFilters);
+        dataAPI.setAction("init", true);
+        dataAPI.update(true);
         submitting.end();
     }
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Bobinagem', userSelect: true, defaultLocked: true, defaultWidth: 120, headerAlign: "center", formatter: p => <Button size="small" type="link" onClick={() => onBobinagemClick(p.row)}>{p.row.nome}</Button> }] : [],
-        ...(true) ? [{ name: 'inico', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Bobinagem', filter: { show: "toolbar", alias:"bobinagem", op: "any",field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: true, defaultWidth: 120, headerAlign: "center",render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.nome}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'inico', header: 'Início',filter: { show: "toolbar", type: "rangedatetime",alias:"data", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center" }] : [],
-        //...(true) ? [{ name: 'core', header: 'Core', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> }] : [],
+        ...(true) ? [{ name: 'comp', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b> m</b>}>{data?.comp}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'diam', header: 'Diâm.', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b> mm</b>}>{data?.diam}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'largura', header: 'Lar', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b> mm</b>}>{data?.largura}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b> m2</b>}>{data?.area}</RightAlign> }] : [],
+        ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b>''</b>}>{data?.core}</RightAlign> }] : [],
+        
+        ...(true) ? Array.from({ length: 28 }, (_, index) => {
+            return { name: String(index+1).padStart(2, '0'), style:{padding:"0px"}, header: String(index+1).padStart(2, '0'), sortable:false, userSelect: true, defaultLocked: false, defaultWidth: 20, headerAlign: "center",render: ({ data, cellProps }) => (Array.isArray(data?.bobines) && data.bobines.length>0) && <EstadoBobine estado={data?.bobines[index]?.estado} largura={data?.bobines[index]?.lar }/>};
+          }) : [],
         //...(true) ? [{ name: 'comp', header: 'Comprimento', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> }] : [],
         //...(true) ? [{ name: 'comp_par', header: 'Comp. Emenda', width: 100, editable: editable, cellClass: editableClass, editor: p => <InputNumberEditor p={p} field="comp_par" min={0} max={p.row.comp} addonAfter="m" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_par} m</div> }] : [],
         //...(true) ? [{ name: 'comp_cli', header: 'Comp. Cliente', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_cli} m</div> }] : [],
@@ -143,12 +172,12 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
 
     const columnsxx = [
         ...(true) ? [{ name: 'eef', header: 'Encomenda', filter: { show: "toolbar", op: "any" }, userSelect: true, defaultLocked: true, defaultWidth: 140, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.eef}</LeftAlign> }] : [],
-        ...(true) ? [{ name: 'carga', header: 'Nome', filter: { show: "toolbar", op: "any" }, userSelect: true, defaultLocked: true, defaultWidth: 320,flex:1,minWidth:320, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.carga}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'carga', header: 'Nome', filter: { show: "toolbar", op: "any" }, userSelect: true, defaultLocked: true, defaultWidth: 320, flex: 1, minWidth: 320, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.carga}</LeftAlign> }] : [],
         ...(true) ? [{ name: 'timestamp', header: 'Data', filter: { show: true, alias: "data", type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.timestamp} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'tipo', header: 'Tipo', filter: { show: true, op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.tipo}</LeftAlign> }] : [],
         ...(true) ? [{ name: "npaletes", header: "Paletes", filter: { show: true, type: "number", alias: "num_paletes_actual", field: { style: { width: "70px" } } }, defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{String(data.npaletes).padStart(2, '0')}/{String(data.num_paletes).padStart(2, '0')}</LeftAlign> }] : [],
-        ...(true) ? [{ name: "perc_nbobines_emendas", header: "%Emendas", filter: { show: false, type: "number"}, defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <RightAlign style={{}} unit="%">{data.perc_nbobines_emendas}</RightAlign> }] : [],
-        ...(true) ? [{ name: "area_real", header: "Área", filter: { show: false, type: "number"}, defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <RightAlign style={{}} unit="m2">{data.area_real}</RightAlign> }] : []
+        ...(true) ? [{ name: "perc_nbobines_emendas", header: "%Emendas", filter: { show: false, type: "number" }, defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <RightAlign style={{}} unit="%">{data.perc_nbobines_emendas}</RightAlign> }] : [],
+        ...(true) ? [{ name: "area_real", header: "Área", filter: { show: false, type: "number" }, defaultWidth: 100, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <RightAlign style={{}} unit="m2">{data.area_real}</RightAlign> }] : []
     ];
 
     const onFilterFinish = (type, values) => {
@@ -226,7 +255,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             sortable
                             reorderColumns={false}
                             showColumnMenuTool
-                            loadOnInit={true}
+                            loadOnInit={false}
                             //editStartEvent={"click"}
                             pagination="remote"
                             defaultLimit={20}

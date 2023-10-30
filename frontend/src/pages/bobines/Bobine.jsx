@@ -52,9 +52,6 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
 }
 
 export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
-    useEffect(() => {
-        console.log("-------------------------------->", props,)
-    }, []);
     return (
         <Space>
             {/* <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={() => { }}>Etiqueta</Button>

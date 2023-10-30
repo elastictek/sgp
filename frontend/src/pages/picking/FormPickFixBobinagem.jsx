@@ -37,7 +37,7 @@ import { useImmer } from "use-immer";
 import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
 import BobinagensChoose from './BobinagensChoose';
 
-const title = "Validar Bobinagem";
+const title = "Corrigir Bobinagem";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
     return (<ToolbarTitle id={auth?.user} description={title}
         leftTitle={<span style={{}}>{title}</span>}
@@ -121,7 +121,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: v.data.id, bobinagem_nome: v.data.nome, ordem_id: v.data.ordem_id } });
+        navigate("/app/bobinagens/fixbobinagem", { state: { action: "fix", bobinagem_id: v.data.id, bobinagem_nome: v.data.nome, ordem_id: v.data.ordem_id } });
     }
 
     return (
@@ -130,8 +130,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
                 noid={false}
                 title={title}
                 onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `pbm.timestamp`, direction: "ASC" }]}
-                defaultFilters={{ valid: 0 }}
+                defaultSort={[{ column: `pbm.timestamp`, direction: "DESC" }]}
+                defaultFilters={{ valid: 1 }}
             />
             }
         </>

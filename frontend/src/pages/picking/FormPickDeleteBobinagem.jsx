@@ -37,7 +37,7 @@ import { useImmer } from "use-immer";
 import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
 import BobinagensChoose from './BobinagensChoose';
 
-const title = "Validar Bobinagem";
+const title = "Apagar Bobinagem";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
     return (<ToolbarTitle id={auth?.user} description={title}
         leftTitle={<span style={{}}>{title}</span>}
@@ -93,6 +93,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "picking" });
     const [load, setLoad] = useState(false);
+    const [refresh, setRefresh] = useState();
 
     useEffect(() => {
         const controller = new AbortController();
@@ -121,17 +122,43 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: v.data.id, bobinagem_nome: v.data.nome, ordem_id: v.data.ordem_id } });
+        //const d = {bobinagem_id: v.data.id, bobinagem_nome: v.data.nome, ordem_id: v.data.ordem_id }
+        Modal.confirm({
+            content: <div>Tem a certeza que deseja apagar a bobinagem <span style={{ fontWeight: 700 }}>{v.data.nome}</span>?</div>,
+            title: `Apagar a Bobinagem ${v.data.nome}?`,
+            onOk: () => onDelete(v)
+        })
+
+        //navigate("/app/picking/newpaleteline", { state: { action: "weigh", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines, lvl: v.data.lvl } });
+    }
+
+    const onDelete = async (v) => {
+        submitting.trigger();
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: {}, parameters: { method: "DeleteBobinagem", ig_id: null, id: v.data.id } });
+            if (response && response?.data?.status !== "error") {
+                openNotification(response?.data?.status, 'top', "Notificação", response?.data?.title, null);
+                setRefresh(Date.now()); //Para fazer refresh à tabela bobinagens list
+            } else {
+                openNotification("error", 'top', "Notificação", response?.data?.title, null);
+            }
+        } catch (e) {
+            openNotification("error", 'top', "Notificação", <YScroll>{e.message}</YScroll>, null);
+            //Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
+        };
+        submitting.end();
     }
 
     return (
         <>
             {load && <BobinagensChoose
+                refresh={refresh}
                 noid={false}
                 title={title}
                 onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `pbm.timestamp`, direction: "ASC" }]}
-                defaultFilters={{ valid: 0 }}
+                defaultSort={[{ column: `pbm.timestamp`, direction: "DESC" }]}
+            //defaultFilters={{ valid: 0 }}
             />
             }
         </>

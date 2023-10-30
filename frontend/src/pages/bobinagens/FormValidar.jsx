@@ -448,7 +448,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 }
             } catch (e) {
                 console.log(e)
-                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+                openNotification("error", 'top', "Notificação", e.message, null);
             } finally {
                 submitting.end();
             };

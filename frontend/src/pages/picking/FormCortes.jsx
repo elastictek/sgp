@@ -223,14 +223,16 @@ export default ({ operationsRef, ...props }) => {
         showModal();
     }
 
-    const onSelectPlan = async (rows) => {
+    const onSelectPlan = async (rows,closeModal) => {
         if (rows?.cortes && Array.isArray(rows?.cortes)) {
             let response = null;
             try {
                 const _d = { cortes: JSON.stringify(rows?.cortes[0].n_cortes), cortes_ordem: JSON.stringify(rows?.cortes[0].cortes_ordem), largura_util: rows?.cortes[0].largura_util }
-                console.log("cortessssss", _d, inputParameters.current)
                 response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: { method: "SaveCortesOrdem", ..._d, ...inputParameters.current } });
                 if (response.data.status !== "error") {
+                    if (closeModal){
+                        closeModal();
+                    }
                     setCortes({ cortesordem_id: response.data.id, tstamp: Date.now() });
                 } else {
                     openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
