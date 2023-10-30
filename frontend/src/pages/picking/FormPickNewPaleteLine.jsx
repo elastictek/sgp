@@ -215,16 +215,8 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
         if (keyPressed) {
 
             if (keyPressed === 'Enter') {
-                //e.preventDefault(); // Prevent the default Tab behavior
                 const inputs = document.querySelectorAll('[tabindex]');
-                console.log("inputs", inputs)
                 const nextInput = Array.from(inputs).find((el) => el.tabIndex === idx + 2);
-                console.log(nextInput);
-                // const currentTabIndex = event.target.tabIndex;
-                // const nextInput = Array.from(inputs).find(
-                //   (el) => el.tabIndex === currentTabIndex + 1
-                // );
-
                 if (nextInput) {
                     nextInput.focus();
                 }
