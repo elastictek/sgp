@@ -153,7 +153,7 @@ def export(sql, db_parameters, parameters,conn_name):
             **parameters
         }
         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http:/192.168.0.16:8080/ReportsGW/{wService}', json=req)
+        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
