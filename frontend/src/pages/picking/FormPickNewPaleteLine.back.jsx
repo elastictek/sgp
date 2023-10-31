@@ -187,17 +187,6 @@ const SelectPalete = ({ openNotification, next, data, onSelect, ...props }) => {
         </YScroll>);
 }
 
-const ListColumns = styled.div`
-    column-count: ${(props) => props.columns};
-    column-gap: 20px;
-    @media (max-width: 800px) {
-        column-count: 2;
-      }
-    @media (max-width: 700px) {
-        column-count: 1;
-      }
-`;
-
 const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onClickError }) => {
     const inputRef = useRef();
 
@@ -249,28 +238,69 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
     }
 
     return (
-        <YScroll height="65vh" {...noStatus && { width: "300px" }}>
-            <ListColumns columns={3}>
+        <YScroll maxHeight="85vh" {...noStatus && { width: "300px" }}>
             <List
+                header={(state.report && !noStatus) ?
+                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
+                        <Row nogutter>
+                            <Hidden xs sm md lg>
+                                <Col style={{}} width={16 * 2 + 30}></Col>
+                                <Col style={{}} width={165}></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o produto não corresponde ao da ordem de fabrico">Produto</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: a bobine não existe, foi reciclada ou o comprimento é igual a zero">Bobine</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o core não corresponde ao da ordem de fabrico">Core</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o diametro da bobine não está dentro dos limites establecidos pelo cliente">Diâmetro</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: existirem bobines duplicadas">Duplicada</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o número de emendas excede o definido na ordem de fabrico">Emendas</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: o estado da bobine for diferente de GOOD">Estado</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: a bobine foi produzida à mais de 3 meses">Expirada</Tooltip></Col>
+                                <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: a largura não corresponde à da ordem de fabrico">Largura</Tooltip></Col>
+                                {!state.palete_id && <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col>}
+                                {state.palete_id && <Col width={65} style={{ textAlign: "center" }}><Tooltip title="Erro se: a palete final encontra-se numa carga" trigger={["click", "hover"]}>Carga</Tooltip></Col>}
+                            </Hidden>
+                        </Row>
+                    </Container>
+                    : false
+                }
                 size="small"
                 itemLayout="horizontal"
                 dataSource={state.bobines}
                 renderItem={(item, index) => (
-                    <List.Item>
+                    <List.Item
+                    // actions={[hasEntries() && <Button disabled={submitting.state} size="large" type="primary" onClick={onSave} icon={<CheckOutlined />}>Submeter</Button>]}
+                    >
                         <List.Item.Meta
                             avatar={<div style={{ width: "30px" }}>{index + 1}</div>}
                             description={
+
                                 <div style={{ display: "flex" }}>
                                     <div><Input disabled={disabled} {...index === 0 && { ref: inputRef }} tabIndex={index + 1} size='small' value={item.lote} onChange={(e) => onInputOk(e.target.value, index)} onKeyDown={(e) => onInputOk(e.target.value, index, e.key)} /></div>
                                     {(state.report && !noStatus) && <>
-                                        <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", ...(state.report[index].isok == 0 && { cursor: "pointer" }), backgroundColor: state.report[index].isok == 1 ? "green" : "#ff4d4f" }} onClick={() => state.report[index].isok == 0 && onClickError(index)}></div>
+                                        <Hidden xs sm md lg>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].artigo_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].produto_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].bobine_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].core_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].diam_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].duplicate == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].emendas_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].estado_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].expired_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].largura_ok == 1 ? "green" : "#ff4d4f" }}></div>
+                                            {!state.palete_id && <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].palete_ok == 1 ? "green" : "#ff4d4f" }}></div>}
+                                            {state.palete_id && <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", backgroundColor: state.report[index].carga_ok == 1 ? "green" : "#ff4d4f" }}></div>}
+                                        </Hidden>
+                                        <Visible xs sm md lg>
+                                            <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", ...(state.report[index].isok == 0 && { cursor: "pointer" }), backgroundColor: state.report[index].isok == 1 ? "green" : "#ff4d4f" }} onClick={() => state.report[index].isok == 0 && onClickError(index)}></div>
+                                        </Visible>
                                     </>}
                                 </div>}
                         />
                     </List.Item>
                 )}
             />
-            </ListColumns>
+
         </YScroll>);
 }
 
@@ -419,8 +449,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             showModal();
         }
     };
-    const onDownloadComplete = async (response, download) => {
-        if (download == "download") {
+    const onDownloadComplete = async (response,download) => {
+        if (download=="download"){
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const pdfUrl = URL.createObjectURL(blob);
             window.open(pdfUrl, '_blank');

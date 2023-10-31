@@ -436,7 +436,7 @@ def FixBobinagem(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 try:
-                    args = [data.get("values").get("id"),data.get("values").get("comp"),data.get("values").get("diam"),data.get("values").get("largura_bruta"),json.dumps(data.get("values").get("lote_nwsup"), ensure_ascii=False),json.dumps(data.get("values").get("lote_nwinf"), ensure_ascii=False),data.get("values").get("nwsup"),data.get("values").get("nwinf"), request.user.id]
+                    args = [data.get("values").get("id"),data.get("values").get("comp"),data.get("values").get("diam"),data.get("values").get("largura_bruta"),data.get("values").get("comp_emenda"),data.get("values").get("troca_nw"),json.dumps(data.get("values").get("lote_nwsup"), ensure_ascii=False),json.dumps(data.get("values").get("lote_nwinf"), ensure_ascii=False),data.get("values").get("nwsup"),data.get("values").get("nwinf"), request.user.id]
                     print(args)
                     cursor.callproc('fix_bobinagem',args)
                 except Exception as error:
@@ -456,26 +456,35 @@ def BobinagemLookup(request, format=None):
     f.auto()
     f.value()
 
+    f2 = Filters(request.data['filter'])
+    f2.setParameters({
+        "bobinagem_id": {"value": lambda v: Filters.getNumeric(v.get('fid')), "field": lambda k, v: f'b.{k}'},
+    }, True)
+    f2.where()
+    f2.auto()
+    f2.value()
+
+    parameters={**f.parameters,**f2.parameters}
+
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*{",(select count(*) from producao_bobine pb where pb.bobinagem_id=pbm.id and pb.palete_id is not null) nbobines_in_paletes" if data.get("checkBobinesInPalete")==True else ""} """
+    cols = f"""pbm.*,pbm.comp_par comp_emenda,t.largura_bobinagem,t.troca_nw{",(select count(*) from producao_bobine pb where pb.bobinagem_id=pbm.id and pb.palete_id is not null) nbobines_in_paletes" if data.get("checkBobinesInPalete")==True else ""} """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  
             select 
             {f'{dql.columns}'}
             from producao_bobinagem pbm
+            join (select b.*,sum(b.lar) over () largura_bobinagem from producao_bobine b {f2.text} limit 1) t on t.bobinagem_id=pbm.id
             {f.text}
             limit 1
         """
     )
-    print(f.text)
-    print(f.parameters)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=f.parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeSimpleList(sql, connection, f.parameters)
+        response = db.executeSimpleList(sql, connection, parameters)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

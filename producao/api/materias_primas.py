@@ -360,6 +360,7 @@ def AddGranuladoToLine(request, format=None):
         with connections["default"].cursor() as cursor:
             f["t_stamp"]=datetime.now()
             args = (f["t_stamp"], f["artigo_cod"], f["artigo_des"], f["vcr_num"], f["n_lote"], f["qty_lote"], f["lote_id"],f["group_id"] if "group_id" in f and f["group_id"] is not None else None,request.user.id,0)
+            print(args)
             cursor.callproc('add_granulado_to_line',args)
             return Response({"status": "success","title":"Entrada de Granulado efetuada com sucesso." })
     except Exception as error:

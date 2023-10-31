@@ -35,6 +35,7 @@ import { AppContext } from 'app';
 import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import { FaStop, FaPlay, FaPause } from 'react-icons/fa';
+import { dayjsValue } from 'utils/index';
 
 export const loadOrdensFabrico = async ({ id }, signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id }, sort: [], parameters: { method: "OrdensFabricoInProduction" }, signal });
@@ -55,7 +56,15 @@ const ListItem = styled(List.Item)`
 `;
 
 export const TitleAgg = ({ item }) => {
-    return (<div>{item.agg_cod}<OFabricoStatus data={item.items[0]} cellProps={{}} /></div>);
+    return (<div><span style={{ fontSize: "14px" }}>{item.items[0].agg_cod}</span><OFabricoStatus data={item.items[0]} cellProps={{}} /></div>);
+}
+
+export const TitleAuditAgg = ({ item }) => {
+    return (<div style={{ diplay: "flex" }}>
+        <div>
+            <div style={{ fontSize: "14px",fontWeight:700 }}>{dayjsValue(item.items[0].timestamp).format(DATETIME_FORMAT)}</div>
+        </div>
+        <OFabricoStatus aggCod={true} data={item.items[0]} cellProps={{}} /></div>);
 }
 
 export const ContentAgg = ({ item }) => {
@@ -65,8 +74,7 @@ export const ContentAgg = ({ item }) => {
                 return (
                     <div key={v.ofid} style={{ display: "flex" }}>
                         <div>
-                            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{v.ofid}</div>
-                            <div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div>
+                            <div style={{display:"flex"}}><div style={{ fontWeight: 900, fontSize: "14px", color: "#000",marginRight:"5px" }}>{v.ofid}</div><div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div></div>
                             <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des}</span></div>
                         </div>
                     </div>

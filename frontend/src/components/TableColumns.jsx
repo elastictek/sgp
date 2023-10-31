@@ -72,26 +72,32 @@ export const OF = ({ id, ofid, of_des }) => {
     );
 }
 
-export const OFabricoStatus = ({ data, onClick, cellProps }) => {
+export const OFabricoStatus = ({ aggCod=false, data, onClick, cellProps }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {(data?.ofabrico_status == 0) && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">{aggCod && <div>{data.agg_cod}</div>}<div>Validar</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>}
             </>}
             {(data?.ofabrico_status == 1) && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>
+                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">{aggCod && <div>{data.agg_cod}</div>}<div>Em Elaboração</div></TagButton>}
+                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>}
             </>}
             {(data?.ofabrico_status == 2 && data?.was_in_production == 0) && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>
+                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Na Produção</div></TagButton>}
+                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>}
             </>}
             {(data?.ofabrico_status == 2 && data?.was_in_production == 1) && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>
+                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Suspensa</div></TagButton>}
+                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>}
             </>}
             {(data?.ofabrico_status) == 3 && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>
+                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">{aggCod && <div>{data.agg_cod}</div>}<div>Em Produção</div></TagButton>}
+                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>}
             </>}
             {(data?.ofabrico_status) == 9 && <>
-                <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>
+                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">{aggCod && <div>{data.agg_cod}</div>}<div>Finalizada</div></TagButton>}
+                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>}
             </>}
         </div>
     );

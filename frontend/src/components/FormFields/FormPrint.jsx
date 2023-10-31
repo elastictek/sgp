@@ -15,7 +15,7 @@ export const printersList = {
     ARMAZEM: [{ value: "PRINTER-ARMAZEM-CANON", label: "Canon Armazém" }],
     SQUIX: [{ value: "cab_SQUIX_6.3_200", label: "SQUIX Armazém" }],
     BUFFER: [{ value: 'PRINTER-BUFFER', label: 'BUFFER' }],
-    PRODUCAO: [{ value: "Canon_iR-ADV_C3720_UFR_II", label: "Canon C3720" }]
+    PRODUCAO: [{ value: "BOBINADORA-CANON", label: "Canon Bobinadora" }]
 };
 
 

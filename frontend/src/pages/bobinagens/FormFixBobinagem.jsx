@@ -27,7 +27,7 @@ import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CU
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, VerticalSpace, FormPrint, printersList } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, VerticalSpace, FormPrint, printersList,SwitchField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
@@ -94,6 +94,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const classes = useStyles();
     const [form] = Form.useForm();
+    const troca_nw = Form.useWatch('troca_nw', form);
 
 
 
@@ -211,6 +212,23 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             const _values = form.getFieldsValue(true);
             const v = schema().validate(_values, { abortEarly: false, messages: validateMessages, context: {} });
             let { errors, warnings, value, ...status } = getStatus(v);
+
+            if (errors === 0) {
+                if (_values?.troca_nw == 1) {
+                    if (_values.comp_emenda < 0) {
+                        errors++;
+                        status.fieldStatus.comp_emenda = { status: "error", messages: [{ message: "O comprimento de emenda tem de ser maior que zero!" }] };
+                    } else if (_values.comp_emenda > _values?.comp) {
+                        errors++;
+                        status.fieldStatus.comp_emenda = { status: "error", messages: [{ message: "O comprimento da emenda tem de ser menor que o comprimento!" }] };
+                    }
+                }
+                if (_values.largura_bobinagem > _values.lar_bruta || _values.lar_bruta > (_values.largura_bobinagem + 200)) {
+                    errors = 1;
+                    status.fieldStatus.lar_bruta = { status: "error", messages: [{ message: "A largura bruta não está dentro dos valores permitidos (valor não inferior à largura da bobinagem)!" }] };
+                }
+            }
+
             setFieldStatus({ ...status.fieldStatus });
             setFormStatus({ ...status.formStatus });
             if (errors === 0) {
@@ -285,11 +303,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                     <Col width={110}><Field name="comp" forInput={state.pos?.nbobines_in_paletes === 0} label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} addonAfter="m" /></Field></Col>
                                                     <Col width={110}><Field name="largura_bruta" forInput={state.pos?.nbobines_in_paletes === 0} label={{ enabled: true, text: "Largura Bruta" }}><InputNumber style={{ textAlign: "right" }} addonAfter="m" /></Field></Col>
                                                     <Col width={110}><Field name="diam" forInput={state.pos?.nbobines_in_paletes === 0} label={{ enabled: true, text: "Diâmetro" }}><InputNumber style={{ textAlign: "right" }} addonAfter="mm" /></Field></Col>
+                                                    <Col width={110}><Field name="comp_emenda" forInput={state.pos?.nbobines_in_paletes === 0} label={{ enabled: true, text: "Comp Emenda" }}><InputNumber disabled={troca_nw == 0} style={{ textAlign: "right" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
+                                                    <Col width={150}><Field name="troca_nw" forInput={state.pos?.nbobines_in_paletes === 0} label={{ enabled: true, text: "Troca de Nonwoven" }}><SwitchField /></Field></Col>
                                                 </Row>
                                                 <Row style={{}} gutterWidth={10}><Col><HorizontalRule title="Nonwoven Superior" hr={false} /></Col></Row>
                                                 <Row style={{}} gutterWidth={10}>
                                                     <Col width={110}><Field name="nwsup" label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} addonAfter="m" /></Field></Col>
-                                                    <Col width={310}><Field name="lote_nwsup" label={{ enabled: true, text: "Lote" }}>
+                                                    <Col width={350}><Field name="lote_nwsup" label={{ enabled: true, text: "Lote" }}>
                                                         <NonwovensLotes
                                                             filters={{ type: 1, queue: 1, t_stamp: `<${dayjsValue(state.pos.timestamp).format(DATETIME_FORMAT)}`, custom_t_stamp_out: dayjsValue(state.pos.timestamp).format(DATETIME_FORMAT) }}
                                                             detailText={(v) => <span style={{ fontWeight: 700 }}>{v?.tiponw}</span>}
@@ -299,7 +319,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 <Row style={{}} gutterWidth={10}><Col><HorizontalRule title="Nonwoven Inferior" hr={false} /></Col></Row>
                                                 <Row style={{}} gutterWidth={10}>
                                                     <Col width={110}><Field name="nwinf" label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} addonAfter="m" /></Field></Col>
-                                                    <Col width={310}><Field name="lote_nwinf" label={{ enabled: true, text: "Lote" }}>
+                                                    <Col width={350}><Field name="lote_nwinf" label={{ enabled: true, text: "Lote" }}>
                                                         <NonwovensLotes
                                                             filters={{ type: 0, queue: 1, t_stamp: `<${dayjsValue(state.pos.timestamp).format(DATETIME_FORMAT)}`, custom_t_stamp_out: dayjsValue(state.pos.timestamp).format(DATETIME_FORMAT) }}
                                                             detailText={(v) => <span style={{ fontWeight: 700 }}>{v?.tiponw}</span>}

@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json, excludeObjectKeys, xmlToJSON } from "utils/object";
-import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, GatewayOutlined, LockOutlined, RollbackOutlined, PlusOutlined,PaperClipOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
+import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, GatewayOutlined, LockOutlined, RollbackOutlined, PlusOutlined, PaperClipOutlined, EllipsisOutlined, UngroupOutlined, ProfileOutlined, StarFilled, UploadOutlined, CopyOutlined, DeleteOutlined, FilePdfTwoTone, FileExcelTwoTone, UndoOutlined, AppstoreAddOutlined, SyncOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
@@ -129,6 +129,11 @@ const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFilters = ({ form, columns }) => [
     ...getMoreFilters({ columns }),
+    <Col xs="content" key="fativa-1">
+        <Field name="fativa" label={{ enabled: true, text: "Prf.Estado", pos: "top", padding: "0px" }}>
+            <Select size="small" options={[{ value: null, label: "Tudo" }, { value: 0, label: "Fechada" }, { value: 1, label: "Aberta" }]} allowClear style={{ width: "90px" }} />
+        </Field>
+    </Col>
     // <Col xs="content">
     //     <Field name="fdocstatus" label={{ enabled: true, text: "Estado Documento", pos: "top", padding: "0px" }}>
     //         <Select size="small" options={[{ value: null, label: "Todos" }, { value: 0, label: "Em elaboração" }, { value: 1, label: "Em revisão" }, { value: 2, label: "Fechado" }]} allowClear style={{ width: "150px" }} />
@@ -666,12 +671,12 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     ]
     const columns = [
         ...(true) ? [{ name: 'baction', header: '', filter: { show: false }, headerAlign: "center", userSelect: true, defaultLocked: true, width: 45, render: ({ data, rowIndex }) => <Actions data={data} rowIndex={rowIndex} allows={allows} onAction={(action) => onAction(action, data, rowIndex)} /> }] : [],
-        ...(true) ? [{ name: 'ofabrico', header: 'O. Fabrico', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.ofabrico}</LeftAlign> }] : [],
-        ...(true) ? [{ name: 'prf', header: 'Prf', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.prf}</LeftAlign> }] : [],
-        ...(true) ? [{ name: 'iorder', header: 'Encomenda', filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'ofabrico', header: 'O. Fabrico', filter: { show: "toolbar", op: "any", field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.ofabrico}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'prf', header: 'Prf', filter: { show: "toolbar", op: "any", field: { style: { width: "150px" } } }, userSelect: true, defaultLocked: false, defaultWidth: 120, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.prf}</LeftAlign> }] : [],
+        ...(true) ? [{ name: 'iorder', header: 'Encomenda', filter: { show: "toolbar", op: "any", field: { style: { width: "150px" } } }, render: ({ data, cellProps }) => data?.iorder, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'cod', header: 'Agg', filter: { show: true, op: "any" }, userSelect: true, defaultLocked: false, defaultWidth: 140, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'ofabrico_status', header: 'Estado Produção', filter: { show: true, type: "select", field: { style: { width: "80px" }, options: OFABRICO_FILTER_STATUS } }, userSelect: true, defaultLocked: false, defaultWidth: 130, headerAlign: "center", render: ({ data, cellProps }) => <OFabricoStatus data={data} cellProps={cellProps} onClick={(e) => onOFStatusClick(e, data)} /> }] : [],
-        ...(true) ? [{ name: "cliente_nome", filter: { show: "toolbar", op: "any",field: { style: { width: "150px" } } }, header: "Cliente", defaultWidth: 190, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "cliente_nome", filter: { show: "toolbar", op: "any", field: { style: { width: "150px" } } }, header: "Cliente", defaultWidth: 190, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: "700" }}>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item", header: "Artigo", filter: { show: true, op: "any" }, defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item_nome", header: "Des.", filter: { show: true, op: "any" }, defaultWidth: 210, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item_nome?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</LeftAlign> }] : [],
         ...(true) ? [{ name: "item_certificacoes", header: "Certificações", filter: { show: true, op: "any" }, defaultWidth: 210, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{}}>{data?.item_certificacoes}</LeftAlign> }] : [],
@@ -803,7 +808,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 break;
             case "op-attachments":
                 console.log(data)
-                setModalParameters({ content: "attachments", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Anexos <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { draft_id:data.temp_ofabrico } });
+                setModalParameters({ content: "attachments", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Anexos <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { draft_id: data.temp_ofabrico } });
                 showModal();
                 break;
             case "op-sync-wopr":

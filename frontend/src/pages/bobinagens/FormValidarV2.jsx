@@ -37,6 +37,7 @@ import { MdOutlineOutput, MdOutlineInput } from 'react-icons/md';
 import { useImmer } from "use-immer";
 import { dayjsValue } from 'utils/index';
 import { Item } from 'components/formLayout';
+import FormPrint from "../commons/FormPrint";
 
 
 //const title = "Validar Bobinagem";
@@ -69,6 +70,9 @@ const steps = [
     },
     {
         title: 'Largura Real e Validar'
+    },
+    {
+        title: 'Imprimir'
     }
 ];
 
@@ -259,6 +263,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "estado": return <Chooser parameters={modalParameters.parameters} />;
+                case "print": return <FormPrint v={modalParameters.parameters} />;
             }
         }
         return (
@@ -309,19 +314,19 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                     inicio: _bm.inico, fim: _bm.fim, duracao: _bm.duracao,
                     data: _bm.data,
                     tiponwinf: _bm.tiponwinf, tiponwsup: _bm.tiponwsup,
-                    rowvalid: 1
+                    rowvalid: 0
                 }
             });
 
         }
         updateState(draft => {
             draft.loaded = true;
-            draft.step = 0;
+            draft.step = 2//0;
             draft.maxStep = 0;
             draft.bobinagem = (_bm) ? _bm : null;
             draft.hasBobines = (_bobines) ? true : false;
             //draft.valid = (_bm && _bobines) ? true : false;
-            draft.nome = inputParameters.current.bobinagem_nome;
+            draft.nome = (_bm) ? _bm.nome : null;
             draft.id = inputParameters.current.bobinagem_id;
         });
         if (_bm && _bobines) {
@@ -391,7 +396,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: _rows, lar_bruta: form.getFieldValue("lar_bruta") } });
                 if (response?.data && response?.data?.status !== "error") {
                     openNotification(response?.data?.status, 'top', "Notificação", response.data.title);
-                    window.history.go(-1);
+                    next();
                 } else {
                     openNotification("error", 'top', "Notificação", response.data.title, null);
                 }
@@ -406,7 +411,6 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     const next = (item) => {
         if (state.step == 0) {
             const _values = form.getFieldsValue(true);
-            console.log("valuessss", _values)
             const v = schema().validate(_values, { abortEarly: false, messages: validateMessages, context: {} });
             let { errors, warnings, value, ...status } = getStatus(v);
             if (errors === 0) {
@@ -462,6 +466,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     };
 
     const onStepChange = (value) => {
+        if (state.step == 2) {
+            return;
+        }
         if (!state.valid || dirty) {
             return;
         }
@@ -590,6 +597,11 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m&sup2;">{getFloat(data?.area, 0)}</RightAlign> }] : [],
     ];
 
+    const onPrint = () => {
+        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { bobinagem: { id: state.id } } });
+        showModal();
+    }
+
     return (
         <ConfigProvider
             theme={{
@@ -700,7 +712,12 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                         />
                                     </Col>
                                 </Row>}
-
+                                {(state.step == 2 && state.bobinagem) && <Col>
+                                    <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                        <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
+                                        <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas">Imprimir Etiquetas</Button>
+                                    </Col>
+                                </Col>}
 
 
                                 {((!state.bobinagem || !state.hasBobines) && state.loaded) && <>

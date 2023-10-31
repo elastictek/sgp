@@ -43,31 +43,8 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
     />);
 }
 
-// export const loadQuantity = async ({ value, artigo_cod }, signal) => {
-//     const { data: { row } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: { value, artigo_cod }, sort: [], parameters: { method: "GetGranuladoLoteQuantityV2" }, signal });
-//     if (row && Object.keys(row).length > 0) {
-//         return row;
-//     }
-//     return null;
-// }
-
-export const loadOrdensFabricoOpen = async ({ id,was_in_production }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
-    if (rows && Object.keys(rows).length > 0) {
-        return rows;
-    }
-    return null;
-}
-export const loadOrdensFabrico = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
-    if (rows && Object.keys(rows).length > 0) {
-        return rows;
-    }
-    return null;
-}
-
-export const loadBobines = async ({ palete_id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, filter: { fpaleteid: palete_id }, sort: [{ column: "mb.posicao_palete", direction: "ASC" }], parameters: { method: "BobinesLookup" }, signal });
+export const loadOrdensFabrico = async ({ allowInElaboration = false }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, sort: [], parameters: { method: "OrdensFabricoPlanGet", allowInElaboration }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }
@@ -92,7 +69,20 @@ const ListItem = styled(List.Item)`
     }
 `;
 
-const OrdensFabricoList = ({ openNotification, next, ...props }) => {
+const TitleOF = ({ item }) => {
+    return (<div><span style={{ fontSize: "14px" }}>{item.ofid}</span><OFabricoStatus data={item} cellProps={{}} /></div>);
+}
+
+const ContentOF = ({ item }) => {
+    return (
+        <div>
+            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{item.cliente_nome}</div>
+            <div><span>{item.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{item.artigo_des}</span></div>
+        </div>
+    );
+}
+
+const OrdensFabricoList = ({ openNotification, next, allowInElaboration, ...props }) => {
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
     const defaultFilters = {};
@@ -113,7 +103,7 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { tstamp: Date.now() }, props?.parameters, null, null);
             inputParameters.current = { ...paramsIn };
         }
-        const _items = await loadOrdensFabricoOpen({}, signal);
+        const _items = await loadOrdensFabrico({ allowInElaboration }, signal);
         setItems(_items);
         submitting.end();
     }
@@ -127,14 +117,8 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
             renderItem={(item, index) => (
                 <ListItem onClick={() => next(item)}>
                     <List.Item.Meta
-                        // avatar={<div style={{ width: "90px", maxWidth: "90px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        //     <OFabricoStatus data={item} cellProps={{}} />
-                        // </div>}
-                        title={<div>{item.ofid}<OFabricoStatus data={item} cellProps={{}} /></div>}
-                        description={<div>
-                            <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{item.cliente_nome}</div>
-                            <div><span>{item.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{item.artigo_des}</span></div>
-                        </div>}
+                        title={<TitleOF item={item} />}
+                        description={<ContentOF item={item} />}
                     />
                 </ListItem>
             )}
@@ -181,10 +165,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         return (() => controller.abort());
     }, []);
 
-
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
-
         updateState(draft => {
             draft.step = 0;
             draft.maxStep = 0;
@@ -218,12 +200,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         // if (v > state.maxStep) {
         //     return;
         // }
-        // updateState(draft => {
-        //     draft.step = (v !== null) ? v : draft.step - 1;
-        // });
+        updateState(draft => {
+            draft.step = (v !== null) ? v : draft.step - 1;
+        });
     };
 
     const onStepChange = (value) => {
+        prev(value);
         // if (state.action == "weigh" && value < 3) {
         //     prev(3);
         // } else if (value === 0 && state.palete_id) {
@@ -234,9 +217,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     }
 
     const onSelectOrdem = (item) => {
-        console.log("RRRr", item)
         next(item);
-
     }
 
     return (
@@ -297,10 +278,19 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                             <Col>
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                                     <Row>
-                                        {state.step == 0 && <Col><OrdensFabricoList openNotification={openNotification} next={onSelectOrdem} /></Col>}
-                                        {state.step == 1 && <Col>
-                                            <FormAttachements noHeader={true} setFormTitle={true} parameters={{ draft_id: state.pos.draft_id, ofid: state.pos.ofid }} />
-                                        </Col>}
+                                        <Col>
+                                            <YScroll height="80vh">
+                                                {(state.step == 0 && permission.loaded) && <Col>
+                                                    <OrdensFabricoList allowInElaboration={permission.isOk({ action: "attachsInElaboration", item: "ordensFabrico" })} openNotification={openNotification} next={onSelectOrdem} /></Col>}
+                                                {state.step == 1 && <Col>
+                                                    <div style={{ marginBottom: "10px" }}>
+                                                        <TitleOF item={state.pos} />
+                                                        <ContentOF item={state.pos} />
+                                                    </div>
+                                                    <FormAttachements noHeader={true} setFormTitle={true} parameters={{ draft_id: state.pos.draft_id, ofid: state.pos.ofid }} />
+                                                </Col>}
+                                            </YScroll>
+                                        </Col>
                                     </Row>
                                 </Container>
                             </Col>

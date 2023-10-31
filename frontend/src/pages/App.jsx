@@ -35,7 +35,7 @@ const OFabricoShortList = lazy(() => import('./OFabricoShortList'));
 /* const BobinagensValidarList = lazy(() => import('./bobinagens/BobinagensValidarList')); */
 const BobinagensList = lazy(() => import('./bobinagens/BobinagensList'));
 
-const FormBobinagemValidar = lazy(() => import('./bobinagens/FormValidar'));
+const FormBobinagemValidar = lazy(() => import('./bobinagens/FormValidar')); //old deprecated
 
 const StockList = lazy(() => import('./artigos/StockList'));
 const MPBufferList = lazy(() => import('./artigos/MPBufferList'));
@@ -131,7 +131,7 @@ const FormPickNonwovensQueue = lazy(() => import('./picking/FormPickNonwovensQue
 const FormPickPrintBuffer = lazy(() => import('./picking/FormPickPrintBuffer'));
 const FormPickNewBobinagemLine = lazy(() => import('./picking/FormPickNewBobinagemLine'));
 const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
-const FormValidateBobinagem = lazy(() => import('./picking/FormValidarV2'));
+const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
 const loadAuthUser = async ({ }, signal) => {
     let response;

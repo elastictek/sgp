@@ -347,20 +347,6 @@ def OrdensFabricoInElaborationAllowed(request, format=None):
             order by pt.cod ASC, pt2.of_id ASC
         """
     ), connection, {**f.parameters,**f2.parameters})
-
-    print(f"""
-            select pt.id, pt.cod,pt.status,pt2.of_id,pf.id formulacao_id,pf.designacao,pf.group_name ,pf.subgroup_name , pf.versao
-            from producao_tempaggordemfabrico pt
-            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
-            left join producao_artigo pa on pa.id=pt2.item_id
-            left join group_artigos ga on ga.artigo_id = pt2.item_id
-            left join producao_formulacao pf on pf.id=pt.formulacao_id
-            where 
-            pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
-             {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
-            order by pt.cod ASC, pt2.of_id ASC
-        """)
-    print({**f.parameters,**f2.parameters})
     return Response(response)
 
 def OrdensFabricoAllowed(request, format=None):
@@ -398,8 +384,60 @@ def OrdensFabricoAllowed(request, format=None):
             order by cod ASC, of_id ASC
         """
     ), connection, {**f.parameters,**f2.parameters})
+    print(f"""
+            select distinct * from (
+	            select pt.id, pt.cod, case when po.status is null then 1 else po.status end ofabrico_status,pt2.of_id, IFNULL(po.was_in_production,0) was_in_production,pc.id cs_id,pt2.cliente_nome, pt2.item_cod artigo_cod
+	            from producao_tempaggordemfabrico pt
+	            join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
+	            left join planeamento_ordemproducao po on po.agg_of_id_id =pt.id
+                left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
+	            left join producao_artigo pa on pa.id=pt2.item_id
+	            left join group_artigos ga on ga.artigo_id = pt2.item_id
+	            #left join producao_formulacao pf on pf.id=pt.formulacao_id
+	            where
+	            (pt.status=0 or po.status in (1,2,3))  and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
+	            {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
+             ) t
+             where t.ofabrico_status<9
+            order by cod ASC, of_id ASC
+        """)
     print({**f.parameters,**f2.parameters})
     return Response(response)
+
+def OrdensFabricoPlanGet(request, format=None):
+    filter = request.data.get("filter")
+    allowInElaboration = request.data.get("parameters").get("allowInElaboration") if "allowInElaboration" in request.data.get("parameters") else None
+    connection = connections["default"].cursor()
+    f = Filters(filter)
+    f.where(False,"and")
+    f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
+    f.add(f'(po.id = :id)',lambda v:(v!=None) )
+    f.add(f'(po.stock = :stock)',lambda v:(v!=None) )
+    f.add(f'(pt.id = :draft_id)',lambda v:(v!=None) )
+    f.add(f'(po.ativa = :ativa)',lambda v:(v!=None) )
+    f.value("and")
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select esquema,po.id,pt.of_id ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id , t1.artigo_des, po.bobines_por_palete, po.was_in_production, 
+            CASE WHEN po.`status` IS NULL AND pt.id is not null and pt2.`status`=0 THEN 1 ELSE
+                CASE WHEN pc.`status`= 1 THEN 2 ELSE
+                    CASE WHEN pc.`status`= 2 THEN 2 ELSE
+                        3
+                        END
+                    END
+            END
+            ofabrico_status,
+            po.ativa
+            from producao_tempordemfabrico pt
+            left join producao_tempaggordemfabrico pt2 on pt2.id=pt.agg_of_id
+            left join planeamento_ordemproducao po on pt.id=po.draft_ordem_id
+            left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
+            left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
+            left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
+            where ({"(pt.id is not null and pt2.`status`=0 ) or " if allowInElaboration else "1=1 and"} (pc.status in (1,2,3))) {f.text} order by po.ofid is null,pt.of_id,po.ofid
+        """
+    ), connection, {**f.parameters})
+    return Response(response)    
 
 
 def OrdensFabricoGet(request, format=None):
@@ -409,6 +447,7 @@ def OrdensFabricoGet(request, format=None):
     f.where()
     f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
     f.add(f'(po.id = :id)',lambda v:(v!=None) )
+    f.add(f'(po.stock = :stock)',lambda v:(v!=None) )
     f.add(f'(po.draft_ordem_id = :draft_id)',lambda v:(v!=None) )
     f.add(f'(po.ativa = :ativa)',lambda v:(v!=None) )
     f.value("and")
@@ -983,7 +1022,6 @@ def GetAttachements(request, format=None):
     """)
     try:
         response = db.executeSimpleList(sql, connection, {**f.parameters,**f2.parameters})
-        print(response)
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

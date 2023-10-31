@@ -184,7 +184,7 @@ def GetAuditCurrentSettingsRange(request,format=None):
     f.value("and")
     response = db.executeSimpleList(lambda: (
         f"""
-             select pc.id acs_id, pta.cod agg_cod, pta.id agg_id, po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , t1.artigo_des, po.was_in_production, po.`status` ofabrico_status,
+             select pc.id acs_id,pc.`timestamp`, pta.cod agg_cod, pta.id agg_id, po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , t1.artigo_des, po.was_in_production, po.`status` ofabrico_status,
             case when pc.cortes is not null then pc.cortes->'$.id' else pta.cortes_id end cortes_id,
             case when pc.cortesordem is not null then pc.cortesordem->'$.id' else pta.cortesordem_id end cortesordem_id
             from planeamento_ordemproducao po 
@@ -195,4 +195,5 @@ def GetAuditCurrentSettingsRange(request,format=None):
             {f.text} order by pc.`timestamp` desc
         """
     ), connection, {**f.parameters})
+
     return Response(response)    

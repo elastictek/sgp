@@ -235,7 +235,7 @@ module.exports = (env, argv) => {
                         toplevel: false,
                         compress: {
                             warnings: false,
-                            drop_console: true,
+                            drop_console: false,
                             global_defs: {
                                 "@alert": "console.log"
                             }

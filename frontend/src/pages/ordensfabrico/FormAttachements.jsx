@@ -92,7 +92,7 @@ const loadAttachments = async ({ aggid, draft_id, signal }) => {
 }
 
 export const loadOrdemFabrico = async ({ draft_id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { draft_id }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { draft_id }, sort: [], parameters: { method: "OrdensFabricoPlanGet",allowInElaboration:true }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows[0];
     }
@@ -223,7 +223,7 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
         <>
             <Toolbar
                 style={{ width: "100%" }}
-                right={((permission.isOk(PERMISSION)) && ordemFabrico?.ativa == 1) && <Button type="primary" disabled={Object.keys(changedTypes).length == 0 ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
+                right={((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <Button type="primary" disabled={Object.keys(changedTypes).length == 0 ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
             />
             {attachments.map((v, i) => <StyledFile key={`attf-${v.id}-${i}`}>
                 <div className="itemtype"><SelectField disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
@@ -411,7 +411,7 @@ export default ({ operationsRef, ...props }) => {
                         <AttachmentsList attachments={attachments} setLoading={(v) => v ? submitting.trigger() : submitting.end()} loadData={loadData} permission={permission} ordemFabrico={ordemFabrico} />
                     </Col>
                 </Row>
-                {((permission.isOk(PERMISSION)) && ordemFabrico?.ativa == 1) && <>
+                {((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <>
                     <Row>
                         <Col>
                             <StyledDragger

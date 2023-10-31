@@ -40,6 +40,7 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
     const loc = useLocation();
     const allowedKeys = Object.keys(allowed); //deprecated
     const permissionKeys = Object.keys(auth.permissions); //deprecated
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -57,6 +58,7 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
             const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
             setPermissions(json(_perm?.permissions));
         }
+        setLoaded(true);
     }
 
     const loadInstantPermissions = async ({ name, module = "main", set = false }) => {
@@ -155,5 +157,5 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
         return false;
     }
 
-    return { auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
+    return { loaded,auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
 }

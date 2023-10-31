@@ -690,6 +690,8 @@ def BobinesList(request, format=None):
         if ("export" in request.data["parameters"]):
             dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
             dql.paging=""
+            print("-----------------------------------")
+            print(sql(lambda v:v,lambda v:v,lambda v:v))
             return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
         try:
             response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}")

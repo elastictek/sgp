@@ -6,16 +6,16 @@ import {  fetchPost } from "utils/fetch";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 
 
-import { Space, Typography, Button, Select, Modal, InputNumber, Checkbox, Badge } from "antd";
+import { Space, Typography, Button, Select, Modal, InputNumber, Checkbox, Badge, Switch } from "antd";
 import { API_URL } from 'config';
 
 export default ({ v, parentRef, closeParent }) => {
-    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: 1 })
+    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: 1, lab:1 })
     const onClick = async () => {
         const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { 
-            ...v?.bobinagem && {type: "bobinagem", bobinagem: v.bobinagem},
-            ...v?.palete && {type: "palete", palete: v.palete}, 
-            ...values } 
+             ...v?.bobinagem && {type: "bobinagem", bobinagem: v.bobinagem},
+             ...v?.palete && {type: "palete", palete: v.palete}, 
+             ...values } 
         });
         if (response.data.status !== "error") {
             closeParent();
@@ -35,7 +35,8 @@ export default ({ v, parentRef, closeParent }) => {
                 <Col><b>Cópias:</b></Col>
             </Row>
             <Row>
-                <Col><InputNumber onChange={(v) => onChange("num_copias", v)} min={1} max={3} defaultValue={values.num_copias} /></Col>
+                <Col width={120}><InputNumber onChange={(v) => onChange("num_copias", v)} min={1} max={3} defaultValue={values.num_copias} /></Col>
+                {v?.bobinagem && <Col><Switch defaultChecked={values.lab==1} onChange={(v) => onChange("lab", v)}/> Etiqueta Laboratório</Col>}
             </Row>
             <Row>
                 <Col><b>Impressora:</b></Col>

@@ -35,7 +35,7 @@ import { AppContext } from 'app';
 import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import { dayjsValue } from 'utils/index';
-import { ContentAgg, TitleAgg } from "./AggChoose";
+import { ContentAgg, TitleAuditAgg } from "./AggChoose";
 import { useForm } from 'antd/es/form/Form';
 const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
 
@@ -208,14 +208,14 @@ const AggList = ({ openNotification, onSelect, next, evento, ...props }) => {
             next();
         } else {
             const groupData = _items.reduce((grouped, item) => {
-                const { agg_cod, ...rest } = item;
-                if (!grouped[agg_cod]) {
-                    grouped[agg_cod] = [];
+                const { acs_id, ...rest } = item;
+                if (!grouped[acs_id]) {
+                    grouped[acs_id] = [];
                 }
-                grouped[agg_cod].push(rest);
+                grouped[acs_id].push(rest);
                 return grouped;
             }, {});
-            const _groupArray = Object.entries(groupData).map(([agg_cod, items]) => ({ agg_cod, items }));
+            const _groupArray = Object.entries(groupData).map(([acs_id, items]) => ({ acs_id, items }));
             setItems(_groupArray);
         }
         submitting.end();
@@ -234,7 +234,7 @@ const AggList = ({ openNotification, onSelect, next, evento, ...props }) => {
                             // avatar={<div style={{ width: "90px", maxWidth: "90px", display: "flex", flexDirection: "column", alignItems: "center" }}>
                             //     <OFabricoStatus data={item} cellProps={{}} />
                             // </div>}
-                            title={<TitleAgg item={item} />}
+                            title={<TitleAuditAgg item={item} />}
                             description={
                                 <>
                                     <ContentAgg item={item} />
@@ -324,7 +324,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         submitting.trigger();
         let response = null;
         try {
-            response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "NewBobinagem", ...{ ig_id: state.evento.id, acs_id: state.agg?.acs_id } } });
+            const _acs_id = state.agg ? state.agg.acs_id : null;
+            response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "NewBobinagem", ...{ ig_id: state.evento.id, acs_id: _acs_id } } });
             if (response && response?.data?.status !== "error") {
                 updateState(draft => {
                     draft.agg = null;
@@ -415,7 +416,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                     {(state.step == 2 && state.agg) &&
                                         <><Row style={{ marginBottom: "10px", paddingLeft: "20px" }}>
                                             <Col style={{ lineHeight: 1.8 }}>
-                                                <TitleAgg item={state.agg} />
+                                                <TitleAuditAgg item={state.agg} />
                                                 <ContentAgg item={state.agg} />
                                             </Col>
                                         </Row>
@@ -432,7 +433,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         {(state.step == 3 && state.bobinagem) && <Col>
                                             <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                                                 <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
-                                                <Button onClick={() => { }}>Validar Bobinagem</Button>
+                                                <Button onClick={() => { 
+                                                    navigate("/app/bobinagens/validatebobinagem",{state:{bobinagem_id:state.bobinagem.id}});
+                                                }}>Validar Bobinagem</Button>
                                             </Col>
                                         </Col>}
 
