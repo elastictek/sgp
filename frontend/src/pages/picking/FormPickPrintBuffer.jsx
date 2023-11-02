@@ -100,7 +100,7 @@ export const Quantity = ({ v, u }) => {
 const printers = [...printersList?.BUFFER, ...printersList?.ARMAZEM, ...printersList?.PRODUCAO];
 
 const ModeAutoPrint = ({}) => {
-    const [lastNum, setLastNum] = useState(null);
+    const [lastTimestamp, setLastTimestamp] = useState(null);
     const [printed, setPrinted] = useState([]);
     const [valuesForm, setValuesForm] = useState({ impressora: printers[0]?.value })
     const { lastJsonMessage, sendJsonMessage } = useWebSocket(`${SOCKET.url}/realtimegeneric`, {
@@ -133,17 +133,17 @@ const ModeAutoPrint = ({}) => {
     useEffect(() => {
         if (lastJsonMessage) {
             console.log(lastJsonMessage)
-            if (lastNum === null) {
+            if (lastTimestamp === null) {
                 if (lastJsonMessage?.rows && lastJsonMessage.rows.length > 0) {
-                    setLastNum(lastJsonMessage.rows[0]["VCRNUM_0"]);
+                    setLastTimestamp(lastJsonMessage.rows[0]["CREDATTIM_0"]);
                 } else {
-                    setLastNum(0);
+                    setLastTimestamp(0);
                 }
             } else {
                 if (lastJsonMessage?.rows && lastJsonMessage.rows.length > 0) {
-                    if (lastNum !== lastJsonMessage.rows[0]["VCRNUM_0"]) {
+                    if (lastTimestamp !== lastJsonMessage.rows[0]["CREDATTIM_0"]) {
                         print(lastJsonMessage.rows[0]);
-                        setLastNum(lastJsonMessage.rows[0]["VCRNUM_0"]);
+                        setLastTimestamp(lastJsonMessage.rows[0]["CREDATTIM_0"]);
                     }
                 }
             }
@@ -183,7 +183,17 @@ const ModeAutoPrint = ({}) => {
                     return (
                         <Row key={`mp-${v.VCRNUM_0}-${i}`} nogutter style={{ borderBottom: "solid 1px #d9d9d9", paddingBottom: "2px" }}>
                             <Col xs="content" style={{ marginRight: "5px" }}><PrinterOutlined onClick={() => print(v)} style={{ fontSize: "16px", cursor: "pointer" }} /></Col>
-                            <Col xs={2}><b>{v.ITMREF_0}</b></Col><Col xs={2}><b>{v.LOT_0}</b></Col><Col xs={5}>{v.ITMDES1_0}</Col><Col xs={2}>{v.QTYPCU_0} {v.PCU_0}</Col><Col xs="content">{v.error ? <Badge status="error" /> : <Badge status="success" />}</Col>
+                            <Col>
+                            <Row>
+                                <Col xs={2}><b>{v.ITMREF_0}</b></Col>
+                                <Col xs={7}>
+                                    <div><b>{v.LOT_0}</b></div>
+                                    <div>{v.ITMDES1_0}</div>
+                                </Col>
+                                <Col xs={2}>{v.QTYPCU_0} {v.PCU_0}</Col>
+                                <Col xs="content">{v.error ? <Badge status="error" /> : <Badge status="success" />}</Col>
+                            </Row>
+                            </Col>
                         </Row>
                     )
                 })}

@@ -57,6 +57,8 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
         );
     }, [modalParameters]);
     const onClickPalete = (type, row) => {
+        console.log("clickedddd",{ offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() })
+        //dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() }
         setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
         showModal();
     }

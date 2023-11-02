@@ -77,7 +77,7 @@ const ContentOF = ({ item }) => {
     return (
         <div>
             <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{item.cliente_nome}</div>
-            <div><span>{item.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{item.artigo_des?.replace(new RegExp("Nonwoven Elastic Bands ", "gi"), "")}</span></div>
+            <div><span>{item.item_cod}</span><span style={{ marginLeft: "10px" }}>{item.artigo_des?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</span></div>
         </div>
     );
 }

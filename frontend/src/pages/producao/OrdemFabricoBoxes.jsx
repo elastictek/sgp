@@ -148,7 +148,7 @@ const ArtigoTitle = ({ data, cellProps }) => {
                 <div style={{}}>{data?.artigo_cod}</div>
             </div>
             <div style={{ display: "flex", fontSize: "10px" }}>
-                <div>{data?.artigo_des}</div>
+                <div>{data?.artigo_des?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</div>
             </div>
             <div style={{ display: "flex", fontSize: "10px" }}>
                 <div>{data?.cliente_nome}</div>

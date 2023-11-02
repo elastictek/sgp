@@ -218,7 +218,6 @@ export default (props) => {
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
-            console.log("DATAAPI....",inputParameters.current?.dataAPI)
             if (inputParameters.current?.dataAPI) {
                 dataAPI.setPayload(inputParameters.current?.dataAPI);
                 dataAPI.pageSize(1, false);
@@ -237,7 +236,7 @@ export default (props) => {
                 inputParameters.current.palete_nome = dt.rows[0].nome;
             }
         } else {
-            dataAPI.setData({ rows: [{ ...inputParameters.current?.palete }], total: 1 });
+            dataAPI.setData({ rows: [{ ...inputParameters.current?.palete, id: inputParameters.current?.palete?.palete_id ? inputParameters.current?.palete?.palete_id : inputParameters.current?.palete?.id }], total: 1 });
         }
 
         if (props?.setFormTitle) {

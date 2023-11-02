@@ -526,6 +526,14 @@ def PaletesLookup(request, format=None):
             {dql.sort} {dql.limit}
         """
     )
+    print(f"""  
+            select
+                {f'{dql.columns}'}
+            FROM mv_paletes sgppl
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            {f.text} {f2["text"]}
+            {dql.sort} {dql.limit}
+        """)
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
