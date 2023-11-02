@@ -354,6 +354,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 </StyledButton>
                                             </Col>
                                             }
+                                            {allows?.bobinagens?.print && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/printetiquetabobinagem")}>
+                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Imprimir<br />Etiqueta</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
                                         </Row>
                                     </Container>
                                 </Card>

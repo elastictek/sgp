@@ -295,6 +295,15 @@ def PrintEtiqueta(request, format=None):
         if len(rows)>0:
             return rows
         return None
+    def getEtiquetaBobine(data,cursor):
+        f = Filters({"bobine": data["bobine"]["nome"]})
+        f.where()
+        f.add(f'bobine = :bobine', True)
+        f.value("and")        
+        rows = db.executeSimpleList(lambda: (f'SELECT * FROM producao_etiquetaretrabalho {f.text} limit 1'), cursor, f.parameters)['rows']
+        if len(rows)>0:
+            return rows
+        return None
     def getEtiquetasPalete(data,cursor):
         f = Filters({"palete_id": data["palete"]["id"]})
         f.where()
@@ -307,6 +316,14 @@ def PrintEtiqueta(request, format=None):
 
     try:
         with conn as cursor:
+            if data["type"] == "bobine":
+                etiqueta = getEtiquetaBobine(data,cursor)
+                if etiqueta is None:
+                    Response({"status": "error", "title": f'Erro ao imprimir etiqueta! Etiqueta não está criada.', "subTitle":None})
+                else:
+                    dta={"impressora":data["impressora"], "num_copias":data["num_copias"], "estado_impressao":1}
+                    dml = db.dml(TypeDml.UPDATE,dta,"producao_etiquetaretrabalho",{"id":f'=={etiqueta[0]["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
             if data["type"] == "bobinagem":
                 etiquetas = getEtiquetasBobinagem(data,cursor)
                 if etiquetas is None:

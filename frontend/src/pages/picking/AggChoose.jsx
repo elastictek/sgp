@@ -75,7 +75,7 @@ export const ContentAgg = ({ item }) => {
                     <div key={v.ofid} style={{ display: "flex" }}>
                         <div>
                             <div style={{display:"flex"}}><div style={{ fontWeight: 900, fontSize: "14px", color: "#000",marginRight:"5px" }}>{v.ofid}</div><div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div></div>
-                            <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des}</span></div>
+                            <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des.replace(new RegExp("Nonwoven Elastic Bands ", "gi"), "")}</span></div>
                         </div>
                     </div>
                 );
@@ -168,7 +168,7 @@ export default ({ openNotification, next, actionsContent, actions, onClick, ...p
                                                     <div key={v.ofid}>
                                                         <div style={{ fontWeight: 900, fontSize: "14px", color: "#000" }}>{v.ofid}</div>
                                                         <div style={{ fontSize: "14px", color: "#000" }}>{v.cliente_nome}</div>
-                                                        <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des}</span></div>
+                                                        <div><span>{v.item_cod}</span><span style={{ fontWeight: 700, marginLeft: "10px" }}>{v.artigo_des.replace(new RegExp("Nonwoven Elastic Bands ", "gi"), "")}</span></div>
                                                     </div>
                                                 );
                                             })}

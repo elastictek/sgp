@@ -27,17 +27,17 @@ import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CU
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, VerticalSpace } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, VerticalSpace, printersList } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 import { produce } from 'immer';
 import { useImmer } from "use-immer";
-import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
-import PaletesChoose from './PaletesChoose';
+import BobinagensChoose from './BobinagensChoose';
+import FormPrint from "../commons/FormPrint";
 
-const title = "Apagar Palete";
+const title = "Imprimir Etiqueta";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
     return (<ToolbarTitle id={auth?.user} description={title}
         leftTitle={<span style={{}}>{title}</span>}
@@ -84,15 +84,30 @@ const moreFilters = ({ form, columns }) => [
     { fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } }, */
 ];
 
-
 export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
-    const permission = usePermission({ name: "controlpanel" });
+    const permission = usePermission({ name: "picking" });
     const [load, setLoad] = useState(false);
+
+    const [modalParameters, setModalParameters] = useState({});
+    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+
+        const content = () => {
+            switch (modalParameters.content) {
+                case "print": return <FormPrint v={modalParameters.parameters} />;
+            }
+        }
+        return (
+            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+                {content()}
+            </ResponsiveModal>
+        );
+    }, [modalParameters]);
+
 
     useEffect(() => {
         const controller = new AbortController();
@@ -121,18 +136,36 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        navigate("/app/picking/newpaleteline", { state: { action: "delete", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines, lvl: v.data.lvl } });
+        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${v.data.nome} `, parameters: { bobinagem: {id:v.data.id},copias:2 } });
+        showModal();
     }
+
+    const onSelectBobine = (t,id,nome,v,e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobine ${nome} `, parameters: { bobine: {id:id,nome:nome} } });
+        showModal();
+    }
+
+    // const onDownloadComplete = async (response,download) => {
+    //     if (download=="download"){
+    //         const blob = new Blob([response.data], { type: 'application/pdf' });
+    //         const pdfUrl = URL.createObjectURL(blob);
+    //         window.open(pdfUrl, '_blank');
+    //         //downloadFile(response.data,"etiqueta_nw.pdf");
+    //     }
+    // }
 
     return (
         <>
-            {load && <PaletesChoose
-                noid={false}
-                title="Apagar Palete"
-                onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]}
-                defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }}
-            />
+            {load &&
+                <BobinagensChoose
+                    noid={false}
+                    title="Imprimir Etiqueta"
+                    onFilterChange={onFilterChange} onSelect={onSelectionChange} onSelectBobine={onSelectBobine}
+                    defaultSort={[{ column: `pbm.timestamp`, direction: "DESC" }]}
+                    defaultFilters={{ /* fcarga: "isnull", */ fdisabled: "==0"/* , fdispatched: "isnull" */ }}
+                />
             }
         </>
     )

@@ -389,7 +389,7 @@ const i18n = {
         enable: 'Ativar',
         sortAsc: 'Ordenação ascendente',
         sortDesc: 'Ordenação descendente',
-        unsort: 'Limparar ordenação',
+        unsort: 'Limpar ordenação',
         group: 'Agrupar',
         ungroup: 'Desagrupar',
         lockStart: 'Fixar no íncio',

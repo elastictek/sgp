@@ -407,7 +407,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     return (
         <>
             {load &&
-                <PaletesChoose noid={false} title="Refazer Palete" onFilterChange={onFilterChange} onSelect={onSelectionChange} defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]} defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }} />
+                <PaletesChoose noid={false} title="Refazer Palete" onFilterChange={onFilterChange} onSelect={onSelectionChange} defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]} defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }} />
             }
         </>
     )

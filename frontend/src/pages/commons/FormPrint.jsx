@@ -10,10 +10,11 @@ import { Space, Typography, Button, Select, Modal, InputNumber, Checkbox, Badge,
 import { API_URL } from 'config';
 
 export default ({ v, parentRef, closeParent }) => {
-    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: 1, lab:1 })
+    const [values, setValues] = useState({ impressora: "Bobinadora_CAB_A4_200", num_copias: v?.copias ? v?.copias : 1, lab:1 })
     const onClick = async () => {
         const response = await fetchPost({ url: `${API_URL}/printetiqueta/`, parameters: { 
-             ...v?.bobinagem && {type: "bobinagem", bobinagem: v.bobinagem},
+            ...v?.bobine && {type: "bobine", bobine: v.bobine}, 
+            ...v?.bobinagem && {type: "bobinagem", bobinagem: v.bobinagem},
              ...v?.palete && {type: "palete", palete: v.palete}, 
              ...values } 
         });

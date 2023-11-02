@@ -42,7 +42,7 @@ module.exports = (env, argv) => {
     console.log(`Compile Mode--->${argv.mode}`);
 
     const commonPlugins = [
-        // new BundleAnalyzerPlugin(),
+        //new BundleAnalyzerPlugin(),
         new VersionFile({
             data: {
                 date: new Date(),
@@ -80,8 +80,9 @@ module.exports = (env, argv) => {
     const pluginsList = isDevMode ? [...commonPlugins, ...devPlugins] : [...commonPlugins, ...devPlugins, ...prodPlugins];
 
     return {
-        //...(isDevMode ? { devtool: 'source-map' } : {}),
-        devtool: 'source-map',
+        //...(isDevMode ? { devtool: 'source-map' } : false),
+        //devtool: false,//'eval-cheap-source-map',
+        devtool: isDevMode ? 'source-map' : false,
         mode: isDevMode ? 'development' : 'production',
         watch: true,
         watchOptions: {

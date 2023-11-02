@@ -418,15 +418,19 @@ def OrdensFabricoPlanGet(request, format=None):
     f.value("and")
     response = db.executeSimpleList(lambda: (
         f"""
+            select * from (
             select esquema,po.id,pt.of_id ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id , t1.artigo_des, po.bobines_por_palete, po.was_in_production, 
             CASE WHEN po.`status` IS NULL AND pt.id is not null and pt2.`status`=0 THEN 1 ELSE
                 CASE WHEN pc.`status`= 1 THEN 2 ELSE
                     CASE WHEN pc.`status`= 2 THEN 2 ELSE
-                        3
+                        CASE WHEN pc.`status`= 3 THEN 3 ELSE
+                        9
+                        END
                         END
                     END
             END
             ofabrico_status,
+            pc.status,
             po.ativa
             from producao_tempordemfabrico pt
             left join producao_tempaggordemfabrico pt2 on pt2.id=pt.agg_of_id
@@ -435,6 +439,7 @@ def OrdensFabricoPlanGet(request, format=None):
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
             where ({"(pt.id is not null and pt2.`status`=0 ) or " if allowInElaboration else "1=1 and"} (pc.status in (1,2,3))) {f.text} order by po.ofid is null,pt.of_id,po.ofid
+            ) t where t.ofabrico_status <9
         """
     ), connection, {**f.parameters})
     return Response(response)    

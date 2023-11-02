@@ -172,7 +172,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
                     noid={false}
                     title="Imprimir Etiqueta"
                     onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                    defaultSort={[{ column: `t.timestamp`, direction: "DESC" }]}
+                    defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]}
                     defaultFilters={{ /* fcarga: "isnull", */ fdisabled: "==0"/* , fdispatched: "isnull" */ }}
                 />
             }

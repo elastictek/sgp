@@ -250,7 +250,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 height: "200px",
                 content: "nwsprint", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiquetas de Nonwovens</div>,
                 parameters: {
-                    url: `${API_URL}/print/sql/`, printers: printersList?.CABS,
+                    url: `${API_URL}/print/sql/`, 
+                    printers: printersList?.PRODUCAO,
+                    printer:printersList?.PRODUCAO[0].value,
                     onComplete: onDownloadComplete,
                     parameters: {
                         method: "PrintNwsEtiquetas",

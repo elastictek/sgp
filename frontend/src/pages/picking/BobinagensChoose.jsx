@@ -90,7 +90,7 @@ export const postProcess = async (dt, submitting) => {
     return dt;
 }
 
-export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, refresh, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilters = {}, defaultSort = [], onSelect,onSelectBobine, title, onFilterChange, refresh, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -147,7 +147,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
         ...(true) ? [{ name: 'core', header: 'Core', userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center",render: ({ data, cellProps }) => <RightAlign style={{}} addonAfter={<b>''</b>}>{data?.core}</RightAlign> }] : [],
         
         ...(true) ? Array.from({ length: 28 }, (_, index) => {
-            return { name: String(index+1).padStart(2, '0'), style:{padding:"0px"}, header: String(index+1).padStart(2, '0'), sortable:false, userSelect: true, defaultLocked: false, defaultWidth: 20, headerAlign: "center",render: ({ data, cellProps }) => (Array.isArray(data?.bobines) && data.bobines.length>0) && <EstadoBobine estado={data?.bobines[index]?.estado} largura={data?.bobines[index]?.lar }/>};
+            return { name: String(index+1).padStart(2, '0'), style:{padding:"0px"}, header: String(index+1).padStart(2, '0'), sortable:false, userSelect: true, defaultLocked: false, defaultWidth: 20, headerAlign: "center",render: ({ data, cellProps }) => (Array.isArray(data?.bobines) && data.bobines.length>0) && <EstadoBobine onClick={onSelectBobine} id={data?.bobines[index]?.id} nome={data?.bobines[index]?.nome} estado={data?.bobines[index]?.estado} largura={data?.bobines[index]?.lar }/>};
           }) : [],
         //...(true) ? [{ name: 'comp', header: 'Comprimento', width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> }] : [],
         //...(true) ? [{ name: 'comp_par', header: 'Comp. Emenda', width: 100, editable: editable, cellClass: editableClass, editor: p => <InputNumberEditor p={p} field="comp_par" min={0} max={p.row.comp} addonAfter="m" onChange={onChange} />, editorOptions: { editOnClick: true }, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_par} m</div> }] : [],

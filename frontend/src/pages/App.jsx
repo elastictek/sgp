@@ -119,6 +119,7 @@ const FormPickWeighPalete = lazy(() => import('./picking/FormPickWeighPalete'));
 const FormPickDeletePalete = lazy(() => import('./picking/FormPickDeletePalete'));
 const FormPickPrePicking = lazy(() => import('./picking/FormPickPrePicking'));
 const FormPickFixBobinagem = lazy(() => import('./picking/FormPickFixBobinagem'));
+const FormPickPrintBobinagem = lazy(() => import('./picking/FormPickPrintBobinagem'));
 const FormPickDeleteBobinagem = lazy(() => import('./picking/FormPickDeleteBobinagem'));
 const FormPickPrintPalete = lazy(() => import('./picking/FormPickPrintPalete'));
 const FormPickOFabricoChangeStatus = lazy(() => import('./picking/FormPickOFabricoChangeStatus'));
@@ -253,6 +254,7 @@ const RenderRouter = () => {
                 { path: "picking/redopaleteline", element: <Suspense fallback={<Spin />}><FormPickRedoPaleteLine /></Suspense> },
                 { path: "picking/weighpalete", element: <Suspense fallback={<Spin />}><FormPickWeighPalete /></Suspense> },
                 { path: "picking/printetiquetapalete", element: <Suspense fallback={<Spin />}><FormPickPrintPalete /></Suspense> },
+                { path: "picking/printetiquetabobinagem", element: <Suspense fallback={<Spin />}><FormPickPrintBobinagem /></Suspense> },
                 { path: "picking/deletepalete", element: <Suspense fallback={<Spin />}><FormPickDeletePalete /></Suspense> },
                 { path: "picking/prepicking", element: <Suspense fallback={<Spin />}><FormPickPrePicking /></Suspense> },
                 { path: "picking/fixbobinagem", element: <Suspense fallback={<Spin />}><FormPickFixBobinagem /></Suspense> },
