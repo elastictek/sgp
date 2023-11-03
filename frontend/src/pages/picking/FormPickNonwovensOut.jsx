@@ -9,7 +9,7 @@ import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
-import { API_URL, JUSTIFICATION_OUT_V2 } from "config";
+import { API_URL, JUSTIFICATION_NW_OUT_V2 } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { json, includeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
@@ -33,6 +33,7 @@ import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 import { MdOutlineOutput, MdOutlineInput } from 'react-icons/md';
+import { getInt } from 'utils/index';
 
 
 const title = "Saída de Nonwovens da Linha";
@@ -46,6 +47,14 @@ export const loadNonwovensInLine = async ({ }, signal) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, sort: [], parameters: { method: "GetNonwovensInLine" }, signal });
     if (rows && rows.length > 0) {
         return rows;
+    }
+    return null;
+}
+
+export const getNonwovenData = async ({ artigo_cod }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: { artigo_cod }, sort: [], parameters: { method: "GetMateriaPrimaData" }, signal });
+    if (rows && rows.length > 0) {
+        return rows[0];
     }
     return null;
 }
@@ -118,7 +127,7 @@ const NonwovensList = ({ openNotification, next, list, setList, ...props }) => {
 
 
 
-export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...props }) => {
+export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -133,7 +142,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
     const [pos, setPos] = useState(null);
     const [list, setList] = useState(null);
     const [qtd, setQtd] = useState(null);
-    const [unit, setUnit] = useState('m2');
+    const [unit, setUnit] = useState('kg');
     const [justificacao, setJustificacao] = useState(null);
 
     useEffect(() => {
@@ -155,8 +164,17 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
     const onSave = async () => {
         let response = null;
         try {
-            const _qtd = (unit==='m2') ? qtd : parseFloat((qtd*(pos.largura/1000)).toFixed(2));
-            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "RemoveNonwovenFromLine", row: { qty_reminder: _qtd, obs: justificacao, vcr_num: pos.vcr_num } } });
+            let _qtd = 0;
+            let _qtd_kg = 0;
+            switch (unit) {
+                case "m": parseFloat((qtd * (pos.largura / 1000)).toFixed(2)); break;
+                case "m2": _qtd = qtd; break;
+                case "kg": _qtd = parseFloat((qtd / pos.gsm).toFixed(2)); break;
+            }
+            _qtd_kg = parseFloat(((_qtd* pos.gsm) / 1000).toFixed(2));
+
+            const _recycle = (justificacao == JUSTIFICATION_NW_OUT_V2[JUSTIFICATION_NW_OUT_V2.length-1]) ? true : false;
+            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "RemoveNonwovenFromLine", row: { recycle:_recycle, qty_reminder: _qtd,qty_kg: _qtd_kg, obs: justificacao, vcr_num: pos.vcr_num } } });
             if (response && response.data.status !== "error") {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title);
                 prev();
@@ -170,9 +188,13 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
         }
     }
 
-    const next = (item) => {
-        console.log(item)
-        setPos(item);
+    const next = async (item) => {
+        if (item) {
+            const _data = await getNonwovenData({ artigo_cod: item.artigo_cod });
+            setPos({ ...item, gsm: _data?.TSICOD_2 });
+            console.log("aaaaaa", { ...item, gsm: getInt(_data?.TSICOD_2) })
+        }
+
         setStep(step + 1);
     };
 
@@ -253,6 +275,9 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
                                                             onChange={onUnitSelect}
                                                             options={[
                                                                 {
+                                                                    label: (<div>Quilos</div>),
+                                                                    value: 'kg'
+                                                                }, {
                                                                     label: (<div>Metros&sup2;</div>),
                                                                     value: 'm2'
                                                                 },
@@ -271,7 +296,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
                                                         <Divider orientation="center">Justificação da saída</Divider>
                                                         {!justificacao && <List
                                                             bordered
-                                                            dataSource={JUSTIFICATION_OUT_V2}
+                                                            dataSource={JUSTIFICATION_NW_OUT_V2}
                                                             renderItem={(item) => (
                                                                 <ListItem onClick={() => setJustificacao(item)}>
                                                                     <Typography.Text></Typography.Text> {item}

@@ -515,7 +515,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
             render: ({ data, cellProps }) => <EstadoBobine id={data.id} nome={data.nome} estado={data.estado} largura={data.lar} cellProps={cellProps} />,
             editable: columnEditable,
             cellProps: { className: columnClass },
-            renderEditor: (props) => <EstadoTableEditor filter={(v => v?.value === "DM" || v?.value === "IND" || v?.value === "BA" || v?.value === "LAB")} {...props} />
+            renderEditor: (props) => <EstadoTableEditor filter={(v => v?.value === "R" || v?.value === "DM" || v?.value === "IND" || v?.value === "BA" || v?.value === "LAB")} {...props} />
         }] : [],
         ...(true) ? [{ name: 'troca_nw', header: 'Troca NW', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.troca_nw} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{

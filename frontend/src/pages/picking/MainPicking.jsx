@@ -182,7 +182,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                             {allows?.paletes?.newcliente && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => newWindow(`${ROOT_URL}/producao/palete/create/`, {}, `paletecreate`)}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Nova Palete<br />Cliente</div>
+                                                    <div className='txt'>Nova Palete<br />Stock</div>
                                                 </StyledButton>
                                             </Col>
                                             }

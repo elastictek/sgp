@@ -2,10 +2,10 @@ import React from 'react';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined, MenuOutlined } from '@ant-design/icons';
 
 
-//export const SERVER_PORT = "81";
-//export const SERVER = "192.168.0.16";
-export const SERVER_PORT = "8000";
-export const SERVER = "localhost";
+export const SERVER_PORT = "81";
+export const SERVER = "192.168.0.16";
+//export const SERVER_PORT = "8000";
+//export const SERVER = "localhost";
 export const ROOT_URL = `http://${SERVER}:${SERVER_PORT}`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
@@ -76,6 +76,7 @@ export const OFABRICO_FILTER_STATUS = [{ value: "Todos", label: "Todos" }, { val
 export const RECICLADO_ARTIGO = { cod: "R00000000000001", des: "Reciclado ElasticTek" };
 export const JUSTIFICATION_OUT = [{ value: "" }, { value: "NÃO CONFORME" }, { value: "TROCA DE PRODUÇÃO" }, { value: "TROCA DE MATÉRIA PRIMA" }];
 export const JUSTIFICATION_OUT_V2 = ["NÃO CONFORME", "TROCA DE PRODUÇÃO", "TROCA DE MATÉRIA PRIMA"];
+export const JUSTIFICATION_NW_OUT_V2 = ["NÃO CONFORME", "TROCA DE PRODUÇÃO", "TROCA DE NONWOVEN", "TROCA DE NONWOVEN PARA RECICLAGEM"];
 //DOSERS
 export const DOSERS = [{ value: 'A1' }, { value: 'A2' }, { value: 'A3' }, { value: 'A4' }, { value: 'A5' }, { value: 'A6' }, { value: 'B1' }, { value: 'B2' }, { value: 'B3' }, { value: 'B4' }, { value: 'B5' }, { value: 'B6' }, { value: 'C1' }, { value: 'C2' }, { value: 'C3' }, { value: 'C4' }, { value: 'C5' }, { value: 'C6' }]
 //CORES

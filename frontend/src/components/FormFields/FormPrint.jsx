@@ -19,7 +19,7 @@ export const printersList = {
 };
 
 
-export default ({ v, parentRef, closeParent, printers, url, parameters, numCopiasMax = 3, printer = "Bobinadora_CAB_A4_200", numCopias = 1, allowDownload = true, onComplete, obs }) => {
+export default ({ v, parentRef, closeParent, printers, url, parameters, numCopiasMax = 4, printer = "Bobinadora_CAB_A4_200", numCopias = 1, allowDownload = true, onComplete, obs }) => {
     const [values, setValues] = useState({ impressora: printer, num_copias: numCopias })
     const onClick = async (download) => {
         const response = (download=="download") ? await fetchPostBlob({ url, parameters: { ...parameters, ...values, ...download && { download } } }) : await fetchPost({ url, parameters: { ...parameters, ...values } });

@@ -382,7 +382,7 @@ def RemoveNonwovenFromLine(request, format=None):
     try:
         with connections["default"].cursor() as cursor:
             f["t_stamp"]=datetime.now()
-            args = (f["t_stamp"],f["vcr_num"],f["qty_reminder"] if "qty_reminder" in f else 0,f["obs"] if "obs" in f else None,request.user.id, 0)
+            args = (f["t_stamp"],f["vcr_num"],f["qty_reminder"] if "qty_reminder" in f else 0,f["obs"] if "obs" in f else None,1 if f.get("recycle") else 0, f.get("qty_kg"), request.user.id, 0)
             cursor.callproc('output_nw_from_line_v2',args)
             return Response({"status": "success","title":"Saída de Nonwoven efetuada com sucesso." })
     except Exception as error:
@@ -594,6 +594,17 @@ def GetNWLoteQuantity(request, format=None):
     else:
         return Response({"status": "error", "title": "O lote de Nonwoven não pode ser utilizado em linha!", "row":{}})
 
+
+def GetMateriaPrimaData(request, format=None):
+    conngw = connections[connGatewayName].cursor()
+    sageAlias = dbgw.dbAlias.get("sage")
+    sgpAlias = dbgw.dbAlias.get("sgp")
+    f = Filters(request.data.get('filter'))
+    f.where()
+    f.add(f'"ITMREF_0" = :artigo_cod ',True )
+    f.value("and")
+    response = dbgw.executeSimpleList(lambda:(f"""SELECT "ITMREF_0","TSICOD_2","TSICOD_3","ITMDES2_0","ITMDES1_0","ZCERT_0" FROM {sageAlias}."ITMMASTER" {f.text} limit 1"""),conngw,f.parameters)
+    return Response(response)
 
 def ListMateriasPrimas(request, format=None):
     connection = connections[connMssqlName].cursor()    

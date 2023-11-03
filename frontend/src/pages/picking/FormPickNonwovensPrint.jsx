@@ -237,11 +237,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         }
     }
 
-    const onDownloadComplete = async (response) => {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        //downloadFile(response.data,"etiqueta_nw.pdf");
+    const onDownloadComplete = async (response,download) => {
+        if (download == "download") {
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(blob);
+            window.open(pdfUrl, '_blank');
+            //downloadFile(response.data,"etiqueta_nw.pdf");
+        }
     }
     const onNwsPrint = () => {
         if (selectedNws.length > 0) {

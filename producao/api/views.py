@@ -5457,11 +5457,7 @@ def SaveRecicladoItems(request, format=None):
         """), cursor, {})
         isLob = lob["rows"][0]["cnt"] if len(lob["rows"])>0 else 0
         leb = {"rows":[]} if eb==[] else db.executeSimpleList(lambda: (f"""SELECT nome FROM producao_bobine where estado not in ('R','GRA','BA') and nome in({','.join(f'"{item}"' for item in eb)})"""), cursor, {})
-        print("B-SAVING-------------------------")
-        print(leb["rows"])
-        print(data["rows"])
         if len(leb["rows"])==0 and isLob==0:
-            print("B-SAVING-------------------------")
             for idx, item in enumerate(data["rows"]):
                 dml = db.dml(TypeDml.INSERT, {"reciclado_id":data["id"],"qtd":item["qtd"],"source":item["source"],"timestamp":item["timestamp"],"lote":item["lote"],"unit":item["unit"],"user_id":request.user.id}, "producao_recicladolotes",None,None,False)
                 dml.statement = f"""
@@ -5475,9 +5471,6 @@ def SaveRecicladoItems(request, format=None):
                         unit=VALUES(unit),
                         reciclado_id=VALUES(reciclado_id)
                 """
-                print("SAVING-------------------------")
-                print(dml.statement)
-                print(dml.parameters)
                 db.execute(dml.statement, cursor, dml.parameters)
     try:
         if not data.get("id"):            

@@ -92,12 +92,7 @@ def PrintNwsEtiquetas(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
     data = request.data["parameters"]
     tmp = tempfile.NamedTemporaryFile()
-    print(tmp)
-    print(tmp.name)
-    print("----")
-    print(data)
     tstamp = datetime.now()
-
     fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
@@ -117,7 +112,7 @@ def PrintNwsEtiquetas(request,format=None):
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -136,7 +131,6 @@ def PrintPaleteEtiqueta(request,format=None):
     data = request.data["parameters"]
     tmp = tempfile.NamedTemporaryFile()
     tstamp = datetime.now()
-
     fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
@@ -156,7 +150,7 @@ def PrintPaleteEtiqueta(request,format=None):
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -182,7 +176,6 @@ def PrintMPBufferEtiqueta(request,format=None):
     cdate = datetime.fromisoformat(request.data["parameters"]["CREDATTIM_0"])
     utc_time = tzutc.localize(cdate)
     ###################
-
     fstream = requests.post(f'{reportServer}/run', json={
         "config":"default",
         "conn-name":"MYSQL-SGP",
@@ -209,7 +202,7 @@ def PrintMPBufferEtiqueta(request,format=None):
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
             ###########################
     except Exception as error:
           print("error----> print")
@@ -264,7 +257,7 @@ def PrintMPBuffer(request,format=None):
         tmp.write(fstream.content)
         #TO UNCOMMENT ON PRODUCTION
         conn = cups.Connection()
-        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{}) 
+        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"]) 
         ###########################
     except Exception as error:
           print("error----> print")

@@ -405,11 +405,11 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 height: "200px",
                 content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiqueta</div>,
                 parameters: {
-                    url: `${API_URL}/print/sql/`, printers: [...printersList?.ARMAZEM, ...printersList?.PRODUCAO],
+                    url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO,...printersList?.ARMAZEM],numCopias:2,
                     onComplete: onDownloadComplete,
                     parameters: {
                         method: "PrintPaleteEtiqueta",
-                        id: state.palete_id,
+                        id: state.palete.id,
                         palete_nome: state.palete.nome,
                         name: "ETIQUETAS-PALETE",
                         path: "ETIQUETAS/PALETE"

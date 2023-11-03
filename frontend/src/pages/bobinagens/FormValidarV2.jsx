@@ -321,11 +321,11 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         }
         updateState(draft => {
             draft.loaded = true;
-            draft.step = 2//0;
+            draft.step = 0;
             draft.maxStep = 0;
             draft.bobinagem = (_bm) ? _bm : null;
             draft.hasBobines = (_bobines) ? true : false;
-            //draft.valid = (_bm && _bobines) ? true : false;
+            draft.valid = (_bm && _bobines) ? true : false;
             draft.nome = (_bm) ? _bm.nome : null;
             draft.id = inputParameters.current.bobinagem_id;
         });
@@ -354,7 +354,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 settings: false,
                 toolbar: false,
                 toolbarFilters: false,
-                data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM"].includes(v.value)),
+                data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM","R"].includes(v.value)),
                 payload: { payload: { url: ``, primaryKey: "value", parameters: { ...defaultParameters }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [] } },
                 columns: [
                     { name: "value", header: 'Estado', flex: 1, render: ({ cellProps, data }) => <EstadoBobine estado={data?.value} /> }
