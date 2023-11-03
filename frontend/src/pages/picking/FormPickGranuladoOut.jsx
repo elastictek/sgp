@@ -165,12 +165,12 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory=true, ...prop
         try {
             switch (option) {
                 case "1":
+                    console.log("vvvvvvvvvvvvvvvvvvv",pos)
                     if (!pos?.arranque && pos?.n_lote) {
                         n = list.reduce((count, current) => ((current["vcr_num"] === pos.vcr_num && current["arranque"]) ? count + 1 : count), 0);
                     }
                     if (n <= 1) {
-                        console.log("okkkkkkk")
-                        //response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "RemoveGranuladoFromLine", row: { qty_reminder: qtd, obs: justificacao, vcr_num: pos.vcr_num } } });
+                        response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "RemoveGranuladoFromLine", row: { qty_reminder: qtd, obs: justificacao, vcr_num: pos.vcr_num } } });
                     } else {
                         openNotification("error", 'top', "Notificação", "Não é possível dar saída do lote, porque faz parte da formulação e encontra-se em linha!");
                         return;

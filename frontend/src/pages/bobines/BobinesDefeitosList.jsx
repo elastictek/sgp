@@ -11,7 +11,7 @@ import { useSubmitting } from "utils";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { orderObjectKeys, json } from "utils/object";
 import { usePermission, Permissions } from "utils/usePermission";
-import loadInit, { fixRangeDates,newWindow } from "utils/loadInitV3";
+import loadInit, { fixRangeDates, newWindow } from "utils/loadInitV3";
 import { useNavigate, useLocation } from "react-router-dom";
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
@@ -20,7 +20,7 @@ const { TextArea } = Input;
 import { PlusOutlined, MoreOutlined, EditOutlined, ReadOutlined, PrinterOutlined, LockOutlined, CopyOutlined, SearchOutlined } from '@ant-design/icons';
 import { CgCloseO } from 'react-icons/cg';
 import Table from 'components/TableV2';
-import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS,ROOT_URL } from 'config';
+import { API_URL, DATE_FORMAT, TIME_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS, ROOT_URL } from 'config';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -71,6 +71,7 @@ const applyValueToAllRows = (rows, col, currentIndex, value) => {
     });
 }
 
+const focus = (el, h,) => { el?.focus(); };
 export default ({ noPrint = true, noEdit = true, ...props }) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
@@ -123,7 +124,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
                 return (col === "generic") ? true : false;
             }
-        }else if (props?.parameters?.bobinagem) {
+        } else if (props?.parameters?.bobinagem) {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id) {
                 return (col === "generic") ? true : false;
             }
@@ -135,7 +136,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !props?.parameters?.palete?.carga_id && !props?.parameters?.palete?.SDHNUM_0/*  && props?.parameters?.palete?.nome.startsWith('D') */) {
                 return (col === "generic") ? classes.edit : undefined;
             }
-        }else if (props?.parameters?.bobinagem) {
+        } else if (props?.parameters?.bobinagem) {
             if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id) {
                 return (col === "generic") ? classes.edit : undefined;
             }
@@ -158,7 +159,13 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
             cellClass: r => editableClass(r, 'generic')
         },
         { key: 'lar', sortable: false, name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
-        { key: 'l_real', sortable: false, name: 'Largura Real', width: 90, formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.l_real} {row.l_real && "mm"}</div> },
+        {
+            key: 'l_real', sortable: false, name: 'Largura Real', width: 110, 
+            formatter: ({ row }) => <div style={{ textAlign: "right" }}>{row.l_real} {row.l_real && "mm"}</div>,
+            editable, cellClass: r => editableClass(r, 'generic'),
+            editor: p => <InputNumber style={{ width: "100%" }} bordered={false} size="small" value={p.row.l_real} ref={focus} onChange={(e) => p.onRowChange({ ...p.row, notValid:1, l_real: e === null ? 0 : e }, true)} min={p.row.lar - 30} max={p.row.lar + 30} />, 
+            editorOptions: { editOnClick: true }
+        },
         {
             key: 'fc_pos', sortable: false, width: 90,
             headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p, 'generic')} />,
@@ -254,7 +261,7 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
         formFilter.setFieldsValue({ ...fieldValues });
         // palete_id = getFilterValue(palete_id, '==')
         // bobinagem_id = getFilterValue(bobinagem_id, '==')
-        setDefaultFilters(prev => ({ ...prev, palete_id , bobinagem_id }));
+        setDefaultFilters(prev => ({ ...prev, palete_id, bobinagem_id }));
         dataAPI.addFilters({ ...defaultFilters, ...filterValues, ...(palete_id && { palete_id, fcompactual: ">0" }), ...(bobinagem_id && { bobinagem_id, fcompactual: ">=0", frecycle: ">=0" }) }, true, true);
         dataAPI.setSort(defaultSort);
         dataAPI.addParameters(defaultParameters, true, true);
@@ -386,11 +393,11 @@ export default ({ noPrint = true, noEdit = true, ...props }) => {
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
                     {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                        <Permissions permissions={permission} action="changeDefeitos" forInput={!noEdit}>
-                            {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                            {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
-                            {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
-                        </Permissions>
+                    <Permissions permissions={permission} action="changeDefeitos" forInput={!noEdit}>
+                        {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
+                        {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
+                        {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
+                    </Permissions>
                 </Space>}
             />
         </>

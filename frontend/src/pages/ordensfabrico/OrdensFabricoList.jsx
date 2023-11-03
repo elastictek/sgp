@@ -462,8 +462,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
-                //case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
-                case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                //case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;

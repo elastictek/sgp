@@ -2465,7 +2465,7 @@ def ClosePrf(request, format=None):
                 raise Exception("A Prf não existe!")
             if _prf.get("ativa")==0:
                 raise Exception("A Prf não não pode ser fechada!")
-            if _prf.get("was_in_production")==1 and (_prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock")):
+            if _prf.get("was_in_production")==1 and (_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in")) < (_prf.get("num_paletes_produzir") + _prf.get("num_paletes_stock")):
                 raise Exception("Número de paletes da Prf insuficiente!")
             dml = db.dml(TypeDml.UPDATE, {
                 "fim": datetime.now(),

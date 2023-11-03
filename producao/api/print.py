@@ -322,8 +322,8 @@ def PrintEtiqueta(request, format=None):
                 if etiquetas is None:
                     Response({"status": "error", "title": f'Erro ao imprimir etiquetas! Etiquetas não estão criadas.', "subTitle":None})
                 else:
-                    for v in etiquetas:
-                        dta={"impressora":data["impressora"], "num_copias":data["num_copias"] +1 if data["lab"] == 1 else data["num_copias"], "estado_impressao":1}
+                    for idx,v in enumerate(etiquetas):
+                        dta={"impressora":data["impressora"], "num_copias":data["num_copias"] +1 if data["lab"] == 1 and idx==0 else data["num_copias"], "estado_impressao":1}
                         dml = db.dml(TypeDml.UPDATE,dta,"producao_etiquetaretrabalho",{"id":f'=={v["id"]}'},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
             if data["type"] == "palete":
