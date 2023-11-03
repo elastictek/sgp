@@ -270,7 +270,7 @@ export const groupBy = (xs, key) => {
 };
 
 
-export const pickAll = (names, obj={}) => {
+export const pickAll = (names, obj={},fn=null) => {
     var result = {};
     var idx = 0;
     var len = Array.isArray(names) ? names.length : 0;
@@ -279,11 +279,11 @@ export const pickAll = (names, obj={}) => {
         if (typeof name == "object") {
             const k = Object.keys(name)[0];
             if (isObject(obj) && (k in obj)) {
-                result[name[k]] = obj[k];
+                result[name[k]] = fn==null ? obj[k] : fn(k,name[k],obj[k]);
             }
         } else {
             if (isObject(obj) && (name in obj)) {
-                result[name] = obj[name];
+                result[name] = fn==null ? obj[name] : fn(name,name,obj[name]);
             }
         }
         idx += 1;

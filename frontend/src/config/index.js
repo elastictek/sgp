@@ -2,10 +2,10 @@ import React from 'react';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined, MenuOutlined } from '@ant-design/icons';
 
 
-export const SERVER_PORT = "81";
-export const SERVER = "192.168.0.16";
-//export const SERVER_PORT = "8000";
-//export const SERVER = "localhost";
+//export const SERVER_PORT = "81";
+//export const SERVER = "192.168.0.16";
+export const SERVER_PORT = "8000";
+export const SERVER = "localhost";
 export const ROOT_URL = `http://${SERVER}:${SERVER_PORT}`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
@@ -87,7 +87,7 @@ export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Proce
 { value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];
 //SENTIDO ENROLAMENTO
 export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }];
-export const TIPOEMENDA_OPTIONS = [{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
+export const TIPOEMENDA_OPTIONS = [{ value: "Não Aplicável", key: null },{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
 //--ARTIGO
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'

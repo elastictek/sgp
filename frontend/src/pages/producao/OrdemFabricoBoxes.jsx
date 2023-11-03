@@ -453,8 +453,6 @@ const BobinesTotais = ({ data }) => {
     );
 }
 
-
-
 export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveKeyChange */ boxWidth = 3, height, ...props }) => {
     const media = useContext(MediaContext);
     const permission = usePermission({ /* name: "widget", item: "estadoProducao" */ });//Permissões Iniciais
@@ -514,19 +512,39 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
     }
 
     const onAttachmentsClick = (data) => {
-        console.log("$$$$",data)
-        setModalParameters({ content: "attachments", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Anexos {data?.of_cod}</div>, parameters: { draft_id:data.of.draft_of_id } });
+        console.log("$$$$", data)
+        setModalParameters({ content: "attachments", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Anexos {data?.of_cod}</div>, parameters: { draft_id: data.of.draft_of_id } });
         showModal();
     }
 
     const onPaletizacaoClick = (data) => {
-        setModalParameters({ content: "paletizacao", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Esquema de Paletização {data?.of_cod}</div>, parameters: { temp_ofabrico:data.of.draft_of_id } });
+        setModalParameters({ content: "paletizacao", type: "drawer", push: false, width: "90%", lazy: true, title: <div style={{ fontWeight: 900 }}>Esquema de Paletização {data?.of_cod}</div>, parameters: { temp_ofabrico: data.of.draft_of_id } });
         showModal();
     }
 
     useEffect(() => {
         if (dataAPI.hasData()) {
-            setOfs([...new Set(dataAPI.getData().rows.map(obj => obj.of_cod))]);
+            const n1 = dataAPI.getData().rows.filter(v=>v.total_current.num_paletes<v.total_planned.num_paletes);
+            n1.sort((a,b)=>{
+                if (a.total_current.num_paletes > 0 && b.total_current.num_paletes > 0) {
+                    return b.total_current.num_paletes - a.total_current.num_paletes;
+                } else if (a.total_current.num_paletes > 0) {
+                    return -1; // a should come before b
+                } else if (b.total_current.num_paletes > 0) {
+                    return 1; // b should come before a
+                }
+            });
+            const n2 = dataAPI.getData().rows.filter(v=>v.total_current.num_paletes>=v.total_planned.num_paletes);
+            n2.sort((a,b)=>{
+                if (a.total_current.num_paletes >= a.total_planned.num_paletes && b.total_current.num_paletes >= b.total_planned.num_paletes) {
+                    return 0; // No change in order
+                } else if (a.total_current.num_paletes >= a.total_planned.num_paletes) {
+                    return 1; // a should come after b
+                } else if (b.total_current.num_paletes >= b.total_planned.num_paletes) {
+                    return -1; // b should come after a
+                }
+            });
+            setOfs([...new Set([...n1.map(v=>v.of_cod),...n2.map(v=>v.of_cod)])]);
         } else {
             setOfs([]);
         }
@@ -551,17 +569,17 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#002766", color: "#fff", padding: "5px" }}><ArtigoTitle data={items[0]} /><Checkbox checked={paletes.includes(v)} onChange={() => onTogglePaletes && onTogglePaletes(v)} /></div>
                                 {/**TOOLBOX */}
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0f0f0", color: "#000", padding: "2px 5px 2px 5px" }}>
-                                <div>
-                                    <Space>
-                                        {/* <Button type="primary" icon={<MoreOutlined/>} size="small" onClick={() => onPaletesStockClick(items[0])} title="Paletes de stock">Mais</Button> */}
-                                    </Space>
+                                    <div>
+                                        <Space>
+                                            {/* <Button type="primary" icon={<MoreOutlined/>} size="small" onClick={() => onPaletesStockClick(items[0])} title="Paletes de stock">Mais</Button> */}
+                                        </Space>
                                     </div>
                                     <div>
-                                    <Space>
-                                        <Button type="primary" size="small" onClick={() => onAttachmentsClick(items[0])} ghost icon={<PaperClipOutlined />} title="Anexos" />
-                                        <Button type="primary" size="small" onClick={() => onPaletizacaoClick(items[0])} ghost title="Paletização">Paletização</Button>
-                                        <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
-                                    </Space>
+                                        <Space>
+                                            <Button type="primary" size="small" onClick={() => onAttachmentsClick(items[0])} ghost icon={<PaperClipOutlined />} title="Anexos" />
+                                            <Button type="primary" size="small" onClick={() => onPaletizacaoClick(items[0])} ghost title="Paletização">Paletização</Button>
+                                            <Button type="primary" size="small" onClick={() => onPaletesStockClick(items[0])} ghost title="Paletes de stock">Stock</Button>
+                                        </Space>
                                     </div>
                                 </div>
                                 <div style={{ height: height ? height : (ofs.length <= 2 ? "400px" : "300px") }}>

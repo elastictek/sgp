@@ -790,9 +790,8 @@ def changePaleteOrdemFabrico(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 args = [filter.get("palete_id"), data.get("ordem_id"),request.user.id]
-                print(args)
                 cursor.callproc('change_palete_ordemfabrico',args)
-        return Response({"status": "success", "success":f"""Palete/Ordem atualizada com sucesso!"""})
+        return Response({"status": "success", "title":f"""Palete/Ordem atualizada com sucesso!"""})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 

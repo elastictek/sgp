@@ -43,6 +43,7 @@ const PaletesList = React.lazy(() => import('../paletes/PaletesList'));
 const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'));
 const FormNewPaleteLine = React.lazy(() => import('../paletes/FormNewPaleteLine'));
 const FormAttachements = React.lazy(() => import('./FormAttachements'));
+const Planeamento = React.lazy(() => import('../planeamento/Planeamento'));
 
 
 const Operations = ({ parameters }) => {
@@ -461,7 +462,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
-                case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                //case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
@@ -876,7 +878,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         if ((data?.ofabrico_status === 1)) {
             ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            setModalParameters({ content: "ordemfabricoinelaboration", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+            setModalParameters({ content: "ordemfabricoinelaboration", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
             showModal();
             // navigate('/app/ofabrico/ordemfabrico', {
             //     state: {
@@ -887,7 +889,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
             ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            setModalParameters({ content: "ordemfabricoview", type: "drawer", width: "95%", title: `${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+            setModalParameters({ content: "ordemfabricoview", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
             showModal();
             // navigate('/app/ofabrico/ordemfabrico', {
             //     state: {

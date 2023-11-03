@@ -69,9 +69,9 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
     </>);
 }
 
-export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc, ...props }) => {
+export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc,loadParentData, ...props }) => {
     const onAction = () => {
-        changeOf({ openNotification: misc?.openNotification, row: { id: parameters?.palete?.id, nome: parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: { key: "changeof" } });
+        changeOf({ loadParentData, openNotification: misc?.openNotification, row: { id: parameters?.palete?.id, nome: parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: { key: "changeof" } });
     }
 
     return (
@@ -91,23 +91,26 @@ export const BtnEtiquetasBobines = () => {
 }
 
 
-const onChangeOf = async ({ data, closeSelf, palete_id, openNotification }) => {
+const onChangeOf = async ({ data, closeSelf, palete_id, openNotification,loadParentData }) => {
     let response = null;
     try {
         response = await fetchPost({ url: `${API_URL}/paletes/sql/`, filter: { palete_id }, parameters: { method: "changePaleteOrdemFabrico", ordem_id: data?.id } });
-        if (response.data.status !== "error") {
+        if (response && response.data.status !== "error") {
+            if (loadParentData){
+                loadParentData();
+            }
             closeSelf();
             openNotification(response.data.status, 'top', "Notificação", response.data.title);
         } else {
-            openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+            openNotification("error", 'top', "Notificação", response.data.title, null);
         }
     } catch (e) {
-        openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+        openNotification("error", 'top', "Notificação", e.message, null);
     } finally {
     };
 }
 
-export const changeOf = ({ setModalParameters, showModal, openNotification, item, row }) => {
+export const changeOf = ({ setModalParameters, showModal, openNotification,loadParentData, item, row }) => {
     setModalParameters({
         content: item.key, responsive: true, type: "drawer", title: `Ordens de Fabrico Compatíveis [Palete ${row?.nome}]`, push: false, loadData: () => { }, parameters: {
             payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "GetPaleteCompatibleOrdensFabricoOpen" }, pagination: { enabled: false, limit: 50 }, filter: { palete_id: row.id }, sort: [] } },
@@ -123,7 +126,7 @@ export const changeOf = ({ setModalParameters, showModal, openNotification, item
                 { name: 'item_numbobines', header: 'Bobines', defaultWidth: 100 }
 
             ],
-            onSelect: ({ rowProps, closeSelf }) => onChangeOf({ data: rowProps?.data, closeSelf, palete_id: row.id, openNotification })
+            onSelect: ({ rowProps, closeSelf }) => onChangeOf({ data: rowProps?.data, closeSelf, palete_id: row.id, openNotification,loadParentData })
         },
 
     });

@@ -49,7 +49,7 @@ const loadPaleteLookup = async (palete_id) => {
     return rows;
 }
 
-const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, parameters, misc, permission }) => {
+const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, parameters, misc, permission, loadParentData }) => {
     const navigate = useNavigate();
 
     const onChange = (v, field) => {
@@ -66,7 +66,7 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
 
     const rightContent = (
         <Space>
-            <RightToolbar permission={permission} parameters={parameters} misc={misc} />
+            <RightToolbar permission={permission} parameters={parameters} misc={misc} loadParentData={loadParentData} />
         </Space>
     );
     return (
@@ -181,7 +181,7 @@ export default (props) => {
 
     return (
         <YScroll>
-            <ToolbarTable {...props} permission={permission} submitting={submitting} />
+            <ToolbarTable {...props} loadParentData={loadData} permission={permission} submitting={submitting} />
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
             <FormContainer id="LAY-FP" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onFinish} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <Row style={{}} gutterWidth={10}>

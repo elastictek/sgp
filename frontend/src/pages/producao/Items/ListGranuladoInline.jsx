@@ -3,7 +3,7 @@ import { Collapse, Form, Input, Typography } from "antd";
 import { DATETIME_FORMAT } from "config";
 import { createUseStyles } from 'react-jss';
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSubmitting } from "utils";
+import { useSubmitting,getFloat } from "utils";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { AppContext, MediaContext } from "app";
 import ResponsiveModal from 'components/Modal';
@@ -84,7 +84,7 @@ export default ({ hash, data, ...props }) => {
             name: 'n_lote', header: 'Lote', headerAlign: "center", userSelect: true, showColumnMenuTool: false, defaultWidth: 140, render: (p) =>
                 <div style={{ display: "flex", alignItems: "start", flexDirection: "column" }}>
                     <div style={{ fontWeight: 700 }}>{p.data?.n_lote}</div>
-                    <RightAlign unit="kg">{p.data?.qty_lote}</RightAlign>
+                    <RightAlign unit="kg">{getFloat(p.data?.qty_lote,2)}</RightAlign>
                 </div>
         }] : [],
         ...(true) ? [{ name: 'arranque', header: '%', headerAlign: "center", userSelect: true, showColumnMenuTool: false, width: 40, render: (p) => <RightAlign unit="%">{p.data?.arranque}</RightAlign> }] : [],
