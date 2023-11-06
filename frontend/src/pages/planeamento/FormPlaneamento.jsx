@@ -131,6 +131,7 @@ export default ({ operationsRef, index, updateState, operations, ...props }) => 
 
     useEffect(() => {
         if (formDirty && !operations.dirtyForms.includes(index)) {
+            form.resetFields();
             form.setFieldsValue({...inputParameters.current.initValues});
         }
     }, [formDirty, operations.dirtyForms])
@@ -156,7 +157,11 @@ export default ({ operationsRef, index, updateState, operations, ...props }) => 
     }
 
     const onSave = () => {
-
+        // temp_id  - temp_ofabrico id
+        // agg_id   - temp_ofabricoagg id
+        // cs_id    - current_settings id
+        // ordem_id - planeamento_producao id
+        console.log("saving---->", { ...pickAll(["cs_id", "agg_id", "ordem_id", "temp_id"], inputParameters.current)})
     }
 
     const forInput = (action, item = "edit") => {

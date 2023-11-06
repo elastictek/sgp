@@ -172,12 +172,12 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...pr
     const onSave = async () => {
         let response = null;
         try {
-            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "AddNWToLine", cs_id: state.item.items[0].cs_id, rows: dataAPI.getData().rows } });
-            if (response.data.status !== "error") {
+            response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "AddNWToLine", cs_id: state.item ? state.item.items[0].cs_id : null, rows: dataAPI.getData().rows } });
+            if (response && response.data.status !== "error") {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title);
                 navigate("/app/picking/main/");
             } else {
-                openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                openNotification("error", 'top', "Notificação", response.data.title, null);
             }
         }
         catch (e) {

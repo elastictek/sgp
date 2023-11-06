@@ -108,8 +108,12 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
         action: null,
         maxStep: null,
         step: null,
-        plan_id: null,
-        agg_id: null,
+        ids: {
+            temp_id: null,
+            agg_id: null,
+            cs_id: null,
+            ordem_id: null
+        },
         ordem: null,
         operations: { dirtyForms: [], edit: false }
     });
@@ -140,9 +144,14 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
             inputParameters.current = { ...paramsIn };
         }
         const planeamento = await loadPlaneamento(inputParameters.current);
+
         updateState(draft => {
-            draft.plan_id = inputParameters.current.temp_ofabrico;
-            draft.agg_id = inputParameters.current.temp_ofabrico_agg;
+            draft.ids = {
+                temp_id: inputParameters.current.temp_ofabrico, //temp_ofabrico id
+                agg_id: inputParameters.current.temp_ofabrico_agg, //temp_ofabricoagg id
+                cs_id: planeamento?.cs_id,  //current_settings id
+                ordem_id: inputParameters.current?.ofabrico_sgp //planeamento_producao id
+            }
             draft.ordem = planeamento;
             draft.step = 0;
             draft.maxStep = 0;
@@ -228,7 +237,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                             items={[
                                 {
                                     key: 1,
-                                    children: <FormPlaneamento index={1} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ plan_id: state.plan_id, agg_id: state.agg_id, ordem: state.ordem }} operationsRef={operationsRef} />,
+                                    children: <FormPlaneamento index={1} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ ...state.ids, ordem: state.ordem }} operationsRef={operationsRef} />,
                                     label: <div style={{}}>Informação{state.operations.dirtyForms.includes(1) && <GoDotFill fontSize="16px" color='#d46b08' />}</div>
                                 }, {
                                     key: 2,
@@ -285,7 +294,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                                     <Row>
                                         {state.step == 0 && <Col>
-                                            <FormPlaneamento index={0} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ plan_id: state.plan_id, agg_id: state.agg_id, ordem: state.ordem }} operationsRef={operationsRef} />
+                                            <FormPlaneamento index={0} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ temp_id: state.temp_id, agg_id: state.agg_id, ordem: state.ordem }} operationsRef={operationsRef} />
                                         </Col>}
                                     </Row>
                                 </Container>

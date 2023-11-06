@@ -9,7 +9,7 @@ const YScroll = styled.div`
     ${props => props.height && css`height: ${props.height};`}
     ${props => props.width && css`width: ${props.width};`}
     overflow-y:auto;
-    overflow-x:hidden;
+    overflow-x:${props => props.xScroll ? props.xScroll : "hidden"};
     -webkit-mask-image:linear-gradient(180deg,rgba(255,0,0,.1) 0 7.5px calc(100%-7.5px),rgba(255,0,0,.1));
     mask-image:linear-gradient(180deg,rgba(255,0,0,.1) 0 7.5px calc(100%-7.5px),rgba(255,0,0,.1));
     &::-webkit-scrollbar {

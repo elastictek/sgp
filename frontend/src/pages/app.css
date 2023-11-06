@@ -10,6 +10,9 @@ body {
     margin-left: 0px !important;
 }*/
 
+.ant-notification-notice-wrapper{
+    width:auto !important;
+}
 
 .ant-notification-notice-with-icon .ant-notification-notice-description {
     margin-left: 0px !important;

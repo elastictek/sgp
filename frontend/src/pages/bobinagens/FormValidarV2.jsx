@@ -38,6 +38,8 @@ import { useImmer } from "use-immer";
 import { dayjsValue } from 'utils/index';
 import { Item } from 'components/formLayout';
 import FormPrint from "../commons/FormPrint";
+import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
+import { checkBobinesDefeitos, postProcess } from '../bobines/commons';
 
 
 //const title = "Validar Bobinagem";
@@ -234,8 +236,6 @@ const rowSchema = (options = {}, required = false) => {
 }
 
 
-
-
 export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -317,8 +317,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                     rowvalid: 0
                 }
             });
-
+            postProcess(_bobines);
         }
+
         updateState(draft => {
             draft.loaded = true;
             draft.step = 0;
@@ -354,7 +355,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 settings: false,
                 toolbar: false,
                 toolbarFilters: false,
-                data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM","R"].includes(v.value)),
+                data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM"].includes(v.value)),
                 payload: { payload: { url: ``, primaryKey: "value", parameters: { ...defaultParameters }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [] } },
                 columns: [
                     { name: "value", header: 'Estado', flex: 1, render: ({ cellProps, data }) => <EstadoBobine estado={data?.value} /> }
@@ -388,8 +389,13 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         let response = null;
         try {
             const _rows = dataAPI.getData().rows;
+            const v = checkBobinesDefeitos(_rows, true);
             const status = dataAPI.validateRows(rowSchema, {}, { context: { num: state.nome.split('-')[1] } }, _rows); //Validate all rows
-            const msg = dataAPI.getMessages();
+            status.formStatus = { ...v.status };
+            if (v.status?.error && v.status?.error.length > 0) {
+                status.errors = status.errors + v.status?.error.length;
+            }
+            const msg = dataAPI.getMessages(status);
             if (status.errors > 0) {
                 openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
             } else {
@@ -415,7 +421,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
             let { errors, warnings, value, ...status } = getStatus(v);
             if (errors === 0) {
                 if (_values?.troca_nw == 1) {
-                    if (_values.comp_emenda < 0) {
+                    if (_values.comp_emenda <= 0) {
                         errors++;
                         status.fieldStatus.comp_emenda = { status: "error", messages: [{ message: "O comprimento de emenda tem de ser maior que zero!" }] };
                     } else if (_values.comp_emenda > _values?.comp) {
@@ -612,8 +618,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 },
             }}
         >
-            <TitleForm auth={permission.auth} level={location?.state?.level} onSave={onSave} loading={submitting.state} title={title} />
-            <Container>
+            {!props?.setFormTitle && <TitleForm auth={permission.auth} level={location?.state?.level} onSave={onSave} loading={submitting.state} title={title} />}
+            <Container fluid={state.step == 1 ? true : false}>
                 <Row style={{ marginBottom: "5px" }}>
                     <Col>
                         <AlertsContainer mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
@@ -666,9 +672,12 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                         <NonwovensList onSelect={onSelectNonwovens} state={state} loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} />
                                     </Row>
                                 </>}
-                                {state.step == 1 && <Row style={{ justifyContent: "center" }}>
-                                    <Col xs="content">
-                                        <Table
+                                {state.step == 1 && <Row nogutter/*  style={{ justifyContent: "center" }} */>
+                                    <Col /*  xs="content" */>
+                                        <Spin spinning={submitting.state}>
+                                            <BobinesDefeitosList validate={true} dataAPI={dataAPI} parameters={{ bobinagem: state.bobinagem }} defaultSort={[{ column: 'nome', direction: 'ASC' }]} />
+                                        </Spin>
+                                        {/* <Table
                                             gridRef={gridRef}
                                             handle={setGridRef}
                                             //dirty={formDirty}
@@ -709,7 +718,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                             //     </Space>}
                                             toolbar={false}
                                             toolbarFilters={false}
-                                        />
+                                        /> */}
                                     </Col>
                                 </Row>}
                                 {(state.step == 2 && state.bobinagem) && <Col>

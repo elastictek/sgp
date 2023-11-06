@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
+import YScroll from './YScroll';
 
-export const openNotification = (api) => (status, placement, message, description, duration = 5,style) => {
+export const openNotification = (api) => (status, placement, message, description, duration = 5, style) => {
     let _description = null;
     if (Array.isArray(description)) {
-        _description = <ul>{description.map((v,i) => <li style={{padding:"0px"}} key={`not-${i}`}>{v}</li>)}</ul>;
+        _description = <YScroll maxHeight="60vh"><ul>{description.map((v, i) => <li style={{ padding: "0px" }} key={`not-${i}`}>{v}</li>)}</ul></YScroll>;
     } else {
         _description = description;
     }
@@ -14,7 +15,7 @@ export const openNotification = (api) => (status, placement, message, descriptio
             description: _description,
             placement,
             duration,
-            style:{...style && style}
+            style: { width: "384px", ...style && style }
         });
     } else if (status === "success") {
         api.success({
@@ -22,7 +23,7 @@ export const openNotification = (api) => (status, placement, message, descriptio
             description: _description,
             placement,
             duration,
-            style:{...style && style}
+            style: { width: "384px", ...style && style }
         });
     } else {
         api.info({
@@ -30,7 +31,7 @@ export const openNotification = (api) => (status, placement, message, descriptio
             description: _description,
             placement,
             duration,
-            style:{...style && style}
+            style: { width: "384px", ...style && style }
         });
     }
 };

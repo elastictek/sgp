@@ -14,8 +14,9 @@ import { Link, RightAlign } from 'components/TableColumns';
 import Table, { useTableStyles } from 'components/TableV3';
 import { useModal } from "react-modal-hook";
 import { usePermission } from "utils/usePermission";
-const FormBobinagemValidar = React.lazy(() => import('../../bobinagens/FormValidar'));
+//const FormBobinagemValidar = React.lazy(() => import('../../bobinagens/FormValidar'));
 const Bobinagem = React.lazy(() => import('../../bobinagens/Bobinagem'));
+const FormValidateBobinagem = React.lazy(() => import('../../bobinagens/FormValidarV2'));
 
 const useStyles = createUseStyles({
 
@@ -53,7 +54,8 @@ export default ({ hash, ...props }) => {
 
         const content = () => {
             switch (modalParameters.content) {
-                case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                case "validar": return <FormValidateBobinagem loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+                //case "validar": return <FormBobinagemValidar /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
                 case "bobinagem": return <Bobinagem /* tab={modalParameters.tab} setTab={modalParameters.setLastTab} */ loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
             }
         }
@@ -66,8 +68,11 @@ export default ({ hash, ...props }) => {
     }, [modalParameters]);
     const onClickBobinagem = (row) => {
         if (row?.valid == 0) {
-            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: `Validar Bobinagem ${row.nome}`, /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { action: "validate", bobinagem_id: row.id, bobinagem_nome: row.nome } });
             showModal();
+            
+            //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            //showModal();
         } else {
             setModalParameters({ content: "bobinagem", tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             showModal();

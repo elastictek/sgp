@@ -39,7 +39,7 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
 }
 
-export default ({ noEdit = true, noPrint = true, ...props }) => {
+export default ({ noEdit = true, noPrint = true, defaultSort:_defaultSort, ...props }) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
     const location = useLocation();
@@ -51,7 +51,7 @@ export default ({ noEdit = true, noPrint = true, ...props }) => {
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = { method: "BobinesList" };
     const [defaultFilters, setDefaultFilters] = useState({});
-    const defaultSort = [{ column: 'posicao_palete', direction: 'ASC' }];
+    const defaultSort = [ _defaultSort ? _defaultSort : { column: 'posicao_palete', direction: 'ASC' }];
     const [lastPaleteTab, setLastPaleteTab] = useState('1');
     const dataAPI = useDataAPI({
         payload: {

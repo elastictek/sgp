@@ -249,34 +249,74 @@ const PickBobines = ({ state, updateState, next, cancel, disabled, noStatus, onC
     }
 
     return (
-        <YScroll height="65vh" {...noStatus && { width: "300px" }}>
+        <YScroll height="65vh" width="100%" /* {...noStatus && { width: "300px" }} */>
             <ListColumns columns={3}>
-            <List
-                size="small"
-                itemLayout="horizontal"
-                dataSource={state.bobines}
-                renderItem={(item, index) => (
-                    <List.Item>
-                        <List.Item.Meta
-                            avatar={<div style={{ width: "30px" }}>{index + 1}</div>}
-                            description={
-                                <div style={{ display: "flex" }}>
-                                    <div><Input disabled={disabled} {...index === 0 && { ref: inputRef }} tabIndex={index + 1} size='small' value={item.lote} onChange={(e) => onInputOk(e.target.value, index)} onKeyDown={(e) => onInputOk(e.target.value, index, e.key)} /></div>
-                                    {(state.report && !noStatus) && <>
-                                        <div style={{ margin: "0px 20px", width: "25px", borderRadius: "2px", ...(state.report[index].isok == 0 && { cursor: "pointer" }), backgroundColor: state.report[index].isok == 1 ? "green" : "#ff4d4f" }} onClick={() => state.report[index].isok == 0 && onClickError(index)}></div>
-                                    </>}
-                                </div>}
-                        />
-                    </List.Item>
-                )}
-            />
+                <List
+                    size="small"
+                    itemLayout="horizontal"
+                    dataSource={state.bobines}
+                    renderItem={(item, index) => (
+                        <List.Item>
+                            <List.Item.Meta
+                                avatar={<div style={{ width: "30px" }}>{index + 1}</div>}
+                                description={
+                                    <div style={{ display: "flex" }}>
+                                        <div><Input disabled={disabled} {...index === 0 && { ref: inputRef }} tabIndex={index + 1} size='small' value={item.lote} onChange={(e) => onInputOk(e.target.value, index)} onKeyDown={(e) => onInputOk(e.target.value, index, e.key)} /></div>
+                                        {(state.report && !noStatus) && <>
+                                            <div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", borderRadius: "2px", ...(state.report[index].isok == 0 && { cursor: "pointer" }), backgroundColor: state.report[index].isok == 1 ? "green" : "#ff4d4f" }} onClick={() => state.report[index].isok == 0 && onClickError(index)}></div>
+                                        </>}
+                                    </div>}
+                            />
+                        </List.Item>
+                    )}
+                />
             </ListColumns>
         </YScroll>);
 }
 
 const Errors = ({ parameters }) => {
+    const { index, report } = parameters;
     return (<Container fluid>
-        <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.artigo_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
+        <Row wrap='nowrap' nogutter>
+            <Col>
+                <YScroll xScroll="auto">
+                    <Row nogutter wrap='nowrap' style={{padding:"3px"}}>
+                        <Col style={{minWidth:"30px"}} width={30}></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o produto não corresponde ao da ordem de fabrico">Produto</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine não existe, foi reciclada ou o comprimento é igual a zero">Bobine</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o core não corresponde ao da ordem de fabrico">Core</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o diametro da bobine não está dentro dos limites establecidos pelo cliente">Diâmetro</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: existirem bobines duplicadas">Duplicada</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o número de emendas excede o definido na ordem de fabrico">Emendas</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o estado da bobine for diferente de GOOD">Estado</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine foi produzida à mais de 3 meses">Expirada</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a largura não corresponde à da ordem de fabrico">Largura</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col>
+                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a palete final encontra-se numa carga" trigger={["click", "hover"]}>Carga</Tooltip></Col>
+                    </Row>
+
+                    {report.map((v, i) => (
+                        <Row nogutter key={`err-${i}`} style={{ marginTop: "2px",padding:"3px", ...(i==index) && {background:"#fff1b8"} }} wrap='nowrap'>
+                            <Col style={{minWidth:"30px",alignSelf:"center"}} width={30}>{`${i + 1}`.padStart(2, '0')}</Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].artigo_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].produto_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].bobine_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].core_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].diam_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].duplicate == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].emendas_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].estado_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].expired_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].largura_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].palete_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].carga_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                        </Row>
+                    ))}
+                </YScroll>
+            </Col>
+        </Row>
+        {/* <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.artigo_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: o produto não corresponde ao da ordem de fabrico">Produto</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.produto_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: a bobine não existe, foi reciclada ou o comprimento é igual a zero">Bobine</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.bobine_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: o core não corresponde ao da ordem de fabrico">Core</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.core_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
@@ -286,14 +326,14 @@ const Errors = ({ parameters }) => {
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: o estado da bobine for diferente de GOOD">Estado</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.estado_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: a bobine foi produzida à mais de 3 meses">Expirada</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.expired_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
         <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: a largura não corresponde à da ordem de fabrico">Largura</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.largura_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
-        <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.palete_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row>
+        <Row style={{ marginBottom: "2px" }}><Col width={100} style={{ textAlign: "left", fontWeight: 700 }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col><Col style={{ borderRadius: "2px", backgroundColor: parameters.item.palete_ok == 1 ? "green" : "#ff4d4f" }} width={25}></Col></Row> */}
     </Container>);
 }
 
 const schemaW = (options = {}) => {
     return getSchema({
         pesobruto: Joi.number().positive().label("Peso Bruto").required(),
-        pesopalete: Joi.number().positive().label("Peso da Palete").required()
+        pesopalete: Joi.number().min(0).label("Peso da Palete").required()
     }, options).unknown(true);
 }
 
@@ -354,7 +394,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const inputParameters = useRef({});
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "controlpanel" });
-    const [title, setTitle] = useState("Nova Palete");
+    const [title, setTitle] = useState("");
 
     const [form_W] = Form.useForm();
     const [fieldW_Status, setFieldW_Status] = useState({});
@@ -377,7 +417,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         palete_id: null,
         palete_nome: null,
         palete_num_bobines: 0,
-        deleted: 0
+        deleted: 0,
+        loaded: false
     });
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -395,7 +436,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         );
     }, [modalParameters]);
     const onClickError = (idx) => {
-        setModalParameters({ content: "errors", type: "drawer", push: false, width: "90%", title: `Bobine ${state.report[idx].nome}`, parameters: { item: state.report[idx] } });
+        setModalParameters({ content: "errors", type: "drawer", push: false, width: "90%", title: `Relatório`, parameters: { index: idx, report: state.report } });
         showModal();
     }
     const onPrint = () => {
@@ -405,7 +446,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 height: "200px",
                 content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiqueta</div>,
                 parameters: {
-                    url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO,...printersList?.ARMAZEM],numCopias:2,
+                    url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 2,
                     onComplete: onDownloadComplete,
                     parameters: {
                         method: "PrintPaleteEtiqueta",
@@ -444,19 +485,21 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     }, [state.bobinesOk, state.paleteOk]);
 
     useEffect(() => {
-        if (state.action == "redo") {
-            setTitle(`Refazer Palete ${state.palete_nome}`)
-        } else if (state.action == "weigh") {
-            setTitle(`Pesar Palete ${state.palete_nome}`)
-        } else if (state.action == "delete") {
-            setTitle(`Apagar Palete ${state.palete_nome}`)
-        } else {
-            setTitle(`Nova Palete`)
-            if (state.step > 1) {
-                prev(0);
+        if (state.loaded) {
+            if (state.action == "redo") {
+                setTitle(`Refazer Palete ${state.palete_nome}`)
+            } else if (state.action == "weigh") {
+                setTitle(`Pesar Palete ${state.palete_nome}`)
+            } else if (state.action == "delete") {
+                setTitle(`Apagar Palete ${state.palete_nome}`)
+            } else {
+                setTitle(`Nova Palete`)
+                if (state.step > 1) {
+                    prev(0);
+                }
             }
         }
-    }, [state.palete_id]);
+    }, [state.palete_id, state.loaded]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -496,6 +539,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     break;
             }
             updateState(draft => {
+                draft.loaded = true;
                 draft.bobines = ["weigh", "delete"].includes(_action) ? _bobines : null;
                 draft.nbobines = ["weigh", "delete"].includes(_action) ? _bobines.length : 0;
                 draft.picked = ["weigh", "delete"].includes(_action) ? _bobines.length : 0;
@@ -510,6 +554,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             });
         } else {
             updateState(draft => {
+                draft.loaded = true;
                 draft.step = 0;
                 draft.maxStep = 0;
             });
@@ -765,7 +810,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                 <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                                     {state.deleted == 1 && <Row><Col style={{ fontSize: "18px", textAlign: "center" }}>A palete <span style={{ fontWeight: 900 }}>{state.palete_nome}</span> foi apagada com sucesso!</Col></Row>}
                                     <Row style={{ justifyContent: "center" }}>
-                                        <PickBobines disabled noStatus state={state} updateState={updateState} next={next} cancel={_cancelPalete} />
+                                        <Col>
+                                            <PickBobines disabled noStatus state={state} updateState={updateState} next={next} cancel={_cancelPalete} />
+                                        </Col>
                                     </Row>
                                 </Container>
                             </Col>

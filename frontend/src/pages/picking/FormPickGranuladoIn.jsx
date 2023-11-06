@@ -195,6 +195,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...pr
     const addLineEntry = async (v) => {
         try {
             if (pos && v && inputOk.current) {
+                console.log("vvvv--",v)
                 submitting.trigger();
                 let _values = (v.startsWith("000026") ? v.replace("000026", "") : v.startsWith("\\000026") ? v.replace("\\000026", "") : v).split(";");
                 let _value = _values.length > 4 ? _values[4] : v; //vcrnum_0

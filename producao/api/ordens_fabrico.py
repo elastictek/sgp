@@ -1032,6 +1032,60 @@ def GetAttachements(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response(response)
 
+def SaveInfo(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
+
+    def _checkOrdemFabrico(temp_id,cursor):
+        f = Filters({"id":cortesOrdemId})
+        f.where()
+        f.add(f'pco.id = :id',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f"""
+            SELECT 
+            pco.id,pco.cortes_id,
+            JSON_OBJECT('created_date', pc.created_date,'id', pc.id,'largura_cod', pc.largura_cod,'largura_json', pc.largura_json,'updated_date', pc.updated_date
+            ) cortes,
+            JSON_OBJECT('cortes_id', pco.cortes_id,'created_date', pco.created_date,'designacao', pco.designacao,'id', pco.id,'largura_ordem', pco.largura_ordem,'ordem_cod', 
+            pco.ordem_cod,'updated_date', pco.updated_date,'versao', pco.versao
+            ) cortesordem
+            FROM producao_cortesordem pco join producao_cortes pc on pc.id=pco.cortes_id {f.text}
+        """), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0]
+        return None
+    
+    try:
+        with connections["default"].cursor() as cursor:
+            #A ordem com que são executados os if's são muito importantes!!!!!!
+            _plan_id = data.get("cortes_plan").get("plan_id") if data.get("cortes_plan") is not None and data.get("cortes_plan").get("plan_id") is not None else None
+            _cortesordem_id = filter.get("cortesordem_id")
+            _cortes = _getCortes(_cortesordem_id,cursor)
+            if filter.get("cs_id") is not None:
+                if _plan_id is None:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': None,"type_op":"cortes_plan_none","cortes":_cortes.get("cortes"),"cortesordem":_cortes.get("cortesordem")}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+                elif _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': _plan_id,"type_op":"cortes_plan","cortes":_cortes.get("cortes"),"cortesordem":_cortes.get("cortesordem")}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+            elif filter.get("agg_of_id") is not None:
+                if _plan_id is None:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id':None,"cortes_id":_cortes.get("cortes_id"),"cortesordem_id":_cortes.get("id")}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+                elif _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {'cortes_plan_id': _plan_id,"cortes_id":_cortes.get("cortes_id"),"cortesordem_id":_cortes.get("id")}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes atualizados com Sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+
+
+
+
 def CoresPlanList(request, format=None):
     connection = connections["default"].cursor()
     filter = request.data['filter']

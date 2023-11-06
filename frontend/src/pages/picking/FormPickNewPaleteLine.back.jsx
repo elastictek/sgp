@@ -323,7 +323,7 @@ const Errors = ({ parameters }) => {
 const schemaW = (options = {}) => {
     return getSchema({
         pesobruto: Joi.number().positive().label("Peso Bruto").required(),
-        pesopalete: Joi.number().positive().label("Peso da Palete").required()
+        pesopalete: Joi.number().label("Peso da Palete")
     }, options).unknown(true);
 }
 

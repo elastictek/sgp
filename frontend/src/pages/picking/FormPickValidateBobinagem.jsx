@@ -121,7 +121,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: v.data.id, bobinagem_nome: v.data.nome, ordem_id: v.data.ordem_id } });
+        navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: v.data.id, bobinagem_nome: v.data.nome } });
     }
 
     return (

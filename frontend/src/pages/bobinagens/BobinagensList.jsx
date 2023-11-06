@@ -669,7 +669,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
 
     const onBobinagemClick = (row, p) => {
         if (row?.valid == 0) {
-            navigate("/app/bobinagens/formbobinagemvalidar", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
+            navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: row.id, bobinagem_nome: row.nome } });
+            //navigate("/app/bobinagens/formbobinagemvalidar", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now() } });
 
             //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();

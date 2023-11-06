@@ -77,6 +77,7 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
         _h = _h.slice(-15);
         setHistory(_h);
         saveToLS(_h, id);
+        document.title = description;
     }, []);
 
 
@@ -211,6 +212,12 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
             }
             setHistory(_h);
             saveToLS(_h, id);
+            document.title = description;
+
+            // Optionally, you can also return a cleanup function to revert the title when the component unmounts
+            /* return () => {
+              document.title = 'Original Page Title';
+            }; */
     }, []);
 
 

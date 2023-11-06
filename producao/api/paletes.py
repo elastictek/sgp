@@ -917,7 +917,7 @@ def DeletePalete(request, format=None):
                 return response["rows"][0]
             return None
 
-        if _checkPalete(data.get("palete_id")) is not None:
+        if _checkPalete(data.get("palete_id")) is None:
             return Response({"status": "error", "title": "A palete já foi expedida ou pertence a uma carga!"})
         with transaction.atomic():
             with connections["default"].cursor() as cursor:

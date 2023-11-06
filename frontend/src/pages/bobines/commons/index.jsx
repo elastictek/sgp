@@ -181,8 +181,8 @@ export const saveTrocaEtiqueta = async (row, value, submitting, parameters, load
 
 }
 
-export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData) => {
-    submitting.trigger();
+
+export const checkBobinesDefeitos = (rows, plainText = false) => {
     const status = { error: [] };
     let _array = [];
     for (let [i, r] of rows.entries()) {
@@ -198,29 +198,33 @@ export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData
             //     status.error.push({ message: <span><b>{_r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
             // }
             if ((estado === "R" || estado === "DM") && !hasDefeitos) {
-                status.error.push({ message: <span><b>{_r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
+                if (plainText) {
+                    status.error.push({ message: `${_r.nome}: Para classificar como DM ou R tem de definir pelo menos um defeito.` });
+                } else {
+                    status.error.push({ message: <span><b>{_r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
+                }
             }
             if (_r.defeitos.some(x => x.key === "fmp") && !_r.obs?.length > 0) {
-                status.error.push({ message: <span><b>{_r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
+                if (plainText) {
+                    status.error.push({ message: `${_r.nome}: Falha de Matéria Prima, preencher nas observações o motivo.` });
+                } else {
+                    status.error.push({ message: <span><b>{_r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
+                }
             }
             if (_r.defeitos.some(x => x.key === "esp") && !_r.prop_obs?.length > 0) {
-                status.error.push({ message: <span><b>{_r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+                if (plainText) {
+                    status.error.push({ message: `${_r.nome}: Gramagem, preencher nas observações das propriedades o motivo.` });
+                } else {
+                    status.error.push({ message: <span><b>{_r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+                }
             }
             if (_r.defeitos.some(x => x.key === "prop") && !_r.prop_obs?.length > 0) {
-                status.error.push({ message: <span><b>{_r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
+                if (plainText) {
+                    status.error.push({ message: `${_r.nome}: Propriedades, preencher nas observações das propriedades o motivo.` });
+                } else {
+                    status.error.push({ message: <span><b>{_r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
+                }
             }
-        }
-        if (status.error.length > 0) {
-            Modal.error({
-                title: "Erros",
-                content: <YScroll style={{ maxHeight: "270px" }}>
-                    <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
-                        {status.error.map((v, i) => <li key={`err-${i}`}>{v.message}</li>)}
-                    </ul>
-                </YScroll>
-            })
-            submitting.end();
-            return;
         }
 
         _r["prop"] = (_r.prop_obs?.length > 0) ? 1 : 0;
@@ -231,6 +235,80 @@ export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData
         _r["rugas"] = (_r.rugas_pos?.length > 0) ? 1 : 0;
         _array.push(_r);
     }
+    return { rows: _array, status };
+}
+
+export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData, submit = true) => {
+    if (submit) {
+        submitting.trigger();
+    }
+    const { status, rows: _array } = checkBobinesDefeitos(rows);
+
+    if (!submit) {
+        return { rows: _array, status };
+    }
+
+    if (status.error.length > 0) {
+        Modal.error({
+            title: "Erros",
+            content: <YScroll style={{ maxHeight: "270px" }}>
+                <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
+                    {status.error.map((v, i) => <li key={`err-${i}`}>{v.message}</li>)}
+                </ul>
+            </YScroll>
+        })
+        submitting.end();
+        return;
+    }
+
+    // const status = { error: [] };
+    // let _array = [];
+    // for (let [i, r] of rows.entries()) {
+    //     const _r = { ...r, defeitos: r?.defeitos ? r.defeitos : [] };
+    //     if (r?.notValid) {
+    //         //r.defeitos = (r?.defeitos ? r.defeitos : []);
+    //         const hasDefeitos = (_r?.defeitos && _r.defeitos.length > 0 || _r.fc_pos?.length > 0 || _r.ff_pos?.length > 0 || _r.fc_pos?.length > 0 || _r.furos_pos?.length > 0 || _r.buracos_pos?.length > 0 || _r.rugas_pos?.length > 0 || _r.prop_obs?.length > 0 || _r.obs?.length > 0) ? true : false;
+    //         const estado = _r.estado;
+    //         // if ((_r.estado_original === "HOLD")/*  && !permission.allow() */) {
+    //         //     status.error.push({ message: <span><b>{_r.nome}</b>: Não tem permissões para alterar o estado de uma bobine em <b>HOLD</b>.</span> });
+    //         // }
+    //         // if ((estado === "HOLD")/*  && !permission.allow() */) {
+    //         //     status.error.push({ message: <span><b>{_r.nome}</b>: Não tem permissões para alterar o estado para <b>HOLD</b>.</span> });
+    //         // }
+    //         if ((estado === "R" || estado === "DM") && !hasDefeitos) {
+    //             status.error.push({ message: <span><b>{_r.nome}</b>: Para classificar como <b>DM</b> ou <b>R</b> tem de definir pelo menos um defeito.</span> });
+    //         }
+    //         if (_r.defeitos.some(x => x.key === "fmp") && !_r.obs?.length > 0) {
+    //             status.error.push({ message: <span><b>{_r.nome}</b>: Falha de <b>Matéria Prima</b>, preencher nas observações o motivo.</span> });
+    //         }
+    //         if (_r.defeitos.some(x => x.key === "esp") && !_r.prop_obs?.length > 0) {
+    //             status.error.push({ message: <span><b>{_r.nome}</b>: <b>Gramagem</b>, preencher nas observações das propriedades o motivo.</span> });
+    //         }
+    //         if (_r.defeitos.some(x => x.key === "prop") && !_r.prop_obs?.length > 0) {
+    //             status.error.push({ message: <span><b>{_r.nome}</b>: <b>Propriedades</b>, preencher nas observações das propriedades o motivo.</span> });
+    //         }
+    //     }
+    //     if (status.error.length > 0) {
+    //         Modal.error({
+    //             title: "Erros",
+    //             content: <YScroll style={{ maxHeight: "270px" }}>
+    //                 <ul style={{ padding: "0px 0px 5px 20px", background: "#fff2f0", border: "solid 1px #ffccc7" }}>
+    //                     {status.error.map((v, i) => <li key={`err-${i}`}>{v.message}</li>)}
+    //                 </ul>
+    //             </YScroll>
+    //         })
+    //         submitting.end();
+    //         return;
+    //     }
+
+    //     _r["prop"] = (_r.prop_obs?.length > 0) ? 1 : 0;
+    //     _r["fc"] = (_r.fc_pos?.length > 0) ? 1 : 0;
+    //     _r["ff"] = (_r.ff_pos?.length > 0) ? 1 : 0;
+    //     _r["furos"] = (_r.furos_pos?.length > 0) ? 1 : 0;
+    //     _r["buraco"] = (_r.buracos_pos?.length > 0) ? 1 : 0;
+    //     _r["rugas"] = (_r.rugas_pos?.length > 0) ? 1 : 0;
+    //     _array.push(_r);
+    // }
 
     try {
         let response = await fetchPost({ url: `${API_URL}/bobines/sql/`, parameters: { method: "UpdateDefeitos", rows: _array.filter(v => v?.notValid === 1), ...parameters }, filter: {} });
@@ -251,21 +329,24 @@ export const saveBobinesDefeitos = async (rows, submitting, parameters, loadData
 
 export const postProcess = async (dt, submitting) => {
     const bobineDefeitos = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
-    for (let [i, v] of dt.rows.entries()) {
+    const _rows = (dt?.rows ? dt.rows : dt);
+    for (let [i, v] of _rows.entries()) {
         let defeitos = [];
         for (let p of bobineDefeitos) {
             (v[p.value] === 1) && defeitos.push(p);
         }
-        dt.rows[i]["defeitos"] = defeitos;
-        dt.rows[i]["estado_original"] = dt.rows[i]["estado"];
-        dt.rows[i]["fc_pos"] = json(dt.rows[i]["fc_pos"]);
-        dt.rows[i]["ff_pos"] = json(dt.rows[i]["ff_pos"]);
-        dt.rows[i]["furos_pos"] = json(dt.rows[i]["furos_pos"]);
-        dt.rows[i]["buracos_pos"] = json(dt.rows[i]["buracos_pos"]);
-        dt.rows[i]["rugas_pos"] = json(dt.rows[i]["rugas_pos"]);
-        dt.rows[i]["estado"] = dt.rows[i]["estado"];
+        _rows[i]["defeitos"] = defeitos;
+        _rows[i]["estado_original"] = _rows[i]["estado"];
+        _rows[i]["fc_pos"] = json(_rows[i]["fc_pos"]);
+        _rows[i]["ff_pos"] = json(_rows[i]["ff_pos"]);
+        _rows[i]["furos_pos"] = json(_rows[i]["furos_pos"]);
+        _rows[i]["buracos_pos"] = json(_rows[i]["buracos_pos"]);
+        _rows[i]["rugas_pos"] = json(_rows[i]["rugas_pos"]);
+        _rows[i]["estado"] = _rows[i]["estado"];
     }
-    submitting.end();
+    if (submitting) {
+        submitting.end();
+    }
     return dt;
 }
 

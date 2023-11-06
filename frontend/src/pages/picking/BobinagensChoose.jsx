@@ -232,6 +232,12 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
         //navigate("/app/picking/newpaleteline", { state: { palete_id: v.data.id, palete_nome: v.data.nome, ordem_id:v.data.ordem_id, num_bobines:v.data.num_bobines } });
     }
 
+    const rowClassName = ({ data }) => {
+        if (data.valid===0) {
+            return tableCls.warning;
+        }
+    }
+
     return (
         <>
             <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} title={title} />
@@ -250,7 +256,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             onSelectionChange={onSelectionChange}
                             enableSelection={true}
                             checkboxColumn={false}
-                            // rowClassName={rowClassName}
+                            rowClassName={rowClassName}
                             //groups={groups}
                             sortable
                             reorderColumns={false}

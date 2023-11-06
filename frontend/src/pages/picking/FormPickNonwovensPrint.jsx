@@ -67,7 +67,7 @@ const ListItem = styled(List.Item)`
     }
 `;
 
-const NonwovensList = ({ loadLists, openNotification, next, listInf, listSup, setListInf, setListSup, setDirty, onSelectNw, ...props }) => {
+const NonwovensList = ({ selectedNws, loadLists, openNotification, next, listInf, listSup, setListInf, setListSup, setDirty, onSelectNw, ...props }) => {
 
     useEffect(() => {
         const controller = new AbortController();
@@ -77,6 +77,10 @@ const NonwovensList = ({ loadLists, openNotification, next, listInf, listSup, se
 
     const loadData = async ({ signal, init = false } = {}) => {
         await loadLists({ signal, init });
+    }
+
+    const isSelected = (item) => {
+        return selectedNws.includes(item.id);
     }
 
     return (
@@ -90,15 +94,16 @@ const NonwovensList = ({ loadLists, openNotification, next, listInf, listSup, se
                             itemLayout="horizontal"
                             dataSource={listInf}
                             renderItem={(item, index) => (
-                                <List.Item/*  onClick={() => onSelectNw(item)} */>
+                                <ListItem onClick={() => onSelectNw(item)} style={{}}>
                                     <List.Item.Meta
-                                        avatar={
+                                        /* avatar={
                                             <div><Checkbox onChange={(e) => onSelectNw(item)} /></div>
-                                        }
+                                        } */
+                                        style={{ border: "solid 1px #d9d9d9", padding: "5px", borderRadius: "3px", ...(isSelected(item)) && { background: "#1890FF", color: "#fff" } }}
                                         title={<div>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div>}
                                         description={<div style={{ display: "flex" }}><QueueNwColumn style={{ fontSize: "9px", width: "110px" }} value={item.queue} status={item.status} /><span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>}
                                     />
-                                </List.Item>
+                                </ListItem>
                             )}
                         />}
                 </YScroll>
@@ -112,17 +117,18 @@ const NonwovensList = ({ loadLists, openNotification, next, listInf, listSup, se
                             itemLayout="horizontal"
                             dataSource={listSup}
                             renderItem={(item, index) => (
-                                <List.Item /* onClick={() => onSelectNw(item)} */>
+                                <ListItem onClick={() => onSelectNw(item)} style={{}}>
                                     <List.Item.Meta
-                                        avatar={
+                                       /*  avatar={
 
                                             <div><Checkbox onChange={() => onSelectNw(item)} /></div>
 
-                                        }
+                                        } */
+                                        style={{ border: "solid 1px #d9d9d9", padding: "5px", borderRadius: "3px", ...(isSelected(item)) && { background: "#1890FF", color: "#fff" } }}
                                         title={<div>{item.artigo_des} <span style={{ color: "rgba(0, 0, 0, 0.45)" }}>{item.artigo_cod}</span></div>}
                                         description={<div style={{ display: "flex" }}><QueueNwColumn style={{ fontSize: "9px", width: "110px" }} value={item.queue} status={item.status} /><span style={{ fontWeight: 800, color: "#000", fontSize: "14px", marginLeft: "10px" }}>{item.n_lote}</span></div>}
                                     />
-                                </List.Item>
+                                </ListItem>
                             )}
                         />}
                 </YScroll>
@@ -229,7 +235,6 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const onSelectNw = (item) => {
 
         const _checked = selectedNws.findIndex(v => v == item.id) == -1 ? false : true;
-        console.log(_checked,selectedNws,item.id)
         if (!_checked) {
             setSelectedNws(prev => ([...prev, item.id]));
         } else {
@@ -297,7 +302,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Col>
                         <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
                             <Row nogutter>
-                                {step == 0 && <NonwovensList loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} onSelectNw={onSelectNw} />}
+                                {step == 0 && <NonwovensList selectedNws={selectedNws} loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} onSelectNw={onSelectNw} />}
                             </Row>
                             <Row nogutter style={{ marginTop: "10px", borderTop: "1px dashed #d9d9d9", padding: "5px" }}>
                                 {(selectedNws && selectedNws.length > 0) && <Col style={{ textAlign: "center" }}>

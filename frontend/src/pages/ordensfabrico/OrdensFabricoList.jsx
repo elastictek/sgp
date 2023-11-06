@@ -462,8 +462,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
-                case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
-                //case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                //case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
@@ -774,7 +774,6 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const onAction = (action, data, rowIndex) => {
         switch (action.key) {
             case "pl-pdf":
-                console.log("pdf---", data)
                 setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, ...data } });
                 showModal();
                 break;
@@ -889,6 +888,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
             ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
+            console.log("DDDDD",data)
             setModalParameters({ content: "ordemfabricoview", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
             showModal();
             // navigate('/app/ofabrico/ordemfabrico', {

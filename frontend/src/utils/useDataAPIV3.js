@@ -56,7 +56,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const [isLoading, setIsLoading] = useState(false);
     const action = useRef([]);
     const [state, updateState] = useImmer({
-        init:false,
+        init: false,
         initLoaded: payload?.initLoaded || false,
         update: Date.now(),
         pagination: payload?.pagination || { enabled: false, pageSize: 10 },
@@ -73,7 +73,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         totalRows: 0
     });
     const ref = useRef({
-        init:false,
+        init: false,
         initLoaded: payload?.initLoaded || false,
         update: null,
         primaryKey: payload?.primaryKey || null,
@@ -89,16 +89,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         totalRows: 0
     });
 
-    useEffect(()=>{
-        ref.current.init=true;
+    useEffect(() => {
+        ref.current.init = true;
         updateState(draft => {
             draft.init = true;
         });
-    },[]);
+    }, []);
 
     const setPayload = (payload) => {
         updateState(payload);
-        ref.current={...payload};
+        ref.current = { ...payload };
     }
 
     const addAction = (type) => {
@@ -177,7 +177,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
         }
     };
-    const getRowOffset = (row,fromState) => {
+    const getRowOffset = (row, fromState) => {
         if (typeof row == 'number') {
             if (getPagination(fromState).enabled) {
                 return (getCurrentPage(fromState) - 1) * getPageSize(fromState) + row;
@@ -187,7 +187,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         } else {
             if (getPagination(fromState).enabled) {
                 return (getCurrentPage(fromState) - 1) * getPageSize(fromState) + getIndex(row)
-            }else{
+            } else {
                 return getIndex(row);
             }
         }
@@ -664,7 +664,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
         return _rows;
     }
-   
+
     const clearData = () => {
         ref.current.totalRows = 0;
         updateState(draft => {
@@ -994,26 +994,36 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         // return _gridStatus;
     }
 
-    const getMessages = () => {
+    const getMessages = (_status = null) => {
+        const _s = _status ? _status : status;
         const messages = { error: [], warning: [] };
-        for (const rowKey of Object.keys(status?.fieldStatus)) {
-            for (const col of Object.keys(status.fieldStatus?.[rowKey] || {})) {
+        for (const rowKey of Object.keys(_s?.fieldStatus)) {
+
+            for (const col of Object.keys(_s.fieldStatus?.[rowKey] || {})) {
                 if (col !== "row") {
-                    const item = status.fieldStatus[rowKey][col];
+                    const item = _s.fieldStatus[rowKey][col];
                     for (const msg of item.msg) {
-                        messages[item.status].push(`#${status.fieldStatus[rowKey]?.["row"] + 1} ${msg?.message}`);
+                        messages[item.status].push(`#${_s.fieldStatus[rowKey]?.["row"] + 1} ${msg?.message}`);
                     }
                 }
             }
         }
-        if (status.formStatus?.error) {
-            for (const msg of status.formStatus?.error) {
-                messages["error"].push(`${msg}`);
+        if (_s.formStatus?.error) {
+            for (const msg of _s.formStatus?.error) {
+                if (typeof msg === 'object' && msg !== null && 'message' in msg) {
+                    messages["error"].push(`${msg.message}`);
+                } else {
+                    messages["error"].push(`${msg}`);
+                }
             }
         }
-        if (status.formStatus?.warning) {
-            for (const msg of status.formStatus?.warning) {
-                messages["warning"].push(`${msg}`);
+        if (_s.formStatus?.warning) {
+            for (const msg of _s.formStatus?.warning) {
+                if (typeof msg === 'object' && msg !== null && 'message' in msg) {
+                    messages["warning"].push(`${msg.message}`);
+                } else {
+                    messages["warning"].push(`${msg}`);
+                }
             }
         }
         return messages;
@@ -1074,7 +1084,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     }
 
     return {
-        init:()=>state.init,
+        init: () => state.init,
         first,
         previous,
         next,
