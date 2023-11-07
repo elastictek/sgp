@@ -61,8 +61,8 @@ const loadBobinagemLookup = async (bobinagem_id) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: {}, filter: { fid: `==${bobinagem_id}` }, parameters: { method: "BobinagemLookup" } });
     return rows;
 }
-const loadBobinesLookup = async (bobinagem_id) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, parameters: { method: "BobinesLookup" } });
+const loadBobinesLookup = async (bobinagem_id,defaultSort=[{ column: 'nome', direction: 'ASC'}]) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, sort:defaultSort, parameters: { method: "BobinesLookup" } });
     return rows;
 }
 

@@ -112,9 +112,10 @@ def PrintNwsEtiquetas(request,format=None):
             print(tmp.name)
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
-            conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])})
-            #subprocess.run(['lp', '-n', str(data["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
+            #conn = cups.Connection()
+            #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])})
+            for i in range(0, data["num_copias"]):
+                subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -151,9 +152,10 @@ def PrintPaleteEtiqueta(request,format=None):
             print(tmp.name)
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
-            conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
-            #subprocess.run(['lp', '-n', str(data["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
+            #conn = cups.Connection()
+            #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
+            for i in range(0, data["num_copias"]):
+                subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -204,9 +206,10 @@ def PrintMPBufferEtiqueta(request,format=None):
             print(tmp.name)
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
-            conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
-            #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
+            #conn = cups.Connection()
+            #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
+            for i in range(0, request.data["parameters"]["num_copias"]):
+                subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
             ###########################
     except Exception as error:
           print("error----> print")
@@ -260,9 +263,10 @@ def PrintMPBuffer(request,format=None):
         print(tmp.name)
         tmp.write(fstream.content)
         #TO UNCOMMENT ON PRODUCTION
-        conn = cups.Connection()
-        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"])
-        #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
+        #conn = cups.Connection()
+        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"])
+        for i in range(0, request.data["parameters"]["num_copias"]):
+            subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
         ###########################
     except Exception as error:
           print("error----> print")
@@ -391,9 +395,10 @@ def PrintReciclado(request,format=None):
         tmp.write(fstream.content)
         print(tmp.name)
         #TO UNCOMMENT ON PRODUCTION
-        conn = cups.Connection()
-        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])})
-        #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
+        #conn = cups.Connection()
+        #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])})
+        for i in range(0, request.data["parameters"]["num_copias"]):
+            subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
         ###########################
     except Exception as error:
           print("error----> print")
@@ -406,5 +411,3 @@ def PrintReciclado(request,format=None):
         print("PRINT OK")
         #os.unlink(tmp.name)
     return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
-
-
