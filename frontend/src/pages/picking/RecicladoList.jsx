@@ -169,7 +169,6 @@ const FieldEstadoEditor = ({ p, onEstadoChange }) => {
 const ConfirmEstadoContent = ({ parameters, parentRef, closeParent }) => {
     const { lote, id, obs, submitting } = parameters;
     const onCancel = () => {
-        console.log("oooooooooooooooooooooooooo", submitting.state)
         submitting.end();
         closeParent();
     }

@@ -246,6 +246,7 @@ const WeighContent = ({ loteId, parentRef, closeParent, loadParentData }) => {
         const v = schemaWeigh().validate(values, { abortEarly: false, messages: validateMessages, context: {} });
         const { errors, warnings, value, ...status } = getStatus(v);
         if (errors === 0) {
+            let response = null;
             try {
                 let response = await fetchPost({ url: `${API_URL}/pesarreciclado/`, filter: { id: loteId }, parameters: values });
                 if (response.data.status !== "error") {
@@ -409,7 +410,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
             onCancel={hideWeighModal}
             //onOk={() => onPickFinish(lastValue)}
             width={600} height={340} footer="ref" >
-            <WeighContent loteId={location?.state?.id} loadParentData={loadData} />
+            <WeighContent loteId={modalParameters.id} loadParentData={loadData} />
         </ResponsiveModal>;
     }, [dataAPI.getTimeStamp(), modalParameters]);
     const [showPrintModal, hidePrintModal] = useModal(({ in: open, onExited }) => (
@@ -534,7 +535,7 @@ export default ({ record, setFormTitle, parentRef, closeParent, parentReload, fo
                     <Button disabled={details?.status < 1} type='primary' icon={<PrinterOutlined />} onClick={onPrintOld} style={{ marginLeft: "5px" }}>Imprimir Etiqueta</Button>
                     {details?.status === 0 && <Button disabled={submitting.state} type='primary' icon={<AppstoreAddOutlined />} onClick={showPickingModal}>Picar Lotes</Button>}
                     {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={onSave}> Guardar Registos</Button>}
-                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}
+                    {(dataAPI.hasData() && dataAPI.getData().rows.filter(v => v?.notValid !== 1).length > 0 && details?.status === 0) && <Button disabled={submitting.state} style={{ marginLeft: "5px" }} icon={<CheckOutlined />} onClick={() => { setModalParameters({ lote: details.lote, id:details.id }); showWeighModal(); }}>Pesar Lote de Reciclado</Button>}
                 </>}
                 //content={<PickHolder/>}
                 //paginationPos='top'

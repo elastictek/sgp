@@ -84,7 +84,7 @@ export default ({ noPrint = true, noEdit = true, defaultSort: _defaultSort, ...p
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = { method: "BobinesList" };
     const [defaultFilters, setDefaultFilters] = useState({});
-    const defaultSort = [_defaultSort ? _defaultSort : { column: 'posicao_palete', direction: 'ASC' }];
+    const defaultSort = _defaultSort ? _defaultSort : [{ column: 'posicao_palete', direction: 'ASC' }];
     const dataAPI = (!props?.dataAPI) ? useDataAPI({
         fnPostProcess: (dt) => postProcess(dt, submitting), payload: {
             url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: {

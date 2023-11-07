@@ -684,7 +684,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         //showModal();
     }
     const onDefeitosClick = (data, item) => {
-        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
+        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { defaultSort:[{ column: 'nome', direction: 'ASC' }], filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
         showModal();
     }
     const onEstadoClick = (data, estado, noPalete = null) => {

@@ -15,6 +15,7 @@ from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteLi
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
+import subprocess
 from datetime import datetime, timedelta, timezone
 from support.myUtils import download_file_stream
 #TO UNCOMMENT ON PRODUCTION
@@ -112,7 +113,8 @@ def PrintNwsEtiquetas(request,format=None):
             tmp.write(fstream.content)
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
-            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
+            conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])})
+            #subprocess.run(['lp', '-n', str(data["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -151,6 +153,7 @@ def PrintPaleteEtiqueta(request,format=None):
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
             conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
+            #subprocess.run(['lp', '-n', str(data["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
             # ###########################
     except Exception as error:
           print("error----> print")
@@ -203,6 +206,7 @@ def PrintMPBufferEtiqueta(request,format=None):
             #TO UNCOMMENT ON PRODUCTION
             conn = cups.Connection()
             conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
+            #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
             ###########################
     except Exception as error:
           print("error----> print")
@@ -257,7 +261,8 @@ def PrintMPBuffer(request,format=None):
         tmp.write(fstream.content)
         #TO UNCOMMENT ON PRODUCTION
         conn = cups.Connection()
-        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"]) 
+        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"])
+        #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
         ###########################
     except Exception as error:
           print("error----> print")
@@ -387,7 +392,8 @@ def PrintReciclado(request,format=None):
         print(tmp.name)
         #TO UNCOMMENT ON PRODUCTION
         conn = cups.Connection()
-        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
+        conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])})
+        #subprocess.run(['lp', '-n', str(request.data["parameters"]["num_copias"]), '-d', request.data["parameters"]["impressora"], tmp.name])
         ###########################
     except Exception as error:
           print("error----> print")

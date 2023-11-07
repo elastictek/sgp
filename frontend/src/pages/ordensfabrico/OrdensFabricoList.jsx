@@ -462,8 +462,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "validar": return <FormOrdemFabricoValidar loadParentData={modalParameters.loadParentData} parameters={modalParameters.parameters} />;
-                //case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
-                case "ordemfabricoinelaboration": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoinelaboration": return <OrdemFabrico record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
+                case "ordemfabricoinelaborationNEW": return <Planeamento parameters={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
@@ -693,6 +693,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'end_prev_date', header: 'Fim Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.end_prev_date} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'inicio', header: 'Início', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.inicio} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.fim} format={DATETIME_FORMAT} /> }] : [],
+        ...(true) ? [{ name: 'forTestsOnly', header: '', userSelect: true, defaultLocked: false, defaultWidth: 5, headerAlign: "center", render: ({ cellProps, data }) => <div onClick={()=>onNewPlaneamentoForTestsOnly(data)}>__</div> }] : [],
         //...(true) ? [{ name: 'ativa', header: 'Prf Estado', filter: { show: "toolbar", type: "select", field: { style: { width: "90px" }, options: [{ value: 0, label: "Fechada" }, { value: 1, label: "Aberta" }] } }, userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.ativa} style={data?.ativa ? { color: "#fff", backgroundColor: "green" } : {}} /> }] : [],
         // ...(allows?.allowChangeStatus) ? [{
         //     name: 'bstatus', header: 'Produção', filter: { show: false }, userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <Operations parameters={{ status: data?.ofabrico_status }} onClick={(status) => changeStatus(data, status)} />, rowspan: ({ data, value, dataSourceArray, rowIndex, column }) => {
@@ -863,6 +864,11 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         //     submitting.end();
         // };
 
+    }
+
+    const onNewPlaneamentoForTestsOnly = (data) => {
+        setModalParameters({ content: "ordemfabricoinelaborationNEW", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+            showModal();
     }
 
     const onOFStatusClick = (e, data) => {

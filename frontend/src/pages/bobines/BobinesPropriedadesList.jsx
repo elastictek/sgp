@@ -51,7 +51,7 @@ export default ({ noEdit = true, noPrint = true, defaultSort:_defaultSort, ...pr
     const [checkData, setCheckData] = useImmer({ destino: false });
     const defaultParameters = { method: "BobinesList" };
     const [defaultFilters, setDefaultFilters] = useState({});
-    const defaultSort = [ _defaultSort ? _defaultSort : { column: 'posicao_palete', direction: 'ASC' }];
+    const defaultSort = _defaultSort ? _defaultSort : [{ column: 'posicao_palete', direction: 'ASC' }];
     const [lastPaleteTab, setLastPaleteTab] = useState('1');
     const dataAPI = useDataAPI({
         payload: {
