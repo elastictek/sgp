@@ -73,7 +73,7 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
     const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Palete', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link  {...data?.nok_estados > 0 && { className: classes.link }} cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Palete', userSelect: true, defaultLocked: false, minWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link  {...data?.nok_estados > 0 && { className: classes.link }} cellProps={cellProps} value={data?.nome} onClick={() => onClickPalete("all", data)} /> }] : [],
         ...(true) ? [{ name: 'ofid', header: 'Ordem', userSelect: true, defaultLocked: false, defaultWidth: 115, headerAlign: "center", render: ({ cellProps, data }) => data?.ofid }] : [],
         ...(true) ? [{ name: 'current_stock', header: 'Stock', userSelect: true, defaultLocked: false, defaultWidth: 53, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.current_stock} /> }] : [],
         ...(true) ? [{ name: 'comp_real', header: 'Comp.', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_real, 0)}</RightAlign> }] : [],

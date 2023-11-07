@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import styled from 'styled-components';
 import { Button, Breadcrumb, Drawer, Dropdown, Space, Modal } from "antd";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined, LeftCircleFilled } from '@ant-design/icons';
-import { Row, Col } from 'react-grid-system';
+import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined, LeftCircleFilled, UserOutlined } from '@ant-design/icons';
+import { Row, Col, Hidden } from 'react-grid-system';
 import { Container as FormContainer } from 'components/FormFields';
 import MainMenu from '../pages/currentline/dashboard/MainMenu';
 import LogoWhite from 'assets/logowhite.svg';
@@ -15,6 +15,7 @@ import { DASHBOARD_URL, HISTORY_DEFAULT, HISTORY_DEFAULT_FOOTER, LOGIN_URL, LOGO
 import YScroll from "components/YScroll";
 import DropdownButton from 'antd/es/dropdown/dropdown-button';
 import { newWindow } from 'utils/loadInitV3';
+import { usePermission } from "utils/usePermission";
 
 const schema = (options = {}) => { return getSchema({}, options).unknown(true); };
 
@@ -197,27 +198,28 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
     );
 }
 
-export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true }) => {
+export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
     const location = useLocation();
+    const permission = usePermission({});
 
     useEffect(() => {
-            const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
-            let _h = getFromLS(id).filter(v => v.key !== path);
-            if (save) {
-                _h.push({ label: description, key: path, state: location?.state });
-                _h = _h.slice(-15);
-            }
-            setHistory(_h);
-            saveToLS(_h, id);
-            document.title = description;
+        const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
+        let _h = getFromLS(id).filter(v => v.key !== path);
+        if (save) {
+            _h.push({ label: description, key: path, state: location?.state });
+            _h = _h.slice(-15);
+        }
+        setHistory(_h);
+        saveToLS(_h, id);
+        document.title = description;
 
-            // Optionally, you can also return a cleanup function to revert the title when the component unmounts
-            /* return () => {
-              document.title = 'Original Page Title';
-            }; */
+        // Optionally, you can also return a cleanup function to revert the title when the component unmounts
+        /* return () => {
+          document.title = 'Original Page Title';
+        }; */
     }, []);
 
 
@@ -353,6 +355,11 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                                     {rightHeader}
                                 </Row>
                             </Col>}
+                            {logInInfo && <Hidden xs sm md>
+                                <Col xs="content" style={{ fontWeight: 400, fontSize: "12px" }}>
+                                    <UserOutlined /><span style={{fontSize:"11px"}}>{permission.auth?.name}</span>
+                                </Col>
+                            </Hidden>}
                         </Row>}
                         {title && <Row style={{ alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }} gutterWidth={5}>
                             {title}

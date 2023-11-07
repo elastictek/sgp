@@ -323,7 +323,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...pr
                                     </Row>
                                     <Row style={{ marginTop: "10px" }}>
                                         <Col style={{ display: "flex" }}>
-                                            <Input size='large' disabled={submitting.state} onPressEnter={onInputOk} onChange={onInputChange} value={value} ref={inputRef} suffix={value && <Button type='link' size="small" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} />} />
+                                            <Input size='large' disabled={submitting.state} onPressEnter={onInputOk} onChange={onInputChange} value={value} ref={inputRef} /* suffix={value && <Button type='link' size="small" disabled={submitting.state} icon={<CheckOutlined />} onClick={() => onInputOk()} />} */ />
                                         </Col>
                                     </Row>
                                     <Row>

@@ -91,7 +91,7 @@ export default ({ hash, ...props }) => {
     const groups = [{ name: 'bobines', header: 'Bobines', headerAlign: "center" }];
 
     const columns = [
-        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, defaultWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
+        ...(true) ? [{ name: 'nome', header: 'Nome', userSelect: true, defaultLocked: false, minWidth: 110, flex: 1, headerAlign: "center", render: ({ cellProps, data }) => <Link cellProps={cellProps} value={data?.nome} onClick={() => onClickBobinagem(data)} /> }] : [],
         ...(true) ? [{ name: 'inico', header: 'Início', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.inico }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.fim }] : [],
         ...(true) ? [{ name: 'duracao', header: 'Duração', userSelect: true, defaultLocked: false, defaultWidth: 70, headerAlign: "center", render: ({ cellProps, data }) => data?.duracao }] : [],

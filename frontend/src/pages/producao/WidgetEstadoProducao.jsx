@@ -22,7 +22,7 @@ import { json } from "utils/object";
 import {
     EditOutlined, CameraOutlined, DeleteTwoTone, ExpandAltOutlined, TabletOutlined, PaperClipOutlined, VerticalAlignBottomOutlined, VerticalAlignTopOutlined,
     CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled, CaretLeftOutlined, CaretRightOutlined,
-    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined, ControlOutlined, ExportOutlined
+    RightOutlined, LeftOutlined, UnorderedListOutlined, PrinterOutlined, ControlOutlined, ExportOutlined, UserOutlined
 } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -772,7 +772,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     return (<>
         <Container fluid style={{ padding: "0px" }}>
             <Row nogutter>
-                {ofs.length>0 && <Col width={ofs.length < 2 ? 360 : 720}>
+                {ofs.length > 0 && <Col width={ofs.length < 2 ? 360 : 720}>
                     <OrdemFabricoBoxes onTogglePaletes={onTogglePaletes} paletes={paletes} boxWidth={ofs.length < 2 ? 12 : 6} dataAPI={dataAPI} />
                 </Col>}
 
@@ -810,10 +810,10 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     </Row>
                                     <Row nogutter>
                                         <Col>
-                                            <div style={{}}>
-                                                <Suspense fallback={<></>}><FormCortesOrdem  forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
+                                            <YScroll height="195px">
+                                                <Suspense fallback={<></>}><FormCortesOrdem forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
-                                            </div>
+                                            </YScroll>
                                         </Col>
                                     </Row>
                                 </Col>
@@ -880,22 +880,22 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                                 </Col>
                                             </Row>
                                             <Row gutterWidth={5} style={{ display: "flex", fontSize: "11px" }}>
-                                                <Col width={115} style={{ fontWeight: 700, fontSize: "10px" }}>Nº Bobinagens</Col>
+                                                <Col width={95} style={{ fontWeight: 700, fontSize: "10px" }}>Nº Bobinagens</Col>
                                                 <Col width={55} style={{}}>{parameters?.data?.bobinagens?.n_bobinagens}</Col>
                                                 <Col width={30} style={{ fontWeight: 700, fontSize: "10px" }}>Mín.</Col>
                                                 <Col width={55} style={{}}>{secondstoDay(getFloat(parameters?.data?.bobinagens?.min) * 60)}</Col>
-                                                <Col width={90} style={{ fontWeight: 700, fontSize: "10px" }}>Duração média</Col>
-                                                <Col width={55} style={{}}>{secondstoDay(getFloat(parameters?.data?.bobinagens?.average) * 60)}</Col>
+                                                <Col width={80} style={{ fontWeight: 700, fontSize: "10px" }}>Duração média</Col>
+                                                <Col width={35} style={{}}>{secondstoDay(getFloat(parameters?.data?.bobinagens?.average) * 60)}</Col>
                                             </Row>
                                             <Row gutterWidth={5} style={{ display: "flex", fontSize: "11px" }}>
-                                                <Col width={115} style={{ fontWeight: 700, fontSize: "10px" }}>Última bobinagem</Col>
+                                                <Col width={95} style={{ fontWeight: 700, fontSize: "10px" }}>Última bobinagem</Col>
                                                 <Col width={55} style={{}}>{secondstoDay(getFloat(parameters?.data?.bobinagens?.last_bobinagem) * 60)}</Col>
                                                 <Col width={30} style={{ fontWeight: 700, fontSize: "10px" }}>Máx.</Col>
                                                 <Col width={55} style={{}}>{secondstoDay(getFloat(parameters?.data?.bobinagens?.max) * 60)}</Col>
                                                 <Col width={90} style={{ fontWeight: 700, fontSize: "10px" }}>Diam. Médio</Col>
                                                 <Col width={55} style={{}}>{getFloat(parameters?.data?.bobinagens?.diam_avg)}mm</Col>
-                                                <Col width={90} style={{ fontWeight: 700, fontSize: "10px" }}>Comp. Médio</Col>
-                                                <Col width={55} style={{}}>{getFloat(parameters?.data?.bobinagens?.comp_avg)}m</Col>
+                                                <Col width={80} style={{ fontWeight: 700, fontSize: "10px" }}>Comp. Médio</Col>
+                                                <Col width={35} style={{}}>{getFloat(parameters?.data?.bobinagens?.comp_avg)}m</Col>
                                             </Row>
                                             <Row nogutter>
                                                 <Col>
@@ -1416,6 +1416,7 @@ export default ({ setFormTitle, ...props }) => {
                     <div>
                         <Space>
                             <Button ghost onClick={() => newWindow("/app/picking/main/", {}, "controlpanel")} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
+                            <Hidden xs sm md><div style={{textAlign:"center",lineHeight:1,color:"#fff"}}><div style={{ fontSize: "11px" }}>{permission.auth?.name}</div></div></Hidden>
                         </Space>
                     </div>
                 </div>
