@@ -84,7 +84,7 @@ const moreFilters = ({ form, columns }) => [
 
 export const postProcess = async (dt, submitting) => {
     for (let [i, v] of dt.rows.entries()) {
-        dt.rows[i]["bobines"] = json(dt.rows[i]["bobines"]).sort((a, b) => a.nome - b.nome);
+        dt.rows[i]["bobines"] = json(dt.rows[i]["bobines"]).sort((a, b) => (a.nome< b.nome) ? -1 : 1);
     }
     submitting.end();
     return dt;
