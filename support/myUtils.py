@@ -36,3 +36,11 @@ def download_file_stream(stream,prefix,mime_type):
     # # Set the HTTP header for sending to browser
     response['Content-Disposition'] = "inline; filename=%s" % filename
     return response
+
+def append_line_after(search_line, insert_line, text):
+    lines = text.split('\n')
+    for i, line in enumerate(lines):
+        if search_line in line:
+            lines.insert(i + 1, insert_line)
+            break
+    return '\n'.join(lines)

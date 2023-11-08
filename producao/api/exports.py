@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 # import cups
 import os, tempfile
+from producao.api import reports
 
 from pyodbc import Cursor, Error, connect, lowercase
 from datetime import datetime
@@ -61,8 +62,6 @@ def max_length(worksheet):
 def getKeyInsensitive(dictionary, key):
     for dict_key in dictionary.keys():
         if dict_key.lower() == key.lower():
-            print("uuuuuuuuuuuuuuuuuuuuuuuu")
-            print(dict_key)
             return dict_key
     return None  # Return None if the key is not found
 
@@ -73,27 +72,35 @@ def exportRunxlslist(req,dbi,conn):
         #lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
         #lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
         #cols = [column for column in df.columns.values.tolist() if column.lower() in lowercase_reqcols]
+        get_string_after_last_dot = lambda input_string: input_string.split('.')[-1] if '.' in input_string else input_string
+        req_cols = {}
+        for key, value in req["cols"].items():
+            k = get_string_after_last_dot(key)
+            req_cols[k] = req["cols"][key]
+
+
+
         lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
         lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
-        cols = [column for column in req["cols"] if column.lower() in lowercase_columns]
+        cols = [column for column in req_cols if column.lower() in lowercase_columns]
         rcols = []
         for v in cols:
             df_k = getKeyInsensitive(df,v)
-            rq_k = getKeyInsensitive(req["cols"],v)
-            if ("format" in req["cols"][rq_k]):
-                if req["cols"][rq_k]["format"]=='0':
+            rq_k = getKeyInsensitive(req_cols,v)
+            if ("format" in req_cols[rq_k]):
+                if req_cols[rq_k]["format"]=='0':
                     df[df_k] = df[df_k].fillna(0).astype(int)
-                elif req["cols"][rq_k]["format"]=='0.0':
+                elif req_cols[rq_k]["format"]=='0.0':
                     df[df_k] = df[df_k].fillna(0).astype(float).round(1)
-                elif req["cols"][rq_k]["format"]=='0.00':
+                elif req_cols[rq_k]["format"]=='0.00':
                     df[df_k] = df[df_k].fillna(0).astype(float).round(2)
-                elif req["cols"][rq_k]["format"]=='0.000':
+                elif req_cols[rq_k]["format"]=='0.000':
                     df[df_k] = df[df_k].fillna(0).astype(float).round(3)
-                elif req["cols"][rq_k]["format"]=='0.0000':
+                elif req_cols[rq_k]["format"]=='0.0000':
                     df[df_k] = df[df_k].fillna(0).astype(float).round(4)
-            if "title" in req["cols"][rq_k]:
-                df.rename(columns = {df_k:req["cols"][rq_k]["title"]}, inplace = True)
-                rcols.append(req["cols"][rq_k]["title"])
+            if "title" in req_cols[rq_k]:
+                df.rename(columns = {df_k:req_cols[rq_k]["title"]}, inplace = True)
+                rcols.append(req_cols[rq_k]["title"])
             else:
                 rcols.append(df_k)
 
@@ -149,26 +156,35 @@ def exportRunxlslist(req,dbi,conn):
 
 def export(sql, db_parameters, parameters,conn_name,dbi=None,conn=None):
     if ("export" in parameters and parameters["export"] is not None):
+        _sql = None
+        if callable(sql):
+            _sql=sql(lambda v:v,lambda v:v,lambda v:v)
+        else:
+            _sql=sql
         dbparams={}
         for key, value in db_parameters.items():
-            if f"%({key})s" not in sql: 
+            if f"%({key})s" not in _sql: 
                 continue
             dbparams[key] = value
         if parameters["export"] == "clean-excel":
             req = {
-                "sql":sql,
+                "sql":_sql,
                 "data":dbparams,
                 "cols":parameters["cols"]
             }
             return exportRunxlslist(req,dbi,conn)
-        
-        
-        sql = sql.replace(f"%({key})s",f":{key}")        
-        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+        if parameters["export"] not in ["pdf", "excel", "word"]:
+            method=parameters["export"]
+            func = getattr(reports,method,None)
+            req = func(sql, dbparams,parameters["cols"],conn_name,dbi,conn)
+            return exportRunxlslist(req,dbi,conn)
+
+        _sql = _sql.replace(f"%({key})s",f":{key}")        
+        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(_sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
         req = {
             
             "conn-name":conn_name,
-            "sql":sql,
+            "sql":_sql,
             "hash":hash,
             "data":dbparams,
             **parameters

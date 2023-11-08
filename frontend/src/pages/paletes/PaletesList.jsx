@@ -1059,7 +1059,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 rowHeight={28}
                 rowClass={rowClassName}
                 reportItems={[
-                    { label: 'Paletes (Detalhado)', key: 'xls-paletes-detailed-01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
+                    { label: 'Paletes (Detalhado)', key: 'PaletesDetailed_01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
                 ]}
                 leftToolbar={<Space>
                     {/* <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions> */}

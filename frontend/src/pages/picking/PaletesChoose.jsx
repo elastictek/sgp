@@ -376,7 +376,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
     //const defaultFilters = { fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" };
     const defaultParameters = { method: "PaletesListV2" };
     //const defaultSort = [{ column: `t.timestamp`, direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "lst-paletes" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
+    const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "lst-paletes-c" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
 
 
     useEffect(() => {
@@ -499,7 +499,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             dataAPI={dataAPI}
                             moreFilters={true}
                             reportItems={[
-                                { label: 'Paletes (Detalhado)', key: 'xls-paletes-detailed-01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
+                                { label: 'Paletes (Detalhado)', key: 'PaletesDetailed_01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
                             ]}
                             // onCellAction={onCellAction}
                             toolbarFilters={{

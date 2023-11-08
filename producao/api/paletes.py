@@ -292,7 +292,7 @@ def PaletesListV2(request, format=None):
     fartigompmulti["text"] = f""" and exists (select 1 from producao_bobine mb join consumos_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
 
     parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
-    dql = dbgw.dql(request.data, False,False)
+    dql = db.dql(request.data, False,False)
     cols = f"""sgppl.id, sgppl.`timestamp`, sgppl.data_pal, sgppl.nome, sgppl.num, sgppl.estado, sgppl.area,
             sgppl.comp_total,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete, sgppl.peso_liquido,
             sgppl.cliente_id, sgppl.retrabalhada,sgppl.stock, sgppl.carga_id, sgppl.num_palete_carga, sgppl.destino,
@@ -308,6 +308,7 @@ def PaletesListV2(request, format=None):
         f"""  
             SELECT {c(f'{dql.columns}')}
             FROM producao_palete sgppl
+            [#MARK-REPORT-01#]
             LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
             LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
             LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
@@ -318,12 +319,10 @@ def PaletesListV2(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-    print(request.data)
-    print("xxxxxxxxxxxxxxxxxxxxxx")
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
         response = db.executeList(sql, connection, parameters,[],None,None)
     except Exception as error:
@@ -471,16 +470,14 @@ def PaletesList(request, format=None):
             WHERE nbobines_real>0 and (disabled=0 or mv."SDHNUM_0" is not null)
             {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             ) t
+            [#MARK-REPORT-01#]
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-    
-    print(request.data)
-    print("yyyyyyyyyyyyyyyyyyyyyy")
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+        return export(sql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
     try:
         response = dbgw.executeList(sql, connection, parameters,[],None,None)
     except Exception as error:

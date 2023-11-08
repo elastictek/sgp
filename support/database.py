@@ -101,6 +101,7 @@ class BaseSql:
         self.id = itertools.count()
         self.encloseColumns = True
         self.typeDB = typeDB
+        self.markPattern = r'\[#MARK-[A-Z]+-\d+#\]'
 
     class Dql:
         def __init__(self) -> None:
@@ -205,8 +206,8 @@ class BaseSql:
             rep = dict((re.escape(f"%({k})s"), "%s") for k, v in parameters.items()) 
             pattern = re.compile("|".join(rep.keys()))
             text = pattern.sub(replaceParams, sql)
-            return {"sql":text,"parameters":sqParameters}
-        return {"sql":sql,"parameters":parameters}
+            return {"sql":re.sub(self.markPattern,'',text),"parameters":sqParameters}
+        return {"sql":re.sub(self.markPattern,'',sql),"parameters":parameters}
 
     def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None):
         if isinstance(connOrCursor,ConnectionProxy):
