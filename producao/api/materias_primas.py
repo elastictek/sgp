@@ -408,12 +408,12 @@ def AdjustNwQueue(request, format=None):
         with connections["default"].cursor() as cursor:
             if checkQueue(f["listInf"],0,cursor) and checkQueue(f["listSup"],1,cursor):
 
-                # for idx,v in enumerate(f["listInf"]):
-                #     dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
-                #     db.execute(dml.statement, cursor, dml.parameters)
-                # for idx,v in enumerate(f["listSup"]):
-                #     dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
-                #     db.execute(dml.statement, cursor, dml.parameters)
+                for idx,v in enumerate(f["listInf"]):
+                    dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                for idx,v in enumerate(f["listSup"]):
+                    dml = db.dml(TypeDml.UPDATE,{"queue":v["queue"]},"lotesnwlinha",{"id":f'=={v["id"]}'},None,False)
+                    db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success","title":"Filas atualizadas com sucesso." })
             else:
                 return Response({"status": "error","title":"Não é possível atuializar as filas de nonwoven." })

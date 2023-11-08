@@ -202,8 +202,6 @@ def Sql(request, format=None):
 
 def PaletesListV2(request, format=None):
     connection = connections["default"].cursor()
-    print("filter")
-    print(request.data['filter'])
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'sgppl.timestamp', lambda k, v: f'DATE(sgppl.timestamp)'),
@@ -320,6 +318,8 @@ def PaletesListV2(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
+    print(request.data)
+    print("xxxxxxxxxxxxxxxxxxxxxx")
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -334,8 +334,6 @@ def PaletesListV2(request, format=None):
 
 def PaletesList(request, format=None):
     connection = connections[connGatewayName].cursor()
-    print("filter")
-    print(request.data['filter'])
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'timestamp', lambda k, v: f'DATE(timestamp)'),
@@ -477,6 +475,8 @@ def PaletesList(request, format=None):
         """
     )
     
+    print(request.data)
+    print("yyyyyyyyyyyyyyyyyyyyyy")
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""

@@ -19,7 +19,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, CaretDownOutlined, CaretUpOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, DeleteTwoTone, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, UserOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, CaretDownOutlined, CaretUpOutlined, SyncOutlined, SnippetsOutlined,FileExcelTwoTone, CheckOutlined, DeleteTwoTone, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, UserOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles, getFilters, getMoreFilters, getFiltersValues } from 'components/TableV3';
 import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, DateTime, OFabricoStatus, StatusProduction, PosColumn, EstadoBobines, Largura, OF } from 'components/TableColumns';
@@ -498,6 +498,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, defaultFilte
                             columns={columns}
                             dataAPI={dataAPI}
                             moreFilters={true}
+                            reportItems={[
+                                { label: 'Paletes (Detalhado)', key: 'xls-paletes-detailed-01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
+                            ]}
                             // onCellAction={onCellAction}
                             toolbarFilters={{
                                 form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilter,

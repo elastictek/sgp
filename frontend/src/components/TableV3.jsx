@@ -236,7 +236,7 @@ export const getFiltersValues = ({ columns, values, server = false }) => {
     return _values;
 }
 
-const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit, modeAdd }) => {
+const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, clearSort, reports, modeEdit, modeAdd, reportItems }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
         setReportTitle(e.target.value);
@@ -256,7 +256,7 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns/*  pageSize, se
             {reports && <>
                 <Divider orientation="left" orientationMargin="0" style={{ margin: "8px 0" }}>Relatórios</Divider>
                 <Input value={reportTitle} onChange={updateReportTitle} size="small" maxLength={200} />
-                <Report dataAPI={dataAPI} columns={columns} hide={onClick} title={reportTitle} />
+                <Report dataAPI={dataAPI} columns={columns} hide={onClick} title={reportTitle} items={reportItems} />
             </>}
         </div>
     );
@@ -574,7 +574,7 @@ const PaginationTool = ({ dataAPI, paginationProps, editable, toolbarFilters, on
     </Container>);
 }
 
-export default ({ dataAPI, columns, gridRef: _gridRef, setGridRef: _setGridRef, rowSelect = true, editOnClick = false, cellNavigation = true, dynamicHeight = false, responsiveToolbar = true, local = false, style, loading = false, rightToolbar, showPaginationTotals, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
+export default ({ dataAPI, columns, gridRef: _gridRef, setGridRef: _setGridRef, reportItems, rowSelect = true, editOnClick = false, cellNavigation = true, dynamicHeight = false, responsiveToolbar = true, local = false, style, loading = false, rightToolbar, showPaginationTotals, onRefresh, loadOnInit = false, onPageChange, formFilter, toolbarFilters, moreFilters = false, showLoading = true, dirty = false, title, leftToolbar, startToolbar, toolbar = true, topContainer = false, settings = true, clearSort = true, reports = true, reportTitle, offsetHeight = "130px", headerHeight = 30, rowHeight = 30, editable, rowClassName, idProperty = "id", onCellAction, ...props }) => {
     const classes = useTableStyles();
     const gridStyle = { minHeight: `calc(100vh - ${offsetHeight})`, fontSize: "12px" };
     const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -934,7 +934,7 @@ export default ({ dataAPI, columns, gridRef: _gridRef, setGridRef: _setGridRef, 
                         content={
                             <ContentSettings modeEdit={editMode(editable)} modeAdd={addMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                 dataAPI={dataAPI} columns={columns} pageSize={dataAPI?.getPageSize(true)} /* setPageSize={updatePageSize} */ reportTitle={reportTitle}
-                                moreFilters={moreFilters} reports={reports} clearSort={clearSort}
+                                moreFilters={moreFilters} reports={reports} clearSort={clearSort} reportItems={reportItems}
                             />
                         } trigger="click">
                         <Button size="small" icon={<SettingOutlined />} />

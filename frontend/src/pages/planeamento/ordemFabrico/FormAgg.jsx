@@ -296,12 +296,12 @@ export default ({ /* changedValues */ }) => {
                         wide: 16, margin: "2px", layout: "horizontal", overflow: false
                     }}
                 >
-                    {/* <FieldSet margin={false}>
+                    <FieldSet margin={false}>
                         <Toolbar
                             style={{ width: "100%" }}
                             right={<Button onClick={() => onShowForm()}>Agrupar</Button>}
                         />
-                    </FieldSet> */}
+                    </FieldSet>
 
                     <FieldSet margin={false}>
                         {aggId &&

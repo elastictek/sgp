@@ -18,7 +18,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TextArea } = Input;
 const { Title } = Typography;
 import { json } from "utils/object";
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined,FileExcelTwoTone, CheckCircleOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, BOBINE_ESTADOS } from 'config';
@@ -1058,6 +1058,9 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 clearSort={false}
                 rowHeight={28}
                 rowClass={rowClassName}
+                reportItems={[
+                    { label: 'Paletes (Detalhado)', key: 'xls-paletes-detailed-01', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
+                ]}
                 leftToolbar={<Space>
                     {/* <Permissions permissions={permission} action="createPalete"><Button disabled={submitting.state} onClick={onCreatePalete}>Criar Palete</Button></Permissions> */}
                     {/* <Permissions permissions={permission} action="editList">

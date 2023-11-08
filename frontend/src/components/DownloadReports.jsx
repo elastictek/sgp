@@ -72,15 +72,16 @@ const PopupProgress = ({ controller, content, messageKey }) => {
 
 
 const getMenuItems = (items) => {
-    if (items.length === 0) {
+    //if (items.length === 0) {
         return [
             { label: 'Pdf', key: 'pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "pdf" } },
             { label: 'Excel', key: 'excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
             { label: 'Excel (Sem formatação)', key: 'clean-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "xlsx" } },
-            { label: 'Word', key: 'word', icon: <FileWordTwoTone style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "docx" } }
+            // { label: 'Word', key: 'word', icon: <FileWordTwoTone style={{ fontSize: "18px" }} />, data: { orientation: "landscape", extension: "docx" } }
+            ...items
         ];
-    }
-    return items;
+    //}
+    //return items;
 }
 
 const Content = ({ menuItems, limit, setLimit, orientation, setOrientation, setIsDirty, onClick }) => {

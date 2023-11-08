@@ -106,7 +106,7 @@ const Action = ({ dataAPI, content, ...props }) => {
 
 
 
-const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setPageSize, reportTitle: _reportTitle, moreFilters, clearSort, reports }) => {
+const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setPageSize, reportTitle: _reportTitle, moreFilters, clearSort, reports, reportItems }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const updateReportTitle = (e) => {
         console.log(e.target)
@@ -127,7 +127,7 @@ const ContentSettings = ({ setIsDirty, onClick, dataAPI, columns, pageSize, setP
             {reports && <>
                 <Divider orientation="left" orientationMargin="0" style={{ margin: "8px 0" }}>Relatórios</Divider>
                 <Input value={reportTitle} onChange={updateReportTitle} size="small" maxLength={200} />
-                <Report dataAPI={dataAPI} columns={columns} hide={onClick} title={reportTitle} />
+                <Report dataAPI={dataAPI} columns={columns} hide={onClick} title={reportTitle} items={reportItems} />
             </>}
         </div>
     );
@@ -156,7 +156,7 @@ const ToolbarFilters = ({ form, dataAPI, schema, onFinish, onValuesChange, initi
     }
 //);
 
-export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: cols, userSelect=true, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, maxPage=true, ...props }) => {
+export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: cols, userSelect=true, reportItems, headerStyle, rowStyle, actionColumn, frozenActionColumn = false, paginationPos = 'bottom', leftToolbar, primaryKeys, rowSelection = false, title, reportTitle, settings = true, moreFilters = true, clearSort = true, reports = true, toolbar = true, search = true, toolbarFilters, content, maxPage=true, ...props }) => {
     const [columns, setColumns] = useState([]);
     /* const [rows, setRows] = useState([]); */
 
@@ -314,7 +314,7 @@ export default ({ dataAPI, loadOnInit = false, loading,onPageChange, columns: co
                             content={
                                 <ContentSettings setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                     dataAPI={dataAPI} columns={columns} pageSize={dataAPI.getPageSize(true)} setPageSize={updatePageSize} reportTitle={reportTitle}
-                                    moreFilters={moreFilters} reports={reports} clearSort={clearSort}
+                                    moreFilters={moreFilters} reports={reports} clearSort={clearSort} reportItems={reportItems}
                                 />
                             } trigger="click">
                             <Button size="small" icon={<SettingOutlined />} />

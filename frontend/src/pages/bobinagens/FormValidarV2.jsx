@@ -604,7 +604,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     ];
 
     const onPrint = () => {
-        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { bobinagem: { id: state.id } } });
+        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { copias:2, bobinagem: { id: state.id } } });
         showModal();
     }
 
