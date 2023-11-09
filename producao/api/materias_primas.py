@@ -278,6 +278,56 @@ def _getGranuladoInLine(data):
             {s(dql.sort)}
         """
     )
+    print( f"""
+            with INLINE AS(
+                select * from (
+                select 
+                t.artigo_des,t.vcr_num, ld.*,t.qty_lote,t.qty_reminder,t.mp_group ,t.densidade ,t.max_in 
+                ,LAST_VALUE(ld.id) OVER (PARTITION BY t.vcr_num,ld.group_id,ld.doser ORDER BY ld.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_doser_entry
+                from(
+                select 
+                LAST_VALUE(lg.id) OVER (PARTITION BY vcr_num ORDER BY lg.t_stamp RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) last_entry,
+                lg.*,gm.`group` mp_group ,gm.densidade ,gm.max_in 
+                from lotesgranuladolinha lg
+                left join group_materiasprimas gm on gm.artigo_cod =lg.artigo_cod 
+                where lg.closed=0
+                )t
+                join lotesdoserslinha ld on ld.loteslinha_id=t.id
+                where t.id=t.last_entry and  date(t.t_stamp)>='2022-09-26' and t.type_mov=1 #and ld.type_mov=1
+                ) t where t.id=t.last_doser_entry and t.type_mov=1
+            ),
+            FORMULACAO AS(
+            select formulacaov2
+            from producao_currentsettings cs
+            {f.text}
+            ),
+            FORMULACAO_DOSERS AS(
+            SELECT doser,matprima_cod, arranque,cuba,matprima_des
+            FROM FORMULACAO F,
+            JSON_TABLE(F.formulacaov2->'$.items',"$[*]"COLUMNS(cuba VARCHAR(3) PATH "$.cuba",doser VARCHAR(3) PATH "$.doseador",matprima_des VARCHAR(200) PATH "$.matprima_des",matprima_cod VARCHAR(200) PATH "$.matprima_cod",arranque DECIMAL PATH "$.arranque")) frm
+            WHERE doser is not null and arranque>0
+            )
+            select
+             {f'{dql.columns}'}
+            FROM (
+            SELECT IFNULL(FR.cuba,IL.group_id) cuba,IFNULL(FR.matprima_cod,IL.artigo_cod) matprima_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(FR.matprima_des,IL.artigo_des) matprima_des,IFNULL(FR.doser,IL.doser) doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
+            (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
+            FROM INLINE IL
+            LEFT JOIN FORMULACAO_DOSERS FR ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser AND IL.group_id =FR.cuba
+            UNION
+            SELECT IFNULL(FR.cuba,IL.group_id) cuba,IFNULL(FR.matprima_cod,IL.artigo_cod) matprima_cod,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(FR.matprima_des,IL.artigo_des) matprima_des,IFNULL(FR.doser,IL.doser) doser,/*group_concat(FR.doser) dosers,*/IL.mp_group
+            ,COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) AS arranque,
+            (CASE WHEN COALESCE(FR.arranque, MIN(FR.arranque) OVER (PARTITION BY IFNULL(FR.cuba,IL.group_id), IFNULL(FR.doser,IL.doser), IL.mp_group)) is null THEN 0 ELSE 1 END) formulation
+            FROM FORMULACAO_DOSERS FR
+            LEFT JOIN INLINE IL ON IL.artigo_cod=FR.matprima_cod AND IL.doser=FR.doser AND IL.group_id =FR.cuba
+            WHERE IL.id is null
+            ) t
+            LEFT JOIN INLINE IL ON (IL.artigo_cod=t.matprima_cod or IL.mp_group=t.mp_group) AND IL.doser=t.doser AND IL.group_id = t.cuba
+            group by t.formulation, t.cuba,IFNULL(IL.artigo_cod,t.matprima_cod),IL.vcr_num,IL.mp_group,IL.max_in,t.arranque,IL.n_lote,IL.t_stamp,IL.qty_lote,IL.qty_reminder,IFNULL(IL.artigo_des,t.matprima_des)
+            {dql.sort}
+        """)
+    print(parameters)
     return db.executeList(sql, connection, parameters)
 
 

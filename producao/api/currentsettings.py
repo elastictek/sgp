@@ -218,6 +218,7 @@ def updateCurrentSettings(id,type,data,user_id,cursor):
                     for item in data["items"]:
                         if "rowvalid" in item:
                             del item["rowvalid"]
+                            del item["rowadded"]
                     data.pop("type", None)
                     args = (id, json.dumps(data),type,user_id,0)                
                     #print(args)

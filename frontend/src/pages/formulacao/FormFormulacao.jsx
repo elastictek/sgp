@@ -101,28 +101,38 @@ const loadLastUsedFormulacao = async (params, signal) => {
         }
         if (params.joinbc == 1) {
             //Tem de retornar agregada
-            _v["items"].forEach((value, index, array)=>{
-                if (value.extrusora=="B" || value.extrusora=="C"){
-                    const _value = excludeObjectKeys(value,["extrusora","cuba_BC","cuba_A","cuba_B","cuba_C"]);
-                    _items.push({..._value,extrusora:"BC",cuba_BC:value.cuba});
-                }else{
-                    _items.push({...value,extrusora:"A",cuba_A:value.cuba});
+            _v["items"].forEach((value, index, array) => {
+                if (value.extrusora == "B" || value.extrusora == "C") {
+                    const _value = excludeObjectKeys(value, ["extrusora", "cuba_BC", "cuba_A", "cuba_B", "cuba_C"]);
+                    _items.push({ ..._value, extrusora: "BC", cuba_BC: value.cuba });
+                } else {
+                    _items.push({ ...value, extrusora: "A", cuba_A: value.cuba });
                 }
             });
         } else if (params.joinbc == 0) {
             //tem de retornar separada
-            console.log("splitted")
-            _v["items"].forEach((value, index, array)=>{
-                if (value.extrusora=="BC"){
-                    const _value = excludeObjectKeys(value,["extrusora","cuba_BC","cuba_A","cuba_B","cuba_C"]);
-                    _items.push({..._value,extrusora:"B",cuba_B:value.cuba});
-                    _items.push({..._value,extrusora:"C",cuba_C:value.cuba});
-                }else{
-                    _items.push({...value,[`cuba_${value.extrusora}`]:value.cuba});
+            _v["items"].forEach((value, index, array) => {
+                if (value.extrusora == "BC") {
+                    const _value = excludeObjectKeys(value, ["extrusora", "cuba_BC", "cuba_A", "cuba_B", "cuba_C"]);
+                    _items.push({ ..._value, extrusora: "B", cuba_B: value.cuba });
+                    _items.push({ ..._value, extrusora: "C", cuba_C: value.cuba });
+                } else {
+                    _items.push({ ...excludeObjectKeys(value, ["cuba_BC", "cuba_A", "cuba_B", "cuba_C"]), [`cuba_${value.extrusora}`]: value.cuba });
                 }
             });
         }
-        _v["items"] = _items;
+        let grouped = _items.reduce((acc, cur) => {
+            let key = `${cur.extrusora}-${cur.cuba}-${cur.matprima_cod}-${cur.arranque}`;
+            if (!acc[key]) {
+                acc[key] = { ...cur, doseador: cur.doseador };
+            } else {
+                acc[key].doseador += `,${cur.doseador}`;
+                acc[key].doseador = acc[key].doseador.split(",").sort().join(",");                
+            }
+            return acc;
+        }, {});
+
+        _v["items"] =  Object.values(grouped);
         return _v;
     }
     return {};
@@ -327,15 +337,11 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
             const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type", "agg_of_id"]);
             inputParameters.current = paramsIn;
         }
-        console.log("###################--------------xxxxx-", props?.parameters)
         setFormDirty(false);
         if (inputParameters.current?.new) {
             form.setFieldsValue({ joinbc: 1, reference: 0 });
         } else {
             const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current }, dataAPI.getPrimaryKey(), signal);
-
-            console.log("loadddedddd", formulacao)
-
             dataAPI.setData({ rows: items, total: items?.length });
             form.setFieldsValue({
                 joinbc: 1, reference: 0, ...formulacao,
@@ -668,7 +674,8 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
     }
 
     const importLastProduction = async () => {
-        const joinbc = dataAPI.getData().rows.findIndex(v => v.extrusora == "BC") == -1 ? 0 : 1;
+        setFormDirty(true);
+        const joinbc = form.getFieldValue("joinbc") ==1 ? 1 : dataAPI.getData().rows.findIndex(v => v.extrusora == "BC") == -1 ? 0 : 1;
         //Get dos doseadores/cubas da última produção relativa, e devolve a formulação, nas seguintes condições:
         //se a formulação atual tiver join das cubas a última formulacao será retornada com join
         //se a formulação atual não tiver join das cubas a última formulacao será retornada sem join
