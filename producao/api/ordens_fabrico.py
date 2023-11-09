@@ -804,6 +804,26 @@ def SaveNonwovens(request, format=None):
 
 
 
+def GetLastUsedFormulacao(request, format=None):
+    cursor = connections["default"].cursor()
+    filter = request.data.get("filter")
+    f = Filters(filter)
+    f.setParameters({}, False)
+    f.add(f'status in (1,3,9)',True )
+    f.add(f'contextid <> :cs_id',lambda v:(v!=None) )
+    f.where()
+    f.value()
+    sql = lambda: (f"""select formulacaov2 formulacao from audit_currentsettings ac {f.text} order by `timestamp` desc limit 1 """)
+    print(f"""select formulacaov2 formulacao from audit_currentsettings ac {f.text} order by `timestamp` desc limit 1 """)
+    print(f.parameters)
+    try:
+        response = db.executeSimpleList(sql, cursor, f.parameters)
+        if response==None:
+            return Response({"status": "success", "data":None})
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 def GetFormulacao(request, format=None):
     #A ordem que são executados os if's é muito importante!!!!
@@ -817,6 +837,8 @@ def GetFormulacao(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
 
 def _getFormulacao(filter):
     cursor = connections["default"].cursor()

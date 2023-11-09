@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import dayjs from 'dayjs';
 import { uid } from 'uid';
+import { produce } from 'immer';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -17,7 +18,7 @@ import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert
 const { TextArea } = Input;
 // import ToolbarTitle from './commons/ToolbarTitle';
 const { Title } = Typography;
-import { json } from "utils/object";
+import { excludeObjectKeys, json } from "utils/object";
 import { EditOutlined, CameraOutlined, DeleteTwoTone, CaretDownOutlined, CaretUpOutlined, LockOutlined, RollbackOutlined, PlusOutlined, EllipsisOutlined, StarFilled } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 //import Table from 'components/TableV2';
@@ -85,6 +86,43 @@ const loadFormulacao = async (params, primaryKey, signal) => {
         } else {
             _v["items"] = _v?.items?.map(v => ({ ...v, [primaryKey]: `${v.extrusora}-${uid(4)}` })).sort((a, b) => a.extrusora.localeCompare(b.extrusora));
         }
+        return _v;
+    }
+    return {};
+}
+
+const loadLastUsedFormulacao = async (params, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { ...params }, sort: [], parameters: { method: "GetLastUsedFormulacao" }, signal });
+    if (rows && rows.length > 0) {
+        let _v = json(rows[0]?.formulacao);
+        const _items = [];
+        if (!_v?.items) {
+            _v["items"] = [];
+        }
+        if (params.joinbc == 1) {
+            //Tem de retornar agregada
+            _v["items"].forEach((value, index, array)=>{
+                if (value.extrusora=="B" || value.extrusora=="C"){
+                    const _value = excludeObjectKeys(value,["extrusora","cuba_BC","cuba_A","cuba_B","cuba_C"]);
+                    _items.push({..._value,extrusora:"BC",cuba_BC:value.cuba});
+                }else{
+                    _items.push({...value,extrusora:"A",cuba_A:value.cuba});
+                }
+            });
+        } else if (params.joinbc == 0) {
+            //tem de retornar separada
+            console.log("splitted")
+            _v["items"].forEach((value, index, array)=>{
+                if (value.extrusora=="BC"){
+                    const _value = excludeObjectKeys(value,["extrusora","cuba_BC","cuba_A","cuba_B","cuba_C"]);
+                    _items.push({..._value,extrusora:"B",cuba_B:value.cuba});
+                    _items.push({..._value,extrusora:"C",cuba_C:value.cuba});
+                }else{
+                    _items.push({...value,[`cuba_${value.extrusora}`]:value.cuba});
+                }
+            });
+        }
+        _v["items"] = _items;
         return _v;
     }
     return {};
@@ -289,6 +327,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
             const { tstamp, ...paramsIn } = loadInit({}, {}, props?.parameters, { ...location?.state }, ["formulacao_id", "cs_id", "audit_cs_id", "new", "type", "agg_of_id"]);
             inputParameters.current = paramsIn;
         }
+        console.log("###################--------------xxxxx-", props?.parameters)
         setFormDirty(false);
         if (inputParameters.current?.new) {
             form.setFieldsValue({ joinbc: 1, reference: 0 });
@@ -628,6 +667,33 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
         return false;
     }
 
+    const importLastProduction = async () => {
+        const joinbc = dataAPI.getData().rows.findIndex(v => v.extrusora == "BC") == -1 ? 0 : 1;
+        //Get dos doseadores/cubas da última produção relativa, e devolve a formulação, nas seguintes condições:
+        //se a formulação atual tiver join das cubas a última formulacao será retornada com join
+        //se a formulação atual não tiver join das cubas a última formulacao será retornada sem join
+        const _l = await loadLastUsedFormulacao({ cs_id: inputParameters.current.cs_id, joinbc });
+        const _rows = produce(dataAPI.getData().rows, (draftArray) => {
+            for (let i = 0; i < draftArray.length; i++) {
+                delete draftArray[i].doseador;
+                delete draftArray[i].cuba;
+                delete draftArray[i].cuba_A;
+                delete draftArray[i].cuba_B;
+                delete draftArray[i].cuba_BC;
+            }
+            for (let i = 0; i < draftArray.length; i++) {
+                const index = _l.items.findIndex(item => item.matprima_cod === draftArray[i]["matprima_cod"] && item.extrusora === draftArray[i]["extrusora"]);
+                if (index !== -1) {
+                    const x = _l.items.splice(index, 1);
+                    draftArray[i].cuba = x[0].cuba;
+                    draftArray[i][`cuba_${x[0].extrusora}`] = x[0].cuba;
+                    draftArray[i].doseador = x[0].doseador;
+                }
+            }
+        });
+        dataAPI.setRows(_rows);
+    }
+
     return (
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
@@ -685,6 +751,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
                             leftToolbar={
                                 <Space>
                                     <Permissions permissions={permission} action="edit" forInput={[enableAssociation, form.getFieldValue("id") > 0, !inputParameters.current?.cs_id, (!mode.datagrid.edit && !mode.datagrid.add)]}><Button onClick={addToOFabrico}>Associar a Ordem Fabrico</Button></Permissions>
+                                    {(mode.datagrid.edit && inputParameters.current.type == "formulacao_dosers_change") && <Button onClick={importLastProduction}>Importar da Última Producção</Button>}
                                     {(mode.datagrid.edit && inputParameters.current?.type !== "formulacao_dosers_change") && < Dropdown trigger={['click']} menu={{ onClick: menuClick, items: menuOptions({ edit: mode.datagrid.edit, joinbc: form.getFieldValue("joinbc"), referenceDisabled: inputParameters.current?.cs_id }) }}>
                                         <Button>
                                             <Space>

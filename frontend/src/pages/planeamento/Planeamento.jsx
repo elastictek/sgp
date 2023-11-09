@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext,Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -35,6 +35,7 @@ import { AppContext } from 'app';
 import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import FormPlaneamento from './FormPlaneamento';
+const FormFormulacaoPlan = React.lazy(() => import('./FormFormulacaoPlan'));
 import { GoDotFill } from 'react-icons/go';
 
 //const title = "Planeamento";
@@ -44,27 +45,27 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
     />);
 }
 
-const steps = (dirty = []) => [
-    {
-        title: <div style={{ ...dirty.includes(0) && { textDecoration: "underline #fa8c16 3px" } }}>Informação</div>
-    }, {
-        title: <div style={{ ...dirty.includes(1) && { textDecoration: "underline #fa8c16 3px" } }}>Embalamento</div>
-    }, {
-        title: <div style={{ ...dirty.includes(2) && { textDecoration: "underline #fa8c16 3px" } }}>Nonwovens</div>
-    }, {
-        title: <div style={{ ...dirty.includes(3) && { textDecoration: "underline #fa8c16 3px" } }}>Cores</div>
-    }, {
-        title: <div style={{ ...dirty.includes(4) && { textDecoration: "underline #fa8c16 3px" } }}>Especificações</div>
-    }, {
-        title: <div style={{ ...dirty.includes(5) && { textDecoration: "underline #fa8c16 3px" } }}>Formulação</div>
-    }, {
-        title: <div style={{ ...dirty.includes(6) && { textDecoration: "underline #fa8c16 3px" } }}>Gama Operatória</div>
-    }, {
-        title: <div style={{ ...dirty.includes(7) && { textDecoration: "underline #fa8c16 3px" } }}>Cortes</div>
-    }, {
-        title: <div style={{ ...dirty.includes(8) && { textDecoration: "underline #fa8c16 3px" } }}>Anexos</div>
-    },
-];
+// const steps = (dirty = []) => [
+//     {
+//         title: <div style={{ ...dirty.includes(0) && { textDecoration: "underline #fa8c16 3px" } }}>Informação</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(1) && { textDecoration: "underline #fa8c16 3px" } }}>Embalamento</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(2) && { textDecoration: "underline #fa8c16 3px" } }}>Nonwovens</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(3) && { textDecoration: "underline #fa8c16 3px" } }}>Cores</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(4) && { textDecoration: "underline #fa8c16 3px" } }}>Especificações</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(5) && { textDecoration: "underline #fa8c16 3px" } }}>Formulação</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(6) && { textDecoration: "underline #fa8c16 3px" } }}>Gama Operatória</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(7) && { textDecoration: "underline #fa8c16 3px" } }}>Cortes</div>
+//     }, {
+//         title: <div style={{ ...dirty.includes(8) && { textDecoration: "underline #fa8c16 3px" } }}>Anexos</div>
+//     },
+// ];
 
 const loadOrdemFabrico = async (agg_of_id, ordem_id, draft_ordem_id) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: { enabled: false }, filter: { agg_of_id, ordem_id, draft_ordem_id }, parameters: { method: "GetOrdemFabricoSettings" } });
@@ -245,7 +246,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                                     label: <div style={{ ...state.operations.dirtyForms.includes(2) && { textDecoration: "underline #fa8c16 3px" } }}>Embalamento</div>
                                 }, {
                                     key: 3,
-                                    children: <div>a</div>,
+                                    children:  <div>c</div>,
                                     label: <div style={{ ...state.operations.dirtyForms.includes(3) && { textDecoration: "underline #fa8c16 3px" } }}>Nonwovens</div>
                                 }, {
                                     key: 4,
@@ -257,7 +258,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                                     label: <div style={{ ...state.operations.dirtyForms.includes(5) && { textDecoration: "underline #fa8c16 3px" } }}>Especificações</div>
                                 }, {
                                     key: 6,
-                                    children: <div>a</div>,
+                                    children: <Suspense fallback={<Spin />}><FormFormulacaoPlan  index={6} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ ...state.ids, ordem: state.ordem }} operationsRef={operationsRef}/></Suspense>,
                                     label: <div style={{ ...state.operations.dirtyForms.includes(6) && { textDecoration: "underline #fa8c16 3px" } }}>Formulação</div>
                                 }, {
                                     key: 7,
