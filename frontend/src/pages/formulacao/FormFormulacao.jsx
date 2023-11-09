@@ -102,6 +102,7 @@ const loadLastUsedFormulacao = async (params, signal) => {
         if (params.joinbc == 1) {
             //Tem de retornar agregada
             _v["items"].forEach((value, index, array) => {
+                console.log("aaaaaaaaaaxxxxxxxx", value.extrusora)
                 if (value.extrusora == "B" || value.extrusora == "C") {
                     const _value = excludeObjectKeys(value, ["extrusora", "cuba_BC", "cuba_A", "cuba_B", "cuba_C"]);
                     _items.push({ ..._value, extrusora: "BC", cuba_BC: value.cuba });
@@ -111,6 +112,7 @@ const loadLastUsedFormulacao = async (params, signal) => {
             });
         } else if (params.joinbc == 0) {
             //tem de retornar separada
+            console.log("aaaaaaaaaa")
             _v["items"].forEach((value, index, array) => {
                 if (value.extrusora == "BC") {
                     const _value = excludeObjectKeys(value, ["extrusora", "cuba_BC", "cuba_A", "cuba_B", "cuba_C"]);
@@ -127,12 +129,12 @@ const loadLastUsedFormulacao = async (params, signal) => {
                 acc[key] = { ...cur, doseador: cur.doseador };
             } else {
                 acc[key].doseador += `,${cur.doseador}`;
-                acc[key].doseador = acc[key].doseador.split(",").sort().join(",");                
+                acc[key].doseador = acc[key].doseador.split(",").sort().join(",");
             }
             return acc;
         }, {});
 
-        _v["items"] =  Object.values(grouped);
+        _v["items"] = Object.values(grouped);
         return _v;
     }
     return {};
@@ -675,11 +677,12 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
 
     const importLastProduction = async () => {
         setFormDirty(true);
-        const joinbc = form.getFieldValue("joinbc") ==1 ? 1 : dataAPI.getData().rows.findIndex(v => v.extrusora == "BC") == -1 ? 0 : 1;
+        const joinbc = form.getFieldValue("joinbc") == 1 ? 1 : dataAPI.getData().rows.findIndex(v => v.extrusora == "BC") == -1 ? 0 : 1;
         //Get dos doseadores/cubas da última produção relativa, e devolve a formulação, nas seguintes condições:
         //se a formulação atual tiver join das cubas a última formulacao será retornada com join
         //se a formulação atual não tiver join das cubas a última formulacao será retornada sem join
         const _l = await loadLastUsedFormulacao({ cs_id: inputParameters.current.cs_id, joinbc });
+        console.log(_l, joinbc)
         const _rows = produce(dataAPI.getData().rows, (draftArray) => {
             for (let i = 0; i < draftArray.length; i++) {
                 delete draftArray[i].doseador;
@@ -689,7 +692,24 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
                 delete draftArray[i].cuba_BC;
             }
             for (let i = 0; i < draftArray.length; i++) {
-                const index = _l.items.findIndex(item => item.matprima_cod === draftArray[i]["matprima_cod"] && item.extrusora === draftArray[i]["extrusora"]);
+                console.log(draftArray[i].extrusora, _l, i)
+                const index = _l.items.findIndex(item => {
+                    if (item.matprima_cod === draftArray[i]["matprima_cod"]) {
+                        if (joinbc == 1) {
+                            if (draftArray[i]["extrusora"] == "A") {
+                                return (item.extrusora == draftArray[i]["extrusora"]) ? true : false;
+                            } else {
+                                if (["B", "C", "BC"].includes(draftArray[i]["extrusora"])) {
+                                    return (["B", "C", "BC"].includes(item.extrusora)) ? true : false;
+                                }
+                                return false;
+                            }
+                        } else {
+                            return (item.extrusora == draftArray[i]["extrusora"]) ? true : false;
+                        }
+                    }
+                    return false;
+                });
                 if (index !== -1) {
                     const x = _l.items.splice(index, 1);
                     draftArray[i].cuba = x[0].cuba;
