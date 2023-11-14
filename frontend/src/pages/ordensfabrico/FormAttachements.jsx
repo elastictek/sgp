@@ -15,7 +15,7 @@ import Toolbar from "components/toolbar";
 import { orderObjectKeys, json, isObjectEmpty, nullIfEmpty } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll, getFloat } from "utils";
 import Portal from "components/portal";
-import { Button, Upload, message, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, TimePicker } from "antd";
+import { Button, Upload, message, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, TimePicker, Switch } from "antd";
 const { Dragger } = Upload;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -30,7 +30,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Cores, FormulacaoPlanSelect } from 'components/EditorsV3';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace, SwitchField } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { ObsTableEditor } from 'components/TableEditorsV3';
 import YScroll from 'components/YScroll';
@@ -39,6 +39,7 @@ import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Fa
 import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { MediaContext, AppContext } from 'app';
+import { getInt } from 'utils/index';
 
 const EDITKEY = "attachements";
 const PERMISSION = { item: "edit", action: "attachements" };
@@ -92,7 +93,7 @@ const loadAttachments = async ({ aggid, draft_id, signal }) => {
 }
 
 export const loadOrdemFabrico = async ({ draft_id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { draft_id }, sort: [], parameters: { method: "OrdensFabricoPlanGet",allowInElaboration:true }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { draft_id }, sort: [], parameters: { method: "OrdensFabricoPlanGet", allowInElaboration: true }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows[0];
     }
@@ -114,6 +115,11 @@ const StyledFile = styled.div`
     }
     .itemtype{
         flex-basis: 180px;
+	    flex-grow: 0;
+	    flex-shrink: 0;
+    }
+    .itemacesso{
+        flex-basis: 50px;
 	    flex-grow: 0;
 	    flex-shrink: 0;
     }
@@ -161,28 +167,41 @@ const StyledDragger = styled(Dragger)`
     }
 `;
 
-const File = ({ originNode, file, currFileList, onRemove, attachmentType, setAttachmentType }) => {
+const File = ({ originNode, file, currFileList, onRemove, attachmentType, setAttachmentType, attachmentAcesso, setAttachmentAcesso }) => {
 
     const onTypeChange = (value, option) => {
         setAttachmentType(prev => ({ ...prev, [file.uid]: value }));
     }
+    const onAcessoChange = (value) => {
+        setAttachmentAcesso(prev => ({ ...prev, [file.uid]: value ? 1 : 0 }));
+    }
 
     return (
-        <StyledFile>
-            <div className="itemtype"><SelectField onChange={onTypeChange} defaultValue={TIPOANEXOS_OF[0].key} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
-                optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
-            /></div>
-            <div className="itemfile">{file.name}</div>
-            <div className="itemremove" onClick={() => onRemove(file)}><DeleteOutlined /></div>
-        </StyledFile>
+        <>
+            <div className="itemacesso">Global</div>
+            <StyledFile>
+                <div className="itemacesso"><Switch onChange={onAcessoChange} size='small' /></div>
+                <div className="itemtype"><SelectField onChange={onTypeChange} defaultValue={TIPOANEXOS_OF[0].key} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
+                    optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
+                /></div>
+                <div className="itemfile">{file.name}</div>
+                <div className="itemremove" onClick={() => onRemove(file)}><DeleteOutlined /></div>
+            </StyledFile>
+        </>
     );
 }
 
 const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemFabrico }) => {
     const [changedTypes, setChangedTypes] = useState({});
+    const [changedAcesso, setChangedAcesso] = useState({});
 
     const onRemove = (id, tipo_doc) => {
         setChangedTypes((prev) => {
+            const newchanges = { ...prev }
+            delete newchanges[id];
+            return newchanges;
+        });
+        setChangedAcesso((prev) => {
             const newchanges = { ...prev }
             delete newchanges[id];
             return newchanges;
@@ -200,9 +219,12 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
     const onTypeChange = (id, value) => {
         setChangedTypes(prev => ({ ...prev, [id]: value }));
     }
+    const onAcessoChange = (id, value) => {
+        setChangedAcesso(prev => ({ ...prev, [id]: value ? 1 : 0 }));
+    }
     const saveChanges = () => {
         setLoading(true);
-        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "changedtypes", changedTypes } }).then(function (response) {
+        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "changedtypes", changedTypes,changedAcesso } }).then(function (response) {
             console.log("data", response.data);
         }).catch(function (error) {
             message.error("Erro ao Alterar Anexos!");
@@ -223,9 +245,11 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
         <>
             <Toolbar
                 style={{ width: "100%" }}
-                right={((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <Button type="primary" disabled={Object.keys(changedTypes).length == 0 ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
+                right={((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <Button type="primary" disabled={(Object.keys(changedAcesso).length == 0 && Object.keys(changedTypes).length == 0) ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
             />
+            <div className="itemacesso">Global</div>
             {attachments.map((v, i) => <StyledFile key={`attf-${v.id}-${i}`}>
+                {v?.id ? <div className="itemacesso"><Switch disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onAcessoChange(v.id, val)} defaultChecked={getInt(v.tipo_acesso,0)==0 ? false : true} size='small' /></div> : <div className="itemacesso"></div>}
                 <div className="itemtype"><SelectField disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
                     optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
                 /></div>
@@ -263,6 +287,7 @@ export default ({ operationsRef, ...props }) => {
     const primaryKeys = [];
     const [fileList, setFileList] = useState([]);
     const [attachmentType, setAttachmentType] = useState({});
+    const [attachmentAcesso, setAttachmentAcesso] = useState({});
     const [attachments, setAttachments] = useState([]);
     const [ordemFabrico, setOrdemFabrico] = useState();
 
@@ -270,9 +295,7 @@ export default ({ operationsRef, ...props }) => {
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
-            switch (modalParameters.content) {
-                case "formulacao": return <FormFormulacao enableAssociation={modalParameters?.enableAssociation} postProcess={modalParameters?.postProcess} parameters={modalParameters.parameters} />
-            }
+            switch (modalParameters.content) { }
         }
         return (
             <ResponsiveModal lazy={modalParameters?.lazy} responsive={modalParameters?.responsive} title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" extra="ref" yScroll>
@@ -349,6 +372,7 @@ export default ({ operationsRef, ...props }) => {
     const beforeUpload = (file, fl) => {
         const flst = [];
         const filesType = {};
+        const filesAcesso = {};
         for (const f of fl) {
             const isSize = f.size / 1024 / 1024 < MAX_UPLOAD_SIZE;
             if (!isSize) {
@@ -356,11 +380,13 @@ export default ({ operationsRef, ...props }) => {
             } else {
                 if (f.uid) {
                     filesType[f.uid] = TIPOANEXOS_OF[0].key;
+                    filesAcesso[f.uid] = 0;
                 }
                 flst.push(f);
             }
         }
         setAttachmentType(prev => ({ ...prev, ...filesType }));
+        setAttachmentAcesso(prev => ({ ...prev, ...filesAcesso }));
         setFileList([...fileList, ...flst]);
         return false;
     }
@@ -370,6 +396,11 @@ export default ({ operationsRef, ...props }) => {
             const newtypes = { ...prev }
             delete newtypes[file.uid];
             return newtypes;
+        });
+        setAttachmentAcesso((prev) => {
+            const newacessos = { ...prev }
+            delete newacessos[file.uid];
+            return newacessos;
         });
         setFileList(prev => {
             const index = prev.indexOf(file);
@@ -387,7 +418,7 @@ export default ({ operationsRef, ...props }) => {
 
         fileList.forEach(file => {
             formData.append(file.uid, file);
-            formData.append(`${file.uid}_type`, attachmentType[file.uid]);
+            formData.append(`${file.uid}_type`, attachmentType[file.uid], attachmentAcesso[file.uid]);
         });
 
         submitting.trigger();
@@ -426,7 +457,7 @@ export default ({ operationsRef, ...props }) => {
                                 multiple
                                 onRemove={onRemove}
                                 itemRender={(originNode, file, currFileList) => (
-                                    <File originNode={originNode} file={file} currFileList={currFileList} onRemove={onRemove} attachmentType={attachmentType} setAttachmentType={setAttachmentType} />
+                                    <File originNode={originNode} file={file} currFileList={currFileList} onRemove={onRemove} attachmentType={attachmentType} setAttachmentType={setAttachmentType} attachmentAcesso={attachmentAcesso} setAttachmentAcesso={setAttachmentAcesso} />
                                 )}
                             >
                                 <div className="ant-upload-drag-icon">

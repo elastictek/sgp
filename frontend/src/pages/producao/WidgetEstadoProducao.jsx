@@ -454,6 +454,7 @@ export const estadoProducaoData = ({ data }) => {
         _acc[idx].agg_cod = data?.current?.agg_cod;
         _acc[idx].cortes = json(data?.current?.cortes);
         _acc[idx].cortesordem = json(data?.current?.cortesordem);
+        _acc[idx].cortes_test = json(data?.current?.cortes_test);
         _acc[idx].current = json(data?.current);
         _acc[idx].nonwovens = json(data?.current?.nonwovens);
         _acc[idx].paletizacao = { ...json(data?.current?.paletizacao).find(v => v.of_cod == _acc[idx]?.of_cod) };
@@ -566,7 +567,7 @@ export const estadoProducaoData = ({ data }) => {
 
 const EstadoProducao = ({ hash, parameters, ...props }) => {
     const media = useContext(MediaContext);
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
+    const permission = usePermission({ name: "widget_estadoproducao" });//Permissões Iniciais
     const inputParameters = useRef({});
     const { openNotification } = useContext(AppContext);
     const location = useLocation();
@@ -584,6 +585,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     const [paletes, setPaletes] = useState([]);
     const [modalParameters, setModalParameters] = useState({});
     const [lastBobinesTab, setLastBobinesTab] = useState('1');
+    const [cortesChoose, setCortesChoose] = useState({ edit: false, save: false });
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
         const content = () => {
@@ -607,11 +609,13 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         );
     }, [modalParameters]);
 
-    const onDownloadComplete = async (response) => {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
-        //downloadFile(response.data,"etiqueta_nw.pdf");
+    const onDownloadComplete = async (response,download) => {
+        if (download == "download") {
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(blob);
+            window.open(pdfUrl, '_blank');
+            //downloadFile(response.data,"etiqueta_nw.pdf");
+        }
     }
 
     // const onNwsPrint = useCallback(() => {
@@ -655,7 +659,9 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                 height: "200px",
                 content: "nwsprint", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiquetas de Nonwovens</div>,
                 parameters: {
-                    url: `${API_URL}/print/sql/`, printers: printersList?.CABS,
+                    url: `${API_URL}/print/sql/`, 
+                    printers: printersList?.PRODUCAO,
+                    printer:printersList?.PRODUCAO[0].value,
                     onComplete: onDownloadComplete,
                     parameters: {
                         method: "PrintNwsEtiquetas",
@@ -684,7 +690,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         //showModal();
     }
     const onDefeitosClick = (data, item) => {
-        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { defaultSort:[{ column: 'nome', direction: 'ASC' }], filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
+        setModalParameters({ content: "bobines", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Bobines</div>, parameters: { defaultSort: [{ column: 'nome', direction: 'ASC' }], filter: { fcomp: ">=0", frecycle: "in:0,1", fof: `==${data?.of_cod}`, fdefeitos: [{ ...item, key: item.value }] } } });
         showModal();
     }
     const onEstadoClick = (data, estado, noPalete = null) => {
@@ -731,6 +737,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
             const v = estadoProducaoData({ data: parameters?.data });
+            console.log("loadedddddddddddddddddddd",v)
             //setOfs([..._ofs]);
             //dataAPI.setData({ rows: _dj, total: _dj.length });
             setOfs(v.ofs);
@@ -769,6 +776,10 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         setActiveKeys([...new Set(["1", "2", "3", ...v])]);
     }
 
+    const onCortesChoose = (v) => {
+        setCortesChoose({...v});
+    }
+
     return (<>
         <Container fluid style={{ padding: "0px" }}>
             <Row nogutter>
@@ -805,13 +816,17 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
-                                            {/* <div><Button type="primary" size="small" onClick={onPaletesExpand} ghost icon={<EditOutlined />} /></div> */}
+                                            <Space>
+                                            {(permission.isOk({ item: "edit", action: "cortes_test" }) && !cortesChoose.edit) && <div><Button type="primary" size="small" onClick={()=>onCortesChoose({edit:true,save:false})} icon={<EditOutlined />}>Bobines a testar</Button></div>}
+                                            {cortesChoose.edit && <div><Button type="primary" ghost size="small" onClick={()=>onCortesChoose({edit:false,save:false})}>Cancelar</Button></div>}
+                                            {cortesChoose.edit && <div><Button type="primary" size="small" onClick={()=>onCortesChoose({edit:true,save:true})}>Guardar</Button></div>}
+                                            </Space>
                                         </Col>
                                     </Row>
                                     <Row nogutter>
                                         <Col>
                                             <YScroll height="195px">
-                                                <Suspense fallback={<></>}><FormCortesOrdem forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem cortesChoose={cortesChoose} forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </YScroll>
                                         </Col>
@@ -1166,7 +1181,7 @@ export default ({ setFormTitle, ...props }) => {
         reconnectAttempts: 500
     });
 
-    const permission = usePermission({ name: "widget", item: "estadoProducao" });//Permissões Iniciais
+    const permission = usePermission({ name: "widget_estadoproducao" });//Permissões Iniciais
     const inputParameters = useRef({});
 
     const { openNotification } = useContext(AppContext);
@@ -1415,8 +1430,8 @@ export default ({ setFormTitle, ...props }) => {
                     {/* <Button ghost icon={<UnorderedListOutlined />} onClick={onOrdemFabricoClick} title="Ordens de Fabrico" /> */}
                     <div>
                         <Space>
-                            <Button ghost onClick={() => newWindow("/app/picking/main/", {}, "controlpanel")} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
-                            <Hidden xs sm md><div style={{textAlign:"center",lineHeight:1,color:"#fff"}}><div style={{ fontSize: "11px" }}>{permission.auth?.name}</div></div></Hidden>
+                            <Button ghost onClick={() => newWindow("/app/picking/main/", {}, `controlpanel-${uid(4)}`)} icon={<ControlOutlined style={{ fontSize: "14px" }} />} />
+                            <Hidden xs sm md><div style={{ textAlign: "center", lineHeight: 1, color: "#fff" }}><div style={{ fontSize: "11px" }}>{permission.auth?.name}</div></div></Hidden>
                         </Space>
                     </div>
                 </div>

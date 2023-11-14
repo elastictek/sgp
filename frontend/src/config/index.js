@@ -1,4 +1,5 @@
 import React from 'react';
+import { uid } from 'uid';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined, MenuOutlined } from '@ant-design/icons';
 
 
@@ -54,7 +55,7 @@ export const HISTORY_DEFAULT = [
     { label: <div style={{textAlign:"center"}}><MenuOutlined style={{ fontSize: "14px",color:"#1677ff" }} /></div>, key: `mainmenu` },
     { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{ fontSize: "14px" }} /> },
     { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{ fontSize: "14px" }} /> },
-    { label: "Painel de Controlo", key: "#/app/picking/main/", state: { newWindow: "controlpanel" }, icon: <ControlOutlined style={{ fontSize: "14px" }} /> },
+    { label: "Painel de Controlo", key: "#/app/picking/main/", state: { newWindow: `controlpanel-${uid(4)}` }, icon: <ControlOutlined style={{ fontSize: "14px" }} /> },
     { label: "Ordens de Fabrico", key: "#/app/ofabrico/ordensfabricolist/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
     { label: "Paletes", key: "#/app/paletes/paleteslist/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },
     { label: "Bobinagens", key: "#/app/bobinagens/reellings/", state: null, icon: <UnorderedListOutlined style={{ fontSize: "14px" }} /> },

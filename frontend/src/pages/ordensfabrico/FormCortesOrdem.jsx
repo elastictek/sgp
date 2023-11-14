@@ -117,7 +117,7 @@ const loadCortesOrdemLookup = async ({ cortesOrdemId, signal }) => {
     return rows;
 }
 
-export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemId, forInput = true, height }) => {
+export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemId, forInput = true, height, cortesChoose }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -163,6 +163,10 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemI
     useEffect(() => {
         init();
     }, [record, cortesOrdemId]);
+
+    useEffect(()=>{
+        console.log(cortesOrdemId,record)
+    },[cortesChoose?.edit,cortesChoose?.save]);
 
     const onFinish = async (values) => {
         const status = { error: [], warning: [], info: [], success: [] };

@@ -160,9 +160,9 @@ const StyledSearch = styled(Search)`
     }
 `;
 
-const InternalForView = ({ forViewBorder, minHeight, forViewBackground, style, onDoubleClick, value, loading = false }) => {
+const InternalForView = ({ forViewBorder, height, forViewBackground, style, onDoubleClick, value, loading = false }) => {
     return (
-        <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight, whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}{loading && <LoadingOutlined />}</div>
+        <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", ...height, whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}{loading && <LoadingOutlined />}</div>
     );
 }
 

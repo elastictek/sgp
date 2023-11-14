@@ -279,7 +279,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
         ...(true) ? [{ name: 'diam_avg', header: 'Diam. Médio', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.diam_avg, 0)}</RightAlign> }] : [],
         ...(true) ? [{ name: "cliente_nome", header: "Cliente", defaultWidth: 160, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign>{data?.cliente_nome}</LeftAlign> }] : [],
         ...(true) ? [{ name: "ofid", header: "Ordem", defaultWidth: 120, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign>{data?.ofid}</LeftAlign> }] : [],
-        ...(true) ? [{ name: "item", header: "Artigo", defaultWidth: 130, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign>{data?.item}</LeftAlign> }] : [],
+        ...(true) ? [{ name: "artigo_cod", header: "Artigo", defaultWidth: 130, flex: 1, userSelect: true, defaultlocked: false, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign>{data?.artigo_cod}</LeftAlign> }] : [],
         ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit, inputParameters.current.isOpen], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Delete onClick={() => onDelete(data, rowIndex)} /> }] : []
         // { name: 'baction', header: '', headerAlign: "center", userSelect: true, defaultlocked: false, width: 45, render: ({ data, rowIndex }) => <Actions data={data} rowIndex={rowIndex} onAction={(action) => onAction(action, data, rowIndex)} /> },
     ];
@@ -388,7 +388,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
                 submitting.trigger();
                 let response = null;
                 try {
-                    response = await fetchPost({ url: `${API_URL}/paletes/sql/`, parameters: { method: "DeletePaletesStock" }, rows: [{ ...data, rowdeleted: 1,rowadded:0 }], ordem_id: inputParameters.current.id });
+                    response = await fetchPost({ url: `${API_URL}/paletes/sql/`, parameters: { method: "DeletePaletesStock", rows: [{ ...data, rowdeleted: 1,rowadded:0 }], ordem_id: inputParameters.current.id } });
                     if (response.data.status !== "error") {
                         //const _rows = dataAPI.deleteRow({ [dataAPI.getPrimaryKey()]: data?.[dataAPI.getPrimaryKey()] }, [dataAPI.getPrimaryKey()]);
                         dataAPI.setAction("edit", true);

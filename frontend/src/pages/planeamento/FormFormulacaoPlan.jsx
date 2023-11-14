@@ -12,14 +12,14 @@ import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL } from "config";
 import { useDataAPI } from "utils/useDataAPIV3";
 import { json } from "utils/object";
-import Toolbar from "components/toolbar";
+import Toolbar from "components/toolbarV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
 import Portal from "components/portal";
 import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, Timeline } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
-const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+const { Title, Paragraph } = Typography;
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import Table from 'components/TableV3';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, ENROLAMENTO_OPTIONS } from 'config';
 import useWebSocket from 'react-use-websocket';
@@ -33,6 +33,7 @@ import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { dayjsValue } from 'utils/index';
 import { useImmer } from "use-immer";
+import FormulacaoReadOnly from '../formulacao/FormulacaoReadOnly';
 const FormFormulacao = React.lazy(() => import('../formulacao/FormFormulacao'));
 //import { MediaContext } from "../App";
 //import { Context } from './Palete';
@@ -52,6 +53,38 @@ export const loadFormulacaoPlan = async ({ agg_of_id }, signal) => {
     }
     return [];
 }
+
+
+const TimeLinePlan = ({ localState, updateLocalState, operations, index, ...props }) => {
+    const [editIndex, setEditIndex] = useState({ i: null, value: null });
+
+    const onEdit = (idx) => {
+        console.log("localState.items[idx]", localState.items[idx])
+        setEditIndex({ i: idx, value: localState.items[idx] });
+    }
+
+    const onChange = (v) => {
+        console.log("RRR", editIndex, v.target.value)
+        setEditIndex(prev => ({ ...prev, value: { ...prev.value, observacoes: v.target.value } }));
+    }
+
+
+    return (<>
+        <Timeline
+            /* mode="alternate" */
+            items={localState.items.map((v, i) => ({
+                ...localState.planId == v.plan_id && { color: 'green' },
+                ...localState.planId != v.plan_id && { dot: <ClockCircleOutlined style={{ fontSize: '16px' }} /> },
+                children: <div>
+                    <div>{v.designacao}{operations.edit && <Button type='link' icon={<EditOutlined />} onClick={() => onEdit(i)} />}</div>
+                    {editIndex.i !== i && <div style={{ fontWeight: 700 }}>{v.observacoes}</div>}
+                    {editIndex.i == i && <div style={{ fontWeight: 700, marginRight:"20px" }}>{<Input.TextArea autoSize={{ minRows: 2, maxRows: 6 }} onChange={onChange} value={editIndex.value.observacoes} />}</div>}
+                </div>
+            }))}
+        />
+    </>);
+}
+
 
 export default ({ operationsRef, index, updateState, operations, ...props }) => {
     const location = useLocation();
@@ -79,7 +112,7 @@ export default ({ operationsRef, index, updateState, operations, ...props }) => 
         planId: null,
         formulacao_id: null,
         cs_id: null,
-        loaded:false
+        loaded: false
     });
 
 
@@ -95,36 +128,15 @@ export default ({ operationsRef, index, updateState, operations, ...props }) => 
         const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
         inputParameters.current = { ...paramsIn };
 
-
-
-        // formulacao_id
-        // : 
-        // 7
-        // formulacao_plan_id
-        // : 
-        // 2079
-        // fplan_cliente_nome
-        // : 
-        // null
-        // fplan_designacao
-        // : 
-        // null
-        // fplan_idx
-        // : 
-        // null
-        // fplan_versao
-        // : 
-        // null
-
         const _rows = await loadFormulacaoPlan({ agg_of_id: inputParameters.current.ordem.agg_of_id }, signal);
         updateLocalState(draft => {
-            draft.loaded=true;
+            draft.loaded = true;
             draft.cs_id = inputParameters.current?.cs_id;
             draft.formulacao_id = inputParameters.current.ordem?.formulacao_id;
             draft.items = _rows;
             draft.planId = inputParameters.current.ordem.formulacao_plan_id;
         });
-        console.log("#####ccccccccccccccccccccccccccc#######", _rows, inputParameters.current.ordem?.formulacao_id);
+        console.log("#####ccccccccccccccccccccccccccc#######", _rows, inputParameters.current.ordem);
         // console.log("########################", inputParameters)
         // const _amostragem = pickAll(["sentido_enrolamento", "amostragem", "observacoes", "item_certificacoes"], inputParameters.current.ordem);
         // _amostragem["sentido_enrolamento"] = ENROLAMENTO_OPTIONS.find(v => v.value == _amostragem?.sentido_enrolamento);
@@ -186,34 +198,70 @@ export default ({ operationsRef, index, updateState, operations, ...props }) => 
         return (operations.edit && permission.isOk({ item, action }));
     }
 
+    const onPlanEdit = () => {
+        updateState(draft => {
+            draft.operations.edit = true;
+            if (!draft.operations.dirtyForms.includes(index)) {
+                draft.operations.dirtyForms.push(index);
+            }
+        });
+    }
+
+    const onPlanCancelEdit = () => {
+        updateState(draft => {
+            draft.operations.edit = false;
+            draft.operations.dirtyForms = draft.operations.dirtyForms.filter(v => v != index);
+        });
+    }
+
     return (
         <YScroll>
             {localState.loaded && <Container fluid style={{ padding: "5px 5px" }}>
                 {/*                 <Row><Col><HorizontalRule marginTop='0px' title="Artigo" /></Col></Row> */}
-                <Row style={{}}>
-                    <Col md={12} lg={3}>
-                        <Timeline
-                            /* mode="alternate" */
-                            items={localState.items.map(v => ({
-                                ...localState.planId == v.plan_id && { color: 'green' },
-                                ...localState.planId != v.plan_id && { dot: <ClockCircleOutlined style={{ fontSize: '16px' }} /> },
-                                children: <div>
-                                    <div>{v.designacao}</div>
-                                    <div style={{ fontWeight: 700 }}>{v.observacoes}</div>
-                                </div>
-                            }))}
-                        />
+                <Row style={{}} nogutter>
+                    {localState.items && localState.items.length > 0 && <Col md={12} lg={3} style={{ marginRight: "5px" }}>
+                        <Toolbar right={<Space>
+
+
+                            <Permissions permissions={permission} item="edit" action="formulacao_plan" forInput={!operations.edit || (operations.edit && operations.dirtyForms.includes(index))}>
+                                {!operations.edit && <Button onClick={() => onPlanEdit()} type="link" icon={<EditOutlined />}>Editar Plano</Button>}
+                                {operations.edit && <Button onClick={() => onPlanCancelEdit()} type="link">Cancelar</Button>}
+                                {/* {editKey === action && <Button onClick={() => onEndEdit(fn)} type="primary" icon={<EditOutlined />}>Guardar</Button>} */}
+                            </Permissions>
+
+
+                        </Space>} style={{ marginBottom: "10px", border: "0px", minHeight: "38px" }} />
+                        <Row nogutter>
+                            <Col>
+                                <TimeLinePlan updateLocalState={updateLocalState} localState={localState} operations={operations} index={index} />
+                            </Col>
+                        </Row>
                     </Col>
+                    }
                     <Col>
-                        <FormFormulacao noHeader={true} setFormTitle={true} parameters={{ ...localState.formulacao_id && { formulacao_id: localState.formulacao_id }, ...localState.cs_id && { cs_id: localState.cs_id }, type: "formulacao_formulation_change" }} />
+                        <Row nogutter>
+                            <Col>
+                                <Toolbar right={<Space>
+                                    <Permissions permissions={permission} item="edit" action="formulacao" forInput={!operations.edit}>
+                                        <Button onClick={() => navigate("/app/ofabrico/formulacao", { state: { new: true, modeEdit: true, formulacao_id: localState.formulacao_id, cs_id: localState.cs_id } })} type="link" icon={<PlusOutlined />}>Nova Formulação</Button>
+                                        <Button onClick={() => navigate("/app/ofabrico/formulacao", { state: { modeEdit: true, formulacao_id: localState.formulacao_id, cs_id: localState.cs_id } })} type="link" icon={<EditOutlined />}>Editar Formulação</Button>
+                                    </Permissions>
+                                </Space>} style={{ marginBottom: "10px", border: "0px", minHeight: "38px" }} />
+                            </Col>
+                        </Row>
+                        <Row nogutter>
+                            <Col>
+                                <FormulacaoReadOnly header={1} showTitle={false} parameters={{ formulacao_id: localState.formulacao_id, cs_id: localState.cs_id }} size='small' />
+                            </Col>
+                        </Row>
                     </Col>
                 </Row>
             </Container>
             }
-            {(operationsRef && operations.edit) && <Portal elId={operationsRef.current}>
+            {/* {(operationsRef && operations.edit) && <Portal elId={operationsRef.current}>
                 {operations.dirtyForms.includes(index) && <Button onClick={onSave} type="primary">Guardar</Button>}
             </Portal>
-            }
+            } */}
         </YScroll>
     )
 

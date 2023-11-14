@@ -76,6 +76,7 @@ const LabBobinagensEssaysList = lazy(() => import('./qualidade/LabBobinagensEssa
 const Bobinagem = lazy(() => import('./bobinagens/Bobinagem'));
 
 
+const OrdemFabricoV2 = React.lazy(() => import('./planeamento/Planeamento'));
 const Formulacao = lazy(() => import('./formulacao/FormFormulacao'));
 const FormulacaoReadOnly = lazy(() => import('./formulacao/FormulacaoReadOnly'));
 const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
@@ -232,6 +233,7 @@ const RenderRouter = () => {
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
                 { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },
 
+                { path: "ofabrico/ordemfabricov2", element: <Suspense fallback={<Spin />}><OrdemFabricoV2 /></Suspense> },
                 { path: "ofabrico/formulacao", element: <Suspense fallback={<Spin />}><Formulacao /></Suspense> },
                 { path: "ofabrico/attachements", element: <Suspense fallback={<Spin />}><FormAttachements /></Suspense> },
                 { path: "ofabrico/formulacaoreadonly", element: <Suspense fallback={<Spin />}><FormulacaoReadOnly /></Suspense> },

@@ -312,7 +312,7 @@ def OrdensFabricoInElaboration(request, format=None):
             from producao_tempaggordemfabrico pt
             join producao_tempordemfabrico pt2 on pt2.agg_of_id = pt.id
             left join producao_formulacao pf on pf.id=pt.formulacao_id
-            where pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
+            where pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id and pa.ignorar=1)
             order by pt.cod ASC, pt2.of_id ASC
         """
     ), connection, {})
@@ -342,7 +342,7 @@ def OrdensFabricoInElaborationAllowed(request, format=None):
             left join group_artigos ga on ga.artigo_id = pt2.item_id
             left join producao_formulacao pf on pf.id=pt.formulacao_id
             where 
-            pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id)
+            pt.status=0 and not exists(select 1 from producao_ordemfabricodetails pa where pa.cod=pt2.of_id and pa.ignorar=1)
              {f'and ({f.text} {f2.text})' if f.hasFilters or f2.hasFilters else ''}
             order by pt.cod ASC, pt2.of_id ASC
         """
@@ -438,7 +438,7 @@ def OrdensFabricoPlanGet(request, format=None):
             left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
-            where ({"(pt.id is not null and pt2.`status`=0 ) or " if allowInElaboration else "1=1 and"} (pc.status in (1,2,3))) {f.text} order by po.ofid is null,pt.of_id,po.ofid
+            where not exists (select 1 from producao_ordemfabricodetails po2 where po2.cod=pt.of_id and po2.ignorar = 1 ) and ({"(pt.id is not null and pt2.`status`=0 ) or " if allowInElaboration else "1=1 and"} (pc.status in (1,2,3))) {f.text} order by po.ofid is null,pt.of_id,po.ofid
             ) t where t.ofabrico_status <9
         """
     ), connection, {**f.parameters})
@@ -1021,6 +1021,10 @@ def GetAttachements(request, format=None):
     f.where()
     f.add(f'pa.of_id = :draft_id',lambda v:(v!=None))
     f.add(f'pt2.agg_of_id = :aggid',lambda v:(v!=None))
+    f.add(f"""
+        pa.of_id in (select id from producao_tempordemfabrico t where t.agg_of_id = (select agg.agg_of_id from producao_tempordemfabrico agg where id=:draft_id))
+        and (pa.of_id = :draft_id or (pa.of_id<> :draft_id and tipo_acesso=1))
+    """,lambda v:(v!=None))
     f.value()
     f2 = Filters(filter)
     f2.setParameters({}, False)
@@ -1035,18 +1039,38 @@ def GetAttachements(request, format=None):
         left join planeamento_ordemproducao po on po.draft_ordem_id = pt2.id
         {f.text}
         union
-        select null id, 'Resumo de Produção' tipo_doc,res_prod `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (res_prod is not null and res_prod<>'')
+        select null id, 'Resumo de Produção' tipo_doc,res_prod `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (res_prod is not null and res_prod<>'')
         union
-        select null id, 'Ordem de Fabrico' tipo_doc,`of` `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (`of` is not null and `of`<>'')
+        select null id, 'Ordem de Fabrico' tipo_doc,`of` `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (`of` is not null and `of`<>'')
         union
-        select null id, 'Ficha Técnica' tipo_doc,ficha_tecnica `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid, po.ativa of_cod from planeamento_ordemproducao po {f2.text} and (ficha_tecnica is not null and ficha_tecnica<>'')
+        select null id, 'Ficha Técnica' tipo_doc,ficha_tecnica `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid, po.ativa of_cod from planeamento_ordemproducao po {f2.text} and (ficha_tecnica is not null and ficha_tecnica<>'')
         union
-        select null id, 'Ficha de Processo' tipo_doc,ficha_processo `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ficha_processo is not null and ficha_processo<>'')
+        select null id, 'Ficha de Processo' tipo_doc,ficha_processo `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ficha_processo is not null and ficha_processo<>'')
         union 
-        select null id, 'Orientação Qualidade' tipo_doc,ori_qua `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ori_qua is not null and ori_qua<>'')
+        select null id, 'Orientação Qualidade' tipo_doc,ori_qua `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ori_qua is not null and ori_qua<>'')
         union 
-        select null id, 'Packing List' tipo_doc,pack_list `path`, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (pack_list is not null and pack_list<>'')
+        select null id, 'Packing List' tipo_doc,pack_list `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (pack_list is not null and pack_list<>'')
     """)
+    print(f"""
+        select pa.*,pt2.of_id of_cod, po.ativa
+        from producao_attachments pa
+        join producao_tempordemfabrico pt2 on pt2.id=pa.of_id
+        left join planeamento_ordemproducao po on po.draft_ordem_id = pt2.id
+        {f.text}
+        union
+        select null id, 'Resumo de Produção' tipo_doc,res_prod `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (res_prod is not null and res_prod<>'')
+        union
+        select null id, 'Ordem de Fabrico' tipo_doc,`of` `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (`of` is not null and `of`<>'')
+        union
+        select null id, 'Ficha Técnica' tipo_doc,ficha_tecnica `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid, po.ativa of_cod from planeamento_ordemproducao po {f2.text} and (ficha_tecnica is not null and ficha_tecnica<>'')
+        union
+        select null id, 'Ficha de Processo' tipo_doc,ficha_processo `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ficha_processo is not null and ficha_processo<>'')
+        union 
+        select null id, 'Orientação Qualidade' tipo_doc,ori_qua `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (ori_qua is not null and ori_qua<>'')
+        union 
+        select null id, 'Packing List' tipo_doc,pack_list `path`, 0 tipo_acesso, draft_ordem_id of_cod,po.`timestamp` created_date,ofid of_cod, po.ativa from planeamento_ordemproducao po {f2.text} and (pack_list is not null and pack_list<>'')
+    """)
+    print({**f.parameters,**f2.parameters})
     try:
         response = db.executeSimpleList(sql, connection, {**f.parameters,**f2.parameters})
     except Error as error:
@@ -2425,7 +2449,7 @@ def GetPaletizacao(request, format=None):
 
 
 def GetPaletesStock(request, format=None):
-    connection = connections[connGatewayName].cursor()
+    connection = connections["default"].cursor()
     filter = request.data['filter']
     f = Filters(filter)
     f.setParameters({
@@ -2437,23 +2461,26 @@ def GetPaletesStock(request, format=None):
     f.auto()
     f.value()
 
-    dql = dbgw.dql(request.data, False)
-    cols = f"""sgppl.id,sgppl."timestamp",sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
+    dql = db.dql(request.data, False)
+    cols = f"""sgppl.id,sgppl.`timestamp`,sgppl.data_pal,sgppl.nome,sgppl.num,sgppl.estado,sgppl.area,sgppl.comp_total,
         sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id,
         sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino,sgppl.ordem_id,sgppl.ordem_original,
         sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real,
-        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, sgppl.ofid_original, sgppl.ofid, sgppl.disabled,
-        sgppl.cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs"""
+        sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, po2.ofid ofid_original, po1.ofid, sgppl.disabled,
+        pc.name cliente_nome,sgppl.artigo,sgppl.destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs, sgppl.artigo->>'$[0].cod' artigo_cod"""
     sql = lambda: (f"""
         select
         {cols}
-        FROM mv_paletes sgppl
-        LEFT JOIN {mv_ofabrico_list} mol on mol.ofabrico=sgppl.ofid
+        FROM producao_palete sgppl
+        LEFT JOIN planeamento_ordemproducao po1 on po1.id=sgppl.ordem_id
+        LEFT JOIN planeamento_ordemproducao po2 on po2.id=sgppl.ordem_id_original
+        LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+        #LEFT JOIN {mv_ofabrico_list} mol on mol.ofabrico=sgppl.ofid
         WHERE sgppl.ordem_id_original <> sgppl.ordem_id {f.text}
         {dql.sort}
     """)
     try:
-        response = dbgw.executeSimpleList(sql, connection, f.parameters)
+        response = db.executeSimpleList(sql, connection, f.parameters)
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -2706,6 +2733,7 @@ def GetOrdemFabricoSettings(request, format=None):
     try:
         for item in calls:
             if item.get("key") in ["settings"]:
+                print("uuuuuuu")
                 print([request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id"),request.data.get("filter").get("draft_ordem_id")])
                 cursor.execute(item.get("st"), [request.data.get("filter").get("agg_of_id"),request.data.get("filter").get("ordem_id"),request.data.get("filter").get("draft_ordem_id")])
                 #results[item.get("key")] = fetchall(cursor) if item.get("array") else fetchone(cursor)

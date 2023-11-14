@@ -119,7 +119,6 @@ export default ({ openNotification, next, actionsContent, actions, onClick, ...p
             return grouped;
         }, {});
         const _groupArray = Object.entries(groupData).map(([agg_cod, items]) => ({ agg_cod, items }));
-        console.log(_groupArray);
         setAllowInit(_items.filter(v => v.ofabrico_status === 3).length >= 1 ? false : true);
         setItems(_groupArray);
 

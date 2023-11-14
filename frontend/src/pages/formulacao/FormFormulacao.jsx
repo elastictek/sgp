@@ -340,6 +340,10 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
             inputParameters.current = paramsIn;
         }
         setFormDirty(false);
+        if (location?.state?.modeEdit || props?.parameters?.modeEdit) {
+            setMode(v => ({ ...v, datagrid: { edit: true, add: false } }));
+        }
+
         if (inputParameters.current?.new) {
             form.setFieldsValue({ joinbc: 1, reference: 0 });
         } else {
@@ -724,7 +728,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
     return (
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
-            <FormContainer id="form" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onValuesChange={onValuesChange} wrapFormItem={true} forInput={mode.datagrid.edit} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
+            <FormContainer id="form" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onValuesChange={onValuesChange} wrapFormItem={true} forInput={mode.datagrid.edit} style={{ padding: "0px 5px" }} alert={{ tooltip: true, pos: "none" }}>
                 {!noHeader && <Row style={{}} gutterWidth={10}>
                     <Col xs={2} md={1}><Field name="versao" forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
                     <Col xs={4} md={2}><FormulacaoGroups name="group_name" label={{ enabled: true, text: "Grupo" }} /></Col>

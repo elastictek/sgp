@@ -8,7 +8,7 @@ import { ConditionalWrapper } from './conditionalWrapper';
 import { MediaContext } from '../pages/App';
 
 
-const TitleModal = ({ title, eTitle }) => {
+const TitleModal = ({ title, eTitle,details }) => {
     const getTitle = () => {
         if (title) {
             return title;
@@ -17,13 +17,16 @@ const TitleModal = ({ title, eTitle }) => {
     }
 
     return (
+        <div>
         <div><span style={{ textTransform: "capitalize", fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
+        {details && <div>{details}</div>}
+        </div>
     );
 }
 
 
 
-export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, details, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -79,7 +82,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
         <>
             {(size.computed && type === "modal") &&
                 <Modal
-                    title={<TitleModal title={iTitle} eTitle={title} />}
+                    title={<TitleModal title={iTitle} eTitle={title} details={details} />}
                     open={true}
                     centered={size.fullscreen ? false : true}
                     maskClosable={true}

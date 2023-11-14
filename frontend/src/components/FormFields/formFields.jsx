@@ -904,13 +904,13 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
 
     const height = (size) => {
         if (!size) {
-            return "28px";
+            return {height:"28px",minHeight:"28px"};
         } else if (size === "small") {
-            return "22px";
-        } else if (size === "default") {
-            return "28px";
+            return {height:"22px",minHeight:"22px"};
+        } else if (size === "default" || size === "middle") {
+            return {height:"28px",minHeight:"28px"};
         } else if (size === "large") {
-            return "32px";
+            return {height:"32px",minHeight:"32px"};
         }
     }
 
@@ -923,7 +923,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                     const { value, onDoubleClick } = rest;
                     switch (type) {
                         case 'Input':
-                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", ...height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         case 'CheckboxField':
                             if (value == 1 || value == true) {
                                 return <CheckSquareOutlined color='#595959' {...children.props} style={{ fontSize: "16px", ...style && style }}  {...onDoubleClick && { onDoubleClick }} />
@@ -935,7 +935,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 <SwitchField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
                             );
                         case 'Selector':
-                            return (<Selector forView={true} minHeight={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
+                            return (<Selector  forView={true} height={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
                         case 'SelectDebounceField':
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
@@ -946,11 +946,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
             <div style={{ padding: "2px", border: "solid 1px #d9d9d9" }}>{text}</div>
             ) */
                             return (
-                                <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
+                                <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", ...height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value?.label}</div>
                             )
                         case 'Picker':
                             const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
-                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? dayjsValue(value).format(format) : ''}</div>)
+                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", ...height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value ? dayjsValue(value).format(format) : ''}</div>)
                         case 'SelectField':
                             let text = "";
                             if (labelInValue || (value !== null && typeof value == "object" && textField in value)) {
@@ -962,11 +962,11 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 }
                             }
                             return (
-                                <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", minHeight: height(children?.props?.size), whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
+                                <div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", alignItems: "center", ...height(children?.props?.size), whiteSpace: "nowrap", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{text}</div>
                             )
                         case 'InputNumber':
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
-                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, ...height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
                                         {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                         <div>{value}</div>
@@ -974,10 +974,10 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                     </div>
                                 </div>)
                             }
-                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", minHeight: height(children?.props?.size), alignItems: "center", justifyContent: "end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", ...height(children?.props?.size), alignItems: "center", justifyContent: "end", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                         default:
                             if ("addonAfter" in children.props || "addonBefore" in children.props) {
-                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, minHeight: height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
+                                return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, ...height(children?.props?.size), ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>
                                     <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
                                         {("addonBefore" in children.props) && <div style={{ marginRight: "2px" }}>{children.props.addonBefore}</div>}
                                         <div>{value}</div>
@@ -986,7 +986,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 </div>)
                             }
 
-                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", minHeight: height(children?.props?.size), alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
+                            return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", ...height(children?.props?.size), alignItems: "center", ...forViewBackground && { background: "#f0f0f0" }, ...(style && style) }} {...onDoubleClick && { onDoubleClick }}>{value}</div>);
                     }
 
                 })()}

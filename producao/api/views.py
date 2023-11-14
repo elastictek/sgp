@@ -3088,7 +3088,10 @@ def OfAttachmentsGet(request, format=None):
     f = Filters(request.data['filter'])
     f.setParameters({}, False)
     f.where()
-    f.add(f'of_id = :of_id', True)
+    f.add(f"""
+        of_id in (select id from producao_tempordemfabrico t where t.agg_of_id = (select agg.agg_of_id from producao_tempordemfabrico agg where id=:of_id))
+        and (of_id = :of_id or (of_id<> :of_id and tipo_acesso=1))
+    """, True)
     f.value("and")
     parameters = {**f.parameters}
     
@@ -3112,7 +3115,6 @@ def OfAttachmentsGet(request, format=None):
 @permission_classes([IsAuthenticated])
 # @transaction.atomic()
 def OfAttachmentsChange(request, format=None):
-    print(f"{request.data}")
     if "type" in request.data:
         try:
             with transaction.atomic():
@@ -3120,6 +3122,9 @@ def OfAttachmentsChange(request, format=None):
                     if request.data.get("type") == "changedtypes":
                         for key, value in request.data.get("changedTypes").items():
                             dml = db.dml(TypeDml.UPDATE, {"tipo_doc":value}, "producao_attachments",{"id":key},None,None)
+                            db.execute(dml.statement, cursor, dml.parameters)
+                        for key, value in request.data.get("changedAcesso").items():
+                            dml = db.dml(TypeDml.UPDATE, {"tipo_acesso":value}, "producao_attachments",{"id":key},None,None)
                             db.execute(dml.statement, cursor, dml.parameters)
                     elif request.data.get("type") == "remove":
                             if request.data.get("id") is None and request.data.get("ordem_id") is not None :
@@ -3154,14 +3159,14 @@ def OfAttachmentsChange(request, format=None):
 def OfUpload(request, format=None):
     statements = []
     folder = request.data.get("of_id").replace("\\","_").replace("/","_")
-    fs = FileSystemStorage(f'docs/OF/{folder}')
+    fs = FileSystemStorage(f'{AppSettings.folders.get("root")}/{AppSettings.folders.get("OF")}/{folder}')
     for k, v in request.FILES.items():
         filename = fs.save(f'{v.name}', v)
-        statements.append(f"('{request.data.get(f'{k}_type')}','docs/OF/{folder}/{filename}',{request.data.get('tempof_id')},'{datetime.now()}')")
+        statements.append(f"""('{request.data.get(f'{k}_type')}','{AppSettings.folders.get("OF")}/{folder}/{filename}',{request.data.get('tempof_id')},'{datetime.now()}',{1 if request.data.get("tipo_acesso")==1 else 0})""")
         #data.append({"tipo_doc":request.data.get(f'{k}_type'),"path":f'docs/OF/{folder}/{filename}'})
     statement = f"""
         INSERT INTO 
-        producao_attachments(tipo_doc,path,of_id,created_date)
+        producao_attachments(tipo_doc,path,of_id,created_date,tipo_acesso)
         VALUES
         {','.join(statements)}
     """
@@ -3387,7 +3392,7 @@ def sgpForProduction(data,aggid,user,cursor):
             'id',pan.id,'designacao',pan.designacao,'versao',pan.versao,'nw_cod_sup',pan.nw_cod_sup,
             'nw_des_sup',pan.nw_des_sup,'nw_cod_inf',pan.nw_cod_inf,'nw_des_inf',pan.nw_des_inf,'produto_id',pan.produto_id
             ) nonwovens,
-            (select JSON_ARRAYAGG(JSON_OBJECT('created_date', patt.created_date,'id', patt.id,'of_id', patt.of_id,'path', patt.path,'tipo_doc', patt.tipo_doc))
+            (select JSON_ARRAYAGG(JSON_OBJECT('created_date', patt.created_date,'id', patt.id,'of_id', patt.of_id,'path', patt.path,'tipo_doc', patt.tipo_doc,'tipo_acesso', patt.tipo_acesso))
             FROM producao_attachments patt WHERE patt.of_id=pto.id) attachments,
             pto.cliente_cod, pto.cliente_nome, pc.id as cliente_id,
             pto.order_cod, penc.id as encomenda_id,

@@ -873,8 +873,6 @@ def AddPaletesStock(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 args = [data.get("ordem_id"),json.dumps(data.get("rows"), ensure_ascii=False),request.user.id]
-                print("Rrrrrr")
-                print(args)
                 cursor.callproc('add_paletes_stock',args)
         return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
     except Exception as error:
@@ -889,7 +887,7 @@ def DeletePaletesStock(request, format=None):
             with connections["default"].cursor() as cursor:
                 args = [data.get("ordem_id"),json.dumps(data.get("rows"), ensure_ascii=False),request.user.id]
                 cursor.callproc('delete_paletes_stock',args)
-        return Response({"status": "success", "success":f"""Registos atualizados com sucesso!"""})
+        return Response({"status": "success", "title":f"""Registos atualizados com sucesso!"""})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
     

@@ -16,8 +16,13 @@ class AppSettings:
             "sage":f'"SAGE-PROD"'
         }
     }
+    folders = {
+        "root":"/home/sgp-docs",
+        "OF":"/docs/OF"
+    }
     reportServer = {
         "default":"http://192.168.0.16:8080/ReportsGW"
+        #"default":"http://localhost:8080/ReportsGW"
     }
     reportConn = {
         "sage":"MSSQL-SAGE",

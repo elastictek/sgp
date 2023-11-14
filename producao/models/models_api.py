@@ -115,6 +115,7 @@ class BaseTempAggOrdemFabrico(models.Model):
     formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
     cortes_plan_id = models.IntegerField(verbose_name="Plano de Cortes", null=True)
     nw_plan_id = models.IntegerField(verbose_name="Plano de Nonwovens", null=True)
+    cortes_test = models.JSONField(blank=True, null=True)
     class Meta:
         abstract = True
 
@@ -189,6 +190,7 @@ class BaseCurrentSettings(models.Model):
     formulacao_plan_id = models.IntegerField(verbose_name="Plano de formulações", null=True)
     cortes_plan_id = models.IntegerField(verbose_name="Plano de cortes", null=True)
     nw_plan_id = models.IntegerField(verbose_name="Plano de Nonwovens", null=True)
+    cortes_test = models.JSONField(blank=True, null=True)
     class Meta:
         abstract = True
 
@@ -205,6 +207,7 @@ class CurrentSettings(BaseCurrentSettings):
 class Attachments(models.Model):
     of = models.ForeignKey('producao.TempOrdemFabrico', on_delete=models.PROTECT, verbose_name="Temporary Ordem fabrico")
     tipo_doc = models.CharField(verbose_name="Tipo Documento", max_length=100)
+    tipo_acesso = models.SmallIntegerField(verbose_name="Tipo de acesso (0 à OF, 1 ao Agregado)")
     path=models.TextField(max_length = 1000, verbose_name = "Caminho", default = "")
     created_date = models.DateTimeField(auto_now=True, verbose_name="Data Criação")
     

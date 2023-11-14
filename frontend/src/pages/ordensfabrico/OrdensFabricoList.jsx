@@ -693,7 +693,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'end_prev_date', header: 'Fim Previsto', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.end_prev_date} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'inicio', header: 'Início', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.inicio} format={DATETIME_FORMAT} /> }] : [],
         ...(true) ? [{ name: 'fim', header: 'Fim', filter: { show: true, type: "rangedatetime", field: { style: { width: "90px" }, format: DATE_FORMAT } }, userSelect: true, defaultLocked: false, defaultWidth: 128, headerAlign: "center", render: ({ cellProps, data }) => <DateTime cellProps={cellProps} value={data?.fim} format={DATETIME_FORMAT} /> }] : [],
-        ...(true) ? [{ name: 'forTestsOnly', header: '', userSelect: true, defaultLocked: false, defaultWidth: 5, headerAlign: "center", render: ({ cellProps, data }) => <div onClick={()=>onNewPlaneamentoForTestsOnly(data)}>__</div> }] : [],
+        ...(true) ? [{ name: 'forTestsOnly', header: '', userSelect: true, defaultLocked: false, defaultWidth: 5, headerAlign: "center", render: ({ cellProps, data }) => <div onClick={() => onNewPlaneamentoForTestsOnly(data)}>__</div> }] : [],
         //...(true) ? [{ name: 'ativa', header: 'Prf Estado', filter: { show: "toolbar", type: "select", field: { style: { width: "90px" }, options: [{ value: 0, label: "Fechada" }, { value: 1, label: "Aberta" }] } }, userSelect: true, defaultLocked: false, defaultWidth: 80, headerAlign: "center", render: ({ cellProps, data }) => <Bool cellProps={cellProps} value={data?.ativa} style={data?.ativa ? { color: "#fff", backgroundColor: "green" } : {}} /> }] : [],
         // ...(allows?.allowChangeStatus) ? [{
         //     name: 'bstatus', header: 'Produção', filter: { show: false }, userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <Operations parameters={{ status: data?.ofabrico_status }} onClick={(status) => changeStatus(data, status)} />, rowspan: ({ data, value, dataSourceArray, rowIndex, column }) => {
@@ -867,8 +867,11 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     }
 
     const onNewPlaneamentoForTestsOnly = (data) => {
-        setModalParameters({ content: "ordemfabricoinelaborationNEW", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
-            showModal();
+
+        //data?.temp_ofabrico_agg, data?.ofabrico_sgp, data?.temp_ofabrico
+        navigate("/app/ofabrico/ordemfabricov2", { state: { ...data, ...allows } });
+        //setModalParameters({ content: "ordemfabricoinelaborationNEW", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
+        //showModal();
     }
 
     const onOFStatusClick = (e, data) => {
@@ -894,7 +897,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
         if ((data?.ofabrico_status === 2 || data?.ofabrico_status === 3 || data?.ofabrico_status === 9)) {
             ////navigate("/app/ofabrico/formordemfabrico", { state: { parameters: { ...data, allowChangeStatus, allowValidar, allowReopen }, tstamp: Date.now() }, replace: true });
             //Validar
-            console.log("DDDDD",data)
+            console.log("DDDDD", data)
             setModalParameters({ content: "ordemfabricoview", type: "drawer", width: "95%", title: `Planeamento ${data?.ofabrico}`, lazy: true, push: false, loadParentData: loadData, parameters: { ...data, ...allows } });
             showModal();
             // navigate('/app/ofabrico/ordemfabrico', {

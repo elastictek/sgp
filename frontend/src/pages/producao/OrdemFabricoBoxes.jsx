@@ -117,8 +117,10 @@ const useStyles = createUseStyles({
     }
 });
 
-const PaletePositionColumn = ({ data, cellProps }) => {
-
+const PaletePositionColumn = ({ data, cellProps, items }) => {
+    useEffect(()=>{
+        console.log("itemsssssss",items,data)
+    },[]);
     const btn = (pos, max, bobines) => {
         if ((pos != 1 && pos != max) || max == 1) {
             return <Button style={{ maxHeight: "23px", padding: "0px 4px", width: "40px", maxWidth: "40px", display: "flex", alignItems: "center", justifyContent: "center" }}>{bobines}</Button>;
@@ -597,7 +599,7 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                                                 {items.map((x, idx) => {
                                                     return (
                                                         <Row key={`itm-${v}-${idx}`} gutterWidth={2} style={{ textAlign: "center", alignItems: "center" }}>
-                                                            <Col width={120}><PaletePositionColumn data={x} /></Col>
+                                                            <Col width={120}><PaletePositionColumn data={x} items={items} /></Col>
                                                             <Col width={35}>{lpadFloat(x?.total_current?.num_paletes_line)}</Col>
                                                             <Col width={35}>{lpadFloat(x?.total_current?.num_paletes_stock)}</Col>
                                                             <Col width={50}><b>{lpadFloat(x?.total_current?.num_paletes)}</b>/{lpadFloat(x?.num_paletes)}</Col>

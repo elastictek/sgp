@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext,Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -84,13 +84,17 @@ export const loadPlaneamento = async (current) => {
     };
 }
 
-const Edit = ({ operations, editable, action, item, permissions, onEdit, onEndEdit, onCancelEdit, ...props }) => {
+const Edit = ({ activeTab, operations, editable, action, item, permissions, onEdit, onEndEdit, onCancelEdit, ...props }) => {
     return (
-        <Permissions permissions={permissions} item={item} action={action} forInput={editable}>
-            {!operations.edit && <Button onClick={() => onEdit(action)} type="link" icon={<EditOutlined />}>Editar</Button>}
-            {operations.edit && <Button onClick={() => onCancelEdit()} type="link">Cancelar</Button>}
-            {/* {editKey === action && <Button onClick={() => onEndEdit(fn)} type="primary" icon={<EditOutlined />}>Guardar</Button>} */}
-        </Permissions>
+        <>
+            {!["formulacao","formulacao_plan"].includes(activeTab) &&
+                <Permissions permissions={permissions} item={item} action={action} forInput={editable}>
+                    {!operations.edit && <Button onClick={() => onEdit(action)} type="link" icon={<EditOutlined />}>Editar</Button>}
+                    {operations.edit && <Button onClick={() => onCancelEdit()} type="link">Cancelar</Button>}
+                    {/* {editKey === action && <Button onClick={() => onEndEdit(fn)} type="primary" icon={<EditOutlined />}>Guardar</Button>} */}
+                </Permissions>
+            }
+        </>
     );
 }
 
@@ -109,6 +113,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
         action: null,
         maxStep: null,
         step: null,
+        tab: null,
         ids: {
             temp_id: null,
             agg_id: null,
@@ -145,7 +150,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
             inputParameters.current = { ...paramsIn };
         }
         const planeamento = await loadPlaneamento(inputParameters.current);
-
+        console.log("palnnn",planeamento)
         updateState(draft => {
             draft.ids = {
                 temp_id: inputParameters.current.temp_ofabrico, //temp_ofabrico id
@@ -154,6 +159,7 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                 ordem_id: inputParameters.current?.ofabrico_sgp //planeamento_producao id
             }
             draft.ordem = planeamento;
+            draft.tab = planeamento?.tab ? planeamento.tab : 1;
             draft.step = 0;
             draft.maxStep = 0;
             draft.operations = { dirtyForms: [], edit: false }
@@ -209,6 +215,12 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
         prev(value);
     }
 
+    const onTabChange = (k) => {
+        updateState(draft => {
+            draft.tab = k;
+        });
+    }
+
     return (
         <ConfigProvider
             theme={{
@@ -229,12 +241,13 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                     <Col>
                         <Tabs
                             tabBarExtraContent={(!submitting.state) && <Space>
-                                <Edit operations={state.operations} permissions={permission} item="edit" action="ordem_fabrico" editable={[isEditable(true)]} onEdit={onEdit} onCancelEdit={onCancelEdit} />
+                                <Edit activeTab={state.tab} operations={state.operations} permissions={permission} item="edit" action="ordem_fabrico" editable={[isEditable(true)]} onEdit={onEdit} onCancelEdit={onCancelEdit} />
                                 <div ref={operationsRef}></div>
                             </Space>}
-                            defaultActiveKey="1"
+                            activeKey={state.tab}
                             size="small"
                             style={{ marginBottom: 32 }}
+                            onChange={onTabChange}
                             items={[
                                 {
                                     key: 1,
@@ -243,35 +256,35 @@ export default ({ extraRef, closeSelf, loadParentData, setFormTitle, ...props })
                                 }, {
                                     key: 2,
                                     children: <div>b</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(2) && { textDecoration: "underline #fa8c16 3px" } }}>Embalamento</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(2) && { textDecoration: "overline #fa8c16 3px" } }}>Embalamento</div>
                                 }, {
                                     key: 3,
-                                    children:  <div>c</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(3) && { textDecoration: "underline #fa8c16 3px" } }}>Nonwovens</div>
+                                    children: <div>c</div>,
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(3) && { textDecoration: "overline #fa8c16 3px" } }}>Nonwovens</div>
                                 }, {
                                     key: 4,
                                     children: <div>a</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(4) && { textDecoration: "underline #fa8c16 3px" } }}>Cores</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(4) && { textDecoration: "overline #fa8c16 3px" } }}>Cores</div>
                                 }, {
                                     key: 5,
                                     children: <div>a</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(5) && { textDecoration: "underline #fa8c16 3px" } }}>Especificações</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(5) && { textDecoration: "overline #fa8c16 3px" } }}>Especificações</div>
                                 }, {
-                                    key: 6,
-                                    children: <Suspense fallback={<Spin />}><FormFormulacaoPlan  index={6} updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ ...state.ids, ordem: state.ordem }} operationsRef={operationsRef}/></Suspense>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(6) && { textDecoration: "underline #fa8c16 3px" } }}>Formulação</div>
+                                    key: "formulacao",
+                                    children: <Suspense fallback={<Spin />}><FormFormulacaoPlan index="formulacao" updateState={updateState} operations={state.operations} permissions={permission.permissions} parameters={{ ...state.ids, ordem: state.ordem }} operationsRef={operationsRef} /></Suspense>,
+                                    label: <div style={{ ...state.operations.dirtyForms.includes("formulacao") && { textDecoration: "overline #fa8c16 3px" } }}>Formulação</div>
                                 }, {
                                     key: 7,
                                     children: <div>a</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(7) && { textDecoration: "underline #fa8c16 3px" } }}>Gama Operatória</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(7) && { textDecoration: "overline #fa8c16 3px" } }}>Gama Operatória</div>
                                 }, {
                                     key: 8,
                                     children: <div>a</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(8) && { textDecoration: "underline #fa8c16 3px" } }}>Cortes</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(8) && { textDecoration: "overline #fa8c16 3px" } }}>Cortes</div>
                                 }, {
                                     key: 9,
                                     children: <div>a</div>,
-                                    label: <div style={{ ...state.operations.dirtyForms.includes(9) && { textDecoration: "underline #fa8c16 3px" } }}>Anexos</div>
+                                    label: <div style={{ ...state.operations.dirtyForms.includes(9) && { textDecoration: "overline #fa8c16 3px" } }}>Anexos</div>
                                 },
                             ]}
                         />

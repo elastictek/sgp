@@ -44,6 +44,15 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
     />);
 }
 
+export const loadBobines = async ({ palete_id }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, filter: { fpaleteid: palete_id }, sort: [], parameters: { method: "BobinesLookup" }, signal });
+    if (rows && Object.keys(rows).length > 0) {
+        return rows;
+    }
+    return [{}];
+}
+
+
 const schema = (options = {}) => {
     return getSchema({}, options).unknown(true);
 }
@@ -102,7 +111,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
             }
         }
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal details={modalParameters?.details} title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -141,14 +150,14 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
             height: "200px",
             content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiqueta</div>,
             parameters: {
-                url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO,...printersList?.ARMAZEM], numCopias:2,
-                onComplete: onDownloadComplete,
+                url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 2,
+                onComplete: async (response, download) => await onDownloadComplete(response, download, v),
                 parameters: {
                     method: "PrintPaleteEtiqueta",
                     id: v.data.id,
                     palete_nome: v.data.nome,
-                    name: "ETIQUETAS-PALETE",
-                    path: "ETIQUETAS/PALETE"
+                    name: v?.data?.nome.startsWith("DM") ? "ETIQUETAS-PALETE-DM" : "ETIQUETAS-PALETE",
+                    path: v?.data?.nome.startsWith("DM") ? "ETIQUETAS/PALETE-DM" : "ETIQUETAS/PALETE-DM"
                 }
             }
         });
@@ -156,12 +165,49 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         //navigate("/app/picking/newpaleteline", { state: { action: "weigh", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines, lvl: v.data.lvl } });
     }
 
-    const onDownloadComplete = async (response,download) => {
-        if (download=="download"){
+    const onPrintPaleteHold = async (v) => {
+        const hasBobinesHold = (await loadBobines({ palete_id: v.data.id })).findIndex(x => x?.estado === "HOLD");
+        if (hasBobinesHold >= 0) {
+            setModalParameters({
+                width: "500px",
+                height: "250px",
+                content: "print", type: "modal", push: false/* , width: "90%" */,
+                title: <div style={{ fontWeight: 900 }}>Imprimir Etiqueta</div>,
+                details: <div>
+                    <div>Produto Acabado em <span style={{ fontWeight: 900 }}>HOLD</span></div>
+                    <Alert
+                        style={{fontWeight:400}}                        
+                        message="Nota Importante!"
+                        description={<span style={{fontWeight:700}}>Imprimir etiqueta(s) em folha rosa.</span>}
+                        type="info"
+                    />
+                </div>,
+                parameters: {
+                    url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 2,
+                    onComplete: async (response, download) => await onDownloadComplete(response, download),
+                    parameters: {
+                        method: "PrintPaleteEtiqueta",
+                        id: v.data.id,
+                        palete_nome: v.data.nome,
+                        user:permission.auth.user,
+                        name: "ETIQUETAS-PALETE-HOLD",
+                        path: "ETIQUETAS/PALETE-HOLD"
+                    }
+                }
+            });
+            showModal();
+        }
+    }
+
+    const onDownloadComplete = async (response, download, v) => {
+        if (download == "download") {
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const pdfUrl = URL.createObjectURL(blob);
             window.open(pdfUrl, '_blank');
             //downloadFile(response.data,"etiqueta_nw.pdf");
+        }
+        if (v) {
+            await onPrintPaleteHold(v);
         }
     }
 

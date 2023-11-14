@@ -175,7 +175,7 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...pr
             response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "AddNWToLine", cs_id: state.item ? state.item.items[0].cs_id : null, rows: dataAPI.getData().rows } });
             if (response && response.data.status !== "error") {
                 openNotification(response.data.status, 'top', "Notificação", response.data.title);
-                navigate("/app/picking/main/");
+                prev();
             } else {
                 openNotification("error", 'top', "Notificação", response.data.title, null);
             }

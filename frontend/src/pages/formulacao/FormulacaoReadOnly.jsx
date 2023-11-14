@@ -96,7 +96,7 @@ const loadFormulacao = async (params, primaryKey, signal) => {
     return {};
 }
 
-export default ({ setFormTitle, showTitle=true, noDosers = false, form:_form, header = true, ...props }) => {
+export default ({ setFormTitle, showTitle = true, noDosers = false, form: _form, header = true, size = "middle", ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "readonly" });//Permissões Iniciais
@@ -158,7 +158,7 @@ export default ({ setFormTitle, showTitle=true, noDosers = false, form:_form, he
         const controller = new AbortController();
         const interval = loadData({ init: true, signal: controller.signal });
         return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, [props?.parameters?.formulacaoData, props?.parameters?.cs_id, props?.parameters?.formulacao_id, props?.parameters?.tstamp,props?.parameters?.audit_cs_id,props?.parameters?.new]);
+    }, [props?.parameters?.formulacaoData, props?.parameters?.cs_id, props?.parameters?.formulacao_id, props?.parameters?.tstamp, props?.parameters?.audit_cs_id, props?.parameters?.new]);
 
     const loadData = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -169,7 +169,7 @@ export default ({ setFormTitle, showTitle=true, noDosers = false, form:_form, he
         const { items, ...formulacao } = await loadFormulacao({ ...inputParameters.current, formulacaoData: props?.parameters?.formulacaoData }, dataAPI.getPrimaryKey(), signal);
         dataAPI.setData({ rows: items, total: items?.length });
         if (header) {
-            console.log("#xxxx",{
+            console.log("#xxxx", {
                 formulacaoRO: {
                     joinbc: 1, reference: 0, ...formulacao,
                     cliente: { BPCNUM_0: formulacao?.cliente_cod, BPCNAM_0: formulacao?.cliente_nome },
@@ -196,15 +196,17 @@ export default ({ setFormTitle, showTitle=true, noDosers = false, form:_form, he
     return (
         <>
             {(!setFormTitle && showTitle) && <TitleForm showHistory={false} auth={permission.auth} data={dataAPI.getFilter(true)} level={location?.state?.level} />}
-            <FormContainer id="form" fluid loading={submitting.state} wrapForm={(!_form && header) ? true : false} form = {form} wrapFormItem={true} forInput={false} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
+            <FormContainer id="form" fluid loading={submitting.state} wrapForm={(!_form && header) ? true : false} form={form} wrapFormItem={true} forInput={false} style={{ padding: "0px" }} alert={{ tooltip: true, pos: "none" }}>
                 {header && <Row style={{ marginBottom: "10px" }} gutterWidth={10} wrap="wrap">
-                    <Col xs={2} md={1}><Field name={["formulacaoRO", "versao"]} forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
-                    <Col xs={4} md={2}><FormulacaoGroups name={["formulacaoRO", "group_name"]} label={{ enabled: true, text: "Grupo" }} /></Col>
-                    <Col xs={4} md={2}><FormulacaoSubGroups name={["formulacaoRO", "subgroup_name"]} label={{ enabled: true, text: "SubGrupo" }} /></Col>
-                    <Col xs={12} md={6} lg={4}><Field name={["formulacaoRO", "designacao"]} label={{ enabled: true, text: "Designação" }}><Input /></Field></Col>
-                    <Col xs={12} md={6} lg={4}><Produtos name={["formulacaoRO", "produto_id"]} allowClear label={{ enabled: true, text: "Produto" }} load /></Col>
-                    <Col xs={12} md={6} lg={4}><Artigos name={["formulacaoRO", "artigo_id"]} allowClear label={{ enabled: true, text: "Artigo" }} load /></Col>
-                    <Col xs={12} md={6} lg={4}><Clientes name={["formulacaoRO", "cliente"]} allowClear label={{ enabled: true, text: "Cliente" }} /></Col>
+                    <Col xs={2} md={1}><Field name={["formulacaoRO", "versao"]} forInput={false} label={{ enabled: true, text: "Versao" }}><Input size={size} /></Field></Col>
+                    <Col xs={4} md={2}><FormulacaoGroups name={["formulacaoRO", "group_name"]} label={{ enabled: true, text: "Grupo" }} size={size} /></Col>
+                    <Col xs={4} md={2}><FormulacaoSubGroups name={["formulacaoRO", "subgroup_name"]} label={{ enabled: true, text: "SubGrupo" }} size={size} /></Col>
+                    <Col xs={12} md={6} lg={4}><Field name={["formulacaoRO", "designacao"]} label={{ enabled: true, text: "Designação" }}><Input size={size} /></Field></Col>
+                    {(header === true || header > 1) && <>
+                        <Col xs={12} md={6} lg={4}><Produtos name={["formulacaoRO", "produto_id"]} allowClear label={{ enabled: true, text: "Produto" }} load size={size} /></Col>
+                        <Col xs={12} md={6} lg={4}><Artigos name={["formulacaoRO", "artigo_id"]} allowClear label={{ enabled: true, text: "Artigo" }} load size={size} /></Col>
+                        <Col xs={12} md={6} lg={4}><Clientes name={["formulacaoRO", "cliente"]} allowClear label={{ enabled: true, text: "Cliente" }} size={size} /></Col>
+                    </>}
                 </Row>}
             </FormContainer>
             <Table
