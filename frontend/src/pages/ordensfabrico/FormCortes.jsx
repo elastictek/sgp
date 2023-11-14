@@ -141,7 +141,7 @@ export default ({ operationsRef, ...props }) => {
             inputParameters.current = { ...paramsIn };
         }
         form.setFieldsValue({ cortes_plan: !("cortes_plan_id" in inputParameters.current) ? null : nullIfEmpty({ ...pickAll([{ cortes_plan_id: "plan_id" }, { cplan_designacao: "designacao" }, { cplan_idx: "idx" }], inputParameters.current) }) });
-        console.log("loaddddddddddddd",inputParameters.current)
+        console.log("loaddddddddddddd", inputParameters.current)
         setCortes({ ...inputParameters.current, tstamp: Date.now() });
         submitting.end();
     }
@@ -222,10 +222,10 @@ export default ({ operationsRef, ...props }) => {
             form.setFieldValue("cortes_plan", null);
             let response = null;
             try {
-                const _d = {cortes:JSON.stringify(rows?.cortes[0].n_cortes), cortes_ordem: JSON.stringify(rows?.cortes[0].cortes_ordem), largura_util:rows?.cortes[0].largura_util}
+                const _d = { cortes: JSON.stringify(rows?.cortes[0].n_cortes), cortes_ordem: JSON.stringify(rows?.cortes[0].cortes_ordem), largura_util: rows?.cortes[0].largura_util }
                 response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: { method: "SaveCortesOrdem", ..._d } });
                 if (response.data.status !== "error") {
-                    setCortes({ cortesordem_id:response.data.id, tstamp: Date.now() });
+                    setCortes({ cortesordem_id: response.data.id, tstamp: Date.now() });
                 } else {
                     openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
                 }
@@ -254,7 +254,7 @@ export default ({ operationsRef, ...props }) => {
                 </Space>} /></Col></Row>
                 {hasCortes() && <Row nogutter><Col>
 
-                    <FormCortesOrdem cortesOrdemId={cortes?.cortesordem_id} forInput={false} />
+                    <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} />
 
                 </Col></Row>}
                 {(operationsRef && props?.activeTab == '2') && <Portal elId={operationsRef.current}>

@@ -247,7 +247,7 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
                 style={{ width: "100%" }}
                 right={((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <Button type="primary" disabled={(Object.keys(changedAcesso).length == 0 && Object.keys(changedTypes).length == 0) ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
             />
-            <div className="itemacesso">Global</div>
+            {attachments?.length>0 && <div className="itemacesso">Global</div>}
             {attachments.map((v, i) => <StyledFile key={`attf-${v.id}-${i}`}>
                 {v?.id ? <div className="itemacesso"><Switch disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onAcessoChange(v.id, val)} defaultChecked={getInt(v.tipo_acesso,0)==0 ? false : true} size='small' /></div> : <div className="itemacesso"></div>}
                 <div className="itemtype"><SelectField disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
@@ -418,7 +418,8 @@ export default ({ operationsRef, ...props }) => {
 
         fileList.forEach(file => {
             formData.append(file.uid, file);
-            formData.append(`${file.uid}_type`, attachmentType[file.uid], attachmentAcesso[file.uid]);
+            formData.append(`${file.uid}_type`, attachmentType[file.uid]);
+            formData.append(`${file.uid}_acesso`, attachmentAcesso[file.uid]);
         });
 
         submitting.trigger();

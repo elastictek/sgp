@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext,Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -238,7 +238,7 @@ const AggList = ({ openNotification, onSelect, next, evento, ...props }) => {
                             description={
                                 <>
                                     <ContentAgg item={item} />
-                                    <Suspense fallback={<></>}><FormCortesOrdem height="77px" cortesOrdemId={item.items[0].cortesordem_id} forInput={false}/></Suspense>
+                                    <Suspense fallback={<></>}><FormCortesOrdem height="77px" parameters={{ cortesOrdemId: item.items[0].cortesordem_id }} forInput={false} /></Suspense>
                                 </>
                             }
                         />
@@ -426,15 +426,15 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                     <Row>
                                         {state.step == 0 && <Col><EventosList openNotification={openNotification} onSelect={onSelectEvento} /></Col>}
                                         {(state.step == 1 && state.evento) && <Col>
-                                            <div style={{textAlign:"right",marginBottom:"5px"}}><Button onClick={()=>next()} type="primary" icon={<DoubleRightOutlined />}>Ignorar</Button></div>
+                                            <div style={{ textAlign: "right", marginBottom: "5px" }}><Button onClick={() => next()} type="primary" icon={<DoubleRightOutlined />}>Ignorar</Button></div>
                                             <AggList openNotification={openNotification} onSelect={onSelectAgg} evento={state.evento} next={next} />
                                         </Col>}
                                         {state.step == 2 && <Col><FormBobinagem openNotification={openNotification} form={form} submitting={submitting} /></Col>}
                                         {(state.step == 3 && state.bobinagem) && <Col>
                                             <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                                                 <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
-                                                <Button onClick={() => { 
-                                                    navigate("/app/bobinagens/validatebobinagem",{state:{bobinagem_id:state.bobinagem.id}});
+                                                <Button onClick={() => {
+                                                    navigate("/app/bobinagens/validatebobinagem", { state: { bobinagem_id: state.bobinagem.id } });
                                                 }}>Validar Bobinagem</Button>
                                             </Col>
                                         </Col>}

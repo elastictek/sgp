@@ -531,7 +531,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
                             <Button type="link" size="small" disabled={(submitting.state)} onClick={showVersions} style={{ width: "100%" }}><HistoryOutlined />Versões</Button>
                         </Space>
                     } />
-                    <FormCortesOrdem onChangeCortesOrdem={onChangeCortesOrdem} record={selected} larguras={larguras} />
+                    <FormCortesOrdem parameters= {{}} onChangeCortesOrdem={onChangeCortesOrdem} record={selected} larguras={larguras} />
                 </>}
 
                 {extraRef && <Portal elId={extraRef.current}>

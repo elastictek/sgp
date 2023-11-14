@@ -107,7 +107,10 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
     // }
 
     const onNavigate = async (url, action) => {
-        if (action !== "back" && action !== "logout") {
+        if (action == "mainmenu") {
+            onShowDrawer();
+        }
+        else if (action !== "back" && action !== "logout") {
             let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
             path = path.startsWith("#") ? path.slice(1) : path;
             let _old = history.find(v => v.key === path);

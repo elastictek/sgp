@@ -809,8 +809,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 onConfirm({ url: `${API_URL}/ordensfabrico/sql/`, method: "ResyncOrderQtys", data, content: `Tem a certeza que deseja sincronizar as quantidades da encomenda na ordem ${data?.ofabrico}` });
                 break;
             case "op-attachments":
-                console.log(data)
-                setModalParameters({ content: "attachments", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Anexos <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { draft_id: data.temp_ofabrico } });
+                setModalParameters({ content: "attachments", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Anexos <b>{data.ofabrico}</b> </div>, loadParentData: loadData, parameters: { draft_id: data.temp_ofabrico, ofid: data?.ofabrico } });
                 showModal();
                 break;
             case "op-sync-wopr":

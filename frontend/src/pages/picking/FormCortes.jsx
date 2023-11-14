@@ -78,8 +78,8 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
 
 const loadCortes = async ({ data, signal }) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "GetCortes" }, filter: { ...data }, sort: [], signal });
-    if (rows && rows.length>0){
-        return {cortes:json(rows[0].cortes),cortesordem:json(rows[0].cortesordem)};
+    if (rows && rows.length > 0) {
+        return { cortes: json(rows[0].cortes), cortesordem: json(rows[0].cortesordem) };
     }
     return rows;
 }
@@ -140,15 +140,17 @@ export default ({ operationsRef, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
-        const row = await loadCortes({ data:inputParameters.current, signal });
-        console.log("444444",row,{ 
-            ...inputParameters.current, 
-            ...row?.cortesordem && {cortesordem_id:row.cortesordem.id,cortes_id:row.cortesordem.cortes_id},
-            tstamp: Date.now() })
-        setCortes({ 
-            ...inputParameters.current, 
-            ...row?.cortesordem && {cortesordem_id:row.cortesordem.id,cortes_id:row.cortesordem.cortes_id},
-            tstamp: Date.now() });
+        const row = await loadCortes({ data: inputParameters.current, signal });
+        console.log("444444", row, {
+            ...inputParameters.current,
+            ...row?.cortesordem && { cortesordem_id: row.cortesordem.id, cortes_id: row.cortesordem.cortes_id },
+            tstamp: Date.now()
+        })
+        setCortes({
+            ...inputParameters.current,
+            ...row?.cortesordem && { cortesordem_id: row.cortesordem.id, cortes_id: row.cortesordem.cortes_id },
+            tstamp: Date.now()
+        });
         submitting.end();
     }
 
@@ -223,14 +225,14 @@ export default ({ operationsRef, ...props }) => {
         showModal();
     }
 
-    const onSelectPlan = async (rows,closeModal) => {
+    const onSelectPlan = async (rows, closeModal) => {
         if (rows?.cortes && Array.isArray(rows?.cortes)) {
             let response = null;
             try {
                 const _d = { cortes: JSON.stringify(rows?.cortes[0].n_cortes), cortes_ordem: JSON.stringify(rows?.cortes[0].cortes_ordem), largura_util: rows?.cortes[0].largura_util }
                 response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: { method: "SaveCortesOrdem", ..._d, ...inputParameters.current } });
                 if (response.data.status !== "error") {
-                    if (closeModal){
+                    if (closeModal) {
                         closeModal();
                     }
                     setCortes({ cortesordem_id: response.data.id, tstamp: Date.now() });
@@ -256,7 +258,7 @@ export default ({ operationsRef, ...props }) => {
                 </Space>} /></Col></Row>
                 <Row nogutter>
                     <Col>
-                        {hasCortes() && <FormCortesOrdem cortesOrdemId={cortes?.cortesordem_id} forInput={false} />}
+                        {hasCortes() && <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} />}
                     </Col>
                 </Row>
             </FormContainer>

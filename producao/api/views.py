@@ -3162,7 +3162,7 @@ def OfUpload(request, format=None):
     fs = FileSystemStorage(f'{AppSettings.folders.get("root")}/{AppSettings.folders.get("OF")}/{folder}')
     for k, v in request.FILES.items():
         filename = fs.save(f'{v.name}', v)
-        statements.append(f"""('{request.data.get(f'{k}_type')}','{AppSettings.folders.get("OF")}/{folder}/{filename}',{request.data.get('tempof_id')},'{datetime.now()}',{1 if request.data.get("tipo_acesso")==1 else 0})""")
+        statements.append(f"""('{request.data.get(f'{k}_type')}','{AppSettings.folders.get("OF")}/{folder}/{filename}',{request.data.get('tempof_id')},'{datetime.now()}',{1 if request.data.get(f'{k}_acesso')==1 else 0})""")
         #data.append({"tipo_doc":request.data.get(f'{k}_type'),"path":f'docs/OF/{folder}/{filename}'})
     statement = f"""
         INSERT INTO 

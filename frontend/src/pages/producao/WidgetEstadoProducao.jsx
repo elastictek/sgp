@@ -609,7 +609,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         );
     }, [modalParameters]);
 
-    const onDownloadComplete = async (response,download) => {
+    const onDownloadComplete = async (response, download) => {
         if (download == "download") {
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const pdfUrl = URL.createObjectURL(blob);
@@ -659,9 +659,9 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                 height: "200px",
                 content: "nwsprint", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiquetas de Nonwovens</div>,
                 parameters: {
-                    url: `${API_URL}/print/sql/`, 
+                    url: `${API_URL}/print/sql/`,
                     printers: printersList?.PRODUCAO,
-                    printer:printersList?.PRODUCAO[0].value,
+                    printer: printersList?.PRODUCAO[0].value,
                     onComplete: onDownloadComplete,
                     parameters: {
                         method: "PrintNwsEtiquetas",
@@ -737,7 +737,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
             const v = estadoProducaoData({ data: parameters?.data });
-            console.log("loadedddddddddddddddddddd",v)
+            console.log("loadedddddddddddddddddddd", v, parameters?.data)
             //setOfs([..._ofs]);
             //dataAPI.setData({ rows: _dj, total: _dj.length });
             setOfs(v.ofs);
@@ -777,7 +777,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     }
 
     const onCortesChoose = (v) => {
-        setCortesChoose({...v});
+        setCortesChoose({ ...v });
     }
 
     return (<>
@@ -817,16 +817,16 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
                                             <Space>
-                                            {(permission.isOk({ item: "edit", action: "cortes_test" }) && !cortesChoose.edit) && <div><Button type="primary" size="small" onClick={()=>onCortesChoose({edit:true,save:false})} icon={<EditOutlined />}>Bobines a testar</Button></div>}
-                                            {cortesChoose.edit && <div><Button type="primary" ghost size="small" onClick={()=>onCortesChoose({edit:false,save:false})}>Cancelar</Button></div>}
-                                            {cortesChoose.edit && <div><Button type="primary" size="small" onClick={()=>onCortesChoose({edit:true,save:true})}>Guardar</Button></div>}
+                                                {(permission.isOk({ item: "edit", action: "cortes_test" }) && !cortesChoose.edit) && <div><Button type="primary" size="small" onClick={() => onCortesChoose({ edit: true, save: false })} icon={<EditOutlined />}>Bobines a testar</Button></div>}
+                                                {cortesChoose.edit && <div><Button type="primary" ghost size="small" onClick={() => onCortesChoose({ edit: false, save: false })}>Cancelar</Button></div>}
+                                                {cortesChoose.edit && <div><Button type="primary" size="small" onClick={() => onCortesChoose({ edit: true, save: true })}>Guardar</Button></div>}
                                             </Space>
                                         </Col>
                                     </Row>
                                     <Row nogutter>
                                         <Col>
                                             <YScroll height="195px">
-                                                <Suspense fallback={<></>}><FormCortesOrdem cortesChoose={cortesChoose} forInput={false} height="77px" cortesOrdemId={json(parameters?.data?.current?.cortesordem)?.id} /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem parameters={{ cs_id: parameters?.data?.current?.cs_id, cortes_test: json(parameters?.data?.current?.cortes_test), cortesOrdemId: json(parameters?.data?.current?.cortesordem)?.id }} cortesChoose={cortesChoose} forInput={false} height="77px" /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </YScroll>
                                         </Col>

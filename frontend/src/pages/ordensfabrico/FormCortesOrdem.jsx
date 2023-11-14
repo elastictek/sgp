@@ -18,8 +18,6 @@ import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useImmer } from "use-immer";
-import { props } from 'ramda';
-
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -36,12 +34,12 @@ const useStyles = createUseStyles({
         height: (props) => props.height ? props.height : "120px",
         padding: "3px",
         width: (props) => `${props.width}%`,
-        minWidth:"34px",
+        minWidth: "34px",
         '& .inner': {
             border: "solid 1px #bfbfbf",
             boxShadow: "2px 1px 2px #f0f0f0",
             borderRadius: "3px",
-            height:"100%",
+            height: "100%",
             '&:hover': {
                 backgroundColor: "#e6f7ff"
             }
@@ -49,7 +47,7 @@ const useStyles = createUseStyles({
     }
 })
 
-const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, larguras, height }) => {
+const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = false, larguras, height, selected }) => {
     const classes = useStyles({ width, forInput, height });
     const ref = useRef(null);
     const [color, setColor] = useState(colors[larguras.indexOf(parseInt(value))]);
@@ -97,8 +95,8 @@ const Bobine = ({ id, value, index, moveBobine, width = 0, forInput = false, lar
     drop(ref);
     return (
         <div ref={ref} className={classes.bobine} data-handler-id={handlerId}>
-            <div className="inner" style={{ opacity, background: color.bcolor, color: color.color }}>
-                <div style={{ fontSize: "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
+            <div className="inner" style={{ opacity, background: selected ? "orange" : color.bcolor, color: selected ? "#000" : color.color }} onClick={()=>onClick && onClick(id,index,value)}>
+                <div style={{ fontWeight: selected ? 900 : 400, fontSize: selected ? "16px" : "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
                 <div style={{
                     color: color.color,
                     fontStyle: "italic",
@@ -117,7 +115,7 @@ const loadCortesOrdemLookup = async ({ cortesOrdemId, signal }) => {
     return rows;
 }
 
-export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemId, forInput = true, height, cortesChoose }) => {
+export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = true, height, cortesChoose, parameters }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -127,17 +125,19 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemI
     const [idx, setIdx] = useState();
     const [larguras, setLarguras] = useState(_larguras);
     const [largurasTxt, setLargurasTxt] = useState();
+    const [cortesTest, setCortesTest] = useState();
 
 
     const init = async () => {
-        console.log("cortesordem", cortesOrdemId)
-        if (cortesOrdemId) {
-            const _rows = await loadCortesOrdemLookup({ cortesOrdemId });
+        console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", parameters?.cortes_test?.cortes)
+        if (parameters?.cortesOrdemId) {
+            const _rows = await loadCortesOrdemLookup({ cortesOrdemId: parameters?.cortesOrdemId });
             setBobines(json(_rows[0].largura_ordem));
             setLarguraTotal(_rows[0].largura_util);
             setIdx(null);
             setLargurasTxt(_rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x"));
             setLarguras(Object.keys(json(_rows[0].largura_json)).map(Number));
+            setCortesTest(parameters?.cortes_test?.cortes);
         } else {
             /* const { cortesOrdem, ...rest } = record;
             console.log("CORTES-ORDEM--->", cortesOrdem)
@@ -162,11 +162,11 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemI
 
     useEffect(() => {
         init();
-    }, [record, cortesOrdemId]);
+    }, [record, parameters?.cortesOrdemId]);
 
-    useEffect(()=>{
-        console.log(cortesOrdemId,record)
-    },[cortesChoose?.edit,cortesChoose?.save]);
+    useEffect(() => {
+        console.log(parameters?.cortesOrdemId, record)
+    }, [cortesChoose?.edit, cortesChoose?.save]);
 
     const onFinish = async (values) => {
         const status = { error: [], warning: [], info: [], success: [] };
@@ -201,6 +201,11 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemI
         onChangeCortesOrdem(idx, _b);
     }, [bobines]);
 
+    const onChooseTest = (id,index,value) => {
+        const _arr = cortesTest.findIndex(v=>index+1)
+        console.log("aaaa,choose-->",id,index,value)
+    }
+
     return (
         <>
             <AlertMessages formStatus={formStatus} />
@@ -208,7 +213,7 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, cortesOrdemI
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap: "wrap" }}>
                     {bobines && bobines.map((v, i) => {
-                        return (<Bobine key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
+                        return (<Bobine selected={cortesTest?.includes(i+1)} key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} {...cortesChoose?.edit && {onClick:onChooseTest}} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
                     })}
                 </div>
             </DndProvider>
