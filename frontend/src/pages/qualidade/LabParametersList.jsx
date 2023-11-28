@@ -243,7 +243,6 @@ export default ({ setFormTitle, ...props }) => {
         const index = rowIndex;
         if (index >= 0) {
             let _rows = [];
-            console.log("$$$$$$$$$$$$$$$$$$$$$$$$$",dataAPI.getData())
             if (columnId === "nome") {
                 _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, ...!data?.designacao && { designacao: value } });
             } else if (columnId === "parameter_type") {
@@ -415,6 +414,7 @@ export default ({ setFormTitle, ...props }) => {
                 columns={columns}
                 dataAPI={dataAPI}
                 moreFilters={true}
+                editOnClick={true}
                 onCellAction={onCellAction}
                 toolbarFilters={{
                     form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,

@@ -131,12 +131,18 @@ export const BooleanTableEditor = ({ dataAPI, selectProps, checkbox = true, chec
         }
     }
 
+    const onClick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
     return (<>
         {checkbox ? <div style={{ display: "flex", flex: 1 }}><div><Checkbox
             onKeyDown={onKeyDown}
             autoFocus
             checked={props?.value}
             onChange={onChange}
+            onClick={onClick}
             //onBlur={onComplete}
             {...checkBoxProps}
         /></div></div> : <Select
@@ -240,12 +246,18 @@ export const StatusTableEditor = ({ dataAPI, selectProps, checkBoxProps, allowed
         }
     }
 
+    const onClick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
     return (<>
         {checkbox ? <div style={{ display: "flex", flex: 1 }}><div><Checkbox
             onKeyDown={onKeyDown}
             autoFocus
             checked={props?.value}
             onChange={onChange}
+            onClick={onClick}
             //onBlur={onComplete}
             {...checkBoxProps}
         /></div></div> :
@@ -341,8 +353,14 @@ export const MetodoTipoTableEditor = ({ dataAPI, selectProps, ...props }) => {
         }
     }
 
+    const onClick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
     return (<>
         <Select
+            onClick={onClick}
             onKeyDown={onKeyDown}
             autoFocus
             options={[
@@ -388,9 +406,15 @@ export const MetodoModeTableEditor = ({ dataAPI, selectProps, ...props }) => {
             selected.current = false;
         }
     }
+    
+    const onClick = (e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
     return (<>
         <Select
+            onClick={onClick}
             onKeyDown={onKeyDown}
             autoFocus
             options={[
@@ -432,8 +456,9 @@ export const ObsTableEditor = ({ dataAPI, inputProps, ...props }) => {
         }
     }
 
-    const onCancel = () => {
-        console.log(props)
+    const onCancel = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         setVisible(false);
         props.onCancel();
     };

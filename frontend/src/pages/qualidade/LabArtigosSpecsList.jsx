@@ -23,7 +23,7 @@ import Table, { useTableStyles } from 'components/TableV3';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { InputNumberTableEditor, MateriasPrimasTableEditor, CubaTableEditor, DoserTableEditor, LabParametersUnitEditor, MetodoOwnerTableEditor, InputTableEditor, BooleanTableEditor, ClientesTableEditor, ArtigosTableEditor, StatusTableEditor, ObsTableEditor, LabMetodosTableEditor } from 'components/TableEditorsV3';
 import { Clientes, Produtos, Artigos, FormulacaoGroups, FormulacaoSubGroups } from 'components/EditorsV3';
-import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid,MetodoAging } from 'components/TableColumns';
+import { RightAlign, LeftAlign, CenterAlign, Cuba, Bool, Status, TextAreaViewer, MetodoOwner, Link, DateTime, Favourite, Valid, MetodoAging } from 'components/TableColumns';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -137,8 +137,8 @@ export default ({ setFormTitle, ...props }) => {
             </ResponsiveModal>
         );
     }, [modalParameters]);
-    const onOpenParameters = ({id, designacao, valid,artigo_id,cliente_cod}) => {
-        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadParentData:()=>dataAPI.update(true), lazy: true, parameters: { id, valid,artigo_id,cliente_cod } });
+    const onOpenParameters = ({ id, designacao, valid, artigo_id, cliente_cod }) => {
+        setModalParameters({ content: "parameters", type: "drawer", width: "95%", title: `Especificações ${designacao}`, push: false, loadParentData: () => dataAPI.update(true), lazy: true, parameters: { id, valid, artigo_id, cliente_cod } });
         showModal();
     }
 
@@ -177,8 +177,15 @@ export default ({ setFormTitle, ...props }) => {
         ...(true) ? [{ name: 'owner', header: 'Owner', editable: columnEditable, render: ({ data, cellProps }) => <MetodoOwner cellProps={cellProps} value={data?.owner} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'aging', header: 'Aging', editable: columnEditable, render: ({ data, cellProps }) => <MetodoAging cellProps={cellProps} value={data?.aging} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 120, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} genre="m" checkbox={true} />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'reference', header: 'Referência', editable: columnEditable, userSelect: true, defaultLocked: false, width: 90, renderEditor: (props) => <BooleanTableEditor {...props} genre="m" checkbox={true} />, cellProps: { className: columnClass }, render: ({ data }) => <Favourite value={data?.reference} /> }] : [],
-        ...(true) ? [{ name: 'obs', header: 'Observações', editable: columnEditable, renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
+        ...(true) ? [{
+            name: 'reference', header: 'Referência', editable: columnEditable, userSelect: true, defaultLocked: false,
+            width: 90,
+            renderEditor: (props) => <BooleanTableEditor {...props} genre="m" checkbox={true} />,
+            cellProps: { className: columnClass },
+            render: ({ data }) => <Favourite value={data?.reference} />
+        }] : [],
+        ...(true) ? [{ name: 'obs', header: 'Observações', editable: columnEditable, 
+        renderEditor: (props) => <ObsTableEditor dataAPI={dataAPI} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 't_stamp', header: 'Data', editable: columnEditable, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <DateTime value={data?.t_stamp} format={DATETIME_FORMAT} />, userSelect: true, defaultLocked: false, width: 150, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'valid', header: 'Válido', editable: columnEditable, render: ({ data, cellProps }) => <Valid cellProps={cellProps} value={data?.valid} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(permission.isOk({ forInput: [!submitting.state, mode.datagrid.edit], action: "delete" })) ? [{ name: 'bdelete', header: '', headerAlign: "center", userSelect: true, defaultLocked: false, width: 45, render: ({ data, rowIndex }) => <Button onClick={() => onDelete(data, rowIndex)} icon={<DeleteTwoTone twoToneColor="#f5222d" />} /> }] : []
@@ -414,6 +421,7 @@ export default ({ setFormTitle, ...props }) => {
                 rowClassName={rowClassName}
                 //groups={groups}
                 sortable
+                editOnClick={true}
                 reorderColumns={false}
                 showColumnMenuTool
                 loadOnInit={true}

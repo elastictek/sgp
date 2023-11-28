@@ -696,7 +696,7 @@ def PaletesStockAvailableList(request, format=None):
     f.where()
     f.auto([],[],True,DBSql(_c.alias).typeDB)
     f.add(f'sgppl.nbobines_real = sgppl.num_bobines', True)
-    f.add(f'sgppl.ordem_id = sgppl.ordem_id_original', True)
+    #f.add(f'sgppl.ordem_id = sgppl.ordem_id_original', True)
     f.value()
 
     f2 = filterMulti(request.data['filter'] if "filter" in request.data else {}, {

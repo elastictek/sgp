@@ -41,6 +41,7 @@ import time
 import requests
 import psycopg2
 from producao.api.currentsettings import getCurrentSettingsId
+from producao.api.exports import export
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -137,37 +138,37 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
                 ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field1 if field is False else field2}
     return ret
 
-def export(sql, db_parameters, parameters,conn_name):
-    if ("export" in parameters and parameters["export"] is not None):
-        dbparams={}
-        for key, value in db_parameters.items():
-            if f"%({key})s" not in sql: 
-                continue
-            dbparams[key] = value
-            sql = sql.replace(f"%({key})s",f":{key}")
-        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        req = {
+# def export(sql, db_parameters, parameters,conn_name):
+#     if ("export" in parameters and parameters["export"] is not None):
+#         dbparams={}
+#         for key, value in db_parameters.items():
+#             if f"%({key})s" not in sql: 
+#                 continue
+#             dbparams[key] = value
+#             sql = sql.replace(f"%({key})s",f":{key}")
+#         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+#         req = {
             
-            "conn-name":conn_name,
-            "sql":sql,
-            "hash":hash,
-            "data":dbparams,
-            **parameters
-        }
-        wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+#             "conn-name":conn_name,
+#             "sql":sql,
+#             "hash":hash,
+#             "data":dbparams,
+#             **parameters
+#         }
+#         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+#         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
-        if (fstream.status_code==200):
-            resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-            if (parameters["export"] == "pdf"):
-                resp['Content-Disposition'] = "inline; filename=list.pdf"
-            elif (parameters["export"] == "excel"):
-                resp['Content-Disposition'] = "inline; filename=list.xlsx"
-            elif (parameters["export"] == "word"):
-                resp['Content-Disposition'] = "inline; filename=list.docx"
-            if (parameters["export"] == "csv"):
-                resp['Content-Disposition'] = "inline; filename=list.csv"
-            return resp
+#         if (fstream.status_code==200):
+#             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+#             if (parameters["export"] == "pdf"):
+#                 resp['Content-Disposition'] = "inline; filename=list.pdf"
+#             elif (parameters["export"] == "excel"):
+#                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
+#             elif (parameters["export"] == "word"):
+#                 resp['Content-Disposition'] = "inline; filename=list.docx"
+#             if (parameters["export"] == "csv"):
+#                 resp['Content-Disposition'] = "inline; filename=list.csv"
+#             return resp
 
 
 @api_view(['POST'])
@@ -467,7 +468,7 @@ def BobinagemLookup(request, format=None):
     parameters={**f.parameters,**f2.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,pbm.comp_par comp_emenda,t.largura_bobinagem,t.troca_nw{",(select count(*) from producao_bobine pb where pb.bobinagem_id=pbm.id and pb.palete_id is not null) nbobines_in_paletes" if data.get("checkBobinesInPalete")==True else ""} """
+    cols = f"""pbm.*,pbm.comp_par comp_emenda,t.largura_bobinagem,t.troca_nw{",(select count(*) from producao_bobine pb join producao_palete pp on pp.id=pb.palete_id and pp.nome not like 'DM%' where pb.bobinagem_id=pbm.id) nbobines_in_paletes" if data.get("checkBobinesInFinalPalete")==True else ""} """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  

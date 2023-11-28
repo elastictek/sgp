@@ -187,7 +187,7 @@ const Actions = ({ data, rowIndex, onAction, allows }) => {
         ...(true) ? [
             { label: 'Anexos', key: 'op-attachments', icon: <PaperClipOutlined style={{ fontSize: "18px" }} /> },
         ] : [],
-        ...(allows?.allowPackingList && data.ofabrico_status >= 2) ? [
+        ...(allows?.allowPackingList) ? [
             { label: 'Packing List', key: 'pl-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
             { label: 'Packing List', key: 'pl-excel', icon: <FileExcelTwoTone twoToneColor="#52c41a" style={{ fontSize: "18px" }} />, data: { extension: "xlsx", export: "excel", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER" } },
             { label: 'Packing List Detalhado', key: 'pld-pdf', icon: <FilePdfTwoTone twoToneColor="red" style={{ fontSize: "18px" }} />, data: { extension: "pdf", export: "pdf", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER" } },

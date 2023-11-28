@@ -230,12 +230,13 @@ def SyncRecicladoProductionReport(request, format=None):
                         print(body)
                         print("------------------------------------------------")
                         print(status)
-                    if status and isinstance(status, list):
-                        if status[0] == 200:
-                            updateReport(value.get("id"),key,cursor)
-                        report.append(status[1])
-                        print(status[0])
-                        print(status[1])
+                    #if status and isinstance(status, list):
+                    #    if status[0] == 200:
+                    #if status:
+                    updateReport(value.get("id"),cursor)
+                        #report.append(status[1])
+                        #print(status[0])
+                        #print(status[1])
                 
                 if data.get("run") == 1:
                     return Response({"status": "success", "title": "Sincronização do relatório de produção efetuada com Sucesso!", "report":json.dumps(report,default=str), "calls":json.dumps(calls,default=str)})

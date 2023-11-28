@@ -276,7 +276,7 @@ class BaseSql:
             with connOrCursor.cursor() as cursor:
                 print(f'EXECUTE--> {sql}')
                 print(f'PARAMS--> {parameters}')
-                execSql = self.computeSequencial(sql, parameters)
+                execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
                 cursor.execute(execSql["sql"],execSql["parameters"])
                 if returning:
                     ret = cursor.fetchone()[0]
@@ -284,7 +284,7 @@ class BaseSql:
         else:
             print(f'EXECUTE--> {sql}')
             print(f'PARAMS--> {parameters}')
-            execSql = self.computeSequencial(sql, parameters)
+            execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
             if returning:
                 ret = connOrCursor.fetchone()[0]
@@ -1014,6 +1014,25 @@ class Filters:
     def getLower(value):
         if value is None: return None
         return value.lower()
+    def getValue(value,isNone=None,compare=None):
+        if value is None and compare is None: 
+            if isNone:
+                return isNone
+            else:
+                return None
+        if value is None and compare is not None:
+            if isNone is not None:
+                value=isNone
+            else:
+                return None
+        pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
+        result = re.match(pattern, str(value), re.IGNORECASE)
+        if not result:
+            if compare is not None:
+                return f"{compare}{value}"
+            return f"{value}"
+        else:
+            return value
 
 def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
     filters, parameters = [], {}

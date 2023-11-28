@@ -238,7 +238,7 @@ const AggList = ({ openNotification, onSelect, next, evento, ...props }) => {
                             description={
                                 <>
                                     <ContentAgg item={item} />
-                                    <Suspense fallback={<></>}><FormCortesOrdem height="77px" parameters={{ cortesOrdemId: item.items[0].cortesordem_id }} forInput={false} /></Suspense>
+                                    <Suspense fallback={<></>}><FormCortesOrdem height="77px" parameters={{ cortesordem_id: item.items[0].cortesordem_id }} forInput={false} /></Suspense>
                                 </>
                             }
                         />

@@ -254,7 +254,7 @@ export default ({ operationsRef, ...props }) => {
                 </Space>} /></Col></Row>
                 {hasCortes() && <Row nogutter><Col>
 
-                    <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} />
+                    <FormCortesOrdem parameters={{ cortesordem_id: cortes?.cortesordem_id }} forInput={false} />
 
                 </Col></Row>}
                 {(operationsRef && props?.activeTab == '2') && <Portal elId={operationsRef.current}>

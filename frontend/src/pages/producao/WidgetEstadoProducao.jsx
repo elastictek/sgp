@@ -580,14 +580,12 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     const defaultSort = [];
     const dataAPI = useDataAPI({ id: props.id, payload: { url: ``, primaryKey: "rowid", parameters: defaultParameters, pagination: { enabled: false }, filter: defaultFilters } });
     const submitting = useSubmitting(true);
+    const cortesRef = useRef();
     const [ofs, setOfs] = useState([]);
-    const [activeKeys, setActiveKeys] = useState(["1", "2", "3"]);
     const [paletes, setPaletes] = useState([]);
     const [modalParameters, setModalParameters] = useState({});
     const [lastBobinesTab, setLastBobinesTab] = useState('1');
-    const [cortesChoose, setCortesChoose] = useState({ edit: false, save: false });
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
         const content = () => {
             switch (modalParameters.content) {
                 case "paletesexpand": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />
@@ -772,13 +770,8 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         setPaletes(_p);
     }
 
-    const onActiveKeyChange = (v) => {
-        setActiveKeys([...new Set(["1", "2", "3", ...v])]);
-    }
 
-    const onCortesChoose = (v) => {
-        setCortesChoose({ ...v });
-    }
+
 
     return (<>
         <Container fluid style={{ padding: "0px" }}>
@@ -816,17 +809,13 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
-                                            <Space>
-                                                {(permission.isOk({ item: "edit", action: "cortes_test" }) && !cortesChoose.edit) && <div><Button type="primary" size="small" onClick={() => onCortesChoose({ edit: true, save: false })} icon={<EditOutlined />}>Bobines a testar</Button></div>}
-                                                {cortesChoose.edit && <div><Button type="primary" ghost size="small" onClick={() => onCortesChoose({ edit: false, save: false })}>Cancelar</Button></div>}
-                                                {cortesChoose.edit && <div><Button type="primary" size="small" onClick={() => onCortesChoose({ edit: true, save: true })}>Guardar</Button></div>}
-                                            </Space>
+                                            <div ref={cortesRef}></div>
                                         </Col>
                                     </Row>
                                     <Row nogutter>
                                         <Col>
                                             <YScroll height="195px">
-                                                <Suspense fallback={<></>}><FormCortesOrdem parameters={{ cs_id: parameters?.data?.current?.cs_id, cortes_test: json(parameters?.data?.current?.cortes_test), cortesOrdemId: json(parameters?.data?.current?.cortesordem)?.id }} cortesChoose={cortesChoose} forInput={false} height="77px" /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem operationsRef={permission.isOk({ item: "edit", action: "cortes_test" }) ? cortesRef : null}  parameters={{ cs_id: parameters?.data?.current?.cs_id, cortes_test: json(parameters?.data?.current?.cortes_test), cortesordem_id: json(parameters?.data?.current?.cortesordem)?.id }} forInput={false} height="77px" /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </YScroll>
                                         </Col>

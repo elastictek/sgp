@@ -196,24 +196,29 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
     const [changedAcesso, setChangedAcesso] = useState({});
 
     const onRemove = (id, tipo_doc) => {
-        setChangedTypes((prev) => {
-            const newchanges = { ...prev }
-            delete newchanges[id];
-            return newchanges;
-        });
-        setChangedAcesso((prev) => {
-            const newchanges = { ...prev }
-            delete newchanges[id];
-            return newchanges;
-        });
-        setLoading(true);
-        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "remove", id, tipo_doc, ordem_id: ordemFabrico.id } }).then(function (response) {
-            loadData();
-            console.log("data", response.data);
-        }).catch(function (error) {
-            message.error("Erro ao Remover Anexo!");
-        }).finally(() => {
-            setLoading(false);
+
+        Modal.confirm({
+            title: <div>Eliminar Anexo?</div>, content: <div>Tem a certeza que deseja eliminar o anexo?</div>, onOk: async () => {
+                setChangedTypes((prev) => {
+                    const newchanges = { ...prev }
+                    delete newchanges[id];
+                    return newchanges;
+                });
+                setChangedAcesso((prev) => {
+                    const newchanges = { ...prev }
+                    delete newchanges[id];
+                    return newchanges;
+                });
+                setLoading(true);
+                serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "remove", id, tipo_doc, ordem_id: ordemFabrico.id } }).then(function (response) {
+                    loadData();
+                    console.log("data", response.data);
+                }).catch(function (error) {
+                    message.error("Erro ao Remover Anexo!");
+                }).finally(() => {
+                    setLoading(false);
+                });
+            }
         });
     }
     const onTypeChange = (id, value) => {
@@ -224,7 +229,7 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
     }
     const saveChanges = () => {
         setLoading(true);
-        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "changedtypes", changedTypes,changedAcesso } }).then(function (response) {
+        serverPost({ url: `${API_URL}/ofattachmentschange/`, parameters: { type: "changedtypes", changedTypes, changedAcesso } }).then(function (response) {
             console.log("data", response.data);
         }).catch(function (error) {
             message.error("Erro ao Alterar Anexos!");
@@ -247,9 +252,9 @@ const AttachmentsList = ({ attachments, setLoading, loadData, permission, ordemF
                 style={{ width: "100%" }}
                 right={((permission.isOk(PERMISSION)) && (ordemFabrico?.ativa == 1 || ordemFabrico?.ofabrico_status == 1)) && <Button type="primary" disabled={(Object.keys(changedAcesso).length == 0 && Object.keys(changedTypes).length == 0) ? true : false} onClick={saveChanges}>Guardar Alterações</Button>}
             />
-            {attachments?.length>0 && <div className="itemacesso">Global</div>}
+            {attachments?.length > 0 && <div className="itemacesso">Global</div>}
             {attachments.map((v, i) => <StyledFile key={`attf-${v.id}-${i}`}>
-                {v?.id ? <div className="itemacesso"><Switch disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onAcessoChange(v.id, val)} defaultChecked={getInt(v.tipo_acesso,0)==0 ? false : true} size='small' /></div> : <div className="itemacesso"></div>}
+                {v?.id ? <div className="itemacesso"><Switch disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onAcessoChange(v.id, val)} defaultChecked={getInt(v.tipo_acesso, 0) == 0 ? false : true} size='small' /></div> : <div className="itemacesso"></div>}
                 <div className="itemtype"><SelectField disabled={(v?.id == null || !permission.isOk(PERMISSION) || !v.ativa) && true} onChange={(val, o) => onTypeChange(v.id, val)} defaultValue={v.tipo_doc} style={{ width: "170px" }} size="small" data={TIPOANEXOS_OF} keyField="value" textField="value"
                     optionsRender={(d, keyField, textField) => ({ label: d[textField], value: d[keyField] })}
                 /></div>

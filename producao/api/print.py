@@ -209,7 +209,8 @@ def PrintMPBufferEtiqueta(request,format=None):
             #TO UNCOMMENT ON PRODUCTION
             #conn = cups.Connection()
             #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(request.data["parameters"]["num_copias"])}) 
-            for i in range(0, request.data["parameters"]["num_copias"]):
+            num_copias = request.data["parameters"]["num_copias"] if "num_copias" in request.data["parameters"] else 1
+            for i in range(0, num_copias):
                 subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
             ###########################
     except Exception as error:
@@ -266,7 +267,8 @@ def PrintMPBuffer(request,format=None):
         #TO UNCOMMENT ON PRODUCTION
         #conn = cups.Connection()
         #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",request.data["parameters"]["num_copias"])
-        for i in range(0, request.data["parameters"]["num_copias"]):
+        num_copias = request.data["parameters"]["num_copias"] if "num_copias" in request.data["parameters"] else 1
+        for i in range(0, num_copias):
             subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
         ###########################
     except Exception as error:

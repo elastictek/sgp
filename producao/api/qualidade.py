@@ -260,8 +260,6 @@ def NewLabParameter(request, format=None):
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
                 dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_lab_parameters",None,None,False)
-                print(dml.statement)
-                print(dml.parameters)
                 db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
     except Exception as error:
@@ -277,9 +275,12 @@ def NewLabBulkParameter(request, format=None):
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         # id = item.get("id")
-                        del item["id"]
-                        del item["rowvalid"]
-                        del item["rowadded"]
+                        if "id" in item:
+                            del item["id"]
+                        if "rowvalid" in item:
+                            del item["rowvalid"]
+                        if "rowadded" in item:
+                            del item["rowadded"]
                         itm=item
                         dml = db.dml(TypeDml.INSERT,{**item, "t_stamp":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",None,None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
@@ -295,15 +296,17 @@ def UpdateLabParameter(request, format=None):
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"parameter_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
                 if "rows" in data:
                     for idx, item in enumerate(data.get("rows")):
                         id = item.get("id")
-                        del item["id"]
-                        del item["rowvalid"]
-                        del item["t_stamp"]
+                        if "id" in item:
+                            del item["id"]
+                        if "rowvalid" in item:
+                            del item["rowvalid"]
+                        if "rowadded" in item:
+                            del item["rowadded"]
+                        if "t_stamp" in item:
+                            del item["t_stamp"]
                         dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_update":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",{"id":Filters.getNumeric(id,"isnull")},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                 return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
@@ -891,7 +894,7 @@ def DoTest(request, format=None):
                 specs = {d['parameter_nome']: {**d,"values":json.loads(d.get("values"))} for d in parameters.get("rows")}
                 if len(metodo.get("rows"))==0:
                     Response({"status": "error", "title": f"As especificações não se encontram válidas ou não existem!"})     
-                return Response(LoadTrapeziumTestFile("20230418-02.csv",metodo,specs,request.user.id))
+                return Response(LoadTrapeziumTestFile("20230330-10.csv",metodo,specs,request.user.id))
 
     except Exception as error:
         return Response({"status": "error", "title": f"Erro executar o teste selecionado! {str(error)}"})
@@ -928,7 +931,70 @@ def _getBobinagemData(file,cursor):
             return db.executeSimpleList(lambda: (f"""select pbm.id,pbm.nome,pb.id bobine_id,pb.nome bobine_nome from producao_bobinagem pbm join producao_bobine pb on pb.bobinagem_id=pbm.id where pbm.nome = '{value_found}'"""), cursor, {})["rows"]
         return None
 
+
 def LoadTrapeziumTestFile(file,metodo,specs,user_id):
+    types_dict = {"traction":"tração","peel":"desgrudar"}
+    modes_dict = {"simples":"simples","controle":"controle","cíclico":"cíclico"}
+
+    cursor = connections["default"].cursor()
+    with cursor:
+        try:
+            bdata = _getBobinagemData(file,cursor)
+            print(bdata)
+            if bdata is None:
+                return {"status": "error", "title": "A bobinagem a que se refere o teste não existe!", "subTitle":None}
+            storage = FileSystemStorage()
+            csv_file = storage.open(f'lab-test-tmp/{file}', 'r')
+            csv_reader = csv.reader(csv_file)
+
+            block = 0
+            counter={}
+            
+            keys=[]
+            valuesheader={}
+            values=[]
+            grp={"value":0,"enabled":False,"ciclo":1}
+
+            tblheader = {}
+            tblspecs = []
+            tbldata = []
+            tblgroup = []
+            print("READING")
+            if tblheader:
+                print("uuuuuuuuuuuuuuuuuuuuuuu")
+            for row in csv_reader:
+                if block!=0 and tblheader:
+                    print("ok")
+                if not row:
+                    valuesheader= {}
+                    keys = []
+                    #values=[]
+                    #grp={"value":0,"enabled":False,"ciclo":1}
+                    block = block + 1
+                elif (block==0):
+                    counter,block,keys,tblheader = block_header(counter,block,row,keys,bdata)
+                elif (block==1):
+                    counter,block,keys,valuesheader = block1(counter,block,row,keys,valuesheader,tblspecs,bdata)
+                elif (block==2):
+                    print("")
+                    #print("BLOCK2")
+                    #print(row)
+                #print(row)
+            print("header")
+            print(tblheader)
+            print("specs")
+            print(tblspecs)
+            csv_file.close()
+            return {"status": "success", "title": "Teste executado com sucesso!", "subTitle":None}
+        except Exception as error:
+            print(error)
+            return {"status": "error", "title": f"Erro executar o teste selecionado! {str(error)}"}
+
+
+
+
+
+def LoadTrapeziumTestFilex(file,metodo,specs,user_id):
     types_dict = {"traction":"tração","peel":"desgrudar"}
     modes_dict = {"simples":"simples","controle":"controle","cíclico":"cíclico"}
 
@@ -970,6 +1036,12 @@ def LoadTrapeziumTestFile(file,metodo,specs,user_id):
                         if counter.get(block)==1:
                             file_mode = tblheader.get("modo_ensaio").lower()
                             file_type = tblheader.get("tipo_ensaio").lower()
+                            print("----------------------------")
+                            print(metodo.get("rows")[0].get("mode"))
+                            print(metodo.get("rows")[0].get("type"))
+                            
+                            print(file_mode)
+                            print(file_type)
                             if modes_dict.get(metodo.get("rows")[0].get("mode"))!=file_mode or types_dict.get(metodo.get("rows")[0].get("type"))!=file_type:
                                 return {"status": "error", "title": f"O método não corresponde ao método do ficheiro de resultados!"}
                             if file_mode=="cíclico":
@@ -1042,12 +1114,12 @@ def _newEssayResults(tbldata,tblspecs,essay_id,user_id,cursor):
         db.execute(dml.statement, cursor, dml.parameters)
         id = cursor.lastrowid
 
-def block0(counter,block,row,keys,bdata):
+def block_header(counter,block,row,keys,bdata):
     tbl={}
     incrementCounter(counter,block)
     if (counter.get(block)==0):
         keys=mapper(row,block,counter.get(block))
-        print(keys)
+        #print(keys)
     else:
         tbl = dict(zip(keys, row))
         tbl["data_report"] = datetime.strptime(tbl.get("data_report"),'%d/%m/%Y').strftime('%Y-%m-%d')

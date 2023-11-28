@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import dayjs from 'dayjs';
@@ -11,13 +11,15 @@ import { FormLayout, Field, FieldSet, FieldItem, AlertsContainer, Item, SelectFi
 import AlertMessages from "components/alertMessages";
 import IconButton from "components/iconButton";
 import ResultMessage from 'components/resultMessage';
+import { useSubmitting } from "utils";
 import Portal from "components/portal";
 import { Input, Space, Form, Button, InputNumber, Menu, Dropdown } from "antd";
-import { EllipsisOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, EditOutlined } from '@ant-design/icons';
 import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useImmer } from "use-immer";
+import { AppContext } from "app";
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -95,7 +97,7 @@ const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = f
     drop(ref);
     return (
         <div ref={ref} className={classes.bobine} data-handler-id={handlerId}>
-            <div className="inner" style={{ opacity, background: selected ? "orange" : color.bcolor, color: selected ? "#000" : color.color }} onClick={()=>onClick && onClick(id,index,value)}>
+            <div className="inner" style={{ opacity, background: selected ? "#fa8c16" : color.bcolor, color: selected ? "#000" : color.color }} onClick={() => onClick && onClick(id, index, value)}>
                 <div style={{ fontWeight: selected ? 900 : 400, fontSize: selected ? "16px" : "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
                 <div style={{
                     color: color.color,
@@ -110,34 +112,52 @@ const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = f
     );
 }
 
-const loadCortesOrdemLookup = async ({ cortesOrdemId, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortesOrdemId }, sort: [], signal });
+const loadCortesOrdemLookup = async ({ acs_id, cs_id, cortesordem_id, agg_of_id, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { agg_of_id, acs_id, cs_id, cortesordem_id }, sort: [], signal });
+    return rows;
+}
+const loadCortesTestLookup = async ({ acs_id, cs_id, cortesordem_id, agg_of_id,use_cs_id, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesTestLookup" }, filter: { use_cs_id,agg_of_id, acs_id, cs_id, cortesordem_id }, sort: [], signal });
     return rows;
 }
 
-export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = true, height, cortesChoose, parameters }) => {
+export default ({ onChangeCortesOrdem, forInput = true, height, parameters, operationsRef }) => {
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
-    const [guides, setGuides] = useState(false);
-    const [bobines, setBobines] = useImmer([]);
-    const [larguraTotal, setLarguraTotal] = useState(0);
-    const [idx, setIdx] = useState();
-    const [larguras, setLarguras] = useState(_larguras);
-    const [largurasTxt, setLargurasTxt] = useState();
-    const [cortesTest, setCortesTest] = useState();
+    const submitting = useSubmitting(true);
+    const { openNotification } = useContext(AppContext);
+    const [state, updateState] = useImmer({
+        larguraTotal: 0,
+        idx: null,
+        larguras: null,
+        largurasTxt: null,
+        cortesTest: null,
+        bobines: [],
+        cortesChoose: false
+    });
 
 
     const init = async () => {
-        console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", parameters?.cortes_test?.cortes)
-        if (parameters?.cortesOrdemId) {
-            const _rows = await loadCortesOrdemLookup({ cortesOrdemId: parameters?.cortesOrdemId });
-            setBobines(json(_rows[0].largura_ordem));
-            setLarguraTotal(_rows[0].largura_util);
-            setIdx(null);
-            setLargurasTxt(_rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x"));
-            setLarguras(Object.keys(json(_rows[0].largura_json)).map(Number));
-            setCortesTest(parameters?.cortes_test?.cortes);
+        if (parameters?.cortesordem_id || parameters?.acs_id || parameters?.cs_id || parameters?.agg_of_id) {
+            const _rows = await loadCortesOrdemLookup({ acs_id: parameters?.acs_id, cs_id: parameters?.cs_id, cortesordem_id: parameters?.cortesordem_id, agg_of_id: parameters?.agg_of_id });
+            let _cortes_test = parameters?.cortes_test?.cortes;
+            if (!parameters?.cortes_test?.cortes) {
+                _cortes_test = await loadCortesTestLookup({ use_cs_id:parameters?.use_cs_id, acs_id: parameters?.acs_id, cs_id: parameters?.cs_id, cortesordem_id: parameters?.cortesordem_id, agg_of_id: parameters?.agg_of_id });
+                if (_cortes_test && _cortes_test.length>0){
+                    _cortes_test = json(_cortes_test[0].cortes_test)?.cortes;
+                }else{
+                    _cortes_test = null;
+                }
+            }
+            updateState(draft => {
+                draft.bobines = json(_rows[0].largura_ordem);
+                draft.larguraTotal = _rows[0].largura_util;
+                draft.idx = null;
+                draft.largurasTxt = _rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x");
+                draft.larguras = Object.keys(json(_rows[0].largura_json)).map(Number);
+                draft.cortesTest = _cortes_test;
+                draft.cortesChoose = false;
+            });
         } else {
             /* const { cortesOrdem, ...rest } = record;
             console.log("CORTES-ORDEM--->", cortesOrdem)
@@ -154,69 +174,95 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
                 // form.setFieldsValue({ designacao: cortesOrdem.designacao });
                 // _larguraTotal = _cortesOrdem.reduce((sum, v) => Number(sum) + Number(v));
             } */
-            setBobines(record?.cortes_ordem);
-            setLarguraTotal(record?.largura_util);
-            setIdx(record?.idx);
+            updateState(draft => {
+                draft.bobines = parameters?.selected?.cortes_ordem;
+                draft.larguraTotal = parameters?.selected?.largura_util;
+                draft.idx = parameters?.selected?.idx;
+                draft.largurasTxt = null;
+                draft.larguras = parameters?.larguras;
+                draft.cortesTest = parameters?.cortes_test?.cortes;
+                draft.cortesChoose = false;
+            });
         }
+        submitting.end();
     }
 
     useEffect(() => {
         init();
-    }, [record, parameters?.cortesOrdemId]);
+    }, [JSON.stringify(parameters?.selected), parameters?.cortesordem_id, JSON.stringify(parameters?.cortes_test?.cortes), parameters?.acs_id, parameters?.cs_id]);
 
-    useEffect(() => {
-        console.log(parameters?.cortesOrdemId, record)
-    }, [cortesChoose?.edit, cortesChoose?.save]);
-
-    const onFinish = async (values) => {
-        const status = { error: [], warning: [], info: [], success: [] };
-        const { cortes, ordem, cortes_id } = record;
-        let touched = false;
-        if (!ordem) {
-            touched = true;
-        } else {
-            if (!JSON.parse(ordem.largura_ordem).every((v, i) => v === bobines[i])) {
-                touched = true;
-            }
-        }
-        if (touched) {
-            const response = await fetchPost({ url: `${API_URL}/updatecortesordem/`, parameters: { ...values, largura_ordem: JSON.stringify(bobines), cortes_id } });
-            if (response.data.status !== "error") {
-                status.success.push({ message: response.data.title });
-                parentReload({}, "lookup");
-                closeParent();
+    const onSave = async () => {
+        submitting.trigger();
+        let response = null;
+        try {
+            response = await fetchPost({
+                url: `${API_URL}/ordensfabrico/sql/`, filter: {
+                    cortes_plan: parameters?.cortes_plan, cs_id: parameters?.cs_id, agg_of_id: parameters?.agg_of_id,
+                    cortesordem_id: parameters?.cortesordem_id
+                }, parameters: {
+                    method: "SaveCortesTest", cortes: state.cortesTest
+                }
+            });
+            if (response?.data?.status == "error") {
+                openNotification(response?.data?.status, 'top', "Notificação", response?.data?.title, null);
             } else {
-                status.error.push({ message: response.data.title });
+                updateState(draft => { draft.cortesChoose = false; });
             }
-            setFormStatus(status);
         }
+        catch (e) {
+            console.log(e)
+            openNotification("error", 'top', "Notificação", e.message, null);
+        }
+        submitting.end();
     }
 
     const moveBobine = useCallback((dragIndex, hoverIndex) => {
-        const _b = [...bobines];
+        const _b = [...state.bobines];
         const tmp = _b[hoverIndex];
         _b[hoverIndex] = _b[dragIndex];
         _b[dragIndex] = tmp;
-        setBobines(_b);
+        updateState(draft => {
+            draft.bobines = _b;
+        });
         onChangeCortesOrdem(idx, _b);
-    }, [bobines]);
+    }, [state.bobines]);
 
-    const onChooseTest = (id,index,value) => {
-        const _arr = cortesTest.findIndex(v=>index+1)
-        console.log("aaaa,choose-->",id,index,value)
+    const onChooseTest = (id, index, value) => {
+        updateState(draft => {
+            let _newTests = [];
+            if (draft.cortesTest.includes(index + 1)) {
+                _newTests = draft.cortesTest.filter(item => item !== index + 1);
+            } else {
+                _newTests = [...draft.cortesTest, index + 1];
+            }
+            draft.cortesTest = _newTests.sort((a, b) => a - b);
+        });
+    }
+
+    const onCortesChoose = (v) => {
+        updateState(draft => {
+            draft.cortesChoose = v;
+        });
     }
 
     return (
         <>
-            <AlertMessages formStatus={formStatus} />
-            <div style={{ display: "flex" }}><div style={{ fontWeight: 700 }}>{largurasTxt}</div><div style={{ marginLeft: "20px" }}>Largura Útil:</div><div style={{ marginLeft: "2px", fontWeight: 700 }}>{larguraTotal}mm</div></div>
+            <div style={{ display: "flex" }}><div style={{ fontWeight: 700 }}>{state.largurasTxt}</div><div style={{ marginLeft: "20px" }}>Largura Útil:</div><div style={{ marginLeft: "2px", fontWeight: 700 }}>{state.larguraTotal}mm</div></div>
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap: "wrap" }}>
-                    {bobines && bobines.map((v, i) => {
-                        return (<Bobine selected={cortesTest?.includes(i+1)} key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} {...cortesChoose?.edit && {onClick:onChooseTest}} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
+                    {state.bobines && state.bobines.map((v, i) => {
+                        return (<Bobine selected={state.cortesTest?.includes(i + 1)} key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} {...state.cortesChoose && { onClick: onChooseTest }} moveBobine={moveBobine} width={(v * 100) / state.larguraTotal} larguras={state.larguras} forInput={forInput} height={height} />);
                     })}
                 </div>
             </DndProvider>
+            {operationsRef && <Portal elId={operationsRef.current}>
+                <Space>
+                    {(!state.cortesChoose && !submitting.state) && <div><Button type="primary" size="small" onClick={() => onCortesChoose(true)} icon={<EditOutlined />}>Bobines a testar</Button></div>}
+                    {state.cortesChoose && <div><Button disabled={submitting.state} type="primary" ghost size="small" onClick={() => onCortesChoose(false)}>Cancelar</Button></div>}
+                    {state.cortesChoose && <div><Button disabled={submitting.state} type="primary" size="small" onClick={onSave}>Submeter</Button></div>}
+                </Space>
+            </Portal>
+            }
         </>
     );
 }

@@ -259,7 +259,7 @@ def BobinesGranuladoMPList(request,format=None):
         f"""  
             SELECT {c(f'{dql.columns}')}
             FROM producao_bobine pb 
-            JOIN sistema.lotesdosers_ig ldi on pb.ig_id=ldi.ig_id and ldi.arranque>0
+            JOIN lotesdosers_ig ldi on pb.ig_id=ldi.ig_id and ldi.arranque>0
             JOIN lotesdoserslinha ldl ON ldl.id=ldi.ldl_id
             JOIN lotesgranuladolinha lgl ON lgl.id=ldl.loteslinha_id and lgl.type_mov=1
             where pb.comp_actual>0 and pb.recycle=0 {f.text} {f2["text"]}

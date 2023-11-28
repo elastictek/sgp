@@ -401,7 +401,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 ...([1, 2].includes(item.items[0].ofabrico_status) && allowInit) ? [<Button key={`B1-${index}`} type="primary" onClick={() => onChange(item.items[0], 3, load)} icon={<FaPlay size={12} />}>Iniciar Produção</Button>] : [],
                                                 ...[3].includes(item.items[0].ofabrico_status) ? [<Button key={`B2-${index}`} style={{ background: "orange" }} onClick={() => onChange(item.items[0], 1, load)} icon={<FaPause size={12} />}>Suspender Produção</Button>] : [],
                                                 ...[3].includes(item.items[0].ofabrico_status) ? [<Button key={`B3-${index}`} type='primary' onClick={() => onChange(item.items[0], 9, load)} danger icon={<FaStop size={12} />}>Finalizar Produção</Button>] : [],
-                                                ...[2].includes(item.items[0].ofabrico_status && item.items[0].was_in_production==1) ? [<Button key={`B3-${index}`} type='primary' onClick={() => onChange(item.items[0], 9, load)} danger icon={<FaStop size={12} />}>Finalizar Produção</Button>] : []
+                                                ...([2].includes(item.items[0].ofabrico_status) && item.items[0].was_in_production==1) ? [<Button key={`B3-${index}`} type='primary' onClick={() => onChange(item.items[0], 9, load)} danger icon={<FaStop size={12} />}>Finalizar Produção</Button>] : []
                                             ]
                                         } /* onChangeStatus={onChangeStatus} */ /></Col>}
                                         {state.step == 1 && <Col>

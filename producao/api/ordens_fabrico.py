@@ -45,6 +45,7 @@ import requests
 import psycopg2
 from decimal import Decimal
 from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings,changeStatus
+from producao.api.exports import export
 
 
 connGatewayName = "postgres"
@@ -143,37 +144,37 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
                 ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field1 if field is False else field2}
     return ret
 
-def export(sql, db_parameters, parameters,conn_name):
-    if ("export" in parameters and parameters["export"] is not None):
-        dbparams={}
-        for key, value in db_parameters.items():
-            if f"%({key})s" not in sql: 
-                continue
-            dbparams[key] = value
-            sql = sql.replace(f"%({key})s",f":{key}")
-        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        req = {
+# def export(sql, db_parameters, parameters,conn_name):
+#     if ("export" in parameters and parameters["export"] is not None):
+#         dbparams={}
+#         for key, value in db_parameters.items():
+#             if f"%({key})s" not in sql: 
+#                 continue
+#             dbparams[key] = value
+#             sql = sql.replace(f"%({key})s",f":{key}")
+#         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+#         req = {
             
-            "conn-name":conn_name,
-            "sql":sql,
-            "hash":hash,
-            "data":dbparams,
-            **parameters
-        }
-        wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+#             "conn-name":conn_name,
+#             "sql":sql,
+#             "hash":hash,
+#             "data":dbparams,
+#             **parameters
+#         }
+#         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+#         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
-        if (fstream.status_code==200):
-            resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-            if (parameters["export"] == "pdf"):
-                resp['Content-Disposition'] = "inline; filename=list.pdf"
-            elif (parameters["export"] == "excel"):
-                resp['Content-Disposition'] = "inline; filename=list.xlsx"
-            elif (parameters["export"] == "word"):
-                resp['Content-Disposition'] = "inline; filename=list.docx"
-            if (parameters["export"] == "csv"):
-                resp['Content-Disposition'] = "inline; filename=list.csv"
-            return resp
+#         if (fstream.status_code==200):
+#             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+#             if (parameters["export"] == "pdf"):
+#                 resp['Content-Disposition'] = "inline; filename=list.pdf"
+#             elif (parameters["export"] == "excel"):
+#                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
+#             elif (parameters["export"] == "word"):
+#                 resp['Content-Disposition'] = "inline; filename=list.docx"
+#             if (parameters["export"] == "csv"):
+#                 resp['Content-Disposition'] = "inline; filename=list.csv"
+#             return resp
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1019,7 +1020,7 @@ def GetAttachements(request, format=None):
     f = Filters(filter)
     f.setParameters({}, False)
     f.where()
-    f.add(f'pa.of_id = :draft_id',lambda v:(v!=None))
+    #f.add(f'pa.of_id = :draft_id',lambda v:(v!=None))
     f.add(f'pt2.agg_of_id = :aggid',lambda v:(v!=None))
     f.add(f"""
         pa.of_id in (select id from producao_tempordemfabrico t where t.agg_of_id = (select agg.agg_of_id from producao_tempordemfabrico agg where id=:draft_id))
@@ -1130,7 +1131,28 @@ def SaveInfo(request, format=None):
         return Response({"status": "error", "title": str(error)})
 
 
+def SaveCortesTest(request, format=None):
+    data = request.data.get("parameters")
+    filter = request.data.get("filter")
 
+    try:
+        with connections["default"].cursor() as cursor:
+            #A ordem com que são executados os if's são muito importantes!!!!!!
+            _cortesordem_id = filter.get("cortesordem_id")
+            _cortes_test = json.dumps({"cortes":data.get("cortes"),"cortesordem":_cortesordem_id}) if data.get("cortes") and len(data.get("cortes"))>0 else None
+            if filter.get("cs_id") is not None:
+                if _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {"type_op":"cortes_test","cortes_test":_cortes_test}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes para teste atualizados com sucesso!"})
+            elif filter.get("agg_of_id") is not None:
+                if _cortesordem_id:
+                    dml = db.dml(TypeDml.UPDATE, {"cortes_test":_cortes_test}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
+                    db.execute(dml.statement, cursor, dml.parameters)
+                    return Response({"status": "success", "title": "Cortes para teste atualizados com sucesso!"})
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
 
 def CoresPlanList(request, format=None):
     connection = connections["default"].cursor()
@@ -1225,33 +1247,140 @@ def StockCutOptimizer(request, format=None):
 def CortesOrdemLookup(request, format=None):
     #conn = connections[connGatewayName].cursor()
     cols = ['co.*,c.largura_json,c.largura_util']
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
     f = Filters(request.data['filter'])
-    if "cortesOrdemId" in request.data['filter']:
-        f.setParameters({"id": {"value": lambda v: v.get('cortesOrdemId')}}, True)
+    if "cortesordem_id" in request.data['filter']:
+        sql=f"""
+                select 
+                {dql.columns}
+                from producao_cortesordem co
+                join producao_cortes c on c.id=co.cortes_id
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('cortesordem_id')}}, True)
+    elif "agg_of_id" in request.data['filter']:
+        sql=f"""
+                select 
+                {dql.columns}
+                from producao_tempaggordemfabrico pt
+                join producao_cortesordem co on pt.cortesordem_id = co.id
+                join producao_cortes c on c.id=co.cortes_id and pt.cortes_id=c.id
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('agg_of_id')}}, True)
+    elif "acs_id" in request.data['filter']:
+        sql=f"""
+                select 
+                {dql.columns}
+                from audit_current_settings pc
+                join audit_current_cortes ac on ac.id=pc.`_cortes`
+                join audit_current_cortesordem aco on aco.id=pc.`_cortesordem` 
+                join producao_cortesordem co on co.id=aco.cortesordem->'$.id'
+                join producao_cortes c on c.id=ac.cortes->'$.id'
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
+    elif "cs_id" in request.data['filter']:
+        sql=f"""
+                select 
+                {dql.columns}
+                from producao_currentsettings pc
+                join producao_cortesordem co on co.id=cortesordem->'$.id'
+                join producao_cortes c on c.id=cortes->'$.id'
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('cs_id')}}, True)
     else:
+        sql=f"""
+                select 
+                {dql.columns}
+                from producao_cortesordem co
+                join producao_cortes c on c.id=co.cortes_id
+            """
         f.setParameters({"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
     f.where()
-    if "cortesOrdemId" in request.data['filter']:
+    if "cortesordem_id" in request.data['filter']:
         f.add(f'co.id = :id', lambda v:(v!=None))
+    elif "agg_of_id" in request.data['filter']:
+        f.add(f'pt.id = :id', lambda v:(v!=None))
+    elif "acs_id" in request.data['filter']:
+        f.add(f'pc.id = :id', lambda v:(v!=None))
+    elif "cs_id" in request.data['filter']:
+        f.add(f'pc.id = :id', lambda v:(v!=None))
     else:
         f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
         f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
-                select 
-                {dql.columns}
-                from producao_cortesordem co
-                join producao_cortes c on c.id=co.cortes_id
+                {sql}
                 {f.text}
                 {dql.sort}
             """
         ), cursor, parameters)
+        return Response(response)
+
+def CortesTestLookup(request, format=None):
+    dql = db.dql(request.data, False)
+    f = Filters(request.data['filter'])
+    if "agg_of_id" in request.data['filter']:
+        sql=f"""
+                select 
+                pt.cortes_test
+                from producao_tempaggordemfabrico pt
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('agg_of_id')}}, True)
+    elif "acs_id" in request.data['filter'] and not request.data['filter'].get("use_cs_id"):
+        sql=f"""
+                select 
+                ac.cortes_test
+                from audit_current_settings pc
+                join audit_current_cortes_test ac on ac.id=pc.`_cortes_test`
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
+    elif "acs_id" in request.data['filter'] and request.data['filter'].get("use_cs_id"):
+        sql=f"""
+                select 
+                pc.cortes_test
+                from producao_currentsettings pc
+                join audit_current_settings acs on pc.id=acs.contextid
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
+    elif "cs_id" in request.data['filter']:
+        sql=f"""
+                select 
+                pc.cortes_test
+                from producao_currentsettings pc
+            """
+        f.setParameters({"id": {"value": lambda v: v.get('cs_id')}}, True)
+    f.where()
+    if "agg_of_id" in request.data['filter']:
+        f.add(f'pt.id = :id', lambda v:(v!=None))
+    elif "acs_id" in request.data['filter'] and request.data['filter'].get("use_cs_id"):
+        f.add(f'acs.id = :id', lambda v:(v!=None))
+    elif "acs_id" in request.data['filter']:
+        f.add(f'pc.id = :id', lambda v:(v!=None))
+    elif "cs_id" in request.data['filter']:
+        f.add(f'pc.id = :id', lambda v:(v!=None))
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                {sql}
+                {f.text}
+                {dql.sort}
+            """
+        ), cursor, parameters)
+        print(
+            f"""
+                {sql}
+                {f.text}
+                {dql.sort}
+            """
+        )
+        print(parameters)
         return Response(response)
 
 def CortesPlanList(request, format=None):
@@ -1390,7 +1519,6 @@ def SaveCortesOrdem(request, format=None):
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
-
 
 def SaveCortesPlan(request, format=None):
     data = request.data.get("parameters")

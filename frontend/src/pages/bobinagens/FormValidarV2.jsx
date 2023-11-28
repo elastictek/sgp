@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, Suspense } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -40,6 +40,7 @@ import { Item } from 'components/formLayout';
 import FormPrint from "../commons/FormPrint";
 import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
 import { checkBobinesDefeitos, postProcess } from '../bobines/commons';
+import FormCortesOrdem from '../ordensfabrico/FormCortesOrdem';
 
 
 //const title = "Validar Bobinagem";
@@ -61,8 +62,8 @@ const loadBobinagemLookup = async (bobinagem_id) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: {}, filter: { fid: `==${bobinagem_id}` }, parameters: { method: "BobinagemLookup" } });
     return rows;
 }
-const loadBobinesLookup = async (bobinagem_id,defaultSort=[{ column: 'nome', direction: 'ASC'}]) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, sort:defaultSort, parameters: { method: "BobinesLookup" } });
+const loadBobinesLookup = async (bobinagem_id, defaultSort = [{ column: 'nome', direction: 'ASC' }]) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, sort: defaultSort, parameters: { method: "BobinesLookup" } });
     return rows;
 }
 
@@ -319,7 +320,6 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
             });
             postProcess(_bobines);
         }
-
         updateState(draft => {
             draft.loaded = true;
             draft.step = 0;
@@ -604,7 +604,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     ];
 
     const onPrint = () => {
-        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { copias:2, bobinagem: { id: state.id } } });
+        setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { copias: 2, bobinagem: { id: state.id } } });
         showModal();
     }
 
@@ -671,6 +671,11 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                     <Row nogutter>
                                         <NonwovensList onSelect={onSelectNonwovens} state={state} loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} />
                                     </Row>
+                                    <Row>
+                                        <Col>
+                                            <Suspense fallback={<></>}><FormCortesOrdem parameters={{ acs_id: state.bobinagem?.audit_current_settings_id, use_cs_id: true }} forInput={false} height="177px" /></Suspense>
+                                        </Col>
+                                    </Row>
                                 </>}
                                 {state.step == 1 && <Row nogutter/*  style={{ justifyContent: "center" }} */>
                                     <Col /*  xs="content" */>
@@ -725,6 +730,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                     <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                                         <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
                                         <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas">Imprimir Etiquetas</Button>
+                                        <div style={{ marginTop: "10px" }}>
+                                            <Suspense fallback={<></>}><FormCortesOrdem parameters={{ acs_id: state.bobinagem?.audit_current_settings_id, use_cs_id: true }} forInput={false} height="177px" /></Suspense>
+                                        </div>
                                     </Col>
                                 </Col>}
 

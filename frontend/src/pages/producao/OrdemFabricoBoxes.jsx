@@ -119,7 +119,6 @@ const useStyles = createUseStyles({
 
 const PaletePositionColumn = ({ data, cellProps, items }) => {
     useEffect(()=>{
-        console.log("itemsssssss",items,data)
     },[]);
     const btn = (pos, max, bobines) => {
         if ((pos != 1 && pos != max) || max == 1) {
@@ -159,7 +158,7 @@ const ArtigoTitle = ({ data, cellProps }) => {
     );
 }
 
-const MiniBarBobines = ({ data, style, minWidth = 35, max = 200, onEstadoClick, ...props }) => {
+const MiniBarBobines = ({ data, style, minWidth = 65, max = 200, onEstadoClick, ...props }) => {
     const cls = useStyles();
     const [widths, setWidths] = useState([]);
     useEffect(() => {
@@ -184,11 +183,11 @@ const MiniBarBobines = ({ data, style, minWidth = 35, max = 200, onEstadoClick, 
     // }
 
     return (<>{data?.bobines && <div className={cls.bobineschart} style={{ lineHeight: 1.1, fontSize: "10px", ...style }}>{data?.bobines?.map((v, i) => {
-        return (<div onClick={() => onEstadoClick(data, v.estado)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
+        return (<div onClick={() => onEstadoClick(data, v.estado)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div><div style={{fontWeight:700}}>{parseFloat(v.total_por_estado_of_m2).toFixed(0)}m&sup2;</div></div>);
     })}</div>}</>);
 }
 
-const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstadoClick, ...props }) => {
+const MiniBarBobinesNoPalete = ({ data, style, minWidth = 65, max = 200, onEstadoClick, ...props }) => {
     const cls = useStyles();
     const [widths, setWidths] = useState([]);
     useEffect(() => {
@@ -212,7 +211,7 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
     // }
 
     return (<>{data?.bobines_nopalete && <div className={cls.bobineschart} style={{ lineHeight: 1.1, fontSize: "10px", ...style }}>{data?.bobines_nopalete?.map((v, i) => {
-        return (<div onClick={() => onEstadoClick(data, v.estado, true)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div></div>);
+        return (<div onClick={() => onEstadoClick(data, v.estado, true)} key={`cbe-${i}-${v.ofid}`} style={{ width: `${widths[i]}%`, background: bColors(v.estado).color, color: bColors(v.estado).fontColor, opacity: 0.6 }}><div style={{ fontWeight: 700 }}>{v.estado}</div><div>{v.total_por_estado_of}</div><div style={{fontWeight:700}}>{parseFloat(v.total_por_estado_of_m2).toFixed(0)}m&sup2;</div></div>);
     })}</div>}</>);
 }
 
@@ -616,14 +615,14 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
                                                     <Container fluid style={{ padding: "0px" }}>
 
                                                         <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                            <Col><MiniBarBobines onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
+                                                            <Col><MiniBarBobines onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "40px" }} /></Col>
                                                         </Row>
                                                     </Container>
                                                 </Panel>
                                                 {items[0]?.bobines_nopalete.length > 0 && <Panel showArrow={false} header={<div style={{ display: "flex", flexDirection: "row", fontWeight: 700/* , justifyContent: "right" */, width: "100%"/* , fontStyle: "italic" */ }}><div>Bobines sem palete atribuída</div></div>} key="2">
                                                     <Container fluid style={{ padding: "0px" }}>
                                                         <Row gutterWidth={2} style={{ textAlign: "center", alignItems: "center", margin: "10px 0" }}>
-                                                            <Col><MiniBarBobinesNoPalete onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "23px" }} /></Col>
+                                                            <Col><MiniBarBobinesNoPalete onEstadoClick={onEstadoClick} data={items[0]} style={{ width: "100%", height: "40px" }} /></Col>
                                                         </Row>
                                                     </Container>
                                                 </Panel>}
