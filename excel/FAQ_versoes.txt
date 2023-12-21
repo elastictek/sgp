@@ -1,0 +1,6 @@
+v1.2.3.4
+
+1 - Alterações que implicam incompatibilidades (alteração nos campos das tabelas base, alteração nos parametros de entrada (filtros),...)
+2 - Novas tabelas base (Não implicam incompatitilidades)
+3 - Alterações que não implicam incompatibilidades (novos parametros de entrada (filtros), novos campos na tabela base,...)
+4 - Outras alterações que não implicam incompatibilidades

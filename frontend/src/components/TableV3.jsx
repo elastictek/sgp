@@ -443,7 +443,7 @@ const FilterTags = ({ dataAPI, removeFilter, style }) => {
 }
 
 const EditControls = ({ editable = {}, dataAPI, columns, idProperty, dirty, grid }) => {
-    const { enabled = false, controls = true, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true, saveText = "Guardar", cancelText = "Cancelar", addText = "Novo", editText = "Editar" } = editable;
+    const { enabled = false, controls = true, add, modeKey = "datagrid", mode, onSave, setMode, onAdd, onAddSave, showSaveButton = true, showCancelButton = true, showAddButton = true, saveText = "Guardar", cancelText = "", addText = "Novo", editText = "Editar" } = editable;
 
 
     const changeMode = async () => {

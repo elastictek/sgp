@@ -968,7 +968,8 @@ def create_perfil_token(num_bobines, produto, core, larguras, produtos, gsms, re
         'NONWOVEN ELASTIC BANDS ELA-ACE 100 HE PUNCTURED':'AM',
         'Nonwoven Elastic Bands ELA-CARDED 80 HE': 'AN',
         'Nonwoven Elastic Bands ELA-CARDED 90 HE': 'AO',
-        'Nonwoven Elastic Bands ELA-CARDED 80 HT': 'AP'
+        'Nonwoven Elastic Bands ELA-CARDED 80 HT': 'AP',
+        'Nonwoven Elastic Bands ELA-CARDED 90 HT': 'AQ'
     }
 
     gsm_dict = {

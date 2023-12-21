@@ -61,6 +61,8 @@ def PaletesDetailed_01(sql,dbParams,cols,conn_name,dbi=None,conn=None):
         cols = {
             "t.nome": {"title": "Palete Nome"}, 
             "nome_bobine":{"title": "Bobine", "col":"pb.nome"},
+            "pa.cod": {"title": "Artigo Cod."},
+            "pa.des": {"title": "Artigo"},
             "pb.posicao_palete":{"title": "Posição"},
             "largura_bobine":{"title": "Bobine Largura", "col":"pb.lar"},
             "comp_bobine":{"title": "Bobine Comp.", "col":"pb.comp_actual"},
@@ -87,11 +89,16 @@ def PaletesDetailed_01(sql,dbParams,cols,conn_name,dbi=None,conn=None):
             _sql=sql(lambda v:v,lambda v:sqlCols(cols),lambda v:f"{v},pb.posicao_palete" if v is not None else "order by pb.posicao_palete")
         else:
             _sql=sql
-        _sql = _sql.replace("[#MARK-REPORT-01#]","JOIN mv_bobines pb on pb.palete_id=t.id and pb.recycle=0 and pb.comp_actual>0")
+            _sql = _sql.replace("[#MARK-REPORT-01#]",f"""
+            JOIN mv_bobines pb on pb.palete_id=t.id and pb.recycle=0 and pb.comp_actual>0
+            JOIN mv_artigos pa on pa.id=pb.artigo_id
+            """)
     else:
         cols = {
             "sgppl.nome": {"title": "Palete Nome"}, 
             "nome_bobine":{"title": "Bobine", "col":"pb.nome"},
+            "pa.cod": {"title": "Artigo Cod."},
+            "pa.des": {"title": "Artigo"},
             "pb.posicao_palete":{"title": "Posição"},
             "largura_bobine":{"title": "Bobine Largura", "col":"pb.lar"},
             "comp_bobine":{"title": "Bobine Comp.", "col":"pb.comp_actual"},
@@ -118,7 +125,10 @@ def PaletesDetailed_01(sql,dbParams,cols,conn_name,dbi=None,conn=None):
             _sql=sql(lambda v:v,lambda v:sqlCols(cols),lambda v:f"{v},pb.posicao_palete" if v is not None else "order by pb.posicao_palete")
         else:
             _sql=sql
-        _sql = _sql.replace("[#MARK-REPORT-01#]","JOIN producao_bobine pb on pb.palete_id=sgppl.id and pb.recycle=0 and pb.comp_actual>0")
+            _sql = _sql.replace("[#MARK-REPORT-01#]",f"""
+                JOIN producao_bobine pb on pb.palete_id=sgppl.id and pb.recycle=0 and pb.comp_actual>0
+                left JOIN producao_artigo pa on pa.id=pb.artigo_id
+            """)
     return {"sql":_sql,"data":dbParams, "cols":cols}
 
 @api_view(['POST'])

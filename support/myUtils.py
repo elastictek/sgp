@@ -1,6 +1,36 @@
 import mimetypes
+import re
 from datetime import datetime, timedelta, timezone
 from django.http import FileResponse
+
+def string_lists(input_string):
+    # Split the input string based on newline characters, commas, and semicolons
+    strs = [v.strip("'\" ") for v in re.split(r'[\n,;]', input_string) if v.strip("'\" ")]
+
+    # Format each date string with single quotes
+    formatted_strs = [f"'{v}'" for v in strs]
+
+    # Join the formatted dates into a single string
+    result_string = ','.join(formatted_strs)
+    return result_string
+
+def int_lists(input_string):
+    # Split the input string based on newline characters, commas, and semicolons
+    strs = [v.strip("'\" ") for v in re.split(r'[\n,;]', input_string) if v.strip("'\" ")]
+
+    # Format each date string with single quotes
+    formatted_strs = [f"{v}" for v in strs]
+
+    # Join the formatted dates into a single string
+    result_string = ','.join(formatted_strs)
+    return result_string
+
+def isDate(date_string, date_format='%Y-%m-%d'):
+    try:
+        datetime.strptime(date_string, date_format)
+        return True
+    except ValueError:
+        return False
 
 def ifNull(var, val):
   if var is None:

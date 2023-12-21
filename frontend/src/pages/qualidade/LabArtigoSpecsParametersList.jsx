@@ -193,7 +193,7 @@ export default ({ setFormTitle, ...props }) => {
 
 
     const columnEditable = (v, { data, name }) => {
-        if (["value1", "value2", "value3", "value4", "required", "decisive"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["value1", "value2", "value3", "value4", "required", "decisive","cycles","functions"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return true;
         }
         return false;
@@ -203,7 +203,7 @@ export default ({ setFormTitle, ...props }) => {
         if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
             return tableCls.error;
         }
-        if (["value1", "value2", "value3", "value4", "required", "decisive"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
+        if (["value1", "value2", "value3", "value4", "required", "decisive","cycles","functions"].includes(name) && (mode.datagrid.edit || (mode.datagrid.add && data?.rowadded === 1))) {
             return tableCls.edit;
         }
     };
@@ -225,10 +225,13 @@ export default ({ setFormTitle, ...props }) => {
         //...(true) ? [{ name: 'nvalues', header: 'Nº Valores', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 1, max: 12 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'min_value', header: 'Min', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'max_value', header: 'Max', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 100 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'value_precision', header: 'Precisão', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 6 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'cycles', header: 'Ciclos', editable: columnEditable, renderEditor: (props) => <InputTableEditor {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+        ...(true) ? [{ name: 'functions', header: 'Funções', editable: columnEditable, renderEditor: (props) => <InputTableEditor {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
+                ...(true) ? [{ name: 'value_precision', header: 'Precisão', editable: columnEditable, renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0, max: 6 }} {...props} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'status', header: 'Estado', editable: columnEditable, renderEditor: (props) => <StatusTableEditor {...props} checkbox={true} genre="m" />, render: ({ data, cellProps }) => <Status cellProps={cellProps} value={data?.status} genre="m" />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 100, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'decisive', header: 'Decisivo', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.decisive} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
         ...(true) ? [{ name: 'required', header: 'Obrigatório', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.required} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 80, headerAlign: "center" }] : [],
+
     ];
 
 
@@ -490,6 +493,7 @@ export default ({ setFormTitle, ...props }) => {
                 rowClassName={rowClassName}
                 //groups={groups}
                 sortable={false}
+                editOnClick={true}
                 groups={groups}
                 reorderColumns={false}
                 showColumnMenuTool

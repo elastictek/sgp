@@ -283,6 +283,7 @@ urlpatterns = [
     re_path(r'^qualidade/loadlabmetodoparametersbyfile/$',qualidade.LoadLabMetodoParametersByFile),
     
     re_path(r'^exportdataA01/call/$',exportdata_A01.SqlK),
+    re_path(r'^qualidade/call/$',qualidade.SqlK),
 
     re_path(r'^printetiqueta/$',print.PrintEtiqueta)
     

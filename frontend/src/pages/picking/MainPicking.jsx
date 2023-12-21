@@ -407,6 +407,29 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                 </Card>
                             </Col>
                             }
+
+                            {allows?.qualidade?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
+                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Qualidade</span>} style={{ width: "100%" }} /* extra={
+                                    <Space.Compact block>
+                                        <Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link">
+                                            Lista
+                                        </Button>
+                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                    </Space.Compact>
+                                } */>
+                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
+                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
+                                            {allows?.qualidade?.tests && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/qualitytestbm")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Testar<br />Bobinagens</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
+                                        </Row>
+                                    </Container>
+                                </Card>
+                            </Col>}
                         </Row>
                     </Col>
 

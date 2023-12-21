@@ -51,7 +51,7 @@ export const InputTableEditor = ({ dataAPI, inputProps, ...props }) => {
             e.stopPropagation();
             props.onTabNavigation(
                 true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                e.shiftKey ? -1 : 1 /*backwards of forwards*/
             );
         }
     }
@@ -81,7 +81,7 @@ export const InputNumberTableEditor = ({ dataAPI, inputProps, ...props }) => {
             e.stopPropagation();
             props.onTabNavigation(
                 true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                e.shiftKey ? -1 : 1 /*backwards of forwards*/
             );
         }
     }
@@ -124,7 +124,7 @@ export const BooleanTableEditor = ({ dataAPI, selectProps, checkbox = true, chec
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -182,7 +182,7 @@ export const StatusApprovalTableEditor = ({ dataAPI, selectProps, allowed = [-1,
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -239,7 +239,7 @@ export const StatusTableEditor = ({ dataAPI, selectProps, checkBoxProps, allowed
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -300,7 +300,7 @@ export const MetodoOwnerTableEditor = ({ dataAPI, selectProps, ...props }) => {
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -346,7 +346,7 @@ export const MetodoTipoTableEditor = ({ dataAPI, selectProps, ...props }) => {
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -400,7 +400,7 @@ export const MetodoModeTableEditor = ({ dataAPI, selectProps, ...props }) => {
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -451,7 +451,7 @@ export const ObsTableEditor = ({ dataAPI, inputProps, ...props }) => {
             e.stopPropagation();
             props.onTabNavigation(
                 true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                e.shiftKey ? -1 : 1 /*backwards of forwards*/
             );
         }
     }
@@ -513,7 +513,7 @@ export const FieldSelectorEditor = ({ dataAPI, selectorProps, onSelect, ...props
             //props.onCancel();
             props.onTabNavigation(
                 true /*complete navigation?*/,
-                //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                e.shiftKey ? -1 : 1 /*backwards of forwards*/
             );
         }
     }
@@ -748,7 +748,7 @@ export const ArtigosCompativeisGroupEditor = ({ dataAPI, ...props }) => {
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;
@@ -797,7 +797,7 @@ export const LabParametersUnitEditor = ({ dataAPI, ...props }) => {
             if (!selected.current) {
                 props.onTabNavigation(
                     true /*complete navigation?*/,
-                    //e.shiftKey ? -1 : 1 /*backwards of forwards*/
+                    e.shiftKey ? -1 : 1 /*backwards of forwards*/
                 );
             }
             selected.current = false;

@@ -135,6 +135,8 @@ const FormPickNewBobinagemLine = lazy(() => import('./picking/FormPickNewBobinag
 const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
 const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
+const FormPickQualityBobinagemTest = lazy(() => import('./picking/FormPickQualityBobinagemTest'));
+
 const loadAuthUser = async ({ }, signal) => {
     let response;
     try {
@@ -269,6 +271,7 @@ const RenderRouter = () => {
                 { path: "picking/ofabricocortes", element: <Suspense fallback={<Spin />}><FormPickOFabricoCortes /></Suspense> },
                 { path: "picking/printbuffer", element: <Suspense fallback={<Spin />}><FormPickPrintBuffer /></Suspense> },
 
+                { path: "picking/qualitytestbm", element: <Suspense fallback={<Spin />}><FormPickQualityBobinagemTest /></Suspense> },
 
 
                 { path: "bobinagens/formbobinagemvalidar", element: <Suspense fallback={<Spin />}><FormBobinagemValidar /></Suspense> },

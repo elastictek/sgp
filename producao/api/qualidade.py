@@ -19,6 +19,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
 import mimetypes
 from datetime import datetime, timedelta
+import numpy as np
 # import cups
 import os, tempfile
 
@@ -44,12 +45,19 @@ import time
 import requests
 import psycopg2
 from decimal import Decimal
+from producao.api.exports import export
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
 dbgw = DBSql(connections[connGatewayName].alias)
 db = DBSql(connections["default"].alias)
 dbmssql = DBSql(connections[connMssqlName].alias)
+
+types_mapper = {"tração":"traction","desgrudar":"peel","gramagem":"gramagem"}
+modes_mapper = {"simples":"simples","controle":"controle","cíclico":"cíclico"}
+header_mapper = {'Nome do ensaio':"nome_ensaio", 'Modo de ensaio':"modo_ensaio", 'Tipo de ensaio':"tipo_ensaio", 'Título1':"titulo", 'Comentário1':"comentario", 'Palavra-chave':"password", 
+                'Nome do produto':"produto", 'Nome do arquivo do ensaio':"filename_ensaio", 'Nome do arquivo do método':"filename_metodo", 'Data do relatório':"data_report", 'Data do ensaio':"data_ensaio", 
+                'Velocidade':"velocidade", 'Placa':"placa", 'Lote No:':"lote", "Sub-Lote No:":"sublote", 'Contador cíclico':"contador_ciclico"}
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication])
@@ -139,37 +147,19 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
                 ret[f'{key}_{i}'] = {"key": key, "value": v, "field": field1 if field is False else field2}
     return ret
 
-def export(sql, db_parameters, parameters,conn_name):
-    if ("export" in parameters and parameters["export"] is not None):
-        dbparams={}
-        for key, value in db_parameters.items():
-            if f"%({key})s" not in sql: 
-                continue
-            dbparams[key] = value
-            sql = sql.replace(f"%({key})s",f":{key}")
-        hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        req = {
-            
-            "conn-name":conn_name,
-            "sql":sql,
-            "hash":hash,
-            "data":dbparams,
-            **parameters
-        }
-        wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+api_keys = {
+    '98866c51710e34795b3888336e6d43b66d31d9a1d2646b92a0aabacb0293b2d6': 'generic'
+}
 
-        if (fstream.status_code==200):
-            resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-            if (parameters["export"] == "pdf"):
-                resp['Content-Disposition'] = "inline; filename=list.pdf"
-            elif (parameters["export"] == "excel"):
-                resp['Content-Disposition'] = "inline; filename=list.xlsx"
-            elif (parameters["export"] == "word"):
-                resp['Content-Disposition'] = "inline; filename=list.docx"
-            if (parameters["export"] == "csv"):
-                resp['Content-Disposition'] = "inline; filename=list.csv"
-            return resp
+def is_valid_key(api_key):
+    if api_key is None:
+        return False
+    return api_key in api_keys
+
+def get_user_role(api_key):
+    return api_keys.get(api_key)
+
+
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -185,6 +175,24 @@ def Sql(request, format=None):
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
+    return Response({})
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def SqlK(request, format=None):
+    if "parameters" in request.data and "method" in request.data["parameters"]:
+        
+        api_key = request.data["parameters"].get('appKey')
+
+        if not api_key or not is_valid_key(api_key):
+            return Response({'error': 'Invalid key'}, status=401)
+        user_role = get_user_role(api_key)
+        
+        request.data["parameters"]["source"] = "external"
+        method=request.data["parameters"]["method"]
+        func = globals()[method]
+        response = func(request, format)
+        return response
     return Response({})
 
 def checkArtigosSpecsPlan(id,type,cursor):
@@ -745,7 +753,7 @@ def UpdateArtigoSpecsParameters(request, format=None):
                             v=None
                         else:
                             v = json.dumps([item.get("value1"),item.get("value2"),item.get("value3"),item.get("value4")])
-                        values = {"`values`":v,"required":item.get("required"),"decisive":item.get("decisive"),"user_id":request.user.id,"t_stamp_update":datetime.now()}
+                        values = {"`values`":v,"cycles":item.get("cycles"),"functions":item.get("functions"),"required":item.get("required"),"decisive":item.get("decisive"),"user_id":request.user.id,"t_stamp_update":datetime.now()}
                         dml = db.dml(TypeDml.UPDATE,values,"producao_lab_artigospecs_parameters",{"id":Filters.getNumeric(item.get("id"),"isnull")},None,False)
                         db.execute(dml.statement, cursor, dml.parameters)
                     dml = db.dml(TypeDml.UPDATE,{"valid":1, "user_id":request.user.id,"t_stamp_update":datetime.now()},"producao_lab_artigospecs",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
@@ -883,18 +891,19 @@ def replace(arr, dictionary):
     return output_arr
 
 def DoTest(request, format=None):
-    print("FIXEDDDD TO CHANGE COME FROM UI")
-    data = request.data.get("parameters").get("data")
+    data = request.data.get("parameters")
+    _file = data.get("file")
+    _specification = data.get("specification")
     filter = request.data.get("filter")
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                metodo = _getLabMetodobyArtigoSpecs(filter.get("id"),1,1,cursor)
-                parameters = _getLabArtigoSpecsParameters(filter.get("id"),cursor)
+                metodo = _getLabMetodobyArtigoSpecs(_specification,1,1,cursor)
+                parameters = _getLabArtigoSpecsParameters(_specification,cursor)
                 specs = {d['parameter_nome']: {**d,"values":json.loads(d.get("values"))} for d in parameters.get("rows")}
                 if len(metodo.get("rows"))==0:
                     Response({"status": "error", "title": f"As especificações não se encontram válidas ou não existem!"})     
-                return Response(LoadTrapeziumTestFile("20230330-10.csv",metodo,specs,request.user.id))
+                return Response(LoadTrapeziumTestFile(_file,metodo,specs,request.user.id))
 
     except Exception as error:
         return Response({"status": "error", "title": f"Erro executar o teste selecionado! {str(error)}"})
@@ -904,7 +913,7 @@ def mapper(row,block,counter):
     if v=="[0][0]":
         map = {'Nome do ensaio':"nome_ensaio", 'Modo de ensaio':"modo_ensaio", 'Tipo de ensaio':"tipo_ensaio", 'Título1':"titulo", 'Comentário1':"comentario", 'Palavra-chave':"password", 
          'Nome do produto':"produto", 'Nome do arquivo do ensaio':"filename_ensaio", 'Nome do arquivo do método':"filename_metodo", 'Data do relatório':"data_report", 'Data do ensaio':"data_ensaio", 
-         'Velocidade':"velocidade", 'Placa':"placa", 'Lote No:':"lote", 'Contador cíclico':"contador_ciclico"}
+         'Velocidade':"velocidade", 'Placa':"placa", 'Lote No:':"lote", "Sub-Lote No:":"sublote", 'Contador cíclico':"contador_ciclico"}
         return replace(row,map)
     elif v=="[1][0]":
         return row
@@ -932,66 +941,255 @@ def _getBobinagemData(file,cursor):
         return None
 
 
-def LoadTrapeziumTestFile(file,metodo,specs,user_id):
-    types_dict = {"traction":"tração","peel":"desgrudar"}
-    modes_dict = {"simples":"simples","controle":"controle","cíclico":"cíclico"}
+def extract_first_numeric(s):
+    match = re.search(r'\d+', s)
+    return int(match.group()) if match else None
 
+def starts_with_numeric(s):
+    # Check if the first character is a digit
+    return s and s[0].isdigit()
+
+def compute_bobine(s,bdata):
+    match = re.search(r'\d+',s)
+    if match:
+        number = match.group().zfill(2) #Bobine Number
+        bobine_nome = f"""{bdata[0].get("nome")}-{number}"""
+        bobine = next((r for r in bdata if r['bobine_nome'] == bobine_nome), None)
+        if bobine is None:
+            return False
+        return bobine
+    else:
+        return False
+
+def LoadTrapeziumTestFile(file,metodo,specs,user_id):
     cursor = connections["default"].cursor()
     with cursor:
         try:
             bdata = _getBobinagemData(file,cursor)
-            print(bdata)
-            if bdata is None:
+            if bdata is None or len(bdata)==0:
                 return {"status": "error", "title": "A bobinagem a que se refere o teste não existe!", "subTitle":None}
             storage = FileSystemStorage()
             csv_file = storage.open(f'lab-test-tmp/{file}', 'r')
             csv_reader = csv.reader(csv_file)
 
             block = 0
-            counter={}
+            _block_lines_counter = 0
+            _cycle_counter = 0
             
-            keys=[]
-            valuesheader={}
-            values=[]
-            grp={"value":0,"enabled":False,"ciclo":1}
+            _header=[]
+            _duplicates=[]
 
-            tblheader = {}
-            tblspecs = []
-            tbldata = []
-            tblgroup = []
+            tblHeader = {}
+            tblblock1 = {}
+            tblparameters = []
+            tbldata = {}
             print("READING")
-            if tblheader:
-                print("uuuuuuuuuuuuuuuuuuuuuuu")
             for row in csv_reader:
-                if block!=0 and tblheader:
-                    print("ok")
                 if not row:
-                    valuesheader= {}
-                    keys = []
-                    #values=[]
-                    #grp={"value":0,"enabled":False,"ciclo":1}
+                    _header= []
                     block = block + 1
+                    _block_lines_counter = 0
                 elif (block==0):
-                    counter,block,keys,tblheader = block_header(counter,block,row,keys,bdata)
+                    blockHeader(row,bdata,tblHeader,_duplicates)
+                    _block_lines_counter = _block_lines_counter + 1
                 elif (block==1):
-                    counter,block,keys,valuesheader = block1(counter,block,row,keys,valuesheader,tblspecs,bdata)
+                    if _block_lines_counter>=2 and _block_lines_counter<=3:
+                        _header.append(row)
+                    elif _block_lines_counter>3:
+                        block1(_header,row,bdata,tblblock1)
+                    _block_lines_counter = _block_lines_counter + 1
                 elif (block==2):
-                    print("")
-                    #print("BLOCK2")
-                    #print(row)
-                #print(row)
-            print("header")
-            print(tblheader)
-            print("specs")
-            print(tblspecs)
+                    if _block_lines_counter == 0:
+                        if not tblHeader or "modo_ensaio" not in tblHeader or "tipo_ensaio" not in tblHeader:
+                            raise ValueError(f"""Erro de cabeçalho no ficheiro submetido""")
+                        filtered_specs = {key: value for key, value in specs.items() if value.get('parameter_type') == value.get('parameter_type') and value.get('parameter_mode') == tblHeader.get("modo_ensaio")}
+                        blockParameters(row,filtered_specs,tblparameters)
+                    elif _block_lines_counter == 1:
+                        a=1
+                        #PARAMETER DESCRIPTION
+                    elif _block_lines_counter == 2:
+                        a=1
+                        #PARAMETER UNITS
+                    else:
+                        if starts_with_numeric(row[0]):
+                            _cycle_counter = _cycle_counter + 1
+                            block2(tblparameters,row,_cycle_counter,bdata,tbldata)
+                    _block_lines_counter = _block_lines_counter + 1
+            
+            if not tblHeader or "modo_ensaio" not in tblHeader or "tipo_ensaio" not in tblHeader:
+                raise ValueError(f"""Erro de cabeçalho no ficheiro submetido""")
+            else:
+                results=[]
+                resultsAllCycles=[]
+                if tblHeader.get("modo_ensaio") == "cíclico":
+                    compute_ciclico(tbldata,tblparameters,results,resultsAllCycles,tblHeader)
+                if tblHeader.get("modo_ensaio") == "simples":
+                    compute_simples(tbldata,tblparameters,results,tblHeader)
+                
+
+                print(tblHeader)
+                print(tblblock1)
+                print(results)
+                print(resultsAllCycles)
             csv_file.close()
             return {"status": "success", "title": "Teste executado com sucesso!", "subTitle":None}
         except Exception as error:
             print(error)
             return {"status": "error", "title": f"Erro executar o teste selecionado! {str(error)}"}
 
+def compute_ciclico(tbldata,tblparameters,results,allresults,tblHeader):
+    transposed_lists = list(map(list, zip(*tbldata.values())))
+    num_cycles = len(transposed_lists)
+    num_bobines = len(transposed_lists[0])
+    num_parameters = len(transposed_lists[0][0])
+    for ncycle in range(num_cycles):
+        for nparameter in range(num_parameters):
+            min=None
+            max=None
+            sum=0
+            cols=[]
+            for nbobine in range(num_bobines):
+                v = transposed_lists[ncycle][nbobine][nparameter] if transposed_lists[ncycle][nbobine][nparameter] is not None else 0
+                sum = sum + v
+                min = v if min is None or min > v else min
+                max = v if max is None or max < v else max
+            _status_tds = 1 if try_float(tblparameters[nparameter].get("targets")[0]) <= (sum / num_bobines) <= try_float(tblparameters[nparameter].get("targets")[1]) else 0
+            _status_target = 1 if try_float(tblparameters[nparameter].get("targets")[2]) <= (sum / num_bobines) <= try_float(tblparameters[nparameter].get("targets")[3]) else 0
+            cols.append({
+                "id":tblparameters[nparameter].get("id"),
+                "param":tblparameters[nparameter].get("name"),
+                "cycles":tblparameters[nparameter].get("cycles"),
+                "cycle":ncycle+1,
+                "targets":tblparameters[nparameter].get("targets"),
+                "status_tds": _status_tds,
+                "status_target": _status_target,
+                "avg": round(sum / num_bobines,tblparameters[nparameter].get("precision")),
+                "min": round(min,tblparameters[nparameter].get("precision")),
+                "max": round(max,tblparameters[nparameter].get("precision")),
+                "std": round(np.std(list(filter(lambda x: x is not None, transposed_lists[ncycle][nbobine])),ddof=1),tblparameters[nparameter].get("precision")) if len(list(filter(lambda x: x is not None, transposed_lists[ncycle][nbobine])))>=2 else None
+            })
+            if (ncycle+1) in [int(num) for num in tblparameters[nparameter].get("cycles").split(",")]:
+                if tblparameters[nparameter].get("decisive") == 1 and tblHeader["status"] == 1 and _status_tds == 0:
+                    tblHeader["status"] = 0
+                results.append(cols)
+            allresults.append(cols)
 
+def compute_simples(tbldata,tblparameters,results,tblHeader):
+    transposed_lists = [inner_list[0] for inner_list in tbldata.values()]
+    num_bobines = len(transposed_lists)
+    num_parameters = len(transposed_lists[0])
+    std_dev = np.std(np.array(transposed_lists), axis=0, ddof=1)
+    for nparameter in range(num_parameters):
+        min=None
+        max=None
+        sum=0
+        cols=[]
+        for nbobine in range(num_bobines):
+            v = transposed_lists[nbobine][nparameter] if transposed_lists[nbobine][nparameter] is not None else 0
+            sum = sum + v
+            min = v if min is None or min > v else min
+            max = v if max is None or max < v else max
+        _status_tds = 1 if try_float(tblparameters[nparameter].get("targets")[0]) <= (sum / num_bobines) <= try_float(tblparameters[nparameter].get("targets")[1]) else 0
+        _status_target = 1 if try_float(tblparameters[nparameter].get("targets")[2]) <= (sum / num_bobines) <= try_float(tblparameters[nparameter].get("targets")[3]) else 0
+        cols.append({
+            "id":tblparameters[nparameter].get("id"),
+            "param":tblparameters[nparameter].get("name"),
+            "targets":tblparameters[nparameter].get("targets"),
+            "status_tds": _status_tds,
+            "status_target":_status_target,
+            "avg": round(sum / num_bobines,tblparameters[nparameter].get("precision")),
+            "min": round(min,tblparameters[nparameter].get("precision")),
+            "max": round(max,tblparameters[nparameter].get("precision")),
+            "std": round(std_dev[nparameter],tblparameters[nparameter].get("precision")) if num_bobines>=2 else None
+        })
+        if tblparameters[nparameter].get("decisive") == 1 and tblHeader["status"] == 1 and _status_tds == 0:
+            tblHeader["status"] = 0
 
+        results.append(cols)
+
+def normalize_string(s):
+    # Remove non-alphanumeric characters and convert to lowercase
+    return re.sub(r'[^a-zA-Z0-9]', '#', s.lower()) + "#"
+
+def is_substring(normalized_substring, normalized_string):
+    # Check if the normalized substring is a substring of the normalized string
+    return normalized_substring in normalized_string
+
+def blockHeader(row,bdata,tblHeader,_duplicates):
+    _keys = []
+    _fix = 0
+    if len(tblHeader.keys())>0:
+        _keys = list(tblHeader.keys())
+    for idx,p in enumerate(row):
+        if len(_keys)==0:
+            if header_mapper.get(p) is not None:
+                if header_mapper.get(p) in tblHeader:
+                    _duplicates.append(idx)
+                else:
+                    tblHeader[header_mapper.get(p)] = None
+            else:
+                tblHeader[f"_{p}"] = None
+        else:
+            if idx not in _duplicates:
+                _k = _keys[idx-_fix]
+                if _k == "modo_ensaio":
+                    _v = modes_mapper.get(p.lower())
+                elif _k == "tipo_ensaio":
+                    _v = types_mapper.get(p.lower())
+                elif _k == "data_ensaio" or _k == "data_report":
+                    _v = datetime.strptime(p,'%d/%m/%Y').strftime('%Y-%m-%d')
+                else:
+                    _v = p
+                tblHeader[_k] = _v
+            else:
+                _fix = _fix + 1
+    if len(_keys)>0:
+        tblHeader["status"] = 1
+
+def blockParameters(row,specs,tblparameters):
+    if (len(specs.keys())==0):
+        raise ValueError(f"""Os parâmetros definidos não correspondem ao ficheiro de resultados submetido!""")
+    _specs_params = [{
+        "name":el, "normalized" : normalize_string(el), "id":specs[el]["id"], "cycles":specs[el]["cycles"], "functions":specs[el]["functions"], 
+        "targets":specs[el]["values"], "precision":specs[el]["value_precision"],"required": specs[el]["required"], "decisive": specs[el]["decisive"]
+    } for el in specs.keys()]
+    for idx,p in enumerate(row):
+        if idx>0:
+            base_param = normalize_string(p)
+            _sp = None
+            for sp in _specs_params:
+                if is_substring(base_param,sp["normalized"]):
+                    _sp=sp
+                    break
+                elif is_substring(sp["normalized"],base_param):
+                    _sp=sp
+                    break
+            tblparameters.append(_sp)
+    if len(tblparameters)!= len(row)-1:
+        raise ValueError(f"""Os parâmetros definidos não correspondem ao ficheiro de resultados submetido!""")
+
+def block2(tblparameters,row,cycle_counter,bdata,tbldata):
+    _bobine = None
+    _bobine = compute_bobine(row[0],bdata)
+    if _bobine is not None:
+        _values=[]
+        for idx,val in enumerate(row):
+            if idx>0:
+                if _bobine.get("bobine_nome") not in tbldata:
+                     tbldata[_bobine.get("bobine_nome")]=[]
+                _values.append(try_float(val.replace(",", ".")))
+                # print(f"""{tblparameters[idx-1]} -- {_bobine["bobine_nome"]}""")
+                # a=1
+        tbldata[_bobine.get("bobine_nome")].append(_values)
+
+def block1(header,row,bdata,tblblock1):
+    _bobine = compute_bobine(row[0],bdata)
+    if _bobine is not None:
+        for idx,val in enumerate(row):
+            if idx>0:
+                if _bobine.get("bobine_nome") not in tblblock1:
+                    tblblock1[_bobine.get("bobine_nome")]={}
+                tblblock1[_bobine.get("bobine_nome")][header[0][idx]] = {"value":try_float(val.replace(",", ".")), "unit": header[1][idx] if idx < len(header[1]) else None }
 
 
 def LoadTrapeziumTestFilex(file,metodo,specs,user_id):
@@ -1114,7 +1312,7 @@ def _newEssayResults(tbldata,tblspecs,essay_id,user_id,cursor):
         db.execute(dml.statement, cursor, dml.parameters)
         id = cursor.lastrowid
 
-def block_header(counter,block,row,keys,bdata):
+def _block_header(counter,block,row,keys,bdata):
     tbl={}
     incrementCounter(counter,block)
     if (counter.get(block)==0):
@@ -1126,7 +1324,11 @@ def block_header(counter,block,row,keys,bdata):
         tbl["data_ensaio"] = datetime.strptime(tbl.get("data_ensaio"),'%d/%m/%Y').strftime('%Y-%m-%d')
     return counter,block,keys,tbl
 
-def block1(counter,block,row,keys,valuesheader,tblspecs,bdata):
+
+
+
+
+def _block1(counter,block,row,keys,valuesheader,tblspecs,bdata):
     if row[0].lower() == "nome":
         incrementCounter(counter,block)
     if (counter.get(block)==0 and len(keys)==0):
@@ -1195,7 +1397,7 @@ def _checkSpecs(bobine_data,specs,tblheader):
                 else:
                     bobine_data["target"] = 0
 
-def block2(counter,block,grp,row,keys,valuesheader,tblheader,tbldata,tblgroup,bdata,specs):
+def _block2(counter,block,grp,row,keys,valuesheader,tblheader,tbldata,tblgroup,bdata,specs):
     if row[0].lower() == "nome":
         incrementCounter(counter,block)
     if (counter.get(block)==0 and len(keys)==0) and row[0].lower() == "nome":
