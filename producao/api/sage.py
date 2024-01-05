@@ -151,6 +151,8 @@ def SyncRecicladoProductionReport(request, format=None):
             return rows
         return None
     
+
+
     def updateReport(id,cursor):
         print("reportingggg")
         print(id)

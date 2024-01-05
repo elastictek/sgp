@@ -237,6 +237,9 @@ const BobinagemQuality = ({ data, state, startTest, finishTest, selectCortes, up
 
 const BobinagemToolbar = ({ data, state, startTest, finishTest, selectCortes, uploadTest }) => {
     let content;
+    
+    //if (state.action=="select" && data.)
+    
     switch (state.action) {
         case 'select':
             content = <>

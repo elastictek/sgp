@@ -15,22 +15,21 @@ fs.readFile(filePath, 'utf8', (err, data) => {
   // Split the file content into an array of lines
   const lines = data.split('\n');
 
-	// Modify the specific line or add content to it
-    if (!lines[lineNumber].includes('return true;')) {
+  // Modify the specific line or add content to it
+  if (!lines[lineNumber].includes('return true;')) {
     // Append the new line after line 24
     lines.splice(lineNumber, 0, 'return true;');
-	}
-  
-  // Join the modified lines back into a single string
-  const modifiedContent = lines.join('\n');
+    // Join the modified lines back into a single string
+    const modifiedContent = lines.join('\n');
 
-  // Write the modified content back to the file
-  fs.writeFile(filePath, modifiedContent, 'utf8', (err) => {
-    if (err) {
-      console.error('Error writing to the file:', err);
-      process.exit(1);
-    }
+    // Write the modified content back to the file
+    fs.writeFile(filePath, modifiedContent, 'utf8', (err) => {
+      if (err) {
+        console.error('Error writing to the file:', err);
+        process.exit(1);
+      }
 
-    console.log('File modification completed successfully.');
-  });
+      console.log('File modification completed successfully.');
+    });
+  }
 });

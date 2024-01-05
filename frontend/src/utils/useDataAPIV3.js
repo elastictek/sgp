@@ -2,13 +2,19 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
 import { deepEqual, pickAll, getInt } from 'utils';
-import { produce } from 'immer';
+import { produce, finishDraft } from 'immer';
 import { useImmer } from "use-immer";
 import { validateMessages } from './schemaValidator';
+import { uid } from 'uid';
 
 export const getLocalStorage = (id, useStorage) => {
     if (useStorage && id) {
-        return JSON.parse(localStorage.getItem(`dapi-${id}`));
+        const v = JSON.parse(localStorage.getItem(`dapi-${id}`));
+        if (v) {
+            delete v.init;
+            delete v.initLoaded;
+        }
+        return v;
     }
     return {};
 }
@@ -109,7 +115,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return action.current.includes(type);
     }
     const first = (updateStateData = false) => {
-        console.log("first");
+        //console.log("first");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: 1 };
         if (updateStateData) {
@@ -119,7 +125,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const previous = (updateStateData = false) => {
-        console.log("previous");
+        //console.log("previous");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: ((ref.current.pagination.page <= 1) ? 1 : (ref.current.pagination.page - 1)) };
         if (updateStateData) {
@@ -129,7 +135,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const next = (updateStateData = false) => {
-        console.log("next");
+        //console.log("next");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: (ref.current.pagination.page + 1) };
         if (updateStateData) {
@@ -139,7 +145,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const last = (updateStateData = false) => {
-        console.log("last");
+        //console.log("last");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: -1 };
         if (updateStateData) {
@@ -149,7 +155,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const currentPage = (page = 0, updateStateData = false) => {
-        console.log("current");
+        //console.log("current");
         addAction('nav');
         ref.current.pagination = { ...ref.current.pagination, page: ((page <= 0) ? 0 : page) };
         if (updateStateData) {
@@ -159,7 +165,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
     const pageSize = (size = 10, updateStateData = false) => {
-        console.log("pageSize");
+        //console.log("pageSize");
         addAction('pageSize');
         ref.current.pagination = { ...ref.current.pagination, pageSize: size }
         if (updateStateData) {
@@ -230,12 +236,24 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             ...v,
             ...(v?.id) && {
                 column: v.id,
-                direction: (v.dir === 1) ? "ASC" : "DESC"
+                direction: (v.dir === 1) ? "ASC" : "DESC",
+                sort: (v.dir === 1) ? "asc" : "desc",
+                colId: v.id
+
             },
             ...(v?.column) && {
                 id: v.column,
                 dir: (v.direction === "ASC") ? 1 : -1,
-                name: v.column
+                name: v.column,
+                sort: (v.direction === "ASC") ? "asc" : "desc",
+                colId: v.column
+            },
+            ...(v?.colId) && {
+                id: v.colId,
+                dir: (v.sort === "asc") ? 1 : -1,
+                column: v.colId,
+                name: v.colId,
+                direction: (v.sort === "asc") ? "ASC" : "DESC"
             }
         }));
         if (updateStateData) {
@@ -277,16 +295,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
 
-    const _addSort = ({ columnKey, field, name, id, order, ...rest }) => {
-        const column = (columnKey) ? columnKey : (name) ? name : (id) ? id : field;
-        const direction = (order == "ascend" || order == "ASC" || order == 1) ? "ASC" : "DESC";
+    const _addSort = ({ columnKey, field, name, colId, id, order, ...rest }) => {
+        const column = (columnKey) ? columnKey : (name) ? name : (id) ? id : (colId) ? colId : field;
+        const direction = (order == "ascend" || order == "ASC" || order == 1 || order == "asc") ? "ASC" : "DESC";
         let idx = ref.current.sort.findIndex(v => (v.column === column));
         if (idx >= 0) {
             const array = [...ref.current.sort];
-            array[idx] = { column, name: column, id: column, dir: direction === "ASC" ? 1 : -1, direction, order, table: rest.column.table };
+            array[idx] = { column, name: column, colId: column, id: column, sort: order, dir: direction === "ASC" ? 1 : -1, direction, order, table: rest.column.table };
             ref.current.sort = array;
         } else {
-            ref.current.sort = [...ref.current.sort, { column, name: column, id: column, dir: direction === "ASC" ? 1 : -1, direction, order, table: rest.column.table }];
+            ref.current.sort = [...ref.current.sort, { column, name: column, id: column, colId: column, sort: order, dir: direction === "ASC" ? 1 : -1, direction, order, table: rest.column.table }];
         }
     }
     const addSort = (obj, updateStateData = false) => {
@@ -413,16 +431,20 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return 0;
     }
 
-    const setData = (data, payload) => {
+    const setData = (data, payload, ignoreTotalRows) => {
+
         ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
         if (payload?.update) {
             ref.current.updated = Date.now();
         }
-        ref.current.totalRows = _totalRows(data?.rows, data?.total);
+
+        const _trows = ignoreTotalRows ? data?.rows?.length ?? 0 : _totalRows(data?.rows, data?.total);
+
+        ref.current.totalRows = _trows;
         updateState(draft => {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
-            draft.totalRows = _totalRows(data?.rows, data?.total);
+            draft.totalRows = _trows;
             if (payload?.update) {
                 draft.updated = ref.current.updated;
             }
@@ -709,7 +731,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     //     return ret;
     //     //return ok;
     // }
-    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ...rest } = {}) => {
+    const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ignoreTotalRows = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
         const payload = getPayload(fromState);
@@ -730,13 +752,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, filter: { ...payload.filter, ...ref.current.baseFilter }, ...((signal) ? { signal } : { cancelToken: token }) })).data;
                 if (typeof rowFn === "function") {
                     ret = await rowFn(dt);
-                    setData(ret, payload);
+                    setData(ret, payload, ignoreTotalRows);
                 } else if (typeof fnPostProcess === "function") {
                     ret = await fnPostProcess(dt);
-                    setData(ret, payload);
+                    setData(ret, payload, ignoreTotalRows);
                 } else {
                     ret = dt;
-                    setData(ret, payload);
+                    setData(ret, payload, ignoreTotalRows);
                 }
             } catch (e) {
                 Modal.error({ content: e.message });
@@ -1083,6 +1105,50 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return getInt(state?.data?.rows?.length, 0);
     }
 
+    const setTotalRows = (n, updateStateData = false) => {
+        addAction('totalRows');
+        ref.current.totalRows = n;
+        if (updateStateData) {
+            updateState(draft => {
+                draft.totalRows = ref.current.totalRows;
+            });
+        }
+    }
+
+    /** Only for AG-GRID */
+    const dataSourceV4 = (gridRef) => {
+        return {
+            getRows: async (params) => {
+                const { api } = gridRef?.current || params;
+                if (!ref.current.initLoaded && getCurrentPage() !== 1) {
+                    //WORKAROUND FOR INITIAL PAGE (FROM STATE)
+                    ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
+                    updateState(draft => { draft.initLoaded = ref.current.initLoaded; });
+                    params.success({
+                        rowData: Array.from({ length: getPageSize() }, () => ({ [getPrimaryKey()]: uid(6) })), //Array(getPageSize()).fill({id:(()=>uid(6))()}),
+                        rowCount: getCurrentPage() * getPageSize()
+                    });
+                }
+                else {
+                    console.log("SERVER-REQUEST")
+                    api.showLoadingOverlay();
+                    currentPage(api.paginationGetCurrentPage() + 1);
+                    setSort(params.request.sortModel);
+                    const data = await _fetchPost();
+                    if (data !== null) {
+                        params.success({
+                            rowData: JSON.parse(JSON.stringify(data.rows)),
+                            rowCount: data.total
+                        });
+                    } else {
+                        params.fail();
+                    }
+                    api.hideOverlay();
+                }
+            },
+        };
+    };
+
     return {
         init: () => state.init,
         first,
@@ -1137,6 +1203,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         fetchPost: _fetchPost,
         isLoading: () => _isLoading(),
         setIsLoading,
+        setTotalRows,
         getTotalRows: (fromState = false) => (fromState) ? getInt(state?.totalRows) : ref.current.totalRows,
         getLength,
         update,
@@ -1157,6 +1224,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getFieldStatus,
         moveRowDown,
         moveRowUp,
-        getPrimaryKey
+        getPrimaryKey,
+        dataSourceV4
     }
 }

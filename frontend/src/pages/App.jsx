@@ -4,7 +4,7 @@ import * as ReactDOM from 'react-dom/client';
 import { Route, Routes, useRoutes, BrowserRouter, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spin, Input, Modal, notification, ConfigProvider } from 'antd';
 import { useMediaQuery } from 'react-responsive';
-import './app.css'
+import './app.css';
 //import 'antd/dist/antd.compact.less';
 import 'antd/dist/reset.css';
 import { SOCKET } from 'config';
@@ -25,6 +25,13 @@ dayjs.extend(quarterOfYear);
 
 /*import 'react-data-grid/lib/styles.css';*/
 
+
+import 'ag-grid-enterprise';
+import { LicenseManager } from "ag-grid-enterprise";
+LicenseManager.setLicenseKey("my-license-key");
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+import './ag-custom.css';
 
 
 
@@ -136,6 +143,7 @@ const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateB
 const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
 const FormPickQualityBobinagemTest = lazy(() => import('./picking/FormPickQualityBobinagemTest'));
+const TestAgGrid = lazy(() => import('./picking/TestAgGrid'));
 
 const loadAuthUser = async ({ }, signal) => {
     let response;
@@ -272,6 +280,8 @@ const RenderRouter = () => {
                 { path: "picking/printbuffer", element: <Suspense fallback={<Spin />}><FormPickPrintBuffer /></Suspense> },
 
                 { path: "picking/qualitytestbm", element: <Suspense fallback={<Spin />}><FormPickQualityBobinagemTest /></Suspense> },
+
+                { path: "picking/test-ag-grid", element: <Suspense fallback={<Spin />}><TestAgGrid /></Suspense> },
 
 
                 { path: "bobinagens/formbobinagemvalidar", element: <Suspense fallback={<Spin />}><FormBobinagemValidar /></Suspense> },

@@ -123,12 +123,19 @@ class PaleteCreateForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         today = datetime.date.today()
-        palete = Palete.objects.filter(estado='G', data_pal__year=f'{today.year}').latest('num')
-        #palete = Palete.objects.filter(estado='G', data_pal__year='2022').latest('num')
-        num_bobines = palete.num_bobines
-        largura_bobines = palete.largura_bobines
-        core_bobines = palete.core_bobines
-        num = palete.num
+        v = Palete.objects.filter(estado='G', data_pal__year=f'{today.year}')
+        if (len(v) == 0):
+            palete = Palete.objects.filter(estado='G', data_pal__year=f'{today.year-1}').latest('num')
+            num_bobines = palete.num_bobines
+            largura_bobines = palete.largura_bobines
+            core_bobines = palete.core_bobines
+            num = 0
+        else:
+            palete = v.latest('num')
+            num_bobines = palete.num_bobines
+            largura_bobines = palete.largura_bobines
+            core_bobines = palete.core_bobines
+            num = palete.num
         # destino = palete.destino
         super(PaleteCreateForm, self).__init__(*args, **kwargs)
         self.fields['ordem'].queryset = OrdemProducao.objects.filter(Q(ativa=True) & Q(completa=False)  & Q(agg_of_id_id__isnull=True))
@@ -190,9 +197,12 @@ class PaleteRetrabalhoForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         today = datetime.date.today()
-        palete = Palete.objects.filter(estado='DM', data_pal__year=f'{today.year}').latest('num')
-        #palete = Palete.objects.filter(estado='DM', data_pal__year='2022').latest('num')
-        num = palete.num
+        v = Palete.objects.filter(estado='DM', data_pal__year=f'{today.year}')
+        if (len(v) == 0):
+            num = 0
+        else:
+            palete = v.latest('num')
+            num = palete.num
         super(PaleteRetrabalhoForm, self).__init__(*args, **kwargs)
 
         self.fields['num'].initial = num + 1

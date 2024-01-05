@@ -426,6 +426,13 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 </StyledButton>
                                             </Col>
                                             }
+                                            {allows?.qualidade?.tests && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/test-ag-grid")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Test-AG-GRID</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
                                         </Row>
                                     </Container>
                                 </Card>

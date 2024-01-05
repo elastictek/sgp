@@ -612,40 +612,148 @@ def EstadoBobines(request, format=None):
     #no filters like in:,>:,<=:,==:,... allowed
     #nofilters  - current agg_of_id
     #fdata      - agg_of_id of a date
+    #fagg       - agg_of_id 
     #fprf       - agg_of_id which the prf_cod belongs 
     #fof        - agg_of_id which the of_cod belongs
     #forder     - agg_of_id which the order_cod belongs   
     #PARAMETERS
-    #summary    - 0/1
+    #lastdate   - 0/1 à última data...
     #todate     - 0/1 à data de...
+    #grouped    - 0/1 agrupado...
 
     if "tolerance" not in _data or _data.get("tolerance") is None or _data.get("tolerance")<0:
         _filter["tolerance"] = 0
     else:
         _filter["tolerance"] = _data.get("tolerance")
 
-    if "fdata_inicio" not in _filter or _filter.get("fdata_inicio") is None or not isDate(_filter.get("fdata_inicio")):
-        _filter["fdata_inicio"] = f"""{datetime.now().strftime("%Y-%m-%d")}""" if "fdata_fim" not in _filter or _filter.get("fdata_fim") is None or not isDate(_filter.get("fdata_fim")) else f"""{_filter["fdata_fim"]}"""
-    if "fdata_fim" not in _filter or _filter.get("fdata_fim") is None or not isDate(_filter.get("fdata_fim")):
-        _filter["fdata_fim"]= f"""{_filter["fdata_inicio"]}"""
-    date_difference = datetime.strptime(_filter["fdata_fim"], "%Y-%m-%d") - datetime.strptime(_filter["fdata_inicio"], "%Y-%m-%d")
-    if date_difference.days<0 or date_difference.days>=35:
-        return Response({"rows":[]})
-    _filter["fdata_inicio"]= f"""{_filter["fdata_inicio"]} 00:00:00"""
-    _filter["fdata_fim"]= f"""{_filter["fdata_fim"]} 23:59:59"""
-    
     f = Filters(_filter)   
     f.setParameters({}, False)
     f.where()
-    f.add(f':fdata_inicio', True)
-    f.add(f':fdata_fim', True)
+    
+    _parameters = {}
+    fspart=""
+    if "fprf" in _filter and _filter.get("fprf") is not None:
+        if (not _filter.get("fprf").lower().startswith("prf")):
+            return Response({"rows":[]})
+        _filterkey="fprf"
+        _parameters["prf_cod"]={"value": lambda v: Filters.getValue(Filters.getLower(v.get('fprf')),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'lower({k})'}
+    else:
+        if "fdata_inicio" not in _filter or _filter.get("fdata_inicio") is None or not isDate(_filter.get("fdata_inicio")):
+            _filter["fdata_inicio"] = f"""{datetime.now().strftime("%Y-%m-%d")}""" if "fdata_fim" not in _filter or _filter.get("fdata_fim") is None or not isDate(_filter.get("fdata_fim")) else f"""{_filter["fdata_fim"]}"""
+        if "fdata_fim" not in _filter or _filter.get("fdata_fim") is None or not isDate(_filter.get("fdata_fim")):
+            _filter["fdata_fim"]= f"""{_filter["fdata_inicio"]}"""
+        date_difference = datetime.strptime(_filter["fdata_fim"], "%Y-%m-%d") - datetime.strptime(_filter["fdata_inicio"], "%Y-%m-%d")
+        if date_difference.days<0 or date_difference.days>=35:
+            return Response({"rows":[]})
+        _filter["fdata_inicio"]= f"""{_filter["fdata_inicio"]} 00:00:00"""
+        _filter["fdata_fim"]= f"""{_filter["fdata_fim"]} 23:59:59"""   
+        f.add(f':fdata_inicio', True)
+        f.add(f':fdata_fim', True)
+        
+
     f.add(f':tolerance', True)
     f.value()
-
     parameters = {**f.parameters}
+    print(parameters)
+    print(f.text)
+    return Response({"rows":[]})
+
+
+    fsgrouped = ["",""]
+    if _data.get("grouped")==1:
+        fsgrouped[0] = f"""
+            select 
+                t.`data`,
+                t.ofid,
+                #min_estado_diff
+                
+                IFNULL(sum(case when t.first_estado_to='DM' THEN 1 END),0) first_to_DM_count,
+                IFNULL(sum(case when t.first_estado_to='DM' THEN t.first_estado_area END),0) first_to_DM_area,
+                IFNULL(sum(case when t.first_estado_to='BA' THEN 1 END),0) first_to_BA_count,
+                IFNULL(sum(case when t.first_estado_to='BA' THEN t.first_estado_area END),0) first_to_BA_area,
+                IFNULL(sum(case when t.first_estado_to='G' THEN 1 END),0) first_to_G_count,
+                IFNULL(sum(case when t.first_estado_to='G' THEN t.first_estado_area END),0) first_to_G_area,
+                IFNULL(sum(case when t.first_estado_to='HOLD' THEN 1 END),0) first_to_HOLD_count,
+                IFNULL(sum(case when t.first_estado_to='HOLD' THEN t.first_estado_area END),0) first_to_HOLD_area,
+                IFNULL(sum(case when t.first_estado_to='IND' THEN 1 END),0) first_to_IND_count,
+                IFNULL(sum(case when t.first_estado_to='IND' THEN t.first_estado_area END),0) first_to_IND_area,
+                IFNULL(sum(case when t.first_estado_to='LAB' THEN 1 END),0) first_to_LAB_count,
+                IFNULL(sum(case when t.first_estado_to='LAB' THEN t.first_estado_area END),0) first_to_LAB_area,
+                IFNULL(sum(case when t.first_estado_to='R' THEN 1 END),0) first_to_R_count,
+                IFNULL(sum(case when t.first_estado_to='R' THEN t.first_estado_area END),0) first_to_R_area,
+                IFNULL(sum(case when t.last_estado_to='DM' THEN 1 END),0) last_to_DM_count,
+                IFNULL(sum(case when t.last_estado_to='DM' THEN t.last_estado_area END),0) last_to_DM_area,
+                IFNULL(sum(case when t.last_estado_to='BA' THEN 1 END),0) last_to_BA_count,
+                IFNULL(sum(case when t.last_estado_to='BA' THEN t.last_estado_area END),0) last_to_BA_area,
+                IFNULL(sum(case when t.last_estado_to='G' THEN 1 END),0) last_to_G_count,
+                IFNULL(sum(case when t.last_estado_to='G' THEN t.last_estado_area END),0) last_to_G_area,
+                IFNULL(sum(case when t.last_estado_to='HOLD' THEN 1 END),0) last_to_HOLD_count,
+                IFNULL(sum(case when t.last_estado_to='HOLD' THEN t.last_estado_area END),0) last_to_HOLD_area,
+                IFNULL(sum(case when t.last_estado_to='IND' THEN 1 END),0) last_to_IND_count,
+                IFNULL(sum(case when t.last_estado_to='BIND' THEN t.last_estado_area END),0) last_to_IND_area,
+                IFNULL(sum(case when t.last_estado_to='LAB' THEN 1 END),0) last_to_LAB_count,
+                IFNULL(sum(case when t.last_estado_to='LAB' THEN t.last_estado_area END),0) last_to_LAB_area,
+                IFNULL(sum(case when t.last_estado_to='R' THEN 1 END),0) last_to_R_count,
+                IFNULL(sum(case when t.last_estado_to='R' THEN t.last_estado_area END),0) last_to_R_area,
+                
+                IFNULL(sum(case when t.first_from_hold='DM' THEN 1 END),0) first_from_hold_to_DM_count,
+                IFNULL(sum(case when t.first_from_hold='DM' THEN t.first_from_hold_area END),0) first_from_hold_to_DM_area,
+                IFNULL(sum(case when t.first_from_hold='BA' THEN 1 END),0) first_from_hold_to_BA_count,
+                IFNULL(sum(case when t.first_from_hold='BA' THEN t.first_from_hold_area END),0) first_from_hold_to_BA_area,
+                IFNULL(sum(case when t.first_from_hold='G' THEN 1 END),0) first_from_hold_to_G_count,
+                IFNULL(sum(case when t.first_from_hold='G' THEN t.first_from_hold_area END),0) first_from_hold_to_G_area,
+                IFNULL(sum(case when t.first_from_hold='IND' THEN 1 END),0) first_from_hold_to_IND_count,
+                IFNULL(sum(case when t.first_from_hold='IND' THEN t.first_from_hold_area END),0) first_from_hold_to_IND_area,
+                IFNULL(sum(case when t.first_from_hold='LAB' THEN 1 END),0) first_from_hold_to_LAB_count,
+                IFNULL(sum(case when t.first_from_hold='LAB' THEN t.first_from_hold_area END),0) first_from_hold_to_LAB_area,
+                IFNULL(sum(case when t.first_from_hold='R' THEN 1 END),0) first_from_hold_to_R_count,
+                IFNULL(sum(case when t.first_from_hold='R' THEN t.first_from_hold_area END),0) first_from_hold_to_R_area,
+                IFNULL(sum(case when t.last_from_hold='DM' THEN 1 END),0) last_from_hold_to_DM_count,
+                IFNULL(sum(case when t.last_from_hold='DM' THEN t.last_from_hold_area END),0) last_from_hold_to_DM_area,
+                IFNULL(sum(case when t.last_from_hold='BA' THEN 1 END),0) last_from_hold_to_BA_count,
+                IFNULL(sum(case when t.last_from_hold='BA' THEN t.last_from_hold_area END),0) last_from_hold_to_BA_area,
+                IFNULL(sum(case when t.last_from_hold='G' THEN 1 END),0) last_from_hold_to_G_count,
+                IFNULL(sum(case when t.last_from_hold='G' THEN t.last_from_hold_area END),0) last_from_hold_to_G_area,
+                IFNULL(sum(case when t.last_from_hold='IND' THEN 1 END),0) last_from_hold_to_IND_count,
+                IFNULL(sum(case when t.last_from_hold='IND' THEN t.last_from_hold_area END),0) last_from_hold_to_IND_area,
+                IFNULL(sum(case when t.last_from_hold='LAB' THEN 1 END),0) last_from_hold_to_LAB_count,
+                IFNULL(sum(case when t.last_from_hold='LAB' THEN t.last_from_hold_area END),0) last_from_hold_to_LAB_area,
+                IFNULL(sum(case when t.last_from_hold='R' THEN 1 END),0) last_from_hold_to_R_count,
+                IFNULL(sum(case when t.last_from_hold='R' THEN t.last_from_hold_area END),0) last_from_hold_to_R_area,
+                
+                IFNULL(sum(case when t.first_to_hold='DM' THEN 1 END),0) first_from_DM_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='DM' THEN t.first_to_hold_area END),0) first_from_DM_to_HOLD_area,
+                IFNULL(sum(case when t.first_to_hold='BA' THEN 1 END),0) first_from_BA_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='BA' THEN t.first_to_hold_area END),0) first_from_BA_to_HOLD_area,
+                IFNULL(sum(case when t.first_to_hold='G' THEN 1 END),0) first_from_G_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='G' THEN t.first_to_hold_area END),0) first_from_G_to_HOLD_area,
+                IFNULL(sum(case when t.first_to_hold='IND' THEN 1 END),0) first_from_IND_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='IND' THEN t.first_to_hold_area END),0) first_from_IND_to_HOLD_area,
+                IFNULL(sum(case when t.first_to_hold='LAB' THEN 1 END),0) first_from_LAB_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='LAB' THEN t.first_to_hold_area END),0) first_from_LAB_to_HOLD_area,
+                IFNULL(sum(case when t.first_to_hold='R' THEN 1 END),0) first_from_R_to_HOLD_count,
+                IFNULL(sum(case when t.first_to_hold='R' THEN t.first_to_hold_area END),0) first_from_R_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='DM' THEN 1 END),0) last_from_DM_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='DM' THEN t.last_to_hold_area END),0) last_from_DM_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='BA' THEN 1 END),0) last_from_BA_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='BA' THEN t.last_to_hold_area END),0) last_from_BA_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='G' THEN 1 END),0) last_from_G_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='G' THEN t.last_to_hold_area END),0) last_from_G_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='IND' THEN 1 END),0) last_from_IND_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='IND' THEN t.last_to_hold_area END),0) last_from_IND_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='LAB' THEN 1 END),0) last_from_LAB_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='LAB' THEN t.last_to_hold_area END),0) last_from_LAB_to_HOLD_area,
+                IFNULL(sum(case when t.last_to_hold='R' THEN 1 END),0) last_from_R_to_HOLD_count,
+                IFNULL(sum(case when t.last_to_hold='R' THEN t.last_to_hold_area END),0) last_from_R_to_HOLD_area                
+            from (
+        """
+        fsgrouped[1] = f"""
+            ) t
+            group by t.`data`,t.ofid
+        """
+
     sql = lambda : (
         f"""
-        	
             WITH BASE AS(
                 select 
                     t.*,
@@ -658,7 +766,7 @@ def EstadoBobines(request, format=None):
                         #LEAD(t.audit_id) over (partition by t.id ORDER BY t.audit_timestamp asc) next_audit_id,
                         LAG(t.audit_timestamp) over (partition by t.id ORDER BY t.audit_timestamp asc) previous_audit_timestamp,
                         #t.prev_audit_timestamp,
-                        t.estado,t.next_estado
+                        t.estado,t.area, t.next_estado
                         /*FIRST STATE CHANGE*/
                         ,min(case when not t.estado<=>t.next_estado THEN t.audit_id END) over (partition by t.id) first_audit_id
                         #,min(case when not t.estado<=>t.next_estado THEN t.audit_timestamp END) over (partition by t.id) first_estado_ts
@@ -687,6 +795,7 @@ def EstadoBobines(request, format=None):
                             apb.audit_id audit_id,
                             pb.estado estado_atual,
                             apb.estado,
+                            apb.area,
                             apb.audit_timestamp,
                             max(apb.audit_id) over (partition by apb.id) max_audit_id,
                             #LAG(apb.audit_timestamp) over (partition by apb.id ORDER BY apb.audit_timestamp asc) prev_audit_timestamp,
@@ -695,84 +804,95 @@ def EstadoBobines(request, format=None):
                         from producao_bobine pb
                         left join audit_producao_bobine apb on apb.id=pb.id
                         where pb.ig_id is not null
-                        and pb.`timestamp` between %(fdata_inicio)s and %(fdata_fim)s
+                        {fspart}
+						#and pb.`timestamp` between @_date_inicio and @_date_fim
+                        #and apb.audit_timestamp <= '2023-12-13 23:59:59'
+                        #and pb.nome = '20231213-33-11'
+                        #and pb.id = 914988 #914868 #914868 #917254 #918895 #914779 #914988
                     ) t
                     where 
-                    not t.estado <=> t.next_estado 
-                    {"and t.audit_timestamp<=DATE_ADD(t.`timestamp`, INTERVAL %(tolerance)s HOUR)" if _data["todate"]==1 else ""}
+                    not t.estado <=> t.next_estado
+                    {"and t.audit_timestamp<=DATE_ADD(t.`timestamp`, INTERVAL %(tolerance)s HOUR)" if _data.get("todate")==1 else ""}
                 )t
             )
-            select t.* from (
-                SELECT 
-                    distinct
-                    t.id
-                    ,apb.nome,apb.area,apb.comp_actual,apb.lar,apb.core,apb.ordem_id,apb.palete_id,apb.recycle,po.ofid
-                    ,apb.troca_nw "Troca NW", apb.con "Cónico", apb.descen "Descentrada", apb.presa "Presa"
-                    ,apb.diam_insuf "Diâmetro Insuficiente", apb.furos "Furos", apb.outros "Outros", apb.buraco "Buracos"
-                    ,apb.nok "Largura NOK", apb.car "Carro Atrás", apb.fc "Falha Corte", apb.ff "Falha Filme"
-                    ,apb.fmp "Falha Matéria Prima", apb.lac "Laçou", apb.ncore "Não Colou", apb.suj "Sujidade"
-                    ,apb.sbrt "Sobretiragem", apb.esp "Gramagem", apb.rugas, apb.tr "Troca Rápida", apb.prop "Propriedades"
-                    ,apb.rugas_pos "Rugas Pos"
-                    ,apb.buracos_pos "Buracos Pos",apb.fc_pos "Falha Corte Pos",apb.ff_pos "Falha Filme Pos",apb.furos_pos "Furos Pos"
-                    ,apb.prop_obs,apb.obs
-                    ,pt.cliente_nome,pt.item_cod
-                    #,t.audit_id
-                    #,t.max_audit_id
-                    ,t.estado_atual
-                    ,t.`timestamp`
-                    ,t.n_estado_changes
-                    ,t.n_to_hold_changes
-                    ,t.n_from_hold_changes
-                    ,t.duration_in_hold
-                    #,t.audit_timestamp
-                    #,t.previous_audit_timestamp
-                    #,t.estado,t.next_estado
-                    #,a1.*
-                    ,'---------------FIRST FROM.ESTADO.TO-----------------' s0
-                    ,case when a0.id is not null then a0.estado else t.estado end min_estado_from, 
-                    case when a0.id is not null and a0.next_estado is not null then a0.next_estado else t.estado_atual end min_estado_to,
-                    IFNULL(a0.previous_audit_timestamp,t.`timestamp`) min_estado_init_ts,
-                    #IFNULL(IFNULL(a1.previous_audit_timestamp,a1.prev_audit_timestamp),t.`timestamp`) estado_atual_init_ts,
-                    case when a0.id then a0.audit_timestamp else t.audit_timestamp end min_estado_ts,
-                    TIMESTAMPDIFF(SECOND, IFNULL(a0.previous_audit_timestamp,t.`timestamp`),(case when a0.id then a0.audit_timestamp else t.audit_timestamp end)) / 3600.0 min_estado_diff
-                    ,'---------------LAST FROM.ESTADO.TO-----------------' s1
-                    ,case when a1.id is not null then a1.estado else t.estado end max_estado_from, 
-                    case when a1.id is not null then a1.next_estado else t.estado_atual end max_estado_to,
-                    IFNULL(a1.previous_audit_timestamp,t.`timestamp`) max_estado_init_ts,
-                    #IFNULL(IFNULL(a1.previous_audit_timestamp,a1.prev_audit_timestamp),t.`timestamp`) estado_atual_init_ts,
-                    case when a1.id then a1.audit_timestamp else t.audit_timestamp end max_estado_ts,
-                    TIMESTAMPDIFF(SECOND, IFNULL(a1.previous_audit_timestamp,t.`timestamp`),(case when a1.id then a1.audit_timestamp else t.audit_timestamp end)) / 3600.0 max_estado_diff
-                    ,'---------------FIRST.FROM.HOLD.TO-----------------' s2
-                    ,case when a2.id is not null then a2.next_estado end min_from_hold, 
-                    case when a2.id is not null and a2.next_estado is not null then IFNULL(a2.previous_audit_timestamp,t.`timestamp`) end min_from_hold_init_ts, 
-                    case when a2.id is not null and a2.next_estado is not null then a2.audit_timestamp end min_from_hold_ts, 
-                    case when a2.id is not null and a2.next_estado is not null then  TIMESTAMPDIFF(SECOND, IFNULL(a2.previous_audit_timestamp,t.`timestamp`), a2.audit_timestamp) / 3600.0 end min_from_hold_diff
-                    ,'---------------LAST.FROM.HOLD.TO-----------------' s3
-                    ,a3.next_estado max_from_hold, case when a3.id is not null then IFNULL(a3.previous_audit_timestamp,t.`timestamp`) end max_from_hold_init_ts 
-                    ,a3.audit_timestamp max_from_hold_ts, 
-                    TIMESTAMPDIFF(SECOND, IFNULL(a3.previous_audit_timestamp,t.`timestamp`), a3.audit_timestamp) / 3600.0 max_from_hold_diff
-                    ,'---------------FIRST.TO.HOLD-----------------' s4
-                    ,a4.estado min_to_hold, 
-                    case when a4.id is not null then IFNULL(a4.previous_audit_timestamp,t.`timestamp`) end min_to_hold_init_ts, 
-                    a4.audit_timestamp min_to_hold_ts, 
-                    TIMESTAMPDIFF(SECOND, IFNULL(a4.previous_audit_timestamp,t.`timestamp`), a4.audit_timestamp) / 3600.0 min_to_hold_diff
-                    ,'---------------LAST.TO.HOLD-----------------' s5
-                    ,a5.estado max_to_hold, 
-                    case when a5.id is not null then IFNULL(a5.previous_audit_timestamp,t.`timestamp`) end max_to_hold_init_ts, 
-                    a5.audit_timestamp max_to_hold_ts, 
-                    TIMESTAMPDIFF(SECOND, IFNULL(a5.previous_audit_timestamp,t.`timestamp`), a5.audit_timestamp) / 3600.0 max_to_hold_diff
+            {fsgrouped[0]}
+            SELECT 
+                distinct
+                t.id
+                ,apb.nome,apb.area,apb.comp_actual,apb.lar,apb.core,apb.ordem_id,apb.palete_id,apb.recycle,po.ofid
+                ,apb.troca_nw "Troca NW", apb.con "Cónico", apb.descen "Descentrada", apb.presa "Presa"
+                ,apb.diam_insuf "Diâmetro Insuficiente", apb.furos "Furos", apb.outros "Outros", apb.buraco "Buracos"
+                ,apb.nok "Largura NOK", apb.car "Carro Atrás", apb.fc "Falha Corte", apb.ff "Falha Filme"
+                ,apb.fmp "Falha Matéria Prima", apb.lac "Laçou", apb.ncore "Não Colou", apb.suj "Sujidade"
+                ,apb.sbrt "Sobretiragem", apb.esp "Gramagem", apb.rugas, apb.tr "Troca Rápida", apb.prop "Propriedades"
+                ,apb.rugas_pos "Rugas Pos"
+                ,apb.buracos_pos "Buracos Pos",apb.fc_pos "Falha Corte Pos",apb.ff_pos "Falha Filme Pos",apb.furos_pos "Furos Pos"
+                ,apb.prop_obs,apb.obs
+                ,pt.cliente_nome,pt.item_cod
+                #,t.audit_id
+                #,t.max_audit_id
+                ,t.estado_atual
+                ,date(t.`timestamp`) `data`
+                ,t.`timestamp`
+                ,t.n_estado_changes
+                ,t.n_to_hold_changes
+                ,t.n_from_hold_changes
+                ,t.duration_in_hold
+                #,t.audit_timestamp
+                #,t.previous_audit_timestamp
+                #,t.estado,t.next_estado
+                #,a1.*
+                ,'---------------FIRST FROM.ESTADO.TO-----------------' s0
+                ,case when a0.id is not null then a0.estado else t.estado end first_estado_from
+                ,case when a0.id is not null and a0.next_estado is not null then a0.next_estado else t.estado_atual end first_estado_to
+                ,IFNULL(a0.previous_audit_timestamp,t.`timestamp`) first_estado_init_ts
+                #IFNULL(IFNULL(a1.previous_audit_timestamp,a1.prev_audit_timestamp),t.`timestamp`) estado_atual_init_ts,
+                ,case when a0.id is not null then a0.audit_timestamp else t.audit_timestamp end first_estado_ts
+                ,TIMESTAMPDIFF(SECOND, IFNULL(a0.previous_audit_timestamp,t.`timestamp`),(case when a0.id then a0.audit_timestamp else t.audit_timestamp end)) / 3600.0 first_estado_diff
+                ,case when a0.id is not null then a0.area else t.area end first_estado_area
+                ,'---------------LAST FROM.ESTADO.TO-----------------' s1
+                ,case when a1.id is not null then a1.estado else t.estado end last_estado_from
+                ,case when a1.id is not null then a1.next_estado else t.estado_atual end last_estado_to
+                ,IFNULL(a1.previous_audit_timestamp,t.`timestamp`) last_estado_init_ts
+                #IFNULL(IFNULL(a1.previous_audit_timestamp,a1.prev_audit_timestamp),t.`timestamp`) estado_atual_init_ts,
+                ,case when a1.id is not null then a1.audit_timestamp else t.audit_timestamp end last_estado_ts
+                ,TIMESTAMPDIFF(SECOND, IFNULL(a1.previous_audit_timestamp,t.`timestamp`),(case when a1.id then a1.audit_timestamp else t.audit_timestamp end)) / 3600.0 last_estado_diff
+                ,case when a1.id is not null then a1.area else t.area end last_estado_area
+                ,'---------------FIRST.FROM.HOLD.TO-----------------' s2
+                ,case when a2.id is not null then a2.next_estado end first_from_hold
+                ,case when a2.id is not null and a2.next_estado is not null then IFNULL(a2.previous_audit_timestamp,t.`timestamp`) end first_from_hold_init_ts
+                ,case when a2.id is not null and a2.next_estado is not null then a2.audit_timestamp end first_from_hold_ts
+                ,case when a2.id is not null and a2.next_estado is not null then  TIMESTAMPDIFF(SECOND, IFNULL(a2.previous_audit_timestamp,t.`timestamp`), a2.audit_timestamp) / 3600.0 end first_from_hold_diff
+                ,case when a2.id is not null and a2.next_estado is not null then a2.area end first_from_hold_area
+                ,'---------------LAST.FROM.HOLD.TO-----------------' s3
+                ,a3.next_estado last_from_hold, case when a3.id is not null then IFNULL(a3.previous_audit_timestamp,t.`timestamp`) end last_from_hold_init_ts 
+                ,a3.audit_timestamp last_from_hold_ts 
+                ,TIMESTAMPDIFF(SECOND, IFNULL(a3.previous_audit_timestamp,t.`timestamp`), a3.audit_timestamp) / 3600.0 last_from_hold_diff
+                ,a3.area last_from_hold_area
+                ,'---------------FIRST.TO.HOLD-----------------' s4
+                ,a4.estado first_to_hold
+                ,case when a4.id is not null then IFNULL(a4.previous_audit_timestamp,t.`timestamp`) end first_to_hold_init_ts
+                ,a4.area first_to_hold_area
+                ,TIMESTAMPDIFF(SECOND, IFNULL(a4.previous_audit_timestamp,t.`timestamp`), a4.audit_timestamp) / 3600.0 first_to_hold_diff
+                ,'---------------LAST.TO.HOLD-----------------' s5
+                ,a5.estado last_to_hold
+                ,case when a5.id is not null then IFNULL(a5.previous_audit_timestamp,t.`timestamp`) end last_to_hold_init_ts
+                ,a5.audit_timestamp last_to_hold_ts
+                ,TIMESTAMPDIFF(SECOND, IFNULL(a5.previous_audit_timestamp,t.`timestamp`), a5.audit_timestamp) / 3600.0 last_to_hold_diff
+                ,a5.area last_to_hold_area
 
-                FROM BASE t
-                join audit_producao_bobine apb on apb.audit_id = t.max_audit_id
-                left join planeamento_ordemproducao po on po.id=apb.ordem_id
-                left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
-                left join BASE a0 on a0.audit_id=t.first_audit_id
-                left join BASE a1 on a1.audit_id=t.last_audit_id
-                left join BASE a2 on a2.audit_id=t.min_from_hold_id
-                left join BASE a3 on a3.audit_id=t.max_from_hold_id
-                left join BASE a4 on a4.audit_id=t.min_to_hold_id
-                left join BASE a5 on a5.audit_id=t.max_to_hold_id
-            ) t
+            FROM BASE t
+            join audit_producao_bobine apb on apb.audit_id = t.max_audit_id
+            left join planeamento_ordemproducao po on po.id=apb.ordem_id
+            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
+            left join BASE a0 on a0.audit_id=t.first_audit_id
+            left join BASE a1 on a1.audit_id=t.last_audit_id
+            left join BASE a2 on a2.audit_id=t.min_from_hold_id
+            left join BASE a3 on a3.audit_id=t.max_from_hold_id
+            left join BASE a4 on a4.audit_id=t.min_to_hold_id
+            left join BASE a5 on a5.audit_id=t.max_to_hold_id
+            #where t.n_to_hold_changes>0
+            {fsgrouped[1]}
 
         """)
     try:

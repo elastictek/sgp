@@ -56,6 +56,12 @@ const saveToLS = (value, id) => {
     }
 }
 
+export const Title = ({ text, level = 3, style }) => {
+    return (
+        <div style={{ alignItems: "center", fontSize: `${13 + level}px`, lineHeight: "normal", fontWeight: 400 + (100 * level), ...style && style }}>{text}</div>
+    )
+}
+
 export const saveNavigation = (description, id, location) => {
     const path = location.pathname.endsWith("/") ? location.pathname : `${location.pathname}/`;
     let _h = getFromLS(id).filter(v => v.key !== path);
@@ -360,7 +366,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                             </Col>}
                             {logInInfo && <Hidden xs sm md>
                                 <Col xs="content" style={{ fontWeight: 400, fontSize: "12px" }}>
-                                    <UserOutlined /><span style={{fontSize:"11px"}}>{permission.auth?.name}</span>
+                                    <UserOutlined /><span style={{ fontSize: "11px" }}>{permission.auth?.name}</span>
                                 </Col>
                             </Hidden>}
                         </Row>}

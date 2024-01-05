@@ -157,5 +157,5 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
         return false;
     }
 
-    return { loaded,auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
+    return { isReady:loaded,loaded,auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
 }
