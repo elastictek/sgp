@@ -24,7 +24,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import encloseColumn, Filters,ParsedFilters,  DBSql, TypeDml, fetchall, Check
 from support.myUtils import  ifNull
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -202,6 +202,9 @@ def Sql(request, format=None):
 
 def PaletesListV2(request, format=None):
     connection = connections["default"].cursor()
+    print(request.data.get("filter"))
+    pf = ParsedFilters(request.data.get("filter"),"and")
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'sgppl.timestamp', lambda k, v: f'DATE(sgppl.timestamp)'),
@@ -236,7 +239,6 @@ def PaletesListV2(request, format=None):
     f.where(False,"and")
     f.auto()
     f.value()
-
     fartigo = filterMulti(request.data['filter'], {
         'fartigo': {"keys": ["'$.cod'", "'$.des'"], "table": 'j->>'},
     }, False, "and" if f.hasFilters else "and" ,False)
@@ -291,7 +293,7 @@ def PaletesListV2(request, format=None):
 
     fartigompmulti["text"] = f""" and exists (select 1 from producao_bobine mb join consumos_granulado mcg on mcg.ig_id = mb.ig_id where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fartigompmulti["text"].lstrip("where (").rstrip(")")}) limit 1) """ if fartigompmulti["hasFilters"] else ""
 
-    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters}
+    parameters = {**f.parameters, **fartigo['parameters'], **festados.parameters, **fbobinemulti["parameters"], **fartigompmulti["parameters"],**fbobinedestinos.parameters,**pf.parameters}
     dql = db.dql(request.data, False,False)
     cols = f"""sgppl.id, sgppl.`timestamp`, sgppl.data_pal, sgppl.nome, sgppl.num, sgppl.estado, sgppl.area,
             sgppl.comp_total,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete, sgppl.peso_liquido,
@@ -315,6 +317,7 @@ def PaletesListV2(request, format=None):
             LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
             LEFT JOIN producao_tempordemfabrico pt ON pt.id = po2.draft_ordem_id
             WHERE sgppl.nbobines_real>0 and sgppl.disabled=0
+            {pf.group()}
             {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
@@ -324,7 +327,7 @@ def PaletesListV2(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None)
+        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

@@ -59,14 +59,6 @@ export const IndexChange = ({ onUp, onDown, onDelete, allowDelete, value, modeEd
 }
 
 
-export const BadgeNumber = ({ value, onClick, cellProps }) => {
-    return (<>
-        {(!(cellProps?.inEdit) && value && value > 0) ? <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", height: "100%", alignItems: "center" }}><Badge count={value} /></div> : <></>}
-    </>
-    )
-}
-
-
 
 export const OFabricoStatus = ({ aggCod = false, data, onClick, cellProps }) => {
     return (
@@ -110,18 +102,6 @@ export const EventColumn = ({ v, grayColor = false, title }) => {
         {v == 6 && <AiOutlineVerticalAlignTop size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Superior ${title}`} />}
         {v == 5 && <AiOutlineVerticalAlignBottom size={20} color={grayColor ? "#8c8c8c" : "#000"} title={`Troca NW Inferior ${title}`} />}
 
-    </>);
-}
-
-
-export const Core = ({ id, artigos, value, nome, onClick, cellProps }) => {
-
-    if (value) {
-        return (<Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: value })}>{value}''</Tag>);
-    }
-
-    return (<>
-        {(!cellProps?.inEdit && Array.isArray(artigos)) && [...new Set(artigos.map(item => item.core))].map(v => <Tag style={{ fontWeight: 600, cursor: "pointer" }} onClick={() => onClick && onClick("core", id, nome, { core: v })} key={`${id}_${v}`}>{v}''</Tag>)}
     </>);
 }
 

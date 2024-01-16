@@ -40,7 +40,7 @@ export const newWindow = (url, data, name, expires = URL_EXPIRATION) => {
 }
 
 
-export default (init, store = {}, props = {}, state = {}, fields) => {
+export default (init, store = {}, props = {}, state = {}, fields=null) => {
     let query = {};
     let df = { ...init };
     let _fields = (fields === null) ? Object.keys({ ...store, ...props, ...state }) : fields;

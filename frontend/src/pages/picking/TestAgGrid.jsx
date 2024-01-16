@@ -11,7 +11,7 @@ import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL } from "config";
 import { uid } from 'uid';
-import { useDataAPI } from "utils/useDataAPIV3";
+import { useDataAPI } from "utils/useDataAPIV4";
 import { json, includeObjectKeys } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
 import Portal from "components/portal";
@@ -32,32 +32,30 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 import useModeApi from 'utils/useModeApi';
-import TableV4, { suppressKeyboardEvent } from 'components/TableV4/TableV4';
+import TableV4, { suppressKeyboardEvent, useModalApi } from 'components/TableV4/TableV4';
 import { Cuba, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, OFabricoStatus, StatusProduction, PosColumn } from 'components/TableV4/TableColumnsTemp';
 import { useImmer } from 'use-immer';
 
-import { Value, Bool, Larguras, Ordens, FromTo, EstadoBobines } from "components/TableV4/TableColumnsV4";
+import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber } from "components/TableV4/TableColumnsV4";
+import { GridApi } from 'ag-grid-community';
 
 
-const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, ...props }) => {
-  const inputParameters = useRef();
+const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection, ...props }) => {
   const gridRef = useRef(); //not required
   const [gridApi, setGridApi] = useState(); //not Required;
+  const modalApi = useModalApi() //not Required;
   const permission = usePermission({ name: "paletes" });
   const modeApi = useModeApi(); //not Required;
   const submitting = useSubmitting(false);
   const defaultParameters = { method: "PaletesListV2" };
-  const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "lst-paletes-c" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
-
-  // useEffect(() => {
-  //   dataAPI.setSort([{ column: `sgppl.nome`, direction: "DESC" }]);
-  // }, []);
+  const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "PaletesListV2-01" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
+  const inputParameters = useRef(loadInit({ filter: { nome: "DM" } }, { filter: dataAPI.getFilters(false, true) }, { ...props?.parameters }, { ...location?.state }));
 
   useEffect(() => {
     if (permission.isReady) {
       modeApi.load({
         key: null,
-        enabled: true,
+        enabled: false,
         allowEdit: permission.isOk({ item: "stock", /* forInput: [!submitting.state], */ action: "edit" }),
         allowAdd: permission.isOk({ item: "stock",/* forInput: [!submitting.state], */ action: "add" }),
         // onAdd: () => { },
@@ -74,20 +72,6 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
     }
   }, [permission.isReady]);
 
-  // useEffect(() => {
-  //   /**When not loadOnInit, we can do any init changes, before load it */
-  //   if (gridApi && !loadOnInit) {
-  //     console.log("rrrrrrrrrrrrrrrrrrrrrrrrr!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",dataAPI.getPagination())
-  //     dataAPI.setSort([{ column: `sgppl.nome`, direction: "DESC" }]);
-  //     if (!local) {
-  //       let datasource = dataAPI.dataSourceV4();
-  //       gridApi.setGridOption("serverSideDatasource", datasource);
-  //     } else {
-
-  //     }
-  //   }
-  // }, [gridApi]);
-
   useEffect(() => {
     if (gridApi) {
       const controller = new AbortController();
@@ -97,21 +81,14 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   }, [gridApi]);
 
   const loadData = async ({ signal, init = false } = {}) => {
-    if (init) {
-      const { tstamp, ...paramsIn } = loadInit({}, {}, { ...props?.parameters }, { ...location?.state }, null);
-      inputParameters.current = paramsIn;
-      //let { filterValues, fieldValues } = fixRangeDates(null, inputParameters.current);
-      //formFilter.setFieldsValue(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']));
-    }
     /**When not loadOnInit, we can do any init changes, before load it */
     if (gridApi && !loadOnInit) {
-
       //dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
       dataAPI.setSort(null, [{ column: `sgppl.nome`, direction: "DESC" }]);
       dataAPI.addParameters({ ...defaultParameters }, false);
 
       if (!local) {
-        let datasource = dataAPI.dataSourceV4();
+        let datasource = dataAPI.dataSourceV4(null);
         gridApi.setGridOption("serverSideDatasource", datasource);
       } else {
         submitting.trigger();
@@ -127,12 +104,13 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
     { colId: 'sgppl.nbobines_real', field: 'nbobines_real', headerName: 'Bobines', width: 90, cellStyle: {}, cellRenderer: (params) => <FromTo field={{ from: "nbobines_real", to: "num_bobines" }} colorize={true} params={params} /> },
     { colId: 'sgppl.estado', field: 'estado', headerName: 'Estado', width: 110, cellStyle: {}, cellEditor: ModalEditor, cellRenderer: (params) => <EstadoBobines field={{ artigos: "artigo" }} params={params} /> },
     { colId: 'sgppl.largura', field: 'largura', headerName: 'Largura', width: 110, cellStyle: {}, cellRenderer: (params) => <Larguras field={{ artigos: "artigo" }} params={params} /> },
-    { colId: 'sgppl.ofid', field: 'ofid', headerName: 'Ordem Fabrico', width: 180, cellStyle: {}, cellRenderer: (params) => <Ordens field={{ cod: "ofid", des: "ordem_original" }} params={params} /> },
+    { colId: 'po2.ofid', field: 'ofid', headerName: 'Ordem Fabrico', width: 180, cellStyle: {}, cellRenderer: (params) => <Ordens field={{ cod: "ofid", des: "ordem_original" }} params={params} /> },
     { colId: 'pt.prf_cod', field: 'prf', headerName: 'Prf', width: 120, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
     { colId: 'pt.order_cod', field: 'iorder', headerName: 'Encomenda', width: 120, cellStyle: {}, cellRenderer: (params) => <Value align='right' params={params} /> },
     { colId: 'sgppl.cliente_nome', field: 'cliente_nome', headerName: 'Cliente', width: 200, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
     { colId: 'sgppl.destino', field: 'destino', headerName: 'Destino', flex: 1, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
-    { colId: 'sgppl.teste', field: 'destino', headerName: 'teste', flex: 1, cellStyle: {}, cellRenderer: (params) => <Bool checkedColor='red' onClick={()=>console.log("######")} value={2} params={params} /> }
+    { colId: 'sgppl.core', field: 'core', headerName: 'Core', width: 110, cellStyle: {}, cellRenderer: (params) => <BadgeNumber params={params} /> },
+    { colId: 'sgppl.destinos', field: 'destinos', wrapText: true, autoHeight: false, headerName: 'teste', flex: 1, cellStyle: {}, cellRenderer: (params) => <MultiLine modalApi={modalApi} dataType='json' params={params} /> }
     // { field: 'age' },
     // { field: 'country', cellRenderer: (params) => { return (<div style={{ fontWeight: 700, color: "red" }}>{params.value}</div>); } },
     // { field: 'year' },
@@ -170,13 +148,24 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
     };
   }, []);
 
+  const [filters, setFilters] = useState({
+    toolbar: ["nome", { field: "largura", type: "number" }, { field: "timestamp", label: "Teste 1", type: "date" },
+      { field: "ofid", type: "text", op: "any", alias: "sgppl.ofid", mask: "lower({k})" },
+      { field: "core", options: [{ value: "3" }, { value: "6" }, { value: "9" }], type: "select", exp: "", multi: true },
+      { field: "test", options: "bool:0", type: "options", exp: "" },
+      { field: "test1", options: "opt:2", type: "options", exp: "" }
+    ],
+    more: ["@columns", { field: "timestamp", type: "date", col: 6, style: { width: "100px" } }],
+    no: ["destinos"]
+  });
+
+
   const rowClassRules = useMemo(() => {
     return {};
   }, []);
 
-  const onSelectionChanged = () => {
-    const selectedRows = gridRef.current.api.getSelectedRows();
-    console.log(selectedRows, gridRef.current.api.getState());
+  const onSelectionChanged = (rows) => {
+    console.log(rows);
 
     // document.querySelector('#selectedRows').innerHTML =
     //   selectedRows.length === 1 ? selectedRows[0].athlete : '';
@@ -202,9 +191,8 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
         gridRef={gridRef}
         local={local}
 
-        /*rowSelection="single"
+        rowSelection="multiple"
         onSelectionChanged={onSelectionChanged}
-        suppressCellFocus={true} */
 
         rowClassRules={rowClassRules}
 
@@ -225,7 +213,14 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
           left: null, /* <Space>
             <Permissions permissions={permission} action="edit" forInput={[!modeApi.isOnMode()]}><Button icon={<UploadOutlined />}>Carregar Parâmetros</Button></Permissions>
           </Space> */
-          right: null
+          right: null,
+          initFilterValues: inputParameters.current,
+          onFilterFinish: null,
+          filters,
+          showSettings: true,
+          showFilters: true,
+          showMoreFilters: true,
+          clearSort: true
         }}
         modeApi={modeApi}
       />

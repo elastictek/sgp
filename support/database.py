@@ -12,6 +12,8 @@ class TypeDml(Enum):
     UPDATE = 2,
     DELETE = 3
 
+PATTERN = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|btw:|^in:|^!between:|!btw:|^!in:|isnull|!isnull|^@:)(.*)'
+
 
 def replace(regex, s, data):
     "Repçace in a filter every pattern like :name by db named parameter in the pattern %(name)s"
@@ -209,7 +211,7 @@ class BaseSql:
             return {"sql":re.sub(self.markPattern,'',text),"parameters":sqParameters}
         return {"sql":re.sub(self.markPattern,'',sql),"parameters":parameters}
 
-    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None):
+    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None, norun= None):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
                 execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
@@ -217,16 +219,19 @@ class BaseSql:
                 #print(f'SQL--> {execSql["sql"]}')
                 #print(f'PARAMS--> {execSql["parameters"]}')
                 #print("###########################################################################")
-                cursor.execute(execSql["sql"],execSql["parameters"])
-                rows = fetchall(cursor, ignore)
+                if (not norun):
+                    cursor.execute(execSql["sql"],execSql["parameters"])
+                    rows = fetchall(cursor, ignore)
                 if (countSql is None):
-                    execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
-                    cursor.execute(execSql["sql"],execSql["parameters"])
-                    count = cursor.fetchone()[0]
+                     if (not norun):
+                        execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                        cursor.execute(execSql["sql"],execSql["parameters"])
+                        count = cursor.fetchone()[0]
                 else:
-                    execSql = self.computeSequencial(countSql, parameters)
-                    cursor.execute(execSql["sql"],execSql["parameters"])
-                    count = cursor.fetchone()[0]
+                    if (not norun):
+                        execSql = self.computeSequencial(countSql, parameters)
+                        cursor.execute(execSql["sql"],execSql["parameters"])
+                        count = cursor.fetchone()[0]
         else:
             if (connOrCursor):
                 print("DB init success")
@@ -237,20 +242,24 @@ class BaseSql:
             #print(f'SQL--> {execSql["sql"]}')
             #print(f'PARAMS--> {execSql["parameters"]}')
             #print("###########################################################################")
-            connOrCursor.execute(execSql["sql"],execSql["parameters"])
-            rows = fetchall(connOrCursor, ignore)
+            if (not norun):
+                connOrCursor.execute(execSql["sql"],execSql["parameters"])
+                rows = fetchall(connOrCursor, ignore)
             if (countSql is None):
-                execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
-                connOrCursor.execute(execSql["sql"],execSql["parameters"])
-                count = connOrCursor.fetchone()[0]
+                if (not norun):
+                    execSql = self.computeSequencial(sql(self.disable, self.disableCols if customDisableCols is None else customDisableCols,self.disable), parameters)
+                    connOrCursor.execute(execSql["sql"],execSql["parameters"])
+                    count = connOrCursor.fetchone()[0]
             else:
-                execSql = self.computeSequencial(countSql, parameters)
-                connOrCursor.execute(execSql["sql"],execSql["parameters"])
-                count = connOrCursor.fetchone()[0]
-
+                if (not norun):
+                    execSql = self.computeSequencial(countSql, parameters)
+                    connOrCursor.execute(execSql["sql"],execSql["parameters"])
+                    count = connOrCursor.fetchone()[0]
+        if (norun):
+            return {"sql":execSql["sql"].replace("%%","%"),"parameters":execSql["parameters"]}
         return {"rows": rows, "total": count}
 
-    def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[]):
+    def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[],norun = None):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
                 execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
@@ -258,16 +267,20 @@ class BaseSql:
                 # print(f'SQL--> {execSql["sql"]}')
                 # print(f'PARAMS--> {execSql["parameters"]}')
                 # print("###########################################################################")
-                cursor.execute(execSql["sql"],execSql["parameters"])
-                rows = fetchall(cursor, ignore)
+                if (not norun):
+                    cursor.execute(execSql["sql"],execSql["parameters"])
+                    rows = fetchall(cursor, ignore)
         else:
             execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
             #print("2-###########################################################################")
             #print(f'SQL--> {execSql["sql"]}')
             #print(f'PARAMS--> {execSql["parameters"]}')
             #print("###########################################################################")
-            connOrCursor.execute(execSql["sql"],execSql["parameters"])
-            rows = fetchall(connOrCursor, ignore)
+            if (not norun):
+                connOrCursor.execute(execSql["sql"],execSql["parameters"])
+                rows = fetchall(connOrCursor, ignore)
+        if (norun):
+            return {"sql":execSql["sql"],"parameters":execSql["parameters"]}
         return {"rows": rows}
 
 
@@ -851,7 +864,72 @@ class SqlServerSql(BaseSql):
                 ret.rows = fetchall(connOrCursor)
         return ret
 
+def trim_outer_quotes(input_string):
+    # Use a regular expression to match the first and last quote characters
+    match = re.match(r"^(['\"])(.*)(\1)$", input_string)
+    
+    # If there is a match, return the content between the quotes; otherwise, return the original string
+    return match.group(2) if match else input_string
 
+class ParsedFilters:
+    def __init__(self,filterData={},prefix="where") -> None:
+        self.betweenfilters = "and"
+        self.hasFilters = False
+        self.parameters = {}
+        self.filterData = {**filterData}
+        self.groups = {}
+        self.compute()
+    
+    def compute(self):
+        for key, value in self.filterData.items():
+            if value.get("group") not in self.groups:
+                _p = {k:v for k, v in self.filterData.items() if 'group' in v and v.get("group") == value.get("group")}
+                _fgrp_txt = []
+                self.groups[value.get("group")] = ""
+                for _name, _param in _p.items():
+                    _ftxt = []
+                    for idx, el in enumerate(_param.get("parsed")):
+                        _pn = f"f.{_name}.{idx}" #Parameter Name
+                        _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _param.get("alias")
+                        #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
+                        if el in ["and","or"]:
+                            _ftxt.append(f" {el} ")
+                            continue
+                        if el in ["(",")"]:
+                            _ftxt.append(f" {el} ")
+                            continue
+                        if (el.startswith(":")):
+                            el = el.replace(":","",1)
+                            if (el==""):
+                                continue
+                            _ftxt.append(f"""({trim_outer_quotes(el).replace("%","%%")})""")
+                            continue
+                        if (el.startswith("@:")):
+                            el = trim_outer_quotes(el.replace("@:","",1))
+                            pattern = r'\{([^{}]+)\}(.+)'
+                            match = re.match(pattern, el)
+                            if match:
+                                _pn = match.group(1)
+                                _alias = match.group(1)
+                                el = match.group(2)
+                            else:
+                                continue
+                        _fp = FiltersParser({_pn:el},{_pn:_alias})
+                        _ftxt.append(f"""({_fp.get("filters")[0]})""")
+                        self.parameters = {**self.parameters,**_fp.get("parameters")}
+                    if len(_fgrp_txt)>0:
+                        _fgrp_txt.append(f" {self.betweenfilters} ")
+                    _fgrp_txt.append(f"""({"".join(_ftxt)})""")
+                prefix = "and"
+                self.groups[value.get("group")]=f""" {prefix} ({"".join(_fgrp_txt)})"""
+        if not self.parameters:
+            self.hasFilters=False
+        else:
+            self.hasFilters=True
+
+    def group(self,name="t1"):
+        return self.groups.get(name) if self.groups.get(name) is not None else ""
+    
 
 class Filters:
     def __init__(self, filterData={}):
@@ -1000,8 +1078,7 @@ class Filters:
                 value=isNone
             else:
                 return None
-        pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
-        result = re.match(pattern, str(value), re.IGNORECASE)
+        result = re.match(PATTERN, str(value), re.IGNORECASE)
         if not result:
             if compare is not None:
                 return f"{compare}{value}"
@@ -1025,8 +1102,7 @@ class Filters:
                 value=isNone
             else:
                 return None
-        pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
-        result = re.match(pattern, str(value), re.IGNORECASE)
+        result = re.match(PATTERN, str(value), re.IGNORECASE)
         if not result:
             if compare is not None:
                 return f"{compare}{value}"
@@ -1034,27 +1110,83 @@ class Filters:
         else:
             return value
 
+    def ParsedFilters(data):
+        #======================================================================
+        _groups = {}
+        _fparams = {}
+        for key, value in data.items():
+            if value.get("group") not in _groups:
+                _p = {k:v for k, v in data.items() if 'group' in v and v.get("group") == value.get("group")}
+                _data = {}
+                _fgrp_txt = []
+                _groups[value.get("group")] = ""
+                for _name, _param in _p.items():
+                    _ftxt = []
+                    for idx, el in enumerate(_param.get("parsed")):
+                        print("----------------------------------------------")
+                        print(el)
+                        _pn = f"f.{_name}.{idx}" #Parameter Name
+                        _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _param.get("alias")
+                        #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
+                        if el in ["and","or"]:
+                            _ftxt.append(f" {el} ")
+                            continue
+                        if el in ["(",")"]:
+                            _ftxt.append(f" {el} ")
+                            continue
+                        if (el.startswith(":")):
+                            el = el.replace(":","",1)
+                            if (el==""):
+                                continue
+                            _ftxt.append(f"""({el.strip('"')})""")
+                            continue
+                        if (el.startswith("@:")):
+                            el = el.replace("@:","",1).strip('"')
+                            pattern = r'\{([^{}]+)\}(.+)'
+                            match = re.match(pattern, el)
+                            if match:
+                                _pn = match.group(1)
+                                _alias = match.group(1)
+                                el = match.group(2)
+                            else:
+                                continue
+                            print("###########################")
+                            print(_pn)
+                            print(el)
+                            print(_alias)
+                        _fp = FiltersParser({_pn:el},{_pn:_alias})
+                        _ftxt.append(f"""({_fp.get("filters")[0]})""")
+                        _fparams = {**_fparams,**_fp.get("parameters")}
+                        #print(f'parsed----{_fp.get("filters")[0]} {_fp.get("parameters")}')
+                        #_data[_pn] = el
+                        
+                    if len(_fgrp_txt)>0:
+                        _fgrp_txt.append(" and ")    
+                    _fgrp_txt.append(f"""({"".join(_ftxt)})""")
+                _mainPrefix = "and"
+                _groups[value.get("group")]=f""" {_mainPrefix} ({"".join(_fgrp_txt)})"""
+                #groups[value.get("group")] = Filters({key: v.get("parsed") for key, v in request.data.get("filter").items() if 'group' in v and v.get("group") == value.get("group")})
+        #======================================================================
+
 def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
     filters, parameters = [], {}
-    pattern = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)'
     for key, f in data.items():
-
         if f == None:
             continue
-        result = re.match(pattern, str(f), re.IGNORECASE)
+        result = re.match(PATTERN, str(f), re.IGNORECASE)
         if any(fields):
             field = fields[key]
         else:
             field = encloseColumn(key, encloseColumns)
-
         opNot = result.group(1).startswith('!') if result else False
         op = (result.group(1) if not opNot else result.group(
             1)[1:]) if result else '='
         value = result.group(2) if result else f
-        if op == '@:':
-            filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
-            parameters[f'auto_{key}'] = value
-        elif op == '===':
+        # if op == '@:':
+        #     filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
+        #     parameters[f'auto_{key}'] = value
+        # el
+        if op == '===':
             if typedb==TypeDB.MYSQL:
                 filters.append(f'{("" if not opNot else "not")} {field} <=> %(auto_{key})s')
             elif  typedb==TypeDB.POSTGRES:
@@ -1081,7 +1213,7 @@ def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
         elif op == '<':
             filters.append(f'{field} < %(auto_{key})s')
             parameters[f'auto_{key}'] = value
-        elif op.lower() == 'between:':
+        elif op.lower() in ['between:', 'btw:']:
             v = value.split(',')
             min = v[0].strip(' ') if v[0].strip(' ') != '' else None
             max = (v[1].strip(' ') if v[1].strip(' ') !=

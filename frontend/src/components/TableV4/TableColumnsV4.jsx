@@ -2,11 +2,13 @@ import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
 import classNames from 'classnames';
+import { useModal } from "react-modal-hook";
+import ResponsiveModal from 'components/Modal';
 import {
     StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, PauseOutlined, SyncOutlined,
     CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone, EllipsisOutlined, ArrowUpOutlined, ArrowDownOutlined
 } from '@ant-design/icons';
-import { json, includeObjectKeys } from "utils/object";
+import { json, includeObjectKeys, isObjectEmpty } from "utils/object";
 import { Tag, Button, Space, Badge, Dropdown } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
@@ -19,6 +21,8 @@ import { BsFillStopFill, BsPauseCircleFill, BsStopCircleFill, BsPlayCircleFill }
 import { IoCodeWorkingOutline } from 'react-icons/io5';
 import TagButton from "components/TagButton";
 import { getInt } from 'utils/index';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 export const useStyles = createUseStyles({
     focus: {
@@ -95,6 +99,45 @@ export const Larguras = ({ field: { artigos } = {}, params: { column, data, rowI
     </>);
 }
 
+export const Cores = ({ field: { artigos } = {}, params: { column, data, rowIndex } = {}, style, className, onClick }) => {
+    const _artigos = json(data?.[artigos]);
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const onKeyDown = (event, a, b) => {
+        if (event.keyCode === 13) {
+            onClick(a, b)
+        }
+    }
+    return (<>
+        {(Array.isArray(_artigos)) && [...new Set(_artigos.map(item => item?.core))]
+            .map((v, i) => <Tag
+                {...genericProps({ fontWeight: 600 },
+                    onClick ? () => onClick && onClick("core", { data: v }) : null,
+                    (e) => onKeyDown(e, "core", { data: v }), style, _classNames)}
+                key={`bol-${rowIndex}-${v?.core}-${i}`}
+            >{v}''</Tag>)}
+    </>);
+}
+
+
+export const BadgeNumber = ({ params: { column, data } = {}, value, unit, style, className, bold, align = "left", onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+    const _value = useMemo(() => {
+        let _v = value;
+        _v = (_v === undefined && column && data) ? data?.[column.getDefinition().field] : _v;
+        return _v;
+    }, []);
+
+
+    return (<div style={{ textAlign: align }}><div {...genericProps({ ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)}><Badge count={_value} />{((unit && _value !== null) && unit)}</div></div>);
+}
+
 export const FromTo = ({ field: { from, to } = {}, params: { column, data } = {}, style, bold, align = "left", className, addonAfter, addonBefore, onClick, unit, pad = 2, colorize = false, color = "#000", colorGreater = "#b7eb8f", colorLess = "#ffa39e" }) => {
     let _color = color;
     const classes = useStyles();
@@ -149,7 +192,7 @@ const StyledBobine = styled.div`
 `;
 
 export const EstadoBobines = ({ field: { artigos } = {}, params: { column, data, rowIndex } = {}, style, align = "start", className, onClick }) => {
-    const _artigos = uniqWith(allPass(map(eqProps)(['lar', 'largura', 'estado'])))(json(data?.[artigos]) || []);
+    const _artigos = uniqWith(allPass(map(eqProps)(['lar', 'largura', 'estado'])))(json(data?.[artigos],[]));
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
     const onKeyDown = (event, a, b) => {
@@ -197,4 +240,39 @@ export const Bool = ({ params: { column, data } = {}, value, style, className, a
     }, []);
 
     return (<div style={{ textAlign: align }}><span {...genericProps({}, onClick, onKeyDown, style, _classNames)}>{addonBefore}{_checked}{addonAfter}</span></div>);
+}
+
+const MultiText = ({ value,dataType }) => {
+    if (dataType==="json"){
+        return <SyntaxHighlighter customStyle={{fontSize:"11px"}} language="json" style={a11yDark}>{value}</SyntaxHighlighter>;
+    }
+    return (<div style={{ whiteSpace: "pre" }}>{value}</div>)
+}
+export const MultiLine = ({ params: { column, data, api } = {}, modalApi, value, style, className, bold, align = "left", type = "drawer", dataType="text", width = 500, height = 300, }) => {
+    const _classNames = classNames({ [className]: className });
+    const _value = useMemo(() => {
+        let _v = value;
+        _v = (_v === undefined && column && data) ? data?.[column.getDefinition().field] : _v;
+        if (dataType=="json"){
+            const _j = json(_v,{});
+            if (isObjectEmpty(_j)){
+                return "";
+            }
+            return JSON.stringify(_j, null, 2);
+        }
+        return _v;
+    }, []);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onOpen();
+        }
+    }
+
+    const onOpen = () => {
+        const _t = api.getFocusedCell();
+        modalApi.setModalParameters({ content: <MultiText dataType={dataType} value={_value} />, title: column.getDefinition().headerName, type: type, width: width, height: height, parameters: { gridApi: api, cellFocus: { rowIndex: _t.rowIndex, colId: _t.column.colId } } });
+        modalApi.showModal();
+    }
+
+    return (<div onClick={onOpen} onKeyDown={onKeyDown} tabIndex="0" {...genericProps({ textAlign: align, cursor: "pointer", ...bold && { fontWeight: 700 } }, null, null, style, _classNames)}>{_value}</div>);
 }

@@ -4,6 +4,10 @@ import moment from 'moment';
 import dayjs from 'dayjs';
 import { DATE_ENGINE } from 'config';
 
+export const removeEmpty = (obj, keys = []) => {
+    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => (v !== null && v !== '' && v !== undefined && !keys.includes(_))));
+}
+
 export const unique = (array, key) => {
     const seen = new Set();
     return array.filter((item) => {

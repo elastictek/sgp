@@ -993,6 +993,7 @@ class Emenda(models.Model):
     metros = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Metros gastos", blank=True, default=0)
     bobinagem_original_id = models.IntegerField(verbose_name="Bobinagem Original em caso de clone", null=True, blank=True) #ADDED
     troca_etiqueta = models.BooleanField(verbose_name="Indica se foi troca de eqiqueta", null=True, blank=True, default=False) #ADDED
+    t_stamp = models.DateTimeField(null=True) #ADDED
     def __str__(self):
         return 'Emenda nº %s da bobinagem %s' % (self.num_emenda, self.bobinagem)
 

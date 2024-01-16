@@ -6,7 +6,19 @@ export const nullIfEmpty = (obj) => {
 }
 
 export const isObjectEmpty = (obj) => {
-    return Object.keys(obj).length === 0;
+    if (!obj) {
+        return true;
+      }
+    
+      if (Array.isArray(obj)) {
+        return obj.length === 0;
+      }
+    
+      if (typeof obj === 'object') {
+        return Object.keys(obj).length === 0;
+      }
+    
+      return false;
 }
 
 export const json = (obj, ret) => {

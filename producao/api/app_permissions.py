@@ -147,6 +147,23 @@ def Sql(request, format=None):
         return response
     return Response({})
 
+def DatagridFilters(request, format=None):
+    if "id" not in request.data['filter'] or not request.data['filter']:
+        return Response({"rows":[]})
+    f = Filters(request.data['filter'])
+    f.where()
+    f.add(f'cod = :id', True)
+    f.value("and")
+    parameters = {**f.parameters}
+    
+    dql = db.dql(request.data, False)
+    with connections["default"].cursor() as cursor:
+        response = db.executeSimpleList(lambda: (
+            f"""SELECT * from datagrid_filters {f.text} order by idx asc limit 50"""
+        ), cursor, parameters)
+        return Response(response)
+
+
 def PermissionsLookup(request, format=None):
     f = Filters(request.data['filter'])
     f.where()

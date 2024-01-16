@@ -56,9 +56,12 @@ const saveToLS = (value, id) => {
     }
 }
 
-export const Title = ({ text, level = 3, style }) => {
+export const Title = ({ text, subTitle, level = 3, style }) => {
     return (
-        <div style={{ alignItems: "center", fontSize: `${13 + level}px`, lineHeight: "normal", fontWeight: 400 + (100 * level), ...style && style }}>{text}</div>
+        <>
+            <div style={{ alignItems: "center", fontSize: `${13 + level}px`, lineHeight: "normal", fontWeight: 400 + (100 * level), ...style && style }}>{text}</div>
+            {subTitle && <div style={{ alignItems: "center", fontSize: `${10 + level}px`, lineHeight: "normal", fontWeight: 400 }}>{subTitle}</div>}
+        </>
     )
 }
 
