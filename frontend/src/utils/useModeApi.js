@@ -16,6 +16,7 @@ const useModeApi = () => {
     // onExit: null,
     onEditSave: null,
     onAddSave: null,
+    onModeChange: null,
     // onAdd: null,
     mode: null,
     newRow: null,
@@ -37,6 +38,7 @@ const useModeApi = () => {
       // draft.onExit = _config?.onExit;
       draft.onEditSave = _config?.onEditSave;
       draft.onAddSave = _config?.onAddSave;
+      draft.onModeChange = _config?.onModeChange;
       // draft.onAdd = _config?.onAdd;
       draft.newRow = _config?.newRow;
       draft.newRowIndex = _config?.newRowIndex;
@@ -78,6 +80,9 @@ const useModeApi = () => {
 
   const onEditMode = async () => {
     if (!data.mode) {
+      if (typeof data.onModeChange === "function") {
+        data.onModeChange({ add: isOnAddMode(), edit: false });
+      }
       return false;
     }
     if (data.enabled && data.allowEdit) {
@@ -85,10 +90,16 @@ const useModeApi = () => {
         draft.mode = { [draft.key]: { ...draft.mode[draft.key], edit: !draft.mode[draft.key].edit, add: false } };
         draft.dirty = false;
       });
+      if (typeof data.onModeChange === "function") {
+        data.onModeChange({ add: false, edit: true });
+      }
     }
   }
   const onAddMode = async (fn) => {
     if (!data.mode) {
+      if (typeof data.onModeChange === "function") {
+        data.onModeChange({ add: false, edit: isOnEditMode() });
+      }
       return false;
     }
     if (data.enabled && data.allowAdd) {
@@ -106,6 +117,9 @@ const useModeApi = () => {
         });
         fn(data.newRowIndex, _row);
       }
+      if (typeof data.onModeChange === "function") {
+        data.onModeChange({ add: true, edit: false });
+      }
     }
   }
 
@@ -118,6 +132,9 @@ const useModeApi = () => {
     // }
     if (typeof fn == "function") {
       fn();
+    }
+    if (typeof data.onModeChange === "function") {
+      data.onModeChange({ add: false, edit: false });
     }
   }
 
@@ -138,8 +155,8 @@ const useModeApi = () => {
     addText: () => data?.addText,
     saveText: () => data?.saveText,
     onExit: (fn) => _onExit(fn),
-    onEditSave: () => data?.onEditSave(),
-    onAddSave: () => data?.onAddSave(),
+    onEditSave: async (rows) => await data?.onEditSave(rows),
+    onAddSave: async (rows) => await data?.onAddSave(rows),
     onAdd: () => data?.onAdd(),
     enabled: () => data?.enabled
   }

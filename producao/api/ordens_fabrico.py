@@ -3383,6 +3383,25 @@ def SaveProdutoAlt(request, format=None):
 #region CHECKLISTS
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def _checkArtigoCliente(artigo_id,cliente_cod, cursor):
         f = Filters({"cliente_cod":cliente_cod,"artigo_id":artigo_id})
         f.where(False,"and")

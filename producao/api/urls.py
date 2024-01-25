@@ -19,6 +19,7 @@ from producao.api import eventos
 from producao.api import cargas
 from producao.api import sage
 from producao.api import reciclado
+from producao.api import trocaetiquetas
 from producao.api import exportdata_A01
 from producao.models.models_api import CurrentSettings
 app_name="producao" 
@@ -280,6 +281,7 @@ urlpatterns = [
     re_path(r'^currentsettings/sql/$',currentsettings.Sql),
     re_path(r'^materiasprimas/sql/$',materias_primas.Sql),
     re_path(r'^qualidade/sql/$',qualidade.Sql),
+    re_path(r'^trocaetiquetas/sql/$',trocaetiquetas.Sql),
     re_path(r'^qualidade/loadlabmetodoparametersbyfile/$',qualidade.LoadLabMetodoParametersByFile),
     
     re_path(r'^exportdataA01/call/$',exportdata_A01.SqlK),

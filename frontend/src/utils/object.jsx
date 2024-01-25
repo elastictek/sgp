@@ -1,3 +1,13 @@
+import { assocPath } from 'ramda';
+
+export const valueByPath = (obj, path) => {
+    return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+}
+
+export const updateByPath = (data, path, value) => {
+    return assocPath(path.split("."), value, data);
+}
+
 export const nullIfEmpty = (obj) => {
     if (isObjectEmpty(obj)) {
         return null;
@@ -8,17 +18,17 @@ export const nullIfEmpty = (obj) => {
 export const isObjectEmpty = (obj) => {
     if (!obj) {
         return true;
-      }
-    
-      if (Array.isArray(obj)) {
+    }
+
+    if (Array.isArray(obj)) {
         return obj.length === 0;
-      }
-    
-      if (typeof obj === 'object') {
+    }
+
+    if (typeof obj === 'object') {
         return Object.keys(obj).length === 0;
-      }
-    
-      return false;
+    }
+
+    return false;
 }
 
 export const json = (obj, ret) => {

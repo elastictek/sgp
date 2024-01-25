@@ -116,6 +116,7 @@ import FormAttachements from './ordensfabrico/FormAttachements';
 import FormPickAttachements from './picking/FormPickAttachements';
 
 
+
 const FormFixBobinagem = lazy(() => import('./bobinagens/FormFixBobinagem'));
 
 const MainPicking = lazy(() => import('./picking/MainPicking'));
@@ -143,7 +144,17 @@ const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateB
 const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
 const FormPickQualityBobinagemTest = lazy(() => import('./picking/FormPickQualityBobinagemTest'));
+
+/**Troca Etiquetas */
+const ListRunTaskChoose = lazy(() => import('./picking/trocaetiquetas/ListRunTaskChoose'));
+const ListRunBobineChoose = lazy(() => import('./picking/trocaetiquetas/ListRunBobineChoose'));
+const ListTasksExecuted = lazy(() => import('./picking/trocaetiquetas/ListTasksExecuted'));
+const ListTasksManager = lazy(() => import('./picking/trocaetiquetas/ListTasksManager'));
+
+
+/**EXAMPLES */
 const TestAgGrid = lazy(() => import('./picking/TestAgGrid'));
+const ExampleTableSingleSelect = lazy(() => import('./examples/ExampleTableSingleSelect'));
 
 const loadAuthUser = async ({ }, signal) => {
     let response;
@@ -282,6 +293,7 @@ const RenderRouter = () => {
                 { path: "picking/qualitytestbm", element: <Suspense fallback={<Spin />}><FormPickQualityBobinagemTest /></Suspense> },
 
                 { path: "picking/test-ag-grid", element: <Suspense fallback={<Spin />}><TestAgGrid /></Suspense> },
+                { path: "examples/ExampleTableSingleSelect", element: <Suspense fallback={<Spin />}><ExampleTableSingleSelect /></Suspense> },
 
 
                 { path: "bobinagens/formbobinagemvalidar", element: <Suspense fallback={<Spin />}><FormBobinagemValidar /></Suspense> },
@@ -290,6 +302,13 @@ const RenderRouter = () => {
 
 
                 { path: "linkexpired", element: <Suspense fallback={<Spin />}><LinkExpired /></Suspense> },
+
+                /**Troca Etiquetas */
+                { path: "picking/trocaetiquetas/listruntaskchoose", element: <Suspense fallback={<Spin />}><ListRunTaskChoose /></Suspense> },
+                { path: "picking/trocaetiquetas/listrunbobinechoose", element: <Suspense fallback={<Spin />}><ListRunBobineChoose /></Suspense> },
+                { path: "picking/trocaetiquetas/listtasksexecuted", element: <Suspense fallback={<Spin />}><ListTasksExecuted /></Suspense> },
+                { path: "picking/trocaetiquetas/managetasks", element: <Suspense fallback={<Spin />}><ListTasksManager /></Suspense> },
+                
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */
             ]

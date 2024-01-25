@@ -59,7 +59,7 @@ const saveToLS = (value, id) => {
 export const Title = ({ text, subTitle, level = 3, style }) => {
     return (
         <>
-            <div style={{ alignItems: "center", fontSize: `${13 + level}px`, lineHeight: "normal", fontWeight: 400 + (100 * level), ...style && style }}>{text}</div>
+            {text && <div style={{ alignItems: "center", fontSize: `${13 + level}px`, lineHeight: "normal", fontWeight: 400 + (100 * level), ...style && style }}>{text}</div>}
             {subTitle && <div style={{ alignItems: "center", fontSize: `${10 + level}px`, lineHeight: "normal", fontWeight: 400 }}>{subTitle}</div>}
         </>
     )
@@ -74,7 +74,7 @@ export const saveNavigation = (description, id, location) => {
     }
 }
 
-export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
+export const SimpleDropdownHistory = ({ disabled=false,fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -182,13 +182,13 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
                     <Col>
                         <Row align='center' nogutter>
                             <Col xs="content" style={{ display: "flex" }}>
-                                <StyledLogo style={{ width: "35px", height: "28px"/* , paddingRight: "10px" */ }} onClick={onShowDrawer} />
+                                <StyledLogo style={{ width: "35px", height: "28px"/* , paddingRight: "10px" */ }} onClick={!disabled && onShowDrawer} />
                             </Col>
                             {center && <Col xs="content" style={{ display: "flex" }}>{center}</Col>}
                             <Col width={25} style={{ textAlign: "right" }}>
-                                <Dropdown menu={{ items: [...fixedTopItems, ...history, ...fixedFooterItems], onClick: (e) => onNavigate(e.key == "back" ? null : [...fixedTopItems, ...history, ...fixedFooterItems].find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                                <Dropdown disabled={disabled} menu={{ items: [...fixedTopItems, ...history, ...fixedFooterItems], onClick: (e) => onNavigate(e.key == "back" ? null : [...fixedTopItems, ...history, ...fixedFooterItems].find(v => v.key === e.key), e.key) }} trigger={['click']}>
                                     {/* <Dropdown menu={{ items: [...fixedItems, ...history], onClick: (e) => (history && history.length > 0) && onNavigate(history.find(v => v.key === e.key), e.key) }} trigger={['click']}> */}
-                                    <Button ghost style={{ border: "0px" }} icon={<MenuOutlined style={{/* fontSize:"24px" */ }} />} onClick={(e) => e.preventDefault()} />
+                                    <Button disabled={disabled} ghost style={{ border: "0px" }} icon={<MenuOutlined style={{/* fontSize:"24px" */ }} />} onClick={(e) => e.preventDefault()} />
                                 </Dropdown>
                             </Col>
                         </Row>
@@ -210,7 +210,7 @@ export const SimpleDropdownHistory = ({ fixedTopItems, fixedFooterItems, right, 
     );
 }
 
-export default ({ title, leftTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
+export default ({ title, disabled=false, leftTitle, leftSubTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -314,7 +314,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                                 <Button type='link' icon={<MenuOutlined />} onClick={onShowDrawer} />
                             </Col> */}
                             <Col xs="content" style={{ marginRight: "2px" }}>
-                                <Button onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px", background: "#f0f0f0", border: "0px" }}>
+                                <Button disabled={disabled} onClick={() => onNavigate(null, "back")} style={{ padding: "0px 5px", background: "#f0f0f0", border: "0px" }}>
                                     <div style={{ display: "flex", alignItems: "center" }}>
                                         <LeftCircleFilled style={{ marginRight: "5px" /* fontSize: "16px", cursor: "pointer", color: "#8c8c8c" */ }} />
                                         <div>Voltar</div>
@@ -322,7 +322,7 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
                                 </Button>
                             </Col>
                             <Col xs="content">
-                                <Dropdown menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
+                                <Dropdown disabled={disabled} menu={{ items: [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER], onClick: (e) => onNavigate(e.key == "back" ? null : [...HISTORY_DEFAULT, ...history, ...HISTORY_DEFAULT_FOOTER].find(v => v.key === e.key), e.key) }} trigger={['click']}>
                                     <Button type='link' icon={<MenuOutlined />} style={{ background: "#f0f0f0" }} />
                                 </Dropdown>
                             </Col>
@@ -338,8 +338,10 @@ export default ({ title, leftTitle, right, rightHeader, details, description, id
 
 
                                 {/* <div><LeftCircleFilled onClick={() => onNavigate(null, "back")} style={{ fontSize: "16px", cursor: "pointer",marginRight:"5px",color:"#8c8c8c" }} /></div> */}
-
-                                {leftTitle && <div style={{ marginLeft: "10px", alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }}>{leftTitle}</div>}
+                                <div>
+                                    {leftTitle && <div style={{ marginLeft: "10px", alignItems: "center", fontSize: "18px", lineHeight: "normal", fontWeight: 900 }}>{leftTitle}</div>}
+                                    {leftSubTitle && <div style={{ marginLeft: "10px", alignItems: "center", fontSize: "12px", lineHeight: "normal", fontWeight: 400 }}>{leftSubTitle}</div>}
+                                </div>
                                 {/* <Breadcrumb>
                                     {history.length > 0 && <>
                                         {history.length > 1 && <Breadcrumb.Item><Button onClick={(e) => onNavigate(null, "back")} title='Retroceder' size="small" type="link" icon={<CaretLeftOutlined />} /> </Breadcrumb.Item>}

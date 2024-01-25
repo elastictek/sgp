@@ -24,7 +24,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check, ParsedFilters
 from support.myUtils import  ifNull
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -471,6 +471,61 @@ def BobinesOriginaisList(request,format=None):
     return Response(response)
 
 
+def BobinesListV2(request, format=None):
+    connection = connections["default"].cursor()
+    print(request.data.get("filter"))
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
+    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+    
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+
+    cols = f"""
+        mb.*,(mb.comp-mb.comp_actual) metros_cons,
+        sgppl.data_pal,sgppl.nome palete_nome,sgppl.num,sgppl.area palete_area,sgppl.comp_total
+        ,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete,sgppl.peso_liquido,sgppl.cliente_id
+        ,sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original
+        ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
+        ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
+        po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
+        sgppl.disabled,pc.name cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
+        mva.cod artigo_cod,pbm.tiponwinf,pbm.tiponwsup
+    """
+
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""           
+            select {c(f'{dql.columns}')}
+            FROM producao_bobine mb
+            JOIN producao_bobinagem pbm on pbm.id=mb.bobinagem_id
+            LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+            LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+            LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+            LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+            LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+            LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+            LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+            {pf.group()}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+
+    if ("export" in data):
+        dql.limit=f"""limit {data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",data.get("norun"),fakeTotal=True)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+
+
+
+
 def BobinesList(request, format=None):
     type_list = request.data.get("filter").get("type") if request.data.get("filter").get("type") is not None else 'A'
     connection = connections[connGatewayName].cursor() if type_list=='C' else connections["default"].cursor()
@@ -807,7 +862,6 @@ def BobinesLookup(request, format=None):
 
 def TrocaEtiqueta(request, format=None):  
     data = request.data['parameters']
-    parameters=json.loads(data.get("parameters"))
     filter = request.data['filter']
     
     def checkExpedicaoSage(ids,cursor):
@@ -822,6 +876,14 @@ def TrocaEtiqueta(request, format=None):
         if len(response["rows"])>0:
             return response["rows"][0]["cnt"]
         return None
+    
+    def getResult(bobine_original_id,conn):
+        response = db.executeSimpleList(lambda: (f"""
+                select pb.id,pb.nome from temp_troca_etiqueta te join producao_bobine pb on pb.nome=te.bobine_nome where te.bobine_original_id = {bobine_original_id} limit 1
+        """), conn, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]
+        return None
 
     try:
         with transaction.atomic():
@@ -829,10 +891,10 @@ def TrocaEtiqueta(request, format=None):
                 chk01 = checkExpedicaoSage(filter.get("bobine_id"),cursor)
                 if chk01 > 0:
                     return Response({"status": "error", "title": f"Não é possível executar a tarefa. Verifique se já existe expedição."})
-                args = (filter.get("bobine_id"),parameters.get("artigo").get("cod"),parameters.get("cliente").get("BPCNUM_0"),parameters.get("data_imputacao"),parameters.get("obs"),request.user.id,data.get("id"),data.get("subtype"))
-                print(args)
+                args = (filter.get("bobine_id"),data.get("artigo").get("cod"),data.get("cliente").get("BPCNUM_0"),data.get("data_imputacao"),data.get("obs"),request.user.id,data.get("id"),data.get("subtype"))
                 cursor.callproc('troca_etiqueta',args)
-        return Response({"status": "success", "success":f"""Tarefa executada com sucesso!"""})
+                result = getResult(filter.get("bobine_id"),cursor)
+        return Response({"status": "success", "title":f"""Tarefa executada com sucesso!""","data":result})
     except Exception as error:
         print(error)
         return Response({"status": "error", "title": str(error)})

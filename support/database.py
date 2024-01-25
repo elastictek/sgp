@@ -211,7 +211,7 @@ class BaseSql:
             return {"sql":re.sub(self.markPattern,'',text),"parameters":sqParameters}
         return {"sql":re.sub(self.markPattern,'',sql),"parameters":parameters}
 
-    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None, norun= None):
+    def executeList(self, sql, connOrCursor, parameters, ignore=[], customDisableCols=None,countSql=None, norun= None,fakeTotal=False):
         if isinstance(connOrCursor,ConnectionProxy):
             with connOrCursor.cursor() as cursor:
                 execSql = self.computeSequencial(sql(self.enable, self.enable,self.enable), parameters)
@@ -257,7 +257,7 @@ class BaseSql:
                     count = connOrCursor.fetchone()[0]
         if (norun):
             return {"sql":execSql["sql"].replace("%%","%"),"parameters":execSql["parameters"]}
-        return {"rows": rows, "total": count}
+        return {"rows": rows, "total": count, "faketotal":fakeTotal}
 
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[],norun = None):
         if isinstance(connOrCursor,ConnectionProxy):
@@ -871,15 +871,23 @@ def trim_outer_quotes(input_string):
     # If there is a match, return the content between the quotes; otherwise, return the original string
     return match.group(2) if match else input_string
 
+def _computeCase(field,params):
+    if (params.get("case") == "i" and params.get("type") in ["input","string","text"]):
+        return f"lower({field})"
+    return field
+
 class ParsedFilters:
-    def __init__(self,filterData={},prefix="where") -> None:
+    def __init__(self,filterData={},prefix="where",apiversion=None) -> None:
         self.betweenfilters = "and"
         self.hasFilters = False
         self.parameters = {}
         self.filterData = {**filterData}
         self.groups = {}
-        self.compute()
-    
+        self.prefix=prefix
+        if apiversion=="4":
+            print("API VERSION --4--")
+            self.compute()
+
     def compute(self):
         for key, value in self.filterData.items():
             if value.get("group") not in self.groups:
@@ -890,7 +898,7 @@ class ParsedFilters:
                     _ftxt = []
                     for idx, el in enumerate(_param.get("parsed")):
                         _pn = f"f.{_name}.{idx}" #Parameter Name
-                        _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _param.get("alias")
+                        _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
                         #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
                         if el in ["and","or"]:
                             _ftxt.append(f" {el} ")
@@ -920,8 +928,7 @@ class ParsedFilters:
                     if len(_fgrp_txt)>0:
                         _fgrp_txt.append(f" {self.betweenfilters} ")
                     _fgrp_txt.append(f"""({"".join(_ftxt)})""")
-                prefix = "and"
-                self.groups[value.get("group")]=f""" {prefix} ({"".join(_fgrp_txt)})"""
+                self.groups[value.get("group")]=f""" {self.prefix} ({"".join(_fgrp_txt)})"""
         if not self.parameters:
             self.hasFilters=False
         else:

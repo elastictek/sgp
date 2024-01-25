@@ -17,5 +17,6 @@ from print import *
 from sage import *
 from reciclado import *
 from exportdata_A01 import *
+from trocaetiquetas import *
 from producao.api.urls import *
 

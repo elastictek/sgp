@@ -241,7 +241,6 @@ export default (props) => {
         } else {
             dataAPI.setData({ rows: [{ ...inputParameters.current?.palete, id: inputParameters.current?.palete?.palete_id ? inputParameters.current?.palete?.palete_id : inputParameters.current?.palete?.id }], total: 1 });
         }
-
         if (props?.setFormTitle) {
             props.setFormTitle({ title: `Palete ${inputParameters.current?.palete_nome}` }); //Set main Title
         }

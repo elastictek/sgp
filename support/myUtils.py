@@ -3,6 +3,12 @@ import re
 from datetime import datetime, timedelta, timezone
 from django.http import FileResponse
 
+def includeDictKeys(dict,include=[]):
+    return {key: dict[key] for key in include if key in dict}
+
+def excludeDictKeys(dict, exclude=[]):
+    return {key: dict[key] for key in dict if key not in exclude}
+
 def string_lists(input_string):
     # Split the input string based on newline characters, commas, and semicolons
     strs = [v.strip("'\" ") for v in re.split(r'[\n,;]', input_string) if v.strip("'\" ")]

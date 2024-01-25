@@ -381,6 +381,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return { ...ref.current.filter };
         }
     }
+    const getFilters = (fromState = false) => {
+        if (fromState) {
+            return { ...state.filter };
+        } else {
+            return { ...ref.current.filter };
+        }
+    }
     const getAllFilter = () => {
         return { ...state.filter, ...ref.current.filter };
     }
@@ -1225,6 +1232,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         moveRowDown,
         moveRowUp,
         getPrimaryKey,
-        dataSourceV4
+        dataSourceV4,
+        getFilters
     }
 }

@@ -904,13 +904,13 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
 
     const height = (size) => {
         if (!size) {
-            return {height:"28px",minHeight:"28px"};
+            return { height: "28px", minHeight: "28px" };
         } else if (size === "small") {
-            return {height:"22px",minHeight:"22px"};
+            return { height: "22px", minHeight: "22px" };
         } else if (size === "default" || size === "middle") {
-            return {height:"28px",minHeight:"28px"};
+            return { height: "28px", minHeight: "28px" };
         } else if (size === "large") {
-            return {height:"32px",minHeight:"32px"};
+            return { height: "32px", minHeight: "32px" };
         }
     }
 
@@ -935,7 +935,7 @@ const ForView = ({ children, data, keyField, textField, optionsRender, labelInVa
                                 <SwitchField {...children.props} value={value} disabled={true} {...onDoubleClick && { onDoubleClick }} />
                             );
                         case 'Selector':
-                            return (<Selector  forView={true} height={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
+                            return (<Selector forView={true} height={height(children?.props?.size)} {...{ children, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style }} {...rest} />);
                         case 'SelectDebounceField':
                             /* const r = data.find(v => v[keyField] === value);
                             let text = "";
@@ -1301,8 +1301,7 @@ export const Label = ({ ...props }) => {
 
 
 
-export const Container = ({ loading = false, schema, children, id, wrapForm = false, form, initialValues, onFinish, label, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, ...props }) => {
-    if (!id) { throw new Error(`Container (id) is Required!`) }
+export const Container = ({ loading = false, schema, children, id = "default", wrapForm = false, form, initialValues, onFinish, label, onValuesChange, fieldStatus: _fieldStatus, setFieldStatus: _setFieldStatus, forInput = true, wrapFormItem = false, alert = { pos: "bottom", noWrap: true, pointing: false }, style, ...props }) => {
     const [fieldStatus, setFieldStatus] = (_fieldStatus && _setFieldStatus) ? [_fieldStatus, _setFieldStatus] : useState({});
     const updateFieldStatus = (field, status) => {
         const { ...fs } = fieldStatus;
@@ -1326,9 +1325,9 @@ export const Container = ({ loading = false, schema, children, id, wrapForm = fa
             <Context.Provider value={dataContext}>
                 <ConditionalWrapper
                     condition={wrapForm}
-                    wrapper={children => <Form name={`frm-${id}`} form={form} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={initialValues}><MainContainer {...props}>{children}</MainContainer></Form>}
+                    wrapper={children => <Form name={`frm-${id}`} form={form} onFinish={onFinish} onValuesChange={onValuesChange} initialValues={initialValues}>{children}</Form>}
                 >
-                    <MainContainer {...props}>{children}</MainContainer>
+                    <MainContainer style={style} {...props}>{children}</MainContainer>
                 </ConditionalWrapper>
             </Context.Provider>
         </Spin>

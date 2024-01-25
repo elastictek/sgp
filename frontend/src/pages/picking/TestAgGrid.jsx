@@ -32,7 +32,7 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 import useModeApi from 'utils/useModeApi';
-import TableV4, { suppressKeyboardEvent, useModalApi } from 'components/TableV4/TableV4';
+import TableV4, { suppressKeyboardEvent, useModalApi,defaultValueGetter } from 'components/TableV4/TableV4';
 import { Cuba, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, OFabricoStatus, StatusProduction, PosColumn } from 'components/TableV4/TableColumnsTemp';
 import { useImmer } from 'use-immer';
 
@@ -40,7 +40,7 @@ import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines,
 import { GridApi } from 'ag-grid-community';
 
 
-const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection, ...props }) => {
+const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection,valueGetter, ...props }) => {
   const gridRef = useRef(); //not required
   const [gridApi, setGridApi] = useState(); //not Required;
   const modalApi = useModalApi() //not Required;
@@ -55,7 +55,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
     if (permission.isReady) {
       modeApi.load({
         key: null,
-        enabled: false,
+        enabled: true,
         allowEdit: permission.isOk({ item: "stock", /* forInput: [!submitting.state], */ action: "edit" }),
         allowAdd: permission.isOk({ item: "stock",/* forInput: [!submitting.state], */ action: "add" }),
         // onAdd: () => { },
@@ -84,11 +84,11 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
     /**When not loadOnInit, we can do any init changes, before load it */
     if (gridApi && !loadOnInit) {
       //dataAPI.addFilters(excludeObjectKeys({ ...dataAPI.getFilter(), ...fieldValues }, ['tstamp']), true);
-      dataAPI.setSort(null, [{ column: `sgppl.nome`, direction: "DESC" }]);
+      dataAPI.setDefaultSort([{ column: `sgppl.nome`, direction: "DESC" }]);
       dataAPI.addParameters({ ...defaultParameters }, false);
 
       if (!local) {
-        let datasource = dataAPI.dataSourceV4(null);
+        let datasource = dataAPI.dataSourceV4(null, gridApi);
         gridApi.setGridOption("serverSideDatasource", datasource);
       } else {
         submitting.trigger();
@@ -128,7 +128,9 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
       filter: false,
       sortable: modeApi.isOnMode() ? false : true,
       suppressMenu: modeApi.isOnMode() ? true : false,
-      valueGetter: (params) => params.data?.[params.column.getDefinition().field],
+      valueGetter: (params) => {
+        return defaultValueGetter(params,valueGetter);
+      },
       suppressKeyboardEvent
       //   valueSetter: params => {
       //     params.data[params.column.getDefinition().field] = params.newValue;
@@ -223,6 +225,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
           clearSort: true
         }}
         modeApi={modeApi}
+
       />
     </div>
   );

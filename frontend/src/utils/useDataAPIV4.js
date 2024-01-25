@@ -1,12 +1,319 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
 import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
-import { deepEqual, pickAll, getInt } from 'utils';
+import { deepEqual, pickAll, getInt, sleep } from 'utils';
 import { produce, finishDraft } from 'immer';
 import { useImmer } from "use-immer";
 import { json, includeObjectKeys } from "utils/object";
-import { validateMessages } from './schemaValidator';
 import { uid } from 'uid';
+import { isEmpty, isNil } from 'ramda';
+import { AppContext } from "app";
+
+//const filterRegExp = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^btw:|^in:|^!btw|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
+export const filterRegExp = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i');
+
+export const parseFilter = (name, parsed, { group = "t1", type = "input", options = {} }) => {
+    return { [name]: { parsed: Array.isArray(parsed) ? parsed : [parsed], group, type, ...options } };
+}
+
+const _filterParser = (value, filter, opTag) => {
+    const _op = filter?.op ? filter.op.toLowerCase() : "any";
+    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%")) {
+        return `${value}`;
+    }
+    if (value.includes("%")) {
+        return `${value}`;
+    }
+    switch (_op) {
+        case 'any': return `%${value.replaceAll(' ', '%%')}%`;
+        case 'start': return `${value}%`;
+        case 'end': return `%${value}`;
+        case 'exact': return `==${value}`;
+        default: return `${value}`;
+    }
+}
+
+// const _fixConditions = (v) => {
+//     // Rule 0 - trim all spaces not inside '' and all new lines
+//     let input = v.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
+
+//     // Rule 1
+//     input = input.replace(/([^&|\(])\(/g, '$1&(');
+//     input = input.replace(/\(\s*[&|]/g, '(');
+
+//     // Rule 2
+//     input = input.replace(/\)([^&|\)])/g, ')&$1');
+
+//     // Rule 3
+//     input = input.replace(/([^&|\(])\(/g, '$1&(');
+
+//     // Rule 4
+//     input = input.replace(/\)([^&|\)])/g, ')&$1');
+
+//     // Rule 5
+//     input = input.replace(/([&|])\1+/g, '$1');
+
+
+
+
+
+//     // Rule 6
+//     const openParenCount = (input.match(/\(/g) || []).length;
+//     const closeParenCount = (input.match(/\)/g) || []).length;
+//     const parenDiff = openParenCount - closeParenCount;
+
+//     if (parenDiff > 0) {
+//         for (let i = 0; i < parenDiff; i++) {
+//             input += ')';
+//         }
+//     } else if (parenDiff < 0) {
+//         for (let i = 0; i < -parenDiff; i++) {
+//             input = '(' + input;
+//         }
+//     }
+
+//     return input;
+// }
+
+const customSplit = (input) => {
+    let result = [];
+    let insideQuotes = false;
+    let currentChunk = '';
+    // Rule 0 - trim all spaces not inside '' and all new lines
+    //const _input = input.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
+    const _input = input.replace(/'[^']*'|"[^"]*"|\s+/g, function (match) {
+        return match.startsWith("'") || match.startsWith('"') ? match : '';
+    });
+
+    for (let i = 0; i < _input.length; i++) {
+        const char = _input[i];
+
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+            currentChunk += char;
+        } else if (insideQuotes) {
+            currentChunk += char;
+        } else if (char === '&' || char === '|' || char === '(' || char === ')') {
+            if (currentChunk.trim() !== '') {
+                result.push(currentChunk.trim());
+            }
+            result.push(char);
+            currentChunk = '';
+        } else {
+            currentChunk += char;
+        }
+    }
+
+    if (currentChunk.trim() !== '') {
+        result.push(currentChunk.trim());
+    }
+
+    return result;
+}
+
+export const filtersDef = (filters, gridRef, all = false) => {
+    let _idx = filters?.toolbar.indexOf("@columns");
+    let _newfilters = (_idx >= 0) ? [...filters?.toolbar.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.toolbar.slice(_idx)] : [...filters?.toolbar];
+    if (all) {
+        let _idx = filters?.more.indexOf("@columns");
+        let _morefilters = (_idx >= 0) ? [...filters?.more.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.more.slice(_idx)] : [...filters?.more];
+        _newfilters = [..._newfilters, ..._morefilters, "fcustom"];
+    }
+    const _f = {};
+    for (const v of _newfilters.filter(v => v !== "@columns" && v !== undefined)) {
+        if (Object.prototype.toString.call(v) === '[object Object]') {
+            let _headerName = "";
+            if (v?.colId || v?.headerName) {
+                _headerName = v?.headerName;
+            } else {
+                _headerName = gridRef.current.api.getColumnDefs().find(x => x.field === v.field)?.headerName;
+            }
+            let _alias = v.field;
+            if (!v?.colId && !v?.alias) {
+                _alias = gridRef.current.api.getColumnDefs().find(x => x.field === v.field)?.colId;
+                if (!_alias) {
+                    _alias = v.field;
+                }
+            }
+            _f[v.field] = {
+                type: v?.type ? v.type : _f?.[v.field]?.type ? _f[v.field]?.type : "input",
+                name: v.field,
+                alias: v?.colId ? v.colId : v?.alias ? v.alias : _f?.[v.field]?.colId ? _f[v.field]?.colId : _alias,
+                style: v?.style ? v?.style : _f?.[v.field]?.style ? _f[v.field]?.style : null,
+                op: v?.op ? v.op : _f?.[v.field]?.op ? _f[v.field]?.op : null,
+                label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
+                col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
+                mask: v?.mask ? v.mask : _f?.[v.field]?.mask ? _f[v.field]?.mask : null,
+                group: v?.group ? v.group : _f?.[v.field]?.group ? _f[v.field]?.group : "t1",
+                multi: v?.multi ? v.multi : _f?.[v.field]?.multi ? _f[v.field]?.multi : false,
+                // exp: v?.exp ? v.exp : _f?.[v.field]?.exp ? _f[v.field]?.exp : null,
+                options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null,
+                case: v?.case ? v.case : _f?.[v.field]?.case ? _f[v.field]?.case : "i",
+            }
+        } else {
+            const _s = gridRef.current.api.getColumnDefs().find(x => x.field === v);
+            const _headerName = _s?.headerName;
+            let _alias = _s?.colId;
+            if (!_alias) {
+                _alias = v;
+            }
+            _f[v] = {
+                type: _f?.[v]?.type ? _f[v]?.type : "input",
+                name: v,
+                alias: _f?.[v]?.alias ? _f[v]?.alias : _alias,
+                style: _f?.[v]?.style ? _f[v]?.style : null,
+                op: _f?.[v]?.op ? _f[v]?.op : null,
+                label: _f?.[v]?.label ? _f[v]?.label : _headerName ? _headerName : v,
+                col: _f?.[v]?.col ? _f[v]?.col : "content",
+                mask: _f?.[v]?.mask ? _f[v]?.mask : null,
+                group: _f?.[v]?.group ? _f[v]?.group : "t1",
+                multi: _f?.[v]?.multi ? _f[v]?.multi : false,
+                // exp: _f?.[v]?.exp ? _f[v]?.exp : null,
+                options: _f?.[v]?.options ? _f[v]?.options : null,
+                case: _f?.[v]?.case ? _f[v]?.case : "i",
+            }
+        }
+    }
+    return Object.values(_f);
+};
+
+export const processConditions = (inputValue, filterDef, rel = "and", logic = "") => {
+    let _input = inputValue;
+    if (isNil(inputValue) || isEmpty(inputValue)) {
+        return null;
+    }
+    if (typeof inputValue === 'object' && !Array.isArray(inputValue)) {
+        _input = inputValue?.value;
+        if (isNil(_input) || isEmpty(_input)) {
+            return null;
+        }
+    }
+    if (Array.isArray(_input)) {
+        if (_input.length == 0) { return null; }
+        console.log("processed--->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
+        return { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef };
+
+    }
+
+
+    //const conditionsArray = _input.split(';');
+    // const conditionsArray = _input.split(/([&|])/).reduce((acc, current, index, array) => {
+    //     if (index > 0 && array[index - 1] === '&' || array[index - 1] === '|') {
+    //       acc[acc.length - 1] += current;
+    //     } else {
+    //       acc.push(current);
+    //     }
+    //     return acc;
+    //   }, []);.toString().split(/([&|()])/)
+    //const conditionsArray = _fixConditions(_input).toString().split(/([&|()])/).filter(Boolean);
+    const conditionsArray = customSplit(_input);
+    console.log("conditions", conditionsArray)
+    const _values = [];
+    const _parsedvalues = [];
+    for (const [idx, condition] of conditionsArray.entries()) {
+        let _valid = true;
+        const _value = [];
+        const _parsedvalue = [];
+
+        if (["&", "|", "(", ")"].includes(condition)) {
+            if (idx >= 1 && !["(", ")"].includes(condition) && ["&", "|"].includes(_values[_values.length - 1])) {
+                continue;
+            }
+            if (["(", ")"].includes(condition)) {
+                _parsedvalues.push(condition);
+                _values.push(condition);
+                continue;
+            }
+
+            _parsedvalues.push(condition === "&" ? "and" : "or");
+            _values.push(condition);
+            continue;
+        }
+        const matches = condition.trim().toString().match(filterRegExp);
+        const _opTag = matches ? matches[1] : "";
+        const _x = matches ? matches[2] : condition.trim().toString();
+        if (_opTag === "@:") {
+            _parsedvalues.push(condition);
+            _values.push(condition);
+            continue;
+        }
+        if (_opTag === ":") {
+            if (condition.trim() === ":") {
+                continue;
+            }
+            _parsedvalues.push(condition);
+            _values.push(condition);
+            continue;
+        }
+
+        if (!isEmpty(_x) || (["isnull", "!isnull"].includes(_opTag))) {
+            for (const value of _x.split(',')) {
+                if (filterDef.type === "options") {
+                    const _t = (_opTag === "") ? "==" : "";
+                    _value.push(value);
+                    _parsedvalue.push(`${_t}${value}`);
+                } else if (filterDef.type === "number") {
+                    if (isNaN(+value)) {
+                        _valid = false;
+                        break;
+                    } else {
+                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        _value.push(value);
+                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                    }
+                } else if (filterDef.type === "date") {
+                    const parsedDate = dayjs(value, { strict: true });
+                    if (!parsedDate.isValid()) {
+                        _valid = false;
+                        break;
+                    } else {
+                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        _value.push(parsedDate.format(DATE_FORMAT));
+                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                    }
+                } else if (filterDef.type === "datetime") {
+                    const parsedDate = dayjs(value, { strict: true });
+                    if (!parsedDate.isValid()) {
+                        _valid = false;
+                        break;
+                    } else {
+                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        _value.push(parsedDate.format(DATETIME_FORMAT));
+                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                    }
+                } else if (filterDef.type === "time") {
+                    const parsedDate = dayjs(value, TIME_FORMAT);
+                    if (!parsedDate.isValid()) {
+                        _valid = false;
+                        break;
+                    } else {
+                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        _value.push(parsedDate.format(TIME_FORMAT));
+                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                    }
+                } else {
+                    const _v = filterDef.case === "i" ? value.toLowerCase() : value;
+                    _value.push(value);
+                    _parsedvalue.push(_filterParser(_v.replace(/\n/g, ''), filterDef, _opTag));
+                }
+            }
+            if (_valid) {
+                _values.push(`${_opTag}${_value.join(",")}`);
+                _parsedvalues.push(`${_opTag}${_parsedvalue.join(",")}`);
+            }
+
+        };
+    }
+    if (_parsedvalues.length === 0) {
+        return null;
+    }
+    if (["&", "|"].includes(_values[_values.length - 1])) {
+        _values.splice(_values.length - 1, 1);
+        _parsedvalues.splice(_parsedvalues.length - 1, 1);
+    }
+    console.log("processed--->", { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef });
+    return { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef };
+}
 
 export const getLocalStorage = (id, useStorage) => {
     if (useStorage && id) {
@@ -18,42 +325,6 @@ export const getLocalStorage = (id, useStorage) => {
         return v;
     }
     return {};
-}
-
-const _getStatus = (vObject, { formStatus = { error: [], warning: [], info: [], success: [] }, fieldStatus = {} } = {}, rowKey, rowIndex) => {
-    const ret = { errors: 0, warnings: 0, formStatus: { ...formStatus }, fieldStatus: { ...fieldStatus } };
-    ret.value = vObject?.value;
-    if (vObject?.error) {
-        for (const itm of vObject.error?.details) {
-            ret.errors++;
-            if (itm.path.length > 0) {
-                if (!(rowKey in ret.fieldStatus)) {
-                    ret.fieldStatus[rowKey] = { [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
-                } else {
-                    ret.fieldStatus[rowKey] = { ...ret.fieldStatus[rowKey], [itm.path[0]]: { status: "error", col: itm.path[0], msg: [{ message: itm.message }] } };
-                }
-                ret.fieldStatus[rowKey]["row"] = rowIndex;
-            } else {
-                ret.formStatus.error.push({ message: itm.message });
-            }
-        }
-    }
-    if (vObject?.warning) {
-        for (const itm of vObject.warning?.details) {
-            ret.warnings++;
-            if (itm.path.length > 0) {
-                if (!(rowKey in ret.fieldStatus)) {
-                    ret.fieldStatus[rowKey] = { [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
-                } else {
-                    ret.fieldStatus[rowKey] = { ...ret.fieldStatus[rowKey], [itm.path[0]]: { status: "warning", col: itm.path[0], msg: [{ message: itm.message }] } };
-                }
-                ret.fieldStatus[rowKey]["row"] = rowIndex;
-            } else {
-                ret.formStatus.warning.push({ message: itm.message });
-            }
-        }
-    }
-    return ret;
 }
 
 const _computeSort = (_s = []) => {
@@ -108,46 +379,94 @@ const _mergeObjects = (obj1, obj2) => {
     return result;
 }
 
+
+
+const _dataPost = (url, method, values, filter, parameters, schema) => {
+    //TODO info warning success
+    const obj = {
+        url, method, values, filter, parameters, schema,
+        alerts: { error: [], info: [], warning: [], success: [] },
+        success: null,
+        valid: true,
+        response: null,
+        timestamp: new Date(),
+        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
+        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
+        onSuccess: async function (fn) { if ((this.valid && this.success) && typeof fn === "function") { fn(this); } },
+        onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
+    };
+    return obj;
+}
+
+const _dataValidation = (values, schema) => {
+    //TODO info warning success
+    const obj = {
+        values, schema,
+        alerts: { error: [], info: [], warning: [], success: [] },
+        valid: true,
+        timestamp: new Date(),
+        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
+        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
+    };
+    return obj;
+}
+
+const _dataRowsValidation = (values, schema) => {
+    //TODO info warning success
+    const obj = {
+        values, schema,
+        alerts: { error: {}, info: {}, warning: {}, success: {} },
+        valid: true,
+        timestamp: new Date(),
+        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { return fn(this); } },
+        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { return fn(this); } },
+    };
+    return obj;
+}
+
+
 export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
-    const [status, updateStatus] = useImmer({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
-    const statusRef = useRef({ fieldStatus: {}, formStatus: {}, errors: 0, warnings: 0 });
+    const { openNotification } = useContext(AppContext);
     const [isLoading, setIsLoading] = useState(false);
     const action = useRef([]);
+    const apiversion = "4"
     const [state, updateState] = useImmer({
         init: false,
         initLoaded: payload?.initLoaded || false,
-        dsV4StateInit: false,
         update: Date.now(),
         pagination: payload?.pagination || { enabled: false, pageSize: 10 },
         filter: payload?.filter || {},
-        baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         preFilter: payload?.preFilter ? { ...payload.preFilter } : {},
         defaultSort: _computeSort(payload?.sort),
-        sort: payload?.sort || [],
+        //sort: payload?.sort || [],
+        sort: [],
         parameters: payload?.parameters || {},
         primaryKey: payload?.primaryKey || null,
         data: (payload?.data) ? payload.data : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
         ...getLocalStorage(id, useStorage),
+        baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         totalRows: 0
     });
     const ref = useRef({
         init: false,
         id: id,
+        dsV4StateInit: false,
         initLoaded: payload?.initLoaded || false,
         update: null,
         primaryKey: payload?.primaryKey || null,
         pagination: payload?.pagination ? { ...payload.pagination } : { enabled: false, pageSize: 10 },
         filter: payload?.filter ? { ...payload.filter } : {},
-        baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         preFilter: payload?.preFilter ? { ...payload.preFilter } : {},
         defaultSort: _computeSort(payload?.sort),
-        sort: payload?.sort ? [...payload.sort] : [],
+        sort: [],//sort: payload?.sort ? [...payload.sort] : [],
         parameters: payload?.parameters ? { ...payload.parameters } : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
         ...getLocalStorage(id, useStorage),
+        baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
+        sortMap: payload?.sortMap ? { ...payload.sortMap } : {},
         totalRows: 0
     });
 
@@ -157,6 +476,117 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.init = true;
         });
     }, []);
+
+
+
+    const _fieldZodDescription = (schema, path) => {
+        const parts = Array.isArray(path) ? path : path.split('.');
+        let descriptions = "";
+        for (const part of parts) {
+            if (schema && !schema?.shape?.[part] && schema?._def?.schema) {
+                schema = schema._def.schema.shape[part];
+                if (schema?.description) {
+                    descriptions = `${descriptions} ${schema?.description}`;
+                }
+            } else if (schema && schema?.shape) {
+                schema = schema.shape[part];
+                if (schema?.description) {
+                    descriptions = `${descriptions} ${schema?.description}`;
+                }
+            } else {
+                return null;
+            }
+        }
+        return descriptions !== "" ? descriptions : parts.join(".");
+    }
+
+    const validate = async (values = {}, schema, passthrough = true) => {
+        let validation = null;
+        let p = _dataValidation(values, schema);
+        p.timestamp = new Date();
+        validation = passthrough ? await p.schema.passthrough().spa(p.values) : await p.schema.spa(p.values);
+        p.valid = validation.success;
+        if (!validation.success) {
+            const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
+            p.alerts.error.push(..._errors);
+        }
+        return p;
+    }
+
+    const validateRows = async (rows = [], schema, nodeId, passthrough = true) => {
+        let validation = null;
+        let p = _dataRowsValidation(rows, schema);
+        p.timestamp = new Date();
+        for (const row of p.values) {
+            validation = passthrough ? await p.schema.passthrough().spa(row) : await p.schema.spa(row);
+            p.valid = (p.valid === true ) ? validation.success : p.valid;
+            if (!validation.success) {
+                const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
+                p.alerts.error[row[nodeId]] = _errors;
+            }else{
+                p.alerts.error[row[nodeId]] = null;
+            }
+        }
+        return p;
+    }
+
+    const safePost = async (url, method, { filter = {}, parameters = {}, values = {}, schema, onPre, notify = ["run_fail", "run_success", "fatal"], passthrough = true, ...rest } = {}) => {
+        let p = _dataPost(url, method, values, filter, parameters, schema);
+        let validation = null;
+        let response = null;
+        try {
+            p.timestamp = new Date();
+            if (typeof preProcess === "function") {
+                await pre(p);
+            }
+            if (p?.schema) {
+                validation = passthrough ? await p.schema.passthrough().spa(p.values) : await p.schema.spa(p.values);
+                p.valid = validation.success;
+                if (!validation.success) {
+                    const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
+                    if (notify && notify.includes("props")) {
+                        //TODO
+                        //openNotification("error", "top", "Notificação", e.message);
+                    }
+                    p.alerts.error.push(..._errors);
+                }
+            } else {
+                validation = { success: true };
+            }
+
+            if (validation?.success) {
+                response = await fetchPost({ url: p.url, filter: p.filter, parameters: { method: p.method, ...p.parameters, apiversion: "4" } });
+                p.response = response?.data;
+                if (!response || response?.data?.status !== "success") {
+                    p.success = false;
+                    p.alerts.error.push({ code: "RUN_ERROR", message: response?.data?.title, type: "run_fail" });
+                    if (notify && notify.includes("run_fail")) {
+                        openNotification("error", "top", "Notificação", response?.data?.title);
+                    }
+                } else if (response?.data?.status === "success") {
+                    const { title, status, ...rest } = response?.data;
+                    p.success = true;
+                    p.alerts.success.push({ code: "RUN_SUCCESS", message: title, type: "run_success", ...rest });
+                    if (notify && notify.includes("run_success")) {
+                        openNotification("success", "top", "Notificação", title);
+                    }
+                }
+            }
+        } catch (e) {
+            console.log(e);
+            p.success = false;
+            p.alerts.error.push({ code: e.code, message: e.message, type: "fatal" });
+            if (notify && notify.includes("fatal")) {
+                openNotification("error", "top", e.code, e.message);
+            }
+        };
+        return p;
+    }
+
+
+
+
+
 
     const setPayload = (payload) => {
         updateState(payload);
@@ -230,15 +660,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             });
         }
     }
-    const getSkip = (fromState) => {
-        console.log("----DEPRECATED----getSkip");
-        if (fromState) {
-            return (state.pagination.page - 1) * state.pagination.pageSize;
-        } else {
-
-            return (ref.current.pagination.page - 1) * ref.current.pagination.pageSize;
-        }
-    };
     const getRowOffset = (row, fromState) => {
         if (typeof row == 'number') {
             if (getPagination(fromState).enabled) {
@@ -283,6 +704,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return getInt(ref.current.pagination.page, 1);
         }
     };
+
+    const setDefaultSort = (obj) => {
+        const _s = (obj && obj.length > 0) ? obj : [];
+        ref.current.defaultSort = _computeSort(_s);
+    }
 
     const setSort = (obj, defaultObj, updateStateData = false) => {
         addAction('sort');
@@ -460,8 +886,12 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     }
 
-    const _totalRows = (rows, total) => {
+    const _totalRows = (rows, total, fakeTotal = false) => {
         if (total) {
+            if (fakeTotal === true) {
+                const _len = (rows && Array.isArray(rows)) ? rows.length : 0;
+                return (_len < getPageSize()) ? _len : total;
+            }
             return total;
         }
         if (rows && Array.isArray(rows)) {
@@ -477,7 +907,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             ref.current.updated = Date.now();
         }
 
-        const _trows = ignoreTotalRows ? data?.rows?.length ?? 0 : _totalRows(data?.rows, data?.total);
+        const _trows = ignoreTotalRows ? data?.rows?.length ?? 0 : _totalRows(data?.rows, data?.total, data?.faketotal);
 
         ref.current.totalRows = _trows;
         updateState(draft => {
@@ -773,8 +1203,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ignoreTotalRows = false, norun = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
-        const payload = getPayload(fromState);
+        const { sort, ...payload } = getPayload(fromState);
         payload.tstamp = Date.now();
+        payload.apiversion = apiversion;
         if (rest?.update === true) {
             payload.update = true;
         } else {
@@ -788,8 +1219,18 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
             }
             try {
-                const dt = (await fetchPost({ url: _url, norun, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, filter: { ..._mergeObjects(ref.current.filter, ref.current.preFilter?.filter), ...ref.current.baseFilter }, ...((signal) ? { signal } : { cancelToken: token }) })).data;
-                if (typeof rowFn === "function") {
+                const _sort = sort.map(v => {
+                    if (v.column in ref.current.sortMap) {
+                        v.column = ref.current.sortMap[v.column];
+                        return v;
+                    }
+                    return v;
+                });
+                const dt = (await fetchPost({ url: _url, norun, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, sort: _sort, filter: { ..._mergeObjects(ref.current.filter, ref.current.preFilter?.filter), ...ref.current.baseFilter }, ...((signal) ? { signal } : { cancelToken: token }) })).data;
+                if (!Array.isArray(dt?.rows)) {
+                    ret = dt;
+                    setData(ret, payload, ignoreTotalRows);
+                } else if (typeof rowFn === "function") {
                     ret = await rowFn(dt);
                     setData(ret, payload, ignoreTotalRows);
                 } else if (typeof fnPostProcess === "function") {
@@ -887,248 +1328,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         action.current = [];
     }
 
-    const validateRows = (schema, status = {}, options = {}, rows = null) => {
-        let _accStatus = status?.status ? status?.status : {};
-        let _errors = status?.errors ? status?.errors : 0;
-        let _warnings = status?.warnings ? status?.warnings : 0;
-        const _rows = rows ? rows : state.data.rows;
-        let _schema = schema;
-        if (typeof schema === "function") {
-            _schema = schema();
-        }
-        for (const [i, v] of _rows.entries()) {
-            if (v?.rowvalid === 0 || v?.rowadded === 1) {
-                let { errors, warnings, value, ..._status } = _getStatus(_schema.validate(v, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, v[getPrimaryKey()], i);
-                _accStatus = _status;
-                _errors = _errors + errors;
-                _warnings = _warnings + warnings;
-            }
-        }
-        statusRef.current = {
-            errors: _errors,
-            warnings: _warnings,
-            fieldStatus: _accStatus?.fieldStatus || {},
-            formStatus: _accStatus?.formStatus || {},
-        };
-        updateStatus(draft => {
-            draft.errors = _errors;
-            draft.warnings = _warnings;
-            draft.fieldStatus = _accStatus?.fieldStatus || {};
-            draft.formStatus = _accStatus?.formStatus || {};
-        });
-        return { ..._accStatus, errors: _errors, warnings: _warnings };
-    }
-
-    const validateRow = (schema, status = {}, options = {}, row = {}, rowIndex) => {
-        let _accStatus = status?.status ? status?.status : {};
-        let _errors = status?.errors ? status?.errors : 0;
-        let _warnings = status?.warnings ? status?.warnings : 0;
-        let _schema = schema;
-        if (typeof schema === "function") {
-            _schema = schema();
-        }
-        let { errors, warnings, value, ..._status } = _getStatus(_schema.validate(row, { abortEarly: false, messages: validateMessages, context: {}, ...options }), _accStatus, row[getPrimaryKey()], rowIndex);
-        _accStatus = _status;
-        _errors = _errors + errors;
-        _warnings = _warnings + warnings;
-        return ({
-            errors: _errors,
-            warnings: _warnings,
-            fieldStatus: _accStatus?.fieldStatus || {},
-            formStatus: _accStatus?.formStatus || {},
-        });
-    }
-
-    const _updateRowStatus = ({ errors = 0, warnings = 0, fieldStatus, formStatus }, rowKey, updateState = true) => {
-        const _gridStatus = { ...statusRef.current };
-        _gridStatus.fieldStatus = { ..._gridStatus.fieldStatus, [rowKey]: fieldStatus?.[rowKey] };
-        const _alerts = getNumAlerts(_gridStatus);
-        statusRef.current = {
-            errors: _alerts.errors,
-            warnings: _alerts.warnings,
-            fieldStatus: _gridStatus.fieldStatus || {}
-        };
-        if (updateState) {
-            updateStatus(draft => {
-                draft.errors = statusRef.current.errors;
-                draft.warnings = statusRef.current.warnings;
-                draft.fieldStatus = statusRef.current.fieldStatus
-            });
-        }
-    }
-
-    const _updateStatus = (_status = null) => {
-        if (_status) {
-            statusRef.current = {
-                errors: _status?.errors,
-                warnings: _status?.warnings,
-                fieldStatus: _status.fieldStatus || {},
-                formStatus: _status?.formStatus || {}
-            };
-        }
-        updateStatus(draft => {
-            draft.errors = statusRef.current.errors;
-            draft.warnings = statusRef.current.warnings;
-            draft.fieldStatus = statusRef.current.fieldStatus;
-            draft.formStatus = statusRef.current.formStatus;
-        });
-    }
-
-    const clearRowStatus = (rowKey) => {
-        const _gridStatus = { ...status };
-        let _errors = 0;
-        let _warnings = 0;
-        if (_gridStatus?.fieldStatus?.[rowKey]) {
-            const _keys = Object.keys(_gridStatus?.fieldStatus?.[rowKey]);
-            for (let v of _keys) {
-                if (_gridStatus?.fieldStatus?.[rowKey]?.[v].status === "error") {
-                    _errors += _gridStatus?.fieldStatus?.[rowKey]?.[v].msg.length;
-                } else {
-                    _warnings += _gridStatus?.fieldStatus?.[rowKey]?.[v].msg.length;
-                }
-            }
-            delete _gridStatus?.fieldStatus?.[rowKey];
-        }
-        _gridStatus.errors = _gridStatus.errors - _errors;
-        _gridStatus.warnings = _gridStatus.warnings - _warnings;
-        statusRef.current = {
-            errors: _gridStatus.errors,
-            warnings: _gridStatus.warnings,
-            fieldStatus: _gridStatus?.fieldStatus || {},
-            formStatus: _gridStatus?.formStatus || {},
-        };
-        updateStatus(draft => {
-            draft.errors = _gridStatus.errors;
-            draft.warnings = _gridStatus.warnings;
-            draft.fieldStatus = _gridStatus?.fieldStatus || {};
-            draft.formStatus = _gridStatus?.formStatus || {};
-        });
-        return _gridStatus;
-    }
-
-    const clearStatus = () => {
-        statusRef.current = { errors: 0, warnings: 0, fieldStatus: {}, formStatus: {} };
-        updateStatus(draft => { draft.fieldStatus = {}; draft.formStatus = {}; draft.errors = 0; draft.warnings = 0; });
-    }
-
-    const validateField = (schema, rowKey, column, value, rowIndex) => {
-        let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowKey, rowIndex);
-        let _gridStatus = { ...status };
-        //const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
-        if (_gridStatus?.fieldStatus?.[rowKey]?.[column]) {
-            _gridStatus.fieldStatus[rowKey]["row"] = rowIndex;
-            if (_gridStatus?.fieldStatus?.[rowKey]?.[column].status === "error") {
-                _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowKey]?.[column].msg.length;
-            } else {
-                _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowKey]?.[column].msg.length;
-            }
-            delete _gridStatus?.fieldStatus?.[rowKey]?.[column];
-        }
-        _gridStatus.fieldStatus = { ..._gridStatus.fieldStatus, [rowKey]: { ..._gridStatus?.fieldStatus?.[rowKey], ...fieldStatus?.[rowKey] } };
-        _gridStatus.errors = _gridStatus.errors + errors;
-        _gridStatus.warnings = _gridStatus.warnings + warnings;
-        statusRef.current = {
-            errors: _gridStatus.errors,
-            warnings: _gridStatus.warnings,
-            fieldStatus: _gridStatus?.fieldStatus,
-            formStatus: _gridStatus?.formStatus
-        };
-        updateStatus(draft => {
-            draft.errors = _gridStatus.errors;
-            draft.warnings = _gridStatus.warnings;
-            draft.fieldStatus = _gridStatus.fieldStatus;
-            draft.formStatus = _gridStatus.formStatus;
-        });
-        return _gridStatus;
-        // let { errors, warnings, fieldStatus, formStatus } = _getStatus(schema({ keys: [column], wrapArray: false }).validate({ [column]: value }, { abortEarly: false, messages: validateMessages, context: {} }), {}, rowIndex);
-        // const _gridStatus = JSON.parse(JSON.stringify(gridStatus));
-        // if (_gridStatus?.fieldStatus?.[rowIndex]?.[column]) {
-        //     if (_gridStatus?.fieldStatus?.[rowIndex]?.[column].status === "error") {
-        //         _gridStatus.errors = _gridStatus.errors - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
-        //     } else {
-        //         _gridStatus.warnings = _gridStatus.warnings - _gridStatus?.fieldStatus?.[rowIndex]?.[column].msg.length;
-        //     }
-        //     delete _gridStatus?.fieldStatus?.[rowIndex]?.[column];
-        // }
-        // _gridStatus.fieldStatus[rowIndex] = { ..._gridStatus?.fieldStatus?.[rowIndex], ...fieldStatus[rowIndex] };
-        // _gridStatus.errors = _gridStatus.errors + errors;
-        // _gridStatus.warnings = _gridStatus.warnings + warnings;
-        // return _gridStatus;
-    }
-
-    const getMessages = (_status = null) => {
-        const _s = _status ? _status : status;
-        const messages = { error: [], warning: [] };
-        for (const rowKey of Object.keys(_s?.fieldStatus)) {
-
-            for (const col of Object.keys(_s.fieldStatus?.[rowKey] || {})) {
-                if (col !== "row") {
-                    const item = _s.fieldStatus[rowKey][col];
-                    for (const msg of item.msg) {
-                        messages[item.status].push(`#${_s.fieldStatus[rowKey]?.["row"] + 1} ${msg?.message}`);
-                    }
-                }
-            }
-        }
-        if (_s.formStatus?.error) {
-            for (const msg of _s.formStatus?.error) {
-                if (typeof msg === 'object' && msg !== null && 'message' in msg) {
-                    messages["error"].push(`${msg.message}`);
-                } else {
-                    messages["error"].push(`${msg}`);
-                }
-            }
-        }
-        if (_s.formStatus?.warning) {
-            for (const msg of _s.formStatus?.warning) {
-                if (typeof msg === 'object' && msg !== null && 'message' in msg) {
-                    messages["warning"].push(`${msg.message}`);
-                } else {
-                    messages["warning"].push(`${msg}`);
-                }
-            }
-        }
-        return messages;
-    }
-
-    const getNumAlerts = (gridStatus = null) => {
-        const _gridStatus = gridStatus ? gridStatus : statusRef.current;
-        const messages = { errors: 0, warnings: 0 };
-        for (const rowKey of Object.keys(_gridStatus?.fieldStatus || {})) {
-            for (const col of Object.keys(_gridStatus?.fieldStatus?.[rowKey] || {})) {
-                if (col !== "row") {
-                    const item = _gridStatus?.fieldStatus[rowKey][col];
-                    for (const msg of item.msg) {
-                        if (item.status === "error") {
-                            messages.errors = messages.errors + 1;
-                        }
-                        if (item.status === "warning") {
-                            messages.warnings = messages.warnings + 1;
-                        }
-                    }
-                }
-            }
-        }
-        if (_gridStatus?.formStatus?.error) {
-            for (const msg of _gridStatus?.formStatus?.error) {
-                messages.errors = messages.errors + 1;
-            }
-        }
-        if (_gridStatus?.formStatus?.warning) {
-            for (const msg of _gridStatus?.formStatus?.warning) {
-                messages.warnings = messages.warnings + 1;
-            }
-        }
-        return messages;
-    }
-
-    const getFieldStatus = (key) => {
-        if (key) {
-            return status.fieldStatus?.[key];
-        }
-        return status.fieldStatus;
-    }
-
     const getPrimaryKey = (fromState = false) => {
         if (fromState) {
             return state.primaryKey;
@@ -1155,22 +1354,34 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
     }
 
+    const loadSortStateV4 = (api) => {
+        let _sort = getSort();
+        _sort = (_sort && _sort.length > 0) ? _sort : _computeSort(getDefaultSort());
+        api.applyColumnState({
+            state: _sort.map(v => includeObjectKeys(v, ["colId", "sort"])),
+            defaultState: { sort: null },
+            applyOrder: false
+        });
+    }
+
     /** Only for AG-GRID */
-    const dataSourceV4 = (gridRef) => {
+    const dataSourceV4 = (gridRef, _api) => {
+        //Load Sort State
+        loadSortStateV4(_api);
         return {
             getRows: async (params) => {
                 const { api } = gridRef?.current || params;
-                if (!ref.current.dsV4StateInit) {
-                    //load Grid State through dataAPI
-                    let _sort = getSort();
-                    _sort = (_sort && _sort.length > 0) ? _sort : _computeSort(getDefaultSort());
-                    params.api.applyColumnState({
-                        state: _sort.map(v => includeObjectKeys(v, ["colId", "sort"])),
-                        defaultState: { sort: null },
-                        applyOrder: false
-                    });
-                    ref.current.dsV4StateInit = true;
-                }
+                // if (!ref.current.dsV4StateInit) {
+                //     //load Grid State through dataAPI
+                //     // let _sort = getSort();
+                //     // _sort = (_sort && _sort.length > 0) ? _sort : _computeSort(getDefaultSort());
+                //     // api.applyColumnState({
+                //     //     state: _sort.map(v => includeObjectKeys(v, ["colId", "sort"])),
+                //     //     defaultState: { sort: null },
+                //     //     applyOrder: false
+                //     // });
+                //     ref.current.dsV4StateInit = true;
+                // }
                 if (!ref.current.initLoaded && getCurrentPage() !== 1) {
                     //WORKAROUND FOR INITIAL PAGE (FROM STATE)
                     ref.current.initLoaded = (ref.current.initLoaded === false) ? true : ref.current.initLoaded;
@@ -1181,15 +1392,15 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     });
                 }
                 else {
-                    console.log("SERVER-REQUEST")
                     api.showLoadingOverlay();
                     currentPage(api.paginationGetCurrentPage() + 1);
                     setSort(params.request.sortModel);
                     const data = await _fetchPost();
+                    console.log("SERVER-REQUEST", ref, params.request.sortModel, data.total, data.rows.length)
                     if (data !== null && data?.status !== "error") {
                         params.success({
-                            rowData: JSON.parse(JSON.stringify(data.rows)),
-                            rowCount: data.total
+                            rowData: data.rows,//JSON.parse(JSON.stringify(data.rows)),
+                            rowCount: ref.current.totalRows//data.total
                         });
                     } else {
                         params.fail();
@@ -1205,12 +1416,12 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getId: () => ref.current.id,
         first,
         previous,
+        setDefaultSort,
         next,
         last,
         dirtyRows,
         newRows,
         currentPage,
-        getSkip,
         pageSize,
         setRows,
         addRow,
@@ -1267,19 +1478,15 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         setPreFilters: (f) => ref.current.preFilter = f,
         preFilters: () => ref.current.preFilter,
         getIndex,
-        validateRows,
-        validateRow,
-        validateField,
-        clearRowStatus,
-        updateRowStatus: _updateRowStatus,
         status: () => status,
-        updateStatus: _updateStatus,
-        clearStatus,
-        getMessages,
-        getFieldStatus,
         moveRowDown,
         moveRowUp,
         getPrimaryKey,
-        dataSourceV4
+        dataSourceV4,
+        loadSortStateV4,
+        safePost,
+        validate,
+        validateRows,
+        openNotification
     }
 }

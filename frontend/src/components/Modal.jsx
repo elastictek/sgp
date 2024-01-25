@@ -8,7 +8,7 @@ import { ConditionalWrapper } from './conditionalWrapper';
 import { MediaContext } from '../pages/App';
 
 
-const TitleModal = ({ title, eTitle,details }) => {
+const TitleModal = ({ title, eTitle, details }) => {
     const getTitle = () => {
         if (title) {
             return title;
@@ -18,15 +18,15 @@ const TitleModal = ({ title, eTitle,details }) => {
 
     return (
         <div>
-        <div><span style={{ textTransform: "capitalize", fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
-        {details && <div>{details}</div>}
+            <div><span style={{ textTransform: "capitalize", fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
+            {details && <div>{details}</div>}
         </div>
     );
 }
 
 
 
-export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer,extra, title: iTitle, details, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer, extra, title: iTitle, details, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -54,7 +54,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
 
     const footerButtons = () => {
         if (footer === "ref") {
-            return <div {...{...id && {id}}} ref={footerRef} style={{ textAlign: 'right' }}></div>;
+            return <div {...{ ...id && { id } }} ref={footerRef} style={{ textAlign: 'right' }}></div>;
         } else if (footer === "none") {
             return null;
         } else {
@@ -87,12 +87,13 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
                     centered={size.fullscreen ? false : true}
                     maskClosable={true}
                     destroyOnClose={true}
+                    
                     okText="Confirmar"
                     cancelText="Cancelar"
                     width={size.width}
                     onCancel={onCancel}
                     {...(footer && { footer: footerButtons() })}
-                    bodyStyle={{ height: size.height }}
+                    styles={{ body: { height: size.height } }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
@@ -123,8 +124,8 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
-                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef,extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}</Suspense>}
-                    {(children && !lazy) && React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef,extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}
+                    {(children && lazy) && <Suspense fallback={<></>}>{React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef, extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}</Suspense>}
+                    {(children && !lazy) && React.cloneElement(children, { ...{ wndRef: footerRef, parentRef: footerRef, extraRef: extraRef, setFormTitle: setTitle, setTitle: setTitle, closeSelf: wrapWithClose(props?.onCancel), closeParent: wrapWithClose(props?.onCancel) }, ...children.props })}
                 </Drawer>
             }
         </>

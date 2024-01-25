@@ -252,6 +252,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                             </Col>
                             }
 
+
+
                             {allows?.materiasPrimas?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
                                 <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Matérias Primas</span>} style={{ width: "100%" }}>
                                     <Container fluid style={{ padding: "0px", margin: "0px" }}>
@@ -431,12 +433,63 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
                                                     <div className='txt'>Test-AG-GRID</div>
                                                 </StyledButton>
+                                                <StyledButton onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt' style={{fontSize:"10px"}}>TableSingleSelect</div>
+                                                </StyledButton>
+                                                
                                             </Col>
                                             }
                                         </Row>
                                     </Container>
                                 </Card>
                             </Col>}
+
+
+                            {allows?.trocaetiquetas?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
+                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Troca de Etiquetas</span>} style={{ width: "100%" }} extra={
+                                    <Space.Compact block>
+                                        <Button onClick={() => navigate("/app/picking/trocaetiquetas/listtasksexecuted", { noid: false })} icon={<UnorderedListOutlined />} type="link">
+                                            Lista
+                                        </Button>
+                                        {/* <Button onClick={() => { }} icon={<MoreOutlined />} /> */}
+                                    </Space.Compact>
+                                }>
+                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
+                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
+                                            {allows?.trocaetiquetas?.execute && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/listruntaskchoose")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Trocar<br/>Etiquetas</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
+                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/managetasks")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Gerir<br/>Tarefas</div>
+                                                </StyledButton>
+                                            </Col>
+                                            }
+{/*                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                                <StyledButton onClick={() => navigate("/app/picking/test-ag-grid")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt'>Test-AG-GRID</div>
+                                                </StyledButton>
+                                                <StyledButton onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}>
+                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
+                                                    <div className='txt' style={{fontSize:"10px"}}>TableSingleSelect</div>
+                                                </StyledButton>
+                                                
+                                            </Col>
+                                            } */}
+                                        </Row>
+                                    </Container>
+                                </Card>
+                            </Col>}
+
+
+
                         </Row>
                     </Col>
 

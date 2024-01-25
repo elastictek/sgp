@@ -1,11 +1,11 @@
 .ag-custom,
 .ag-custom.default {
   /*--ag-header-column-separator-height:100%;*/
-  --ag-selected-row-background-color:#91caff;
+  --ag-selected-row-background-color:#bae0ff;
   --ag-header-column-resize-handle-height:80%;
   --ag-header-cell-moving-background-color: rgb(194, 194, 194);
   --ag-header-column-resize-handle-color: rgb(194, 194, 194);
-  --ag-grid-size: 6px;
+  --ag-grid-size: 5px;
   --ag-header-height: calc(12px + var(--ag-grid-size) * 5);
   --ag-list-item-height: 20px;
   --ag-font-size: 11px;
@@ -14,7 +14,7 @@
 }
 
 .ag-custom .ag-row-selected {
-  border:solid 1px #0958d9;
+  border:solid 1px #69b1ff;
 }
 
 .ag-custom .ag-header-cell-label {

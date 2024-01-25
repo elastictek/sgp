@@ -24,7 +24,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check,ParsedFilters
 from support.myUtils import  ifNull,delKeys
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -187,20 +187,24 @@ def Sql(request, format=None):
     
 def ArtigosLookup(request, format=None):
     connection = connections["default"].cursor()
-    f = Filters(request.data['filter'])
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
+    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+
+    _filter = {} if data.get("apiversion")=="4" else request.data['filter']
+    f = Filters(_filter)
     f.setParameters({}, False)
     f.where()
     f.value()
 
-    f2 = filterMulti(request.data['filter'], {
+    f2 = filterMulti(_filter, {
         'fartigo': {"keys": ['cod', 'des'], "table": ''}
     }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
+    parameters = {**f.parameters, **f2['parameters'],**pf.parameters}
 
     dql = db.dql(request.data, False)
     cols = f"""*"""
     dql.columns=encloseColumn(cols,False)
-    sql = lambda: (f"""select {f'{dql.columns}'} from producao_artigo {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
+    sql = lambda: (f"""select {f'{dql.columns}'} from producao_artigo {pf.group()} {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
     if ("export" in request.data["parameters"]):
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
         dql.paging=""
@@ -441,8 +445,13 @@ def ListVolumeProduzidoArtigos(request, format=None):
 
 def ClientesLookup(request, format=None):
     cols = ['*']
-    f = filterMulti(request.data['filter'], {'fmulti_customer': {"keys": ["BPCNUM_0","BPCNAM_0"]}})
-    parameters = {**f['parameters']}
+
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
+    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+
+    _filter = {} if data.get("apiversion")=="4" else request.data['filter']
+    f = filterMulti(_filter, {'fmulti_customer': {"keys": ["BPCNUM_0","BPCNAM_0"]}})
+    parameters = {**f['parameters'],**pf.parameters}
 
     dql = dbgw.dql(request.data, False)
     sgpAlias = dbgw.dbAlias.get("sgp")
@@ -454,6 +463,7 @@ def ClientesLookup(request, format=None):
                 f"""
                     SELECT {c(dql.columns)} 
                     FROM mv_clientes_sage
+                    {pf.group()}
                     {f["text"]}
                     {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
                 """

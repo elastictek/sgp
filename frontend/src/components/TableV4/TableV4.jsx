@@ -4,12 +4,13 @@ import styled from 'styled-components';
 import { useSubmitting } from "utils";
 import { usePermission } from "utils/usePermission";
 import { useImmer } from 'use-immer';
-import { isEmpty, isNil } from 'ramda';
+import { isEmpty, isNil, assocPath, assoc } from 'ramda';
+import { filterRegExp, filtersDef, processConditions } from 'utils/useDataAPIV4';
 import { uid } from 'uid';
 import dayjs from 'dayjs';
-import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty } from "utils/object";
+import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty, valueByPath, updateByPath } from "utils/object";
 import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar } from "antd";
-import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined } from '@ant-design/icons';
+import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -33,6 +34,9 @@ const GRID_CELL_CLASSNAME = 'ag-cell';
 
 export const TableContext = React.createContext({});
 
+export const refreshDataSource = (api) => {
+    api.refreshServerSide({ purge: true });
+}
 const GridContainer = styled.div`
   height: 100%;
   width: 100%;    
@@ -58,77 +62,14 @@ const StatusRightPanel = ({ loading, dataAPI, modeApi, showRange, allowGoTo, sho
     }, []);
 
     return (<div style={{ color: "#000" }}>
-        <div>{!modeApi.isOnMode() && <Pagination loading={loading} showRange={showRange} onPageSizeChange={onPageSizeChange} allowGoTo={allowGoTo} showTotalCount={showTotalCount} showFromTo={showFromTo} totalCount={dataAPI.getTotalRows()} rowsFromTo={dataAPI.getRowsFromTo()} onPageChange={onPageChange} currentPage={dataAPI.getCurrentPage()} pageSize={dataAPI.getPageSize()} /* {...paginationProps} */ /* {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} */ {...paginationI18n} /* bordered={false} */ />}</div>
+        <div>{!modeApi?.isOnMode() && <Pagination loading={loading} showRange={showRange} onPageSizeChange={onPageSizeChange} allowGoTo={allowGoTo} showTotalCount={showTotalCount} showFromTo={showFromTo} totalCount={dataAPI.getTotalRows()} rowsFromTo={dataAPI.getRowsFromTo()} onPageChange={onPageChange} currentPage={dataAPI.getCurrentPage()} pageSize={dataAPI.getPageSize()} /* {...paginationProps} */ /* {...(editable.enabled || editable.add) && { skip: dataAPI?.getSkip() }} */ {...paginationI18n} /* bordered={false} */ />}</div>
     </div>)
 }
-
-const _filters = (filters, gridRef, all = false) => {
-    let _idx = filters?.toolbar.indexOf("@columns");
-    let _newfilters = (_idx >= 0) ? [...filters?.toolbar.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.toolbar.slice(_idx)] : [...filters?.toolbar];
-    if (all) {
-        let _idx = filters?.more.indexOf("@columns");
-        let _morefilters = (_idx >= 0) ? [...filters?.more.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.more.slice(_idx)] : [...filters?.more];
-        _newfilters = [..._newfilters, ..._morefilters, "fcustom"];
-    }
-    const _f = {};
-    for (const v of _newfilters.filter(v => v !== "@columns")) {
-        if (Object.prototype.toString.call(v) === '[object Object]') {
-            let _headerName = "";
-            if (v?.colId || v?.headerName) {
-                _headerName = v?.headerName;
-            } else {
-                _headerName = gridRef.current.api.getColumnDefs().find(x => x.field === v.field)?.headerName;
-            }
-            let _alias = v.field;
-            if (!v?.colId && !v?.alias) {
-                _alias = gridRef.current.api.getColumnDefs().find(x => x.field === v.field)?.colId;
-                if (!_alias) {
-                    _alias = v.field;
-                }
-            }
-            _f[v.field] = {
-                type: v?.type ? v.type : _f?.[v.field]?.type ? _f[v.field]?.type : "input",
-                name: v.field,
-                alias: v?.colId ? v.colId : v?.alias ? v.alias : _f?.[v.field]?.colId ? _f[v.field]?.colId : _alias,
-                style: v?.style ? v?.style : _f?.[v.field]?.style ? _f[v.field]?.style : null,
-                op: v?.op ? v.op : _f?.[v.field]?.op ? _f[v.field]?.op : null,
-                label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
-                col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
-                mask: v?.mask ? v.mask : _f?.[v.field]?.mask ? _f[v.field]?.mask : null,
-                group: v?.group ? v.group : _f?.[v.field]?.group ? _f[v.field]?.group : "t1",
-                multi: v?.multi ? v.multi : _f?.[v.field]?.multi ? _f[v.field]?.multi : false,
-                exp: v?.exp ? v.exp : _f?.[v.field]?.exp ? _f[v.field]?.exp : null,
-                options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null
-            }
-        } else {
-            const _s = gridRef.current.api.getColumnDefs().find(x => x.field === v);
-            const _headerName = _s?.headerName;
-            let _alias = _s?.colId;
-            if (!_alias) {
-                _alias = v;
-            }
-            _f[v] = {
-                type: _f?.[v]?.type ? _f[v]?.type : "input",
-                name: v,
-                alias: _f?.[v]?.alias ? _f[v]?.alias : _alias,
-                style: _f?.[v]?.style ? _f[v]?.style : null,
-                op: _f?.[v]?.op ? _f[v]?.op : null,
-                label: _f?.[v]?.label ? _f[v]?.label : _headerName ? _headerName : v,
-                col: _f?.[v]?.col ? _f[v]?.col : "content",
-                mask: _f?.[v]?.mask ? _f[v]?.mask : null,
-                group: _f?.[v]?.group ? _f[v]?.group : "t1",
-                multi: _f?.[v]?.multi ? _f[v]?.multi : false,
-                exp: _f?.[v]?.exp ? _f[v]?.exp : null,
-                options: _f?.[v]?.options ? _f[v]?.options : null,
-            }
-        }
-    }
-    return Object.values(_f);
-};
 
 const StyledMenu = styled(Menu)`
     .ant-menu-item{
         height:25px !important;
+        line-height:25px !important;
     }
 `;
 
@@ -158,7 +99,7 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
 
     return (<>
         {initFilterValues !== undefined &&
-            <Flex wrap="nowrap" gap="small" align='end'>{_filters(filters, gridRef, false).map((v, i) =>
+            <Flex wrap="nowrap" gap="small" align='end'>{filtersDef(filters, gridRef, false).map((v, i) =>
                 <div key={`f-${v.name}.${i}`}>
                     <div style={{ padding: "0 0 5px" }}>
                         <label>{v.label}</label>
@@ -174,19 +115,19 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
                                 // inputnumber: <InputNumber allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
                                 // selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
                                 select: <div style={{ display: "flex", width: DEFAULTWIDTH, ...v?.style }}>
-                                    {v.multi && <TypeLogic disabled={modeApi.isOnMode()} background name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.logic} />}
-                                    <Select disabled={modeApi.isOnMode()} mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={v.options} />
+                                    {v.multi && <TypeLogic disabled={modeApi?.isOnMode()} background name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.logic} />}
+                                    <Select disabled={modeApi?.isOnMode()} mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={v.options} />
                                 </div>,
-                                options: <FilterSelect disabled={modeApi.isOnMode()} style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={v?.options} />
+                                options: <FilterSelect disabled={modeApi?.isOnMode()} style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={v?.options} />
                                 // datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />
-                            }[v.type] || <Input disabled={modeApi.isOnMode()} addonBefore={v.multi && <TypeRelation disabled={modeApi.isOnMode()} name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />
+                            }[v.type] || <Input disabled={modeApi?.isOnMode()} addonBefore={v.multi && <TypeRelation disabled={modeApi?.isOnMode()} name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />
 
                         }
                     </div>
                 </div>)}
                 <div>
-                    <Badge dot={countFilters > 0 ? true : false} offset={[-2, 0]} style={{ backgroundColor: '#52c41a' }} /* count={countFilters}  *//* size="small" */><Button disabled={modeApi.isOnMode()} onClick={() => onFilterFinish("filter", removeEmpty(stateFilters))} size="small" icon={<SearchOutlined />} /></Badge>
-                    <Button size="small" disabled={modeApi.isOnMode()} onClick={onPredifinedFilters} icon={<MoreOutlined />} />
+                    <Badge dot={countFilters > 0 ? true : false} offset={[-2, 0]} style={{ backgroundColor: '#52c41a' }} /* count={countFilters}  *//* size="small" */><Button disabled={modeApi?.isOnMode()} onClick={() => onFilterFinish("filter", removeEmpty(stateFilters))} size="small" icon={<SearchOutlined />} /></Badge>
+                    <Button size="small" disabled={modeApi?.isOnMode()} onClick={onPredifinedFilters} icon={<MoreOutlined />} />
                 </div>
             </Flex>
         }
@@ -203,11 +144,12 @@ const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, set
     return (
         <div style={{ display: "flex", flexDirection: "column" }}>
             <StyledMenu onClick={(v) => onClick(v)} items={[
-                (permission.auth.isAdmin) && { label: 'Verificar Sql Query', key: 'sqlquery', icon: <ConsoleSqlOutlined />, data: {} },
-                (!modeApi.isOnMode()) && { label: 'Atualizar', key: 'refresh', icon: <ReloadOutlined />, data: {} },
-                (clearSort && !modeApi.isOnMode()) && { label: 'Limpar Ordenação', key: 'clearsort', icon: <Icon component={ClearSort} />, data: {} },
-                (showFilters && !modeApi.isOnMode()) && { label: 'Limpar Filtros', key: 'clearfilters', icon: <FilterOutlined />, data: {} },
-                (showMoreFilters && !modeApi.isOnMode()) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} }
+                (!modeApi?.isOnMode()) && { label: 'Atualizar', key: 'refresh', icon: <ReloadOutlined />, data: {} },
+                (clearSort && !modeApi?.isOnMode()) && { label: 'Limpar Ordenação', key: 'clearsort', icon: <Icon component={ClearSort} />, data: {} },
+                (showFilters && !modeApi?.isOnMode()) && { label: 'Limpar Filtros', key: 'clearfilters', icon: <FilterOutlined />, data: {} },
+                (showMoreFilters && !modeApi?.isOnMode()) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} },
+                { type: 'divider' },
+                (permission.auth.isAdmin) && { label: <span style={{ color: "#10239e" }}>Server Request and Execution</span>, key: 'sqlquery', icon: <PullRequestOutlined style={{ color: "#10239e" }} />, data: {} }
             ]}></StyledMenu>
             {/* 
             <Divider style={{ margin: "8px 0" }} />
@@ -226,7 +168,8 @@ const _getSelectDefaultOptions = (v) => {
         case "opt:0": return [{ value: "0", label: "Ok" }, { value: "1", label: "Not Ok" }];
         case "opt:1": return [{ value: "0", label: "Ok" }, { value: ">=1", label: "Not Ok" }];
         case "opt:2": return [{ value: "", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }];
-        case "opt:3": return [{ value: "0", label: "Saída" }, { value: "1", label: "Entrada" }]
+        case "opt:3": return [{ value: "0", label: "Saída" }, { value: "1", label: "Entrada" }];
+        case "opt:4": return [{ value: "1", label: "Aberto" }, { value: "9", label: "Fechado" }];
     }
 }
 
@@ -242,8 +185,6 @@ const FilterSelect = ({ style, name, _value, onChange, options, disabled }) => {
         <Select disabled={disabled} allowClear popupMatchSelectWidth={false} style={{ width: DEFAULTWIDTH, ...style }} size="small" name={name} value={_value(name)} onChange={(x) => onChange(name, x)} options={_options} />
     );
 }
-
-
 
 const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _value, onSelectChange }) => {
     const { dataAPI, modeApi, gridRef, stateFilters, updateStateFilters, topToolbar: { filters, initFilterValues } = {} } = useContext(TableContext);
@@ -264,7 +205,7 @@ const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _val
     >
         <Container fluid style={{ padding: "0px" }}>
             <Row gutterWidth={2}>
-                {_filters(filters, gridRef, true).filter(v => v.name !== "fcustom").map((v, i) => {
+                {filtersDef(filters, gridRef, true).filter(v => v.name !== "fcustom").map((v, i) => {
                     return (<Col style={{ marginTop: "5px" }} xs={v.col} key={`fm-${v.name}.${i}`}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end" }}>
                             <label><b>{v.label}</b></label>
@@ -344,7 +285,7 @@ const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
             }, {});
     }, []);
 
-    return (<Drawer title="Ver Sql Query" open={visible} onClose={() => setVisible(false)} width="100%"
+    return (<Drawer title="Server Request and Execution" open={visible} onClose={() => setVisible(false)} width="100%"
         footer={
             <div style={{ textAlign: 'right' }}>
                 <Button onClick={() => setVisible(false)} type="primary">Fechar</Button>
@@ -377,7 +318,6 @@ const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
     </Drawer >);
 }
 
-
 const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToolbarFilters }) => {
     const [data, setData] = useState([]);
     useEffect(() => {
@@ -393,7 +333,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
 
 
     const onPre = (item) => {
-        const _defs = _filters(topToolbarFilters, gridRef, true);
+        const _defs = filtersDef(topToolbarFilters, gridRef, true);
         const _values = {};
         for (const [key, value] of Object.entries(json(item.filters))) {
             const _f = _defs.find(obj => obj.name === key);
@@ -440,16 +380,79 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
     </Drawer >);
 }
 
-
-const Toolbar = ({ visible = true, loading = false, onExit, onAdd, onFilterFinish }) => {
+const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish }) => {
     const [moreFilters, setMoreFilters] = useState(false);
     const [sqlQueryView, setSqlQueryView] = useState(false);
     const [predifinedFilters, setPredifinedFilters] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
-    const { modeApi, dataAPI, gridRef, local, updateStateFilters, stateFilters, topToolbar: { title, start, left, right, filters, showSettings = true, showFilters = true, showMoreFilters = true, clearSort = true } = {} } = useContext(TableContext);
+    const { modeApi, dataAPI, gridRef, local, updateStateFilters, stateFilters, topToolbar: { title, leftTitle, start, left, right, filters, showSettings = true, showFilters = true, showMoreFilters = true, clearSort = true } = {} } = useContext(TableContext);
     if (!visible) {
         return (<></>);
     }
+
+    const onExitMode = useCallback(() => {
+        gridRef.current.api.stopEditing();
+        if (onExitModeRefresh) {
+            if (!local) {
+                gridRef.current.api.refreshServerSide({ purge: false });
+            } else {
+                // _gridRef.current.api.refreshCells({force:true});
+                // _gridRef.current.api.redrawRows();
+                console.log(dataAPI.getData().rows)
+                gridRef.current.api.updateGridOptions({ rowData: dataAPI.getData().rows });
+            }
+        }
+    }, [dataAPI.getTimeStamp()]);
+
+    const onAddMode = useCallback((idx = null, row) => {
+        let _first = gridRef.current.api.getFirstDisplayedRow() == -1 ? 0 : gridRef.current.api.getFirstDisplayedRow();
+        const transaction = {
+            addIndex: idx != null ? idx : _first,
+            add: [{ ...row, rowadded: 1, rowvalid: 0 }],
+        };
+        if (local) {
+            const result = gridRef.current.api.applyTransaction(transaction);
+        } else {
+            const result = gridRef.current.api.applyServerSideTransaction(transaction);
+        }
+    }, []);
+
+    const onSave = useCallback(async () => {
+        if (modeApi?.isOnMode()) {
+            const loadedRows = [];
+            const updatedRows = [];
+            const addedRows = [];
+            gridRef.current.api.forEachNode((node) => {
+                loadedRows.push(node.data);
+                if (node.data?.rowadded == 1) {
+                    addedRows.push(node.data);
+                }
+                if (!node.data?.rowadded && node.data.rowvalid == 0) {
+                    updatedRows.push(node.data);
+                }
+            });
+            if (modeApi.isOnAddMode()) {
+                if (addedRows.length > 0) {
+                    const success = await modeApi.onAddSave(addedRows, loadedRows);
+                    if (success == true && onAddSaveExit) {
+                        modeApi.onExit(onExitMode);
+                    }
+                } else {
+                    dataAPI.openNotification("info", 'top', null, "Não existem dados a processar.");
+                }
+            } else if (modeApi.isOnEditMode()) {
+                if (updatedRows.length > 0) {
+                    const success = await modeApi.onEditSave(updatedRows, loadedRows);
+                    if (success == true && onEditSaveExit) {
+                        modeApi.onExit(onExitMode);
+                    }
+                } else {
+                    dataAPI.openNotification("info", 'top', null, "Não existem dados a processar.");
+                }
+            }
+        }
+    }, [modeApi?.isOnMode()]);
+
 
     const onChange = (field, e, rel = false, logic = false) => {
         if (!rel && !logic) {
@@ -524,19 +527,22 @@ const Toolbar = ({ visible = true, loading = false, onExit, onAdd, onFilterFinis
                 {moreFilters && <DrawerMoreFilters visible={moreFilters} setVisible={setMoreFilters} onFilterFinish={onFilterFinish} onChange={onChange} onSelectChange={onSelectChange} _value={_value} />}
             </>}
             <Container fluid>
-                {title && <Row gutterWidth={5} style={{ padding: "5px" }}>
+                {(title || (!title && !leftTitle && dataAPI.preFilters()?.designacao)) && <Row gutterWidth={5} style={{ padding: "5px" }}>
                     <Col>{title}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c" }}>{dataAPI.preFilters()?.designacao}</span>}</Col>
                 </Row>}
                 <RowXScroll gutterWidth={5} style={{ padding: "5px" }} align='center' wrap='nowrap'>
                     <Col xs="content">
+                        {(leftTitle && !title) && <>{leftTitle}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c" }}>{dataAPI.preFilters()?.designacao}</span>}</>}
+                    </Col>
+                    <Col xs="content">
                         {start && start}
                     </Col>
 
-                    {modeApi.enabled() && modeApi.isReady() && <>
-                        {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col xs="content"><Button type="default" icon={<PlusOutlined />} onClick={onAdd}>{modeApi.addText()}</Button></Col>}
+                    {modeApi?.enabled() && modeApi?.isReady() && <>
+                        {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col xs="content"><Button type="default" icon={<PlusOutlined />} onClick={() => modeApi.onAddMode(onAddMode)}>{modeApi.addText()}</Button></Col>}
                         {(!modeApi.isOnMode() && modeApi.allowEdit()) && <Col xs="content"><Button type="default" icon={<EditOutlined />} onClick={modeApi.onEditMode}>{modeApi.editText()}</Button></Col>}
-                        {(modeApi.isOnMode() && modeApi.isDirty()) && <Col xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onAdd}>{modeApi.saveText()}</Button></Col>}
-                        {modeApi.isOnMode() && <Col xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={onExit} /></Col>}
+                        {(modeApi.isOnMode() && modeApi.isDirty()) && <Col xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onSave}>{modeApi.saveText()}</Button></Col>}
+                        {modeApi.isOnMode() && <Col xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={() => modeApi.onExit(onExitMode)} /></Col>}
                     </>}
 
                     <Col xs="content">
@@ -669,10 +675,25 @@ export const useModalApi = () => {
         }, []);
         const onClose = useCallback(() => {
             hideModal();
-            modalParameters.parameters.gridApi.setFocusedCell(modalParameters.parameters.cellFocus.rowIndex, modalParameters.parameters.cellFocus.colId, null);
+            if (typeof modalParameters.parameters.gridApi?.setFocusedCell === "function") {
+                modalParameters.parameters.gridApi.setFocusedCell(modalParameters.parameters.cellFocus.rowIndex, modalParameters.parameters.cellFocus.colId, null);
+            }
         }, []);
         return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={onClose} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+            <ResponsiveModal
+                responsive={!isNil(modalParameters?.responsive) ? modalParameters.responsive : true}
+                closable={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
+                maskClosable={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
+                keyboard={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
+                lazy={modalParameters?.lazy}
+                title={modalParameters?.title}
+                type={modalParameters?.type}
+                push={modalParameters?.push}
+                onCancel={onClose}
+                width={modalParameters.width}
+                height={modalParameters.height}
+                footer="ref"
+                yScroll>
                 {content()}
             </ResponsiveModal>
         );
@@ -681,249 +702,39 @@ export const useModalApi = () => {
     return { setModalParameters, showModal, hideModal };
 }
 
-const filterRegExp = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i');
-//const filterRegExp = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^btw:|^in:|^!btw|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
-const _filterParser = (value, filter, opTag) => {
-    const _op = filter?.op ? filter.op.toLowerCase() : "any";
-    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%")) {
-        return `${value}`;
-    }
-    if (value.includes("%")) {
-        return `${value}`;
-    }
-    switch (_op) {
-        case 'any': return `%${value.replaceAll(' ', '%%')}%`;
-        case 'start': return `${value}%`;
-        case 'end': return `%${value}`;
-        case 'exact': return `==${value}`;
-        default: return `${value}`;
-    }
-}
-
-// const _fixConditions = (v) => {
-//     // Rule 0 - trim all spaces not inside '' and all new lines
-//     let input = v.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
-
-//     // Rule 1
-//     input = input.replace(/([^&|\(])\(/g, '$1&(');
-//     input = input.replace(/\(\s*[&|]/g, '(');
-
-//     // Rule 2
-//     input = input.replace(/\)([^&|\)])/g, ')&$1');
-
-//     // Rule 3
-//     input = input.replace(/([^&|\(])\(/g, '$1&(');
-
-//     // Rule 4
-//     input = input.replace(/\)([^&|\)])/g, ')&$1');
-
-//     // Rule 5
-//     input = input.replace(/([&|])\1+/g, '$1');
-
-
-
-
-
-//     // Rule 6
-//     const openParenCount = (input.match(/\(/g) || []).length;
-//     const closeParenCount = (input.match(/\)/g) || []).length;
-//     const parenDiff = openParenCount - closeParenCount;
-
-//     if (parenDiff > 0) {
-//         for (let i = 0; i < parenDiff; i++) {
-//             input += ')';
-//         }
-//     } else if (parenDiff < 0) {
-//         for (let i = 0; i < -parenDiff; i++) {
-//             input = '(' + input;
-//         }
-//     }
-
-//     return input;
-// }
-
-
-const customSplit = (input) => {
-    let result = [];
-    let insideQuotes = false;
-    let currentChunk = '';
-    // Rule 0 - trim all spaces not inside '' and all new lines
-    //const _input = input.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
-    const _input = input.replace(/'[^']*'|"[^"]*"|\s+/g, function (match) {
-        return match.startsWith("'") || match.startsWith('"') ? match : '';
-    });
-
-    for (let i = 0; i < _input.length; i++) {
-        const char = _input[i];
-
-        if (char === '"') {
-            insideQuotes = !insideQuotes;
-            currentChunk += char;
-        } else if (insideQuotes) {
-            currentChunk += char;
-        } else if (char === '&' || char === '|' || char === '(' || char === ')') {
-            if (currentChunk.trim() !== '') {
-                result.push(currentChunk.trim());
-            }
-            result.push(char);
-            currentChunk = '';
-        } else {
-            currentChunk += char;
-        }
-    }
-
-    if (currentChunk.trim() !== '') {
-        result.push(currentChunk.trim());
-    }
-
-    return result;
-}
-
-const _processConditions = (inputValue, filterDef, rel = "and", logic = "") => {
-    let _input = inputValue;
-    if (isNil(inputValue) || isEmpty(inputValue)) {
-        return null;
-    }
-    if (typeof inputValue === 'object' && !Array.isArray(inputValue)) {
-        _input = inputValue?.value;
-        if (isNil(_input) || isEmpty(_input)) {
-            return null;
-        }
-    }
-    if (Array.isArray(_input)) {
-        if (_input.length == 0) { return null; }
-        console.log("processed--->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
-        return { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef };
-
-    }
-
-
-    //const conditionsArray = _input.split(';');
-    // const conditionsArray = _input.split(/([&|])/).reduce((acc, current, index, array) => {
-    //     if (index > 0 && array[index - 1] === '&' || array[index - 1] === '|') {
-    //       acc[acc.length - 1] += current;
-    //     } else {
-    //       acc.push(current);
-    //     }
-    //     return acc;
-    //   }, []);.toString().split(/([&|()])/)
-    //const conditionsArray = _fixConditions(_input).toString().split(/([&|()])/).filter(Boolean);
-    const conditionsArray = customSplit(_input);
-    console.log("conditions", conditionsArray)
-    const _values = [];
-    const _parsedvalues = [];
-    for (const [idx, condition] of conditionsArray.entries()) {
-        let _valid = true;
-        const _value = [];
-        const _parsedvalue = [];
-
-        if (["&", "|", "(", ")"].includes(condition)) {
-            if (idx >= 1 && !["(", ")"].includes(condition) && ["&", "|"].includes(_values[_values.length - 1])) {
-                continue;
-            }
-            if (["(", ")"].includes(condition)) {
-                _parsedvalues.push(condition);
-                _values.push(condition);
-                continue;
-            }
-
-            _parsedvalues.push(condition === "&" ? "and" : "or");
-            _values.push(condition);
-            continue;
-        }
-        const matches = condition.trim().toString().match(filterRegExp);
-        const _opTag = matches ? matches[1] : "";
-        const _x = matches ? matches[2] : condition.trim().toString();
-        if (_opTag === "@:") {
-            _parsedvalues.push(condition);
-            _values.push(condition);
-            continue;
-        }
-        if (_opTag === ":") {
-            if (condition.trim() === ":") {
-                continue;
-            }
-            _parsedvalues.push(condition);
-            _values.push(condition);
-            continue;
-        }
-
-        if (!isEmpty(_x) || (["isnull", "!isnull"].includes(_opTag))) {
-            for (const value of _x.split(',')) {
-                if (filterDef.type === "options") {
-                    const _t = (_opTag === "") ? "==" : "";
-                    _value.push(value);
-                    _parsedvalue.push(`${_t}${value}`);
-                } else if (filterDef.type === "number") {
-                    if (isNaN(+value)) {
-                        _valid = false;
-                        break;
-                    } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
-                        _value.push(value);
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
-                    }
-                } else if (filterDef.type === "date") {
-                    const parsedDate = dayjs(value, { strict: true });
-                    if (!parsedDate.isValid()) {
-                        _valid = false;
-                        break;
-                    } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
-                        _value.push(parsedDate.format(DATE_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
-                    }
-                } else if (filterDef.type === "datetime") {
-                    const parsedDate = dayjs(value, { strict: true });
-                    if (!parsedDate.isValid()) {
-                        _valid = false;
-                        break;
-                    } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
-                        _value.push(parsedDate.format(DATETIME_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
-                    }
-                } else if (filterDef.type === "time") {
-                    const parsedDate = dayjs(value, TIME_FORMAT);
-                    if (!parsedDate.isValid()) {
-                        _valid = false;
-                        break;
-                    } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
-                        _value.push(parsedDate.format(TIME_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
-                    }
-                } else {
-                    _value.push(value);
-                    _parsedvalue.push(_filterParser(value.replace(/\n/g, ''), filterDef, _opTag));
-                }
-            }
-            if (_valid) {
-                _values.push(`${_opTag}${_value.join(",")}`);
-                _parsedvalues.push(`${_opTag}${_parsedvalue.join(",")}`);
-            }
-
-        };
-    }
-    if (_parsedvalues.length === 0) {
-        return null;
-    }
-    if (["&", "|"].includes(_values[_values.length - 1])) {
-        _values.splice(_values.length - 1, 1);
-        _parsedvalues.splice(_parsedvalues.length - 1, 1);
-    }
-    console.log("processed--->", { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef });
-    return { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef };
-}
-
 const Status = ({ dataAPI }) => {
     return (<div style={{ color: "#f5222d", fontWeight: 700 }}>{dataAPI?.getData()?.status === "error" && dataAPI?.getData()?.title}</div>)
+}
+
+export const getCellFocus = (api) => {
+    const _t = api.getFocusedCell();
+    return { gridApi: api, cellFocus: { rowIndex: _t.rowIndex, colId: _t.column.colId } };
+
+}
+
+export const columnPath = (col) => {
+    return col.getDefinition().cellRendererParams?.path ? col.getDefinition().cellRendererParams.path : col.getDefinition().field;
+}
+
+export const columnHasPath = (col) => {
+    return col.getDefinition().cellRendererParams?.path ? true : false;
+}
+
+export const defaultValueGetter = (params, fn) => {
+    if (typeof fn === "function") {
+        const _v = fn(params);
+        if (_v !== undefined) {
+            return _v;
+        }
+    }
+    return columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
 }
 
 export default ({
     columnDefs, defaultColDef, columnTypes, dataAPI, local = false, gridApi, setGridApi, modalApi, loadOnInit = true,
     loading = false, showRange = true, allowGoTo = true, showFromTo, showTotalCount, gridRef, showTopToolbar = true, topToolbar = {},
-    onExitModeRefresh = true, rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, ...props
+    onExitModeRefresh = true, onAddSaveExit = true, onEditSaveExit = false, rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, onCellClick, onRowClick, isRowSelectable,
+    ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, ...props
 }) => {
     const classes = useTableStyles();
     const _gridRef = gridRef || useRef();
@@ -931,16 +742,15 @@ export default ({
     const sourceType = useMemo(() => local ? "clientSide" : "serverSide", [local]);
     const [isReady, setIsReady] = useState(false);
     const [initialState, setInitialState] = useState();
-
     const [stateFilters, updateStateFilters] = useState({});
-
+    const _columnClicked = useRef();
 
     const parseFilters = useCallback((values) => {
-        const _defs = _filters(topToolbar?.filters, _gridRef, true);
+        const _defs = filtersDef(topToolbar?.filters, _gridRef, true);
         const _values = {};
         for (const [key, value] of Object.entries(values)) {
             const _f = _defs.find(obj => obj.name === key);
-            const _pf = _processConditions(value?.value ? value.value : value, _f, value?.rel, value?.logic);
+            const _pf = processConditions(value?.value ? value.value : value, _f, value?.rel, value?.logic);
             if (_pf !== null) {
                 _values[key] = excludeObjectKeys(_pf, ["options", "style", "op", "col"]);
             }
@@ -958,9 +768,7 @@ export default ({
     const onGridReady = useCallback((params) => {
         console.log("GIRD-READY");
         //Load Filters State
-
         updateStateFilters({ ...topToolbar?.initFilterValues?.filter || {} });
-
         if (isObjectEmpty(dataAPI.getFilters()) && isObjectEmpty(dataAPI.preFilters())) {
             const _values = parseFilters(topToolbar?.initFilterValues?.filter);
             dataAPI.setFilters(_values);
@@ -972,7 +780,7 @@ export default ({
         }
 
         if (loadOnInit && local == false) {
-            let datasource = dataAPI.dataSourceV4();
+            let datasource = dataAPI.dataSourceV4(null, params.api);
             params.api.setGridOption("serverSideDatasource", datasource);
         }
         setIsReady(true);
@@ -1054,7 +862,107 @@ export default ({
     //   _gridRef.current.api.hideOverlay();
     // }, []);
 
+    const _columnTypes = useMemo(() => {
+        return {
+            actionOnViewColumn: {
+                sortable: false,
+                supressMenu: true,
+                editable: false,
+                hide: true,
+                width: 45,
+                resizable: false,
+                cellStyle: (params) => {
+                    return {
 
+                    };
+                }
+            },
+            actionOnModeColumn: {
+                sortable: false,
+                supressMenu: true,
+                editable: false,
+                hide: true,
+                width: 45,
+                resizable: false,
+                cellStyle: (params) => {
+                    return {
+
+                    };
+                }
+            },
+            actionOnEditColumn: {
+                sortable: false,
+                supressMenu: true,
+                editable: false,
+                hide: true,
+                width: 45,
+                resizable: false,
+                cellStyle: (params) => {
+                    return {
+
+                    };
+                }
+            },
+            actionOnAddColumn: {
+                sortable: false,
+                supressMenu: true,
+                editable: false,
+                hide: true,
+                width: 45,
+                resizable: false,
+                cellStyle: (params) => {
+                    return {
+
+                    };
+                }
+            },
+            actionColumn: {
+                sortable: false,
+                supressMenu: true,
+                editable: false,
+                hide: true,
+                width: 45,
+                resizable: false,
+                cellStyle: (params) => {
+                    return {
+
+                    };
+                }
+            },
+            ...columnTypes
+        };
+    }, [modeApi?.isOnMode()]);
+
+    useEffect(() => {
+        if (modeApi && isReady) {
+            _gridRef.current.api.getColumns().forEach(c => {
+                if (c.getDefinition().type === "actionOnViewColumn") {
+                    _gridRef.current.api.setColumnVisible(c, !modeApi.isOnMode());
+                } else if (c.getDefinition().type === "actionOnModeColumn") {
+                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnMode());
+                } else if (c.getDefinition().type === "actionOnEditColumn") {
+                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnEditMode());
+                } else if (c.getDefinition().type === "actionOnAddColumn") {
+                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnAddMode());
+                }
+            });
+        } else if (!modeApi && isReady) {
+            _gridRef.current.api.getColumns().forEach(c => {
+                if (c.getDefinition().type === "actionOnViewColumn") {
+                    _gridRef.current.api.setColumnVisible(c, true);
+                }
+            });
+        }
+    }, [isReady, modeApi?.isOnMode(), columnDefs?.timestamp]);
+
+    useEffect(() => {
+        //Apenas loading externo!!!!
+        if (loading && isReady) {
+            _gridRef.current.api.showLoadingOverlay();
+        } else if (!loading && isReady) {
+            _gridRef.current.api.hideOverlay();
+        }
+    }, [loading, isReady]);
 
     const statusBar = useMemo(() => {
         return {
@@ -1078,21 +986,33 @@ export default ({
                     allowGoTo: allowGoTo
                 }
             }] : []
-            ],
+            ]
         };
-    }, [isLoading, dataAPI.getTimeStamp(), dataAPI.getPageSize(), dataAPI.getCurrentPage(), modeApi.isOnMode()]);
+    }, [isLoading, dataAPI.getTimeStamp(), dataAPI.getPageSize(), dataAPI.getCurrentPage(), modeApi?.isOnMode()]);
 
 
-    const onCellEditRequest = event => {
-        console.log('Cell Editing updated a cell, but the grid did nothing!', _gridRef.current);
-        const transaction = {
-            update: [{ ...event.data, [event.column.getDefinition().field]: event.newValue, rowvalid: 0 }],
-        };
-        if (local) {
-            const result = _gridRef.current.api.applyTransaction(transaction);
-        } else {
-            const result = _gridRef.current.api.applyServerSideTransaction(transaction);
+    const _onCellEditRequest = async event => {
+        const _path = columnPath(event.column);
+        let _data;
+        if (typeof onBeforeCellEditRequest === "function") {
+            _data = await onBeforeCellEditRequest(event.data, event.column.getDefinition(), _path, event.newValue, event);
         }
+        if (isNil(_data)) {
+            _data = assocPath(_path.split('.'), event.newValue, event.data);
+        }
+        const transaction = {
+            update: [{ ...assoc('rowvalid', 0, _data) }],
+        };
+        let result;
+        if (local) {
+            result = _gridRef.current.api.applyTransaction(transaction);
+        } else {
+            result = _gridRef.current.api.applyServerSideTransaction(transaction);
+        }
+        if (typeof onAfterCellEditRequest === "function") {
+            await onAfterCellEditRequest(event.node.data, event.column.getDefinition(), _path, event.newValue, event, result);
+        }
+        //_gridRef.current.api.redrawRows({ rowNodes: [event.node] });
         modeApi.setDirty(true);
     };
 
@@ -1120,33 +1040,6 @@ export default ({
     //   const result = _gridRef.current.api.applyServerSideTransaction(transaction);
     // }, []);
 
-    const onExitMode = useCallback(() => {
-        _gridRef.current.api.stopEditing();
-        if (onExitModeRefresh) {
-            if (!local) {
-                _gridRef.current.api.refreshServerSide({ purge: false });
-            } else {
-                // _gridRef.current.api.refreshCells({force:true});
-                // _gridRef.current.api.redrawRows();
-                console.log(dataAPI.getData().rows)
-                _gridRef.current.api.updateGridOptions({ rowData: dataAPI.getData().rows });
-            }
-        }
-    }, [dataAPI.getTimeStamp()]);
-
-    const onAddMode = useCallback((idx = null, row) => {
-        let _first = _gridRef.current.api.getFirstDisplayedRow() == -1 ? 0 : _gridRef.current.api.getFirstDisplayedRow();
-        const transaction = {
-            addIndex: idx != null ? idx : _first,
-            add: [{ ...row, rowadded: 1, rowvalid: 0 }],
-        };
-        if (local) {
-            const result = _gridRef.current.api.applyTransaction(transaction);
-        } else {
-            const result = _gridRef.current.api.applyServerSideTransaction(transaction);
-        }
-    }, []);
-
     const _rowClassRules = useMemo(() => {
         return {
             [classes.rowNotValid]: (params) => {
@@ -1163,26 +1056,50 @@ export default ({
             const _values = parseFilters(values);
             console.log("onfilter->>>", _values)
             dataAPI.setFilters(_values);
-            _gridRef.current.api.refreshServerSide({ purge: false });
+            _gridRef.current.api.refreshServerSide({ purge: true });
             //_gridRef.current.api.paginationGoToPage(0);
         }
     }, []);
 
     const _onSelectionChanged = useCallback(() => {
+        if (ignoreRowSelectionOnCells.includes(_columnClicked.current)) {
+            return;
+        }
         const selectedRows = _gridRef.current.api.getSelectedRows();
         if (typeof onSelectionChanged === "function") {
             onSelectionChanged(selectedRows);
         }
     }, []);
 
+    const _onCellClick = useCallback((data) => {
+        _columnClicked.current = data.column.colId;
+        if (typeof onCellClick === "function") {
+            onCellClick(data.colDef, data.data);
+        }
+    }, []);
+
+    const _onRowClick = useCallback((data, v, y) => {
+        if (typeof onRowClick === "function") {
+            onRowClick(data.data, data.rowIndex);
+        }
+    }, []);
+
+    const _isRowSelectable = useCallback((params) => {
+        if (typeof isRowSelectable === "function") {
+            return isRowSelectable(params);
+        }
+        return true;
+    }, []);
+
     return (
         <GridContainer>
             <TableContext.Provider value={{ dataAPI, modeApi, gridRef: _gridRef, stateFilters, updateStateFilters, topToolbar, local }}>
-                {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} onFilterFinish={onFilterFinish} />}
+                {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExitModeRefresh={onExitModeRefresh} onAddSaveExit={onAddSaveExit} onEditSaveExit={onEditSaveExit} /* onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} */ onFilterFinish={onFilterFinish} />}
                 <div className="ag-theme-quartz ag-custom">
                     <AgGridReact
                         ref={_gridRef}
                         onFirstDataRendered={onFirstDataRendered}
+                        isRowSelectable={_isRowSelectable}
                         //initialState={{ pagination: { page: 15 } }}
                         // initialState={{
                         //   pagination: {
@@ -1203,36 +1120,45 @@ export default ({
                         suppressScrollOnNewData={true}
                         onPaginationChanged={onPaginationChanged}
 
-                        columnDefs={columnDefs}
+                        columnDefs={columnDefs?.cols ? columnDefs?.cols : columnDefs}
                         defaultColDef={defaultColDef}
                         rowModelType={sourceType}
-                        columnTypes={columnTypes}
+                        columnTypes={_columnTypes}
                         maxBlocksInCache={0}
                         {...!local ? { cacheBlockSize: dataAPI.getPageSize() } : {}}
                         {...local ? { rowData: dataAPI.getData().rows } : {}}
 
-                        {...(rowSelection) && {
-                            rowSelection: modeApi.enabled() ? null : rowSelection,
+                        {...(rowSelection && !rowSelectionIgnoreOnMode) && {
+                            rowSelection: modeApi?.enabled() ? null : rowSelection,
                             onSelectionChanged: _onSelectionChanged,
-                            suppressCellFocus: modeApi.enabled() ? false : true
+                            suppressCellFocus: modeApi?.enabled() ? false : true
+                        }}
+                        {...(rowSelection && rowSelectionIgnoreOnMode) && {
+                            rowSelection,
+                            onSelectionChanged: _onSelectionChanged,
+                            suppressCellFocus
                         }}
 
                         //sideBar={'columns'}
                         onGridReady={onGridReady}
                         getRowId={getRowId}
-
+                        maxComponentCreationTimeMs={2500}
                         enableCellTextSelection={false}
                         suppressContextMenu={true}
+                        onRowClicked={_onRowClick}
                         //onCellKeyDown={(v) => console.log("###", v)}
                         //onCellClicked={(v) => console.log("###", v)}
                         //onGridPreDestroyed={onGridPreDestroyed}
                         statusBar={statusBar}
-
-                        onCellEditRequest={onCellEditRequest}
-
+                        onCellEditRequest={_onCellEditRequest}
+                        onCellClicked={_onCellClick}
                         readOnlyEdit={true}
                         rowClassRules={_rowClassRules}
-
+                        reactiveCustomComponents
+                        rowHeight={31}
+                        overlayLoadingTemplate={
+                            '<div style="background:#fafafa;border-radius:5px;padding:10px;">Aguarde um momento...</div>'
+                        }
                         {...props}
                     />
                 </div>

@@ -258,7 +258,7 @@ export default ({ operationsRef, ...props }) => {
                 </Space>} /></Col></Row>
                 <Row nogutter>
                     <Col>
-                        {hasCortes() && <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} />}
+                        {hasCortes() && <FormCortesOrdem parameters={{ cortesordem_id: cortes?.cortesordem_id }} forInput={false} />}
                     </Col>
                 </Row>
             </FormContainer>
