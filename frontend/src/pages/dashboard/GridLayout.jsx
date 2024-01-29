@@ -12,7 +12,7 @@ import GridLayout, { Responsive, WidthProvider } from "react-grid-layout";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { ScrollMenu, VisibilityContext } from 'react-horizontal-scrolling-menu';
 import './commons/react-horizontal-scrolling-menu.css';
-import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer, message, Checkbox } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer, message, Checkbox,ConfigProvider } from "antd";
 const { Text, Title } = Typography;
 import { SyncOutlined, SettingOutlined, MenuOutlined, AppstoreOutlined, LogoutOutlined, ProjectOutlined, SaveOutlined, ClearOutlined, PushpinOutlined, CaretDownOutlined } from '@ant-design/icons';
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -134,19 +134,6 @@ const StyledScrollMenu = styled(ScrollMenu)`
         border-radius: 3px; 
         padding: 2px;
 
-
-`;
-
-const StyledDrawer = styled(Drawer)`
-    .ant-drawer-wrapper-body{
-        background:#2a3142;
-    }    
-    .ant-drawer-content{
-        background:#2a3142;
-    }
-    .ant-drawer-header{
-        border-bottom:none;
-    }
 
 `;
 
@@ -809,7 +796,7 @@ export default (props) => {
     });
 
     useEffect(() => {
-        let updated =false;
+        let updated = false;
         if (wsMessageBroadcast?.hash?.hash_estadoproducao !== hash?.hash_estadoproducao || wsMessageBroadcast?.hash?.hash_estadoproducao_realtime !== hash?.hash_estadoproducao_realtime) {
             updated = true;
         }
@@ -824,7 +811,7 @@ export default (props) => {
                 draft.updated = dayjs().valueOf();
             }
         });
-        if (updated){
+        if (updated) {
             setEstadoProducao(wsMessageBroadcast);
         }
         console.log("MESSAGE BROADCAST", wsMessageBroadcast?.hash?.hash_estadoproducao, wsMessageBroadcast?.hash?.hash_estadoproducao_realtime)
@@ -1144,24 +1131,32 @@ export default (props) => {
         <div/*  style={{transform: 'scale(0.8)',transformOrigin: "left top"}} */ /* style={{ transform: 'scale(0.8) translate(-12%, -12%)' }} */>
             <SocketContext.Provider value={estadoProducao}>
                 {(layouts) && <>
-                    <Drawer title={<div style={{ fontWeight: 900 }}>Definições</div>} placement='right' closable={false} onClose={() => setRightDrawerVisible(false)} visible={rightDrawerVisible}>
+                    <Drawer title={<div style={{ fontWeight: 900 }}>Definições</div>} placement='right' closable={false} onClose={() => setRightDrawerVisible(false)} open={rightDrawerVisible}>
                         <SettingsLayout clickSettings={clickSettings} handleSettingsClick={handleSettingsClick} onSettingsClick={onSettingsClick} setDashboards={setDashboards} dashboards={dashboards} currentDashboard={currentDashboard} showOfs={showOfs} setShowOfs={setShowOfs} preventCollisions={preventCollisions} overlap={overlap} />
                     </Drawer>
-                    <StyledDrawer
-                        title={
-                            <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                                <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                            </div>
-                        }
-                        placement="left"
-                        closable={false}
-                        onClose={onCloseDrawer}
-                        open={drawerVisible}
+                    <ConfigProvider
+                        theme={{
+                            token: {
+                                colorBgElevated: "#2a3142"
+                            },
+                        }}
                     >
-                        <YScroll>
-                            <MainMenu dark />
-                        </YScroll>
-                    </StyledDrawer>
+                        <Drawer
+                            title={
+                                <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                                    <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                                </div>
+                            }
+                            placement="left"
+                            closable={false}
+                            onClose={onCloseDrawer}
+                            open={drawerVisible}
+                        >
+                            <YScroll>
+                                <MainMenu dark />
+                            </YScroll>
+                        </Drawer>
+                    </ConfigProvider>
                     <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[baseBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<ButtonSettings dashboards={dashboards} currentDashboard={currentDashboard} onClick={setRightDrawerVisible} />} items={(toolbox[baseBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
                         {(toolbox[baseBreakpoint] || []).map(item => <ToolboxItem allItems={allItems} currentBreakpoint={currentBreakpoint} itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}
                     </ScrollMenu>

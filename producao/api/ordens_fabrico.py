@@ -2680,10 +2680,19 @@ def ClosePrf(request, format=None):
     def getPrf(ofid,cursor):
         f = Filters({"id": ofid})
         f.where()
-        f.add(f'id = :id', True )
+        f.add(f'po.id = :id', True )
         f.value("and")
-        response = db.executeSimpleList(lambda: (f"""        
-            select ativa,num_paletes_produzidas,num_paletes_produzir,num_paletes_stock_in,num_paletes_stock,was_in_production from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
+        response = db.executeSimpleList(lambda: (f"""  
+            select distinct
+            po.ativa,po.was_in_production,
+            top.n_paletes_total n_paletes,
+            sum(case when pp.ordem_id=pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_produzidas,
+            sum(case when pp.ordem_id<>pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_stock_in,
+            sum(case when pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_total
+            from producao_palete pp
+            join planeamento_ordemproducao po on po.id=pp.ordem_id
+            LEFT JOIN producao_tempordemfabrico top on top.id=po.draft_ordem_id
+            {f.text} and agg_of_id_id is not null
         """), cursor, f.parameters)
         if len(response["rows"])>0:
             return response["rows"][0]
@@ -2696,15 +2705,15 @@ def ClosePrf(request, format=None):
                 raise Exception("A Prf não existe!")
             if _prf.get("ativa")==0:
                 raise Exception("A Prf não não pode ser fechada!")
-            if _prf.get("was_in_production")==1 and (_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in")) < (_prf.get("num_paletes_produzir") + _prf.get("num_paletes_stock")):
+            if (_prf.get("n_paletes_total") < _prf.get("n_paletes")):
                 raise Exception("Número de paletes da Prf insuficiente!")
             dml = db.dml(TypeDml.UPDATE, {
                 "fim": datetime.now(),
-                "num_paletes_total":_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in"),
-                "num_paletes_stock":_prf.get("num_paletes_stock_in"),
-                "num_paletes_produzir":_prf.get("num_paletes_produzidas"),
+                "num_paletes_total":_prf.get("n_paletes_produzidas") + _prf.get("n_paletes_stock_in"),
+                "num_paletes_stock":_prf.get("n_paletes_stock_in"),
+                "num_paletes_produzir":_prf.get("n_paletes_produzidas"),
                 "ativa":0,
-                "completa": 0 if (_prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock")) else 1
+                "completa": 0 if (_prf.get("n_paletes_total") < _prf.get("n_paletes")) else 1
                 }, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
             db.execute(dml.statement, cursor, dml.parameters)
             updateMaterializedView()
@@ -3501,6 +3510,75 @@ def AvailableAggLookup(request,format):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
+def GetCortesMeasures(request, format=None):
+    cursor = connections["default"].cursor()
+    filter = request.data.get("filter")
+    print(filter)
+    try:
+        f = Filters(filter)
+        f.where()
+        f.add(f'(cortesordem_id = :cortesordem_id)', True)
+        f.add(f'(cs_id = :cs_id)', True)
+        f.value("and")    
+        sql = lambda: (f"""select * from producao_cortes_medicoes {f.text} order by t_stamp desc limit 1""")
+
+        response = db.executeSimpleList(sql, cursor, f.parameters)
+        if response==None:
+            return Response({"status": "success", "data":None})
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+def SaveCortesMeasures(request, format=None):
+    data = request.data.get('parameters')
+    
+    def _checkMeasure(cortesordem_id,cs_id,hash_cod, cursor):
+        f = Filters({"cortesordem_id":cortesordem_id,"cs_id":cs_id,"hash_cod":hash_cod})
+        f.where()
+        f.add(f'(cortesordem_id = :cortesordem_id)', True)
+        f.add(f'(hash_cod = :hash_cod)', True)
+        f.add(f'(cs_id = :cs_id)', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""select count(*) cnt from producao_cortes_medicoes {f.text}"""), cursor, f.parameters)
+        return response["rows"][0].get("cnt")
+    
+    la = {}
+    for key in data.get("measures").get("LA"):
+        la[f"la_{key}"]=data.get("measures").get("LA").get(key)
+    lo = {}
+    for key in data.get("measures").get("LO"):
+        lo[f"lo_{key}"]=data.get("measures").get("LO").get(key)
+    values = {
+        "_offset":data.get("offset"),
+        "cortesordem_id":data.get("cortesordem_id"),
+        "cs_id":data.get("cs_id"),
+        **la,
+        **lo
+    }
+    hashvalue = hashlib.md5(json.dumps(values).encode('utf-8')).hexdigest()[ 0 : 16 ]
+    values={
+        **values,
+        "hash_cod":hashvalue,
+        "user_id":request.user.id,
+        "t_stamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }   
+    try:
+        with connections["default"].cursor() as cursor:
+            chk = _checkMeasure(data.get("cortesordem_id"),data.get("cs_id"),hashvalue,cursor)
+            if (chk>0):
+                return Response({"status": "error", "title": f"A medição já se encontra registada!"})       
+            dml = db.dml(TypeDml.INSERT, values, "producao_cortes_medicoes",None,None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+            return Response({"status": "success", "title": "Medições registadas com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+
+
 
 def CheckLists(request, format=None):
     connection = connections["default"].cursor()

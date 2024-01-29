@@ -13,7 +13,7 @@ import { API_URL, ROOT_URL, DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, DATE_FORM
 import { useDataAPI, getLocalStorage } from "utils/useDataAPIV3";
 import { getFilterRangeValues, getFilterValue, secondstoDay, getFloat } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch, Card, Progress, Collapse, Checkbox } from "antd";
+import { Button, Spin, Form, Space, Input, Typography, Modal, Select, Tag, Alert, Drawer, Image, TimePicker, InputNumber, DatePicker, Dropdown, Switch, Card, Progress, Collapse, Checkbox, ConfigProvider } from "antd";
 const { Panel } = Collapse;
 const { TextArea } = Input;
 // import ToolbarTitle from './commons/ToolbarTitle';
@@ -735,7 +735,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
             const v = estadoProducaoData({ data: parameters?.data });
-            console.log("loadedddddddddddddddddddd", v, parameters?.data)
+            console.log("loadedddddddddddddddddddd", v, parameters?.data, json(parameters?.data?.current?.cortesordem)?.id)
             //setOfs([..._ofs]);
             //dataAPI.setData({ rows: _dj, total: _dj.length });
             setOfs(v.ofs);
@@ -809,13 +809,12 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
                                     <Row nogutter>
                                         <Col style={{ background: "#f0f0f0", padding: "3px", fontWeight: 800, display: "flex", justifyContent: "space-between" }}>
                                             <div style={{}}>Cortes</div>
-                                            <div ref={cortesRef}></div>
                                         </Col>
                                     </Row>
                                     <Row nogutter>
                                         <Col>
                                             <YScroll height="195px">
-                                                <Suspense fallback={<></>}><FormCortesOrdem operationsRef={permission.isOk({ item: "edit", action: "cortes_test" }) ? cortesRef : null}  parameters={{ cs_id: parameters?.data?.current?.cs_id, cortes_test: json(parameters?.data?.current?.cortes_test), cortesordem_id: json(parameters?.data?.current?.cortesordem)?.id }} forInput={false} height="77px" /></Suspense>
+                                                <Suspense fallback={<></>}><FormCortesOrdem parameters={{ cs_id: parameters?.data?.current?.cs_id, cortes_test: json(parameters?.data?.current?.cortes_test), cortesOrdemId: json(parameters?.data?.current?.cortesordem)?.id }} forInput={false} height="77px" /* forInput={false} record={{ ofs, cortes: json(parameters?.data?.current?.cortes), cortesordem: json(parameters?.data?.current?.cortesordem) }} */ /></Suspense>
                                                 {/* <ListPaletesOf data={{ paletes: parameters?.data?.paletes, timestamp: parameters?.data?.timestamp, filter: paletes }} mini={true} /> */}
                                             </YScroll>
                                         </Col>
@@ -1141,19 +1140,6 @@ const OrdemFabricoChooser = ({ parameters, onClick }) => {
     return (<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
 } */
 
-const StyledDrawer = styled(Drawer)`
-    .ant-drawer-wrapper-body{
-        background:#2a3142;
-    }    
-    .ant-drawer-content{
-        background:#2a3142;
-    }
-    .ant-drawer-header{
-        border-bottom:none;
-    }
-
-`;
-
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     /*     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} }; */
@@ -1387,21 +1373,29 @@ export default ({ setFormTitle, ...props }) => {
 
 
     return (<>
-        <StyledDrawer
-            title={
-                <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                    <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                </div>
-            }
-            placement="left"
-            closable={false}
-            onClose={onCloseDrawer}
-            open={drawerVisible}
+        <ConfigProvider
+            theme={{
+                token: {
+                    colorBgElevated: "#2a3142"
+                },
+            }}
         >
-            <YScroll>
-                <MainMenu dark />
-            </YScroll>
-        </StyledDrawer>
+            <Drawer
+                title={
+                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                        <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                    </div>
+                }
+                placement="left"
+                closable={false}
+                onClose={onCloseDrawer}
+                open={drawerVisible}
+            >
+                <YScroll>
+                    <MainMenu dark />
+                </YScroll>
+            </Drawer>
+        </ConfigProvider>
         <Card
             hoverable
             headStyle={{ padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" }}

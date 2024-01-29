@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from 'styled-components';
-import { Button, Breadcrumb, Drawer, Dropdown, Space, Modal } from "antd";
+import { Button, Breadcrumb, Drawer, Dropdown, Space, Modal, ConfigProvider } from "antd";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { HomeOutlined, MenuOutlined, CaretDownFilled, UnorderedListOutlined, MoreOutlined, CaretLeftOutlined, HomeFilled, HistoryOutlined, LeftCircleFilled, UserOutlined } from '@ant-design/icons';
 import { Row, Col, Hidden } from 'react-grid-system';
@@ -19,19 +19,6 @@ import { usePermission } from "utils/usePermission";
 
 const schema = (options = {}) => { return getSchema({}, options).unknown(true); };
 
-
-const StyledDrawer = styled(Drawer)`
-    .ant-drawer-wrapper-body{
-        background:#2a3142;
-    }
-    .ant-drawer-content{
-        background:#2a3142;
-    }
-    .ant-drawer-header{
-        border-bottom:none;
-    }
-
-`;
 
 const StyledLogo = styled(LogoWhiteNoText)`
     &:hover svg path[style*="fill:#fff"
@@ -74,7 +61,7 @@ export const saveNavigation = (description, id, location) => {
     }
 }
 
-export const SimpleDropdownHistory = ({ disabled=false,fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
+export const SimpleDropdownHistory = ({ disabled = false, fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -162,21 +149,29 @@ export const SimpleDropdownHistory = ({ disabled=false,fixedTopItems, fixedFoote
 
     return (
         <>
-            <StyledDrawer
-                title={
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                        <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                    </div>
-                }
-                placement="left"
-                closable={false}
-                onClose={onCloseDrawer}
-                open={drawerVisible}
+            <ConfigProvider
+                theme={{
+                    token: {
+                        colorBgElevated: "#2a3142"
+                    },
+                }}
             >
-                <YScroll>
-                    <MainMenu dark />
-                </YScroll>
-            </StyledDrawer>
+                <Drawer
+                    title={
+                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                            <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                        </div>
+                    }
+                    placement="left"
+                    closable={false}
+                    onClose={onCloseDrawer}
+                    open={drawerVisible}
+                >
+                    <YScroll>
+                        <MainMenu dark />
+                    </YScroll>
+                </Drawer>
+            </ConfigProvider >
             <FormContainer id="frm-title" /* form={form} */ wrapForm={false} wrapFormItem={false} schema={schema} fluid style={{ padding: "0px" }}>
                 <Row nogutter style={{ /* marginBottom: "5px" */ }}>
                     <Col>
@@ -210,7 +205,7 @@ export const SimpleDropdownHistory = ({ disabled=false,fixedTopItems, fixedFoote
     );
 }
 
-export default ({ title, disabled=false, leftTitle, leftSubTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
+export default ({ title, disabled = false, leftTitle, leftSubTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -291,21 +286,30 @@ export default ({ title, disabled=false, leftTitle, leftSubTitle, right, rightHe
 
     return (
         <>
-            {showHistory && <StyledDrawer
-                title={
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                        <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                    </div>
-                }
-                placement="left"
-                closable={false}
-                onClose={onCloseDrawer}
-                open={drawerVisible}
+            <ConfigProvider
+                theme={{
+                    token: {
+                        colorBgElevated: "#2a3142"
+                    },
+                }}
             >
-                <YScroll>
-                    <MainMenu dark />
-                </YScroll>
-            </StyledDrawer>}
+                {showHistory && <Drawer
+                    title={
+                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                            <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                        </div>
+                    }
+                    placement="left"
+                    closable={false}
+                    onClose={onCloseDrawer}
+                    open={drawerVisible}
+                    styles={{ body: { background: "red !important" } }}
+                >
+                    <YScroll>
+                        <MainMenu dark />
+                    </YScroll>
+                </Drawer>}
+            </ConfigProvider>
             <FormContainer id="frm-title" /* form={form} */ wrapForm={false} wrapFormItem={false} schema={schema} fluid style={{}}>
                 <Row style={{ marginBottom: "5px" }}>
                     <Col style={{ paddingTop: "5px" }}>

@@ -12,7 +12,7 @@ import GridLayout, { Responsive, WidthProvider } from "react-grid-layout";
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { ScrollMenu, VisibilityContext } from 'react-horizontal-scrolling-menu';
 import './commons/react-horizontal-scrolling-menu.css';
-import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer, message, Checkbox } from "antd";
+import { Button, Select, Typography, Card, Collapse, Space, Modal, Popover, Menu, Divider, Drawer, message, Checkbox,ConfigProvider } from "antd";
 const { Text, Title } = Typography;
 import { SyncOutlined, SettingOutlined, MenuOutlined, AppstoreOutlined, LogoutOutlined, ProjectOutlined, SaveOutlined, ClearOutlined, PushpinOutlined, CaretDownOutlined } from '@ant-design/icons';
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
@@ -130,19 +130,6 @@ const StyledScrollMenu = styled(ScrollMenu)`
         border-radius: 3px; 
         padding: 2px;
 
-
-`;
-
-const StyledDrawer = styled(Drawer)`
-    .ant-drawer-wrapper-body{
-        background:#2a3142;
-    }    
-    .ant-drawer-content{
-        background:#2a3142;
-    }
-    .ant-drawer-header{
-        border-bottom:none;
-    }
 
 `;
 
@@ -288,7 +275,7 @@ const baseItems = [
     { i: "stockavailable", x: 0, y: 0, w: 6, h: 8, minH: 4, closable: true },
     //{ i: "nav", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
     { i: "dataprod" },
-    { i: "dataprod#estado", x: 0, y: 0, w: 12, h: 19, minH: 19, minW: 12, fixed: true, static: true, pinnable: false,onClick:(navigate)=>navigate("/app/producao/widgetestadoproducao",{}) },
+    { i: "dataprod#estado", x: 0, y: 0, w: 12, h: 19, minH: 19, minW: 12, fixed: true, static: true, pinnable: false, onClick: (navigate) => navigate("/app/producao/widgetestadoproducao", {}) },
     { i: "mp" },
     { i: "mp#local", x: 0, y: 0, w: 4, h: 8, minH: 4, closable: true },
     { i: "mp#granuladoinline", x: 0, y: 0, w: 8, h: 8, minH: 4, closable: true },
@@ -528,9 +515,9 @@ const ToolboxItem = ({ allItems, currentBreakpoint, item, onTakeItem }) => {
     const itemsClick = (i) => {
         const key = i.key;
         const _item = allItems[baseBreakpoint].find(v => v.i == key);
-        if ("onClick" in _item){
+        if ("onClick" in _item) {
             _item.onClick(navigate);
-        }else{
+        } else {
             onTakeItem(_item);
         }
     }
@@ -817,7 +804,7 @@ export default (props) => {
     useEffect(() => {
         //Every time breakpoint changes updates allItems
 
-        console.log("breakpoint", media?.breakpoint,hash_estadoproducao);
+        console.log("breakpoint", media?.breakpoint, hash_estadoproducao);
         if (media?.breakpoint && hash_estadoproducao) {
             const controller = new AbortController();
             loadData({ aggId: props?.aggId, signal: controller.signal });
@@ -1131,21 +1118,29 @@ export default (props) => {
                 <Drawer title={<div style={{ fontWeight: 900 }}>Definições</div>} placement='right' closable={false} onClose={() => setRightDrawerVisible(false)} visible={rightDrawerVisible}>
                     <SettingsLayout clickSettings={clickSettings} handleSettingsClick={handleSettingsClick} onSettingsClick={onSettingsClick} setDashboards={setDashboards} dashboards={dashboards} currentDashboard={currentDashboard} showOfs={showOfs} setShowOfs={setShowOfs} preventCollisions={preventCollisions} overlap={overlap} />
                 </Drawer>
-                <StyledDrawer
-                    title={
-                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                            <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                        </div>
-                    }
-                    placement="left"
-                    closable={false}
-                    onClose={onCloseDrawer}
-                    open={drawerVisible}
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            colorBgElevated: "#2a3142"
+                        },
+                    }}
                 >
-                   <YScroll>
-                    <MainMenu dark />
-                    </YScroll>
-                </StyledDrawer>
+                    <Drawer
+                        title={
+                            <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                                <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                            </div>
+                        }
+                        placement="left"
+                        closable={false}
+                        onClose={onCloseDrawer}
+                        open={drawerVisible}
+                    >
+                        <YScroll>
+                            <MainMenu dark />
+                        </YScroll>
+                    </Drawer>
+                </ConfigProvider>
                 <ScrollMenu onWheel={onWheel} LeftArrow={<LeftArrow items={(toolbox[baseBreakpoint] || [])} onShowDrawer={onShowDrawer} />} RightArrow={<RightArrow optionsLayout={<ButtonSettings dashboards={dashboards} currentDashboard={currentDashboard} onClick={setRightDrawerVisible} />} items={(toolbox[baseBreakpoint] || [])} />} wrapperClassName={classes.wrapperContainer} scrollContainerClassName={classes.scrollContainer}>
                     {(toolbox[baseBreakpoint] || []).map(item => <ToolboxItem allItems={allItems} currentBreakpoint={currentBreakpoint} itemId={`t-${item.i}`} key={`t-${item.i}`} item={item} onTakeItem={onTakeItem} />)}
                 </ScrollMenu>

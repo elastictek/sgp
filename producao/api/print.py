@@ -89,6 +89,46 @@ def ExportFile(request, format=None):
             resp['Content-Disposition'] = "inline; filename=list.docx"
         return resp
 
+def PrintCortesSchema(request,format=None):
+    #Canon_iR-ADV_C3720_UFR_II
+    data = request.data["parameters"]
+    tmp = tempfile.NamedTemporaryFile()
+    tstamp = datetime.now()
+    fstream = requests.post(f'{reportServer}/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":data.get("name"),
+        "path":data.get("path"),
+        "export":"pdf",
+        "data":{      
+            "CORTES_ORDEM_ID":data.get("cortesordem_id"),
+            "CS_ID":data.get("cs_id")
+        }
+    })
+    try:
+        if "download" in data:
+            return download_file_stream(fstream,f"""CORTESSCHEMA-{data.get("cortesordem_id")}""","application/pdf")
+        else:
+            print(tmp.name)
+            tmp.write(fstream.content)
+            #TO UNCOMMENT ON PRODUCTION
+            #conn = cups.Connection()
+            #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])}) 
+            for i in range(0, data["num_copias"]):
+                subprocess.run(['lp', '-n', str(1), '-d', request.data["parameters"]["impressora"], tmp.name])
+            # ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'A Impressão foi efetuada com Sucesso!', "subTitle":None})
+
 def PrintNwsEtiquetas(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II
     data = request.data["parameters"]

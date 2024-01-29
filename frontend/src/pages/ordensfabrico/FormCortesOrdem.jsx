@@ -34,12 +34,12 @@ const useStyles = createUseStyles({
         height: (props) => props.height ? props.height : "120px",
         padding: "3px",
         width: (props) => `${props.width}%`,
-        minWidth: "34px",
+        minWidth: "50px",//"34px",
         '& .inner': {
             border: "solid 1px #bfbfbf",
             boxShadow: "2px 1px 2px #f0f0f0",
             borderRadius: "3px",
-            height: "100%",
+            height: (props) => props.measure ? "70%" : "100%",
             '&:hover': {
                 backgroundColor: "#e6f7ff"
             }
@@ -47,8 +47,8 @@ const useStyles = createUseStyles({
     }
 })
 
-const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = false, larguras, height, selected }) => {
-    const classes = useStyles({ width, forInput, height });
+const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = false, larguras, height, selected, nBobines, measure, measures, onMeasureChange, measureIsValid }) => {
+    const classes = useStyles({ width, forInput, height, measure });
     const ref = useRef(null);
     const [color, setColor] = useState(colors[larguras.indexOf(parseInt(value))]);
 
@@ -95,7 +95,8 @@ const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = f
     drop(ref);
     return (
         <div ref={ref} className={classes.bobine} data-handler-id={handlerId}>
-            <div className="inner" style={{ opacity, background: selected ? "orange" : color.bcolor, color: selected ? "#000" : color.color }} onClick={()=>onClick && onClick(id,index,value)}>
+            {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center" }}><InputNumber status={measureIsValid("LA", index + 1, nBobines) ? null : "error"} min={1} max={3000} style={{ width: "100%" }} value={measures?.["LA"]?.[index + 1]} tabIndex={index + 2} size="small" controls={false} onChange={(v) => onMeasureChange("LA", index + 1, v)} /></div>}
+            <div className="inner" style={{ opacity, background: selected ? "orange" : color.bcolor, color: selected ? "#000" : color.color }} onClick={() => onClick && onClick(id, index, value)}>
                 <div style={{ fontWeight: selected ? 900 : 400, fontSize: selected ? "16px" : "10px", textAlign: "center", height: "10%" }}>{index + 1}</div>
                 <div style={{
                     color: color.color,
@@ -106,16 +107,17 @@ const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = f
                     alignItems: "center"
                 }}>{value}</div>
             </div>
+            {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center" }}><InputNumber status={measureIsValid("LO", index + 1, nBobines) ? null : "error"} min={1} max={3000} style={{ width: "100%" }} value={measures?.["LO"]?.[index + 1]} size="small" tabIndex={(31 + nBobines) - (index + 1)} controls={false} onChange={(v) => onMeasureChange("LO", index + 1, v)} /></div>}
         </div>
     );
 }
 
-const loadCortesOrdemLookup = async ({ cortesOrdemId, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortesOrdemId }, sort: [], signal });
+const loadCortesOrdemLookup = async ({ cortesordem_id, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortesordem_id }, sort: [], signal });
     return rows;
 }
 
-export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = true, height, cortesChoose, parameters }) => {
+export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = true, height, measure = false, cortesChoose, parameters, measures, measureIsValid, onMeasureChange,onOffsetChange, offset }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
@@ -128,11 +130,13 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
     const [cortesTest, setCortesTest] = useState();
 
 
+
     const init = async () => {
-        console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", parameters?.cortes_test?.cortes)
-        if (parameters?.cortesOrdemId) {
-            const _rows = await loadCortesOrdemLookup({ cortesOrdemId: parameters?.cortesOrdemId });
+        const _co = (parameters?.cortesOrdemId) ? parameters?.cortesOrdemId : parameters?.cortesordem_id;
+        if (_co) {
+            const _rows = await loadCortesOrdemLookup({ cortesordem_id: _co });
             setBobines(json(_rows[0].largura_ordem));
+            console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", _co, json(_rows[0].largura_ordem))
             setLarguraTotal(_rows[0].largura_util);
             setIdx(null);
             setLargurasTxt(_rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x"));
@@ -201,20 +205,27 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
         onChangeCortesOrdem(idx, _b);
     }, [bobines]);
 
-    const onChooseTest = (id,index,value) => {
-        const _arr = cortesTest.findIndex(v=>index+1)
-        console.log("aaaa,choose-->",id,index,value)
+    const onChooseTest = (id, index, value) => {
+        const _arr = cortesTest.findIndex(v => index + 1)
+        console.log("aaaa,choose-->", id, index, value)
     }
+
+
+
 
     return (
         <>
             <AlertMessages formStatus={formStatus} />
             <div style={{ display: "flex" }}><div style={{ fontWeight: 700 }}>{largurasTxt}</div><div style={{ marginLeft: "20px" }}>Largura Útil:</div><div style={{ marginLeft: "2px", fontWeight: 700 }}>{larguraTotal}mm</div></div>
+            {(!forInput && measure) && <div style={{marginLeft:"25px"}}><div>Offset</div><div><InputNumber value={offset} onChange={onOffsetChange} size='small' min={0} max={2200} /></div></div>}
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap: "wrap" }}>
+                    {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center", marginTop: "3px" }}><span style={{ fontWeight: 700, marginRight: "3px" }}>LA</span>{/* <InputNumber min={1} max={3000} style={{ width: "50px" }} value={measures?.["LA"]?.[0]} tabIndex={1} size="small" controls={false} onChange={(v) => onMeasureChange("LA", 0, v)} /> */}</div>}
                     {bobines && bobines.map((v, i) => {
-                        return (<Bobine selected={cortesTest?.includes(i+1)} key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} {...cortesChoose?.edit && {onClick:onChooseTest}} moveBobine={moveBobine} width={(v * 100) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
+                        return (
+                            <Bobine measure={measure} measures={measures} measureIsValid={measureIsValid} onMeasureChange={onMeasureChange} selected={cortesTest?.includes(i + 1)} key={`b-${v}.${i}`} id={`b-${v}.${i}`} value={v} index={i} {...cortesChoose?.edit && { onClick: onChooseTest }} nBobines={bobines.length} moveBobine={moveBobine} width={(v * (measure ? 97 : 100)) / larguraTotal} larguras={larguras} forInput={forInput} height={height} />);
                     })}
+                    {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center", alignSelf: "end", marginBottom: "11px" }}>{/* <InputNumber min={1} max={3000} style={{ width: "50px" }} value={measures?.["LO"]?.[bobines.length + 1]} tabIndex={30} size="small" controls={false} onChange={(v) => onMeasureChange("LO", bobines.length + 1, v)} /> */}<span style={{ fontWeight: 700, marginLeft: "3px" }}>LO</span></div>}
                 </div>
             </DndProvider>
         </>

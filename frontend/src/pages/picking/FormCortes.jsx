@@ -3,7 +3,7 @@ import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
 import dayjs from 'dayjs';
-import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
+import { allPass, curry, eqProps, isNil, map, uniqWith } from 'ramda';
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetch, fetchPost, cancelToken } from "utils/fetch";
 import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
@@ -30,7 +30,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Cores, CortesPlanSelect } from 'components/EditorsV3';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector,FormPrint, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace,printersList } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { ObsTableEditor } from 'components/TableEditorsV3';
 import YScroll from 'components/YScroll';
@@ -84,6 +84,14 @@ const loadCortes = async ({ data, signal }) => {
     return rows;
 }
 
+const loadMeasures = async ({ data, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "GetCortesMeasures" }, filter: { ...data }, sort: [], signal });
+    if (rows && rows.length > 0) {
+        return rows[0];
+    }
+    return rows;
+}
+
 export default ({ operationsRef, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -108,10 +116,13 @@ export default ({ operationsRef, ...props }) => {
     const primaryKeys = [];
     const [cortes, setCortes] = useState();
     const [modalParameters, setModalParameters] = useState({});
+    const [measures, setMeasures] = useState({});
+    const [offset, setOffset] = useState();
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
                 case "generate": return <FormGenerateCortes parameters={modalParameters.parameters} permissions={modalParameters.permissions} onSelectPlan={modalParameters.onSelectPlan} />;
+                case "print": return <FormPrint {...modalParameters.parameters} printer={modalParameters.parameters?.printers && modalParameters.parameters?.printers[0]?.value} />;
                 //case "formulacao": return <FormFormulacao enableAssociation={modalParameters?.enableAssociation} postProcess={modalParameters?.postProcess} parameters={modalParameters.parameters} />
             }
         }
@@ -141,6 +152,24 @@ export default ({ operationsRef, ...props }) => {
             inputParameters.current = { ...paramsIn };
         }
         const row = await loadCortes({ data: inputParameters.current, signal });
+        if (row?.cortesordem.id && inputParameters.current?.cs_id) {
+            const rowMeasures = await loadMeasures({ data: { cortesordem_id: row.cortesordem.id, cs_id: inputParameters.current.cs_id }, signal });
+            if (rowMeasures) {
+                setOffset(rowMeasures._offset);
+                const la = {};
+                const lo = {};
+                for (let i = 1; i <= 24; i++) {
+                    if (!isNil(rowMeasures[`la_${i}`])) {
+                        la[`${i}`] = rowMeasures[`la_${i}`];
+                    }
+                    if (!isNil(rowMeasures[`lo_${i}`])) {
+                        lo[`${i}`] = rowMeasures[`lo_${i}`];
+                    }
+                }
+                setMeasures({ LA: { ...la }, LO: { ...lo } });
+            }
+
+        }
         console.log("444444", row, {
             ...inputParameters.current,
             ...row?.cortesordem && { cortesordem_id: row.cortesordem.id, cortes_id: row.cortesordem.cortes_id },
@@ -248,6 +277,140 @@ export default ({ operationsRef, ...props }) => {
     }
 
 
+    const onMeasuresSave = async () => {
+        let errorLA = false;
+        let errorLO = false;
+        let dataLA = (measures?.LA || {});
+        let dataLO = (measures?.LO || {});
+
+        const la = Object.keys(dataLA).map(Number).sort((a, b) => a - b);
+        const lo = Object.keys(dataLO).map(Number).sort((a, b) => a - b);
+
+        for (let i = 0; i < la.length - 1; i++) {
+            const currentKey = la[i];
+            const nextKey = la[i + 1];
+
+            if (dataLA[nextKey] == undefined)
+                continue;
+
+            if (currentKey + 1 !== nextKey) {
+                errorLA = true;
+                break;
+            }
+            if (dataLA[currentKey] >= dataLA[nextKey]) {
+                errorLA = true;
+                break;
+            }
+        }
+
+        for (let i = 0; i < lo.length - 1; i++) {
+            const currentKey = lo[i];
+            const nextKey = lo[i + 1];
+            if (dataLO[currentKey] == undefined) {
+                continue;
+            }
+            if (currentKey + 1 !== nextKey) {
+                errorLO = true;
+                break;
+            }
+            if (dataLO[currentKey] <= dataLO[nextKey] || dataLO[nextKey] == undefined) {
+                errorLO = true;
+                break;
+            }
+        }
+
+        if (errorLA) {
+            openNotification("error", 'top', "Erros no preenchimento", "Não é possível registar as medições em LA.");
+            return;
+        }
+        if (errorLO) {
+            openNotification("error", 'top', "Erros no preenchimento", "Não é possível registar as medições em LO.");
+            return;
+        }
+
+        if (isNil(offset)) {
+            openNotification("error", 'top', "Erros no preenchimento", "O offset é obrigatório!");
+            return;
+        }
+
+        let response = null;
+        try {
+            response = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: {}, parameters: { method: "SaveCortesMeasures", measures, offset, cortesordem_id: cortes?.cortesordem_id, cs_id: cortes?.cs_id } });
+            if (response?.data?.status !== "error") {
+                openNotification(response?.data?.status, 'top', "Notificação", response?.data?.title);
+            } else {
+                openNotification("error", 'top', "Notificação", response?.data?.title, null);
+            }
+        }
+        catch (e) {
+            console.log(e)
+            openNotification("error", 'top', "Notificação", e.message, null);
+        }
+    }
+
+    const onOffsetChange = (v) => {
+        setOffset(v);
+    }
+
+    const onMeasureChange = (type, idx, value) => {
+        const _d = { ...measures, [type]: { ...measures[type], [idx]: value } };
+        const _m = Object.fromEntries(
+            Object.entries(_d).map(([key, nestedObj]) => [
+                key,
+                Object.fromEntries(
+                    Object.entries(nestedObj).filter(([_, value]) => value !== undefined && value !== null)
+                )
+            ])
+        );
+        setMeasures(_m);
+    }
+
+    const measureIsValid = (type, idx, nBobines) => {
+        if ((type === "LA" && idx === 1) || (idx === nBobines && type === "LO")) {
+            return true;
+        }
+        const value = measures?.[type]?.[idx];
+        const pnValue = (type === "LA") ? measures?.[type]?.[idx - 1] : measures?.[type]?.[idx + 1];
+
+        if (pnValue === undefined && value !== undefined) {
+            return false;
+        }
+
+        if (value !== undefined && pnValue !== undefined) {
+            if (value <= pnValue) {
+                return false;
+            }
+        }
+        return true;
+
+    }
+
+    const onPrint = () => {
+        setModalParameters({
+            width: "500px",
+            height: "200px",
+            content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Esquema</div>,
+            parameters: {
+                url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 1,
+                onComplete: onDownloadComplete,
+                parameters: {
+                    method: "PrintCortesSchema",
+                    cortesordem_id: cortes?.cortesordem_id,
+                    cs_id:  inputParameters.current.cs_id,
+                    name: "CORTES-SCHEMA",
+                    path: "MISC/CORTES_SCHEMA"
+                }
+            }
+        });
+        showModal();
+    }
+
+    const onDownloadComplete = async (response,download) => {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(blob);
+        window.open(pdfUrl, '_blank');
+    }
+
     return (
         <>
             <AlertsContainer /* id="el-external" */ mask fieldStatus={fieldStatus} formStatus={formStatus} portal={false} />
@@ -255,10 +418,14 @@ export default ({ operationsRef, ...props }) => {
                 <RowSpace />
                 <Row><Col><HorizontalRule marginTop='0px' title="Cortes" right={<Space>
                     <Button type="link" size="small" disabled={(submitting.state)} onClick={onGenerateCortes} style={{ width: "100%" }}>Gerar Cortes</Button>
+                    <Button type="link" size="small" disabled={(submitting.state)} onClick={onPrint} style={{ width: "100%" }}>Imprimir</Button>
+                    <Button type="link" size="small" disabled={(submitting.state || Object.keys(measures?.LA || {}).length == 0 || Object.keys(measures?.LO || {}).length == 0)} onClick={onMeasuresSave} style={{ width: "100%" }}>Registar Medições</Button>
                 </Space>} /></Col></Row>
                 <Row nogutter>
                     <Col>
-                        {hasCortes() && <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} />}
+                        {hasCortes() && <>
+                            <FormCortesOrdem parameters={{ cortesOrdemId: cortes?.cortesordem_id }} forInput={false} measure={cortes?.ofabrico_status === 3 ? true : false} offset={offset} measures={measures} onOffsetChange={onOffsetChange} measureIsValid={measureIsValid} onMeasureChange={onMeasureChange} height="200px" />
+                        </>}
                     </Col>
                 </Row>
             </FormContainer>

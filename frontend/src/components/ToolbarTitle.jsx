@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from 'styled-components';
-import { Button, Breadcrumb, Drawer, Space } from "antd";
+import { Button, Breadcrumb, Drawer, Space, ConfigProvider } from "antd";
 import { HomeOutlined, MenuOutlined } from '@ant-design/icons';
 import { Row, Col } from 'react-grid-system';
 import { Container as FormContainer } from 'components/FormFields';
@@ -12,19 +12,6 @@ import YScroll from "components/YScroll";
 
 const schema = (options = {}) => { return getSchema({}, options).unknown(true); };
 
-
-const StyledDrawer = styled(Drawer)`
-    .ant-drawer-wrapper-body{
-        background:#2a3142;
-    }
-    .ant-drawer-content{
-        background:#2a3142;
-    }
-    .ant-drawer-header{
-        border-bottom:none;
-    }
-
-`;
 
 export default ({ title, right, history = [], details }) => {
     const navigate = useNavigate();
@@ -39,21 +26,29 @@ export default ({ title, right, history = [], details }) => {
 
     return (
         <>
-            <StyledDrawer
-                title={
-                    <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                        <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
-                    </div>
-                }
-                placement="left"
-                closable={false}
-                onClose={onCloseDrawer}
-                visible={drawerVisible}
+            <ConfigProvider
+                theme={{
+                    token: {
+                        colorBgElevated: "#2a3142"
+                    },
+                }}
             >
-                <YScroll>
-                    <MainMenu dark />
-                </YScroll>
-            </StyledDrawer>
+                <Drawer
+                    title={
+                        <div style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                            <LogoWhite style={{ width: "100px", height: "24px", paddingRight: "10px" }} />
+                        </div>
+                    }
+                    placement="left"
+                    closable={false}
+                    onClose={onCloseDrawer}
+                    open={drawerVisible}
+                >
+                    <YScroll>
+                        <MainMenu dark />
+                    </YScroll>
+                </Drawer>
+            </ConfigProvider>
             <FormContainer id="frm-title" /* form={form} */ wrapForm={false} wrapFormItem={false} schema={schema} label={{ enabled: false }} fluid style={{ margin: "0px" }}>
                 <Row style={{ marginBottom: "10px" }}>
                     <Col>
@@ -66,7 +61,7 @@ export default ({ title, right, history = [], details }) => {
                                     {history.length === 0 ?
                                         <Breadcrumb.Item style={{ cursor: "pointer", display: "flex", alignItems: "center" }} onClick={() => navigate(-1)}>
                                             <Space>
-                                            <HomeOutlined style={{ fontSize:"14px" }} />
+                                                <HomeOutlined style={{ fontSize: "14px" }} />
                                                 <span>Dashboard</span>
                                             </Space>
                                         </Breadcrumb.Item>
@@ -76,8 +71,8 @@ export default ({ title, right, history = [], details }) => {
                                                     <span>{v}</span>
                                                 </Breadcrumb.Item>
                                                     : <Breadcrumb.Item onClick={() => navigate(((history.length + 1) - i) * -1)}>
-                                                        <Space style={{ cursor: "pointer", display: "flex", alignItems: "center"}}>
-                                                            <HomeOutlined style={{ fontSize:"14px" }} />
+                                                        <Space style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+                                                            <HomeOutlined style={{ fontSize: "14px" }} />
                                                             <span>Dashboard</span>
                                                         </Space>
                                                     </Breadcrumb.Item>}
