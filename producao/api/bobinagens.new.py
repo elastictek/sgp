@@ -139,36 +139,36 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
     return ret
 
 # def export(sql, db_parameters, parameters,conn_name):
-    # if ("export" in parameters and parameters["export"] is not None):
-        # dbparams={}
-        # for key, value in db_parameters.items():
-            # if f"%({key})s" not in sql: 
-                # continue
-            # dbparams[key] = value
-            # sql = sql.replace(f"%({key})s",f":{key}")
-        # hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        # req = {
+#     if ("export" in parameters and parameters["export"] is not None):
+#         dbparams={}
+#         for key, value in db_parameters.items():
+#             if f"%({key})s" not in sql: 
+#                 continue
+#             dbparams[key] = value
+#             sql = sql.replace(f"%({key})s",f":{key}")
+#         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+#         req = {
             
-            # "conn-name":conn_name,
-            # "sql":sql,
-            # "hash":hash,
-            # "data":dbparams,
-            # **parameters
-        # }
-        # wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        # fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+#             "conn-name":conn_name,
+#             "sql":sql,
+#             "hash":hash,
+#             "data":dbparams,
+#             **parameters
+#         }
+#         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+#         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
-        # if (fstream.status_code==200):
-            # resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-            # if (parameters["export"] == "pdf"):
-                # resp['Content-Disposition'] = "inline; filename=list.pdf"
-            # elif (parameters["export"] == "excel"):
-                # resp['Content-Disposition'] = "inline; filename=list.xlsx"
-            # elif (parameters["export"] == "word"):
-                # resp['Content-Disposition'] = "inline; filename=list.docx"
-            # if (parameters["export"] == "csv"):
-                # resp['Content-Disposition'] = "inline; filename=list.csv"
-            # return resp
+#         if (fstream.status_code==200):
+#             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+#             if (parameters["export"] == "pdf"):
+#                 resp['Content-Disposition'] = "inline; filename=list.pdf"
+#             elif (parameters["export"] == "excel"):
+#                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
+#             elif (parameters["export"] == "word"):
+#                 resp['Content-Disposition'] = "inline; filename=list.docx"
+#             if (parameters["export"] == "csv"):
+#                 resp['Content-Disposition'] = "inline; filename=list.csv"
+#             return resp
 
 
 @api_view(['POST'])
@@ -323,7 +323,7 @@ def BobinagensList(request, format=None):
     parameters = {**f.parameters, **f2['parameters'],**f3.parameters, **fdefeitos.parameters, **festados.parameters, **f4.parameters, **f5.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pb.lar,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome)) bobines,sum(pb.lar) largura,pb.core"""
+    cols = f"""pbm.*,bobines_lab,bobines_lab_perfil,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pb.lar,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome,'carga_id',pl.carga_id,'recycle',pb.recycle,'comp',pb.comp_actual,'destinos',pb.destinos->>'$.destinos[*].cliente.BPCNUM_0')) bobines,sum(pb.lar) largura,pb.core"""
     dql.columns=encloseColumn(cols,False)
 
     w = "where" if f.text=='' and f2["text"] == '' else 'and'
@@ -341,6 +341,39 @@ def BobinagensList(request, format=None):
             SELECT
             {c(f'{dql.columns}')}
             from(
+                select pbm.*,lbs.bobines bobines_lab,lbs.bobines_perfil bobines_lab_perfil
+                {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
+                (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
+                ''' if feature=='fixconsumos' else ''}
+                {f''',ROUND(pbc.A1,2) A1,ROUND(pbc.A2,2) A2,ROUND(pbc.A3,2) A3,ROUND(pbc.A4,2) A4,ROUND(pbc.A5,2) A5,ROUND(pbc.A6,2) A6,
+                      ROUND(pbc.B1,2) B1,ROUND(pbc.B2,2) B2,ROUND(pbc.B3,2) B3,ROUND(pbc.B4,2) B4,ROUND(pbc.B5,2) B5,ROUND(pbc.B6,2) B6,
+                      ROUND(pbc.C1,2) C1,ROUND(pbc.C2,2) C2,ROUND(pbc.C3,2) C3,ROUND(pbc.C4,2) C4,ROUND(pbc.C5,2) C5,ROUND(pbc.C6,2) C6''' if typeList=='B' else '' }
+                ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
+                ,JSON_EXTRACT(acs.ofs, '$[*].cliente_nome') clientes
+                ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
+                acs.agg_of_id
+                FROM producao_bobinagem pbm
+                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                left join producao_lab_bobines_select lbs on lbs.agg_of_id=acs.agg_of_id
+                {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
+                {f.text} {f2["text"]}
+                {fText01}
+                {fText02}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+            ) pbm
+            join producao_bobine pb on pb.bobinagem_id = pbm.id
+            left join producao_palete pl on pb.palete_id=pl.id
+            where 1=1 {f3.text}
+            {f' and no_lotes>0' if feature=='fixconsumos' else ''}
+            group by pbm.id,pb.core,pbm.bobines_lab,pbm.bobines_lab_perfil {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
+            {s(dql.sort)}
+        """
+    )
+    print(
+        f""" 
+            SELECT
+            {f'{dql.columns}'}
+            from(
                 select pbm.*
                 {f''',(SELECT GROUP_CONCAT(ld.doser) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes_dosers,
                 (select count(*) FROM lotesdosers ld where ld.ig_bobinagem_id=pbm.ig_bobinagem_id and (ld.n_lote is null or ld.qty_to_consume<>ld.qty_consumed)) no_lotes
@@ -354,54 +387,21 @@ def BobinagensList(request, format=None):
                 acs.agg_of_id
                 FROM producao_bobinagem pbm
                 left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
-                                                                                        
                 {'LEFT JOIN producao_bobinagemconsumos pbc ON pbc.bobinagem_id=pbm.id' if typeList=='B' else '' }
                 {f.text} {f2["text"]}
                 {fText01}
                 {fText02}
-                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+                {dql.sort} {dql.paging} {dql.limit}
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
-                                                              
+            left join producao_palete pl on pb.palete_id=pl.id
             where 1=1 {f3.text}
             {f' and no_lotes>0' if feature=='fixconsumos' else ''}
             group by pbm.id,pb.core {',A1,A2,A3,A4,A5,A6,B1,B2,B3,B4,B5,B6,C1,C2,C3,C4,C5,C6' if typeList=='B' else '' } 
-            {s(dql.sort)}
+            {dql.sort}
         """
     )
-          
-             
-                  
-                              
-                 
-                            
-                                                                                                                                                                                                     
-                                                                                                                                                                         
-                                                      
-                                                                                                                                        
-                                                                                                                                        
-                                                                                                                                                                     
-                                                         
-                                                                    
-                                                                
-                             
-                                           
-                                                                                           
-                                                                                                                 
-                                     
-                         
-                         
-                                                   
-                 
-                                                               
-                                                              
-                               
-                                                                  
-                                                                                                                         
-                      
-           
-     
-                     
+    print(parameters)
     # sqlCount = f""" 
     #         SELECT count(*) FROM (
     #             SELECT
@@ -417,9 +417,8 @@ def BobinagensList(request, format=None):
     #         where 1=1 {f3.text}
     #         {f' and no_lotes>0' if feature=='fixconsumos' else ''}
     #     """
-    
+
     if ("export" in request.data["parameters"]):
-        print("uuuuuuuuuuuuuuuu")
         for x in range(0, 30):
             request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
         dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
@@ -452,72 +451,72 @@ def BobinagensList(request, format=None):
     return Response(response)
 
 
-                                            
-                                                
+def BobinagensListLab(request, format=None):
+    connection = connections["default"].cursor()
 
-                                       
-                     
-                                                                                   
-                                                                                                                                                         
-                                                                                           
-                                                                              
-                                                                                                              
-                                                                                      
-                                                                                      
-                                                                                      
-                                                                                                                                                                 
-            
-             
-            
-             
+    f = Filters(request.data['filter'])
+    f.setParameters({
+        **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
+        **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
+        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
+        "_nome": {"value": lambda v: "2%", "field": lambda k, v: f'pbm.nome'},
+        "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
+        "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},
+        "diam": {"value": lambda v: v.get('fdiam'), "field": lambda k, v: f'pbm.{k}'},
+        "comp": {"value": lambda v: v.get('fcomp'), "field": lambda k, v: f'pbm.{k}'},
+        "valid": {"value": lambda v: f"=={v.get('valid')}" if v.get("valid") is not None and v.get("valid") != "-1" else None, "field": lambda k, v: f'pbm.{k}'},
+    }, True)
+    f.where()
+    f.auto()
+    f.value()
 
-                                 
-                                     
-                           
-            
-                   
-                        
-                                                                                                
-                      
-                              
-                               
-                           
-                                      
-                                            
-                                                  
-                                                          
-                            
-                                                                                                                        
-                                                                             
-                                                                                                                                                                   
-                                                                       
-                 
-                      
-                       
-                         
-                                
-                                   
-                                           
-                        
-                                             
-                                                              
-                 
-                                                                         
-                                                                             
-                                                                                    
-                                                                       
-                                                                                  
-                                                                                                                 
-                                                          
-           
-     
+    parameters = {**f.parameters}
+    dql = db.dql(request.data, False)
+    sql = lambda p, c, s: (
+        f"""
+            select 
+                distinct
+                concat(pbm.id,case when lt.id is null then '' else concat('-',lt.id) end) rowid,
+                pbm.*,
+                ibd.agg_of_id,
+                lt.id teste_id,
+                lt.t_stamp,
+                lt.lab_artigospecs_id,
+                lbs.bobines default_bobines,
+                lbs.bobines_pg default_bobines_pg,
+                lbs.bobines_perfil default_bobines_perfil,
+                pbd.bobines,
+                JSON_OBJECT('open',lt.`open`,'selected_bobines',lt.bobines,'type',lt.`type`,'result',lt.`result`) teste,
+                case when lasp.id is not null then JSON_ARRAYAGG(JSON_OBJECT(
+                'id',lasp.id,'p_id',lasp.lab_metodoparameter_id,'p_des',lasp.parameter_des,'values',lasp.`values`,'required',lasp.required,'decisive',lasp.decisive
+                )) over (partition by pbm.id) else null end teste_specs
+            from(
+                select
+                pbm.id,
+                pbm.nome,
+                pbm.`timestamp`,
+                pbm.ig_bobinagem_id
+                FROM producao_bobinagem pbm
+                {f.text}
+                order by pbm.`timestamp` desc
+                {p(dql.paging)} {p(dql.limit)}                
+            ) pbm
+            JOIN producao_bobinagem_data pbd on pbd.bobinagem_id = pbm.id
+            left join ig_bobinagens_data ibd on ibd.ig_id=pbm.ig_bobinagem_id
+            left join producao_lab_bobines_select lbs on lbs.agg_of_id=ibd.agg_of_id
+            left join producao_lab_teste lt on lt.bobinagem_id = pbm.id
+            left join producao_lab_artigospecs las on las.id=lt.lab_artigospecs_id
+            left join producao_lab_artigospecs_parameters lasp on lasp.lab_artigospecs_id = lt.lab_artigospecs_id
+            order by pbm.`timestamp` desc, lt.t_stamp desc
+        """
+    )
    
-                                                
-                                                                    
-                     
-                                                                                                                                                                                            
-                                                                                                              
-                             
+    if ("export" in request.data["parameters"]):
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    response = db.executeList(sql, connection, parameters, [],None,f"select {dql.currentPage*dql.pageSize+1}")
+    return Response(response)
 
 
 
@@ -574,7 +573,7 @@ def BobinagemLookup(request, format=None):
     parameters={**f.parameters,**f2.parameters}
 
     dql = db.dql(request.data, False)
-    cols = f"""pbm.*,pbm.comp_par comp_emenda,t.largura_bobinagem,t.troca_nw{",(select count(*) from producao_bobine pb join producao_palete pp on pp.id=pb.palete_id and pp.nome not like 'DM%%' where pb.bobinagem_id=pbm.id) nbobines_in_paletes" if data.get("checkBobinesInPalete")==True else ""} """
+    cols = f"""pbm.*,pbm.comp_par comp_emenda,t.largura_bobinagem,t.troca_nw{",(select count(*) from producao_bobine pb join producao_palete pp on pp.id=pb.palete_id and pp.nome not like 'DM%' where pb.bobinagem_id=pbm.id) nbobines_in_paletes" if data.get("checkBobinesInFinalPalete")==True else ""} """
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (
         f"""  
@@ -963,7 +962,6 @@ def NewBobinagem(request, format=None):
                 if "ig_id" not in data:
                     return Response({"status": "error", "title":"Tem de indicar o Evento de linha!"})
                 args = [data.get("ig_id"),data.get("acs_id")]
-                print("newwwwwwwwwwwwwwwwwwwwwwww")
                 print(args)
                 cursor.callproc('create_bobinagem_from_ig_v3',args)
                 row = cursor.fetchone()
@@ -1032,3 +1030,6 @@ def BobinesByAggByStatusList(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
+
+
+

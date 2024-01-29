@@ -243,6 +243,7 @@ def create_bobine(pk):
         bob = Bobine.objects.filter(bobinagem=instance, largura=lar)
         if not bob:
             bob = Bobine.objects.create(bobinagem=instance, largura=lar, comp_actual=instance.comp, comp = instance.comp, artigo=lar.artigo, designacao_prod=lar.designacao_prod, diam=instance.diam, cliente=lar.cliente.nome)
+            bob.timestamp=instance.timestamp                              
             if num < 10:
                 bob.nome = '%s-0%s' % (instance.nome, num)
             else:

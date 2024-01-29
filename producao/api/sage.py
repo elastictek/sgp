@@ -227,6 +227,7 @@ def SyncRecicladoProductionReport(request, format=None):
                     """
                     status = None
                     if data.get("run") == 1:
+                        updateReport(value.get("id"),cursor)                          
                         status = _sendSAGE(body)
                         print("REQUEST")
                         print(body)
@@ -235,7 +236,7 @@ def SyncRecicladoProductionReport(request, format=None):
                     #if status and isinstance(status, list):
                     #    if status[0] == 200:
                     #if status:
-                    updateReport(value.get("id"),cursor)
+                    
                         #report.append(status[1])
                         #print(status[0])
                         #print(status[1])

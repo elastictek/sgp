@@ -145,36 +145,36 @@ def rangeP2(data, key, field1, field2, fieldDiff=None):
     return ret
 
 # def export(sql, db_parameters, parameters,conn_name):
-#     if ("export" in parameters and parameters["export"] is not None):
-#         dbparams={}
-#         for key, value in db_parameters.items():
-#             if f"%({key})s" not in sql: 
-#                 continue
-#             dbparams[key] = value
-#             sql = sql.replace(f"%({key})s",f":{key}")
-#         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-#         req = {
+    # if ("export" in parameters and parameters["export"] is not None):
+        # dbparams={}
+        # for key, value in db_parameters.items():
+            # if f"%({key})s" not in sql: 
+                # continue
+            # dbparams[key] = value
+            # sql = sql.replace(f"%({key})s",f":{key}")
+        # hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
+        # req = {
             
-#             "conn-name":conn_name,
-#             "sql":sql,
-#             "hash":hash,
-#             "data":dbparams,
-#             **parameters
-#         }
-#         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-#         fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
+            # "conn-name":conn_name,
+            # "sql":sql,
+            # "hash":hash,
+            # "data":dbparams,
+            # **parameters
+        # }
+        # wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
+        # fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
 
-#         if (fstream.status_code==200):
-#             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
-#             if (parameters["export"] == "pdf"):
-#                 resp['Content-Disposition'] = "inline; filename=list.pdf"
-#             elif (parameters["export"] == "excel"):
-#                 resp['Content-Disposition'] = "inline; filename=list.xlsx"
-#             elif (parameters["export"] == "word"):
-#                 resp['Content-Disposition'] = "inline; filename=list.docx"
-#             if (parameters["export"] == "csv"):
-#                 resp['Content-Disposition'] = "inline; filename=list.csv"
-#             return resp
+        # if (fstream.status_code==200):
+            # resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
+            # if (parameters["export"] == "pdf"):
+                # resp['Content-Disposition'] = "inline; filename=list.pdf"
+            # elif (parameters["export"] == "excel"):
+                # resp['Content-Disposition'] = "inline; filename=list.xlsx"
+            # elif (parameters["export"] == "word"):
+                # resp['Content-Disposition'] = "inline; filename=list.docx"
+            # if (parameters["export"] == "csv"):
+                # resp['Content-Disposition'] = "inline; filename=list.csv"
+            # return resp
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
@@ -1131,28 +1131,28 @@ def SaveInfo(request, format=None):
         return Response({"status": "error", "title": str(error)})
 
 
-def SaveCortesTest(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
+                                         
+                                         
+                                       
 
-    try:
-        with connections["default"].cursor() as cursor:
-            #A ordem com que são executados os if's são muito importantes!!!!!!
-            _cortesordem_id = filter.get("cortesordem_id")
-            _cortes_test = json.dumps({"cortes":data.get("cortes"),"cortesordem":_cortesordem_id}) if data.get("cortes") and len(data.get("cortes"))>0 else None
-            if filter.get("cs_id") is not None:
-                if _cortesordem_id:
-                    dml = db.dml(TypeDml.UPDATE, {"type_op":"cortes_test","cortes_test":_cortes_test}, "producao_currentsettings",{"id":Filters.getNumeric(filter.get("cs_id"))},None,None)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    return Response({"status": "success", "title": "Cortes para teste atualizados com sucesso!"})
-            elif filter.get("agg_of_id") is not None:
-                if _cortesordem_id:
-                    dml = db.dml(TypeDml.UPDATE, {"cortes_test":_cortes_test}, "producao_tempaggordemfabrico",{"id":Filters.getNumeric(filter.get("agg_of_id"))},None,None)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    return Response({"status": "success", "title": "Cortes para teste atualizados com sucesso!"})
-    except Exception as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
+        
+                                                       
+                                                                                 
+                                                          
+                                                                                                                                                                
+                                               
+                                   
+                                                                                                                                                                                           
+                                                                     
+                                                                                                                 
+                                                     
+                                   
+                                                                                                                                                                           
+                                                                     
+                                                                                                                 
+                              
+                         
+                                                                 
 
 def CoresPlanList(request, format=None):
     connection = connections["default"].cursor()
@@ -1247,140 +1247,142 @@ def StockCutOptimizer(request, format=None):
 def CortesOrdemLookup(request, format=None):
     #conn = connections[connGatewayName].cursor()
     cols = ['co.*,c.largura_json,c.largura_util']
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
+                                     
+                                           
     f = Filters(request.data['filter'])
-    if "cortesordem_id" in request.data['filter']:
-        sql=f"""
-                select 
-                {dql.columns}
-                from producao_cortesordem co
-                join producao_cortes c on c.id=co.cortes_id
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('cortesordem_id')}}, True)
-    elif "agg_of_id" in request.data['filter']:
-        sql=f"""
-                select 
-                {dql.columns}
-                from producao_tempaggordemfabrico pt
-                join producao_cortesordem co on pt.cortesordem_id = co.id
-                join producao_cortes c on c.id=co.cortes_id and pt.cortes_id=c.id
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('agg_of_id')}}, True)
-    elif "acs_id" in request.data['filter']:
-        sql=f"""
-                select 
-                {dql.columns}
-                from audit_current_settings pc
-                join audit_current_cortes ac on ac.id=pc.`_cortes`
-                join audit_current_cortesordem aco on aco.id=pc.`_cortesordem` 
-                join producao_cortesordem co on co.id=aco.cortesordem->'$.id'
-                join producao_cortes c on c.id=ac.cortes->'$.id'
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
-    elif "cs_id" in request.data['filter']:
-        sql=f"""
-                select 
-                {dql.columns}
-                from producao_currentsettings pc
-                join producao_cortesordem co on co.id=cortesordem->'$.id'
-                join producao_cortes c on c.id=cortes->'$.id'
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('cs_id')}}, True)
+    if "cortesOrdemId" in request.data['filter']:
+                
+                       
+                             
+                                            
+                                                           
+               
+        f.setParameters({"id": {"value": lambda v: v.get('cortesOrdemId')}}, True)
+                                               
+                
+                       
+                             
+                                                    
+                                                                         
+                                                                                 
+               
+                                                                              
+                                            
+                
+                       
+                             
+                                              
+                                                                  
+                                                                               
+                                                                             
+                                                                
+               
+                                                                           
+                                           
+                
+                       
+                             
+                                                
+                                                                         
+                                                             
+               
+                                                                          
     else:
-        sql=f"""
-                select 
-                {dql.columns}
-                from producao_cortesordem co
-                join producao_cortes c on c.id=co.cortes_id
-            """
+                
+                       
+                             
+                                            
+                                                           
+               
         f.setParameters({"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
     f.where()
-    if "cortesordem_id" in request.data['filter']:
+    if "cortesOrdemId" in request.data['filter']:
         f.add(f'co.id = :id', lambda v:(v!=None))
-    elif "agg_of_id" in request.data['filter']:
-        f.add(f'pt.id = :id', lambda v:(v!=None))
-    elif "acs_id" in request.data['filter']:
-        f.add(f'pc.id = :id', lambda v:(v!=None))
-    elif "cs_id" in request.data['filter']:
-        f.add(f'pc.id = :id', lambda v:(v!=None))
+                                               
+                                                 
+                                            
+                                                 
+                                           
+                                                 
     else:
         f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
         f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
     f.value("and")
     parameters = {**f.parameters}
     
-    with connections["default"].cursor() as cursor:
-        response = db.executeSimpleList(lambda: (
-            f"""
-                {sql}
-                {f.text}
-                {dql.sort}
-            """
-        ), cursor, parameters)
-        return Response(response)
-
-def CortesTestLookup(request, format=None):
     dql = db.dql(request.data, False)
-    f = Filters(request.data['filter'])
-    if "agg_of_id" in request.data['filter']:
-        sql=f"""
-                select 
-                pt.cortes_test
-                from producao_tempaggordemfabrico pt
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('agg_of_id')}}, True)
-    elif "acs_id" in request.data['filter'] and not request.data['filter'].get("use_cs_id"):
-        sql=f"""
-                select 
-                ac.cortes_test
-                from audit_current_settings pc
-                join audit_current_cortes_test ac on ac.id=pc.`_cortes_test`
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
-    elif "acs_id" in request.data['filter'] and request.data['filter'].get("use_cs_id"):
-        sql=f"""
-                select 
-                pc.cortes_test
-                from producao_currentsettings pc
-                join audit_current_settings acs on pc.id=acs.contextid
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('acs_id')}}, True)
-    elif "cs_id" in request.data['filter']:
-        sql=f"""
-                select 
-                pc.cortes_test
-                from producao_currentsettings pc
-            """
-        f.setParameters({"id": {"value": lambda v: v.get('cs_id')}}, True)
-    f.where()
-    if "agg_of_id" in request.data['filter']:
-        f.add(f'pt.id = :id', lambda v:(v!=None))
-    elif "acs_id" in request.data['filter'] and request.data['filter'].get("use_cs_id"):
-        f.add(f'acs.id = :id', lambda v:(v!=None))
-    elif "acs_id" in request.data['filter']:
-        f.add(f'pc.id = :id', lambda v:(v!=None))
-    elif "cs_id" in request.data['filter']:
-        f.add(f'pc.id = :id', lambda v:(v!=None))
-    f.value("and")
-    parameters = {**f.parameters}
-    
+    dql.columns = encloseColumn(cols,False)
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
-                {sql}
+                     
+                        
+                          
+               
+                              
+                                 
+
+                                           
+                                     
+                                       
+                                             
+                
+                select 
+                {dql.columns}
+                from producao_cortesordem co
+               
+                                                                              
+                                                                                            
+                
+                       
+                              
+                                              
+                join producao_cortes c on c.id=co.cortes_id
+               
+                                                                           
+                                                                                        
+                
+                       
+                              
+                                                
+                                                                      
+               
+                                                                           
+                                           
+                
+                       
+                              
+                                                
+               
+                                                                          
+             
+                                             
+                                                 
+                                                                                        
+                                                  
+                                            
+                                                 
+                                           
+                                                 
+                  
+                                 
+    
+                                                   
+                                                 
+                
+                     
                 {f.text}
                 {dql.sort}
             """
         ), cursor, parameters)
-        print(
-            f"""
-                {sql}
-                {f.text}
-                {dql.sort}
-            """
-        )
-        print(parameters)
+              
+                
+                     
+                        
+                          
+               
+         
+                         
         return Response(response)
 
 def CortesPlanList(request, format=None):
@@ -1519,6 +1521,7 @@ def SaveCortesOrdem(request, format=None):
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
+
 
 def SaveCortesPlan(request, format=None):
     data = request.data.get("parameters")
@@ -2680,19 +2683,19 @@ def ClosePrf(request, format=None):
     def getPrf(ofid,cursor):
         f = Filters({"id": ofid})
         f.where()
-        f.add(f'po.id = :id', True )
+        f.add(f'id = :id', True )
         f.value("and")
-        response = db.executeSimpleList(lambda: (f"""  
-            select distinct
-            po.ativa,po.was_in_production,
-            top.n_paletes_total n_paletes,
-            sum(case when pp.ordem_id=pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_produzidas,
-            sum(case when pp.ordem_id<>pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_stock_in,
-            sum(case when pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_total
-            from producao_palete pp
-            join planeamento_ordemproducao po on po.id=pp.ordem_id
-            LEFT JOIN producao_tempordemfabrico top on top.id=po.draft_ordem_id
-            {f.text} and agg_of_id_id is not null
+        response = db.executeSimpleList(lambda: (f"""        
+            select ativa,num_paletes_produzidas,num_paletes_produzir,num_paletes_stock_in,num_paletes_stock,was_in_production from planeamento_ordemproducao po {f.text} and agg_of_id_id is not null
+                                          
+                                          
+                                                                                                                                                                                                        
+                                                                                                                                                                                                       
+                                                                                                                                                             
+                                   
+                                                                  
+                                                                               
+                                                 
         """), cursor, f.parameters)
         if len(response["rows"])>0:
             return response["rows"][0]
@@ -2705,15 +2708,15 @@ def ClosePrf(request, format=None):
                 raise Exception("A Prf não existe!")
             if _prf.get("ativa")==0:
                 raise Exception("A Prf não não pode ser fechada!")
-            if (_prf.get("n_paletes_total") < _prf.get("n_paletes")):
-                raise Exception("Número de paletes da Prf insuficiente!")
+            #if _prf.get("was_in_production")==1 and (_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in")) < (_prf.get("num_paletes_produzir") + _prf.get("num_paletes_stock")):
+            #    raise Exception("Número de paletes da Prf insuficiente!")
             dml = db.dml(TypeDml.UPDATE, {
                 "fim": datetime.now(),
-                "num_paletes_total":_prf.get("n_paletes_produzidas") + _prf.get("n_paletes_stock_in"),
-                "num_paletes_stock":_prf.get("n_paletes_stock_in"),
-                "num_paletes_produzir":_prf.get("n_paletes_produzidas"),
+                "num_paletes_total":_prf.get("num_paletes_produzidas") + _prf.get("num_paletes_stock_in"),
+                "num_paletes_stock":_prf.get("num_paletes_stock_in"),
+                "num_paletes_produzir":_prf.get("num_paletes_produzidas"),
                 "ativa":0,
-                "completa": 0 if (_prf.get("n_paletes_total") < _prf.get("n_paletes")) else 1
+                "completa": 0 if (_prf.get("num_paletes_produzidas") < _prf.get("num_paletes_produzir") or _prf.get("num_paletes_stock_in") < _prf.get("num_paletes_stock")) else 1
                 }, "planeamento_ordemproducao",{"id":Filters.getNumeric(data.get("ofid"))},None,None)
             db.execute(dml.statement, cursor, dml.parameters)
             updateMaterializedView()
@@ -3362,8 +3365,9 @@ def Ignorar(request, format=None):
             with connections["default"].cursor() as cursor:
                 dml = db.dml(TypeDml.INSERT, {"cod":data.get("ofabrico_cod"),"ignorar":1}, "producao_ordemfabricodetails",None,None,False)
                 dml.statement = f"""{dml.statement} ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)"""
+                
                 db.execute(dml.statement, cursor, dml.parameters)
-                return cursor.lastrowid
+                                       
                 return Response({"status": "success", "success":f"""Ordem de fabrico ignorada com sucesso!"""})
     except Error as error:
         return Response({"status": "error", "title": str(error)})
@@ -3512,70 +3516,70 @@ def AvailableAggLookup(request,format):
     return Response(response)
 
 
-def GetCortesMeasures(request, format=None):
-    cursor = connections["default"].cursor()
-    filter = request.data.get("filter")
-    print(filter)
-    try:
-        f = Filters(filter)
-        f.where()
-        f.add(f'(cortesordem_id = :cortesordem_id)', True)
-        f.add(f'(cs_id = :cs_id)', True)
-        f.value("and")    
-        sql = lambda: (f"""select * from producao_cortes_medicoes {f.text} order by t_stamp desc limit 1""")
+                                            
+                                            
+                                       
+                 
+        
+                           
+                 
+                                                          
+                                        
+                          
+                                                                                                            
 
-        response = db.executeSimpleList(sql, cursor, f.parameters)
-        if response==None:
-            return Response({"status": "success", "data":None})
-    except Error as error:
-        print(str(error))
-        return Response({"status": "error", "title": str(error)})
-    return Response(response)
+                                                                  
+                          
+                                                               
+                          
+                         
+                                                                 
+                             
 
 
-def SaveCortesMeasures(request, format=None):
-    data = request.data.get('parameters')
+                                             
+                                         
     
-    def _checkMeasure(cortesordem_id,cs_id,hash_cod, cursor):
-        f = Filters({"cortesordem_id":cortesordem_id,"cs_id":cs_id,"hash_cod":hash_cod})
-        f.where()
-        f.add(f'(cortesordem_id = :cortesordem_id)', True)
-        f.add(f'(hash_cod = :hash_cod)', True)
-        f.add(f'(cs_id = :cs_id)', True)
-        f.value("and")
-        response = db.executeSimpleList(lambda: (f"""select count(*) cnt from producao_cortes_medicoes {f.text}"""), cursor, f.parameters)
-        return response["rows"][0].get("cnt")
+                                                             
+                                                                                        
+                 
+                                                          
+                                              
+                                        
+                      
+                                                                                                                                          
+                                             
     
-    la = {}
-    for key in data.get("measures").get("LA"):
-        la[f"la_{key}"]=data.get("measures").get("LA").get(key)
-    lo = {}
-    for key in data.get("measures").get("LO"):
-        lo[f"lo_{key}"]=data.get("measures").get("LO").get(key)
-    values = {
-        "_offset":data.get("offset"),
-        "cortesordem_id":data.get("cortesordem_id"),
-        "cs_id":data.get("cs_id"),
-        **la,
-        **lo
-    }
-    hashvalue = hashlib.md5(json.dumps(values).encode('utf-8')).hexdigest()[ 0 : 16 ]
-    values={
-        **values,
-        "hash_cod":hashvalue,
-        "user_id":request.user.id,
-        "t_stamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }   
-    try:
-        with connections["default"].cursor() as cursor:
-            chk = _checkMeasure(data.get("cortesordem_id"),data.get("cs_id"),hashvalue,cursor)
-            if (chk>0):
-                return Response({"status": "error", "title": f"A medição já se encontra registada!"})       
-            dml = db.dml(TypeDml.INSERT, values, "producao_cortes_medicoes",None,None,False)
-            db.execute(dml.statement, cursor, dml.parameters)
-            return Response({"status": "success", "title": "Medições registadas com sucesso!", "subTitle":f'{None}'})
-    except Exception as error:
-        return Response({"status": "error", "title": str(error)})
+           
+                                              
+                                                               
+           
+                                              
+                                                               
+              
+                                     
+                                                    
+                                  
+             
+            
+     
+                                                                                     
+            
+                 
+                             
+                                  
+                                                              
+        
+        
+                                                       
+                                                                                              
+                       
+                                                                                                               
+                                                                                            
+                                                             
+                                                                                                                       
+                              
+                                                                 
 
 
 

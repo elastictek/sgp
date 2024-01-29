@@ -73,6 +73,19 @@ def Sql(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response({})
+@api_view(['GET'])
+@renderer_classes([JSONRenderer])
+def SqlK(request, format=None):
+    try:
+        if "parameters" in request.data and "method" in request.data["parameters"]:
+            method=request.data["parameters"]["method"]
+            func = globals()[method]
+            response = func(request, format)
+            return response
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response({})
 
 
 def ExportFile(request, format=None):
@@ -88,6 +101,53 @@ def ExportFile(request, format=None):
         elif (p["export"] == "word"):
             resp['Content-Disposition'] = "inline; filename=list.docx"
         return resp
+
+def PrintEtiquetaRececao(request,format=None):
+                              
+    data = request.data["parameters"]
+    printer = data["impressora"] if "impressora" in data else "PRINTER-CITIZEN-ARMAZEM"
+    tmp = tempfile.NamedTemporaryFile()
+    tstamp = datetime.now()
+    fstream = requests.post(f'{reportServer}/run', json={
+        "config":"default",
+        "conn-name":"MYSQL-SGP",
+        "name":data.get("name"),
+        "path":data.get("path"),
+        "export":"pdf",
+        "data":{      
+            "tstamp":tstamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "n_lote":data.get("n_lote"),
+            "artigo_cod":data.get("artigo_cod"),
+            "artigo_des":data.get("artigo_des"),
+            "qty":data.get("qty"),
+            "unit":data.get("unit"),
+            "data_rececao":tstamp.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    })
+    try:
+        if "download" in data:
+            return download_file_stream(fstream,"ETIQUETA-RECECAO","application/pdf")
+        else:
+            print(tmp.name)
+            tmp.write(fstream.content)
+            #TO UNCOMMENT ON PRODUCTION
+            #conn = cups.Connection()
+            #conn.printFile(request.data["parameters"]["impressora"],tmp.name,"",{"copies":str(data["num_copias"])})
+            for i in range(0, data["num_copias"]):
+                subprocess.run(['lp', '-n', str(1), '-d', printer, tmp.name])
+            # ###########################
+    except Exception as error:
+          print("error----> print")
+          print(error)
+          return Response({"status": "error", "id":None, "title": f'Erro ao imprimir Etiqueta!', "subTitle":error})
+    finally:
+        #TO UNCOMMENT ON PRODUCTION
+        tmp.close()
+        ###########################
+        print("PRINT OK")
+        #os.unlink(tmp.name)
+    return Response({"status": "success", "id":None, "title": f'Etiqueta Impressa com Sucesso!', "subTitle":None})
+
 
 def PrintCortesSchema(request,format=None):
     #Canon_iR-ADV_C3720_UFR_II

@@ -91,7 +91,7 @@ def PaletesDetailed_01(sql,dbParams,cols,conn_name,dbi=None,conn=None):
             _sql=sql
             _sql = _sql.replace("[#MARK-REPORT-01#]",f"""
             JOIN mv_bobines pb on pb.palete_id=t.id and pb.recycle=0 and pb.comp_actual>0
-            JOIN mv_artigos pa on pa.id=pb.artigo_id
+            LEFT JOIN mv_artigos pa on pa.id=pb.artigo_id
             """)
     else:
         cols = {
