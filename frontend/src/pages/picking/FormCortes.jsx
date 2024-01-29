@@ -16,11 +16,11 @@ import Toolbar from "components/toolbar";
 import { orderObjectKeys, json, isObjectEmpty, nullIfEmpty } from "utils/object";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll, getFloat } from "utils";
 import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, TimePicker } from "antd";
+import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Tabs, TimePicker, Dropdown } from "antd";
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, HistoryOutlined } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, DownOutlined, PlusCircleOutlined, CheckCircleOutlined, HistoryOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table, { useTableStyles } from 'components/TableV3';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, TIME_FORMAT, ENROLAMENTO_OPTIONS } from 'config';
@@ -30,7 +30,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 import { Cores, CortesPlanSelect } from 'components/EditorsV3';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector,FormPrint, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace,printersList } from 'components/FormFields';
+import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, FormPrint, Label, HorizontalRule, DatetimeField, TimeField, CortesField, Chooser, VerticalSpace, RowSpace, printersList } from 'components/FormFields';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { ObsTableEditor } from 'components/TableEditorsV3';
 import YScroll from 'components/YScroll';
@@ -385,7 +385,15 @@ export default ({ operationsRef, ...props }) => {
 
     }
 
-    const onPrint = () => {
+    const onPrint = (item) => {
+        let toPrint = 1;
+        let empty = 0;
+        if (item?.key == "2") {
+            toPrint = 0;
+        }
+        else if (item?.key == "3") {
+            empty = 1;
+        }
         setModalParameters({
             width: "500px",
             height: "200px",
@@ -396,7 +404,9 @@ export default ({ operationsRef, ...props }) => {
                 parameters: {
                     method: "PrintCortesSchema",
                     cortesordem_id: cortes?.cortesordem_id,
-                    cs_id:  inputParameters.current.cs_id,
+                    to_print: toPrint,
+                    empty,
+                    cs_id: inputParameters.current.cs_id,
                     name: "CORTES-SCHEMA",
                     path: "MISC/CORTES_SCHEMA"
                 }
@@ -405,7 +415,7 @@ export default ({ operationsRef, ...props }) => {
         showModal();
     }
 
-    const onDownloadComplete = async (response,download) => {
+    const onDownloadComplete = async (response, download) => {
         const blob = new Blob([response.data], { type: 'application/pdf' });
         const pdfUrl = URL.createObjectURL(blob);
         window.open(pdfUrl, '_blank');
@@ -418,8 +428,10 @@ export default ({ operationsRef, ...props }) => {
                 <RowSpace />
                 <Row><Col><HorizontalRule marginTop='0px' title="Cortes" right={<Space>
                     <Button type="link" size="small" disabled={(submitting.state)} onClick={onGenerateCortes} style={{ width: "100%" }}>Gerar Cortes</Button>
-                    <Button type="link" size="small" disabled={(submitting.state)} onClick={onPrint} style={{ width: "100%" }}>Imprimir</Button>
                     <Button type="link" size="small" disabled={(submitting.state || Object.keys(measures?.LA || {}).length == 0 || Object.keys(measures?.LO || {}).length == 0)} onClick={onMeasuresSave} style={{ width: "100%" }}>Registar Medições</Button>
+                    <Dropdown.Button onClick={() => onPrint({ key: "1" })} disabled={(submitting.state)} trigger={["click"]} menu={{ items: [{ key: "1", label: "Imprimir" }, { key: "2", label: "Imprimir sem Contraste" }, { key: "3", label: "Vazio" }], onClick: onPrint }}>
+                        Imprimir
+                    </Dropdown.Button>
                 </Space>} /></Col></Row>
                 <Row nogutter>
                     <Col>

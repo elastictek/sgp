@@ -162,7 +162,9 @@ def PrintCortesSchema(request,format=None):
         "export":"pdf",
         "data":{      
             "CORTES_ORDEM_ID":data.get("cortesordem_id"),
-            "CS_ID":data.get("cs_id")
+            "CS_ID":data.get("cs_id"),
+            "TOPRINT":data.get("to_print"),
+            "EMPTY":data.get("empty")
         }
     })
     try:
