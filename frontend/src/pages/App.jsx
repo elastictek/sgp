@@ -151,6 +151,8 @@ const ListRunBobineChoose = lazy(() => import('./picking/trocaetiquetas/ListRunB
 const ListTasksExecuted = lazy(() => import('./picking/trocaetiquetas/ListTasksExecuted'));
 const ListTasksManager = lazy(() => import('./picking/trocaetiquetas/ListTasksManager'));
 
+const ListCortesManager = lazy(() => import('./picking/cortes/ListCortesManager'));
+
 
 /**EXAMPLES */
 const TestAgGrid = lazy(() => import('./picking/TestAgGrid'));
@@ -308,6 +310,8 @@ const RenderRouter = () => {
                 { path: "picking/trocaetiquetas/listrunbobinechoose", element: <Suspense fallback={<Spin />}><ListRunBobineChoose /></Suspense> },
                 { path: "picking/trocaetiquetas/listtasksexecuted", element: <Suspense fallback={<Spin />}><ListTasksExecuted /></Suspense> },
                 { path: "picking/trocaetiquetas/managetasks", element: <Suspense fallback={<Spin />}><ListTasksManager /></Suspense> },
+
+                { path: "picking/cortes/managecortes", element: <Suspense fallback={<Spin />}><ListCortesManager /></Suspense> },
                 
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */

@@ -349,7 +349,8 @@ class CortesOrdem(models.Model):
     ordem_cod = models.CharField(verbose_name="Código de Posotionamento das larguras", max_length=25) #HASH MD5 Ordem dos Cortes
     created_date = models.DateTimeField(auto_now=True, verbose_name="Data Criação")
     updated_date = models.DateTimeField(auto_now=True, verbose_name="Data Alteração")
-    
+    status = models.SmallIntegerField(verbose_name="Estado", default=1)
+
     class Meta:
         unique_together = (('cortes_id', 'ordem_cod'))
 

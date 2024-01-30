@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useContext, useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
 import Joi, { alternatives } from 'joi';
@@ -87,6 +87,18 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     }
 
 
+    const ofsItems = useMemo(() => {
+        return [
+            ...allows?.cortes?.admin ? [{ key: "cortesmanage", label: "Gerir Cortes" }] : []
+        ];
+
+    }, [allows]);
+
+    const onOfsItemsClick = useCallback((item) => {
+        switch (item.key){
+            case "cortesmanage":navigate("/app/picking/cortes/managecortes");break;
+        }
+    }, []);
 
     return (
         <>
@@ -101,7 +113,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         <Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >
                                             Lista
                                         </Button>
-                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                        <Dropdown trigger={["click"]} menu={{ items:ofsItems, onClick: onOfsItemsClick }}>
+                                            <Button onClick={() => { }} icon={<MoreOutlined />} />
+                                        </Dropdown>
                                     </Space.Compact>
                                 }>
                                     <Container fluid style={{ padding: "0px", margin: "0px" }}>
@@ -435,9 +449,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                 </StyledButton>
                                                 <StyledButton onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt' style={{fontSize:"10px"}}>TableSingleSelect</div>
+                                                    <div className='txt' style={{ fontSize: "10px" }}>TableSingleSelect</div>
                                                 </StyledButton>
-                                                
+
                                             </Col>
                                             }
                                         </Row>
@@ -460,18 +474,18 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                             {allows?.trocaetiquetas?.execute && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/listruntaskchoose")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Trocar<br/>Etiquetas</div>
+                                                    <div className='txt'>Trocar<br />Etiquetas</div>
                                                 </StyledButton>
                                             </Col>
                                             }
-                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                            {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/managetasks")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Gerir<br/>Tarefas</div>
+                                                    <div className='txt'>Gerir<br />Tarefas</div>
                                                 </StyledButton>
                                             </Col>
                                             }
-{/*                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
+                                            {/*                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
                                                 <StyledButton onClick={() => navigate("/app/picking/test-ag-grid")}>
                                                     <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
                                                     <div className='txt'>Test-AG-GRID</div>

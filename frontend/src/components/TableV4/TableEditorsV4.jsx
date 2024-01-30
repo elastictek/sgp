@@ -1,10 +1,10 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useContext, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { DatePicker, Input, InputNumber, Select } from 'antd';
+import { Checkbox, DatePicker, Input, InputNumber, Select } from 'antd';
 import { dayjsValue } from 'utils/index';
 import { SearchOutlined } from '@ant-design/icons';
 import { getCellFocus, useModalApi } from './TableV4';
 import { useDataAPI } from 'utils/useDataAPIV4';
-import { API_URL,DATETIME_FORMAT } from 'config';
+import { API_URL, DATETIME_FORMAT } from 'config';
 import { Value } from './TableColumnsV4';
 import TableGridSelect from './TableGridSelect';
 
@@ -163,6 +163,39 @@ export const AntdSelectEditor = forwardRef((props, ref) => {
         },
     }));
     return <Select style={{ width: "100%" }} autoFocus popupMatchSelectWidth={false} value={value} onChange={handleChange} options={options} {...editorParams} />;
+});
+export const AntdCheckboxEditor = forwardRef((props, ref) => {
+    const { onValueChange } = props;
+    const { checkedValues = [1, "1", true], uncheckedValues = [0, "0", false], checkedValue = null, uncheckedValue = null, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+
+    const value = useMemo(() => {
+        return checkedValues.includes(props?.value) ? true : false;
+    }, [props.value]);
+
+    const handleChange = (e) => {
+        if (e.target.checked === true) {
+            if (checkedValue != null) {
+                onValueChange(checkedValue);
+            } else {
+                onValueChange(checkedValues[0]);
+            }
+        }
+        if (e.target.checked === false) {
+            if (uncheckedValue != null) {
+                onValueChange(uncheckedValue);
+            } else {
+                onValueChange(uncheckedValues[0]);
+            }
+        }
+
+    };
+    // Expose the Input value to ag-Grid
+    useImperativeHandle(ref, () => ({
+        getValue() {
+            return value;
+        },
+    }));
+    return <div style={{width:"100%",textAlign:"left",paddingLeft:"10px",backgroundColor:"#ffffff"}}><Checkbox checked={value} autoFocus onChange={handleChange} {...editorParams} /></div>;
 });
 export const AntdInputNumberEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;

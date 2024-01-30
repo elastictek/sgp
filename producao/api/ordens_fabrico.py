@@ -27,8 +27,8 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall,fetchone, Check
-from support.myUtils import  ifNull
+from support.database import ParsedFilters, encloseColumn, Filters, DBSql, TypeDml, fetchall,fetchone, Check
+from support.myUtils import  ifNull, includeDictKeys
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -1294,7 +1294,7 @@ def CortesOrdemLookup(request, format=None):
                 from producao_cortesordem co
                 join producao_cortes c on c.id=co.cortes_id
             """
-        f.setParameters({"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
+        f.setParameters({"status":{"value":1},"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
     f.where()
     if "cortesordem_id" in request.data['filter']:
         f.add(f'co.id = :id', lambda v:(v!=None))
@@ -1305,6 +1305,7 @@ def CortesOrdemLookup(request, format=None):
     elif "cs_id" in request.data['filter']:
         f.add(f'pc.id = :id', lambda v:(v!=None))
     else:
+        f.add(f'co.status = :status', lambda v:(v!=None))
         f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
         f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
     f.value("and")
@@ -3893,3 +3894,73 @@ def DeleteChecklist(request, format=None):
         return Response({"status": "error", "title": str(error)})
 
 #endregion
+    
+
+def CortesList(request, format=None):
+    connection = connections["default"].cursor()
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
+    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))   
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+
+    cols=f"""
+        pc2.designacao, pc2.versao,
+        pc2.id,pc.largura_json,pc.largura_util,
+        pc2.largura_ordem,pc.id cortes_id
+    """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select 
+            {c(f'{dql.columns}')}
+            from producao_cortes pc
+            join producao_cortesordem pc2 on pc2.cortes_id = pc.id
+            {pf.group()}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+
+    if ("export" in data):
+        dql.limit=f"""limit {data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def UpdateCortes(request, format=None):
+    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
+
+    def _checkCortesOrdem(id, cursor):
+        f = Filters({"id":id})
+        f.where()
+        f.add(f'(id = :id)', True)
+        f.value("and")
+        response = db.executeSimpleList(lambda: (f"""select count(*) cnt from ofabrico_checklist_items {f.text}"""), cursor, f.parameters)
+        return response["rows"][0].get("cnt")
+
+    def update(id,data,cursor):
+        values = includeDictKeys(data,["designacao","status"])
+        dml = db.dml(TypeDml.UPDATE,{**values},"producao_cortesordem",{"id":f'=={id}'},None,False)
+        #db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                errors = [] 
+                for i, v in enumerate(data.get("rows")):
+                    chk = _checkCortesOrdem(v.get("id"),cursor)
+                    if chk > 0:
+                        errors.append(v.get("nome"))
+                    else:
+                        update(v.get("id"),v,cursor)
+                if len(errors) == len(data.get("rows")):
+                    return Response({"status": "error", "title": f"Erro ao atualizar a(s) tarefa(s). Já foram executadas trocas de etiquetas! "})
+                if len(errors) < len(data.get("rows")):
+                    return Response({"status": "success", "title": f"Algumas tarefas não foram atualizadas! {','.join(errors)} "})
+        return Response({"status": "success", "title": "Tarefa(s) atualizada(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})

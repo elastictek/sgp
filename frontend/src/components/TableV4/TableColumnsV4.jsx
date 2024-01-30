@@ -233,6 +233,76 @@ export const Cores = ({ field: { artigos } = {}, params: { column: col, data, no
 }
 
 
+export const Cortes = ({ params: { column: col, data, node, rowIndex } = {}, column, value, style, className, onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const onKeyDown = (event, a, b) => {
+        if (event.keyCode === 13) {
+            onClick(a, b)
+        }
+    }
+
+    const _value = useMemo(() => {
+        let _v = value;
+        const _path = columnPath(col);
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : (columnHasPath(col) ? valueByPath(data, _path) : data?.[_path]) : _v;
+        return json(_v);
+    }, [data]);
+
+    return (<OuterDiv error={error}>
+        {(_value && Object.keys(_value)) && Object.keys(_value).map((v, i) => <Tag
+            {...genericProps({ fontWeight: 600 },
+                onClick ? () => onClick && onClick("cortes", { data: _value[v] }) : null,
+                (e) => onKeyDown(e, "cortes", { data: _value[v] }), style, _classNames)}
+            key={`crt-${rowIndex}-${i}`}
+        >L<span style={{ fontWeight: 700 }}>{v}</span> x {_value[v]}</Tag>)}
+    </OuterDiv>);
+}
+
+export const CortesOrdem = ({ params: { column: col, data, node, rowIndex } = {}, column, value, style, className, width = 1000, onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    let _alternate = 0;
+    const onKeyDown = (event, a, b) => {
+        if (event.keyCode === 13) {
+            onClick(a, b)
+        }
+    }
+
+    const _value = useMemo(() => {
+        let _v = value;
+        const _path = columnPath(col);
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : (columnHasPath(col) ? valueByPath(data, _path) : data?.[_path]) : _v;
+        return json(_v);
+    }, [data]);
+
+    const _largura_util = useMemo(() => {
+        if (!_value) {
+            return 1;
+        }
+        return _value.reduce((accumulator, currentValue) => {
+            return accumulator + parseInt(currentValue);
+        }, 0);
+    }, [_value]);
+
+    return (<OuterDiv error={error}>
+        <div style={{ width: `${width}px`, background: "#f0f0f0", borderRight: "solid 2px red" }}>
+            <div {...genericProps({ display: "flex", width: `${parseInt((_largura_util * width) / 2100)}px` }, onClick ? () => onClick && onClick("cortes_ordem", { data: _value }) : null, (e) => onKeyDown(e, "cortes_ordem", { data: _value }), style, _classNames)}>
+                {_value && _value.map((v, i) => {
+                    if (_value?.[i - 1] !== _value?.[i]) {
+                        _alternate = _alternate == 0 ? 1 : 0;
+                    }
+                    return (<div style={{ minWidth: "30px", padding: "0px 1px", flex: `${(parseInt(v) * 1) / _largura_util}%` }} key={`crto-${rowIndex}-${i}`}>
+                        <div style={{ textAlign: "center", borderRadius: "2px", backgroundColor: _alternate == 0 ? "#0050b3" : "#003a8c", color: _alternate == 0 ? "#ffffff" : "#ffffff" }}>{v}</div>
+                    </div>);
+                })}
+            </div>
+        </div>
+    </OuterDiv>);
+}
+
 export const BadgeNumber = ({ params: { column: col, data, node } = {}, column, value, unit, style, className, bold, align = "left", onClick }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });

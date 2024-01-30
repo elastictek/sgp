@@ -1246,64 +1246,15 @@ def StockCutOptimizer(request, format=None):
 
 def CortesOrdemLookup(request, format=None):
     #conn = connections[connGatewayName].cursor()
-    cols = ['co.*,c.largura_json,c.largura_util']
-                                     
-                                           
+    cols = ['co.*,c.largura_json,c.largura_util']                                         
     f = Filters(request.data['filter'])
     if "cortesOrdemId" in request.data['filter']:
-                
-                       
-                             
-                                            
-                                                           
-               
-        f.setParameters({"id": {"value": lambda v: v.get('cortesOrdemId')}}, True)
-                                               
-                
-                       
-                             
-                                                    
-                                                                         
-                                                                                 
-               
-                                                                              
-                                            
-                
-                       
-                             
-                                              
-                                                                  
-                                                                               
-                                                                             
-                                                                
-               
-                                                                           
-                                           
-                
-                       
-                             
-                                                
-                                                                         
-                                                             
-               
-                                                                          
+        f.setParameters({"id": {"value": lambda v: v.get('cortesOrdemId')}}, True)                         
     else:
-                
-                       
-                             
-                                            
-                                                           
-               
         f.setParameters({"cortes": {"value": lambda v: hashlib.md5(json.dumps(v.get('cortes')).encode('utf-8')).hexdigest()[ 0 : 16 ] if v.get("cortes") else None}}, False)
     f.where()
     if "cortesOrdemId" in request.data['filter']:
         f.add(f'co.id = :id', lambda v:(v!=None))
-                                               
-                                                 
-                                            
-                                                 
-                                           
-                                                 
     else:
         f.add(f'co.cortes_id = :cortes_id', lambda v:(v!=None))
         f.add(f'c.largura_cod = :cortes', lambda v:(v!=None))
@@ -1315,74 +1266,14 @@ def CortesOrdemLookup(request, format=None):
     with connections["default"].cursor() as cursor:
         response = db.executeSimpleList(lambda: (
             f"""
-                     
-                        
-                          
-               
-                              
-                                 
-
-                                           
-                                     
-                                       
-                                             
-                
                 select 
                 {dql.columns}
                 from producao_cortesordem co
-               
-                                                                              
-                                                                                            
-                
-                       
-                              
-                                              
                 join producao_cortes c on c.id=co.cortes_id
-               
-                                                                           
-                                                                                        
-                
-                       
-                              
-                                                
-                                                                      
-               
-                                                                           
-                                           
-                
-                       
-                              
-                                                
-               
-                                                                          
-             
-                                             
-                                                 
-                                                                                        
-                                                  
-                                            
-                                                 
-                                           
-                                                 
-                  
-                                 
-    
-                                                   
-                                                 
-                
-                     
                 {f.text}
                 {dql.sort}
             """
         ), cursor, parameters)
-              
-                
-                     
-                        
-                          
-               
-         
-                         
         return Response(response)
 
 def CortesPlanList(request, format=None):

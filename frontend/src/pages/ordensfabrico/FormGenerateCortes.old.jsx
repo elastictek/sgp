@@ -212,7 +212,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
             inputParameters.current = { showPlan: true, ...paramsIn };
         }
         const _base = await loadGenerationCortes(inputParameters.current.agg_of_id);
-        console.log("aaa",_base)
+        console.log("aaa", _base)
         let _cortes = [];
         if (inputParameters.current?.data && inputParameters.current.data.length > 0) {
             _cortes = inputParameters.current.data.map((v, idx) => {
@@ -229,7 +229,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
     const onSave = async (values) => {
         submitting.trigger();
         if (props?.onSelectPlan && typeof props.onSelectPlan == "function") {
-            props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
+            props?.onSelectPlan(form.getFieldsValue(true), props?.closeSelf);
         }
         submitting.end();
     }
@@ -239,10 +239,10 @@ export default ({ operationsRef, extraRef, ...props }) => {
         if (props?.onSelectPlan && typeof props.onSelectPlan == "function") {
             const v = form.getFieldsValue(true);
             let _n_cuts = Object.values(v?.cortes[0].n_cortes).reduce((a, b) => a + b, 0);
-            if (_n_cuts==0){
+            if (_n_cuts == 0) {
                 openNotification("error", 'top', "Notificação", "O nº de cortes não pode ser zero!");
-            }else{
-                props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
+            } else {
+                props?.onSelectPlan(form.getFieldsValue(true), props?.closeSelf);
             }
         }
         submitting.end();
@@ -452,6 +452,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
                                 for (let x of larguras) {
                                     _template = { largura: { ..._template.largura, [x]: x }, n_cortes: { ..._template.n_cortes, [x]: 0 } };
                                 }
+                                console.log("$$$$$$$$",{ idx: uid(4), ..._template, n: 0, largura_util: 0, bobines_total: 0, cortes_ordem: [] })
                                 add({ idx: uid(4), ..._template, n: 0, largura_util: 0, bobines_total: 0, cortes_ordem: [] });
                             }
                         }
@@ -512,8 +513,8 @@ export default ({ operationsRef, extraRef, ...props }) => {
                                         })}
                                         <Col></Col>
                                         {inputParameters.current.showPlan && <>
-                                        <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("n_bobinagens")}</Col>
-                                        <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("bobines_total")}</Col>
+                                            <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("n_bobinagens")}</Col>
+                                            <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("bobines_total")}</Col>
                                         </>}
                                         <Col width={125}></Col>
                                         <Col width={20}></Col>
@@ -531,13 +532,13 @@ export default ({ operationsRef, extraRef, ...props }) => {
                             <Button type="link" size="small" disabled={(submitting.state)} onClick={showVersions} style={{ width: "100%" }}><HistoryOutlined />Versões</Button>
                         </Space>
                     } />
-                    <FormCortesOrdem parameters= {{}} onChangeCortesOrdem={onChangeCortesOrdem} record={selected} larguras={larguras} />
+                    <FormCortesOrdem parameters={{ larguras, selected }} onChangeCortesOrdem={onChangeCortesOrdem} />
                 </>}
 
                 {extraRef && <Portal elId={extraRef.current}>
                     {permission.isOk(PERMISSION) && <Space>
                         {(generated && inputParameters.current.showPlan) && <Button disabled={submitting.state} type="primary" onClick={onSave}>Confirmar</Button>}
-                        {(form.getFieldValue("cortes") && form.getFieldValue("cortes").length>0 && inputParameters.current.showPlan===false) && <Button disabled={submitting.state} type="primary" onClick={onSaveCortes}>Confirmar</Button>}
+                        {(form.getFieldValue("cortes") && form.getFieldValue("cortes").length > 0 && inputParameters.current.showPlan === false) && <Button disabled={submitting.state} type="primary" onClick={onSaveCortes}>Confirmar</Button>}
                     </Space>}
                 </Portal>
                 }

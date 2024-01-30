@@ -170,6 +170,7 @@ const _getSelectDefaultOptions = (v) => {
         case "opt:2": return [{ value: "", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }];
         case "opt:3": return [{ value: "0", label: "Saída" }, { value: "1", label: "Entrada" }];
         case "opt:4": return [{ value: "1", label: "Aberto" }, { value: "9", label: "Fechado" }];
+        case "opt:5": return [{ value: "1", label: "Ativo" }, { value: "0", label: "Inativo" }];
     }
 }
 
