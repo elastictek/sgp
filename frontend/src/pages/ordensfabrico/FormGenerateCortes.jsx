@@ -38,6 +38,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { Core, EstadoBobines, Largura } from "components/TableColumns";
 import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
 import FormCortesOrdem from './FormCortesOrdem';
+import loadCortesOrdemLookup from './FormCortes';
+import CortesVersionsPopup from './commons/CortesVersionsPopup';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { current } from 'immer';
 import { MediaContext, AppContext } from 'app';
@@ -60,10 +62,7 @@ const loadStockCutOptimizer = async (child_rolls, parent_rolls, max_cutters) => 
     return data;
 }
 
-const loadCortesOrdemLookup = async ({ cortes, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortes }, sort: [{ column: 'versao', direction: 'DESC' }], signal });
-    return rows;
-}
+
 
 const coloured = (field, form, index) => {
     switch (field) {
@@ -92,71 +91,7 @@ const RowHover = styled(Row)`
 
   }`;
 
-export const VersionsPopup = ({ record, closeSelf }) => {
-    const [visible, setVisible] = useState({ drawer: { open: false } });
-    const dataAPI = useDataAPI({ payload: { parameters: {}, primaryKey: "id", pagination: { enabled: false, limit: 30 }, filter: {}, sort: [] } });
-    const columns = [
-        { name: 'versao', header: 'Versão', defaultWidth: 50 },
-        { name: 'designacao', header: 'Designação', defaultWidth: 180 },
-        { name: 'largura_ordem', flex: 1, header: 'Posicionamento', render: ({ data, cellProps }) => <div style={{ color: "#1890ff", fontWeight: 600 }}>{data.largura_ordem.replaceAll('"', ' ')}</div> }
-    ];
 
-    useEffect(() => {
-        dataAPI.setData({ rows: record.versions }, { tstamp: Date.now() });
-    }, []);
-
-    const onOpen = (component, data) => {
-        setVisible(prev => ({ ...prev, [component]: { ...data, title: <div>Bobine <span style={{ fontWeight: 900 }}>{data.nome}</span></div>, open: true } }));
-    }
-
-    const onClose = (component) => {
-        setVisible(prev => ({ ...prev, [component]: { open: false } }));
-    }
-
-    const onSelect = (row, col) => {
-        record.onSelect(row?.data);
-        closeSelf();
-    }
-
-    return (<YScroll>
-
-        <Table
-            idProperty={dataAPI.getPrimaryKey()}
-            local={true}
-            cellNavigation={false}
-            onSelectionChange={onSelect}
-            enableSelection={true}
-            rowSelect={true}
-            sortable={false}
-            settings={false}
-            reorderColumns={false}
-            showColumnMenuTool={false}
-            loadOnInit={false}
-            defaultLimit={30}
-            columns={columns}
-            dataAPI={dataAPI}
-            moreFilters={false}
-        />
-        {/* 
-
-
-
-        <Table
-            onRowClick={onSelect}
-            rowStyle={`cursor:pointer;font-size:12px;`}
-            headerStyle={`background-color:#f0f0f0;font-size:10px;`}
-            loadOnInit={false}
-            columns={columns}
-            dataAPI={dataAPI}
-            toolbar={false}
-            search={false}
-            moreFilters={false}
-            rowSelection={false}
-            editable={false}
-        //rowHeight={28}
-        /> */}
-    </YScroll>);
-}
 
 export default ({ operationsRef, extraRef, ...props }) => {
     const location = useLocation();
@@ -187,7 +122,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.type) {
-                case "versions": return <VersionsPopup record={{ ...modalParameters }} />
+                case "versions": return <CortesVersionsPopup record={{ ...modalParameters }} />
             }
         }
 
@@ -211,8 +146,9 @@ export default ({ operationsRef, extraRef, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { showPlan: true, ...paramsIn };
         }
+        console.log("generate", inputParameters.current)
         const _base = await loadGenerationCortes(inputParameters.current.agg_of_id);
-        console.log("aaa",_base)
+        console.log("aaa", _base)
         let _cortes = [];
         if (inputParameters.current?.data && inputParameters.current.data.length > 0) {
             _cortes = inputParameters.current.data.map((v, idx) => {
@@ -229,7 +165,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
     const onSave = async (values) => {
         submitting.trigger();
         if (props?.onSelectPlan && typeof props.onSelectPlan == "function") {
-            props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
+            props?.onSelectPlan(form.getFieldsValue(true), props?.closeSelf);
         }
         submitting.end();
     }
@@ -239,10 +175,10 @@ export default ({ operationsRef, extraRef, ...props }) => {
         if (props?.onSelectPlan && typeof props.onSelectPlan == "function") {
             const v = form.getFieldsValue(true);
             let _n_cuts = Object.values(v?.cortes[0].n_cortes).reduce((a, b) => a + b, 0);
-            if (_n_cuts==0){
+            if (_n_cuts == 0) {
                 openNotification("error", 'top', "Notificação", "O nº de cortes não pode ser zero!");
-            }else{
-                props?.onSelectPlan(form.getFieldsValue(true),props?.closeSelf);
+            } else {
+                props?.onSelectPlan(form.getFieldsValue(true), props?.closeSelf);
             }
         }
         submitting.end();
@@ -448,9 +384,10 @@ export default ({ operationsRef, extraRef, ...props }) => {
                     {(fields, { add, remove, move }) => {
                         const addRow = (fields) => {
                             if ((inputParameters.current.showPlan === false && fields.length == 0) || inputParameters.current.showPlan === true) {
+                                const _largura_json = inputParameters.current?.largura_json;
                                 let _template = { largura: {}, n_cortes: {} };
                                 for (let x of larguras) {
-                                    _template = { largura: { ..._template.largura, [x]: x }, n_cortes: { ..._template.n_cortes, [x]: 0 } };
+                                    _template = { largura: { ..._template.largura, [x]: x }, n_cortes: { ..._template.n_cortes, [x]: _largura_json?.[x] ? _largura_json[x] : 0 } };
                                 }
                                 add({ idx: uid(4), ..._template, n: 0, largura_util: 0, bobines_total: 0, cortes_ordem: [] });
                             }
@@ -512,8 +449,8 @@ export default ({ operationsRef, extraRef, ...props }) => {
                                         })}
                                         <Col></Col>
                                         {inputParameters.current.showPlan && <>
-                                        <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("n_bobinagens")}</Col>
-                                        <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("bobines_total")}</Col>
+                                            <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("n_bobinagens")}</Col>
+                                            <Col width={125} style={{ display: "flex", justifyContent: "center", borderTop: "solid 2px #000", textAlign: "end", fontWeight: 600 }}>{subTotal("bobines_total")}</Col>
                                         </>}
                                         <Col width={125}></Col>
                                         <Col width={20}></Col>
@@ -531,13 +468,13 @@ export default ({ operationsRef, extraRef, ...props }) => {
                             <Button type="link" size="small" disabled={(submitting.state)} onClick={showVersions} style={{ width: "100%" }}><HistoryOutlined />Versões</Button>
                         </Space>
                     } />
-                    <FormCortesOrdem parameters= {{}} onChangeCortesOrdem={onChangeCortesOrdem} record={selected} larguras={larguras} />
+                    <FormCortesOrdem parameters={{}} onChangeCortesOrdem={onChangeCortesOrdem} record={selected} larguras={larguras} />
                 </>}
 
                 {extraRef && <Portal elId={extraRef.current}>
                     {permission.isOk(PERMISSION) && <Space>
                         {(generated && inputParameters.current.showPlan) && <Button disabled={submitting.state} type="primary" onClick={onSave}>Confirmar</Button>}
-                        {(form.getFieldValue("cortes") && form.getFieldValue("cortes").length>0 && inputParameters.current.showPlan===false) && <Button disabled={submitting.state} type="primary" onClick={onSaveCortes}>Confirmar</Button>}
+                        {(form.getFieldValue("cortes") && form.getFieldValue("cortes").length > 0 && inputParameters.current.showPlan === false) && <Button disabled={submitting.state} type="primary" onClick={onSaveCortes}>Confirmar</Button>}
                     </Space>}
                 </Portal>
                 }

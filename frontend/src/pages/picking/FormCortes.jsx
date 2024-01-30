@@ -38,8 +38,10 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { Core, EstadoBobines, Largura, Link, DateTime, RightAlign, LeftAlign, Favourite, IndexChange } from "components/TableColumns";
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { MediaContext, AppContext } from 'app';
+import CortesVersionsPopup from '../ordensfabrico/commons/CortesVersionsPopup'
 const FormGenerateCortes = React.lazy(() => import('../ordensfabrico/FormGenerateCortes'));
 const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
+
 
 const EDITKEY = "cortes";
 const PERMISSION = { item: "edit", action: "cortes" };
@@ -92,6 +94,11 @@ const loadMeasures = async ({ data, signal }) => {
     return rows;
 }
 
+export const loadCortesOrdemLookup = async ({ cortes, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortes }, sort: [{ column: 'versao', direction: 'DESC' }], signal });
+    return rows;
+}
+
 export default ({ operationsRef, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -123,6 +130,7 @@ export default ({ operationsRef, ...props }) => {
             switch (modalParameters.content) {
                 case "generate": return <FormGenerateCortes parameters={modalParameters.parameters} permissions={modalParameters.permissions} onSelectPlan={modalParameters.onSelectPlan} />;
                 case "print": return <FormPrint {...modalParameters.parameters} printer={modalParameters.parameters?.printers && modalParameters.parameters?.printers[0]?.value} />;
+                case "versions": return <CortesVersionsPopup record={{ ...modalParameters }} />;
                 //case "formulacao": return <FormFormulacao enableAssociation={modalParameters?.enableAssociation} postProcess={modalParameters?.postProcess} parameters={modalParameters.parameters} />
             }
         }
@@ -170,17 +178,18 @@ export default ({ operationsRef, ...props }) => {
             }
 
         }
-        console.log("444444", row, {
-            ...inputParameters.current,
-            ...row?.cortesordem && { cortesordem_id: row.cortesordem.id, cortes_id: row.cortesordem.cortes_id },
-            tstamp: Date.now()
-        })
         setCortes({
             ...inputParameters.current,
+            ...row?.cortes && { largura_json: json(row.cortes.largura_json) },
             ...row?.cortesordem && { cortesordem_id: row.cortesordem.id, cortes_id: row.cortesordem.cortes_id },
             tstamp: Date.now()
         });
         submitting.end();
+    }
+
+    const onSelectCortesOrdem = async (v) => {
+        const _row = { cortes: [{ n_cortes: json(v.largura_json), cortes_ordem: json(v.largura_ordem), largura_util: v.largura_util }] };
+       onSelectPlan(_row);
     }
 
     const onValuesChange = async (changedValues, values) => {
@@ -250,7 +259,7 @@ export default ({ operationsRef, ...props }) => {
     // }
 
     const onGenerateCortes = () => {
-        setModalParameters({ content: "generate", type: "drawer", width: "95%", title: "Gerar Cortes", lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, onSelectPlan, permissions: permission.permissions, parameters: { ...pickAll(["agg_of_id"], inputParameters.current), data: dataAPI.getData().rows, showPlan: false } });
+        setModalParameters({ content: "generate", type: "drawer", width: "95%", title: "Gerar Cortes", lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, onSelectPlan, permissions: permission.permissions, parameters: { ...pickAll(["agg_of_id"], inputParameters.current), largura_json: cortes?.largura_json, data: dataAPI.getData().rows, showPlan: false } });
         showModal();
     }
 
@@ -264,14 +273,15 @@ export default ({ operationsRef, ...props }) => {
                     if (closeModal) {
                         closeModal();
                     }
-                    setCortes({ cortesordem_id: response.data.id, tstamp: Date.now() });
+                    loadData();
+                    //setCortes({ cortesordem_id: response.data.id, tstamp: Date.now() });
                 } else {
-                    openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
+                    openNotification("error", 'top', "Notificação", response.data.title, null);
                 }
             }
             catch (e) {
                 console.log(e)
-                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+                openNotification("error", 'top', "Notificação", e.message, null);
             }
         }
     }
@@ -400,7 +410,7 @@ export default ({ operationsRef, ...props }) => {
             content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Esquema</div>,
             parameters: {
                 url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 1,
-                onComplete: onDownloadComplete,
+                onComplete:  async (response, download) => await onDownloadComplete(response, download),
                 parameters: {
                     method: "PrintCortesSchema",
                     cortesordem_id: cortes?.cortesordem_id,
@@ -416,10 +426,20 @@ export default ({ operationsRef, ...props }) => {
     }
 
     const onDownloadComplete = async (response, download) => {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(blob);
-        window.open(pdfUrl, '_blank');
+        if (download == "download") {
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(blob);
+            window.open(pdfUrl, '_blank');
+        }
     }
+
+    const onVersoes = async () => {
+        const versions = await loadCortesOrdemLookup({ cortes: cortes?.largura_json });
+        setModalParameters({ content: 'versions', width: 850, title: <div>Versões de Posicionamento <span style={{ fontWeight: 900 }}>{JSON.stringify(cortes?.largura_json).replaceAll(":", "x").replaceAll('"', "")}</span></div>, versions, onSelect: onSelectCortesOrdem });
+        showModal();
+    }
+
+
 
     return (
         <>
@@ -427,6 +447,7 @@ export default ({ operationsRef, ...props }) => {
             <FormContainer id="LAY-OFFL" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <RowSpace />
                 <Row><Col><HorizontalRule marginTop='0px' title="Cortes" right={<Space>
+                    {permission.isOk(PERMISSION) && <Button type="link" size="small" disabled={(submitting.state)} onClick={onVersoes} style={{ width: "100%" }}><HistoryOutlined />Versões</Button>}
                     {permission.isOk(PERMISSION) && <Button type="link" size="small" disabled={(submitting.state)} onClick={onGenerateCortes} style={{ width: "100%" }}>Gerar Cortes</Button>}
                     <Button type="link" size="small" disabled={(submitting.state || Object.keys(measures?.LA || {}).length == 0 || Object.keys(measures?.LO || {}).length == 0)} onClick={onMeasuresSave} style={{ width: "100%" }}>Registar Medições</Button>
                     <Dropdown.Button onClick={() => onPrint({ key: "1" })} disabled={(submitting.state)} trigger={["click"]} menu={{ items: [{ key: "1", label: "Imprimir" }, { key: "2", label: "Imprimir sem Contraste" }, { key: "3", label: "Vazio" }], onClick: onPrint }}>

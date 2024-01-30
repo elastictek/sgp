@@ -3560,7 +3560,7 @@ def SaveCortesMeasures(request, format=None):
         **la,
         **lo
     }
-    hashvalue = hashlib.md5(json.dumps(values).encode('utf-8')).hexdigest()[ 0 : 16 ]
+    hashvalue = hashlib.md5(json.dumps(values).encode('utf-8')).hexdigest()[ 0 : 48 ]
     values={
         **values,
         "hash_cod":hashvalue,
