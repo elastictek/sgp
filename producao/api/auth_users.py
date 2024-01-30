@@ -80,7 +80,6 @@ def authUser(user):
             items[key] = int(permission_value)
     
     #print("FIXED PERMISSION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    #isAdmin=False
     turno = {"enabled":False}
     if hasattr(user, 'turno'):
         turno["dep"] = user.turno.dep

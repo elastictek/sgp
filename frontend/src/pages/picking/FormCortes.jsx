@@ -427,7 +427,7 @@ export default ({ operationsRef, ...props }) => {
             <FormContainer id="LAY-OFFL" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} /* onFinish={onFinish} */ onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={false} alert={{ tooltip: true, pos: "none" }}>
                 <RowSpace />
                 <Row><Col><HorizontalRule marginTop='0px' title="Cortes" right={<Space>
-                    <Button type="link" size="small" disabled={(submitting.state)} onClick={onGenerateCortes} style={{ width: "100%" }}>Gerar Cortes</Button>
+                    {permission.isOk(PERMISSION) && <Button type="link" size="small" disabled={(submitting.state)} onClick={onGenerateCortes} style={{ width: "100%" }}>Gerar Cortes</Button>}
                     <Button type="link" size="small" disabled={(submitting.state || Object.keys(measures?.LA || {}).length == 0 || Object.keys(measures?.LO || {}).length == 0)} onClick={onMeasuresSave} style={{ width: "100%" }}>Registar Medições</Button>
                     <Dropdown.Button onClick={() => onPrint({ key: "1" })} disabled={(submitting.state)} trigger={["click"]} menu={{ items: [{ key: "1", label: "Imprimir" }, { key: "2", label: "Imprimir sem Contraste" }, { key: "3", label: "Vazio" }], onClick: onPrint }}>
                         Imprimir
