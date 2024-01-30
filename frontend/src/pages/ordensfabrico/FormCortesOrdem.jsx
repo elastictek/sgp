@@ -18,6 +18,7 @@ import { DATE_FORMAT, DATETIME_FORMAT } from 'config';
 import { useDrag, useDrop, DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useImmer } from "use-immer";
+import {loadCortesOrdemLookup} from './FormCortes';
 
 const schema = (keys, excludeKeys) => {
     return getSchema({}, keys, excludeKeys).unknown(true);
@@ -110,11 +111,6 @@ const Bobine = ({ id, value, index, moveBobine, onClick, width = 0, forInput = f
             {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center" }}><InputNumber status={measureIsValid("LO", index + 1, nBobines) ? null : "error"} min={1} max={3000} style={{ width: "100%" }} value={measures?.["LO"]?.[index + 1]} size="small" tabIndex={(31 + nBobines) - (index + 1)} controls={false} onChange={(v) => onMeasureChange("LO", index + 1, v)} /></div>}
         </div>
     );
-}
-
-const loadCortesOrdemLookup = async ({ cortesordem_id, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortesordem_id }, sort: [], signal });
-    return rows;
 }
 
 export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = true, height, measure = false, cortesChoose, parameters, measures, measureIsValid, onMeasureChange,onOffsetChange, offset }) => {

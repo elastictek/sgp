@@ -288,7 +288,7 @@ export const CortesOrdem = ({ params: { column: col, data, node, rowIndex } = {}
     }, [_value]);
 
     return (<OuterDiv error={error}>
-        <div style={{ width: `${width}px`, background: "#f0f0f0", borderRight: "solid 2px red" }}>
+        <div style={{ width: `${width}px`, background: "#f0f0f0", borderRight: "solid 4px red" }}>
             <div {...genericProps({ display: "flex", width: `${parseInt((_largura_util * width) / 2100)}px` }, onClick ? () => onClick && onClick("cortes_ordem", { data: _value }) : null, (e) => onKeyDown(e, "cortes_ordem", { data: _value }), style, _classNames)}>
                 {_value && _value.map((v, i) => {
                     if (_value?.[i - 1] !== _value?.[i]) {

@@ -298,7 +298,11 @@ class BaseSql:
             print(f'EXECUTE--> {sql}')
             print(f'PARAMS--> {parameters}')
             execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
+            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            print(execSql["sql"])
+            print(execSql["parameters"])
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
+            print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
             if returning:
                 ret = connOrCursor.fetchone()[0]
                 return ret

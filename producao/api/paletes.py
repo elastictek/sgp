@@ -202,8 +202,9 @@ def Sql(request, format=None):
 
 def PaletesListV2(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"and",data.get("apiversion"))
+    pf = ParsedFilters(request.data.get("filter"),"and",options.get("apiversion"))
     f = Filters(request.data['filter'])
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'sgppl.timestamp', lambda k, v: f'DATE(sgppl.timestamp)'),
@@ -326,7 +327,7 @@ def PaletesListV2(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

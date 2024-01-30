@@ -473,9 +473,9 @@ def BobinesOriginaisList(request,format=None):
 
 def BobinesListV2(request, format=None):
     connection = connections["default"].cursor()
-    print(request.data.get("filter"))
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
     
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
@@ -515,7 +515,7 @@ def BobinesListV2(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",data.get("norun"),fakeTotal=True)
+        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",options.get("norun"),fakeTotal=True)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

@@ -179,7 +179,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       { colId: "pc2.designacao", field: 'designacao', headerName: 'Designação', ...cellParams(), type: "editableColumn", cellEditor: AntdInputEditor, lockPosition: "left", width: 190, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pc2.versao", field: 'versao', headerName: 'Versão', ...cellParams(), width: 80, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pc.largura_util", field: 'largura_util', headerName: 'Lar. útil', ...cellParams(), width: 70, cellRenderer: (params) => <Value params={params} /> },
-      { colId: "pc.largura_json", field: 'largura_json', headerName: 'Larguras', sortable: false, ...cellParams(), width: 250, cellRenderer: (params) => <Cortes params={params} /> },
+      { colId: "pc.largura_json", field: 'largura_json', headerName: 'Larguras', sortable: true, ...cellParams(), width: 250, cellRenderer: (params) => <Cortes params={params} /> },
       { colId: "pc2.largura_ordem", field: 'largura_ordem', headerName: 'Esquema', sortable: false, ...cellParams(), width: 250, flex: 1, cellRenderer: (params) => <CortesOrdem params={params} /> },
       { field: 'pc2.status', field: "status", headerName: 'Ativo', ...cellParams(), type: "editableColumn", cellEditor: AntdCheckboxEditor, width: 70, cellRenderer: (params) => <Bool checkedValue={1} unCheckedValue={0} params={params} /> },
     ], timestamp: new Date()

@@ -187,10 +187,11 @@ def Sql(request, format=None):
     
 def ArtigosLookup(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
 
-    _filter = {} if data.get("apiversion")=="4" else request.data['filter']
+    _filter = {} if options.get("apiversion")=="4" else request.data['filter']
     f = Filters(_filter)
     f.setParameters({}, False)
     f.where()
@@ -205,10 +206,10 @@ def ArtigosLookup(request, format=None):
     cols = f"""*"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (f"""select {f'{dql.columns}'} from producao_artigo {pf.group()} {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+    if ("export" in data):
+        dql.limit=f"""limit {data["limit"]}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
         response = db.executeSimpleList(sql, connection, parameters)
     except Error as error:
@@ -445,11 +446,11 @@ def ListVolumeProduzidoArtigos(request, format=None):
 
 def ClientesLookup(request, format=None):
     cols = ['*']
-
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
 
-    _filter = {} if data.get("apiversion")=="4" else request.data['filter']
+    _filter = {} if options.get("apiversion")=="4" else request.data['filter']
     f = filterMulti(_filter, {'fmulti_customer': {"keys": ["BPCNUM_0","BPCNAM_0"]}})
     parameters = {**f['parameters'],**pf.parameters}
 

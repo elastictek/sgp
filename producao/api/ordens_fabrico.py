@@ -2690,8 +2690,8 @@ def ClosePrf(request, format=None):
             sum(case when pp.ordem_id=pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_produzidas,
             sum(case when pp.ordem_id<>pp.ordem_id_original and pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_stock_in,
             sum(case when pp.nok=0 and po.draft_ordem_id is not null and pp.ordem_id is not null then 1 else 0 end) over (partition by po.id) n_paletes_total
-            from producao_palete pp
-            join planeamento_ordemproducao po on po.id=pp.ordem_id
+            from planeamento_ordemproducao po
+            left join producao_palete pp on po.id=pp.ordem_id
             LEFT JOIN producao_tempordemfabrico top on top.id=po.draft_ordem_id
             {f.text} and agg_of_id_id is not null
         """), cursor, f.parameters)
@@ -2706,8 +2706,8 @@ def ClosePrf(request, format=None):
                 raise Exception("A Prf não existe!")
             if _prf.get("ativa")==0:
                 raise Exception("A Prf não não pode ser fechada!")
-            if (_prf.get("n_paletes_total") < _prf.get("n_paletes")):
-                raise Exception("Número de paletes da Prf insuficiente!")
+            #if (_prf.get("n_paletes_total") < _prf.get("n_paletes")):
+            #    raise Exception("Número de paletes da Prf insuficiente!")
             dml = db.dml(TypeDml.UPDATE, {
                 "fim": datetime.now(),
                 "num_paletes_total":_prf.get("n_paletes_produzidas") + _prf.get("n_paletes_stock_in"),
@@ -3898,8 +3898,9 @@ def DeleteChecklist(request, format=None):
 
 def CortesList(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))   
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))   
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -3925,7 +3926,7 @@ def CortesList(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

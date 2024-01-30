@@ -31,7 +31,7 @@ const dateTransformer = (data, dates, key) => {
 const serverRequest = async (request, fetch = true) => {
   const { url = "", norun = false, apiversion = "", responseType = "json", method = "get", filter = {}, sort = [], pagination = {}, timeout = 20000, parameters = {}, cancelToken, signal, dates = [], withCredentials } = request;
   //let source = CancelToken.source();
-  const params = (fetch) ? { method, responseType, [paramType(method)]: { sort, filter, pagination, parameters: { ...parameters, norun, apiversion } } } : { method, responseType, [paramType(method)]: { ...parameters, norun } };
+  const params = (fetch) ? { method, responseType, [paramType(method)]: { sort, filter, pagination, options: { norun, apiversion }, parameters: { ...parameters } } } : { method, responseType, [paramType(method)]: { ...parameters } };
   if (cancelToken) {
     setTimeout(() => { cancelToken.cancel('Request Timeout.'); }, timeout);
   }

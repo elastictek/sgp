@@ -83,8 +83,9 @@ def _checkListStatus(id, cursor):
 
 def TodoTasksList(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))   
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))   
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -102,7 +103,7 @@ def TodoTasksList(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -110,8 +111,9 @@ def TodoTasksList(request, format=None):
 
 def TasksExecutedList(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))   
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))   
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -144,7 +146,7 @@ def TasksExecutedList(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
@@ -152,8 +154,9 @@ def TasksExecutedList(request, format=None):
 
 def TasksList(request, format=None):
     connection = connections["default"].cursor()
+    options = request.data.get("options") if request.data.get("options") is not None else {}
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",data.get("apiversion"))   
+    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))   
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -176,7 +179,7 @@ def TasksList(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,data.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

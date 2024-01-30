@@ -38,7 +38,7 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { Core, EstadoBobines, Largura } from "components/TableColumns";
 import { LeftToolbar, RightToolbar, Edit } from "./OrdemFabrico";
 import FormCortesOrdem from './FormCortesOrdem';
-import loadCortesOrdemLookup from './FormCortes';
+import {loadCortesOrdemLookup} from './FormCortes';
 import CortesVersionsPopup from './commons/CortesVersionsPopup';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
 import { current } from 'immer';
@@ -90,8 +90,6 @@ const RowHover = styled(Row)`
     `}
 
   }`;
-
-
 
 export default ({ operationsRef, extraRef, ...props }) => {
     const location = useLocation();
@@ -313,6 +311,7 @@ export default ({ operationsRef, extraRef, ...props }) => {
     }
 
     const showVersions = async () => {
+        console.log("aaaaaaaaaaaaaa")
         const versions = await loadCortesOrdemLookup({ cortes: selected.n_cortes });
         setModalParameters({ type: 'versions', width: 850, title: <div>Versões de Posicionamento <span style={{ fontWeight: 900 }}>{JSON.stringify(selected.n_cortes).replaceAll(":", "x").replaceAll('"', "")}</span></div>, versions, onSelect: onSelectCortesOrdem });
         showModal();

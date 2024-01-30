@@ -79,10 +79,11 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     );
 }
 
-const loadCortesOrdemLookup = async ({ cortes, signal }) => {
+export const loadCortesOrdemLookup = async ({ cortes, signal }) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortes }, sort: [{ column: 'versao', direction: 'DESC' }], signal });
     return rows;
 }
+
 
 export default ({ operationsRef, ...props }) => {
     const location = useLocation();
