@@ -92,7 +92,7 @@ def FiltersHelp(request, format=None):
     try:
         with storage.open(f'help/filters.htm', 'r') as file:
             file_content = file.read()
-            return Response({'file_content': file_content}, content_type='text/plain; charset=utf-8')
+            return Response({'file_content': file_content}, content_type='text/plain')
     except FileNotFoundError:
         return Response({'error': 'File not found'}, status=404)
 

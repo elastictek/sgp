@@ -215,7 +215,7 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
         <>
             <AlertMessages formStatus={formStatus} />
             <div style={{ display: "flex" }}><div style={{ fontWeight: 700 }}>{largurasTxt}</div><div style={{ marginLeft: "20px" }}>Largura Útil:</div><div style={{ marginLeft: "2px", fontWeight: 700 }}>{larguraTotal}mm</div></div>
-            {(!forInput && measure) && <div style={{marginLeft:"22px"}}><div>Offset</div><div><InputNumber tabIndex={1} value={offset} onChange={onOffsetChange} size='small' min={0} max={2200} /></div></div>}
+            {(!forInput && measure) && <div style={{marginLeft:"22px"}}><div>Offset</div><div><InputNumber tabIndex={1} value={offset} onChange={onOffsetChange} size='small' min={-1000} max={2200} /></div></div>}
             <DndProvider backend={HTML5Backend}>
                 <div style={{ display: "flex", flexDirection: "row", /* justifyContent: "space-around", */flexWrap: "wrap" }}>
                     {(!forInput && measure) && <div style={{ height: "25px", textAlign: "center", marginTop: "3px" }}><span style={{ fontWeight: 700, marginRight: "3px" }}>LA</span>{/* <InputNumber min={1} max={3000} style={{ width: "50px" }} value={measures?.["LA"]?.[0]} tabIndex={1} size="small" controls={false} onChange={(v) => onMeasureChange("LA", 0, v)} /> */}</div>}

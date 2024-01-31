@@ -3905,7 +3905,7 @@ def CortesList(request, format=None):
     parameters = {**pf.parameters}
 
     cols=f"""
-        pc2.designacao, pc2.versao,
+        pc2.designacao, pc2.versao,pc2.status,
         pc2.id,pc.largura_json,pc.largura_util,
         pc2.largura_ordem,pc.id cortes_id
     """
@@ -3935,33 +3935,16 @@ def CortesList(request, format=None):
 def UpdateCortes(request, format=None):
     data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
 
-    def _checkCortesOrdem(id, cursor):
-        f = Filters({"id":id})
-        f.where()
-        f.add(f'(id = :id)', True)
-        f.value("and")
-        response = db.executeSimpleList(lambda: (f"""select count(*) cnt from ofabrico_checklist_items {f.text}"""), cursor, f.parameters)
-        return response["rows"][0].get("cnt")
-
     def update(id,data,cursor):
         values = includeDictKeys(data,["designacao","status"])
         dml = db.dml(TypeDml.UPDATE,{**values},"producao_cortesordem",{"id":f'=={id}'},None,False)
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
 
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                errors = [] 
                 for i, v in enumerate(data.get("rows")):
-                    chk = _checkCortesOrdem(v.get("id"),cursor)
-                    if chk > 0:
-                        errors.append(v.get("nome"))
-                    else:
-                        update(v.get("id"),v,cursor)
-                if len(errors) == len(data.get("rows")):
-                    return Response({"status": "error", "title": f"Erro ao atualizar a(s) tarefa(s). Já foram executadas trocas de etiquetas! "})
-                if len(errors) < len(data.get("rows")):
-                    return Response({"status": "success", "title": f"Algumas tarefas não foram atualizadas! {','.join(errors)} "})
-        return Response({"status": "success", "title": "Tarefa(s) atualizada(s) com sucesso!", "subTitle":f'{None}'})
+                    update(v.get("id"),v,cursor)
+        return Response({"status": "success", "title": "Corte(s) atualizado(s) com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
