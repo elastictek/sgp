@@ -10,7 +10,7 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty, valueByPath, updateByPath } from "utils/object";
 import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar } from "antd";
-import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined } from '@ant-design/icons';
+import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined, QuestionCircleTwoTone } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -149,7 +149,9 @@ const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, set
                 (showFilters && !modeApi?.isOnMode()) && { label: 'Limpar Filtros', key: 'clearfilters', icon: <FilterOutlined />, data: {} },
                 (showMoreFilters && !modeApi?.isOnMode()) && { label: 'Mais Filtros', key: 'morefilters', icon: <Icon component={MoreFilters} />, data: {} },
                 { type: 'divider' },
-                (permission.auth.isAdmin) && { label: <span style={{ color: "#10239e" }}>Server Request and Execution</span>, key: 'sqlquery', icon: <PullRequestOutlined style={{ color: "#10239e" }} />, data: {} }
+                (permission.auth.isAdmin) && { label: <span style={{ color: "#10239e" }}>Server Request and Execution</span>, key: 'sqlquery', icon: <PullRequestOutlined style={{ color: "#10239e" }} />, data: {} },
+                { type: 'divider' },
+                { label: <span style={{ color: "#10239e" }}>Ajuda Filtros</span>, key: 'helpfilters', icon: <QuestionCircleTwoTone />, data: {} },
             ]}></StyledMenu>
             {/* 
             <Divider style={{ margin: "8px 0" }} />
@@ -248,6 +250,42 @@ const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _val
     </Drawer>);
 }
 
+const DrawerHelp = ({ visible, setVisible, dataAPI }) => {
+    const [data, setData] = useState();
+    useEffect(() => {
+        if (visible) {
+            loadData();
+        }
+    }, [visible]);
+
+    const loadData = useCallback(async () => {
+        let response;
+        try {
+            response = await fetchPost({ url: `${API_URL}/print/sql/`, parameters: { method: "FiltersHelp" } });
+            setData(response.data.file_content);
+        } catch (e) {
+            console.log(e);
+        };
+    }, []);
+
+    return (<Drawer title="Ajuda Filtros" open={visible} onClose={() => setVisible(false)} width="100%"
+        footer={
+            <div style={{ textAlign: 'right' }}>
+                <Button onClick={() => setVisible(false)} type="primary">Fechar</Button>
+            </div>
+        }
+    >
+        <Container fluid style={{ padding: "0px" }}>
+            <Row nogutter>
+                <Col>
+                    <div dangerouslySetInnerHTML={{ __html: data }} />
+                </Col>
+            </Row>
+        </Container >
+    </Drawer >);
+}
+
+
 const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
     const [data, setData] = useState({});
     useEffect(() => {
@@ -338,7 +376,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
         const _values = {};
         for (const [key, value] of Object.entries(json(item.filters))) {
             const _f = _defs.find(obj => obj.name === key);
-            _values[key] = { parsed: value?.parsed, ...excludeObjectKeys(_f, ["options", "style", "op", "col"]) }
+            _values[key] = { parsed: value?.parsed, ...excludeObjectKeys(_f, ["options", "style", "op", "col", "fnvalue"]) }
         }
         dataAPI.setPreFilters({ filter: _values, designacao: item.designacao });
         gridRef.current.api.refreshServerSide({ purge: false });
@@ -384,6 +422,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
 const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish }) => {
     const [moreFilters, setMoreFilters] = useState(false);
     const [sqlQueryView, setSqlQueryView] = useState(false);
+    const [helpfilters, setHelpFilters] = useState(false);
     const [predifinedFilters, setPredifinedFilters] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
     const { modeApi, dataAPI, gridRef, local, updateStateFilters, stateFilters, topToolbar: { title, leftTitle, start, left, right, filters, showSettings = true, showFilters = true, showMoreFilters = true, clearSort = true } = {} } = useContext(TableContext);
@@ -505,6 +544,9 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
             case "sqlquery":
                 setSqlQueryView(true);
                 break;
+            case "helpfilters":
+                setHelpFilters(true);
+                break;
             case "clearfilters":
                 dataAPI.addFilters({}, true);
                 dataAPI.setPreFilters({});
@@ -524,6 +566,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
     return (
         <Spin spinning={loading} indicator={<></>} >
             {!local && <><DrawerPredifinedFilters visible={predifinedFilters} setVisible={setPredifinedFilters} dataAPI={dataAPI} gridRef={gridRef} topToolbarFilters={filters} />
+                <DrawerHelp visible={helpfilters} setVisible={setHelpFilters} dataAPI={dataAPI} />
                 <DrawerSqlQueryView visible={sqlQueryView} setVisible={setSqlQueryView} dataAPI={dataAPI} />
                 {moreFilters && <DrawerMoreFilters visible={moreFilters} setVisible={setMoreFilters} onFilterFinish={onFilterFinish} onChange={onChange} onSelectChange={onSelectChange} _value={_value} />}
             </>}
@@ -753,7 +796,7 @@ export default ({
             const _f = _defs.find(obj => obj.name === key);
             const _pf = processConditions(value?.value ? value.value : value, _f, value?.rel, value?.logic);
             if (_pf !== null) {
-                _values[key] = excludeObjectKeys(_pf, ["options", "style", "op", "col"]);
+                _values[key] = excludeObjectKeys(_pf, ["options", "style", "op", "col", "fnvalue"]);
             }
         }
         return _values;

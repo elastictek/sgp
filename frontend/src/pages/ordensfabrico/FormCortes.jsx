@@ -79,8 +79,8 @@ const ToolbarTable = ({ form, modeEdit, allowEdit, submitting, changeMode, param
     );
 }
 
-export const loadCortesOrdemLookup = async ({ cortes, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortes }, sort: [{ column: 'versao', direction: 'DESC' }], signal });
+export const loadCortesOrdemLookup = async ({ cortes,cortesordem_id, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "CortesOrdemLookup" }, filter: { cortes,cortesordem_id }, sort: [{ column: 'versao', direction: 'DESC' }], signal });
     return rows;
 }
 

@@ -41,6 +41,7 @@ import time
 import requests
 import psycopg2
 from producao.api.exports import export
+from support.postdata import PostData
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -202,10 +203,9 @@ def Sql(request, format=None):
 
 def PaletesListV2(request, format=None):
     connection = connections["default"].cursor()
-    options = request.data.get("options") if request.data.get("options") is not None else {}
-    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"and",options.get("apiversion"))
-    f = Filters(request.data['filter'])
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"and",r.apiversion)
+    f = Filters(r.filter)
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'sgppl.timestamp', lambda k, v: f'DATE(sgppl.timestamp)'),
     #    **rangeP(f.filterData.get('fdatain'), 'in_t', lambda k, v: f'DATE(in_t)'),
@@ -239,7 +239,7 @@ def PaletesListV2(request, format=None):
     f.where(False,"and")
     f.auto()
     f.value()
-    fartigo = filterMulti(request.data['filter'], {
+    fartigo = filterMulti(r.filter, {
         'fartigo': {"keys": ["'$.cod'", "'$.des'"], "table": 'j->>'},
     }, False, "and" if f.hasFilters else "and" ,False)
 
@@ -255,9 +255,9 @@ def PaletesListV2(request, format=None):
         f.where(False, "and")
         f.value()
         return f
-    festados = filterMultiSelectJson(request.data['filter'],'festados','estado','j')
+    festados = filterMultiSelectJson(r.filter,'festados','estado','j')
 
-    fbobinemulti = filterMulti(request.data['filter'], {
+    fbobinemulti = filterMulti(r.filter, {
         'flotenw': {"keys": ['lotenwinf', 'lotenwsup'], "table": 'mb.'},
         'ftiponw': {"keys": ['tiponwinf', 'tiponwsup'], "table": 'mb.'},
         'fbobine': {"keys": ['nome'], "table": 'mb.'},
@@ -270,7 +270,7 @@ def PaletesListV2(request, format=None):
     fbobinemulti["text"] = f"""and exists (select 1 from producao_bobine mb where mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 {fbobinemulti["text"].lstrip("where (").rstrip(")")}))""" if fbobinemulti["hasFilters"] else ""
 
 
-    fbobinedestinos = Filters(request.data['filter'])
+    fbobinedestinos = Filters(r.filter)
     fbobinedestinos.setParameters({
         "destino_cli": {"value": lambda v: v.get('fdestino').lower() if v.get('fdestino') is not None else None, "field": lambda k, v: f"lower(d->'$.cliente'->>'$.BPCNAM_0')"},
         "destino_lar": {"value": lambda v: Filters.getNumeric(v.get('fdestino_lar')), "field": lambda k, v: f"d->>'$.largura'"},
@@ -286,7 +286,7 @@ def PaletesListV2(request, format=None):
     WHERE mb.palete_id=sgppl.id and mb.recycle=0 and mb.comp_actual>0 and mb.destinos is not null {fbobinedestinos.text}
     limit 1)""" if fbobinedestinos.hasFilters else ""
 
-    fartigompmulti = filterMulti(request.data['filter'], {
+    fartigompmulti = filterMulti(r.filter, {
         'fartigo_mp': {"keys": ['matprima_cod', 'matprima_des'], "table": 'mcg.'},
         'flote_mp': {"keys": ['n_lote'], "table": 'mcg.'},
     }, False, "and" if f.hasFilters else "and" ,False)
@@ -322,12 +322,12 @@ def PaletesListV2(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-    if ("export" in request.data["parameters"]):
-        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,r.norun)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

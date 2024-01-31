@@ -130,9 +130,11 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
     const init = async () => {
         const _co = (parameters?.cortesOrdemId) ? parameters?.cortesOrdemId : parameters?.cortesordem_id;
         if (_co) {
+            console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", _co)
             const _rows = await loadCortesOrdemLookup({ cortesordem_id: _co });
+            console.log("RRRR",_rows)
             setBobines(json(_rows[0].largura_ordem));
-            console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", _co, json(_rows[0].largura_ordem))
+            
             setLarguraTotal(_rows[0].largura_util);
             setIdx(null);
             setLargurasTxt(_rows[0].largura_json.replace("{", "[").replace("}", "]").replace(":", "x"));

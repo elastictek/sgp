@@ -216,8 +216,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   const filters = useMemo(() => ({
     toolbar: [
       { field: "subtype", type: "options", options: OPTIONS_SUBTYPE },
-      { field: "timestamp", type: "date", mask: "date({k})" },
-      "bobine_nome", "bobine_original_nome"
+      { field: "timestamp", type: "date", mask: "date({k})" }
     ],
     more: [/* "@columns"*/
       { field: "cod", alias: "pa1.cod" },

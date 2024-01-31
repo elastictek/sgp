@@ -311,7 +311,6 @@ export default ({ operationsRef, extraRef, ...props }) => {
     }
 
     const showVersions = async () => {
-        console.log("aaaaaaaaaaaaaa")
         const versions = await loadCortesOrdemLookup({ cortes: selected.n_cortes });
         setModalParameters({ type: 'versions', width: 850, title: <div>Versões de Posicionamento <span style={{ fontWeight: 900 }}>{JSON.stringify(selected.n_cortes).replaceAll(":", "x").replaceAll('"', "")}</span></div>, versions, onSelect: onSelectCortesOrdem });
         showModal();

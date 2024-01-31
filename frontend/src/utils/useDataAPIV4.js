@@ -6,10 +6,11 @@ import { produce, finishDraft } from 'immer';
 import { useImmer } from "use-immer";
 import { json, includeObjectKeys } from "utils/object";
 import { uid } from 'uid';
-import { isEmpty, isNil } from 'ramda';
+import { isEmpty, isNil, isNotNil } from 'ramda';
 import { AppContext } from "app";
+import dayjs from 'dayjs';
+import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 
-//const filterRegExp = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^btw:|^in:|^!btw|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
 export const filterRegExp = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i');
 
 export const parseFilter = (name, parsed, { group = "t1", type = "input", options = {} }) => {
@@ -18,10 +19,10 @@ export const parseFilter = (name, parsed, { group = "t1", type = "input", option
 
 const _filterParser = (value, filter, opTag) => {
     const _op = filter?.op ? filter.op.toLowerCase() : "any";
-    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%")) {
+    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%") && !value.includes("_")) {
         return `${value}`;
     }
-    if (value.includes("%")) {
+    if (value.includes("%") || value.includes("_")) {
         return `${value}`;
     }
     switch (_op) {
@@ -144,11 +145,16 @@ export const filtersDef = (filters, gridRef, all = false) => {
                 label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
                 col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
                 mask: v?.mask ? v.mask : _f?.[v.field]?.mask ? _f[v.field]?.mask : null,
+                vmask: v?.vmask ? v.vmask : _f?.[v.field]?.vmask ? _f[v.field]?.vmask : null,
                 group: v?.group ? v.group : _f?.[v.field]?.group ? _f[v.field]?.group : "t1",
-                multi: v?.multi ? v.multi : _f?.[v.field]?.multi ? _f[v.field]?.multi : false,
+                multi: isNotNil(v?.multi) ? v.multi : isNotNil(_f?.[v.field]?.multi) ? _f[v.field]?.multi : false,
                 // exp: v?.exp ? v.exp : _f?.[v.field]?.exp ? _f[v.field]?.exp : null,
                 options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null,
                 case: v?.case ? v.case : _f?.[v.field]?.case ? _f[v.field]?.case : "i",
+                assign: isNotNil(v?.assign) ? v.assign : isNotNil(_f?.[v.field]?.assign) ? _f[v.field]?.assign : true,
+                wildcards: isNotNil(v?.wildcards) ? v.wildcards : isNotNil(_f?.[v.field]?.wildcards) ? _f[v.field]?.wildcards : true,
+                tags: isNotNil(v?.tags) ? v.tags : isNotNil(_f?.[v.field]?.tags) ? _f[v.field]?.tags : true,
+                fnvalue: v?.fnvalue ? v.fnvalue : _f?.[v.field]?.fnvalue ? _f[v.field]?.fnvalue : null,
             }
         } else {
             const _s = gridRef.current.api.getColumnDefs().find(x => x.field === v);
@@ -166,32 +172,69 @@ export const filtersDef = (filters, gridRef, all = false) => {
                 label: _f?.[v]?.label ? _f[v]?.label : _headerName ? _headerName : v,
                 col: _f?.[v]?.col ? _f[v]?.col : "content",
                 mask: _f?.[v]?.mask ? _f[v]?.mask : null,
+                vmask: _f?.[v]?.vmask ? _f[v]?.vmask : null,
                 group: _f?.[v]?.group ? _f[v]?.group : "t1",
-                multi: _f?.[v]?.multi ? _f[v]?.multi : false,
+                multi: isNotNil(_f?.[v]?.multi) ? _f[v]?.multi : false,
                 // exp: _f?.[v]?.exp ? _f[v]?.exp : null,
                 options: _f?.[v]?.options ? _f[v]?.options : null,
                 case: _f?.[v]?.case ? _f[v]?.case : "i",
+                assign: isNotNil(_f?.[v]?.assign) ? _f[v]?.assign : true,
+                wildcards: isNotNil(_f?.[v]?.wildcards) ? _f[v]?.wildcards : true,
+                tags: isNotNil(_f?.[v]?.tags) ? _f[v]?.tags : true,
+                fnvalue: _f?.[v]?.fnvalue ? _f[v]?.fnvalue : null
             }
         }
     }
     return Object.values(_f);
 };
 
+const prepareInput = (value, wildcards = true, tags = true) => {
+    let _v = value;
+    if (!tags) {
+        const matches = _v.trim().toString().match(filterRegExp);
+        _v = matches ? matches[2] : _v.trim().toString();
+        _v = _v.replaceAll(",", "&");
+        _v = _v.replaceAll(";", "|");
+    }
+    if (!wildcards) {
+        _v = _v.replaceAll("%", "").replaceAll("_", "");
+    }
+    return _v;
+}
+
+
+const fnValue = (value, fnvalue = null) => {
+    if (typeof fnvalue == "function") {
+        return fnvalue(value);
+    }
+    return value;
+}
+
 export const processConditions = (inputValue, filterDef, rel = "and", logic = "") => {
     let _input = inputValue;
     if (isNil(inputValue) || isEmpty(inputValue)) {
+        if (typeof filterDef?.fnvalue == "function") {
+            return filterDef.fnvalue(null);
+        }
         return null;
     }
     if (typeof inputValue === 'object' && !Array.isArray(inputValue)) {
         _input = inputValue?.value;
         if (isNil(_input) || isEmpty(_input)) {
+            if (typeof filterDef?.fnvalue == "function") {
+                return filterDef.fnvalue(null);
+            }
             return null;
         }
     }
     if (Array.isArray(_input)) {
         if (_input.length == 0) { return null; }
-        console.log("processed--->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
-        return { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef };
+        console.log("processed-Array-->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
+        _v = [`${logic}in:${_input.join(",")}`];
+        if (typeof filterDef?.fnvalue == "function") {
+            _v = filterDef.fnvalue(_v);
+        }
+        return { value: _input, parsed: _v, logic, ...filterDef };
 
     }
 
@@ -206,15 +249,13 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
     //     return acc;
     //   }, []);.toString().split(/([&|()])/)
     //const conditionsArray = _fixConditions(_input).toString().split(/([&|()])/).filter(Boolean);
-    const conditionsArray = customSplit(_input);
-    console.log("conditions", conditionsArray)
+    const conditionsArray = customSplit(prepareInput(_input,filterDef.wildcards,filterDef.tags));
     const _values = [];
     const _parsedvalues = [];
     for (const [idx, condition] of conditionsArray.entries()) {
         let _valid = true;
         const _value = [];
         const _parsedvalue = [];
-
         if (["&", "|", "(", ")"].includes(condition)) {
             if (idx >= 1 && !["(", ")"].includes(condition) && ["&", "|"].includes(_values[_values.length - 1])) {
                 continue;
@@ -249,17 +290,23 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
         if (!isEmpty(_x) || (["isnull", "!isnull"].includes(_opTag))) {
             for (const value of _x.split(',')) {
                 if (filterDef.type === "options") {
-                    const _t = (_opTag === "") ? "==" : "";
+                    let _t = "";
+                    if (filterDef.tags) {
+                        _t = (_opTag === "") ? "==" : "";
+                    }
                     _value.push(value);
-                    _parsedvalue.push(`${_t}${value}`);
+                    _parsedvalue.push(fnValue(`${_t}${value}`, filterDef.fnvalue));
                 } else if (filterDef.type === "number") {
                     if (isNaN(+value)) {
                         _valid = false;
                         break;
                     } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        let _t = "";
+                        if (filterDef.tags) {
+                            _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        }
                         _value.push(value);
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                        _parsedvalue.push(fnValue(`${_t}${value.replace(/\n/g, '')}`, filterDef.fnvalue));
                     }
                 } else if (filterDef.type === "date") {
                     const parsedDate = dayjs(value, { strict: true });
@@ -267,9 +314,12 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
                         _valid = false;
                         break;
                     } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        let _t = "";
+                        if (filterDef.tags) {
+                            _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        }
                         _value.push(parsedDate.format(DATE_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                        _parsedvalue.push(fnValue(`${_t}${value.replace(/\n/g, '')}`, filterDef.fnvalue));
                     }
                 } else if (filterDef.type === "datetime") {
                     const parsedDate = dayjs(value, { strict: true });
@@ -277,9 +327,12 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
                         _valid = false;
                         break;
                     } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        let _t = "";
+                        if (filterDef.tags) {
+                            _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        }
                         _value.push(parsedDate.format(DATETIME_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                        _parsedvalue.push(fnValue(`${_t}${value.replace(/\n/g, '')}`, filterDef.fnvalue));
                     }
                 } else if (filterDef.type === "time") {
                     const parsedDate = dayjs(value, TIME_FORMAT);
@@ -287,19 +340,22 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
                         _valid = false;
                         break;
                     } else {
-                        const _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        let _t = "";
+                        if (filterDef.tags) {
+                            _t = (_opTag === "") ? "==" : (_opTag === "=") ? "=" : "";
+                        }
                         _value.push(parsedDate.format(TIME_FORMAT));
-                        _parsedvalue.push(`${_t}${value.replace(/\n/g, '')}`);
+                        _parsedvalue.push(fnValue(`${_t}${value.replace(/\n/g, '')}`, filterDef.fnvalue));
                     }
                 } else {
                     const _v = filterDef.case === "i" ? value.toLowerCase() : value;
                     _value.push(value);
-                    _parsedvalue.push(_filterParser(_v.replace(/\n/g, ''), filterDef, _opTag));
+                    _parsedvalue.push(fnValue(prepareInput(_filterParser(_v.replace(/\n/g, ''), filterDef, _opTag), filterDef.wildcards, filterDef.tags), filterDef.fnvalue));
                 }
             }
             if (_valid) {
                 _values.push(`${_opTag}${_value.join(",")}`);
-                _parsedvalues.push(`${_opTag}${_parsedvalue.join(",")}`);
+                _parsedvalues.push(`${filterDef.tags ? _opTag : ""}${_parsedvalue.join(",")}`);
             }
 
         };
@@ -519,11 +575,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         p.timestamp = new Date();
         for (const row of p.values) {
             validation = passthrough ? await p.schema.passthrough().spa(row) : await p.schema.spa(row);
-            p.valid = (p.valid === true ) ? validation.success : p.valid;
+            p.valid = (p.valid === true) ? validation.success : p.valid;
             if (!validation.success) {
                 const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
                 p.alerts.error[row[nodeId]] = _errors;
-            }else{
+            } else {
                 p.alerts.error[row[nodeId]] = null;
             }
         }

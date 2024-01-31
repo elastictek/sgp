@@ -901,7 +901,7 @@ class ParsedFilters:
                 for _name, _param in _p.items():
                     _ftxt = []
                     for idx, el in enumerate(_param.get("parsed")):
-                        _pn = f"f.{_name}.{idx}" #Parameter Name
+                        _pn = f"f.{_name}.{idx}" #Parameter Name   
                         _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
                         #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
                         if el in ["and","or"]:
@@ -926,7 +926,7 @@ class ParsedFilters:
                                 el = match.group(2)
                             else:
                                 continue
-                        _fp = FiltersParser({_pn:el},{_pn:_alias})
+                        _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
                         _ftxt.append(f"""({_fp.get("filters")[0]})""")
                         self.parameters = {**self.parameters,**_fp.get("parameters")}
                     if len(_fgrp_txt)>0:
@@ -1039,7 +1039,7 @@ class Filters:
             nData = {k: v for k, v in baseData.items() if k not in exclude}
         else:
             nData=baseData
-        a = FiltersParser(nData, self.paramsSetFields, encloseColumns, typedb)
+        a = FiltersParser(nData, self.paramsSetFields,{}, encloseColumns, typedb)
         self.__autoFilters.extend(a['filters'])
         self.autoParamsSet.update(a['parameters'])
 
@@ -1134,8 +1134,6 @@ class Filters:
                 for _name, _param in _p.items():
                     _ftxt = []
                     for idx, el in enumerate(_param.get("parsed")):
-                        print("----------------------------------------------")
-                        print(el)
                         _pn = f"f.{_name}.{idx}" #Parameter Name
                         _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _param.get("alias")
                         #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
@@ -1161,11 +1159,7 @@ class Filters:
                                 el = match.group(2)
                             else:
                                 continue
-                            print("###########################")
-                            print(_pn)
-                            print(el)
-                            print(_alias)
-                        _fp = FiltersParser({_pn:el},{_pn:_alias})
+                        _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
                         _ftxt.append(f"""({_fp.get("filters")[0]})""")
                         _fparams = {**_fparams,**_fp.get("parameters")}
                         #print(f'parsed----{_fp.get("filters")[0]} {_fp.get("parameters")}')
@@ -1179,7 +1173,14 @@ class Filters:
                 #groups[value.get("group")] = Filters({key: v.get("parsed") for key, v in request.data.get("filter").items() if 'group' in v and v.get("group") == value.get("group")})
         #======================================================================
 
-def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
+def _apply_vmask(vmask,field,value):
+    return vmask.format(k=field,v=value) if vmask else value
+def _apply_wildcards(value,wildcards=True):
+    if (wildcards):
+        return value
+    return value.replace('%', '').replace('_', '')
+
+def FiltersParser(data, fields={},options={}, encloseColumns=True, typedb=TypeDB.MYSQL):
     filters, parameters = [], {}
     for key, f in data.items():
         if f == None:
@@ -1190,39 +1191,40 @@ def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
         else:
             field = encloseColumn(key, encloseColumns)
         opNot = result.group(1).startswith('!') if result else False
-        op = (result.group(1) if not opNot else result.group(
-            1)[1:]) if result else '='
+        op = (result.group(1) if not opNot else result.group(1)[1:]) if result else '='
         value = result.group(2) if result else f
         # if op == '@:':
         #     filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
         #     parameters[f'auto_{key}'] = value
         # el
-        if op == '===':
+        if (options and not options.get("assign")):
+            filters.append(_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s'))
+            parameters[f'auto_{key}'] = _apply_wildcards(value,options.get("wildcards"))
+        elif op == '===':
             if typedb==TypeDB.MYSQL:
-                filters.append(f'{("" if not opNot else "not")} {field} <=> %(auto_{key})s')
+                filters.append(f"""{("" if not opNot else "not")} {field} <=> {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             elif  typedb==TypeDB.POSTGRES:
-                filters.append(f'{field} {("IS NOT DISTINCT FROM" if not opNot else "IS DISTINCT FROM")} %(auto_{key})s')
+                filters.append(f"""{field} {("IS NOT DISTINCT FROM" if not opNot else "IS DISTINCT FROM")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             else:
-                filters.append(f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
+                filters.append(f"""{field} {("=" if not opNot else "<>")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '==':
-            filters.append(f'{field} {("=" if not opNot else "<>")} %(auto_{key})s')
+            filters.append(f"""{field} {("=" if not opNot else "<>")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '=':
-            filters.append(
-                f'{field} {("like" if not opNot else "not like")} %(auto_{key})s')
+            filters.append(f"""{field} {("like" if not opNot else "not like")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '>=':
-            filters.append(f'{field} >= %(auto_{key})s')
+            filters.append(f"""{field} >= {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '<=':
-            filters.append(f'{field} <= %(auto_{key})s')
+            filters.append(f"""{field} <= {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '>':
-            filters.append(f'{field} > %(auto_{key})s')
+            filters.append(f"""{field} > {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op == '<':
-            filters.append(f'{field} < %(auto_{key})s')
+            filters.append(f"""{field} < {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')}""")
             parameters[f'auto_{key}'] = value
         elif op.lower() in ['between:', 'btw:']:
             v = value.split(',')
@@ -1231,16 +1233,14 @@ def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
                    '' else None) if len(v) == 2 else None
             if min and max:
                 filters.append(
-                    f'({field} {("between" if not opNot else "not between")} %(auto_{key}_min)s and %(auto_{key}_max)s)')
+                    f"""({field} {("between" if not opNot else "not between")}  {_apply_vmask(options.get("vmask"),field,f'%(auto_{key}_min)s')} and {_apply_vmask(options.get("vmask"),field,f'%(auto_{key}_max)s')})""")
                 parameters[f'auto_{key}_min'] = min
                 parameters[f'auto_{key}_max'] = max
             elif min:
-                filters.append(
-                    f'({field} {(">=" if not opNot else "<")} %(auto_{key})s)')
+                filters.append(f"""({field} {(">=" if not opNot else "<")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')})""")
                 parameters[f'auto_{key}'] = min
             elif max:
-                filters.append(
-                    f'({field} {("<=" if not opNot else ">")} %(auto_{key})s)')
+                filters.append(f"""({field} {("<=" if not opNot else ">")} {_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s')})""")
                 parameters[f'auto_{key}'] = max
         elif op.lower() == 'in:':
             v = value.split(',')
@@ -1252,7 +1252,7 @@ def FiltersParser(data, fields={}, encloseColumns=True, typedb=TypeDB.MYSQL):
                 f'({field} {("in" if not opNot else "not in")} ({",".join(p)}))')
         elif op.lower() == 'isnull':
             filters.append(
-                f'({field} {("is NULL" if not opNot else "is not NULL")})')
+                f'({field} {(_apply_vmask(options.get("vmask"),field,"is NULL") if not opNot else _apply_vmask(options.get("vmask"),field,"is not NULL"))})')
     return {"filters": filters, "parameters": parameters}
 
 

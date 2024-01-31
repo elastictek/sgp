@@ -41,6 +41,7 @@ import time
 import requests
 import psycopg2
 from producao.api.exports import export
+from support.postdata import PostData
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -473,9 +474,8 @@ def BobinesOriginaisList(request,format=None):
 
 def BobinesListV2(request, format=None):
     connection = connections["default"].cursor()
-    options = request.data.get("options") if request.data.get("options") is not None else {}
-    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
     
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
@@ -510,12 +510,12 @@ def BobinesListV2(request, format=None):
         """
     )
 
-    if ("export" in data):
-        dql.limit=f"""limit {data.get("limit")}"""
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
         dql.paging=""
-        return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",options.get("norun"),fakeTotal=True)
+        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

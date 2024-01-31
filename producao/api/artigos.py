@@ -42,6 +42,7 @@ import requests
 import psycopg2
 from decimal import Decimal
 from producao.api.exports import export
+from support.postdata import PostData
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -187,11 +188,10 @@ def Sql(request, format=None):
     
 def ArtigosLookup(request, format=None):
     connection = connections["default"].cursor()
-    options = request.data.get("options") if request.data.get("options") is not None else {}
-    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
 
-    _filter = {} if options.get("apiversion")=="4" else request.data['filter']
+    _filter = {} if r.apiversion=="4" else r.filter
     f = Filters(_filter)
     f.setParameters({}, False)
     f.where()
@@ -206,10 +206,10 @@ def ArtigosLookup(request, format=None):
     cols = f"""*"""
     dql.columns=encloseColumn(cols,False)
     sql = lambda: (f"""select {f'{dql.columns}'} from producao_artigo {pf.group()} {f.text} {f2["text"]} {dql.sort} {dql.limit}""")
-    if ("export" in data):
-        dql.limit=f"""limit {data["limit"]}"""
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
         dql.paging=""
-        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
         response = db.executeSimpleList(sql, connection, parameters)
     except Error as error:
@@ -446,11 +446,10 @@ def ListVolumeProduzidoArtigos(request, format=None):
 
 def ClientesLookup(request, format=None):
     cols = ['*']
-    options = request.data.get("options") if request.data.get("options") is not None else {}
-    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
 
-    _filter = {} if options.get("apiversion")=="4" else request.data['filter']
+    _filter = {} if r.apiversion=="4" else r.filter
     f = filterMulti(_filter, {'fmulti_customer': {"keys": ["BPCNUM_0","BPCNAM_0"]}})
     parameters = {**f['parameters'],**pf.parameters}
 

@@ -187,7 +187,13 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
 
 
   const filters = useMemo(() => ({
-    toolbar: ["designacao", "versao", "largura_util", { field: "status", type: "options", options: "opt:5", label: "Estado" }],
+    toolbar: [
+      "designacao",
+      "versao",
+      "largura_util",
+      { field: "status", type: "options", options: "opt:5", label: "Estado" },
+      { field: "larguras", alias: "pc2.largura_ordem", assign: false, tags: false, wildcards: false, case: "s", fnvalue: (v) => `"${v}"`, vmask: `JSON_CONTAINS({k}, {v}, '$')`, type: "number" }
+    ],
     more: [/* "@columns"*/],
     no: [...Object.keys(baseFilters), "action"]
   }), []);

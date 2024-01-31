@@ -159,6 +159,7 @@ export default ({ operationsRef, ...props }) => {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
             inputParameters.current = { ...paramsIn };
         }
+
         const row = await loadCortes({ data: inputParameters.current, signal });
         if (row?.cortesordem.id && inputParameters.current?.cs_id) {
             const rowMeasures = await loadMeasures({ data: { cortesordem_id: row.cortesordem.id, cs_id: inputParameters.current.cs_id }, signal });

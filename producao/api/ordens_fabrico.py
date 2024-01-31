@@ -46,6 +46,7 @@ import psycopg2
 from decimal import Decimal
 from producao.api.currentsettings import checkCurrentSettings,updateCurrentSettings,changeStatus
 from producao.api.exports import export
+from support.postdata import PostData
 
 
 connGatewayName = "postgres"
@@ -3898,9 +3899,8 @@ def DeleteChecklist(request, format=None):
 
 def CortesList(request, format=None):
     connection = connections["default"].cursor()
-    options = request.data.get("options") if request.data.get("options") is not None else {}
-    data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
-    pf = ParsedFilters(request.data.get("filter"),"where",options.get("apiversion"))   
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)   
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -3921,12 +3921,12 @@ def CortesList(request, format=None):
         """
     )
 
-    if ("export" in data):
-        dql.limit=f"""limit {data.get("limit")}"""
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
         dql.paging=""
-        return export(sql, db_parameters=parameters, parameters=data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,None,options.get("norun"))
+        response = db.executeList(sql, connection, parameters,[],None,None,r.norun)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
