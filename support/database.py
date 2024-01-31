@@ -1197,7 +1197,7 @@ def FiltersParser(data, fields={},options={}, encloseColumns=True, typedb=TypeDB
         #     filters.append(f'{field}'.replace("[f]",f'%(auto_{key})s'))
         #     parameters[f'auto_{key}'] = value
         # el
-        if (options and not options.get("assign")):
+        if (options and "assign" in options and not options.get("assign")):
             filters.append(_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s'))
             parameters[f'auto_{key}'] = _apply_wildcards(value,options.get("wildcards"))
         elif op == '===':

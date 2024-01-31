@@ -240,6 +240,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
+        singleClickEdit={true}
         //rowSelectionIgnoreOnMode={true}
         // rowSelection="single"
         // onSelectionChanged={onselectionchange}
