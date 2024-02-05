@@ -81,7 +81,7 @@ const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'))
 const PickNWList = lazy(() => import('../picking/PickNWList'));
 
 const title = "Produção";
-const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop'];
+const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop','mpalete','rasgo'];
 
 const StyledCollapse = styled(Collapse)`
 

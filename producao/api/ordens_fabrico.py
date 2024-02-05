@@ -28,7 +28,7 @@ from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
 from support.database import ParsedFilters, encloseColumn, Filters, DBSql, TypeDml, fetchall,fetchone, Check
-from support.myUtils import  ifNull, includeDictKeys
+from support.myUtils import  ifNull, includeDictKeys,timestamp
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -3946,5 +3946,250 @@ def UpdateCortes(request, format=None):
                 for i, v in enumerate(data.get("rows")):
                     update(v.get("id"),v,cursor)
         return Response({"status": "success", "title": "Corte(s) atualizado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+
+def ArtigosClienteList(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)   
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+
+    cols=f"""
+        pac.*,
+        pc.name cliente_nome,pc.liminf,pc.limsup,pc.cod cliente_cod,pc.abv cliente_abv,pc.diam_ref,
+        pa.cod artigo_cod,pa.des artigo_des,pa.gtin
+    """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select 
+            {c(f'{dql.columns}')}
+            from producao_artigocliente pac
+            join producao_artigo pa on pa.id=pac.artigo_id
+            join producao_cliente pc on pc.id=pac.cliente_id
+            {pf.group()}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None,r.norun)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+def _artigoClienteExists(artigo_id,cliente_id,cursor):
+    f = Filters({"artigo_id": artigo_id,"cliente_id":cliente_id})
+    f.where()
+    f.add(f'artigo_id = :artigo_id', True)
+    f.add(f'cliente_id = :cliente_id', True)
+    f.value("and")
+    return db.exists("producao_artigocliente", f, cursor).exists
+def _getClienteId(cod,cursor):
+    f = Filters({"cod": cod})
+    f.where()
+    f.add(f'cod = :cod', True)
+    f.value("and")
+    r = db.get("id","producao_cliente", f, cursor).rows
+    if (len(r)>0):
+        return r[0].get("id")
+    return None
+def _getArtigoId(cod,cursor):
+    f = Filters({"cod": cod})
+    f.where()
+    f.add(f'cod = :cod', True)
+    f.value("and")
+    r = db.get("id","producao_artigo", f, cursor).rows
+    if (len(r)>0):
+        return r[0].get("id")
+    return None
+def _getProdutoIdByName(name,cursor):
+    f = Filters({"produto_cod": name})
+    f.where()
+    f.add(f'lower(produto_cod) = lower(:produto_cod)', True)
+    f.value("and")
+    r = db.get("id","producao_produtos", f, cursor).rows
+    if (len(r)>0):
+        return r[0].get("id")
+    return None
+def _insertCliente(data,cursor):
+    values = {
+        'cod': data.get('cliente_cod'),
+        'nome': data.get('cliente_nome'),
+        'name': data.get('cliente_nome'),
+        'abv': data.get('cliente_abv').upper(),
+        "liminf":data.get("liminf"),
+        "limsup":data.get("limsup"),
+        "diam_ref":data.get("diam_ref"),
+        '`timestamp`':timestamp()
+    }
+    dml = db.dml(TypeDml.INSERT, {**values}, "producao_cliente", None, None, False,[])
+    db.execute(dml.statement, cursor, dml.parameters)
+    return cursor.lastrowid
+def _updateCliente(data,id,cursor):
+    values = {
+        'abv': data.get('cliente_abv').upper(),
+        "liminf":data.get("liminf"),
+        "limsup":data.get("limsup"),
+        "diam_ref":data.get("diam_ref")
+    }
+    dml = db.dml(TypeDml.UPDATE, values, "producao_cliente",{"id":Filters.getNumeric(id,"isnull")}, None, False,[])
+    db.execute(dml.statement, cursor, dml.parameters)
+def _insertProduto(data,cursor):
+    values = {**data}
+    dml = db.dml(TypeDml.INSERT, values, "producao_produtos", None, None, False,[])
+    db.execute(dml.statement, cursor, dml.parameters)
+    return cursor.lastrowid
+def _computeArtigoData(name):
+    def getCore(v):
+        pattern = re.compile(r'(\d)\'\'$')
+        match = pattern.search(v)
+        if match:
+            return int(match.group(1))
+        else:
+            return None
+    def getDiam(v):
+        match = re.match(r'^D(\d+)$', v)
+        if match:
+            return int(match.group(1))
+        else:
+            return None
+    def getLar(v):
+        match = re.match(r'^L(\d+)$', v)
+        if match:
+            return int(match.group(1))
+        else:
+            return None
+
+    _artigo = name.split(" ")
+    r = {"core":None,"lar":None,"diam_ref":None,"gsm":None,"formu":None,"nw1":None,"nw2":None,"produto":None}
+    _prod=[]
+    for el in reversed(_artigo):
+        _el=el.strip()
+        if r.get("core") is None:
+            r["core"]=getCore(_el)
+        elif r.get("core") and r.get("diam_ref") is None:
+            r["diam_ref"]=getDiam(_el)
+        elif r.get("diam_ref") and r.get("lar") is None:
+            r["lar"]=getLar(_el)
+        elif r.get("lar") and r.get("formu") is None:
+            if _el in ["HE","HT","T-HE","T-HT"]:
+                r["formu"]=_el
+            elif not _el.isnumeric():
+                r["nw2"]=_el
+        if r.get("formu") and r.get("gsm") is None:
+            if _el.isnumeric():
+                r["gsm"] = _el
+        elif r.get("gsm") and r.get("nw1") is None:
+            r["nw1"]=_el
+        if r.get("formu") or r.get("nw2") or r.get("nw1"):
+            _prod.append(_el)
+    r["produto"]=' '.join(_prod[::-1])
+    return r
+def _insertArtigo(data,cursor):
+    artigo_data = _computeArtigoData(data.get("artigo_des"))
+    produto_id = _getProdutoIdByName(artigo_data.get("produto"),cursor)
+    if (produto_id is None):
+        produto_id = _insertProduto({"produto_cod":artigo_data.get("produto")},cursor)
+    values = {
+        **artigo_data,
+        "des":data.get("artigo_des"),
+        "cod":data.get("artigo_cod"),
+        "tipo":"Produto final",
+        "gtin":"(select sistema.compute_gtin())",
+        "produto_id":produto_id,
+        "thikness":325
+    }
+    dml = db.dml(TypeDml.INSERT, values, "producao_artigo", None, None, False,["gtin"])
+    db.execute(dml.statement, cursor, dml.parameters)
+    return cursor.lastrowid
+def NewArtigoCliente(request, format=None):
+    r = PostData(request)
+    def insert(data,artigo_id,cliente_id,cursor):
+        values={
+            "cliente_id":cliente_id,
+            "artigo_id":artigo_id,
+            "timestamp":timestamp(),
+            "user_id":request.user.id,
+            "produto":data.get("produto"),
+            "cod_client":data.get("cod_client")
+        }
+        dml = db.dml(TypeDml.INSERT, values, "producao_artigocliente", None, None, False,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                for i, v in enumerate(r.data.get("rows")):
+                    cliente_id = _getClienteId(v.get("cliente_cod"),cursor)
+                    if (cliente_id is None):
+                        cliente_id = _insertCliente(v,cursor)
+                    artigo_id = _getArtigoId(v.get("artigo_cod"),cursor)
+                    if (artigo_id is None):
+                        artigo_id = _insertArtigo(v,cursor)
+                    if cliente_id and artigo_id:
+                        chk = _artigoClienteExists(artigo_id,cliente_id,cursor)
+                        if (chk==0):
+                            insert(v,artigo_id,cliente_id,cursor)
+                        else:
+                            return Response({"status": "error", "title": "A relação artigo/cliente já existe!", "subTitle":f'{None}'})
+                    else:
+                        return Response({"status": "error", "title": "Não existe artigo/cliente para associar!", "subTitle":f'{None}'})
+        return Response({"status": "success", "title": "Artigo e cliente relacionados!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def UpdateArtigoCliente(request, format=None):
+    r = PostData(request)
+    def update(data,artigo_id,cliente_id,cursor):
+        values={
+            "timestamp":timestamp(),
+            "user_id":request.user.id,
+            "produto":data.get("produto"),
+            "cod_client":data.get("cod_client")
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_artigocliente", {"artigo_id":Filters.getNumeric(artigo_id,"isnull"),"cliente_id":Filters.getNumeric(cliente_id,"isnull")}, None, False,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                for i, v in enumerate(r.data.get("rows")):
+                    cliente_id = _getClienteId(v.get("cliente_cod"),cursor)
+                    if (cliente_id is None):
+                        return Response({"status": "error", "title": "O cliente não existe!", "subTitle":f'{None}'})
+                    artigo_id = _getArtigoId(v.get("artigo_cod"),cursor)
+                    if (artigo_id is None):
+                        return Response({"status": "error", "title": "O artigo não existe!", "subTitle":f'{None}'})
+                    if cliente_id and artigo_id:
+                        _updateCliente(v,cliente_id,cursor)
+                        chk = _artigoClienteExists(artigo_id,cliente_id,cursor)
+                        if (chk==0):
+                            return Response({"status": "error", "title": "A relação artigo/cliente não existe!", "subTitle":f'{None}'})
+                        else:
+                            update(v,artigo_id,cliente_id,cursor)                        
+        return Response({"status": "success", "title": "Relação artigo/cliente atualizados!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def DeleteArtigoCliente(request, format=None):
+    r = PostData(request)
+    def delete(cliente_id,artigo_id,cursor):
+        dml = db.dml(TypeDml.DELETE,None,"producao_artigocliente",{"cliente_id":Filters.getNumeric(cliente_id),"artigo_id":Filters.getNumeric(artigo_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                delete(r.data.get("cliente_id"),r.data.get("artigo_id"),cursor)
+        return Response({"status": "success", "title": "Relação artigo/cliente eliminada com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})

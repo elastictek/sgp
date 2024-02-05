@@ -52,7 +52,7 @@ mv_ofabrico_list = "mv_ofabrico_listv2"
 
 defeitosCols = {
 "columns" : ['estado', 'l_real', 'fc_diam_fim', 'fc_diam_ini', 'ff_m_fim', 'ff_m_ini','prop_obs', 'buracos_pos', 'rugas_pos', 'fc_pos', 'ff_pos', 'furos_pos','obs'],
-"columns_defeitos" : ['con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'nok', 'rugas', 'tr','car', 'fc', 'ff', 'fmp', 'lac', 'ncore', 'prop', 'sbrt', 'suj','prop']
+"columns_defeitos" : ['con', 'descen', 'presa', 'diam_insuf', 'furos', 'esp', 'troca_nw', 'outros', 'buraco', 'nok', 'rugas', 'tr','car', 'fc', 'ff', 'fmp', 'lac', 'ncore', 'prop', 'sbrt', 'suj','prop','mpalete','rasgo']
 }
 
 
@@ -848,6 +848,22 @@ def BobinesLookup(request, format=None):
                 {dql.sort} {dql.limit}
             """
         )
+        print(
+            f"""  
+                select {f'{dql.columns}'}
+                FROM producao_bobine mb
+                LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
+                LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
+                LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
+                LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+                LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+                LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+                LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+                {f.text} {f2["text"]}
+                {dql.sort} {dql.limit}
+            """
+        )
+        print(parameters)
         if ("export" in request.data["parameters"]):
             dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
             dql.paging=""

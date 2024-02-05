@@ -182,11 +182,13 @@ export const getFilterForceRangeValues = (data) => {
 
 
 //type = any | start | end | exact
+/**DEPRECATED use getFilterValue from >useDataAPIV4 Instead*/
 export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
     let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
     val = (val === undefined || val === null) ? val : `${val}`;
     if (val !== '' && val !== undefined) {
-        const re = new RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
+        const re = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i')
+        //RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
         const matches = val.toString().match(re);
         if (matches !== null && matches.length > 0) {
             return `${val}`;

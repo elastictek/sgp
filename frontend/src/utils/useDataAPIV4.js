@@ -4,7 +4,7 @@ import { Modal } from 'antd';
 import { deepEqual, pickAll, getInt, sleep } from 'utils';
 import { produce, finishDraft } from 'immer';
 import { useImmer } from "use-immer";
-import { json, includeObjectKeys } from "utils/object";
+import { json, includeObjectKeys, updateByPath, valueByPath } from "utils/object";
 import { uid } from 'uid';
 import { isEmpty, isNil, isNotNil } from 'ramda';
 import { AppContext } from "app";
@@ -32,6 +32,36 @@ const _filterParser = (value, filter, opTag) => {
         case 'exact': return `==${value}`;
         default: return `${value}`;
     }
+}
+
+
+//type = any | start | end | exact
+export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
+    let val = (v === undefined) ? v : (v?.value === undefined) ? v : v.value;
+    val = (val === undefined || val === null) ? val : `${val}`;
+    if (val !== '' && val !== undefined) {
+        const re = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i')
+        //RegExp('(^==|^=|^!==|^!=|^>=|^<=|^>|^<|^between:|^in:|^!between:|^!in:|isnull|!isnull|^@:)(.*)', 'i');
+        const matches = val.toString().match(re);
+        if (matches !== null && matches.length > 0) {
+            return `${val}`;
+        } else {
+            switch (type) {
+                case 'any': return `%${val.replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
+                case 'start': return `${val.replaceAll('%%', ' ').replaceAll(' ', '%%')}%`;
+                case 'end': return `%${val.replaceAll('%%', ' ').replaceAll(' ', '%%')}`;
+                case '==': return `==${val.replaceAll('==', '')}`;
+                case '<': return `<${val.replaceAll('==', '')}`;
+                case '>': return `>${val.replaceAll('==', '')}`;
+                case '<=': return `<=${val.replaceAll('==', '')}`;
+                case '>=': return `>=${val.replaceAll('==', '')}`;
+                case '@': return `@${val.replaceAll('==', '')}`;
+                case 'exact': return `${val}`;
+                default: return `==${val.replaceAll('==', '').replaceAll('%%', ' ').replaceAll('%', '').replaceAll(' ', '%%')}%`;
+            }
+        }
+    }
+    return undefined;
 }
 
 // const _fixConditions = (v) => {
@@ -111,7 +141,6 @@ const customSplit = (input) => {
 
     return result;
 }
-
 export const filtersDef = (filters, gridRef, all = false) => {
     let _idx = filters?.toolbar.indexOf("@columns");
     let _newfilters = (_idx >= 0) ? [...filters?.toolbar.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.toolbar.slice(_idx)] : [...filters?.toolbar];
@@ -249,7 +278,7 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
     //     return acc;
     //   }, []);.toString().split(/([&|()])/)
     //const conditionsArray = _fixConditions(_input).toString().split(/([&|()])/).filter(Boolean);
-    const conditionsArray = customSplit(prepareInput(_input,filterDef.wildcards,filterDef.tags));
+    const conditionsArray = customSplit(prepareInput(_input, filterDef.wildcards, filterDef.tags));
     const _values = [];
     const _parsedvalues = [];
     for (const [idx, condition] of conditionsArray.entries()) {
@@ -481,6 +510,73 @@ const _dataRowsValidation = (values, schema) => {
 }
 
 
+const _reverseMapping = (_vg) => {
+    const r = {};
+    for (const key in _vg) {
+        const items = _vg[key];
+        items.forEach(item => {
+            if (!r[item]) {
+                r[item] = [];
+            }
+            r[item].push(key);
+            if (item !== key) {
+                r[item].push(`${key}.${item}`);
+            }
+        });
+    }
+    return r;
+}
+const vGroups = (vg) => {
+    const def = vg;
+    const reversed = _reverseMapping(vg);
+
+    const groupPaths = (path)=>{
+        if (reversed?.[path]) {
+           return [path,...reversed[path]];
+        }
+        return [path];
+    }
+
+    const _groups = (_vg, _path) => {
+        const g = {};
+        for (const key in _vg) {
+            const idx = _vg[key].findIndex(item => item === _path);
+            if (idx >= 0) {
+                g[key] = _vg[key];
+            }
+        }
+    }
+    const _createGroupsData = (data) => {
+        const _data = Array.isArray(data) ? [...data] : {...data};
+        for (const groupName in def) {
+            const groupItems = def[groupName];
+            _data[groupName] = {};
+            groupItems.forEach(item => {
+                _data[groupName] = updateByPath(_data[groupName], item, valueByPath(_data, item));
+            });
+        }
+        return _data;
+    }
+
+    const r = {
+        obj: def,
+        data: _createGroupsData,
+        reversed,
+        groupPaths
+        //groups: (path) => _groups(vg, path)
+        // alerts: { error: [], info: [], warning: [], success: [] },
+        // success: null,
+        // valid: true,
+        // response: null,
+        // timestamp: new Date(),
+        // onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
+        // onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
+        // onSuccess: async function (fn) { if ((this.valid && this.success) && typeof fn === "function") { fn(this); } },
+        // onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
+    };
+    return r;
+}
+
 export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
     const { openNotification } = useContext(AppContext);
     const [isLoading, setIsLoading] = useState(false);
@@ -569,12 +665,12 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return p;
     }
 
-    const validateRows = async (rows = [], schema, nodeId, passthrough = true) => {
+    const validateRows = async (rows = [], schema, nodeId, { passthrough = true, validationGroups } = {}) => {
         let validation = null;
         let p = _dataRowsValidation(rows, schema);
         p.timestamp = new Date();
         for (const row of p.values) {
-            validation = passthrough ? await p.schema.passthrough().spa(row) : await p.schema.spa(row);
+            validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(row)) : await p.schema.spa(validationGroups.data(row));
             p.valid = (p.valid === true) ? validation.success : p.valid;
             if (!validation.success) {
                 const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
@@ -1543,6 +1639,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         safePost,
         validate,
         validateRows,
-        openNotification
+        openNotification,
+        validationGroups: vGroups
     }
 }

@@ -86,10 +86,12 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }, [permission?.isReady]);
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
-    // if (newValue && colDef.field === "cod") {
-    //   data = updateByPath(data, "parameters.artigo", includeObjectKeys(newValue, ["id", "cod", "des", "lar", "core"]));
-    //   return data;
-    // }
+    /**
+     * Método que permite antes do "commit", fazer pequenas alterações aos dados.
+     * No caso dessas alterações afetarem os valores de outras colunas da "Grid", é necessário desablitar o TabOnNextCell da coluna,
+     * pois o próximo campo entra em edição antes deste método (isto é um Workaround!!!!!), para isso na definição da coluna colocar:
+     * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
+     */
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
@@ -133,8 +135,8 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   const onActionSave = useCallback(async (row, option) => {
     submitting.trigger();
 
-    // const _safePost = async (method, parameters) => {
-    //   const result = await dataAPI.safePost(`${API_URL}/trocaetiquetas/sql/`, method, { parameters: parameters });
+    // const _safePost = async (method, { filter, parameters }) => {
+    //   const result = await dataAPI.safePost(`${API_URL}/trocaetiquetas/sql/`, method, { filter, parameters });
     //   result.onValidationFail((p) => { });
     //   result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
     //   result.onFail((p) => { });
@@ -145,12 +147,12 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     //   case "delete":
     //     Modal.confirm({
     //       content: <div>Tem a certeza que deseja apagar a tarefa <b>{row.nome}</b>?</div>, onOk: async () => {
-    //         await _safePost("DeleteTask", { id: row.id });
+    //         await _safePost("DeleteTask",  { parameters: { id:row.id }, filter: {} });
     //       }
     //     })
     //     break;
-    //   case "open": await _safePost("OpenTask", { id: row.id }); break;
-    //   case "close": await _safePost("CloseTask", { id: row.id }); break;
+    //   case "open": await _safePost("OpenTask", { parameters: { id:row.id }, filter: {} }); break;
+    //   case "close": await _safePost("CloseTask", { parameters: { id:row.id }, filter: {} }); break;
     // };
 
     submitting.end();

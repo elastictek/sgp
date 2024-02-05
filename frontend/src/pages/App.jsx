@@ -152,6 +152,7 @@ const ListTasksExecuted = lazy(() => import('./picking/trocaetiquetas/ListTasksE
 const ListTasksManager = lazy(() => import('./picking/trocaetiquetas/ListTasksManager'));
 
 const ListCortesManager = lazy(() => import('./picking/cortes/ListCortesManager'));
+const ListArtigosClienteManager = lazy(() => import('./picking/base/ListArtigosClienteManager'));
 
 
 /**EXAMPLES */
@@ -312,6 +313,8 @@ const RenderRouter = () => {
                 { path: "picking/trocaetiquetas/managetasks", element: <Suspense fallback={<Spin />}><ListTasksManager /></Suspense> },
 
                 { path: "picking/cortes/managecortes", element: <Suspense fallback={<Spin />}><ListCortesManager /></Suspense> },
+                
+                { path: "picking/base/manageartigoscliente", element: <Suspense fallback={<Spin />}><ListArtigosClienteManager /></Suspense> },
                 
 
                 /*  { path: "ordemfabrico/formdetails", element: <Suspense fallback={<Spin />}><OFDetails /></Suspense> }, */

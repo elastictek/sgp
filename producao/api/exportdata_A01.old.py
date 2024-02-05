@@ -824,7 +824,7 @@ def EstadoBobines(request, format=None):
                 ,apb.diam_insuf "Diâmetro Insuficiente", apb.furos "Furos", apb.outros "Outros", apb.buraco "Buracos"
                 ,apb.nok "Largura NOK", apb.car "Carro Atrás", apb.fc "Falha Corte", apb.ff "Falha Filme"
                 ,apb.fmp "Falha Matéria Prima", apb.lac "Laçou", apb.ncore "Não Colou", apb.suj "Sujidade"
-                ,apb.sbrt "Sobretiragem", apb.esp "Gramagem", apb.rugas, apb.tr "Troca Rápida", apb.prop "Propriedades"
+                ,apb.sbrt "Sobretiragem", apb.esp "Gramagem", apb.rugas, apb.tr "Troca Rápida", apb.prop "Propriedades", apb.mpalete "Marcas Palete", apb.rasgo "Rasgo"
                 ,apb.rugas_pos "Rugas Pos"
                 ,apb.buracos_pos "Buracos Pos",apb.fc_pos "Falha Corte Pos",apb.ff_pos "Falha Filme Pos",apb.furos_pos "Furos Pos"
                 ,apb.prop_obs,apb.obs
@@ -1353,7 +1353,8 @@ def TempoResidenciaBobines(request, format=None):
                 sum(esp) "Gramagem",
                 sum(tr) "Troca Rápida",
                 sum(prop) "Propriedades",
-                --sum(mpalete) "Marcas de Palete",
+                sum(mpalete) "Marcas de Palete",
+                sum(rasgo) "Rasgo",
                 sum(outros) outros
 
                 from mv_paletes pp

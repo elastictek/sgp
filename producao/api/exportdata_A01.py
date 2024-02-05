@@ -306,7 +306,8 @@ def ProducaoEstadoBobines(request, format=None):
                 IFNULL(apb.diam_insuf,t.diam_insuf) diam_insuf, IFNULL(apb.furos,t.furos) furos, IFNULL(apb.outros,t.outros) outros, IFNULL(apb.buraco,t.buraco) buracos, 
                 IFNULL(apb.nok, t.nok) nok, IFNULL(apb.car,t.car) carro_atras, IFNULL(apb.fc,t.fc) falha_corte, IFNULL(apb.ff,t.ff) falha_filme, IFNULL(apb.fmp,t.fmp) falha_mp,
                 IFNULL(apb.lac,t.lac) lacou, IFNULL(apb.ncore,t.ncore) nao_colou, IFNULL(apb.suj,t.suj) sujidade, IFNULL(apb.sbrt,t.sbrt) sobretiragem, 
-                IFNULL(apb.esp, t.esp) gramagem, IFNULL(apb.rugas,t.rugas) rugas, IFNULL(apb.tr,t.tr) troca_rapida, IFNULL(apb.prop,t.prop) prop, 
+                IFNULL(apb.esp, t.esp) gramagem, IFNULL(apb.rugas,t.rugas) rugas, IFNULL(apb.tr,t.tr) troca_rapida, IFNULL(apb.prop,t.prop) prop,IFNULL(apb.mpalete,t.mpalete) mpalete,
+                IFNULL(apb.rasgo,t.rasgo) rasgo, 
                 IFNULL(apb.rugas_pos, t.rugas_pos) rugas_pos, IFNULL(apb.buracos_pos,t.buracos_pos) buracos_pos, 
                 IFNULL(apb.fc_pos,t.fc_pos) fc_pos, IFNULL(apb.ff_pos,t.ff_pos) ff_pos, IFNULL(apb.furos_pos, t.furos_pos) furos_pos, IFNULL(apb.prop_obs, t.prop_obs) prop_obs,
                 IFNULL(apb.obs, t.obs) obs
@@ -323,7 +324,7 @@ def ProducaoEstadoBobines(request, format=None):
                         round(apb.comp_actual*(apb.lar/1000),1) area,
                         round(pbm.comp*(pb.lar/1000),1) area_original,
                         pb.troca_nw, pb.con, pb.descen, pb.presa,pb.diam_insuf, pb.furos, pb.outros, pb.buraco,pb.nok, pb.car, pb.fc, pb.ff,pb.fmp,
-                        pb.lac, pb.ncore, pb.suj,pb.sbrt, pb.esp, pb.rugas, pb.tr, pb.prop ,pb.rugas_pos,pb.buracos_pos,pb.fc_pos,pb.ff_pos,
+                        pb.lac, pb.ncore, pb.suj,pb.sbrt, pb.esp, pb.rugas, pb.tr, pb.prop , pb.mpalete, pb.rasgo,  pb.rugas_pos,pb.buracos_pos,pb.fc_pos,pb.ff_pos,
                         pb.furos_pos,pb.prop_obs,pb.obs,
                         apb.estado from_estado,
                         LEAD(apb.audit_id) over (partition by apb.id ORDER BY apb.audit_timestamp asc) next_audit_id
@@ -577,12 +578,12 @@ def ProducaoEstadosMovimentos(request, format=None):
                     t.id,t.audit_id,t.estado_atual,t.`timestamp`,t.audit_timestamp,max_audit_id,
                         
                     t.troca_nw, t.con, t.descen, t.presa,t.diam_insuf, t.furos, t.outros, t.buraco,t.nok, t.car, t.fc, t.ff,t.fmp, 
-                    t.lac, t.ncore, t.suj,t.sbrt, t.esp, t.rugas, t.tr, t.prop ,t.rugas_pos,t.buracos_pos,t.fc_pos,t.ff_pos,
+                    t.lac, t.ncore, t.suj,t.sbrt, t.esp, t.rugas, t.tr, t.prop , t.mpalete, t.rasgo, t.rugas_pos,t.buracos_pos,t.fc_pos,t.ff_pos,
                     t.furos_pos,t.prop_obs,t.obs,
                     t.next_troca_nw,t.next_con, t.next_descen, t.next_presa, t.next_diam_insuf, 
                     t.next_furos, t.next_outros, t.next_buraco,t.next_nok,t.next_car, t.next_fc, 
                     t.next_ff,t.next_fmp,t.next_lac, t.next_ncore, t.next_suj,t.next_sbrt, t.next_esp, 
-                    t.next_rugas, t.next_tr, t.next_prop,t.next_rugas_pos,t.next_buracos_pos,t.next_fc_pos,
+                    t.next_rugas, t.next_tr, t.next_prop, t.next_mpalete, t.next_rasgo, t.next_rugas_pos,t.next_buracos_pos,t.next_fc_pos,
                     t.next_ff_pos,t.next_furos_pos,t.next_prop_obs,t.next_obs,
 
                     #LEAD(t.audit_id) over (partition by t.id ORDER BY t.audit_timestamp asc) next_audit_id,
@@ -618,7 +619,7 @@ def ProducaoEstadosMovimentos(request, format=None):
                         apb.troca_nw next_troca_nw,	apb.con next_con, apb.descen next_descen, apb.presa next_presa, apb.diam_insuf next_diam_insuf, 
                         apb.furos next_furos, apb.outros next_outros, apb.buraco next_buraco,apb.nok next_nok,apb.car next_car, apb.fc next_fc, 
                         apb.ff next_ff,apb.fmp next_fmp,apb.lac next_lac, apb.ncore next_ncore, apb.suj next_suj,apb.sbrt next_sbrt, apb.esp next_esp, 
-                        apb.rugas next_rugas, apb.tr next_tr, apb.prop next_prop,apb.rugas_pos next_rugas_pos,apb.buracos_pos next_buracos_pos,	apb.fc_pos next_fc_pos,
+                        apb.rugas next_rugas, apb.tr next_tr, apb.prop next_prop,apb.mpalete next_mpalete, apb.rasgo next_rasgo,apb.rugas_pos next_rugas_pos,apb.buracos_pos next_buracos_pos,	apb.fc_pos next_fc_pos,
                         apb.ff_pos next_ff_pos,apb.furos_pos next_furos_pos,apb.prop_obs next_prop_obs,	apb.obs next_obs
                     from (
                         select 
@@ -630,7 +631,7 @@ def ProducaoEstadosMovimentos(request, format=None):
                             apb.audit_timestamp,
             
                             apb.troca_nw, apb.con, apb.descen, apb.presa,apb.diam_insuf, apb.furos, apb.outros, apb.buraco,apb.nok, apb.car, apb.fc, apb.ff,apb.fmp, 
-                            apb.lac, apb.ncore, apb.suj,apb.sbrt, apb.esp, apb.rugas, apb.tr, apb.prop ,apb.rugas_pos,apb.buracos_pos,apb.fc_pos,apb.ff_pos,
+                            apb.lac, apb.ncore, apb.suj,apb.sbrt, apb.esp, apb.rugas, apb.tr, apb.prop , apb.mpalete, apb.rasgo, apb.rugas_pos,apb.buracos_pos,apb.fc_pos,apb.ff_pos,
                             apb.furos_pos,apb.prop_obs,apb.obs,
                             IFNULL(pc.end_date,pb.`timestamp`) end_timestamp,
                             max(apb.audit_id) over (partition by apb.id) max_audit_id,
@@ -678,6 +679,8 @@ def ProducaoEstadosMovimentos(request, format=None):
             ,case when a1.id is not null then ifnull(a1.next_rugas,0) else ifnull(t.rugas,0) end last_rugas
             ,case when a1.id is not null then ifnull(a1.next_tr,0) else ifnull(t.tr,0) end last_troca_rapida
             ,case when a1.id is not null then ifnull(a1.next_prop,0) else ifnull(t.prop,0) end last_propriedades
+            ,case when a1.id is not null then ifnull(a1.next_mpalete,0) else ifnull(t.mpalete,0) end last_mpalete
+            ,case when a1.id is not null then ifnull(a1.next_rasgo,0) else ifnull(t.rasgo,0) end last_rasgo
             
             ,case when a1.id is not null then ifnull(a1.next_troca_nw,0) else ifnull(t.troca_nw,0) end +
             case when a1.id is not null then ifnull(a1.next_con,0) else ifnull(t.con,0) end +
@@ -696,6 +699,8 @@ def ProducaoEstadosMovimentos(request, format=None):
             case when a1.id is not null then ifnull(a1.next_ncore,0) else ifnull(t.ncore,0) end +
             case when a1.id is not null then ifnull(a1.next_suj,0) else ifnull(t.suj,0) end +
             case when a1.id is not null then ifnull(a1.next_sbrt,0) else ifnull(t.sbrt,0) end +
+            case when a1.id is not null then ifnull(a1.next_mpalete,0) else ifnull(t.mpalete,0) end +
+            case when a1.id is not null then ifnull(a1.next_rasgo,0) else ifnull(t.rasgo,0) end +
             case when a1.id is not null then ifnull(a1.next_esp,0) else ifnull(t.esp,0) end +
             case when a1.id is not null then ifnull(a1.next_rugas,0) else ifnull(t.rugas,0) end +
             case when a1.id is not null then ifnull(a1.next_tr,0) else ifnull(t.tr,0) end +
@@ -1674,7 +1679,8 @@ def TempoResidenciaBobines(request, format=None):
                 sum(esp) "Gramagem",
                 sum(tr) "Troca Rápida",
                 sum(prop) "Propriedades",
-                --sum(mpalete) "Marcas de Palete",
+                sum(mpalete) "Marcas de Palete",
+                sum(rasgo) "Rasgo",
                 sum(outros) outros
 
                 from mv_paletes pp
@@ -1722,7 +1728,8 @@ def TempoResidenciaBobines(request, format=None):
             esp "Gramagem",
             tr "Troca Rápida",
             prop "Propriedades",
-            --mpalete "Marcas de Palete",
+            mpalete "Marcas de Palete",
+            rasgo "Rasgo",
             outros
 
             from mv_paletes pp

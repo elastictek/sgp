@@ -50,10 +50,10 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
 
     const loadData = async ({ signal } = {}) => {
         if (objPermissions){
-            console.log("start--",objPermissions)
+            //console.log("start--",objPermissions)
             setPermissions(objPermissions);
         }else if (load) {
-            console.log("isAdmin is commented, uncomment!!!!!")
+            //console.log("isAdmin is commented, uncomment!!!!!")
             console.log("Permissions Location/Name:", name ? name : loc.pathname.replace(/\:$/, ''), " module:", module)
             const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
             setPermissions(json(_perm?.permissions));
@@ -96,17 +96,13 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
             return false;
         }
         if (auth.isAdmin) {
-            //return true;
+            return true;
         }
         if (!_permissions) {
             return false;
         }
         let min = null;
         let value = -1;
-        //console.log("isOKKKKKK")
-        //console.log(log, action, item)
-        //console.log(permissions)
-        //console.log(json(permissions)[action])
         let p = (onPlace) ? json(onPlace) : (item) ? (_permissions[item] ? _permissions[item][action] : null) : _permissions[action];
         if (!p) {
             p = (item) ? (_permissions[item] ? ((_permissions[item]["default"]) ? _permissions[item]["default"] : _permissions["default"]) : null) : _permissions["default"];

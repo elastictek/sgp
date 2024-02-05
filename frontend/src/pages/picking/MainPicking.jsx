@@ -19,7 +19,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, PaperClipOutlined, AppstoreTwoTone, UnorderedListOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PrinterTwoTone } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, PaperClipOutlined, AppstoreTwoTone, UnorderedListOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined, PrinterTwoTone, SettingOutlined } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV3';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, THICKNESS, GTIN } from 'config';
@@ -38,14 +38,72 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
 }
 
 const StyledButton = styled(Button)`
-    height:80px;
-    width:100px;
+    height:90px;
+    width:120px;
     .txt{
         height:20px;
         line-height:1;
+        text-wrap:wrap;
     }
 `;
 
+const MenuContainer = styled.div`
+    max-width: 1fr;
+    columns: 3 500px;
+    column-gap: 10px;
+    padding: 0px 10px;
+    /*display: grid;*/
+    /*grid-template-columns: repeat(auto-fill, minmax(300px, 400px));
+    gap: 15px;*/
+`;
+
+const Box = styled.div`
+    margin: 0 0 10px;
+    /*display: inline-block;*/ 
+    width: 100%;
+    min-width:450px;
+    break-inside: avoid;
+    background-color:#ffffff;
+`;
+
+const Group = ({ title, right, more, visible = true, children }) => {
+    const hasItems = React.Children.count(children) > 0;
+    return (
+        <>{visible &&
+            <Box>
+                <div style={{ border: "solid 1px #bfbfbf", borderRadius: "3px" }}>
+                    <div style={{ display: "flex", borderBottom: "solid 1px #f0f0f0", height: "35px", alignItems: "center", padding: "5px 5px", marginBottom: "10px" }}>
+                        <div style={{ flex: 1 }}><span style={{ fontWeight: 900, fontSize: "14px" }}>{title}</span></div>
+                        <div><Space.Compact block>{right}</Space.Compact></div>
+                        <div>
+                            {more && <Dropdown trigger={["click"]} menu={{ ...more }}>
+                                <Button onClick={() => { }} icon={<MoreOutlined />} />
+                            </Dropdown>}
+                        </div>
+                    </div>
+                    {hasItems &&
+                        <Row gutterWidth={5} style={{ padding: "0px 10px", marginBottom: "5px" }}>
+                            {children}
+                        </Row>
+                    }
+                </div>
+            </Box>
+        }</>);
+}
+
+const Item = ({ title, icon, onClick, visible = true }) => {
+    return (
+        <>
+            {visible &&
+                <Col xs="content" style={{ marginBottom: "5px" }}>
+                    <StyledButton onClick={onClick}>
+                        <div>{icon ? icon : <AppstoreTwoTone style={{ fontSize: "22px" }} />}</div>
+                        <div className='txt'>{title}</div>
+                    </StyledButton>
+                </Col>
+            }</>
+    )
+}
 
 export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const location = useLocation();
@@ -58,11 +116,11 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const [formDirty, setFormDirty] = useState(false);
     const [allows, setAllows] = useState();
 
-
     useEffect(() => {
+        document.body.style.backgroundColor = '#f5f5f5';
         const controller = new AbortController();
         loadData({ signal: controller.signal, init: true });
-        return (() => controller.abort());
+        return (() => { document.body.style.backgroundColor = ''; controller.abort(); });
     }, []);
 
     const loadData = async ({ signal, init = false } = {}) => {
@@ -89,435 +147,207 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
     const ofsItems = useMemo(() => {
         return [
-            ...allows?.cortes?.admin ? [{ key: "cortesmanage", label: "Gerir Cortes" }] : []
+            ...allows?.cortes?.admin ? [{ key: "cortesmanage", label: "Gerir cortes", icon: <SettingOutlined /> }] : [],
+            ...allows?.base?.admin ? [{ key: "artigosclientemanage", label: "Gerir relação artigo/cliente", icon: <SettingOutlined /> }] : []
         ];
 
     }, [allows]);
 
     const onOfsItemsClick = useCallback((item) => {
-        switch (item.key){
-            case "cortesmanage":navigate("/app/picking/cortes/managecortes");break;
+        switch (item.key) {
+            case "cortesmanage": navigate("/app/picking/cortes/managecortes"); break;
+            case "artigosclientemanage": navigate("/app/picking/base/manageartigoscliente"); break;
+        }
+    }, []);
+
+    const qualidadeItems = useMemo(() => {
+        return [
+            ...allows?.qualidade?.admin ? [{ key: "parameters", label: "Gerir Parâmetros", icon: <SettingOutlined /> }] : []
+        ];
+
+    }, [allows]);
+
+    const onQualidadeItemsClick = useCallback((item) => {
+        switch (item.key) {
+            case "parameters": navigate("/app/qualidade/labparameterslist"); break;
         }
     }, []);
 
     return (
         <>
             <TitleForm auth={permission.auth} level={location?.state?.level} />
-            <Container fluid>
-                <Row>
-                    <Col xs={12} md={4}>
-                        <Row>
-                            {allows?.ordensFabrico?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Ordens de Fabrico</span>} style={{ width: "100%" }} extra={
-                                    <Space.Compact block>
-                                        <Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >
-                                            Lista
-                                        </Button>
-                                        <Dropdown trigger={["click"]} menu={{ items:ofsItems, onClick: onOfsItemsClick }}>
-                                            <Button onClick={() => { }} icon={<MoreOutlined />} />
-                                        </Dropdown>
-                                    </Space.Compact>
-                                }>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.ordensFabrico?.attachements && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricoattachements")}>
-                                                    <div><PaperClipOutlined style={{ fontSize: "22px", color: "rgb(22, 119, 255)" }} /></div>
-                                                    <div className='txt'>Anexos</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.ordensFabrico?.status && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricochangestatus")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Gerir<br />Estados</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.ordensFabrico?.formulacao && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricoformulacao")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Gerir<br />Formulação</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.ordensFabrico?.doseadores && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricodoseadores")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Gerir<br />Doseadores</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.ordensFabrico?.cortes && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricocortes")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Cortes</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.ordensFabrico?.nonwovens && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/ofabricononwovens")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Nonwovens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {/* <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                        <StyledButton onClick={() => navigate("/app/picking/ofabricochangestatus")}>
-                                            <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                            <div className='txt'>Cores</div>
-                                        </StyledButton>
-                                    </Col> */}
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>
-                            }
+
+            <MenuContainer>
+
+                <Group title="Ordens de Fabrico" visible={allows?.ordensFabrico?.n > 0}
+                    right={<><Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}
+                    more={{ items: ofsItems, onClick: onOfsItemsClick }}>
+
+                    <Item title="Anexos" visible={allows?.ordensFabrico?.attachements}
+                        onClick={() => navigate("/app/picking/ofabricoattachements")}
+                        icon={<PaperClipOutlined style={{ fontSize: "22px", color: "rgb(22, 119, 255)" }} />}
+                    />
+                    <Item title="Gerir Estados" visible={allows?.ordensFabrico?.status}
+                        onClick={() => navigate("/app/picking/ofabricochangestatus")}
+                    />
+                    <Item title="Gerir Formulação" visible={allows?.ordensFabrico?.formulacao}
+                        onClick={() => navigate("/app/picking/ofabricoformulacao")}
+                    />
+                    <Item title="Gerir Doseadores" visible={allows?.ordensFabrico?.doseadores}
+                        onClick={() => navigate("/app/picking/ofabricodoseadores")}
+                    />
+                    <Item title="Cortes" visible={allows?.ordensFabrico?.cortes}
+                        onClick={() => navigate("/app/picking/ofabricocortes")}
+                    />
+                    <Item title="Nonwovens" visible={allows?.ordensFabrico?.nonwovens}
+                        onClick={() => navigate("/app/picking/ofabricononwovens")}
+                    />
+
+                </Group>
+
+                <Group title="Paletes" visible={allows?.paletes?.n > 0}
+                    right={<><Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}>
+
+                    <Item title="Nova Palete Linha" visible={allows?.paletes?.newline}
+                        onClick={() => navigate("/app/picking/newpaleteline")}
+                    />
+                    <Item title="Nova Palete Stock" visible={allows?.paletes?.newcliente}
+                        onClick={() => newWindow(`${ROOT_URL}/producao/palete/create/`, {}, `paletecreate`)}
+                    />
+                    <Item title="Refazer Palete" visible={allows?.paletes?.redo}
+                        onClick={() => navigate("/app/picking/redopaleteline")}
+                    />
+                    <Item title="Pesar Palete" visible={allows?.paletes?.weigh}
+                        onClick={() => navigate("/app/picking/weighpalete")}
+                    />
+                    <Item title="Imprimir Etiqueta" visible={allows?.paletes?.print}
+                        icon={<PrinterTwoTone style={{ fontSize: "22px" }} />}
+                        onClick={() => navigate("/app/picking/printetiquetapalete")}
+                    />
+                    <Item title="Apagar Palete" visible={allows?.paletes?.delete}
+                        onClick={() => navigate("/app/picking/deletepalete")}
+                    />
+                </Group>
+
+                <Group title="Cargas" visible={allows?.cargas?.n > 0}>
+
+                    <Item title="Pré-Picking" visible={allows?.cargas?.prepicking}
+                        onClick={() => navigate("/app/picking/prepicking")}
+                    />
+                    <Item title="Criar Carga" visible={allows?.cargas?.new}
+                        onClick={() => navigate("/app/picking/addpaletescarga")}
+                    />
+                    <Item title="Apagar Carga" visible={allows?.cargas?.delete}
+                        onClick={() => navigate("/app/picking/xxxxx")}
+                    />
+
+                </Group>
+
+                <Group title="Matérias Primas" visible={allows?.materiasPrimas?.n > 0}>
+
+                    <Item title="Entrada Granulado" visible={allows?.materiasPrimas?.ingranulado}
+                        onClick={() => navigate("/app/picking/granuladoin")}
+                    />
+                    <Item title="Saída Granulado" visible={allows?.materiasPrimas?.outgranulado}
+                        onClick={() => navigate("/app/picking/granuladoout")}
+                    />
+                    <Item title="Entrada Nonwovens" visible={allows?.materiasPrimas?.innw}
+                        onClick={() => navigate("/app/picking/nonwovensin")}
+                    />
+                    <Item title="Saída Nonwovens" visible={allows?.materiasPrimas?.outnw}
+                        onClick={() => navigate("/app/picking/nonwovensout")}
+                    />
+                    <Item title="Ajustar Fila Nonwovens" visible={allows?.materiasPrimas?.fixqueue}
+                        onClick={() => navigate("/app/picking/nonwovensqueue")}
+                    />
+                    <Item title="Imp. Amostras Nonwovens" visible={allows?.materiasPrimas?.printnw}
+                        icon={<PrinterTwoTone style={{ fontSize: "22px" }} />}
+                        onClick={() => navigate("/app/picking/nonwovensprint")}
+                    />
+                    <Item title="Imprimir Etiqueta Buffer" visible={allows?.materiasPrimas?.printbuffer}
+                        icon={<PrinterTwoTone style={{ fontSize: "22px" }} />}
+                        onClick={() => navigate("/app/picking/printbuffer")}
+                    />
+
+                </Group>
+
+                <Group title="Bobinagens" visible={allows?.bobinagens?.n > 0}
+                    right={<><Button onClick={() => navigate("/app/bobinagens/reellings", { noid: false })} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}>
+
+                    <Item title="Validar Bobinagem" visible={allows?.bobinagens?.validate}
+                        onClick={() => navigate("/app/picking/validatebobinagem")}
+                    />
+                    <Item title="Apagar Bobinagem" visible={allows?.bobinagens?.delete}
+                        onClick={() => navigate("/app/picking/deletebobinagem")}
+                    />
+                    <Item title="Nova Bobinagem" visible={allows?.bobinagens?.new}
+                        onClick={() => navigate("/app/picking/newbobinagemline")}
+                    />
+                    <Item title="Corrigir Bobinagem" visible={allows?.bobinagens?.fix}
+                        onClick={() => navigate("/app/picking/fixbobinagem")}
+                    />
+                    <Item title="Imprimir Etiqueta" visible={allows?.bobinagens?.print}
+                        icon={<PrinterTwoTone style={{ fontSize: "22px" }} />}
+                        onClick={() => navigate("/app/picking/printetiquetabobinagem")}
+                    />
+
+                </Group>
+
+                <Group title="Retrabalho" visible={allows?.retrabalho?.n > 0}>
+
+                    <Item title="Ordens Retrabalho" visible={allows?.retrabalho?.ordens}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            newWindow(`${ROOT_URL}/planeamento/ordemdeproducao/list-retrabalho/`, {}, "ordensretrabalho");
+                        }}
+                    />
+                    <Item title="Bobinagens Retrabalho" visible={allows?.retrabalho?.bobinagens}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            newWindow(`${ROOT_URL}/producao/retrabalho/`, {}, "bobinagensretrabalho");
+                        }}
+                    />
+                    <Item title="Paletes Retrabalho" visible={allows?.retrabalho?.paletes}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            newWindow(`${ROOT_URL}/producao/palete/retrabalho`, {}, "paletedm");
+                        }}
+                    />
+
+                </Group>
+
+                <Group title="Qualidade" visible={allows?.qualidade?.n > 0}
+                    more={{ items: qualidadeItems, onClick: onQualidadeItemsClick }}
+                >
+
+                    <Item title="Testar Bobinagens" visible={allows?.qualidade?.tests}
+                        onClick={() => navigate("/app/picking/qualitytestbm")}
+                    />
+                    <Item title="TEST-AG-GRID" visible={allows?.qualidade?.tests}
+                        onClick={() => navigate("/app/picking/test-ag-grid")}
+                    />
+                    <Item title="TEST-AG-GRID SINGLE SELECT" visible={allows?.qualidade?.tests}
+                        onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}
+                    />
+
+                </Group>
+
+                <Group title="Troca de Etiquetas" visible={allows?.trocaetiquetas?.n > 0}
+                    right={<Button onClick={() => navigate("/app/picking/trocaetiquetas/listtasksexecuted", { noid: false })} icon={<UnorderedListOutlined />} type="link">Lista</Button>}
+                >
+
+                    <Item title="Trocar Etiquetas" visible={allows?.trocaetiquetas?.execute}
+                        onClick={() => navigate("/app/picking/trocaetiquetas/listruntaskchoose")}
+                    />
+                    <Item title="Gerir Tarefas" visible={allows?.trocaetiquetas?.admin}
+                        onClick={() => navigate("/app/picking/trocaetiquetas/managetasks")}
+                    />
+
+                </Group>
 
 
-                            {allows?.paletes?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Paletes</span>} style={{ width: "100%" }} extra={
-                                    <Space.Compact block>
-                                        <Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link">
-                                            Lista
-                                        </Button>
-                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
-                                    </Space.Compact>
-                                }>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.paletes?.newline && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/newpaleteline")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Nova Palete<br />Linha</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.paletes?.newcliente && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => newWindow(`${ROOT_URL}/producao/palete/create/`, {}, `paletecreate`)}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Nova Palete<br />Stock</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.paletes?.redo && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/redopaleteline")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Refazer Palete</div>
-                                                </StyledButton>
-                                            </Col>}
-                                            {allows?.paletes?.weigh && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/weighpalete")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Pesar Palete</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.paletes?.print && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/printetiquetapalete")}>
-                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Imprimir<br />Etiqueta</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.paletes?.delete && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/deletepalete")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Apagar Palete</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>}
+            </MenuContainer>
 
-                        </Row>
-                    </Col>
-                    <Col xs={12} md={4}>
-                        <Row>
-                            {allows?.cargas?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Cargas</span>} style={{ width: "100%" }}>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.cargas?.prepicking && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/prepicking")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Pré-Picking</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.cargas?.new && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/addpaletescarga")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Criar Carga</div>
-                                                </StyledButton>
-                                            </Col>}
-                                            {allows?.cargas?.delete && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/xxxxx")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Apagar Carga</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>
-                            }
-
-
-
-                            {allows?.materiasPrimas?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Matérias Primas</span>} style={{ width: "100%" }}>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.materiasPrimas?.ingranulado && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/granuladoin")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Entrada<br />Granulado</div>
-                                                </StyledButton>
-                                            </Col>}
-                                            {allows?.materiasPrimas?.outgranulado && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/granuladoout")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Saída<br />Granulado</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.materiasPrimas?.innw && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/nonwovensin")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Entrada<br />Nonwovens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.materiasPrimas?.outnw && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/nonwovensout")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Saída<br />Nonwovens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.materiasPrimas?.fixqueue && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/nonwovensqueue")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Ajustar Fila<br />Nonwovens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.materiasPrimas?.printnw && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/nonwovensprint")}>
-                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Imp. Amostras<br />Nonwovens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.materiasPrimas?.printbuffer && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/printbuffer")}>
-                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Imprimir<br />Etiqueta Buffer</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>
-                            }
-                        </Row>
-                    </Col>
-                    <Col xs={12} md={4}>
-                        <Row>
-                            {allows?.bobinagens?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Bobinagens</span>} style={{ width: "100%", fontWeight: 900 }}
-                                    extra={
-                                        <Space.Compact block>
-                                            <Button onClick={() => navigate("/app/bobinagens/reellings", { noid: false })} icon={<UnorderedListOutlined />} type="link">
-                                                Lista
-                                            </Button>
-                                            <Button onClick={() => { }} icon={<MoreOutlined />} />
-                                        </Space.Compact>
-                                    }
-                                >
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.bobinagens?.validate && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/validatebobinagem")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Validar<br />Bobinagem</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.bobinagens?.delete && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/deletebobinagem")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Apagar<br />Bobinagem</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.bobinagens?.new && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/newbobinagemline")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Nova<br />Bobinagem</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.bobinagens?.fix && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/fixbobinagem")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Corrigir<br />Bobinagem</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.bobinagens?.print && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/printetiquetabobinagem")}>
-                                                    <div><PrinterTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Imprimir<br />Etiqueta</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>
-                            }
-
-
-                            {allows?.retrabalho?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Retrabalho</span>} style={{ width: "100%", fontWeight: 900 }}>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.retrabalho?.ordens && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    newWindow(`${ROOT_URL}/planeamento/ordemdeproducao/list-retrabalho/`, {}, "ordensretrabalho");
-                                                }}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Ordens<br />Retrabalho</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.retrabalho?.bobinagens && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    newWindow(`${ROOT_URL}/producao/retrabalho/`, {}, "bobinagensretrabalho");
-                                                }}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Bobinagens<br />Retrabalho</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.retrabalho?.paletes && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    newWindow(`${ROOT_URL}/producao/palete/retrabalho`, {}, "paletedm");
-                                                }}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Paletes<br />Retrabalho</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>
-                            }
-
-                            {allows?.qualidade?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Qualidade</span>} style={{ width: "100%" }} /* extra={
-                                    <Space.Compact block>
-                                        <Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link">
-                                            Lista
-                                        </Button>
-                                        <Button onClick={() => { }} icon={<MoreOutlined />} />
-                                    </Space.Compact>
-                                } */>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.qualidade?.tests && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/qualitytestbm")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Testar<br />Bobinagens</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.qualidade?.tests && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/test-ag-grid")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Test-AG-GRID</div>
-                                                </StyledButton>
-                                                <StyledButton onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt' style={{ fontSize: "10px" }}>TableSingleSelect</div>
-                                                </StyledButton>
-
-                                            </Col>
-                                            }
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>}
-
-
-                            {allows?.trocaetiquetas?.n > 0 && <Col xs={12} style={{ marginTop: "5px" }}>
-                                <Card bodyStyle={{ padding: "7px" }} size="small" title={<span style={{ fontWeight: 900, fontSize: "14px" }}>Troca de Etiquetas</span>} style={{ width: "100%" }} extra={
-                                    <Space.Compact block>
-                                        <Button onClick={() => navigate("/app/picking/trocaetiquetas/listtasksexecuted", { noid: false })} icon={<UnorderedListOutlined />} type="link">
-                                            Lista
-                                        </Button>
-                                        {/* <Button onClick={() => { }} icon={<MoreOutlined />} /> */}
-                                    </Space.Compact>
-                                }>
-                                    <Container fluid style={{ padding: "0px", margin: "0px" }}>
-                                        <Row gutterWidth={5} style={{ /* justifyContent: "center" */ }}>
-                                            {allows?.trocaetiquetas?.execute && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/listruntaskchoose")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Trocar<br />Etiquetas</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/trocaetiquetas/managetasks")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Gerir<br />Tarefas</div>
-                                                </StyledButton>
-                                            </Col>
-                                            }
-                                            {/*                                             {allows?.trocaetiquetas?.admin && <Col xs="content" style={{ textAlign: "center", marginTop: "5px" }}>
-                                                <StyledButton onClick={() => navigate("/app/picking/test-ag-grid")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt'>Test-AG-GRID</div>
-                                                </StyledButton>
-                                                <StyledButton onClick={() => navigate("/app/examples/ExampleTableSingleSelect")}>
-                                                    <div><AppstoreTwoTone style={{ fontSize: "22px" }} /></div>
-                                                    <div className='txt' style={{fontSize:"10px"}}>TableSingleSelect</div>
-                                                </StyledButton>
-                                                
-                                            </Col>
-                                            } */}
-                                        </Row>
-                                    </Container>
-                                </Card>
-                            </Col>}
-
-
-
-                        </Row>
-                    </Col>
-
-
-
-
-
-
-
-
-
-
-                </Row>
-            </Container>
         </>
     )
 

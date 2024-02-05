@@ -936,6 +936,8 @@ class Bobine(models.Model):
     cliente_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Cliente") #ADDED
     cliente_cod = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Cliente") #ADDED
     produto_id = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Produto") #ADDED
+    mpalete = models.BooleanField(default=False, verbose_name="Marcas Palete", null=True, blank=True) #ADDED
+    rasgo = models.BooleanField(default=False, verbose_name="Rasgo", null=True, blank=True) #ADDED
     def __str__(self):
         return self.nome
 

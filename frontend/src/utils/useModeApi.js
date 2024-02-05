@@ -1,3 +1,4 @@
+import { isNil } from 'ramda';
 import React, { memo, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useImmer } from 'use-immer';
 
@@ -7,6 +8,7 @@ const useModeApi = () => {
     isReady: false,
     key: "datagrid",
     enabled: false,
+    showControls: false,
     allowEdit: false,
     allowAdd: false,
     allowDelete: false,
@@ -21,14 +23,19 @@ const useModeApi = () => {
     mode: null,
     newRow: null,
     newRowIndex: null,
-    dirty: false
+    dirty: false,
+    initMode: null
   });
+
+  const EDIT = "edit";
+  const ADD = "add"
 
   const load = (_config) => {
     updateData(draft => {
       draft.isReady = true;
       draft.key = _config?.key || "datagrid";
       draft.enabled = _config?.enabled || false;
+      draft.showControls = _config?.showControls ?? true;
       draft.allowEdit = _config?.allowEdit || false;
       draft.allowAdd = _config?.allowAdd || false;
       draft.allowDelete = _config?.allowDelete || false;
@@ -42,7 +49,7 @@ const useModeApi = () => {
       // draft.onAdd = _config?.onAdd;
       draft.newRow = _config?.newRow;
       draft.newRowIndex = _config?.newRowIndex;
-      draft.mode = { [draft.key]: { edit: false, add: false } };
+      draft.mode = _config.initMode ? { [draft.key]: { edit: false, add: false, [_config.initMode]: true } } : { [draft.key]: { edit: false, add: false } };
       draft.dirty = false;
     });
   }
@@ -158,7 +165,10 @@ const useModeApi = () => {
     onEditSave: async (rows) => await data?.onEditSave(rows),
     onAddSave: async (rows) => await data?.onAddSave(rows),
     onAdd: () => data?.onAdd(),
-    enabled: () => data?.enabled
+    enabled: () => data?.enabled,
+    showControls: () => data?.showControls,
+    EDIT,
+    ADD
   }
 
 };

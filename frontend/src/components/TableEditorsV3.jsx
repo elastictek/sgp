@@ -769,7 +769,7 @@ export const ArtigosCompativeisGroupEditor = ({ dataAPI, ...props }) => {
 }
 
 const fetchLabParametersUnit = async ({ value, units, signal }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/artigos/sql/`, parameters: { method: "LabParametersUnitLookup" }, pagination: { limit: 20 }, filter: { unit: getFilterValue(value, 'any') }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/qualidade/sql/`, parameters: { method: "LabParametersUnitLookup" }, pagination: { limit: 20 }, filter: { unit: getFilterValue(value, 'any') }, signal });
     if (!units || units.length === 0) {
         return rows;
     } else {

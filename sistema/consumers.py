@@ -155,7 +155,7 @@ def executeAlerts():
                 "hash_estadoproducao_realtime":dataEstadoProducao.get("hash_estadoproducao_realtime"),
             }
     })
-    print(f"""MESSAGE BROADCASTING {dataEstadoProducao.get("hash_estadoproducao")} {dataEstadoProducao.get("hash_estadoproducao_realtime")}""")
+    #print(f"""MESSAGE BROADCASTING {dataEstadoProducao.get("hash_estadoproducao")} {dataEstadoProducao.get("hash_estadoproducao_realtime")}""")
     Timer(10,executeAlerts).start()
 executeAlerts()
 

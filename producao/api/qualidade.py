@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from django.http.response import HttpResponse
 from django.http import FileResponse
 from producao.models import Artigo, Palete, Bobine, Emenda, Bobinagem, Cliente, Encomenda, Carga
+from support.postdata import PostData
 from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteListSerializer, PaleteDetailSerializer, CargaListSerializer, PaletesCargaSerializer, CargasEncomendaSerializer, CargaDetailSerializer, BobineSerializer, EncomendaListSerializer, BobinagemCreateSerializer, BobinesDmSerializer, BobinesPaleteDmSerializer, EmendaSerializer, EmendaCreateSerializer, BobinagemListSerializer, BobineListAllSerializer, ClienteSerializer, BobinagemBobinesSerializer, PaleteDmSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
@@ -28,8 +29,8 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
-from support.myUtils import  ifNull,try_float
+from support.database import ParsedFilters, encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.myUtils import  excludeDictKeys, ifNull, timestamp,try_float
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -194,645 +195,6 @@ def SqlK(request, format=None):
         response = func(request, format)
         return response
     return Response({})
-
-def checkArtigosSpecsPlan(id,type,cursor):
-    #Check if specifications are in use...
-    if type is None:
-        f = Filters({"id": id})
-        f.where()
-        f.add(f'pap.lab_artigospecs_id = :id', True )
-        f.value("and")
-        exists = db.exists("producao_artigospecs_plan pap", f, cursor).exists
-        return exists
-    if type == "lab_metodo_id":
-        f = Filters({"id": id})
-        f.where()
-        f.add(f'lab_metodo_id = :id', lambda v:(v!=None) )
-        f.value("and")
-        row = db.executeSimpleList(lambda: (
-        f"""
-            select id from producao_artigospecs_plan pap where lab_artigospecs_id in (
-                select id from producao_lab_artigospecs pla {f.text}
-            ) limit 1
-        """
-        ), cursor, f.parameters)["rows"]
-        if row and len(row)>0:
-            return True
-        return False
-    if type == "parameter_id":
-        f = Filters({"id": id})
-        f.where()
-        f.add(f'parameter_id = :id', lambda v:(v!=None) )
-        f.value("and")
-        row = db.executeSimpleList(lambda: (
-        f"""
-            select id from producao_artigospecs_plan pap where lab_artigospecs_id in (
-            select id from producao_lab_artigospecs pla where pla.lab_metodo_id in (
-                select id from producao_lab_metodos plm2 where id in (select lab_metodo_id from producao_lab_metodoparameters plm)
-            )
-            ) limit 1
-        """
-        ), cursor, f.parameters)["rows"]
-        if row and len(row)>0:
-            return True
-        return False
-    return False
-
-def LabParametersUnitLookup(request, format=None):
-    conn = connections["default"].cursor()
-    cols = ['unit']
-    f = Filters(request.data['filter'])
-    f.setParameters({"unit":{"value": lambda v: Filters.getUpper(v.get("unit")), "field": lambda k, v: f'upper({k})'}}, True)
-    f.auto()
-    f.where()
-    f.value("and")    
-
-    dql = db.dql(request.data, False)
-    dql.columns = encloseColumn(cols,False)
-    response = db.executeSimpleList(lambda: (
-        f"""
-            select 
-            distinct {dql.columns}
-            from producao_lab_parameters
-            {f.text}
-            {dql.sort}
-            {dql.limit}
-        """
-    ), conn, f.parameters)
-
-    return Response(response)
-
-def NewLabParameter(request, format=None):
-    data = request.data.get("parameters").get("data")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_lab_parameters",None,None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
-
-def NewLabBulkParameter(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    itm={}
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                if "rows" in data:
-                    for idx, item in enumerate(data.get("rows")):
-                        # id = item.get("id")
-                        if "id" in item:
-                            del item["id"]
-                        if "rowvalid" in item:
-                            del item["rowvalid"]
-                        if "rowadded" in item:
-                            del item["rowadded"]
-                        itm=item
-                        dml = db.dml(TypeDml.INSERT,{**item, "t_stamp":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",None,None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo(s) carregado(s) com sucesso!", "subTitle":None})
-    except Exception as error:
-        print(f"""Erro ao carregar registo(s)! {itm.get("designacao")} {str(error)} """)
-        return Response({"status": "error", "title": f"""Erro ao carregar registo(s)! {itm.get("designacao")} {str(error)} """})
-
-#ok
-def UpdateLabParameter(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                if "rows" in data:
-                    for idx, item in enumerate(data.get("rows")):
-                        id = item.get("id")
-                        if "id" in item:
-                            del item["id"]
-                        if "rowvalid" in item:
-                            del item["rowvalid"]
-                        if "rowadded" in item:
-                            del item["rowadded"]
-                        if "t_stamp" in item:
-                            del item["t_stamp"]
-                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_update":datetime.now(),"user_id":request.user.id},"producao_lab_parameters",{"id":Filters.getNumeric(id,"isnull")},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
-
-def ListLabParameters(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
-        "status": {"value": lambda v: Filters.getNumeric(v.get("status")), "field": lambda k, v: f'{k}'}
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-
-    cols = f"""*"""
-    sql = lambda p, c, s: (
-        f"""
-            SELECT {c(f'{cols}')} 
-            FROM producao_lab_parameters asp
-            {f.text} {f2["text"]}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-        """
-    )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
-    return Response(response)
-
-#ok
-def DeleteLabParameter(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"parameter_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})     
-                dml = db.dml(TypeDml.DELETE,None,"producao_lab_parameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
-
-def ListLabMetodos(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
-        # "cod": {"value": lambda v: Filters.getUpper(v.get('fartigo_cod')), "field": lambda k, v: f'upper(pa.{k})'},
-        # "des": {"value": lambda v: Filters.getUpper(v.get('fartigo_des')), "field": lambda k, v: f'upper(pa.{k})'},
-        #"cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper({k})'},
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-
-    cols = f"""plm.*"""
-    sql = lambda p, c, s: (
-        f"""
-            SELECT {c(f'{cols}')} 
-            FROM producao_lab_metodos plm
-            #LEFT JOIN producao_artigo pa on pa.id=plm.artigo_id
-            {f.text} {f2["text"]}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-        """
-    )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
-    return Response(response)
-
-def checkLabMetodo(data,cursor):
-    f = Filters({
-        # "artigo_id": data.get("artigo_id"),
-        # "cliente_cod": data.get("cliente_cod"),
-        "designacao": data.get("designacao"),
-        "aging": data.get("aging"),
-        "owner": data.get("owner")
-    })
-    f.where()
-    # f.add(f'artigo_id {f.nullValue("artigo_id","=:artigo_id")}',True )
-    # f.add(f'cliente_cod {f.nullValue("cliente_cod","=:cliente_cod")}',True )
-    f.add(f'designacao {f.nullValue("designacao","=:designacao")}',True ),
-    f.add(f'aging {f.nullValue("aging","=:aging")}',True ),
-    f.add(f'owner {f.nullValue("owner","=:owner")}',True )
-    f.value("and")
-    exists = db.exists("producao_lab_metodos", f, cursor).exists
-    return exists
-
-def NewLabMetodo(request, format=None):
-    data = request.data.get("parameters").get("data")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                exists= checkLabMetodo(data,cursor)
-                if exists==0:
-                    dml = db.dml(TypeDml.INSERT, {**data, "t_stamp":datetime.now(),"user_id":request.user.id}, "producao_lab_metodos",None,None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    return Response({"status": "success", "title": "Registo criado com sucesso!", "subTitle":None})
-                else:
-                    return Response({"status": "error", "title": "Já existe um método definido com as mesmas condições!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
-
-#ok
-def UpdateLabMetodo(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                if "rows" in data:
-                    for idx, item in enumerate(data.get("rows")):
-                        id = item.get("id")
-                        del item["id"]
-                        del item["rowvalid"]
-                        del item["t_stamp"]
-                        dml = db.dml(TypeDml.UPDATE,{**item, "t_stamp_update":datetime.now(),"user_id":request.user.id},"producao_lab_metodos",{"id":Filters.getNumeric(id,"isnull")},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
-
-#ok
-def DeleteLabMetodo(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodos",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
-
-def ListLabMetodoParameters(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        "lab_metodo_id": {"value": lambda v: Filters.getNumeric(v.get('lab_metodo_id')), "field": lambda k, v: f'lmp.{k}'},
-        #"designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-
-    cols = f"""lmp.*,p.id parameter_id,p.nvalues,p.unit,p.min_value,p.max_value,p.parameter_type,p.parameter_mode,p.value_precision,p.nome parameter_nome,p.designacao parameter_des,lm.designacao metodo_des"""
-    sql = lambda p, c, s: (
-        f"""
-            SELECT {c(f'{cols}')}  
-            from producao_lab_metodoparameters lmp
-            join producao_lab_parameters p on p.id=lmp.parameter_id
-            join producao_lab_metodos lm on lm.id=lmp.lab_metodo_id
-            {f.text} {f2["text"]}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-        """
-    )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
-    return Response(response)
-
-#ok
-def DeleteLabMetodoParameter(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})      
-                dml = db.dml(TypeDml.DELETE,None,"producao_lab_metodoparameters",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
-
-#ok
-def UpdateLabMetodoParameters(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),"lab_metodo_id",cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                for idx, v in enumerate(data.get("rows")):
-                    if v.get("rowadded")==1:
-                        values ={"parameter_id":v.get("parameter_id"),"status":v.get("status"),"required":v.get("required"),"decisive":v.get("decisive"), "lab_metodo_id":filter.get("id"), "t_stamp":datetime.now(),"user_id":request.user.id}
-                        dml = db.dml(TypeDml.INSERT, values, "producao_lab_metodoparameters",None,None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                    else:
-                        values ={"parameter_id":v.get("parameter_id"),"status":v.get("status"),"required":v.get("required"),"decisive":v.get("decisive"), "lab_metodo_id":filter.get("id"), "t_stamp_update":datetime.now(),"user_id":request.user.id}
-                        dml = db.dml(TypeDml.UPDATE, values, "producao_lab_metodoparameters",{"id":Filters.getNumeric(v.get("id"),"isnull")},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Método alterado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao alterar método! {str(error)}"})
-
-@api_view(['POST'])
-@renderer_classes([JSONRenderer])
-@authentication_classes([SessionAuthentication])
-@permission_classes([IsAuthenticated])
-def LoadLabMetodoParametersByFile(request, format=None):
-    try:
-        uploaded_file = request.FILES.get("file")
-        csv_reader = csv.reader(io.TextIOWrapper(uploaded_file))
-        block=0
-        counter={}
-        valuesheader= {}
-        for row in csv_reader:
-            if not row:
-                keys = []
-                values=[]
-                block = block + 1
-            else:
-                if (block==2):
-                    if row[0].lower() == "nome":
-                        incrementCounter(counter,block)
-                    if (counter.get(block)==0 and len(keys)==0) and row[0].lower() == "nome":
-                        keys=mapper(row,block,counter.get(block))
-                        valuesheader = {key.lower(): {} for key in keys[1:]}
-                    if row[0].lower().startswith("unidade"):
-                        incrementCounter(counter,block)
-                        append_dict(valuesheader,keys[1:],[{"unit": x} for x in row[1:]])
-                    elif row[0].lower().startswith("parâmetro"):
-                        incrementCounter(counter,block)
-                        append_dict(valuesheader,keys[1:],[{"designacao": x} for x in row[1:]])
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                new_list = [
-                    {"nome": key, "designacao": value['designacao'], "unit": value['unit']} 
-                    for key, value in valuesheader.items()
-                ]
-                return Response({"rows": new_list, "total": len(new_list)})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao carregar parâmetros! {str(error)}"})
-
-def ListLabArtigosSpecs(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        #"lab_metodo_id": {"value": lambda v: Filters.getNumeric(v.get('lab_metodo_id')), "field": lambda k, v: f'lmp.{k}'},
-        #"designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-
-    cols = f"""las.*,lm.designacao metodo_designacao,lm.owner,lm.aging,pa.cod,pa.des"""
-    sql = lambda p, c, s: (
-        f"""
-            SELECT {c(f'{cols}')}  
-            from producao_lab_artigospecs las
-            join producao_lab_metodos lm on lm.id=las.lab_metodo_id
-            join producao_artigo pa on pa.id=las.artigo_id
-            {f.text} {f2["text"]}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-        """
-    )
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
-    return Response(response)
-
-def NewLabArtigoSpecs(request, format=None):
-    data = request.data.get("parameters").get("data")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                if data.get("rowadded")==1:
-                    values ={"aging":data.get("aging"),"owner":data.get("owner"),"metodo_designacao":data.get("metodo_designacao"),"artigo_id":data.get("artigo_id"),"cliente_cod":data.get("cliente_cod"),"cliente_nome":data.get("cliente_nome"), "lab_metodo_id":data.get("lab_metodo_id"),"obs":data.get("obs"),"`status`":data.get("status"),"reference":data.get("reference"),"designacao":data.get("designacao"), "t_stamp":datetime.now(),"user_id":request.user.id}
-                    dml = db.dml(TypeDml.INSERT, values, "producao_lab_artigospecs",None,None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                    lastid = cursor.lastrowid
-                    dml = db.dml(TypeDml.UPDATE, {}, "",{"lab_metodo_id":Filters.getNumeric(data.get("lab_metodo_id"),"isnull")},None,False)
-                    dml.statement = f"""
-                        insert into producao_lab_artigospecs_parameters (parameter_des,parameter_nome,`values`,unit,nvalues,min_value,max_value,value_precision,required,decisive,parameter_type,parameter_mode, lab_metodoparameter_id,lab_artigospecs_id,user_id,t_stamp)
-                        select plp.designacao,plp.nome,null, plp.unit,plp.nvalues ,plp.min_value ,plp.max_value ,plp.value_precision,plm.required ,plm.decisive,plp.parameter_type,plp.parameter_mode ,plm.id ,{lastid} lab_artigospecs_id,{request.user.id},'{datetime.now()}'
-                        from producao_lab_metodoparameters plm
-                        join producao_lab_parameters plp on plp.id=plm.parameter_id
-                        where lab_metodo_id=%(auto_lab_metodo_id)s
-                    """
-                    db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Especificação criada com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao criar especificação! {str(error)}"})
-
-#ok
-def UpdateLabArtigoSpecs(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                if "rows" in data:
-                    for idx, item in enumerate(data.get("rows")):
-                        id = item.get("id")
-                        values = {"designacao":item.get("designacao"), "status":item.get("status"), "obs":item.get("obs"),"reference":item.get("reference"),"artigo_id":item.get("artigo_id"),"cliente_cod":item.get("cliente_cod"),"cliente_nome":item.get("cliente_nome")}
-                        dml = db.dml(TypeDml.UPDATE,{**values, "user_id":request.user.id,"t_stamp_update":datetime.now()},"producao_lab_artigospecs",{"id":Filters.getNumeric(id,"isnull")},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
-
-#ok
-def DeleteLabArtigoSpecs(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)      
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                dml = db.dml(TypeDml.DELETE,None,"producao_lab_artigospecs_parameters",{"lab_artigospecs_id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                dml = db.dml(TypeDml.DELETE,None,"producao_lab_artigospecs",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
-
-def ListArtigoSpecsParameters(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        "lab_artigospecs_id": {"value": lambda v: Filters.getNumeric(v.get('lab_artigospecs_id')), "field": lambda k, v: f'{k}'},
-        #"designacao": {"value": lambda v: Filters.getUpper(v.get('fdes')), "field": lambda k, v: f'upper({k})'},
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-    cols = f"""*"""
-    response = db.executeSimpleList(lambda: (
-        f"""
-            select {cols}
-            from producao_lab_artigospecs_parameters
-            {f.text}
-            {dql.sort}
-            {dql.limit}
-        """
-    ), connection, f.parameters)
-    return Response(response)
-
-#ok
-def UpdateArtigoSpecsParameters(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:
-                inuse = checkArtigosSpecsPlan(filter.get("id"),None,cursor)
-                if inuse:
-                    return Response({"status": "error", "title": f"A especificação de artigo encontra-se em uso!"})
-                if "rows" in data:
-                    for idx, item in enumerate(data.get("rows")):
-                        if item.get("value1") is None or item.get("value2") is None or item.get("value3") is None or item.get("value4") is None:
-                            v=None
-                        else:
-                            v = json.dumps([item.get("value1"),item.get("value2"),item.get("value3"),item.get("value4")])
-                        values = {"`values`":v,"cycles":item.get("cycles"),"functions":item.get("functions"),"required":item.get("required"),"decisive":item.get("decisive"),"user_id":request.user.id,"t_stamp_update":datetime.now()}
-                        dml = db.dml(TypeDml.UPDATE,values,"producao_lab_artigospecs_parameters",{"id":Filters.getNumeric(item.get("id"),"isnull")},None,False)
-                        db.execute(dml.statement, cursor, dml.parameters)
-                    dml = db.dml(TypeDml.UPDATE,{"valid":1, "user_id":request.user.id,"t_stamp_update":datetime.now()},"producao_lab_artigospecs",{"id":Filters.getNumeric(filter.get("id"),"isnull")},None,False)
-                    db.execute(dml.statement, cursor, dml.parameters)
-                return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao alterar registo(s)! {str(error)}"})
-
-def CopyTo(request, format=None):
-    data = request.data.get("parameters")
-    filter = request.data.get("filter")
-    print(data)
-    print(filter)
-    try:
-        with transaction.atomic():
-            with connections["default"].cursor() as cursor:        
-                args = [filter.get("id"),request.user.id]
-                cursor.callproc('copy_lab_artigospecs',args)
-                return Response({"status": "success", "title": "Especificações copiadas com sucesso!", "subTitle":None})
-    except Exception as error:
-        return Response({"status": "error", "title": f"Erro ao copiar especificações! {str(error)}"})
-
-def ListLabBobinagensEssays(request, format=None):
-    connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        #"lab_metodo_id": {"value": lambda v: Filters.getNumeric(v.get('lab_metodo_id')), "field": lambda k, v: f'lmp.{k}'},
-        "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
-        # "produto_cod": {"value": lambda v: v.get('fproduto'), "field": lambda k, v: f'pp.{k}'},
-        # "core": {"value": lambda v: v.get('fcore'), "field": lambda k, v: f'pa.{k}'},
-        # "lar": {"value": lambda v: v.get('flar'), "field": lambda k, v: f'pa.{k}'},
-        # "des": {"value": lambda v: v.get('fdes'), "field": lambda k, v: f'pa.{k}'},
-        # "cod": {"value": lambda v: v.get('fcod'), "field": lambda k, v: f'pa.{k}'},
-        # "gsm": {"value": lambda v: v.get('fgsm'), "field": lambda k, v: f'pa.{k}'}
-    }, True)
-    f.where()
-    f.auto()
-    f.value("and")
-
-    f2 = filterMulti(request.data['filter'], {
-        # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
-    }, False, "and" if f.hasFilters else "where" ,False)
-    parameters = {**f.parameters, **f2['parameters']}
-    dql = db.dql(request.data, False,False)
-
-    # cols = f"""ple.*,pb.id bobinagem_id, pb.nome bobinagem_nome,ple2.tipo_ensaio,ple2.modo_ensaio,ple2.nome_ensaio,ple2.contador_ciclico,ple2.t_stamp,ple2.data_ensaio #,pb2.estado,pb2.destino """
-    # sql = lambda p, c, s: (
-    #     f"""
-    #         SELECT {c(f'{cols}')}  
-    #         from producao_bobinagem pb 
-    #         left join producao_lab_essaysdata ple on ple.bobinagem_id = pb.id 
-    #         left join producao_lab_essaysheader ple2 on ple2.id=ple.essay_id
-             
-    #         #join producao_bobine pb2 on pb2.id=ple.bobine_id 
-    #         {f.text} {f2["text"]}
-    #         order by pb.id desc
-    #         {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-    #     """
-    # )
-    cols = f"""ROW_NUMBER() OVER() rowid, pleh.id,pleh.modo_ensaio,pleh.tipo_ensaio,pleh.contador_ciclico,pleh.data_ensaio,
-               pbm.nome,pbm.tiponwsup,pbm.tiponwinf,
-               t.cliente,pbmd.produtos,pbmd.estados,pbmd.bobines
-            """
-    sql = lambda p, c, s: (
-        f"""
-            select {c(f'{cols}')}
-            from producao_bobinagem pbm
-            left join producao_lab_essaysheader pleh on pleh.bobinagem_id=pbm.id
-            join producao_bobinagem_data pbmd on pbm.id=pbmd.bobinagem_id,
-            JSON_TABLE(pbmd.clientes,'$[*]' COLUMNS (cliente VARCHAR(150) PATH '$')) t
-            {f.text} {f2["text"]}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
-        """
-    )
-
-    if ("export" in request.data["parameters"]):
-        return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [],None,f"select {dql.currentPage*dql.pageSize+1}")
-    return Response(response)
 
 
 #region TEST SECTION
@@ -1465,3 +827,226 @@ def _block2(counter,block,grp,row,keys,valuesheader,tblheader,tbldata,tblgroup,b
     return counter,block,keys,valuesheader
 
 #endregion
+
+
+
+
+
+
+
+#NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def LoadLabParametersByFile(request, format=None):
+    try:
+        uploaded_file = request.FILES.get("file")
+        csv_reader = csv.reader(io.TextIOWrapper(uploaded_file))
+        block = 0
+        _block_lines_counter = 0
+        _cycle_counter = 0
+        
+        _header=[]
+        _duplicates=[]
+
+        tblHeader = {}
+        tblblock1 = {}
+        tblparameters = []
+        tbldata = {}
+        print("READING")
+        for row in csv_reader:
+            if not row:
+                _header= []
+                block = block + 1
+                _block_lines_counter = 0
+            elif (block==0):
+                print("block0")
+                print(row)
+                blockHeader(row,None,tblHeader,_duplicates)
+                _block_lines_counter = _block_lines_counter + 1
+            elif (block==1):
+                print("block1")
+                print(row)
+                #if _block_lines_counter>=2 and _block_lines_counter<=3:
+                #    _header.append(row)
+                #elif _block_lines_counter>3:
+                #    block1(_header,row,bdata,tblblock1)
+                _block_lines_counter = _block_lines_counter + 1
+            elif (block==2):
+                print("blovk2")
+                print(row)
+                if _block_lines_counter == 0:
+                    print("####")
+                    if not tblHeader or "modo_ensaio" not in tblHeader or "tipo_ensaio" not in tblHeader:
+                        raise ValueError(f"""Erro de cabeçalho no ficheiro submetido""")
+                #    filtered_specs = {key: value for key, value in specs.items() if value.get('parameter_type') == value.get('parameter_type') and value.get('parameter_mode') == tblHeader.get("modo_ensaio")}
+                #    blockParameters(row,filtered_specs,tblparameters)
+                elif _block_lines_counter == 1:
+                    a=1
+                    #PARAMETER DESCRIPTION
+                elif _block_lines_counter == 2:
+                    a=1
+                    #PARAMETER UNITS
+                #else:
+                #    if starts_with_numeric(row[0]):
+                #        _cycle_counter = _cycle_counter + 1
+                #        block2(tblparameters,row,_cycle_counter,bdata,tbldata)
+                _block_lines_counter = _block_lines_counter + 1
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao carregar parâmetros! {str(error)}"})            
+        
+        
+        
+        
+        #block=0
+        #counter={}
+        #valuesheader= {}
+    #     for row in csv_reader:
+    #         if not row:
+    #             keys = []
+    #             values=[]
+    #             block = block + 1
+    #         else:
+    #             if (block==2):
+    #                 if row[0].lower() == "nome":
+    #                     incrementCounter(counter,block)
+    #                 if (counter.get(block)==0 and len(keys)==0) and row[0].lower() == "nome":
+    #                     keys=mapper(row,block,counter.get(block))
+    #                     valuesheader = {key.lower(): {} for key in keys[1:]}
+    #                 if row[0].lower().startswith("unidade"):
+    #                     incrementCounter(counter,block)
+    #                     append_dict(valuesheader,keys[1:],[{"unit": x} for x in row[1:]])
+    #                 elif row[0].lower().startswith("parâmetro"):
+    #                     incrementCounter(counter,block)
+    #                     append_dict(valuesheader,keys[1:],[{"designacao": x} for x in row[1:]])
+    #     with transaction.atomic():
+    #         with connections["default"].cursor() as cursor:
+    #             new_list = [
+    #                 {"nome": key, "designacao": value['designacao'], "unit": value['unit']} 
+    #                 for key, value in valuesheader.items()
+    #             ]
+    #             return Response({"rows": new_list, "total": len(new_list)})
+    # except Exception as error:
+    #     return Response({"status": "error", "title": f"Erro ao carregar parâmetros! {str(error)}"})
+
+
+def LabParametersUnitLookup(request, format=None):
+    conn = connections["default"].cursor()
+    cols = ['unit']
+    r = PostData(request)
+    f = Filters(r.filter)
+    f.setParameters({"unit":{"value": lambda v: Filters.getUpper(v.get("unit")), "field": lambda k, v: f'upper({k})'}}, True)
+    f.auto()
+    f.where()
+    f.value("and")    
+
+    dql = db.dql(request.data, False)
+    dql.columns = encloseColumn(cols,False)
+    response = db.executeSimpleList(lambda: (
+        f"""
+            select 
+            distinct {dql.columns}
+            from producao_lab_parameters
+            {f.text}
+            {dql.sort}
+            {dql.limit}
+        """
+    ), conn, f.parameters)
+
+    return Response(response)
+
+def _checkParameterInUse(parameter_id,cursor):
+    f = Filters({"parameter_id": parameter_id})
+    f.where()
+    f.add(f'parameter_id = :parameter_id', True)
+    f.value("and")
+    return db.exists("producao_lab_metodoparameters", f, cursor).exists
+
+def ListLabParameters(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)   
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+
+    cols=f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+         f"""
+            SELECT {c(f'{cols}')} 
+            FROM producao_lab_parameters asp
+            {pf.group()}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+        """
+    )
+
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None,r.norun)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+def DeleteLabParameter(request, format=None):
+    r = PostData(request)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                inuse = _checkParameterInUse(r.filter.get("id"),cursor)      
+                if inuse:
+                    return Response({"status": "error", "title": f"O parâmetro encontra-se em uso!"})     
+                dml = db.dml(TypeDml.DELETE,None,"producao_lab_parameters",{"id":Filters.getNumeric(r.filter.get("id"),"isnull")},None,False)
+                db.execute(dml.statement, cursor, dml.parameters)
+                return Response({"status": "success", "title": "Registo eliminado com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao eliminar registo! {str(error)}"})
+
+def NewLabParameter(request, format=None):
+    r = PostData(request)
+    def insert(data,cursor):
+        values={
+            **excludeDictKeys(data,["id","rowadded","rowvalid","versao"]),
+            "t_stamp":timestamp(),
+            "user_id":request.user.id,
+            "status":1,
+            "nvalues":4,
+            "versao":f"(select count(*) + 1 v from producao_lab_parameters t where lower(t.nome)=lower({Filters.fParam('nome')}))"     
+        }
+        dml = db.dml(TypeDml.INSERT, values, "producao_lab_parameters", None, None, False,["versao"])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                for i, v in enumerate(r.data.get("rows")):
+                    insert(v,cursor)
+        return Response({"status": "success", "title": "Registo(s) inserido(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def UpdateLabParameter(request, format=None):
+    r = PostData(request)
+    def update(data,id,cursor):
+        values={
+            **excludeDictKeys(data,["id","rowadded","rowvalid","versao","t_stamp"]),
+            "t_stamp_update":timestamp(),
+            "user_id":request.user.id,
+            "versao":f"versao=(select count(*) + 1 v from ( select * from producao_lab_parameters t where lower(t.nome)=lower({Filters.fParam('nome')}) ) t )"
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_lab_parameters", {"id":Filters.getNumeric(id,"isnull")}, None, False,["versao"])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                for i, v in enumerate(r.data.get("rows")):
+                    update(v,v.get("id"),cursor)
+        return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})

@@ -31,6 +31,20 @@ export const isObjectEmpty = (obj) => {
     return false;
 }
 
+export const firstKeyValue = (obj) => {
+    if (isObjectEmpty(obj)){
+        return null;
+    }
+    return obj[Object.keys(obj)[0]];
+}
+export const firstKey = (obj) => {
+    if (isObjectEmpty(obj)){
+        return null;
+    }
+    return Object.keys(obj)[0];
+}
+
+
 export const json = (obj, ret) => {
     try {
         let json = JSON.parse(obj);

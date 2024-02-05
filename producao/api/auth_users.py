@@ -54,8 +54,6 @@ def authUser(user):
     isAdmin=False
     grps = list(groups)
     grps.append("all#100")
-    print("AUTH - GROUPS")
-    print(grps)
     for idx, v in enumerate(grps):
         key = ""
         grp = v.split("#")

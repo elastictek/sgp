@@ -1,12 +1,15 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useContext, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { Checkbox, DatePicker, Input, InputNumber, Select } from 'antd';
+import { AutoComplete, Checkbox, DatePicker, Input, InputNumber, Select } from 'antd';
 import { dayjsValue } from 'utils/index';
 import { SearchOutlined } from '@ant-design/icons';
-import { getCellFocus, useModalApi } from './TableV4';
+import { columnPath, getCellFocus, useModalApi } from './TableV4';
 import { useDataAPI } from 'utils/useDataAPIV4';
 import { API_URL, DATETIME_FORMAT } from 'config';
 import { Value } from './TableColumnsV4';
 import TableGridSelect from './TableGridSelect';
+import { fetchPost } from 'utils/fetch';
+import { isNil } from 'ramda';
+import { valueByPath } from 'utils/object';
 
 
 
@@ -145,9 +148,53 @@ export const AntdDateEditor = forwardRef((props, ref) => {
     }));
     return <DatePicker style={{ width: "100%" }} autoFocus value={value} onChange={handleChange} {...editorParams} />;
 });
+
+export const AntdAutoCompleteEditor = forwardRef((props, ref) => {
+    const { onValueChange } = props;
+    const { map } = props.column.getDefinition()?.cellRendererParams || {};
+    const { options: opt, remote, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const _options = opt ? opt : map ? Object.entries(map).map(([value, { label }]) => ({ value: value, label })) : [];
+    const [options, setOptions] = useState([]);
+
+    const value = useMemo(() => {
+        if (isNil(props.value)){
+            return null;
+        }
+        return `${props.value}`;
+    }, [props.value]);
+
+    const handleChange = (v) => {
+        onValueChange(v);
+    };
+    // Expose the Input value to ag-Grid
+    useImperativeHandle(ref, () => ({
+        getValue() {
+            return value;
+        },
+    }));
+
+    const handleSearch = async (value) => {
+        if (remote && remote?.fetch) {
+            try {
+                const _col = (remote?.column) ? remote.column : columnPath(props.column);
+                const { data: { rows } } = await remote.fetch(value);
+                setOptions(rows.map(item => ({ value: item?.[_col], label: item?.[_col] })));
+            } catch (e) {
+                console.log(e)
+            }
+        } else if (Array.isArray(_options)) {
+            setOptions(_options.filter(v => v.value.toLowerCase().includes(value.toLowerCase())));
+        }
+    };
+    return <AutoComplete showSearch allowClear style={{ width: "100%" }} autoFocus popupMatchSelectWidth={false} value={value} onChange={handleChange} onSearch={handleSearch} options={options} {...editorParams} />;
+});
+
+
 export const AntdSelectEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
+    const { map } = props.column.getDefinition()?.cellRendererParams || {};
     const { options, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const _options = options ? options : map ? Object.entries(map).map(([value, { label }]) => ({ value: value, label })) : [];
 
     const value = useMemo(() => {
         return `${props.value}`;
@@ -162,11 +209,11 @@ export const AntdSelectEditor = forwardRef((props, ref) => {
             return value;
         },
     }));
-    return <Select style={{ width: "100%" }} autoFocus popupMatchSelectWidth={false} value={value} onChange={handleChange} options={options} {...editorParams} />;
+    return <Select style={{ width: "100%" }} autoFocus popupMatchSelectWidth={false} value={value} onChange={handleChange} options={_options} {...editorParams} />;
 });
 export const AntdCheckboxEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
-    const { checkedValues = [1, "1", true], uncheckedValues = [0, "0", false], checkedValue = null, uncheckedValue = null, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { checkedValues = [1, "1", true], unCheckedValues = [0, "0", false], checkedValue = null, unCheckedValue = null, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
 
     const value = useMemo(() => {
         return checkedValues.includes(props?.value) ? true : false;
@@ -181,10 +228,10 @@ export const AntdCheckboxEditor = forwardRef((props, ref) => {
             }
         }
         if (e.target.checked === false) {
-            if (uncheckedValue != null) {
-                onValueChange(uncheckedValue);
+            if (unCheckedValue != null) {
+                onValueChange(unCheckedValue);
             } else {
-                onValueChange(uncheckedValues[0]);
+                onValueChange(unCheckedValues[0]);
             }
         }
 
@@ -195,7 +242,7 @@ export const AntdCheckboxEditor = forwardRef((props, ref) => {
             return value;
         },
     }));
-    return <div style={{width:"100%",textAlign:"left",paddingLeft:"10px",backgroundColor:"#ffffff"}}><Checkbox checked={value} autoFocus onChange={handleChange} {...editorParams} /></div>;
+    return <div style={{ width: "100%", textAlign: "left", paddingLeft: "10px", backgroundColor: "#ffffff" }}><Checkbox checked={value} autoFocus onChange={handleChange} {...editorParams} /></div>;
 });
 export const AntdInputNumberEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
@@ -213,7 +260,7 @@ export const AntdInputNumberEditor = forwardRef((props, ref) => {
             return value;
         },
     }));
-    return <InputNumber autoFocus value={value} onChange={handleChange} {...editorParams} />;
+    return <InputNumber style={{ width: "100%" }} autoFocus value={value} onChange={handleChange} {...editorParams} />;
 });
 
 const Lookup = ({ dataAPI, columnDefs, filters, onSelectionChanged, style, closeSelf }) => {

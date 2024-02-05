@@ -3,6 +3,9 @@ import re
 from datetime import datetime, timedelta, timezone
 from django.http import FileResponse
 
+def timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 def includeDictKeys(dict,include=[]):
     return {key: dict[key] for key in include if key in dict}
 

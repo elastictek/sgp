@@ -1,3 +1,4 @@
+import datetime
 from email.policy import default
 import re
 import itertools
@@ -13,7 +14,6 @@ class TypeDml(Enum):
     DELETE = 3
 
 PATTERN = f'(^==|^=|^!===|^!==|^!=|^>=|^<=|^>|^<|^between:|btw:|^in:|^!between:|!btw:|^!in:|isnull|!isnull|^@:)(.*)'
-
 
 def replace(regex, s, data):
     "Repçace in a filter every pattern like :name by db named parameter in the pattern %(name)s"
@@ -149,7 +149,7 @@ class BaseSql:
             self.parameters = {}
             self.filter = ''
             self.rows = False
-
+    
     @property
     def encloseColumns(self):
         return self.__encloseColumns
@@ -1068,6 +1068,9 @@ class Filters:
 
         return self
 
+    def fParam(name):
+        return f"%({name})s"
+
     def nullValue(self,key,dbparam,removeEmpty=True):
         val = self.autoParamsSet.get(key)
         val = self.paramsSetValues.get(key) if key in self.paramsSetValues else val
@@ -1120,6 +1123,7 @@ class Filters:
             return f"{value}"
         else:
             return value
+
 
     def ParsedFilters(data):
         #======================================================================

@@ -189,5 +189,5 @@ export const BOBINE_DEFEITOS = [
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }, { value: 'mpalete', label: "Marcas de Palete" }
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }, { value: 'mpalete', label: "Marcas de Palete" },{value: 'rasgo', label: 'Rasgo' }
 ];

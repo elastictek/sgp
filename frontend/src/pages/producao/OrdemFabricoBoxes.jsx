@@ -63,7 +63,7 @@ const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'))
 const FormAttachements = React.lazy(() => import('../ordensfabrico/FormAttachements'));
 const FormPaletizacao = React.lazy(() => import('../ordensfabrico/FormPaletizacao'));
 
-const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop'];
+const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop','rasgo','mpalete'];
 
 
 const StyledCollapse = styled(Collapse)`

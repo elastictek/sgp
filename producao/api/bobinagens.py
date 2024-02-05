@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from django.http.response import HttpResponse
 from django.http import FileResponse
 from producao.models import Artigo, Palete, Bobine, Emenda, Bobinagem, Cliente, Encomenda, Carga
+from support.postdata import PostData
 from .serializers import ArtigoDetailSerializer, PaleteStockSerializer, PaleteListSerializer, PaleteDetailSerializer, CargaListSerializer, PaletesCargaSerializer, CargasEncomendaSerializer, CargaDetailSerializer, BobineSerializer, EncomendaListSerializer, BobinagemCreateSerializer, BobinesDmSerializer, BobinesPaleteDmSerializer, EmendaSerializer, EmendaCreateSerializer, BobinagemListSerializer, BobineListAllSerializer, ClienteSerializer, BobinagemBobinesSerializer, PaleteDmSerializer
 from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import status
@@ -24,7 +25,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import ParsedFilters, encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
 from support.myUtils import  ifNull
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -1028,6 +1029,67 @@ def BobinesByAggByStatusList(request, format=None):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
     try:
         response = db.executeSimpleList(sql(lambda v:v,lambda v:v,lambda v:v), connection, parameters, [])
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+def BobinagensListLab(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)   
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+
+    cols=f"""
+        concat(pbm.id,case when lt.id is null then '' else concat('-',lt.id) end) rowid,
+        pbm.*,
+        ibd.agg_of_id,
+        lt.id teste_id,
+        lt.t_stamp,
+        lt.lab_artigospecs_id,
+        lbs.bobines default_bobines,
+        lbs.bobines_pg default_bobines_pg,
+        lbs.bobines_perfil default_bobines_perfil,
+        pbd.bobines,
+        JSON_OBJECT('open',lt.`open`,'selected_bobines',lt.bobines,'type',lt.`type`,'result',lt.`result`) teste,
+        case when lasp.id is not null then JSON_ARRAYAGG(JSON_OBJECT(
+        'id',lasp.id,'p_id',lasp.lab_metodoparameter_id,'p_des',lasp.parameter_des,'values',lasp.`values`,'required',lasp.required,'decisive',lasp.decisive
+        )) over (partition by pbm.id) else null end teste_specs
+    """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            select 
+                distinct {c(f'{dql.columns}')}
+            from(
+                select
+                pbm.id,
+                pbm.nome,
+                pbm.`timestamp`,
+                pbm.ig_bobinagem_id
+                FROM producao_bobinagem pbm
+                {pf.group()}
+                order by pbm.`timestamp` desc
+                {p(dql.paging)} {p(dql.limit)}                
+            ) pbm
+            JOIN producao_bobinagem_data pbd on pbd.bobinagem_id = pbm.id
+            left join ig_bobinagens_data ibd on ibd.ig_id=pbm.ig_bobinagem_id
+            left join producao_lab_bobines_select lbs on lbs.agg_of_id=ibd.agg_of_id
+            left join producao_lab_teste lt on lt.bobinagem_id = pbm.id
+            left join producao_lab_artigospecs las on las.id=lt.lab_artigospecs_id
+            left join producao_lab_artigospecs_parameters lasp on lasp.lab_artigospecs_id = lt.lab_artigospecs_id
+            {s(dql.sort)}
+        """
+    )
+
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

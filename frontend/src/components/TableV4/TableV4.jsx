@@ -21,7 +21,7 @@ import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
 
 import { AgGridReact } from 'ag-grid-react';
-import { removeEmpty, unique } from 'utils/index';
+import { removeEmpty, sleep, unique } from 'utils/index';
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, API_URL } from 'config';
 import TextArea from 'antd/es/input/TextArea';
 import SyntaxHighlighter from 'react-syntax-highlighter';
@@ -34,8 +34,8 @@ const GRID_CELL_CLASSNAME = 'ag-cell';
 
 export const TableContext = React.createContext({});
 
-export const refreshDataSource = (api) => {
-    api.refreshServerSide({ purge: true });
+export const refreshDataSource = (api, purge = false) => {
+    api.refreshServerSide({ purge });
 }
 const GridContainer = styled.div`
   height: 100%;
@@ -92,6 +92,17 @@ export const TypeLogic = ({ onChange, name, value, background = false, disabled 
         <StyledType disabled={disabled} size='small' background={background} popupMatchSelectWidth={false} name={`lo-${name}`} onChange={(e) => onChange(name, e, false, true)} value={value} options={[{ value: "!", label: "Não" }, { value: "", label: "" }]} />
     );
 };
+
+const _selectOptions = (v) => {
+    if (v?.options) {
+        if (Array.isArray(v.options)) {
+            return v.options;
+        } else {
+            return Object.entries(v.options).map(([value, { label }]) => ({ value: value, label }));
+        }
+    }
+    return v?.options;
+};
 const DEFAULTWIDTH = "150px";
 const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value, onSelectChange }) => {
     const { dataAPI, modeApi, gridRef, stateFilters, topToolbar: { filters, initFilterValues } = {} } = useContext(TableContext);
@@ -116,9 +127,9 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
                                 // selectmulti: <SelectMultiField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
                                 select: <div style={{ display: "flex", width: DEFAULTWIDTH, ...v?.style }}>
                                     {v.multi && <TypeLogic disabled={modeApi?.isOnMode()} background name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.logic} />}
-                                    <Select disabled={modeApi?.isOnMode()} mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={v.options} />
+                                    <Select disabled={modeApi?.isOnMode()} mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={_selectOptions(v)} />
                                 </div>,
-                                options: <FilterSelect disabled={modeApi?.isOnMode()} style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={v?.options} />
+                                options: <FilterSelect disabled={modeApi?.isOnMode()} style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={_selectOptions(v)} />
                                 // datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />
                             }[v.type] || <Input disabled={modeApi?.isOnMode()} addonBefore={v.multi && <TypeRelation disabled={modeApi?.isOnMode()} name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />
 
@@ -151,7 +162,7 @@ const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, set
                 { type: 'divider' },
                 (permission.auth.isAdmin) && { label: <span style={{ color: "#10239e" }}>Server Request and Execution</span>, key: 'sqlquery', icon: <PullRequestOutlined style={{ color: "#10239e" }} />, data: {} },
                 { type: 'divider' },
-                { label: <span style={{ color: "#10239e" }}>Ajuda Filtros</span>, key: 'helpfilters', icon: <QuestionCircleTwoTone />, data: {} },
+                { label: <span style={{ color: "#10239e" }}>Ajuda Filtros</span>, key: 'helpfilters', icon: <QuestionCircleTwoTone style={{ fontSize: "14px" }} />, data: {} },
             ]}></StyledMenu>
             {/* 
             <Divider style={{ margin: "8px 0" }} />
@@ -192,6 +203,7 @@ const FilterSelect = ({ style, name, _value, onChange, options, disabled }) => {
 const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _value, onSelectChange }) => {
     const { dataAPI, modeApi, gridRef, stateFilters, updateStateFilters, topToolbar: { filters, initFilterValues } = {} } = useContext(TableContext);
     const permission = usePermission();
+
     return (<Drawer title="Filtros" open={visible} onClose={() => setVisible(false)} width="500px"
         footer={
             <div style={{ textAlign: 'right' }}>
@@ -220,9 +232,9 @@ const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _val
                                     text: <TextArea autoSize={{ minRows: 1, maxRows: 6 }} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear style={{ width: DEFAULTWIDTH, ...v?.style }} />,
                                     select: <div style={{ display: "flex", width: DEFAULTWIDTH, ...v?.style }}>
                                         {v.multi && <TypeLogic background name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.logic} />}
-                                        <Select mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={v.options} />
+                                        <Select mode={v.multi && "multiple"} allowClear popupMatchSelectWidth={false} style={{ width: "100%" }} size="small" name={v.name} value={_value(v.name, v.multi ? [] : null)} onChange={(x) => onSelectChange(v.name, x)} options={_selectOptions(v)} />
                                     </div>,
-                                    options: <FilterSelect style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={v?.options} />
+                                    options: <FilterSelect style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={_selectOptions(v)} />
                                     // autocomplete: <AutoCompleteField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
                                     // rangedatetime: <RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
                                     //rangedate: <Input addonBefore={<TypeRelation name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />,//<RangeDateField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />,
@@ -438,7 +450,6 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
             } else {
                 // _gridRef.current.api.refreshCells({force:true});
                 // _gridRef.current.api.redrawRows();
-                console.log(dataAPI.getData().rows)
                 gridRef.current.api.updateGridOptions({ rowData: dataAPI.getData().rows });
             }
         }
@@ -459,6 +470,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
 
     const onSave = useCallback(async () => {
         if (modeApi?.isOnMode()) {
+            gridRef.current.api.stopEditing();
             const loadedRows = [];
             const updatedRows = [];
             const addedRows = [];
@@ -582,7 +594,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                         {start && start}
                     </Col>
 
-                    {modeApi?.enabled() && modeApi?.isReady() && <>
+                    {modeApi?.showControls() && modeApi?.enabled() && modeApi?.isReady() && <>
                         {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col xs="content"><Button type="default" icon={<PlusOutlined />} onClick={() => modeApi.onAddMode(onAddMode)}>{modeApi.addText()}</Button></Col>}
                         {(!modeApi.isOnMode() && modeApi.allowEdit()) && <Col xs="content"><Button type="default" icon={<EditOutlined />} onClick={modeApi.onEditMode}>{modeApi.editText()}</Button></Col>}
                         {(modeApi.isOnMode() && modeApi.isDirty()) && <Col xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onSave}>{modeApi.saveText()}</Button></Col>}
@@ -711,6 +723,8 @@ export const suppressKeyboardEvent = ({ event }) => {
     return suppressEvent;
 };
 
+
+
 export const useModalApi = () => {
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -774,6 +788,18 @@ export const defaultValueGetter = (params, fn) => {
     return columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
 }
 
+export const disableTabOnNextCell = ({ event, api, editing, node, column }, onEdit = true) => {
+    if (event.key === "Tab" && ((editing == true && onEdit) || !onEdit)) {
+        event.preventDefault();
+        if (editing) {
+            api.stopEditing();
+        }
+        api.setFocusedCell(node.rowIndex, column.colId);
+        return true;
+    }
+    return false;
+}
+
 export default ({
     columnDefs, defaultColDef, columnTypes, dataAPI, local = false, gridApi, setGridApi, modalApi, loadOnInit = true,
     loading = false, showRange = true, allowGoTo = true, showFromTo, showTotalCount, gridRef, showTopToolbar = true, topToolbar = {},
@@ -813,7 +839,7 @@ export default ({
         console.log("GIRD-READY");
         //Load Filters State
         updateStateFilters({ ...topToolbar?.initFilterValues?.filter || {} });
-        if (isObjectEmpty(dataAPI.getFilters()) && isObjectEmpty(dataAPI.preFilters())) {
+        if (topToolbar?.filters && isObjectEmpty(dataAPI.getFilters()) && isObjectEmpty(dataAPI.preFilters())) {
             const _values = parseFilters(topToolbar?.initFilterValues?.filter);
             dataAPI.setFilters(_values);
         }
@@ -1037,12 +1063,14 @@ export default ({
 
     const _onCellEditRequest = async event => {
         const _path = columnPath(event.column);
+        let _eventdata = event.data;
         let _data;
+
         if (typeof onBeforeCellEditRequest === "function") {
-            _data = await onBeforeCellEditRequest(event.data, event.column.getDefinition(), _path, event.newValue, event);
+            _data = await onBeforeCellEditRequest(_eventdata, event.column.getDefinition(), _path, event.newValue, event);
         }
         if (isNil(_data)) {
-            _data = assocPath(_path.split('.'), event.newValue, event.data);
+            _data = assocPath(_path.split('.'), event.newValue, _eventdata);
         }
         const transaction = {
             update: [{ ...assoc('rowvalid', 0, _data) }],
@@ -1052,11 +1080,12 @@ export default ({
             result = _gridRef.current.api.applyTransaction(transaction);
         } else {
             result = _gridRef.current.api.applyServerSideTransaction(transaction);
+
         }
         if (typeof onAfterCellEditRequest === "function") {
             await onAfterCellEditRequest(event.node.data, event.column.getDefinition(), _path, event.newValue, event, result);
         }
-        //_gridRef.current.api.redrawRows({ rowNodes: [event.node] });
+
         modeApi.setDirty(true);
     };
 
@@ -1158,6 +1187,8 @@ export default ({
                         //     pageSize: 50//dataAPI.getPagination().pageSize
                         //   }
                         // }}
+
+
                         pagination={dataAPI.getPagination().enabled}
                         paginationPageSize={dataAPI.getPagination().pageSize}
                         suppressPaginationPanel={true}

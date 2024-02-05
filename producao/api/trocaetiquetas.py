@@ -193,7 +193,6 @@ def NewTask(request, format=None):
             "nome":f"""(SELECT CONCAT('TRE-',YEAR(CURRENT_DATE()),LPAD(MONTH(CURRENT_DATE()),2,'0'),LPAD(DAY(CURRENT_DATE()),2,'0'),'-',LPAD(n,3,'0')) FROM (SELECT COUNT(*)+1 n FROM ofabrico_checklist_tasks oct where oct.type=1 and YEAR(`timestamp`)=YEAR(CURRENT_DATE())) t)""",
             **includeDictKeys(data,["type","subtype","status","runtype","appliesto","mode","parameters","cliente","obs"])
         }
-        print(values)
         dml = db.dml(TypeDml.INSERT, {**values,"parameters":json.dumps(values.get("parameters"))}, "ofabrico_checklist_tasks", None, None, False,["nome"])
         db.execute(dml.statement, cursor, dml.parameters)
 

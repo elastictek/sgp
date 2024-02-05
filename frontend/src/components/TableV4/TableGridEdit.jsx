@@ -66,9 +66,9 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 let datasource = dataAPI.dataSourceV4(null, gridApi);
                 gridApi.setGridOption("serverSideDatasource", datasource);
             } else {
-                submitting.trigger();
-                const dt = await dataAPI.fetchPost({ ignoreTotalRows: true });
-                submitting.end();
+                // submitting.trigger();
+                // const dt = await dataAPI.fetchPost({ ignoreTotalRows: true });
+                // submitting.end();
             }
         }
     }
@@ -167,6 +167,8 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 columnTypes={_columnTypes}
                 onRowClick={onRowClick}
                 onCellClick={onCellClick}
+                
+                //stopEditingWhenCellsLoseFocus={true}
 
                 showTopToolbar={true}
                 topToolbar={{

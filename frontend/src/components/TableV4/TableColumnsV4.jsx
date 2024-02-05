@@ -48,6 +48,20 @@ export const OPTIONS_TROCAETIQUETAS = {
 }
 
 
+export const OPTIONS_LAB_PARAMETERTYPE = {
+    "gramagem": { label: "Gramagem", props: {} },
+    "histerese": { label: "Histerese", props: {} },
+    "peel": { label: "Peel", props: {} },
+    "traction": { label: "Tração", props: {} }
+}
+
+export const OPTIONS_LAB_MODE = {
+    "simples": { label: "Simples", props: {} },
+    "controle": { label: "Controle", props: {} },
+    "ciclico": { label: "Cíclico", props: {} }
+}
+
+
 const OuterDiv = ({ error, style, children }) => {
     return (
         <div title={error && error.message} style={{ width: "100%", height: "100%", ...error && { backgroundColor: "#ffa39e", borderRadius: "5px" }, ...style }}>
@@ -57,15 +71,17 @@ const OuterDiv = ({ error, style, children }) => {
 }
 
 const useValidation = (node, col) => {
-    const { validation } = col.getDefinition().cellRendererParams || {};
+    const { validation, validationGroups } = col.getDefinition().cellRendererParams || {};
     const error = useMemo(() => {
         if (validation && Object.keys(validation).length > 0) {
             const _validation = validation?.[node.id];
             if (_validation) {
-                const _path = columnPath(col);
-                const _f = _validation.find(v => v.field === _path);
+                const _path = validationGroups ? validationGroups.groupPaths(columnPath(col)) : [columnPath(col)];
+                const _f = _validation.find(v => _path.includes(v.field));
                 if (_f) {
                     return { label: col?.headerName ? col.headerName : _f.label, message: _f.message };
+                } else {
+
                 }
                 return undefined;
             }
@@ -80,7 +96,8 @@ const useValidation = (node, col) => {
 export const Options = ({ params: { column: col, data, node } = {}, integer, column, value, style, bold, className, onClick, map }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
-    const { validation } = col.getDefinition().cellRendererParams || {};
+    const { validation, map: mp } = col.getDefinition().cellRendererParams || {};
+    const _map = map ? map : mp;
     const onKeyDown = (event) => {
         if (event.keyCode === 13) {
             onClick(event)
@@ -102,8 +119,8 @@ export const Options = ({ params: { column: col, data, node } = {}, integer, col
     const _value = useMemo(() => {
         let _v = value;
         _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : data?.[col.getDefinition().field] : _v;
-        if (map) {
-            return map?.[integer ? getInt(_v) : _v];
+        if (_map) {
+            return _map?.[integer ? getInt(_v) : _v];
         }
         return { label: integer ? getInt(_v) : _v };
     }, [data]);
@@ -140,6 +157,9 @@ export const Value = ({ params: { column: col, data, node } = {}, column, detail
         let _v = value;
         const _path = columnPath(col);
         _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : (columnHasPath(col) ? valueByPath(data, _path) : data?.[_path]) : _v;
+        if (_v == undefined) {
+            return null;
+        }
         if (datetime) {
             _v = (_v && dayjs(_v).isValid()) && dayjs(_v).format(format);
         }

@@ -1,16 +1,49 @@
+import { isNil, isNotNil } from "ramda";
 import { z } from "zod";
 
-export const zRangeNumber = (min, max) => z.coerce.number().min(min).max(max);
-export const zRangeDate = (min, max) => z.coerce.date().min(min).max(max);
-export const zIntervalDate = (init, end, { custom_error, description: { init: _dinit, end: _dend } } = {}) =>
+
+export const zIntervalDate = (min, max) => z.coerce.date().min(min).max(max);
+export const zGroupIntervalDate = (init, end, { nullable = true, custom_error, description: { init: _init, end: _end } } = {}) =>
     z.object({
-        [init]: z.coerce.date({ description: _dinit }),
-        [end]: z.coerce.date({ description: _dend })
-    }).refine((value) => {
-        return value?.[init] === undefined || value?.[end] === undefined || value[end] >= value[init];
+        [init]: z.coerce.date({ description: _init }),
+        [end]: z.coerce.date({ description: _end })
+    }).refine((v) => {
+        if (nullable && (isNil(v?.[init]) || isNil(v?.[end]))) {
+            return true;
+        }
+        return isNotNil(v?.[init]) && isNotNil(v?.[end]) && v[end] >= v[init];
     }, {
-        ...custom_error ? custom_error : { message: 'Start date must be greater than or equal to End date' },
-    })
+        ...custom_error ? custom_error : { message: `${_end ? _end : end} must be greater or equal than ${_init ? _init : init}` },
+    });
+
+
+
+export const zRangeNumber = (min, max) => z.coerce.number().min(min).max(max);
+export const zGroupRangeNumber = (value, min, max, { nullable = true, custom_error, description: { value: _value, min: _min, max: _max } } = {}) =>
+    z.object({
+        [min]: z.coerce.number({ description: _min }),
+        [max]: z.coerce.number({ description: _max }),
+        [value]: z.coerce.number({ description: _value })
+    }).refine((v) => {
+        if (nullable && isNil(v?.[value])) {
+            return true;
+        }
+        return isNotNil(v?.[min]) && isNotNil(v?.[max]) && v[value] >= v[min] && v[value] <= v[max];
+    }, {
+        ...custom_error ? custom_error : { message: `${_value ? _value : value} must be between ${_min ? _min : min} and ${_max ? _max : max}` },
+    });
+export const zGroupIntervalNumber = (init, end, { nullable = true, custom_error, description: { init: _init, end: _end } } = {}) =>
+    z.object({
+        [init]: z.coerce.number({ description: _init }),
+        [end]: z.coerce.number({ description: _end })
+    }).refine((v) => {
+        if (nullable && (isNil(v?.[init]) || isNil(v?.[end]))) {
+            return true;
+        }
+        return isNotNil(v?.[init]) && isNotNil(v?.[end]) && v[end] >= v[init];
+    }, {
+        ...custom_error ? custom_error : { message: `${_end ? _end : end} must be greater or equal than ${_init ? _init : init}` },
+    });
 export const zOneOfNumber = (values) => z.coerce.number().refine(value => values.includes(value));
 export const zOneOfString = (values) => z.coerce.string().refine(value => values.includes(value));
 
