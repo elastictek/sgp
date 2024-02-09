@@ -3,6 +3,53 @@ import * as R from 'ramda';
 import moment from 'moment';
 import dayjs from 'dayjs';
 import { DATE_ENGINE } from 'config';
+import { includeObjectKeys } from './object';
+
+export const isNullOrEmpty = value => R.isNil(value) || R.isEmpty(value);
+
+export const length = (v) =>{
+    if (v && Array.isArray(v)){
+        return v.length;
+    }
+    return 0;
+}
+
+export const compareArrays = (oldArray, newArray,keys=[]) => {
+    if (!R.isEmpty(keys)){
+        return compareObjArrays(oldArray, newArray,keys);
+    }
+    const removed = oldArray.filter(item => !newArray.includes(item));
+    const added = newArray.filter(item => !oldArray.includes(item));
+    return { removed, added };
+}
+export const compareObjArrays = (oldArray, newArray, keys) => {
+    const getKeysValues = (item) => keys.map(key => item?.[key]);
+    const oldKeyValues = oldArray.map(getKeysValues);
+    const newKeyValues = newArray.map(getKeysValues);
+    const removed = oldArray.filter((item, index) => {
+      const values = getKeysValues(item);
+      return !newKeyValues.some(newValues => keys.every((key, i) => newValues[i] === values[i]));
+    });
+  
+    const added = newArray.filter((item, index) => {
+      const values = getKeysValues(item);
+      return !oldKeyValues.some(oldValues => keys.every((key, i) => oldValues[i] === values[i]));
+    });
+  
+    return { removed, added };
+  };
+  export const removeArrayMatchingElements = (arr1, arr2, keys) => {
+    const keysValuesSet = new Set(arr2.flatMap(obj => keys.map(key => `${key}:${obj[key]}`)));
+    return arr1.filter(obj => !keys.some(key => keysValuesSet.has(`${key}:${obj[key]}`)));
+  }
+  export const uniqueValues = (arr, keys) => {
+    const _uniqueValues = new Map();  
+    arr.forEach(obj => {
+      const key = keys.map(key => obj[key]).join(':');
+      _uniqueValues.set(key, obj);
+    });  
+    return Array.from(_uniqueValues.values());
+  }
 
 export const removeEmpty = (obj, keys = []) => {
     return Object.fromEntries(Object.entries(obj).filter(([_, v]) => (v !== null && v !== '' && v !== undefined && !keys.includes(_))));

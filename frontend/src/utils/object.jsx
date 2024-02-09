@@ -1,7 +1,8 @@
-import { assocPath } from 'ramda';
+import { assocPath, isNil } from 'ramda';
 
-export const valueByPath = (obj, path) => {
-    return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+export const valueByPath = (obj, path,ret=null) => {
+    const _v = path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+    return isNil(_v) ? ret : _v;
 }
 
 export const updateByPath = (data, path, value) => {

@@ -44,13 +44,13 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       { colId: 'ot.nome', field: 'nome', headerName: 'Tarefa',...cellParams(), lockPosition: "left", width: 120, cellRenderer: (params) => <Value params={params} /> },
       { colId: "ot.subtype", field: 'subtype', headerName: 'Tipo',...cellParams(), minWidth: 120, cellRenderer: (params) => <Options map={OPTIONS_TROCAETIQUETAS} params={params} /> },
       { colId: 'te.timestamp', field: 'timestamp', headerName: 'Data',...cellParams({format:DATETIME_FORMAT}), minWidth: 100, cellRenderer: (params) => <Value datetime params={params} /> },
+      { colId: 'te.bobine_original_nome', field: "bobine_original_nome", headerName: 'Bobine Original',...cellParams(), width: 150, cellRenderer: (params) => <Value link onClick={(e) => onBobineClick(e, "bobine_original_id", params)} params={params} /> },
       { colId: 'te.bobine_nome', field: "bobine_nome", headerName: 'Bobine',...cellParams(), width: 150, cellRenderer: (params) => <Value link bold onClick={(e) => onBobineClick(e, "bobine_id", params)} params={params} /> },
       { colId: 'pb1.lar', field: 'lar', headerName: 'Lar.',...cellParams(), width: 100, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
       { colId: 'pb1.core', field: 'core', headerName: 'Core',...cellParams(), width: 100, cellRenderer: (params) => <Value unit="''" params={params} /> },
       { field: 'cod', headerName: 'Artigo Cód.',...cellParams(), minWidth: 100, cellRenderer: (params) => <Value params={params} /> },
       { field: 'des', headerName: 'Artigo',...cellParams(), minWidth: 200, flex: 1, cellRenderer: (params) => <Value params={params} /> },
-      { field: 'cliente', headerName: 'Cliente',...cellParams(), minWidth: 200, flex: 1, cellRenderer: (params) => <Value params={params} /> },
-      { colId: 'te.bobine_original_nome', field: "bobine_original_nome", headerName: 'Bobine Original',...cellParams(), width: 150, cellRenderer: (params) => <Value link onClick={(e) => onBobineClick(e, "bobine_original_id", params)} params={params} /> },
+      { field: 'cliente', headerName: 'Cliente',...cellParams(), minWidth: 200, flex: 1, cellRenderer: (params) => <Value params={params} /> }
     ], timestamp: new Date()
   }), []);
 

@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useCallback, useRef, useContext, forwardRef, useLayoutEffect, useMemo } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled, { css } from 'styled-components';
+import YScroll from 'components/YScroll';
 import classNames from 'classnames';
 import { useModal } from "react-modal-hook";
 import ResponsiveModal from 'components/Modal';
+import { useSubmitting } from "utils";
+import Portal from "components/portal";
 import {
     StarFilled, CheckSquareOutlined, BorderOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteTwoTone, UnorderedListOutlined, CheckOutlined, PauseOutlined, SyncOutlined,
     CheckCircleTwoTone, CloseCircleTwoTone, EditTwoTone, EllipsisOutlined, ArrowUpOutlined, ArrowDownOutlined
 } from '@ant-design/icons';
 import { json, includeObjectKeys, isObjectEmpty, valueByPath } from "utils/object";
-import { Tag, Button, Space, Badge, Dropdown } from "antd";
+import { Tag, Button, Space, Badge, Dropdown, Form, Select, InputNumber, Checkbox } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
@@ -24,6 +27,8 @@ import { getInt } from 'utils/index';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { columnHasPath, columnPath } from './TableV4';
+import { Field, Container as FormContainer, SelectField, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
+import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 
 export const useStyles = createUseStyles({
     focus: {
@@ -93,7 +98,7 @@ const useValidation = (node, col) => {
 
 
 
-export const Options = ({ params: { column: col, data, node } = {}, integer, column, value, style, bold, className, onClick, map }) => {
+export const Options = ({ params: { column: col, data, node } = {}, color, integer, column, value, style, bold, className, onClick, map }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
     const { validation, map: mp } = col.getDefinition().cellRendererParams || {};
@@ -125,9 +130,83 @@ export const Options = ({ params: { column: col, data, node } = {}, integer, col
         return { label: integer ? getInt(_v) : _v };
     }, [data]);
 
-    return (<div title={error && error.message} style={{ width: "100%", height: "100%", ...error && { backgroundColor: "#ffa39e", borderRadius: "5px" } }}><Tag {...genericProps({ ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)} {..._value?.props}>{_value?.label}</Tag></div>);
+    return (<div title={error && error.message} style={{ width: "100%", height: "100%", ...error && { backgroundColor: "#ffa39e", borderRadius: "5px" } }}><Tag {...color && { color }} {...genericProps({ ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)} {..._value?.props}>{_value?.label}</Tag></div>);
 }
 
+export const ArrayTags = ({ params = {}, color, isObject = false, value, column, style, className, onClick, valueProperty = "value", labelProperty = "label" }) => {
+    const { column: col, data, rowIndex, node } = params;
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const { modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
+    const _checkKey = checkKey ? checkKey : col.getDefinition().field;
+    const isOnMode = useMemo(() => {
+        if (col.getDefinition()?.editable) {
+            return modeApi?.isOnMode() && col.getDefinition().editable(params);
+        }
+        return false;
+    }, [modeApi?.isOnMode()]);
+
+    const onCheckChange = useCallback((e) => {
+        if (e.target.checked) {
+            updateChecks(draft => {
+                if (!draft[_checkKey].includes(node.id)) {
+                    draft[_checkKey].push(node.id);
+                    draft.timestamp = new Date();
+                }
+            });
+        } else {
+            updateChecks(draft => {
+                draft[_checkKey] = draft[_checkKey].filter(item => item !== node.id);
+                draft.timestamp = new Date();
+            });
+        }
+    }, []);
+
+    const _checkValue = useMemo(() => {
+        if (check) {
+            return (checks[_checkKey].includes(node.id)) ? true : false;
+        }
+        return false;
+    }, [checks?.[_checkKey]?.length]);
+
+    const onColumControl = () => {
+        params.api.startEditingCell({
+            rowIndex: params.rowIndex,
+            colKey: col.colId
+        })
+    }
+
+
+
+    const onKeyDown = (event, a) => {
+        if (event.keyCode === 13) {
+            onClick(a)
+        }
+    }
+
+    const _values = useMemo(() => {
+        let _v = value;
+        const _path = columnPath(col);
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : (columnHasPath(col) ? valueByPath(data, _path) : data?.[_path]) : _v;
+        if (_v == undefined) {
+            return null;
+        }
+        return json(_v);
+    }, [data]);
+
+
+    return (<OuterDiv style={{ display: "flex" }} error={error}>
+        <div onClick={editColumControl && onColumControl} style={{ flex: 1 }}>
+            {(Array.isArray(_values)) && _values.map((v, i) => <Tag {...color && { color }} {...genericProps({ fontWeight: 600 },
+                onClick ? () => onClick && onClick({ data: v }) : null,
+                (e) => onKeyDown(e, { data: v }), style, _classNames)}
+                key={`va-${rowIndex}-${isObject ? v?.[valueProperty] : v}-${i}`}
+            >{isObject ? v?.[labelProperty] : v}</Tag>)}
+        </div>
+        {(isOnMode && check) && <Checkbox defaultChecked={false} checked={_checkValue} onChange={onCheckChange} />}
+    </OuterDiv>);
+}
 
 export const Action = ({ params: { column: col, data, node } = {}, icon, onClick, items = [] }) => {
 
@@ -141,10 +220,11 @@ export const Action = ({ params: { column: col, data, node } = {}, icon, onClick
 
 }
 
-export const Value = ({ params: { column: col, data, node } = {}, column, detailColumn, detailValue, value, unit, style, className, addonAfter, addonBefore, link, bold, align = "left", onClick, datetime }) => {
+export const Value = ({ params = {}, column, detailColumn, detailValue, value, unit, style, className, addonAfter, addonBefore, link, bold, align = "left", onClick, datetime }) => {
+    const { column: col, data, rowIndex, node } = params;
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
-    const { format = DATETIME_FORMAT } = col.getDefinition().cellRendererParams || {};
+    const { format = DATETIME_FORMAT, editColumControl } = col.getDefinition().cellRendererParams || {};
     const error = useValidation(node, col);
     const onKeyDown = (event) => {
         if (event.keyCode === 13) {
@@ -175,9 +255,16 @@ export const Value = ({ params: { column: col, data, node } = {}, column, detail
         return null;
     }, [data]);
 
+    const onColumControl = () => {
+        params.api.startEditingCell({
+            rowIndex: params.rowIndex,
+            colKey: col.colId
+        })
+    }
+
     if (link) {
         return (
-            <div style={{ ..._detail !== null && { lineHeight: 1.3 } }}>
+            <div onClick={editColumControl && onColumControl} style={{ width: "100%", height: "100%", ..._detail !== null && { lineHeight: 1.3 } }}>
                 <Button title={error && error.message} size='small' type='link' {...genericProps({ textAlign: align, height: "16px", lineHeight: 1.3, ...error && { backgroundColor: "#ffa39e", borderRadius: "5px" }, ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)}>{(_value !== null) && addonBefore}{_value}{((unit && _value !== null) && unit)}{(_value !== null) && addonAfter}</Button>
                 {_detail !== null && <div style={{ padding: "0px 7px" }}>{_detail}</div>}
             </div>
@@ -185,7 +272,7 @@ export const Value = ({ params: { column: col, data, node } = {}, column, detail
     }
     return (
         <OuterDiv error={error}>
-            <div style={{ textAlign: align, ..._detail !== null && { lineHeight: 1.3 } }}>
+            <div onClick={editColumControl && onColumControl} style={{ textAlign: align, width: "100%", height: "100%", ..._detail !== null && { lineHeight: 1.3 } }}>
                 <div><span {...genericProps({ ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)}>{(_value !== null) && addonBefore}{_value}{((unit && _value !== null) && unit)}{(_value !== null) && addonAfter}</span></div>
                 {_detail !== null && <div>{_detail}</div>}
             </div>
@@ -323,7 +410,7 @@ export const CortesOrdem = ({ params: { column: col, data, node, rowIndex } = {}
     </OuterDiv>);
 }
 
-export const BadgeNumber = ({ params: { column: col, data, node } = {}, column, value, unit, style, className, bold, align = "left", onClick }) => {
+export const BadgeNumber = ({ params: { column: col, data, node } = {}, column, value, unit, style, className, bold, align = "center", onClick }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
     const error = useValidation(node, col);
@@ -340,6 +427,71 @@ export const BadgeNumber = ({ params: { column: col, data, node } = {}, column, 
 
 
     return (<OuterDiv error={error} style={{ textAlign: align }}><div {...genericProps({ ...bold && { fontWeight: 700 } }, onClick, onKeyDown, style, _classNames)}><Badge count={_value} />{((unit && _value !== null) && unit)}</div></OuterDiv>);
+}
+
+export const BadgeCount = ({ params = {}, column, value, unit, style, className, bold, align = "center", onClick }) => {
+    const { column: col, data, rowIndex, node } = params;
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const { modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
+    const _checkKey = checkKey ? checkKey : col.getDefinition().field;
+    const error = useValidation(node, col);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+    const isOnMode = useMemo(() => {
+        if (col.getDefinition()?.editable) {
+            return modeApi?.isOnMode() && col.getDefinition().editable(params);
+        }
+        return false;
+    }, [modeApi?.isOnMode()]);
+    const onCheckChange = useCallback((e) => {
+        if (e.target.checked) {
+            updateChecks(draft => {
+                if (!draft[_checkKey].includes(node.id)) {
+                    draft[_checkKey].push(node.id);
+                    draft.timestamp = new Date();
+                }
+            });
+        } else {
+            updateChecks(draft => {
+                draft[_checkKey] = draft[_checkKey].filter(item => item !== node.id);
+                draft.timestamp = new Date();
+            });
+        }
+    }, []);
+
+    const _checkValue = useMemo(() => {
+        if (check) {
+            return (checks[_checkKey].includes(node.id)) ? true : false;
+        }
+        return false;
+    }, [checks?.[_checkKey]?.length]);
+
+    const onColumControl = () => {
+        params.api.startEditingCell({
+            rowIndex: params.rowIndex,
+            colKey: col.colId
+        })
+    }
+
+    const _value = useMemo(() => {
+        let _v = value;
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : data?.[col.getDefinition().field] : _v;
+        return Array.isArray(_v) ? _v.length : null;
+    }, [data]);
+
+
+    return (<OuterDiv error={error} style={{ textAlign: align, display: "flex" }}>
+        <div style={{ flex: 1, height: "100%" }} onClick={editColumControl && onColumControl}>
+            <div {...genericProps({ ...bold && { fontWeight: 700 } }, !isOnMode && onClick, onKeyDown, style, _classNames)}>
+                <Badge count={_value} />{((unit && _value !== null) && unit)}
+            </div>
+        </div>
+        {(isOnMode && check) && <Checkbox defaultChecked={false} checked={_checkValue} onChange={onCheckChange} />}
+    </OuterDiv>);
 }
 
 export const FromTo = ({ field: { from, to } = {}, params: { column: col, data, node } = {}, style, bold, align = "left", className, addonAfter, addonBefore, onClick, unit, pad = 2, colorize = false, color = "#000", colorGreater = "#b7eb8f", colorLess = "#ffa39e" }) => {
@@ -426,11 +578,54 @@ export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, 
         </div></OuterDiv>);
 }
 
-export const EstadoBobine = ({ field: { estado, largura } = {}, params: { column: col, data, rowIndex, node } = {}, align = "center", ...props }) => {
+export const EstadoBobine = ({ field: { estado, largura } = {}, params = {}, align = "center", ...props }) => {
+    const { column: col, data, rowIndex, node } = params;
     const error = useValidation(node, col);
     const _data = { artigo: [{ estado: data?.[estado], lar: data?.[largura] }] };
-    return (<OuterDiv error={error}>
-        <EstadoBobines field={{ artigos: "artigo" }} params={{ column: col, data: _data, rowIndex, node }} align={align} {...props} />
+    const { modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
+    const _checkKey = checkKey ? checkKey : col.getDefinition().field;
+    const isOnMode = useMemo(() => {
+        if (col.getDefinition()?.editable) {
+            return modeApi?.isOnMode() && col.getDefinition().editable(params);
+        }
+        return false;
+    }, [modeApi?.isOnMode()]);
+
+    const onCheckChange = useCallback((e) => {
+        if (e.target.checked) {
+            updateChecks(draft => {
+                if (!draft[_checkKey].includes(node.id)) {
+                    draft[_checkKey].push(node.id);
+                    draft.timestamp = new Date();
+                }
+            });
+        } else {
+            updateChecks(draft => {
+                draft[_checkKey] = draft[_checkKey].filter(item => item !== node.id);
+                draft.timestamp = new Date();
+            });
+        }
+    }, []);
+
+    const _checkValue = useMemo(() => {
+        if (check) {
+            return (checks[_checkKey].includes(node.id)) ? true : false;
+        }
+        return false;
+    }, [checks?.[_checkKey]?.length]);
+
+    const onColumControl = () => {
+        params.api.startEditingCell({
+            rowIndex: params.rowIndex,
+            colKey: col.colId
+        })
+    }
+
+    return (<OuterDiv style={{ display: "flex" }} error={error}>
+        <div onClick={editColumControl && onColumControl} style={{ flex: 1 }}>
+            <EstadoBobines field={{ artigos: "artigo" }} params={{ column: col, data: _data, rowIndex, node }} align={align} {...props} />
+        </div>
+        {(isOnMode && check) && <Checkbox defaultChecked={false} checked={_checkValue} onChange={onCheckChange} />}
     </OuterDiv>);
 }
 
@@ -468,13 +663,52 @@ const MultiText = ({ value, dataType }) => {
     if (dataType === "json") {
         return <SyntaxHighlighter customStyle={{ fontSize: "11px" }} language="json" style={a11yDark}>{value}</SyntaxHighlighter>;
     }
-    return (<div style={{ whiteSpace: "pre" }}>{value}</div>)
+    return (<div style={{ whiteSpace: "pre-wrap" }}>{value}</div>)
 }
 export const MultiLine = ({ params = {}, column, value, style, className, bold, align = "left", type = "drawer", dataType = "text", width = 500, height = 300, }) => {
     const { column: col, data, api, node } = params;
     const _classNames = classNames({ [className]: className });
-    const { modalApi, modeApi } = col.getDefinition().cellRendererParams || {};
+    const { modalApi, modeApi,check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
     const error = useValidation(node, col);
+    const _checkKey = checkKey ? checkKey : col.getDefinition().field;
+    const isOnMode = useMemo(() => {
+        if (col.getDefinition()?.editable) {
+            return modeApi?.isOnMode() && col.getDefinition().editable(params);
+        }
+        return false;
+    }, [modeApi?.isOnMode()]);
+
+    const onCheckChange = useCallback((e) => {
+        if (e.target.checked) {
+            updateChecks(draft => {
+                if (!draft[_checkKey].includes(node.id)) {
+                    draft[_checkKey].push(node.id);
+                    draft.timestamp = new Date();
+                }
+            });
+        } else {
+            updateChecks(draft => {
+                draft[_checkKey] = draft[_checkKey].filter(item => item !== node.id);
+                draft.timestamp = new Date();
+            });
+        }
+    }, []);
+
+    const _checkValue = useMemo(() => {
+        if (check) {
+            return (checks[_checkKey].includes(node.id)) ? true : false;
+        }
+        return false;
+    }, [checks?.[_checkKey]?.length]);
+
+    const onColumControl = () => {
+        params.api.startEditingCell({
+            rowIndex: params.rowIndex,
+            colKey: col.colId
+        })
+    }
+
+
     const _value = useMemo(() => {
         let _v = value;
         _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : data?.[col.getDefinition().field] : _v;
@@ -494,15 +728,77 @@ export const MultiLine = ({ params = {}, column, value, style, className, bold, 
         }
     }
 
-    const isOnMode = useMemo(() => {
-        return modeApi?.isOnMode() && col.getDefinition().editable(params);
-    }, [modeApi?.isOnMode()]);
-
     const onOpen = () => {
         const _t = api.getFocusedCell();
         modalApi.setModalParameters({ content: <MultiText dataType={dataType} value={_value} />, title: col.getDefinition().headerName, type: type, width: width, height: height, parameters: { gridApi: api, cellFocus: { rowIndex: _t.rowIndex, colId: _t.column.colId } } });
         modalApi.showModal();
     }
 
-    return (<OuterDiv error={error}><div {...!isOnMode && { onClick: onOpen, onKeyDown }} tabIndex="0" {...genericProps({ textAlign: align, cursor: "pointer", ...bold && { fontWeight: 700 } }, null, null, style, _classNames)}>{_value}</div></OuterDiv>);
+    return (<OuterDiv style={{ display: "flex" }} error={error}>
+        <div onClick={editColumControl && onColumControl} style={{ flex: 1 }}>
+        <div {...!isOnMode && { onClick: onOpen, onKeyDown }} tabIndex="0" {...genericProps({ textAlign: align, cursor: "pointer", ...bold && { fontWeight: 700 } }, null, null, style, _classNames)}>{_value}</div>
+        </div>
+        {(isOnMode && check) && <Checkbox defaultChecked={false} checked={_checkValue} onChange={onCheckChange} />}
+        </OuterDiv>
+        );
+}
+
+
+export const ModalMultiRangeView = ({ value, unit, minValue, maxValue, extraFields, wndRef, closeSelf, ...props }) => {
+    const submitting = useSubmitting(true);
+    const [form] = Form.useForm();
+
+    useEffect(() => {
+        form.setFieldsValue({ items: [...value].reverse() });
+        submitting.end();
+    }, []);
+
+    return (<>
+        <FormContainer fluid form={form} forInput={false} wrapForm={true} wrapFormItem={true} style={{}}>
+            <Row style={{}} gutterWidth={10}>
+                <Col>
+                    <Form.List name="items">
+                        {(fields, { add, remove, move }) => {
+                            // const addRow = (fields) => {
+                            //     if (fields.length === 0 && type == "furos") {
+                            //         add({ [`min`]: 1, [`max`]: p.row.comp_actual, "unit": unit });
+                            //     } else {
+                            //         add({ [`min`]: null, [`max`]: null, "unit": unit, ...(type == "ff" && { "type": "Desbobinagem" }) });
+                            //     }
+                            // }
+                            // const removeRow = (fieldName, field) => {
+                            //     remove(fieldName);
+                            // }
+                            // const moveRow = (from, to) => {
+                            //     //move(from, to);
+                            // }
+                            return (
+                                <>
+                                    <div style={{ height: "300px" }}>
+                                        <YScroll>
+                                            {fields.map((field, index) => (
+                                                <Row key={field.key} gutterWidth={1}>
+                                                    <Col width={20} style={{ alignSelf: "center", fontWeight: 700 }}>{index + 1}</Col>
+                                                    <Col xs="content"><Field name={[field.name, `min`]} label={{ enabled: false }}><InputNumber autoFocus size="small" style={{ width: "110px", textAlign: "right" }} controls={false} addonAfter={<b>{unit}</b>} min={minValue} max={maxValue} /></Field></Col>
+                                                    <Col xs="content"><Field name={[field.name, `max`]} label={{ enabled: false }} includeKeyRules={['min']} allValues={{ min: form.getFieldValue(['items', index, 'min']) }}><InputNumber size="small" style={{ width: "110px", textAlign: "right" }} controls={false} addonAfter={<b>{unit}</b>} min={minValue} max={maxValue} /></Field></Col>
+                                                    {extraFields?.type && <Col xs="content"><Field name={[field.name, `type`]} label={{ enabled: false }}><Select size="small" style={{ width: "150px", textAlign: "right" }} options={[{ value: "Bobinagem" }, { value: "Desbobinagem" }]} /></Field></Col>}
+                                                </Row>
+                                            ))}
+                                        </YScroll>
+                                    </div>
+                                </>
+                            )
+                        }
+                        }
+                    </Form.List>
+                </Col>
+            </Row>
+        </FormContainer>
+        {wndRef && <Portal elId={wndRef.current}>
+            <Space>
+                <Button disabled={submitting.state} onClick={closeSelf}>Fechar</Button>
+            </Space>
+        </Portal>}
+    </>
+    );
 }

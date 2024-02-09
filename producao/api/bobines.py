@@ -25,7 +25,7 @@ from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
 from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check, ParsedFilters
-from support.myUtils import  ifNull
+from support.myUtils import  excludeDictKeys, ifNull, includeDictKeys, timestamp
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -155,6 +155,57 @@ def Sql(request, format=None):
         response = func(request, format)
         return response
     return Response({})
+
+def UpdateDefeitosV2(request, format=None):
+    r = PostData(request)
+
+    def _checkBobines(ids, cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select count(*) cnt
+            from producao_bobine pb
+            left join producao_palete pp on pp.id=pb.palete_id 
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
+        """), cursor, {})
+        return response["rows"][0]["cnt"]
+
+    def _checkExpedicaoSage(ids):
+        connection = connections[connGatewayName].cursor()
+        response = dbgw.executeSimpleList(lambda: (f"""
+                select count(*) cnt
+                from mv_bobines pb
+                left join mv_paletes pp on pp.id=pb.palete_id
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
+                where pb.id in ({ids}) and mv."SDHNUM_0" is not null
+        """), connection, {})
+        return response["rows"][0]["cnt"]
+
+    def update(data,id,cursor):
+        values={
+            **excludeDictKeys(data,["id","ff_pos","fc_pos","buracos_pos","rugas_pos","furos_pos"]),
+            "ff_pos":json.dumps(data["ff_pos"], ensure_ascii=False) if data["ff_pos"] is not None else None,
+            "fc_pos":json.dumps(data["fc_pos"], ensure_ascii=False) if data["fc_pos"] is not None else None,
+            "furos_pos":json.dumps(data["furos_pos"], ensure_ascii=False) if data["furos_pos"] is not None else None,
+            "buracos_pos":json.dumps(data["buracos_pos"], ensure_ascii=False) if data["buracos_pos"] is not None else None,
+            "rugas_pos":json.dumps(data["rugas_pos"], ensure_ascii=False) if data["rugas_pos"] is not None else None
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_bobine", {"id":Filters.getNumeric(id,"isnull")}, None, False,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                ids = ','.join(str(x["id"]) for x in r.data.get("rows"))
+                chk = _checkBobines(ids,cursor)
+                if chk > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Comprimento actual, se entrou em reciclado, ou se está numa carga... )"})
+                chk = _checkExpedicaoSage(ids)
+                if chk > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique se foi expedida."})
+                for i, v in enumerate(r.data.get("rows")):
+                    update(v,v.get("id"),cursor)
+        return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 def UpdateDefeitos(request, format=None):
     connection = connections["default"].cursor()
@@ -489,7 +540,7 @@ def BobinesListV2(request, format=None):
         ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
         po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
         sgppl.disabled,pc.name cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
-        mva.cod artigo_cod,pbm.tiponwinf,pbm.tiponwsup
+        mva.cod artigo_cod,pbm.tiponwinf,pbm.tiponwsup,pbm.comp comp_original, pbm.diam diam_original,pbm.num_bobinagem
     """
 
     dql.columns=encloseColumn(cols,False)

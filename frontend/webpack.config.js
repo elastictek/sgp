@@ -88,7 +88,7 @@ module.exports = (env, argv) => {
         watchOptions: {
             aggregateTimeout: 200,
             poll: 1000,
-            ignored: ['node_modules/**', 'dist/**', 'static/**', "*.log", "*.lock", "*.code-workspace", "__pycache__/**","templates/frontend/index.html"]
+            ignored: ['node_modules/**', 'dist/**', 'static/**', "*.log", "*.lock", "*.code-workspace", "__pycache__/**", "templates/frontend/index.html"]
         },
         entry: {
             [`${appName}/index`]: [`./${baseFolder}/index.jsx`, ...(isDevMode ? [] : [])]
@@ -105,8 +105,8 @@ module.exports = (env, argv) => {
             alias: {
                 config: path.resolve(rootPath, "src", 'config'),
                 components: path.resolve(rootPath, "src", 'components'),
-                app: path.resolve(rootPath, "src", 'pages','App'),
-                gridlayout: path.resolve(rootPath, "src", 'pages','dashboard','GridLayout'),
+                app: path.resolve(rootPath, "src", 'pages', 'App'),
+                gridlayout: path.resolve(rootPath, "src", 'pages', 'dashboard', 'GridLayout'),
                 assets: path.resolve(rootPath, "src", 'assets'),
                 'react/jsx-dev-runtime.js': path.resolve(rootPath, 'node_modules', 'react', 'jsx-dev-runtime.js'),
                 'react/jsx-runtime.js': path.resolve(rootPath, 'node_modules', 'react', 'jsx-runtime.js')
@@ -119,6 +119,11 @@ module.exports = (env, argv) => {
                     include: path.resolve(rootPath, "src"),
                     exclude: /node_modules/,
                     use: [{
+                        loader: 'thread-loader', // Use thread-loader for parallelism
+                        options: {
+                            workers: require('os').cpus().length - 1, // Use one less than the number of CPU cores
+                        },
+                    }, {
                         loader: "babel-loader", options: {
                             babelrc: false,
                             presets: [["@babel/preset-env", { modules: false, useBuiltIns: 'usage', corejs: 3 }], "@babel/preset-react"],

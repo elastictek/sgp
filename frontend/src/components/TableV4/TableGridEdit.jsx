@@ -41,7 +41,7 @@ import { useImmer } from 'use-immer';
 
 export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRules = {}, filters, title, leftTitle, permission, defaultParameters, dataAPI, onSelectionChanged, isRowSelectable, ignoreRowSelectionOnCells = [],
     topToolbar, loadOnInit = false, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, modeApi, isCellEditable, valueGetter, onBeforeCellEditRequest,
-    onAfterCellEditRequest, onRowClick, onCellClick, rowSelectionIgnoreOnMode, suppressCellFocus, rowSelection, /* extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, onFilterChange, local = false, loadOnInit = false, rowSelection, */ ...props }) => {
+    onAfterCellEditRequest, onRowClick, onCellClick, rowSelectionIgnoreOnMode, suppressCellFocus, rowSelection,onExitMode, /* extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, onFilterChange, local = false, loadOnInit = false, rowSelection, */ ...props }) => {
     const _gridRef = gridRef || useRef(); //not required
     const [gridApi, setGridApi] = useState(); //not Required;
     const modalApi = useModalApi() //not Required;
@@ -151,6 +151,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 onAfterCellEditRequest={onAfterCellEditRequest}
                 rowSelectionIgnoreOnMode={rowSelectionIgnoreOnMode}
                 rowSelection={rowSelection}
+                suppressCellFocus={suppressCellFocus}
                 onSelectionChanged={_onSelectionChanged}
                 isRowSelectable={_isRowSelectable}
                 rowClassRules={_rowClassRules}
@@ -167,7 +168,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 columnTypes={_columnTypes}
                 onRowClick={onRowClick}
                 onCellClick={onCellClick}
-                
+                onExitMode={onExitMode}
                 //stopEditingWhenCellsLoseFocus={true}
 
                 showTopToolbar={true}

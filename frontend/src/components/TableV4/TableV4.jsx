@@ -9,7 +9,7 @@ import { filterRegExp, filtersDef, processConditions } from 'utils/useDataAPIV4'
 import { uid } from 'uid';
 import dayjs from 'dayjs';
 import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty, valueByPath, updateByPath } from "utils/object";
-import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar } from "antd";
+import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar, Checkbox } from "antd";
 import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined, QuestionCircleTwoTone } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
@@ -81,6 +81,40 @@ const StyledType = styled(Select).withConfig({
         ${(props) => props?.background && `background-color:#fafafa !important;`}
     }
 `;
+
+export const HeaderCheck = ({ data, column, api }) => {
+    const _headerName = column.getDefinition().headerName;
+    const { checks, updateChecks, checkKey } = column.getDefinition().headerComponentParams || {};
+    const _checkKey = checkKey ? checkKey : column.getDefinition().field;
+
+    const onChange = useCallback((e) => {
+        const _v = [];
+        if (e.target.checked) {
+            api.forEachNode((node) => {
+                _v.push(node.id);
+            });
+        }
+        updateChecks(draft => {
+            draft[_checkKey] = _v;
+            draft.timestamp = new Date();
+        });
+    }, []);
+
+    const _value = useMemo(() => {
+        let _count = 0;
+        api.forEachNode((node) => {
+            _count++;
+        });
+        return (checks[_checkKey].length == _count) ? true : false;
+    }, [checks[_checkKey].length]);
+
+    return (
+        <div style={{ fontSize: "12px", display: "flex", width: "100%", justifyContent: "space-between" }}>
+            <span>{_headerName}</span>
+            <Checkbox checked={_value} onChange={onChange} defaultChecked={false} />
+        </div>
+    );
+}
 
 export const TypeRelation = ({ disabled, onChange, name, value, background = false }) => {
     return (
@@ -431,7 +465,23 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
     </Drawer >);
 }
 
-const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish }) => {
+export const exitMode = (gridApi, onExitModeRefresh = true, data = null, fn = null) => {
+    gridApi.stopEditing();
+    if (typeof fn === "function") {
+        fn();
+    }
+    if (onExitModeRefresh) {
+        if (!data) {
+            gridApi.refreshServerSide({ purge: false });
+        } else {
+            // _gridRef.current.api.refreshCells({force:true});
+            // _gridRef.current.api.redrawRows();
+            gridApi.updateGridOptions({ rowData: data });
+        }
+    }
+}
+
+const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish,onExitMode }) => {
     const [moreFilters, setMoreFilters] = useState(false);
     const [sqlQueryView, setSqlQueryView] = useState(false);
     const [helpfilters, setHelpFilters] = useState(false);
@@ -442,18 +492,24 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
         return (<></>);
     }
 
-    const onExitMode = useCallback(() => {
-        gridRef.current.api.stopEditing();
-        if (onExitModeRefresh) {
-            if (!local) {
-                gridRef.current.api.refreshServerSide({ purge: false });
-            } else {
-                // _gridRef.current.api.refreshCells({force:true});
-                // _gridRef.current.api.redrawRows();
-                gridRef.current.api.updateGridOptions({ rowData: dataAPI.getData().rows });
-            }
-        }
-    }, [dataAPI.getTimeStamp()]);
+    const _exitMode = () => {
+        exitMode(gridRef.current.api, onExitModeRefresh, local ? dataAPI.getData().rows : null,onExitMode);
+    }
+    // const onExitMode = useCallback(() => {
+    //     gridRef.current.api.stopEditing();
+    //     if (typeof onExitMode==="function"){
+    //         _onExitMode();
+    //     }
+    //     if (onExitModeRefresh) {
+    //         if (!local) {
+    //             gridRef.current.api.refreshServerSide({ purge: false });
+    //         } else {
+    //             // _gridRef.current.api.refreshCells({force:true});
+    //             // _gridRef.current.api.redrawRows();
+    //             gridRef.current.api.updateGridOptions({ rowData: dataAPI.getData().rows });
+    //         }
+    //     }
+    // }, [dataAPI.getTimeStamp()]);
 
     const onAddMode = useCallback((idx = null, row) => {
         let _first = gridRef.current.api.getFirstDisplayedRow() == -1 ? 0 : gridRef.current.api.getFirstDisplayedRow();
@@ -487,7 +543,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                 if (addedRows.length > 0) {
                     const success = await modeApi.onAddSave(addedRows, loadedRows);
                     if (success == true && onAddSaveExit) {
-                        modeApi.onExit(onExitMode);
+                        modeApi.onExit(_exitMode);
                     }
                 } else {
                     dataAPI.openNotification("info", 'top', null, "Não existem dados a processar.");
@@ -495,8 +551,11 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
             } else if (modeApi.isOnEditMode()) {
                 if (updatedRows.length > 0) {
                     const success = await modeApi.onEditSave(updatedRows, loadedRows);
+                    if (success == true) {
+                        modeApi.setDirty(false);
+                    }
                     if (success == true && onEditSaveExit) {
-                        modeApi.onExit(onExitMode);
+                        modeApi.onExit(_exitMode);
                     }
                 } else {
                     dataAPI.openNotification("info", 'top', null, "Não existem dados a processar.");
@@ -598,7 +657,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                         {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col xs="content"><Button type="default" icon={<PlusOutlined />} onClick={() => modeApi.onAddMode(onAddMode)}>{modeApi.addText()}</Button></Col>}
                         {(!modeApi.isOnMode() && modeApi.allowEdit()) && <Col xs="content"><Button type="default" icon={<EditOutlined />} onClick={modeApi.onEditMode}>{modeApi.editText()}</Button></Col>}
                         {(modeApi.isOnMode() && modeApi.isDirty()) && <Col xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onSave}>{modeApi.saveText()}</Button></Col>}
-                        {modeApi.isOnMode() && <Col xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={() => modeApi.onExit(onExitMode)} /></Col>}
+                        {modeApi.isOnMode() && <Col xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={() => modeApi.onExit(_exitMode)} /></Col>}
                     </>}
 
                     <Col xs="content">
@@ -723,6 +782,27 @@ export const suppressKeyboardEvent = ({ event }) => {
     return suppressEvent;
 };
 
+export const getSelectedNodes = (api, local = false) => {
+    if (local) {
+        return api.getSelectedNodes();
+    }
+    const selectedNodes = [];
+    const _state = api.getServerSideSelectionState();
+    if (_state.selectAll) {
+        api.forEachNode(n => {
+            if (!_state.toggledNodes.includes(n.id)) {
+                selectedNodes.push(n);
+            }
+        });
+    } else {
+        api.forEachNode(n => {
+            if (_state.toggledNodes.includes(n.id)) {
+                selectedNodes.push(n);
+            }
+        });
+    }
+    return selectedNodes;
+}
 
 
 export const useModalApi = () => {
@@ -804,7 +884,7 @@ export default ({
     columnDefs, defaultColDef, columnTypes, dataAPI, local = false, gridApi, setGridApi, modalApi, loadOnInit = true,
     loading = false, showRange = true, allowGoTo = true, showFromTo, showTotalCount, gridRef, showTopToolbar = true, topToolbar = {},
     onExitModeRefresh = true, onAddSaveExit = true, onEditSaveExit = false, rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, onCellClick, onRowClick, isRowSelectable,
-    ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, ...props
+    ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, onExitMode, ...props
 }) => {
     const classes = useTableStyles();
     const _gridRef = gridRef || useRef();
@@ -1069,18 +1149,20 @@ export default ({
         if (typeof onBeforeCellEditRequest === "function") {
             _data = await onBeforeCellEditRequest(_eventdata, event.column.getDefinition(), _path, event.newValue, event);
         }
-        if (isNil(_data)) {
-            _data = assocPath(_path.split('.'), event.newValue, _eventdata);
-        }
-        const transaction = {
-            update: [{ ...assoc('rowvalid', 0, _data) }],
-        };
         let result;
-        if (local) {
-            result = _gridRef.current.api.applyTransaction(transaction);
-        } else {
-            result = _gridRef.current.api.applyServerSideTransaction(transaction);
+        if (_data !== false) {
+            if (isNil(_data)) {
+                _data = assocPath(_path.split('.'), event.newValue, _eventdata);
+            }
+            const transaction = {
+                update: [{ ...assoc('rowvalid', 0, _data) }],
+            };
+            if (local) {
+                result = _gridRef.current.api.applyTransaction(transaction);
+            } else {
+                result = _gridRef.current.api.applyServerSideTransaction(transaction);
 
+            }
         }
         if (typeof onAfterCellEditRequest === "function") {
             await onAfterCellEditRequest(event.node.data, event.column.getDefinition(), _path, event.newValue, event, result);
@@ -1167,7 +1249,7 @@ export default ({
     return (
         <GridContainer>
             <TableContext.Provider value={{ dataAPI, modeApi, gridRef: _gridRef, stateFilters, updateStateFilters, topToolbar, local }}>
-                {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExitModeRefresh={onExitModeRefresh} onAddSaveExit={onAddSaveExit} onEditSaveExit={onEditSaveExit} /* onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} */ onFilterFinish={onFilterFinish} />}
+                {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExitModeRefresh={onExitModeRefresh} onAddSaveExit={onAddSaveExit} onEditSaveExit={onEditSaveExit} onExitMode={onExitMode} /* onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} */ onFilterFinish={onFilterFinish} />}
                 <div className="ag-theme-quartz ag-custom">
                     <AgGridReact
                         ref={_gridRef}
@@ -1190,7 +1272,7 @@ export default ({
 
 
                         pagination={dataAPI.getPagination().enabled}
-                        paginationPageSize={dataAPI.getPagination().pageSize}
+                        paginationPageSize={dataAPI.getPageSize()}
                         suppressPaginationPanel={true}
                         suppressScrollOnNewData={true}
                         onPaginationChanged={onPaginationChanged}

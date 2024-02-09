@@ -516,6 +516,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const defaultSort = [{ column: 'nome', direction: 'DESC' }];
     const primaryKeys = ['id'];
     const [modalParameters, setModalParameters] = useState({});
+    const [tab, setTab] = useState();
     // const [showModal, hideModal] = useModal(({ in: open, onExited }) => (
     //     <ResponsiveModal title={modalParameters.title} lazy={true} footer="ref" onCancel={hideModal} width={5000} height={5000}><IFrame src={modalParameters.src} /></ResponsiveModal>
     // ), [modalParameters]);
@@ -675,7 +676,8 @@ export default ({ noid = false, setFormTitle, ...props }) => {
             //setModalParameters({ content: "validar", /* tab: lastTab, setLastTab, */lazy: true, type: "drawer", push: false, width: "90%", title: "Validar Bobinagem", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         } else {
-            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now(), dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() } } });
+            const hasQualidadeGroup = permission.auth.groups.some(role => role.startsWith("qualidade"));
+            navigate("/app/bobinagens/formbobinagem", { replace: true, state: { tab: hasQualidadeGroup ? "4" : "1", bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome, tstamp: Date.now(), dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() } } });
             //setModalParameters({ content: "bobinagem", /* tab: lastBobinagemTab, setLastTab: setLastBobinagemTab, */ lazy: true, type: "drawer", push: false, width: "90%", /* title: "Bobinagem", */ /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { bobinagem: row, bobinagem_id: row.id, bobinagem_nome: row.nome } });
             //showModal();
         }
@@ -699,7 +701,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const loadData = ({ init = false, signal }) => {
         if (init) {
             const { typelist, filter = {}, ...initFilters } = loadInit({ ...defaultFilters, ...defaultParameters }, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, location?.state, null);
-            let { filterValues, fieldValues } = fixRangeDates(null, {...initFilters,...filter});
+            let { filterValues, fieldValues } = fixRangeDates(null, { ...initFilters, ...filter });
             formFilter.setFieldsValue({ typelist, ...fieldValues });
             dataAPI.addFilters(filterValues, true, false);
             dataAPI.setSort(defaultSort);
@@ -708,6 +710,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
 
             setAllowEdit({ datagrid: permission.allow() });
             setModeEdit({ datagrid: false });
+
         }
         submitting.end();
     }

@@ -99,7 +99,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   }
 
   const [columnDefs, setColumnDefs] = useImmer([
-    { colId: 'sgppl.nome', field: 'nome', headerName: 'Nome', lockPosition: "left", minWidth: 120, cellStyle: {}, cellRenderer: (params) => <Value link bold params={params} /> },
+    { colId: 'sgppl.nome', field: 'nome', headerName: 'Nome', checkboxSelection: true,headerCheckboxSelection: true,lockPosition: "left", minWidth: 120, cellStyle: {}, cellRenderer: (params) => <Value link bold params={params} /> },
     { colId: 'sgppl.timestamp', field: 'timestamp', headerName: 'Data', minWidth: 100, cellStyle: {}, cellRenderer: (params) => <Value datetime params={params} /> },
     { colId: 'sgppl.nbobines_real', field: 'nbobines_real', headerName: 'Bobines', width: 90, cellStyle: {}, cellRenderer: (params) => <FromTo field={{ from: "nbobines_real", to: "num_bobines" }} colorize={true} params={params} /> },
     { colId: 'sgppl.estado', field: 'estado', headerName: 'Estado', width: 110, cellStyle: {}, cellEditor: ModalEditor, cellRenderer: (params) => <EstadoBobines field={{ artigos: "artigo" }} params={params} /> },

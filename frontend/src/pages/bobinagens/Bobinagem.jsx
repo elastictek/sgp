@@ -17,7 +17,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Title } = Typography;
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined,CaretLeftFilled, CaretRightFilled } from '@ant-design/icons';
+import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, CaretLeftFilled, CaretRightFilled } from '@ant-design/icons';
 import ResultMessage from 'components/resultMessage';
 import Table from 'components/TableV2';
 import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS } from 'config';
@@ -54,12 +54,12 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, bobinagemNome = "
     return (<ToolbarTitle id={auth?.user} description={`${title} ${bobinagemNome}`}
         leftTitle={<span style={{}}>{`${title} ${bobinagemNome}`}</span>}
         actions={
-            <Space.Compact style={{marginLeft:"5px"}}>
+            <Space.Compact style={{ marginLeft: "5px" }}>
                 {(loadData && nav) && <>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: reverseDirection ? 1 : -1 })}/>
-                <Button disabled={submitting.state} style={{background:"#d9d9d9",border:"0px"}} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: reverseDirection ? -1 : 1 })}/>
-            </>
-            }
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: reverseDirection ? 1 : -1 })} />
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: reverseDirection ? -1 : 1 })} />
+                </>
+                }
             </Space.Compact>
         }
     />);
@@ -92,7 +92,7 @@ export const RightToolbar = ({ form, dataAPI, permission, edit, ...props }) => {
     }
 
     return (
-        <Space style={{marginRight:"5px"}}>
+        <Space style={{ marginRight: "5px" }}>
             <Button disabled={!permission.isOk({ action: "printEtiqueta" })} icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas">Imprimir Etiquetas</Button>
             {/* <Button disabled={!permission.isOk({ action: "printEtiqueta" })} title='Imprimir Etiqueta' icon={<PrinterOutlined />} onClick={props?.onPrint && props.onPrint()}>Etiqueta</Button> */}
             {/*             <Button disabled={!edit || !permission.isOk({ action: "refazerPalete" })} onClick={() => { }}>Refazer Palete</Button>
@@ -215,7 +215,9 @@ export default (props) => {
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);
         }
-        setActiveTab(props?.tab);
+        if (inputParameters.current?.tab) {
+            setActiveTab(inputParameters.current?.tab);
+        }
         submitting.end();
     }
 

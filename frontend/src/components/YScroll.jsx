@@ -1,7 +1,8 @@
 import React from 'react';
-import styled,{css} from 'styled-components';
+import styled, { css } from 'styled-components';
 
-const YScroll = styled.div`
+const YScroll = styled("div").withConfig({
+  shouldForwardProp: (prop) =>!['height','maxHeight','width','xScroll'].includes(prop)})`
     scrollbar-color:rgba(105,112,125,.5) transparent;
     scrollbar-width:thin;
     ${props => !props.height && css`height: 100%;`}

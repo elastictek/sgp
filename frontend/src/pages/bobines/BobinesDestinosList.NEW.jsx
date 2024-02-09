@@ -5,7 +5,7 @@ import { ROOT_URL, API_URL, DATE_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from 
 import { useDataAPI, parseFilter, getFilterValue } from "utils/useDataAPIV4";
 import { usePermission, Permissions } from "utils/usePermission";
 import { useImmer } from 'use-immer';
-import { useSubmitting, sleep, compareArrays, compareObjArrays, removeArrayMatchingElements, uniqueValues, length, isNullOrEmpty } from "utils";
+import { useSubmitting, sleep, compareArrays, compareObjArrays, removeArrayMatchingElements, uniqueValues, length,isNullOrEmpty } from "utils";
 import loadInit, { newWindow } from "utils/loadInitV3";
 import { uid } from 'uid';
 import dayjs from 'dayjs';
@@ -16,10 +16,10 @@ import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDa
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, EstadoBobine, Action, OPTIONS_LAB_MODE, OPTIONS_LAB_PARAMETERTYPE, BadgeCount, ModalMultiRangeView, ArrayTags } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
 import TableGridEdit from 'components/TableV4/TableGridEdit';
-import { AntdAutoCompleteEditor, AntdCheckboxEditor, AntdDateEditor, AntdInputEditor, AntdInputNumberEditor, AntdMultiSelectEditor, AntdSelectEditor, ArtigosLookupEditor, ClientesLookupEditor, RangeDefeitosEditor } from 'components/TableV4/TableEditorsV4';
+import { AntdAutoCompleteEditor, AntdCheckboxEditor, AntdDateEditor, AntdInputEditor, AntdInputNumberEditor, AntdMultiSelectEditor, AntdSelectEditor, ArtigosLookupEditor, ClientesLookupEditor, RangeDefeitosEditor, DestinosEditor } from 'components/TableV4/TableEditorsV4';
 import { firstKey, firstKeyValue, includeObjectKeys, json, updateByPath, valueByPath } from 'utils/object';
 import { z } from "zod";
-import { CheckOutlined, CloseCircleFilled, CloseOutlined, DeleteFilled, DownloadOutlined, EditOutlined, MoreOutlined, PrinterOutlined, StockOutlined, StopOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseCircleFilled, CloseOutlined, DeleteFilled, DeleteOutlined, DownloadOutlined, EditOutlined, MoreOutlined, PrinterOutlined, StockOutlined, StopOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Dropdown, Modal, Space } from 'antd';
 import { AppContext } from 'app';
 import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber, zRangeNumber } from 'utils/schemaZodRules';
@@ -27,11 +27,12 @@ import { fetchPost } from 'utils/fetch';
 import { is, isEmpty, isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import FormPrint from '../commons/FormPrint';
+import { RowsSelection } from './BobinesDefeitosList';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
 
-const title = "Bobines Defeitos";
+const title = "Bobines Destinos";
 const subTitle = null;
 const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, title, subTitle }) => {
   return (<>{visible && <ToolbarTitle disabled={loading} id={auth?.user} description={title}
@@ -55,60 +56,10 @@ const postProcess = async (dt) => {
     dt.rows[i]["furos_pos"] = json(dt.rows[i]["furos_pos"]);
     dt.rows[i]["buracos_pos"] = json(dt.rows[i]["buracos_pos"]);
     dt.rows[i]["rugas_pos"] = json(dt.rows[i]["rugas_pos"]);
+    dt.rows[i]["destinos"] = json(dt.rows[i]["destinos"]);
   }
   return dt;
 };
-
-
-export const RowsSelection = ({ dataAPI, modeApi, gridApi, validation }) => {
-
-  const handleSelectionClick = (v, select = 1) => {
-    const k = v.key.split(":");
-    gridApi.forEachNode(node => {
-      if (k.length == 2) {
-        if (k[0].includes(node.data.estado) && k[1].includes(node.data.lar) && canChangeRow(node.data)) {
-          node.setSelected(select == 1);
-        }
-      } else {
-        if (k[0].includes(node.data.estado) && canChangeRow(node.data)) {
-          node.setSelected(select == 1);
-        }
-      }
-    });
-  }
-  const selectionOptions = useMemo(() => {
-    if (dataAPI.hasData() || modeApi.isOnMode()) {
-      const _keysAdded = [];
-      const itemsE = [];
-      const itemsL = [];
-
-      const appendItem = (n) => {
-        if (!_keysAdded.includes(n.estado)) {
-          _keysAdded.push(n.estado);
-          itemsE.push({ key: n.estado, label: <div style={{ display: "flex", justifyContent: "space-between", width:"150px", alignItems: "center" }}><div><b>{n.estado}</b></div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
-        }
-        if (!_keysAdded.includes(`${n.estado}:${n.lar}`)) {
-          _keysAdded.push(`${n.estado}:${n.lar}`);
-          itemsL.push({ key: `${n.estado}:${n.lar}`, label: <div style={{ display: "flex", justifyContent: "space-between", width:"150px", alignItems: "center" }}><div><b>{n.estado}</b>&nbsp;{n.lar}</div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}:${n.lar}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
-        }
-      }
-
-      if (modeApi.isOnMode()) {
-        gridApi.forEachNode(n => {
-          appendItem(n.data);
-        });
-      } else {
-        dataAPI.getData().rows.forEach(n => {
-          appendItem(n);
-        });
-      }
-      return { items: [...itemsE, { type: "divider" }, ...itemsL], onClick: (v) => handleSelectionClick(v, 1) };
-    }
-    return { items: [] };
-  }, [dataAPI.getTimeStamp(), validation]);
-
-  return (<Dropdown trigger={["click"]} menu={selectionOptions}><Button><Space>Selecionar<MoreOutlined /></Space></Button></Dropdown>);
-}
 
 export const schema = z.object({
   largura: z.object({
@@ -139,7 +90,6 @@ const schemaFinal = z.object({
   defeitos: z.any(),
   estado: z.string(),
   prop_obs: z.string().nullable(),
-  palete_nome: z.string().nullable(),
   obs: z.string().nullable()
 }).merge(schema).refine(v => {
   const hasDefeitos = (length(v.defeitos) > 0 || length(v.fc_pos) > 0 || length(v.ff_pos) > 0 || length(v.furos_pos) > 0 || length(v.buracos_pos) > 0 || length(v.rugas_pos) > 0 || !isNullOrEmpty(v.prop_obs) || !isNullOrEmpty(v.obs)) ? true : false;
@@ -198,7 +148,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     //...parseFilter("ot.`type`", `==1`, { type: "number" })
   };
   const dataAPI = useDataAPI({
-    ...((!noid || location?.state?.noid === false) && { id: "ListBobinesDefeitos-01" }), fnPostProcess: (dt) => postProcess(dt, null),
+    ...((!noid || location?.state?.noid === false) && { id: "ListBobinesDestinos-01" }), fnPostProcess: (dt) => postProcess(dt, null),
     payload: {
       url: `${API_URL}/bobines/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: false, pageSize: 250, limit: 250 },
       filter: {}, baseFilter: baseFilters,
@@ -462,14 +412,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     return canChangeRow(node.data);
   }, [modeApi?.isOnMode()]);
 
-  const selectRows = (estado) => {
-    gridRef.current.api.forEachNode(node => {
-      if (estado.includes(node.data.estado) && canChangeRow(node.data)) {
-        node.setSelected(true);
-      }
-    });
-  };
-
   const onExitMode = () => {
     gridRef.current.api.deselectAll();
   };
@@ -513,20 +455,19 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
       return {
         cols: [
           { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', lockPosition: "left", ...cellParams(), width: 150, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
-          ...!inputParameters.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
-          ...inputParameters.palete?.id ? [{ colId: "mb.posicao_palete", field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 90, cellRenderer: (params) => <Value params={params} /> }] : [],
-          { colId: 'mb.estado', field: 'estado', headerName: 'Estado', type: "editableColumn", cellEditor: AntdSelectEditor, width: 90, ...cellParams({ multi: true }, { options: BOBINE_ESTADOS }), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
-          { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', width: 90, ...cellParams(), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-          { colId: 'mb.l_real', field: 'l_real', headerName: 'Lar. Real', width: 90, ...cellParams(null, {}), type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-          { colId: 'pbm.comp', field: 'comp_original', headerName: 'Comp. Original', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
-          { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
-          { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 90, ...cellParams({ unit: "mm", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-
-          { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
-          { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, { options: OPTIONS_OUTROSDEFEITOS, labelInValue: true }), type: "editableColumn", cellEditor: AntdMultiSelectEditor, cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
+          ...!inputParameters?.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
+          ...inputParameters?.palete?.id ? [{ colId: "mb.posicao_palete", field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 90, cellRenderer: (params) => <Value params={params} /> }] : [],
+          { colId: 'mb.estado', field: 'estado', headerName: 'Estado', type: "editableColumn", cellEditor: AntdSelectEditor, width: 80, ...cellParams({ multi: true }, { options: BOBINE_ESTADOS }), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
+          { field: 'mb.troca_etiqueta', headerName: 'Troca Etiqueta', ...cellParams(), width: 70, cellRenderer: (params) => <Bool checkedValue={1} unCheckedValue={0} params={params} /> },
+          { colId: 'mb.destino', field: 'destino', headerName: 'Destino', width: 350, flex: 1, ...cellParams({ multi: true }), type: "editableColumn", cellEditor: DestinosEditor, cellRenderer: (params) => <Value bold params={params} /> },
+          /* { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', width: 90, ...cellParams(), cellRenderer: (params) => <Value unit=" mm" params={params} /> }, */
+          { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', width: 80, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
+          { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 80, ...cellParams({ unit: "mm" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+          { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 80, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
+          { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 80, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+          { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 80, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+          { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 80, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+          { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 150, minWidth: 150, flex: 1, ...cellParams({}, { options: OPTIONS_OUTROSDEFEITOS, labelInValue: true }), cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
           { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
           { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, width: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
         ], timestamp: new Date()
@@ -540,7 +481,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
 
   const filters = useMemo(() => ({
     toolbar: ["nome", "estado", { field: "lar", alias: "mb.lar", label: "Largura" }],
-    more: [/* "@columns" */"nome", "estado", { field: "lar", alias: "mb.lar", label: "Largura" }, "l_real", "comp", "comp_actual"],
+    more: [/* "@columns" */"nome", "estado", { field: "lar", alias: "mb.lar", label: "Largura" }, "comp"],
     no: [...Object.keys(baseFilters), "action"]
   }), []);
 
@@ -597,11 +538,13 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
+        loadon
         //singleClickEdit={true}
         //suppressClickEdit={true}
         topToolbar={{
           start: <Space>
             {modeApi.isOnMode() && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
+            {/* {modeApi.isOnMode() && <Button icon={<CheckOutlined />} onClick={() => selectRows(["LAB"])}>Selecionar&nbsp;<b>LAB's</b></Button>} */}
             {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
           left: <></>
         }}

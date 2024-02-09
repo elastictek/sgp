@@ -530,9 +530,9 @@ const vGroups = (vg) => {
     const def = vg;
     const reversed = _reverseMapping(vg);
 
-    const groupPaths = (path)=>{
+    const groupPaths = (path) => {
         if (reversed?.[path]) {
-           return [path,...reversed[path]];
+            return [path, ...reversed[path]];
         }
         return [path];
     }
@@ -547,7 +547,7 @@ const vGroups = (vg) => {
         }
     }
     const _createGroupsData = (data) => {
-        const _data = Array.isArray(data) ? [...data] : {...data};
+        const _data = Array.isArray(data) ? [...data] : { ...data };
         for (const groupName in def) {
             const groupItems = def[groupName];
             _data[groupName] = {};
@@ -575,6 +575,27 @@ const vGroups = (vg) => {
         // onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
     };
     return r;
+}
+
+export const _fieldZodDescription = (schema, path) => {
+    const parts = Array.isArray(path) ? path : path.split('.');
+    let descriptions = "";
+    for (const part of parts) {
+        if (schema && !schema?.shape?.[part] && schema?._def?.schema) {
+            schema = schema._def.schema.shape[part];
+            if (schema?.description) {
+                descriptions = `${descriptions} ${schema?.description}`;
+            }
+        } else if (schema && schema?.shape) {
+            schema = schema.shape[part];
+            if (schema?.description) {
+                descriptions = `${descriptions} ${schema?.description}`;
+            }
+        } else {
+            return null;
+        }
+    }
+    return descriptions !== "" ? descriptions : parts.join(".");
 }
 
 export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
@@ -630,28 +651,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     }, []);
 
 
-
-    const _fieldZodDescription = (schema, path) => {
-        const parts = Array.isArray(path) ? path : path.split('.');
-        let descriptions = "";
-        for (const part of parts) {
-            if (schema && !schema?.shape?.[part] && schema?._def?.schema) {
-                schema = schema._def.schema.shape[part];
-                if (schema?.description) {
-                    descriptions = `${descriptions} ${schema?.description}`;
-                }
-            } else if (schema && schema?.shape) {
-                schema = schema.shape[part];
-                if (schema?.description) {
-                    descriptions = `${descriptions} ${schema?.description}`;
-                }
-            } else {
-                return null;
-            }
-        }
-        return descriptions !== "" ? descriptions : parts.join(".");
-    }
-
     const validate = async (values = {}, schema, passthrough = true) => {
         let validation = null;
         let p = _dataValidation(values, schema);
@@ -670,7 +669,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         let p = _dataRowsValidation(rows, schema);
         p.timestamp = new Date();
         for (const row of p.values) {
-            validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(row)) : await p.schema.spa(validationGroups.data(row));
+            try {
+                if (isNotNil(validationGroups)) {
+                    validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(row)) : await p.schema.spa(validationGroups.data(row));
+                } else {
+                    validation = passthrough ? await p.schema.passthrough().spa(row) : await p.schema.spa(row);
+                }
+            } catch (e) {
+                console.log(e);
+                validation = { success: false, error: { errors: [...e.issues] } };
+            }
             p.valid = (p.valid === true) ? validation.success : p.valid;
             if (!validation.success) {
                 const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
@@ -844,8 +852,14 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     };
     const getPageSize = (fromState = false) => {
         if (fromState) {
+            if (!state.pagination.enabled && state.pagination?.limit) {
+                return state.pagination?.limit;
+            }
             return state.pagination.pageSize;
         } else {
+            if (!ref.current.pagination.enabled && ref.current.pagination?.limit) {
+                return state.pagination?.limit;
+            }
             return ref.current.pagination.pageSize;
         }
     };

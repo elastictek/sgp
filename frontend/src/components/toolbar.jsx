@@ -2,7 +2,10 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { Space, Popconfirm, Popover, Button } from 'antd';
 
-const StyledToolbar = styled.div`
+const StyledToolbar = styled("div").withConfig({
+    shouldForwardProp: (prop) =>
+        !['clean'].includes(prop)
+})`
     display: flex;
 
     .left{
@@ -27,7 +30,7 @@ const StyledToolbar = styled.div`
         white-space: nowrap;
     }
 
-    ${({clean="false"}) => {
+    ${({ clean = "false" }) => {
         return (clean == "true") ? `
             padding:5px;
             margin-bottom: .2rem!important;
@@ -52,7 +55,7 @@ export default ({ left, right, center, clean = false, ...props }) => {
         <StyledToolbar clean={clean ? "true" : "false"} {...props}>
             <div className="left">{left}</div>
             {center && <div className="center">{center}</div>}
-{/*             <div className='right'>
+            {/*             <div className='right'>
             <Popover placement="bottom" content={right} trigger="click">
                 <Button>...</Button>
             </Popover>

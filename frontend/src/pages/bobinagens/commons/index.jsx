@@ -74,7 +74,10 @@ export const Wnd = ({ show, setShow, children }) => {
     );
 };
 
-const StyledBobine = styled.div`
+const StyledBobine = styled("div").withConfig({
+    shouldForwardProp: (prop) =>
+        !['fontColor','color'].includes(prop)
+})`
     border:dashed 1px #000;
     background-color:${props => props.color};
     color:${props => props.fontColor};
