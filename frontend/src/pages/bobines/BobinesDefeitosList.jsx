@@ -332,11 +332,13 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         if (!["prop_obs", "obs", "estado"].includes(field)) {
           const { removed, added } = compareArrays(valueByPath(data, path, []), newValue, _keys);
           event.api.forEachNode(n => {
+            let tx = true;
             if (cancelTxs == false && !canChangeRow(n.data)) {
-              cancelTxs = true;
-              transactions.length = 0;
+              tx = false;
+              //cancelTxs = true;
+              //transactions.length = 0;
             }
-            if (!cancelTxs) {
+            if (!cancelTxs && tx) {
               const _selected = selectedNodes.some(obj => obj.id === n.id);
               if (_selected) {
                 let _nodedata = removeArrayMatchingElements(valueByPath(n.data, path, []), removed, _keys);
