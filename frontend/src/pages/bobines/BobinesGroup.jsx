@@ -149,7 +149,6 @@ export default (props) => {
     }, [modalParameters]);
 
     useEffect(() => {
-
         props.setFormTitle({ title: `Bobinagem ${props?.parameters?.bobinagem?.nome}` }); //Set main Title
         const controller = new AbortController();
         loadData({ signal: controller.signal, init: true });

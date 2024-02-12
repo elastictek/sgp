@@ -24,6 +24,19 @@ import { isNil } from 'ramda';
 export const Context = createContext({});
 
 
+// export const validate = async (values = {}, schema, passthrough = true) => {
+//     let validation = null;
+//     let p = _dataValidation(values, schema);
+//     p.timestamp = new Date();
+//     validation = passthrough ? await p.schema.passthrough().spa(p.values) : await p.schema.spa(p.values);
+//     p.valid = validation.success;
+//     if (!validation.success) {
+//         const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
+//         p.alerts.error.push(..._errors);
+//     }
+//     return p;
+// }
+
 
 export const Container = ({ loading = false, children, id = "default", wrapForm = false, form, initialValues, onFinish, onValuesChange, forInput = true, wrapFormItem = false, style, size = "small", ...props }) => {
     const dataContext = { form, wrapForm, wrapFormItem, forInput, containerId: id, size };

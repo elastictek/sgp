@@ -901,12 +901,15 @@ export default ({
         }
     });
 
+    useEffect(() => {
+        if (isReady) {
+            modeApi.setOptions({ ...excludeObjectKeys(modeOptions, ["onExitModeRefresh", "onAddSaveExit", "onEditSaveExit", "onExitMode"]), isReady: true });
+        }
+    }, [isReady]);
+
     const _onGridReady = useCallback(async (params) => {
         console.log("GIRD-READY");
         //Load Filters State
-        if (modeApi) {
-            modeApi.setOptions({ ...excludeObjectKeys(modeOptions, ["onExitModeRefresh", "onAddSaveExit", "onEditSaveExit", "onExitMode"]), isReady: true });
-        }
         updateStateFilters({ ...topToolbar?.initFilterValues?.filter || {} });
         if (topToolbar?.filters && isObjectEmpty(dataAPI.getFilters()) && isObjectEmpty(dataAPI.preFilters())) {
             const _values = parseFilters(topToolbar?.initFilterValues?.filter);

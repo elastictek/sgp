@@ -213,6 +213,10 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     }
   });
 
+  useEffect(()=>{
+    console.log("???????????????????",permission.isReady,props?.permissions,permission.isOk({ action: "changeDefeitos" }));
+  },[permission?.isReady]);
+
   useEffect(() => {
     if (!isNil(inputParameters)) {
       //It means that this has parameters already, so the need to exit mode and reload grid data!

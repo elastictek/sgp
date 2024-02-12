@@ -6,6 +6,7 @@ import { useImmer } from 'use-immer';
 const useModeApi = (params) => {
   const [data, updateData] = useImmer({
     isReady: false,
+    permissionIsReady:false,
     key: params?.key || "datagrid",
     enabled: params?.enabled || true,
     showControls: params?.showControls || true,
