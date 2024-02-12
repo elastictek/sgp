@@ -119,11 +119,6 @@ module.exports = (env, argv) => {
                     include: path.resolve(rootPath, "src"),
                     exclude: /node_modules/,
                     use: [{
-                        loader: 'thread-loader', // Use thread-loader for parallelism
-                        options: {
-                            workers: require('os').cpus().length - 1, // Use one less than the number of CPU cores
-                        },
-                    }, {
                         loader: "babel-loader", options: {
                             babelrc: false,
                             presets: [["@babel/preset-env", { modules: false, useBuiltIns: 'usage', corejs: 3 }], "@babel/preset-react"],

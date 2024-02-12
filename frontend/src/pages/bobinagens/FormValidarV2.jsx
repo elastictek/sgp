@@ -10,8 +10,8 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, BOBINE_ESTADOS } from "config";
-import { useDataAPI } from "utils/useDataAPIV3";
-import { json, includeObjectKeys } from "utils/object";
+import { useDataAPI } from "utils/useDataAPIV4";
+import { json, includeObjectKeys, excludeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll, getFloat } from "utils";
 import Portal from "components/portal";
@@ -38,7 +38,7 @@ import { useImmer } from "use-immer";
 import { dayjsValue } from 'utils/index';
 import { Item } from 'components/formLayout';
 import FormPrint from "../commons/FormPrint";
-import BobinesDefeitosList from '../bobines/BobinesDefeitosList';
+import BobinesDefeitosList, { schemaFinal, validationGroups } from '../bobines/BobinesDefeitosList';
 import { checkBobinesDefeitos, postProcess } from '../bobines/commons';
 import FormCortesOrdem from '../ordensfabrico/FormCortesOrdem';
 
@@ -62,8 +62,12 @@ const loadBobinagemLookup = async (bobinagem_id) => {
     const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, pagination: {}, filter: { fid: `==${bobinagem_id}` }, parameters: { method: "BobinagemLookup" } });
     return rows;
 }
-const loadBobinesLookup = async (bobinagem_id, defaultSort = [{ column: 'nome', direction: 'ASC' }]) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobines/sql/`, pagination: {}, filter: { fbobinagemid: `==${bobinagem_id}` }, sort: defaultSort, parameters: { method: "BobinesLookup" } });
+
+const loadCortes = async ({ data, signal }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, parameters: { method: "GetCortes" }, filter: { ...data }, sort: [], signal });
+    if (rows && rows.length > 0) {
+        return { cortes: json(rows[0].cortes), cortesordem: json(rows[0].cortesordem) };
+    }
     return rows;
 }
 
@@ -237,7 +241,7 @@ const rowSchema = (options = {}, required = false) => {
 }
 
 
-export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
+export default ({ extraRef, closeSelf, noid, ...props }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { openNotification } = useContext(AppContext);
@@ -257,7 +261,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
     const [fieldStatus, setFieldStatus] = useState({});
     const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
     const troca_nw = Form.useWatch('troca_nw', form);
-    const [gridRef, setGridRef] = useState(null);
+    const childData = useRef({ values: { tstamp: null } });
+
 
     const [modalParameters, setModalParameters] = useState({});
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
@@ -285,7 +290,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         hasBobines: false,
         valid: false,
         nome: null,
-        id: null
+        id: null,
+        cortesordem_id: null
     });
 
     useEffect(() => {
@@ -300,77 +306,61 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         inputParameters.current = { ...paramsIn };
         //window.history.replaceState({}, document.title, window.location.pathname);
         const _bobinagem = await loadBobinagemLookup(inputParameters.current?.bobinagem_id);
-        const _bm = (_bobinagem && _bobinagem.length > 0 && _bobinagem[0].valid == 0) ? _bobinagem[0] : null;
+        const _bm = (_bobinagem && _bobinagem.length > 0 && _bobinagem[0].valid == 0 ) ? _bobinagem[0] : null;
+        let _cortes;
+        if (_bm) {
+            _cortes = await loadCortes({ data: { audit_cs_id: _bm?.audit_current_settings_id } });
+        }
         form.setFieldsValue((_bm) ? {
             ..._bobinagem[0],
             lote_nwinf: { n_lote: _bobinagem[0].lotenwinf, vcr_num: _bobinagem[0].vcr_num_inf, tiponw: _bobinagem[0].tiponwinf },
             lote_nwsup: { n_lote: _bobinagem[0].lotenwsup, vcr_num: _bobinagem[0].vcr_num_sup, tiponw: _bobinagem[0].tiponwsup }
         } : null);
-        let _bobines = [];
-        if (_bm) {
-            setTitle(`Validar Bobinagem ${_bm.nome}`);
-            _bobines = (await loadBobinesLookup(inputParameters.current.bobinagem_id)).map(v => {
-                return {
-                    ...v,
-                    inicio: _bm.inico, fim: _bm.fim, duracao: _bm.duracao,
-                    data: _bm.data,
-                    tiponwinf: _bm.tiponwinf, tiponwsup: _bm.tiponwsup,
-                    rowvalid: 0
-                }
-            });
-            postProcess(_bobines);
-        }
         updateState(draft => {
             draft.loaded = true;
             draft.step = 0;
             draft.maxStep = 0;
             draft.bobinagem = (_bm) ? _bm : null;
-            draft.hasBobines = (_bobines) ? true : false;
-            draft.valid = (_bm && _bobines) ? true : false;
+            draft.hasBobines = false; //(_bobines) ? true : false;
+            draft.valid = false; //(_bm && _bobines) ? true : false;
             draft.nome = (_bm) ? _bm.nome : null;
             draft.id = inputParameters.current.bobinagem_id;
+            draft.cortesordem_id = _cortes?.cortesordem?.id;
         });
-        if (_bm && _bobines) {
-            dataAPI.setData({ rows: _bobines, total: _bobines?.length });
+        if (_bm) {
             form.setFieldsValue({
                 comp: _bm.comp,
                 vcr_num_inf: null,
-                vcr_num_sup: null,
-                troca_nw: _bobines[0].troca_nw,
-                estado: _bobines[0].estado,
-                comp_emenda: 0,
-                data: _bobines[0].data,
-                inicio: _bobines[0].inicio,
-                fim: _bobines[0].fim,
-                core: _bobines[0].core
+                vcr_num_sup: null
             });
         }
         submitting.end();
     }
 
-    const onEstadoChoose = () => {
-        setModalParameters({
-            content: "estado", responsive: true, type: "drawer", width: 600, title: "Estados", push: false, loadData: () => { }, parameters: {
-                multipleSelection: false,
-                settings: false,
-                toolbar: false,
-                toolbarFilters: false,
-                data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM"].includes(v.value)),
-                payload: { payload: { url: ``, primaryKey: "value", parameters: { ...defaultParameters }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [] } },
-                columns: [
-                    { name: "value", header: 'Estado', flex: 1, render: ({ cellProps, data }) => <EstadoBobine estado={data?.value} /> }
-                ],
-                onSelect: (({ rowProps, closeSelf }) => {
-                    setDirty(true);
-                    form.setFieldValue("estado", rowProps?.data?.value);
-                    closeSelf();
-                })
+    // const onEstadoChoose = () => {
+    //     setModalParameters({
+    //         content: "estado", responsive: true, type: "drawer", width: 600, title: "Estados", push: false, loadData: () => { }, parameters: {
+    //             multipleSelection: false,
+    //             settings: false,
+    //             toolbar: false,
+    //             toolbarFilters: false,
+    //             data: BOBINE_ESTADOS.filter(v => ["BA", "LAB", "IND", "DM"].includes(v.value)),
+    //             payload: { payload: { url: ``, primaryKey: "value", parameters: { ...defaultParameters }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [] } },
+    //             columns: [
+    //                 { name: "value", header: 'Estado', flex: 1, render: ({ cellProps, data }) => <EstadoBobine estado={data?.value} /> }
+    //             ],
+    //             onSelect: (({ rowProps, closeSelf }) => {
+    //                 setDirty(true);
+    //                 form.setFieldValue("estado", rowProps?.data?.value);
+    //                 changedValues.current = { ...changedValues.current, estado: rowProps?.data?.value, tstamp: new Date() };
+    //                 closeSelf();
+    //             })
 
-            },
+    //         },
 
-        });
-        showModal();
-    }
+    //     });
+    //     showModal();
+    // }
 
     const loadLists = async ({ signal, init = false } = {}) => {
         submitting.trigger();
@@ -384,29 +374,44 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         submitting.end();
     }
 
+    const setChildData = (rows) => {
+        if (Array.isArray(rows)) {
+            childData.current = { values: childData.current?.values, rows, total: rows.length };
+            updateState(draft => {
+                draft.hasBobines = true;
+                draft.valid = true;
+            });
+            form.setFieldsValue({
+                largura_bobinagem: rows[0].largura_bobinagem,
+                troca_nw: rows[0].troca_nw,
+                // estado: rows[0].estado,
+                comp_emenda: 0,
+                data: rows[0].data,
+                inicio: rows[0].inicio,
+                fim: rows[0].fim,
+                core: rows[0].core
+            });
+        }
+    }
+
     const onSave = async () => {
         submitting.trigger();
         let response = null;
         try {
-            const _rows = dataAPI.getData().rows;
-            const v = checkBobinesDefeitos(_rows, true);
-            const status = dataAPI.validateRows(rowSchema, {}, { context: { num: state.nome.split('-')[1] } }, _rows); //Validate all rows
-            status.formStatus = { ...v.status };
-            if (v.status?.error && v.status?.error.length > 0) {
-                status.errors = status.errors + v.status?.error.length;
-            }
-            const msg = dataAPI.getMessages(status);
-            if (status.errors > 0) {
-                openNotification("error", "top", "Notificação", msg.error, 5, { width: "500px" });
-            } else {
-                response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: _rows, lar_bruta: form.getFieldValue("lar_bruta") } });
+            const rv = await dataAPI.validateRows(childData.current.rows, schemaFinal, "id", {
+                passthrough: false, validationGroups: validationGroups(dataAPI)
+            });
+            rv.onValidationFail((p) => { openNotification("error", "top", "Notificação", p.alerts.error, 5, { width: "500px" }); });
+            await rv.onValidationSuccess(async (p) => {
+                console.log("success", { method: "Validar", rows: childData.current.rows, lar_bruta: form.getFieldValue("lar_bruta") })
+                response = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, parameters: { method: "Validar", rows: childData.current.rows, lar_bruta: form.getFieldValue("lar_bruta") } });
                 if (response?.data && response?.data?.status !== "error") {
                     openNotification(response?.data?.status, 'top', "Notificação", response.data.title);
                     next();
                 } else {
                     openNotification("error", 'top', "Notificação", response.data.title, null);
                 }
-            }
+            });
         } catch (e) {
             console.log(e)
             openNotification("error", 'top', "Notificação", e.message, null);
@@ -429,7 +434,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                         status.fieldStatus.comp_emenda = { status: "error", messages: [{ message: "O comprimento da emenda tem de ser menor que o comprimento!" }] };
                     }
                 }
-                if (dataAPI.getData().rows[0].largura_bobinagem > _values.lar_bruta || _values.lar_bruta > (dataAPI.getData().rows[0].largura_bobinagem + 200)) {
+                if (form.getFieldValue("largura_bobinagem") > _values.lar_bruta || _values.lar_bruta > (form.getFieldValue("largura_bobinagem") + 200)) {
                     errors = 1;
                     status.fieldStatus.lar_bruta = { status: "error", messages: [{ message: "A largura bruta não está dentro dos valores permitidos (valor não inferior à largura da bobinagem)!" }] };
                 }
@@ -444,17 +449,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 });
                 return;
             }
-            const _rows = [...dataAPI.getData().rows];
-            for (const [idx, item] of _rows.entries()) {
-                _rows[idx] = {
-                    ..._rows[idx], estado: _values.estado, lar_bruta: _values.lar_bruta, comp_emenda: _values.comp_emenda, troca_nw: _values.troca_nw,
-                    lotenwinf: state.nwinf.n_lote, lotenwsup: state.nwsup.n_lote,
-                    vcr_num_inf: state.nwinf.vcr_num, vcr_num_sup: state.nwsup.vcr_num
-                };
-            }
-            dataAPI.setRows(_rows);
         }
         setDirty(false);
+        childData.current.values = { ...childData.current.values, tstamp: new Date() };
         updateState(draft => {
             if (draft.step == 0) {
                 draft.valid = true;
@@ -485,6 +482,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         if (item && pos == 1) {
             setDirty(true);
             form.setFieldValue("vcr_num_sup", item.vcr_num);
+            childData.current.values = { ...childData.current.values, lotenwsup: item.n_lote, vcr_num_sup: item.vcr_num };
             updateState(draft => {
                 draft.nwsup = item;
             });
@@ -492,6 +490,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
         if (item && pos == 0) {
             setDirty(true);
             form.setFieldValue("vcr_num_inf", item.vcr_num);
+            childData.current.values = { ...childData.current.values, lotenwinf: item.n_lote, vcr_num_inf: item.vcr_num };
             updateState(draft => {
                 draft.nwinf = item;
             });
@@ -500,108 +499,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
 
     const onValuesChange = (changedValues, values) => {
         setDirty(true);
-        console.log(changedValues)
-        // if ("lote_nwinf" in changedValues) {
-        //     const _v = changedValues["lote_nwinf"];
-        //     form.setFieldValue("lote_nwinf", { n_lote: _v.n_lote, vcr_num: _v.vcr_num, tiponw: _v.artigo_des });
-        // }
-        // if ("lote_nwsup" in changedValues) {
-        //     const _v = changedValues["lote_nwsup"];
-        //     form.setFieldValue("lote_nwsup", { n_lote: _v.n_lote, vcr_num: _v.vcr_num, tiponw: _v.artigo_des });
-        // }
+        childData.current.values = { ...childData.current.values, ...changedValues };
     }
-
-    const larguraRealEditable = () => {
-        if (state.nome) {
-            return state.nome.split('-')[1] % 10 === 0 || form.getFieldValue("estado") == "BA";
-        }
-        return false;
-
-    }
-
-    const rowClassName = ({ data }) => {
-        // if () {
-        //     return tableCls.error;
-        // }
-    }
-
-    const columnEditable = (v, { data, name }) => {
-
-
-        if (["l_real"].includes(name)) {
-            if (larguraRealEditable()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
-        if (dataAPI.getFieldStatus(data[dataAPI.getPrimaryKey()])?.[name]?.status === "error") {
-            return tableCls.error;
-        }
-        if (["l_real"].includes(name)) {
-            if (larguraRealEditable()) {
-                return tableCls.edit;
-            }
-        }
-    };
-
-    const onEditComplete = ({ value, columnId, rowIndex, data, ...rest }) => {
-        const index = dataAPI.getIndex(data);
-        if (index >= 0) {
-            let _rows = [];
-            _rows = dataAPI.updateValues(index, columnId, { [columnId]: value, rowvalid: 0 });
-            dataAPI.validateRows(rowSchema, {}, { context: { num: _rows[0].nome.split('-')[1] } }, _rows);
-            if (rowIndex < _rows.length) {
-                gridRef.current.setActiveCell([rowIndex + 1, rest.columnIndex]);
-            }
-        }
-    }
-    const onEditCancel = async () => {
-        await loadData();
-        return false;
-    }
-
-    const onCellAction = (data, column, key) => {
-        if (key === "Enter" || key === "DoubleClick") {
-            //if (column.name === "obs") {
-            //    setModalParameters({ content: "textarea", type: "drawer", width: 550, title: column.header, push: false, parameters: { value: data[column.name] } });
-            //    showModal();
-            // }
-        }
-    }
-
-    const columns = [
-        ...(true) ? [{ name: "nome", header: "Bobine", minWidth: 130, flex: 1, userSelect: true, defaultlocked: true, headerAlign: "center", render: ({ data, cellProps }) => <LeftAlign style={{ fontWeight: 700 }} cellProps={cellProps}>{data?.nome}</LeftAlign> }] : [],
-        ...(true) ? [{
-            name: "estado", header: "Estado", defaultWidth: 70, userSelect: true, defaultlocked: false, headerAlign: "center", align: "center",
-            render: ({ data, cellProps }) => <EstadoBobine id={data.id} nome={data.nome} estado={data.estado} largura={data.lar} cellProps={cellProps} />,
-            // editable: columnEditable,
-            // cellProps: { className: columnClass },
-            // renderEditor: (props) => <EstadoTableEditor filter={(v => v?.value === "DM" || v?.value === "IND" || v?.value === "BA" || v?.value === "LAB")} {...props} />
-        }] : [],
-        // ...(true) ? [{ name: 'troca_nw', header: 'Troca NW', editable: columnEditable, renderEditor: (props) => <BooleanTableEditor {...props} />, render: ({ data, cellProps }) => <Bool cellProps={cellProps} value={data?.troca_nw} />, cellProps: { className: columnClass }, userSelect: true, defaultLocked: false, width: 110, headerAlign: "center" }] : [],
-        ...(true) ? [{
-            name: 'l_real', header: 'Largura Real', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center",
-            editable: columnEditable,
-            cellProps: { className: columnClass },
-            render: ({ data, cellProps }) => <RightAlign cellProps={cellProps} unit="mm">{data?.l_real}</RightAlign>,
-            renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0 }} {...props} />,
-            visible: larguraRealEditable()
-        }] : [],
-        // ...(true) ? [{
-        //     name: 'comp_emenda', header: 'Comp. Emenda', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center",
-        //     editable: columnEditable,
-        //     cellProps: { className: columnClass },
-        //     render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m">{getFloat(data?.comp_emenda, 0)}</RightAlign>,
-        //     renderEditor: (props) => <InputNumberTableEditor inputProps={{ min: 0 }} {...props} />
-        // }] : [],
-        // ...(true) ? [{ name: 'vcr_num_inf', header: 'Nonwoven Inf.', defaultWidth: 150, flex: 1, editable: columnEditable, renderEditor: (props) => <NwQueueTableEditor dataAPI={dataAPI} {...props} filters={{ type: 0, queue: 1, status: 1 }} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <NwColumn style={{ fontSize: "10px" }} data={{ data, artigo_des: data?.tiponwinf, n_lote: data?.lotenwinf }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
-        // ...(true) ? [{ name: 'vcr_num_sup', header: 'Nonwoven Sup.', defaultWidth: 150, flex: 1, editable: columnEditable, renderEditor: (props) => <NwQueueTableEditor dataAPI={dataAPI} {...props} filters={{ type: 1, queue: 1, status: 1 }} />, cellProps: { className: columnClass }, render: ({ cellProps, data }) => <NwColumn style={{ fontSize: "10px" }} data={{ data, artigo_des: data?.tiponwsup, n_lote: data?.lotenwsup }} cellProps={cellProps} />, userSelect: true, defaultLocked: false, flex: 1, headerAlign: "center" }] : [],
-        ...(true) ? [{ name: 'lar', header: 'Largura', userSelect: true, defaultLocked: false, defaultWidth: 90, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="mm">{getFloat(data?.lar, 0)}</RightAlign> }] : [],
-        ...(true) ? [{ name: 'area', header: 'Área', userSelect: true, defaultLocked: false, defaultWidth: 75, headerAlign: "center", render: ({ cellProps, data }) => <RightAlign cellProps={cellProps} unit="m&sup2;">{getFloat(data?.area, 0)}</RightAlign> }] : [],
-    ];
 
     const onPrint = () => {
         setModalParameters({ content: "print", type: "modal", width: 500, height: 280, title: `Etiquetas Bobines - Bobinagem ${state.nome} `, parameters: { copias: 2, bobinagem: { id: state.id } } });
@@ -644,45 +543,49 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                 </Row>
                 <Row>
                     <Col>
-                        <YScroll>
-                            <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
-                                {(state.step == 0 && state.bobinagem && state.hasBobines && state.loaded) && <>
-                                    <Row>
-                                        <Col>
-                                            <FormContainer id="LAY-VB" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onSave} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
-                                                <Row style={{}} gutterWidth={10}>
-                                                    <Col width={100}><Field forInput={false} name="data" label={{ enabled: true, text: "Data", pos: "top" }}><Input /></Field></Col>
-                                                    <Col width={100}><Field forInput={false} name="inicio" label={{ enabled: true, text: "Hora Início" }}><Input /></Field></Col>
-                                                    <Col width={100}><Field forInput={false} name="fim" label={{ enabled: true, text: "Hora Fim" }}><Input /></Field></Col>
-                                                    <Col width={50}><Field forInput={false} name="core" label={{ enabled: true, text: "Core" }}><InputNumber style={{ textAlign: "right" }} addonAfter={<b>''</b>} /></Field></Col>
-                                                    <Col width={100}><Field forInput={false} name="comp" label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} addonAfter={<b>m</b>} /></Field></Col>
-                                                    <Col width={120}><Field forInput={false} name="diam" label={{ enabled: true, text: "Diâmetro" }}><InputNumber size="small" style={{ textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
-                                                </Row>
-                                                <Row style={{ height: "15px" }}><Col></Col></Row>
-                                                <Row style={{}} gutterWidth={10}>
-                                                    <Col style={{ alignSelf: "end" }} width={60}><EstadoBobine style={{ width: "35px", height: "35px" }} onClick={onEstadoChoose} estado={form.getFieldValue("estado")} /></Col>
-                                                    <Col width={180}><Field name="lar_bruta" label={{ enabled: true, text: `Largura bruta [${dataAPI.getData().rows[0].largura_bobinagem}mm]`, pos: "top" }}><InputNumber style={{ textAlign: "right", width: "150px" }} addonAfter={<b>mm</b>} /></Field></Col>
-                                                    <Col width={180}><Field name="comp_emenda" label={{ enabled: true, text: "Comprimento Emenda" }}><InputNumber disabled={troca_nw == 0} style={{ textAlign: "right", width: "150px" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
-                                                    <Col width={200}><Field name="troca_nw" label={{ enabled: true, text: "Troca de Nonwoven" }}><SwitchField /></Field></Col>
-                                                </Row>
-                                            </FormContainer>
-                                        </Col>
-                                    </Row>
-                                    <Row nogutter>
-                                        <NonwovensList onSelect={onSelectNonwovens} state={state} loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} />
-                                    </Row>
-                                    <Row>
-                                        <Col>
-                                            <Suspense fallback={<></>}><FormCortesOrdem parameters={{ acs_id: state.bobinagem?.audit_current_settings_id, use_cs_id: true }} forInput={false} height="177px" /></Suspense>
-                                        </Col>
-                                    </Row>
-                                </>}
-                                {state.step == 1 && <Row nogutter/*  style={{ justifyContent: "center" }} */>
-                                    <Col /*  xs="content" */>
-                                        <Spin spinning={submitting.state}>
-                                            <BobinesDefeitosList validate={true} dataAPI={dataAPI} parameters={{ bobinagem: state.bobinagem }} defaultSort={[{ column: 'nome', direction: 'ASC' }]} />
-                                        </Spin>
-                                        {/* <Table
+                        <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
+                            {(state.step == 0 && state.bobinagem && state.hasBobines && state.loaded) && <>
+                                <Row>
+                                    <Col>
+                                        <FormContainer id="LAY-VB" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onFinish={onSave} onValuesChange={onValuesChange} schema={schema} wrapFormItem={true} forInput={true} alert={{ tooltip: true, pos: "none" }}>
+                                            <Row style={{}} gutterWidth={10}>
+                                                <Col width={100}><Field forInput={false} name="data" label={{ enabled: true, text: "Data", pos: "top" }}><Input /></Field></Col>
+                                                <Col width={100}><Field forInput={false} name="inicio" label={{ enabled: true, text: "Hora Início" }}><Input /></Field></Col>
+                                                <Col width={100}><Field forInput={false} name="fim" label={{ enabled: true, text: "Hora Fim" }}><Input /></Field></Col>
+                                                <Col width={50}><Field forInput={false} name="core" label={{ enabled: true, text: "Core" }}><InputNumber style={{ textAlign: "right" }} addonAfter={<b>''</b>} /></Field></Col>
+                                                <Col width={100}><Field forInput={false} name="comp" label={{ enabled: true, text: "Comprimento" }}><InputNumber style={{ textAlign: "right" }} addonAfter={<b>m</b>} /></Field></Col>
+                                                <Col width={120}><Field forInput={false} name="diam" label={{ enabled: true, text: "Diâmetro" }}><InputNumber size="small" style={{ textAlign: "right" }} addonAfter={<b>mm</b>} /></Field></Col>
+                                            </Row>
+                                            <Row style={{ height: "15px" }}><Col></Col></Row>
+                                            <Row style={{}} gutterWidth={10}>
+                                                {/* <Col style={{ alignSelf: "end" }} width={60}><EstadoBobine style={{ width: "35px", height: "35px" }} onClick={onEstadoChoose} estado={form.getFieldValue("estado")} /></Col> */}
+                                                <Col width={180}><Field name="lar_bruta" label={{ enabled: true, text: `Largura bruta [${form.getFieldValue("largura_bobinagem")}mm]`, pos: "top" }}><InputNumber style={{ textAlign: "right", width: "150px" }} addonAfter={<b>mm</b>} /></Field></Col>
+                                                <Col width={180}><Field name="comp_emenda" label={{ enabled: true, text: "Comprimento Emenda" }}><InputNumber disabled={troca_nw == 0} style={{ textAlign: "right", width: "150px" }} min={0} addonAfter={<b>m</b>} /></Field></Col>
+                                                <Col width={200}><Field name="troca_nw" label={{ enabled: true, text: "Troca de Nonwoven" }}><SwitchField /></Field></Col>
+                                            </Row>
+                                        </FormContainer>
+                                    </Col>
+                                </Row>
+                                <Row nogutter>
+                                    <NonwovensList onSelect={onSelectNonwovens} state={state} loadLists={loadLists} setDirty={setDirty} openNotification={openNotification} next={next} setListSup={setListSup} listSup={listSup} setListInf={setListInf} listInf={listInf} />
+                                </Row>
+                                <Row>
+                                    <Col>
+                                        {state?.cortesordem_id && <Suspense fallback={<></>}><FormCortesOrdem parameters={{ cortesordem_id: state.cortesordem_id }} forInput={false} height="177px" /></Suspense>}
+                                    </Col>
+                                </Row>
+                            </>}
+                            {state?.bobinagem && <Row nogutter/*  style={{ justifyContent: "center" }} */>
+                                <Col hidden={!(state.step == 1)} /*  xs="content" */>
+                                    <Spin spinning={submitting.state}>
+                                        <BobinesDefeitosList noid={true} validate={true} setDataToParent={setChildData} parameters={{
+                                            bobinagem: state.bobinagem,
+                                            validateValues: excludeObjectKeys(childData.current.values, ["tstamp"]),
+                                            validateTstamp: childData.current.values?.tstamp,
+                                            tstamp: new Date()
+                                        }} />
+                                    </Spin>
+                                    {/* <Table
                                             gridRef={gridRef}
                                             handle={setGridRef}
                                             //dirty={formDirty}
@@ -724,35 +627,34 @@ export default ({ extraRef, closeSelf, loadParentData, noid, ...props }) => {
                                             toolbar={false}
                                             toolbarFilters={false}
                                         /> */}
-                                    </Col>
-                                </Row>}
-                                {(state.step == 2 && state.bobinagem) && <Col>
-                                    <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                        <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
-                                        <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas">Imprimir Etiquetas</Button>
-                                        <div style={{ marginTop: "10px" }}>
-                                            <Suspense fallback={<></>}><FormCortesOrdem parameters={{ acs_id: state.bobinagem?.audit_current_settings_id, use_cs_id: true }} forInput={false} height="177px" /></Suspense>
-                                        </div>
-                                    </Col>
-                                </Col>}
+                                </Col>
+                            </Row>}
+                            {(state.step == 2 && state.bobinagem) && <Col>
+                                <Col style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                    <div style={{ fontSize: "22px", fontWeight: 900, marginBottom: "10px" }}>{state.bobinagem.nome}</div>
+                                    <Button icon={<PrinterOutlined />} onClick={onPrint} title="Imprimir Etiquetas">Imprimir Etiquetas</Button>
+                                    <div style={{ marginTop: "10px" }}>
+                                        {state?.cortesordem_id && <Suspense fallback={<></>}><FormCortesOrdem parameters={{ cortesordem_id: state.cortesordem_id }} forInput={false} height="177px" /></Suspense>}
+                                    </div>
+                                </Col>
+                            </Col>}
 
 
-                                {((!state.bobinagem || !state.hasBobines) && state.loaded) && <>
-                                    <Row>
-                                        <Col>
-                                            <Alert style={{ width: "100%", textAlign: "left" }}
-                                                message={<>Bobinagem <span style={{ fontWeight: 700 }}>{state.nome}</span></>}
-                                                description={<ul style={{ fontWeight: 900, fontSize: "14px" }}>
-                                                    <li>A bobinagem não existe ou já se encontra validada.</li>
-                                                </ul>}
-                                                type="warning"
-                                                showIcon
-                                            />
-                                        </Col>
-                                    </Row>
-                                </>}
-                            </Container>
-                        </YScroll>
+                            {((!state.bobinagem) && state.loaded) && <>
+                                <Row>
+                                    <Col>
+                                        <Alert style={{ width: "100%", textAlign: "left" }}
+                                            message={<>Bobinagem <span style={{ fontWeight: 700 }}>{state.nome}</span></>}
+                                            description={<ul style={{ fontWeight: 900, fontSize: "14px" }}>
+                                                <li>A bobinagem não existe ou já se encontra validada.</li>
+                                            </ul>}
+                                            type="warning"
+                                            showIcon
+                                        />
+                                    </Col>
+                                </Row>
+                            </>}
+                        </Container>
                     </Col >
                 </Row >
             </Container >

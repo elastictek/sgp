@@ -638,9 +638,13 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
         ...getLocalStorage(id, useStorage),
+        onGridRequest: payload?.onGridRequest ? payload.onGridRequest : null,
+        onGridResponse: payload?.onGridResponse ? payload.onGridResponse : null,
+        onGridFailRequest: payload?.onGridFailRequest ? payload.onGridFailRequest : null,
         baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         sortMap: payload?.sortMap ? { ...payload.sortMap } : {},
-        totalRows: 0
+        totalRows: 0,
+        requestsCount: 0
     });
 
     useEffect(() => {
@@ -664,16 +668,19 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return p;
     }
 
-    const validateRows = async (rows = [], schema, nodeId, { passthrough = true, validationGroups } = {}) => {
+    const validateRows = async (rows = [], schema, nodeId, { passthrough = true, validationGroups, fn } = {}) => {
         let validation = null;
-        let p = _dataRowsValidation(rows, schema);
+        let p = _dataRowsValidation(null, schema);
         p.timestamp = new Date();
-        for (const row of p.values) {
+        const _rows = [];
+        for (const row of rows) {
+            const _row = (fn && typeof fn === "function") ? fn(row) : row;
+            _rows.push(_row);
             try {
                 if (isNotNil(validationGroups)) {
-                    validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(row)) : await p.schema.spa(validationGroups.data(row));
+                    validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(_row)) : await p.schema.spa(validationGroups.data(_row));
                 } else {
-                    validation = passthrough ? await p.schema.passthrough().spa(row) : await p.schema.spa(row);
+                    validation = passthrough ? await p.schema.passthrough().spa(_row) : await p.schema.spa(_row);
                 }
             } catch (e) {
                 console.log(e);
@@ -682,11 +689,12 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             p.valid = (p.valid === true) ? validation.success : p.valid;
             if (!validation.success) {
                 const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
-                p.alerts.error[row[nodeId]] = _errors;
+                p.alerts.error[_row[nodeId]] = _errors;
             } else {
-                p.alerts.error[row[nodeId]] = null;
+                p.alerts.error[_row[nodeId]] = null;
             }
         }
+        p.values = (_rows.length === 0) ? rows : _rows;
         return p;
     }
 
@@ -1406,6 +1414,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     ret = dt;
                     setData(ret, payload, ignoreTotalRows);
                 }
+                ref.current.requestsCount++;
             } catch (e) {
                 console.log(e)
                 Modal.error({ content: e.message });
@@ -1561,14 +1570,31 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     api.showLoadingOverlay();
                     currentPage(api.paginationGetCurrentPage() + 1);
                     setSort(params.request.sortModel);
-                    const data = await _fetchPost();
-                    console.log("SERVER-REQUEST", ref, params.request.sortModel, data.total, data.rows.length)
+                    let doRequest = true;
+                    if (typeof ref.current.onGridRequest == "function") {
+                        doRequest = await ref.current.onGridRequest(api);
+                    }
+                    let data;
+                    if (doRequest === false) {
+                        clearData();
+                        data = null;
+                        console.log("SERVER-REQUEST-FAIL onGridRequest EVENT")
+                    } else {
+                        data = await _fetchPost();
+                        console.log("SERVER-REQUEST", ref, params.request.sortModel, data.total, data.rows.length)
+                    }
                     if (data !== null && data?.status !== "error") {
                         params.success({
                             rowData: data.rows,//JSON.parse(JSON.stringify(data.rows)),
                             rowCount: ref.current.totalRows//data.total
                         });
+                        if (typeof ref.current.onGridResponse == "function") {
+                            await ref.current.onGridResponse(api);
+                        }
                     } else {
+                        if (typeof ref.current.onGridFailRequest == "function") {
+                            await ref.current.onGridFailRequest(api);
+                        }
                         params.fail();
                     }
                     api.hideOverlay();
@@ -1576,6 +1602,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             },
         };
     };
+
+    //                let datasource = dataAPI.dataSourceV4(null, gridApi);
+    //gridApi.setGridOption("serverSideDatasource", datasource);
 
     return {
         init: () => state.init,
@@ -1650,10 +1679,14 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         getPrimaryKey,
         dataSourceV4,
         loadSortStateV4,
+        onGridRequest: (fn) => { ref.current.onGridRequest = fn; },
+        onGridResponse: (fn) => { ref.current.onGridResponse = fn; },
+        onGridFailRequest: (fn) => { ref.current.onGridFailRequest = fn; },
         safePost,
         validate,
         validateRows,
         openNotification,
-        validationGroups: vGroups
+        validationGroups: vGroups,
+        requestsCount: () => ref.current.requestsCount
     }
 }

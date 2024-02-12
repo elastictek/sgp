@@ -43,8 +43,8 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title, save }) =>
     />);
 }
 
-export const loadBobinagem = async ({ id, checkBobinesInFinalPalete }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: { fid: id }, sort: [], parameters: { method: "BobinagemLookup", checkBobinesInFinalPalete }, signal });
+export const loadBobinagem = async ({ id, checkBobinesInPalete }, signal) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/bobinagens/sql/`, filter: { fid: id }, sort: [], parameters: { method: "BobinagemLookup", checkBobinesInPalete }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }

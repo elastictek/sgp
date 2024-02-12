@@ -32,7 +32,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 // import useModeApi from 'utils/useModeApi';
-import TableV4, { suppressKeyboardEvent, useModalApi, defaultValueGetter } from 'components/TableV4/TableV4';
+import TableV4, { suppressKeyboardEvent, defaultValueGetter } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 import { useImmer } from 'use-immer';
 
 // import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber } from "components/TableV4/TableColumnsV4";
@@ -40,36 +41,57 @@ import { useImmer } from 'use-immer';
 
 
 export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRules = {}, filters, title, leftTitle, permission, defaultParameters, dataAPI, onSelectionChanged, isRowSelectable, ignoreRowSelectionOnCells = [],
-    topToolbar, loadOnInit = false, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, modeApi, isCellEditable, valueGetter, onBeforeCellEditRequest,
-    onAfterCellEditRequest, onRowClick, onCellClick, rowSelectionIgnoreOnMode, suppressCellFocus, rowSelection,onExitMode, /* extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, onFilterChange, local = false, loadOnInit = false, rowSelection, */ ...props }) => {
+    topToolbar, loadOnInit = true, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, modeApi, isCellEditable, valueGetter, onBeforeCellEditRequest,
+    onAfterCellEditRequest, onRowClick, onCellClick, rowSelectionIgnoreOnMode, suppressCellFocus, rowSelection, onGridReady, 
+    onGridRequest, onGridResponse, onGridFailRequest,modeOptions,
+    /* extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, onFilterChange, local = false, loadOnInit = false, rowSelection, */ ...props }) => {
     const _gridRef = gridRef || useRef(); //not required
-    const [gridApi, setGridApi] = useState(); //not Required;
+    // const [gridApi, setGridApi] = useState(); //not Required;
     const modalApi = useModalApi() //not Required;
     const submitting = useSubmitting(false);
     const location = useLocation();
     const inputParameters = useRef(loadInit({ filter: defaultFilters }, { filter: dataAPI.getFilters(false, true) }, { ...props?.parameters }, { ...location?.state }));
 
-    useEffect(() => {
-        if (gridApi) {
-            const controller = new AbortController();
-            loadData({ signal: controller.signal, init: true });
-            return (() => controller.abort());
-        }
-    }, [gridApi]);
+    // useEffect(() => {
+    //     if (gridApi) {
+    //         const controller = new AbortController();
+    //         loadData({ signal: controller.signal, init: true });
+    //         return (() => controller.abort());
+    //     }
+    // }, [gridApi]);
 
-    const loadData = async ({ signal, init = false } = {}) => {
+    // const loadData = async ({ signal, init = false } = {}) => {
+    //     /**When not loadOnInit, we can do any init changes, before load it */
+    //     if (gridApi && loadOnInit) {
+    //         dataAPI.setDefaultSort(defaultSort);
+    //         dataAPI.addParameters({ ...defaultParameters }, false);
+    //         if (!local) {
+    //             let datasource = dataAPI.dataSourceV4(null, gridApi);
+    //             gridApi.setGridOption("serverSideDatasource", datasource);
+    //         } else {
+    //             // submitting.trigger();
+    //             // const dt = await dataAPI.fetchPost({ ignoreTotalRows: true });
+    //             // submitting.end();
+    //         }
+    //     }
+    // }
+
+    const _onGridReady = async ({ api, dataAPI, ...params }) => {
         /**When not loadOnInit, we can do any init changes, before load it */
-        if (gridApi && !loadOnInit) {
+        if (api && loadOnInit) {
             dataAPI.setDefaultSort(defaultSort);
             dataAPI.addParameters({ ...defaultParameters }, false);
             if (!local) {
-                let datasource = dataAPI.dataSourceV4(null, gridApi);
-                gridApi.setGridOption("serverSideDatasource", datasource);
+                let datasource = dataAPI.dataSourceV4(null, api);
+                api.setGridOption("serverSideDatasource", datasource);
             } else {
                 // submitting.trigger();
                 // const dt = await dataAPI.fetchPost({ ignoreTotalRows: true });
                 // submitting.end();
             }
+        }
+        if (typeof onGridReady == "function") {
+            await onGridReady(params);
         }
     }
 
@@ -140,10 +162,14 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
     return (
         <div style={{ width: "100%", height: "80vh", ...style }}>
             <TableV4
+                onGridRequest={onGridRequest}
+                onGridResponse={onGridResponse}
+                onGridFailRequest={onGridFailRequest}
                 loading={submitting.state || loading}
-                gridApi={gridApi}
-                loadOnInit={loadOnInit}
-                setGridApi={setGridApi}
+                // gridApi={gridApi}
+                onGridReady={_onGridReady}
+                loadOnInit={false}
+                // setGridApi={setGridApi}
                 multiSortKey='ctrl'
                 gridRef={_gridRef}
                 local={local}
@@ -168,7 +194,6 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 columnTypes={_columnTypes}
                 onRowClick={onRowClick}
                 onCellClick={onCellClick}
-                onExitMode={onExitMode}
                 //stopEditingWhenCellsLoseFocus={true}
 
                 showTopToolbar={true}
@@ -190,6 +215,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                     ...topToolbar
                 }}
                 modeApi={modeApi}
+                modeOptions={modeOptions}
                 {...props}
             />
         </div>

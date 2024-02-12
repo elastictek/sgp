@@ -3,33 +3,34 @@ import React, { memo, useEffect, useState, useCallback, useRef, useMemo } from '
 import { useImmer } from 'use-immer';
 
 /**Only when edit mode = true, delete is allowed */
-const useModeApi = () => {
+const useModeApi = (params) => {
   const [data, updateData] = useImmer({
     isReady: false,
-    key: "datagrid",
-    enabled: false,
-    showControls: false,
-    allowEdit: false,
-    allowAdd: false,
-    allowDelete: false,
-    editText: "Editar",
-    addText: "Novo",
-    saveText: "Guardar",
+    key: params?.key || "datagrid",
+    enabled: params?.enabled || true,
+    showControls: params?.showControls || true,
+    allowEdit: params?.allowEdit || false,
+    allowAdd: params?.allowAdd || false,
+    allowDelete: params?.allowDelete || false,
+    editText: params?.editText || "Editar",
+    addText: params?.addText || "Novo",
+    saveText: params?.saveText || "Guardar",
     // onExit: null,
-    onEditSave: null,
-    onAddSave: null,
-    onModeChange: null,
+    onEditSave: params?.onEditSave || null,
+    onAddSave: params?.onAddSave || null,
+    onModeChange: params?.onModeChange || null,
     // onAdd: null,
-    mode: null,
-    newRow: null,
-    newRowIndex: null,
+    mode: params?.initMode ? { "datagrid": { edit: false, add: false, [params?.initMode]: true } } : { ["datagrid"]: { edit: false, add: false } },
+    newRow: params?.newRow || null,
+    newRowIndex: params?.newRowIndex || null,
     dirty: false,
-    initMode: null
+    initMode: params?.initMode || null
   });
 
   const EDIT = "edit";
   const ADD = "add"
 
+  //Deprecated
   const load = (_config) => {
     updateData(draft => {
       draft.isReady = true;
@@ -53,6 +54,19 @@ const useModeApi = () => {
       draft.dirty = false;
     });
   }
+
+  const setOptions = (options = {}) => {
+    updateData((draft) => {
+      Object.keys(options).forEach((key) => {
+        if (key === "mode") {
+          draft[key][draft.key] = { edit: false, add: false, ...{ [options[key]]: true } };
+        } else {
+          draft[key] = options[key];
+        }
+      });
+    });
+  }
+
 
   const setDirty = (v = true) => {
     if (isOnMode()) {
@@ -93,13 +107,16 @@ const useModeApi = () => {
       return false;
     }
     if (data.enabled && data.allowEdit) {
-      updateData(draft => {
-        draft.mode = { [draft.key]: { ...draft.mode[draft.key], edit: !draft.mode[draft.key].edit, add: false } };
-        draft.dirty = false;
-      });
       if (typeof data.onModeChange === "function") {
-        data.onModeChange({ add: false, edit: true });
+        let _change = await data.onModeChange({ add: false, edit: true });
+        if (_change===false){
+          return false;
+        }
       }
+        updateData(draft => {
+          draft.mode = { [draft.key]: { ...draft.mode[draft.key], edit: !draft.mode[draft.key].edit, add: false } };
+          draft.dirty = false;
+        });
     }
   }
   const onAddMode = async (fn) => {
@@ -110,11 +127,19 @@ const useModeApi = () => {
       return false;
     }
     if (data.enabled && data.allowAdd) {
+      const _row = (typeof data.newRow == "function") ? data.newRow() : {};
+      if (typeof data.onModeChange === "function") {
+        let _change = await data.onModeChange({ add: true, edit: false },data.newRowIndex, _row);
+        if (_change===false){
+          return false;
+        }
+      }
+
       updateData(draft => {
         draft.mode = { [draft.key]: { ...draft.mode[draft.key], add: !draft.mode[draft.key].add, edit: false } };
         draft.dirty = false;
       });
-      const _row = (typeof data.newRow == "function") ? data.newRow() : {};
+      
       // if (typeof data?.onAdd == "function") {
       //   data.onAdd(data.newRowIndex, _row);
       // }
@@ -123,9 +148,6 @@ const useModeApi = () => {
           draft.dirty = true;
         });
         fn(data.newRowIndex, _row);
-      }
-      if (typeof data.onModeChange === "function") {
-        data.onModeChange({ add: true, edit: false });
       }
     }
   }
@@ -147,6 +169,7 @@ const useModeApi = () => {
 
   return {
     isReady: () => data.isReady,
+    setOptions,
     load,
     onEditMode,
     onAddMode,

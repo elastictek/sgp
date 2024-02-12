@@ -10,7 +10,8 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { useGridCellEditor } from 'ag-grid-react';
-import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, Action, OPTIONS_LAB_MODE, OPTIONS_LAB_PARAMETERTYPE } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
@@ -24,7 +25,7 @@ const { Dragger } = Upload;
 import { AppContext } from 'app';
 import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber, zRangeNumber } from 'utils/schemaZodRules';
 import { fetchPost } from 'utils/fetch';
-import { columns,schema,fecthUnits } from './LabParametersList';
+import { columns, schema, fecthUnits } from './LabParametersList';
 import { isNotNil, isNil } from 'ramda';
 
 const title = "Carregar Parâmetros";
@@ -41,7 +42,7 @@ const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, t
 //   return dt;
 // };
 
-const postProcessParamaters = (dt,info) => {
+const postProcessParamaters = (dt, info) => {
 
 }
 
@@ -69,26 +70,11 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         }
     });
 
-    useEffect(() => {
-        if (permission?.isReady) {
-            modeApi.load({
-                key: null,
-                enabled: true,
-                showControls: false,
-                allowEdit: permission.isOk({ item: "qualidade", action: "admin" }),
-                allowAdd: permission.isOk({ item: "qualidade", action: "admin" }),
-                newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6), parameter_type: firstKey(OPTIONS_LAB_PARAMETERTYPE), parameter_mode: firstKey(OPTIONS_LAB_MODE), required: 0 }),
-                onModeChange: (m) => { },
-                newRowIndex: null,
-                onAddSave: async (rows, allRows) => await onAddSave(rows, allRows),
-                onEditSave: async (rows, allRows) => await onEditSave(rows, allRows),
-                editText: null,
-                addText: null,
-                saveText: null,
-                initMode: modeApi.EDIT
-            });
-        }
-    }, [permission?.isReady]);
+    const onGridReady = async ({ api, ...params }) => { }
+    const onGridRequest = async () => { };
+    const onGridResponse = async (api) => {
+        if (dataAPI.requestsCount() === 1) { }
+    };
 
     const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
         /**
@@ -116,7 +102,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         });
     }
 
-    const onAddSave = useCallback(async (rows, allRows) => {
+    const onAddSave = async (rows, allRows) => {
         const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
         await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -128,9 +114,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
             return result.success;
             //setFormStatus(result);
         }));
-    }, []);
+    };
 
-    const onEditSave = useCallback(async (rows, allRows) => {
+    const onEditSave = async (rows, allRows) => {
         const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
         rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -142,7 +128,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
             //setFormStatus(result);
             return result.success;
         }));
-    }, []);
+    };
 
     const onActionSave = useCallback(async (row, option) => {
         submitting.trigger();
@@ -244,6 +230,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
                 </Dragger>
             </div>
             <TableGridEdit
+                onGridRequest={onGridRequest}
+                onGridResponse={onGridResponse}
+                onGridReady={onGridReady}
                 style={{ height: "60vh" }}
                 loading={submitting.state}
                 local={true}
@@ -268,6 +257,24 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
                 // onSelectionChanged={onselectionchange}
                 dataAPI={dataAPI}
                 modeApi={modeApi}
+                modeOptions={{
+
+                    enabled: true,
+                    showControls: false,
+                    allowEdit: permission.isOk({ item: "qualidade", action: "admin" }),
+                    allowAdd: permission.isOk({ item: "qualidade", action: "admin" }),
+                    newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6), parameter_type: firstKey(OPTIONS_LAB_PARAMETERTYPE), parameter_mode: firstKey(OPTIONS_LAB_MODE), required: 0 }),
+                    newRowIndex: null,
+                    onAddSave,
+                    onEditSave,
+                    onAdd: null,
+                    onModeChange: null,
+                    onExitMode: {},
+                    onExitModeRefresh: true,
+                    onAddSaveExit: true,
+                    onEditSaveExit: false,
+                    mode: modeApi.EDIT
+                  }}
                 onBeforeCellEditRequest={onBeforeCellEditRequest}
                 onAfterCellEditRequest={onAfterCellEditRequest}
                 {...props}

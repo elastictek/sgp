@@ -5,7 +5,8 @@ import { useDataAPI, parseFilter } from "utils/useDataAPIV4";
 import { usePermission, Permissions } from "utils/usePermission";
 import { useImmer } from 'use-immer';
 import ToolbarTitle from 'components/ToolbarTitleV3';
-import { suppressKeyboardEvent, useModalApi, getCellFocus } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, OPTIONS_TROCAETIQUETAS } from "components/TableV4/TableColumnsV4";
 

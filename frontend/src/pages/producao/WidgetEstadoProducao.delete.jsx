@@ -82,7 +82,7 @@ const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'))
 const PickNWList = lazy(() => import('../picking/PickNWList'));
 
 const title = "Produção";
-const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop','mpalete','rasgo'];
+const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop', 'mpalete', 'rasgo'];
 
 const StyledCollapse = styled(Collapse)`
 
@@ -1117,16 +1117,6 @@ const MiniBarBobinesNoPalete = ({ data, style, minWidth = 35, max = 200, onEstad
 }
 
 
-/* 
-const OrdemFabricoChooser = ({ parameters, onClick }) => {
-
-    useEffect(() => {
-        console.log("chooser--------------------", parameters)
-    }, [parameters?.data?.agg_cod]);
-
-    return (<div onClick={onClick}>{parameters?.data?.agg_cod}</div>);
-} */
-
 export default ({ setFormTitle, ...props }) => {
     const media = useContext(MediaContext);
     /*     const { hash: { hash_estadoproducao, hash_linelog_params }, data: { estadoProducao } } = useContext(SocketContext) || { hash: {}, data: {} }; */
@@ -1194,16 +1184,6 @@ export default ({ setFormTitle, ...props }) => {
         //     showModal();
         // }
     }
-
-
-    // cod: { title: "Agg", width: 130, render: v => <span style={{ color: "#096dd9" }}>{v}</span>, ...common },
-    // /* ofabrico_sgp: { title: "OF.SGP", width: 60, render: v => <>{v}</>, ...common }, */
-    // estado: { title: "", sort:false, width: 125, render: (v, r) => <ColumnEstado onValidar={onValidar} allow={permission.allow()} record={r} showMenuActions={showMenuActions} setShowMenuActions={setShowMenuActions} /*showConfirm={showConfirm} setShowConfirm={setShowConfirm} */ onAction={onEstadoChange} /*    setEstadoRecord={setEstadoRecord} estadoRecord={estadoRecord} reloadParent={reloadFromChild} rowKey={selectionRowKey(r)} record={r} */ />, ...common },
-    // /* options: { title: "", sort: false, width: 25, render: (v, r) => <ActionButton content={<MenuActionButton record={r} />} />, ...common }, */
-    // //item: { title: "Artigo(s)", width: 140, render: v => <>{v}</>, ...common },
-    // item_nome: { title: "Artigo(s)", ellipsis: true, render: v => <div style={{ /* overflow:"hidden", textOverflow:"ellipsis" */whiteSpace: 'nowrap' }}>{v}</div>, ...common },
-    // cliente_nome: { title: "Cliente(s)", ellipsis: true, render: v => <div style={{ whiteSpace: 'nowrap' }}><b>{v}</b></div>, ...common },
-
 
     const onOFStatusClick = (e, data, allowChangeStatus, allowValidar, allowReopen) => {
         e.preventDefault();
@@ -1360,7 +1340,28 @@ export default ({ setFormTitle, ...props }) => {
         setDrawerVisible(false);
     };
 
+    const ontesteclick = () => {
+        modalApi.setModalParameters({
+            content: <Palete parameters={{ palete: { id: 76634, nome: 'R1187-2024' }, palete_id: 76634, palete_nome: 'R1187-2024' }} />,
+            closable: true,
+            title: null, //"Carregar Parâmetros",
+            lazy: false,
+            type: "drawer",
+            responsive: true,
+            width: "95%",
+            push: false,
+            parameters: {} //{ ...getCellFocus(gridRef.current.api) }
+        });
+        modalApi.showModal();
+
+        //console.log("clickedddd",{ offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() })
+        //dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() }
+        //setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
+        //showModal();
+    }
+
     return (<>
+
         <ConfigProvider
             theme={{
                 token: {
@@ -1385,11 +1386,13 @@ export default ({ setFormTitle, ...props }) => {
             </Drawer>
         </ConfigProvider>
 
+        <div onClick={ontesteclick}>testeZy</div>
+
         <Card
             hoverable
             styles={{
-                header:{ padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" },
-                body:{ height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }
+                header: { padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" },
+                body: { height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }
             }}
             style={{ height: "100%", border: "1px solid #8c8c8c" }}
             size="small"
@@ -1426,6 +1429,7 @@ export default ({ setFormTitle, ...props }) => {
                 {/*                 </Container> */}
             </YScroll>
         </Card>
+
     </>
     );
 

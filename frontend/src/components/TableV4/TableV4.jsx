@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useContext, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
-import { useSubmitting } from "utils";
+import { useSubmitting, removeEmpty, sleep, unique } from "utils";
 import { usePermission } from "utils/usePermission";
 import { useImmer } from 'use-immer';
 import { isEmpty, isNil, assocPath, assoc } from 'ramda';
@@ -17,11 +17,8 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import YScroll from 'components/YScroll';
 import XScroll, { RowXScroll } from 'components/XScroll';
 import Pagination, { paginationI18n } from './PaginatorV4';
-import { useModal } from "react-modal-hook";
-import ResponsiveModal from 'components/Modal';
 
 import { AgGridReact } from 'ag-grid-react';
-import { removeEmpty, sleep, unique } from 'utils/index';
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, API_URL } from 'config';
 import TextArea from 'antd/es/input/TextArea';
 import SyntaxHighlighter from 'react-syntax-highlighter';
@@ -481,7 +478,7 @@ export const exitMode = (gridApi, onExitModeRefresh = true, data = null, fn = nu
     }
 }
 
-const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish,onExitMode }) => {
+const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish, onExitMode }) => {
     const [moreFilters, setMoreFilters] = useState(false);
     const [sqlQueryView, setSqlQueryView] = useState(false);
     const [helpfilters, setHelpFilters] = useState(false);
@@ -493,7 +490,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
     }
 
     const _exitMode = () => {
-        exitMode(gridRef.current.api, onExitModeRefresh, local ? dataAPI.getData().rows : null,onExitMode);
+        exitMode(gridRef.current.api, onExitModeRefresh, local ? dataAPI.getData().rows : null, onExitMode);
     }
     // const onExitMode = useCallback(() => {
     //     gridRef.current.api.stopEditing();
@@ -511,10 +508,11 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
     //     }
     // }, [dataAPI.getTimeStamp()]);
 
-    const onAddMode = useCallback((idx = null, row) => {
+    const onAddMode = useCallback(async (idx = null, row) => {
         let _first = gridRef.current.api.getFirstDisplayedRow() == -1 ? 0 : gridRef.current.api.getFirstDisplayedRow();
+        const _idx = idx != null ? idx : _first
         const transaction = {
-            addIndex: idx != null ? idx : _first,
+            addIndex: _idx,
             add: [{ ...row, rowadded: 1, rowvalid: 0 }],
         };
         if (local) {
@@ -782,6 +780,14 @@ export const suppressKeyboardEvent = ({ event }) => {
     return suppressEvent;
 };
 
+export const getAllNodes = (api) => {
+    const _v = [];
+    api.forEachNode((node) => {
+        _v.push(node.data);
+    });
+    return _v;
+}
+
 export const getSelectedNodes = (api, local = false) => {
     if (local) {
         return api.getSelectedNodes();
@@ -802,42 +808,6 @@ export const getSelectedNodes = (api, local = false) => {
         });
     }
     return selectedNodes;
-}
-
-
-export const useModalApi = () => {
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-        const content = useCallback(() => {
-            return modalParameters.content;
-        }, []);
-        const onClose = useCallback(() => {
-            hideModal();
-            if (typeof modalParameters.parameters.gridApi?.setFocusedCell === "function") {
-                modalParameters.parameters.gridApi.setFocusedCell(modalParameters.parameters.cellFocus.rowIndex, modalParameters.parameters.cellFocus.colId, null);
-            }
-        }, []);
-        return (
-            <ResponsiveModal
-                responsive={!isNil(modalParameters?.responsive) ? modalParameters.responsive : true}
-                closable={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
-                maskClosable={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
-                keyboard={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
-                lazy={modalParameters?.lazy}
-                title={modalParameters?.title}
-                type={modalParameters?.type}
-                push={modalParameters?.push}
-                onCancel={onClose}
-                width={modalParameters.width}
-                height={modalParameters.height}
-                footer="ref"
-                yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
-
-    return { setModalParameters, showModal, hideModal };
 }
 
 const Status = ({ dataAPI }) => {
@@ -883,9 +853,12 @@ export const disableTabOnNextCell = ({ event, api, editing, node, column }, onEd
 export default ({
     columnDefs, defaultColDef, columnTypes, dataAPI, local = false, gridApi, setGridApi, modalApi, loadOnInit = true,
     loading = false, showRange = true, allowGoTo = true, showFromTo, showTotalCount, gridRef, showTopToolbar = true, topToolbar = {},
-    onExitModeRefresh = true, onAddSaveExit = true, onEditSaveExit = false, rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, onCellClick, onRowClick, isRowSelectable,
-    ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, onExitMode, ...props
+    rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, onCellClick, onRowClick, isRowSelectable,
+    ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, onGridReady,
+    onGridRequest, onGridResponse, onGridFailRequest, modeOptions = {},
+    ...props
 }) => {
+    const { onExitModeRefresh = true, onAddSaveExit = true, onEditSaveExit = false, onExitMode } = modeOptions;
     const classes = useTableStyles();
     const _gridRef = gridRef || useRef();
     const submitting = useSubmitting(false);
@@ -915,20 +888,37 @@ export default ({
         return false;
     }, [loading, submitting.state, dataAPI.isLoading()]);
 
-    const onGridReady = useCallback((params) => {
+    useEffect(() => {
+        if (dataAPI) {
+            dataAPI.onGridRequest(onGridRequest);
+            dataAPI.onGridResponse(onGridResponse);
+            dataAPI.onGridFailRequest(onGridFailRequest);
+        }
+        if (modeApi) {
+            // modeApi.setOptions({
+            //     ...includeObjectKeys(modeOptions,["onAddSave","onEditSave","onModeChange"])
+            // });
+        }
+    });
+
+    const _onGridReady = useCallback(async (params) => {
         console.log("GIRD-READY");
         //Load Filters State
+        if (modeApi) {
+            modeApi.setOptions({ ...excludeObjectKeys(modeOptions, ["onExitModeRefresh", "onAddSaveExit", "onEditSaveExit", "onExitMode"]), isReady: true });
+        }
         updateStateFilters({ ...topToolbar?.initFilterValues?.filter || {} });
         if (topToolbar?.filters && isObjectEmpty(dataAPI.getFilters()) && isObjectEmpty(dataAPI.preFilters())) {
             const _values = parseFilters(topToolbar?.initFilterValues?.filter);
             dataAPI.setFilters(_values);
         }
-
         if (setGridApi) {
             const { api } = params;
             setGridApi(api);
         }
-
+        if (typeof onGridReady == "function") {
+            await onGridReady({ api: params.api, dataAPI });
+        }
         if (loadOnInit && local == false) {
             let datasource = dataAPI.dataSourceV4(null, params.api);
             params.api.setGridOption("serverSideDatasource", datasource);
@@ -1270,7 +1260,6 @@ export default ({
                         //   }
                         // }}
 
-
                         pagination={dataAPI.getPagination().enabled}
                         paginationPageSize={dataAPI.getPageSize()}
                         suppressPaginationPanel={true}
@@ -1297,7 +1286,7 @@ export default ({
                         }}
 
                         //sideBar={'columns'}
-                        onGridReady={onGridReady}
+                        onGridReady={_onGridReady}
                         getRowId={getRowId}
                         maxComponentCreationTimeMs={2500}
                         enableCellTextSelection={false}

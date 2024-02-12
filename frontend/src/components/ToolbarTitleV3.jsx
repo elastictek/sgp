@@ -21,9 +21,7 @@ const schema = (options = {}) => { return getSchema({}, options).unknown(true); 
 
 
 const StyledLogo = styled(LogoWhiteNoText)`
-    &:hover svg path[style*="fill:#fff"
-        fill: rgb(21, 145, 196);
-    }
+    
 `;
 
 

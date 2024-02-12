@@ -10,7 +10,8 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { useGridCellEditor } from 'ag-grid-react';
-import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDataSource } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus, columnPath, refreshDataSource } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, Action } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
@@ -65,25 +66,8 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     }
   });
 
-  useEffect(() => {
-    if (permission?.isReady) {
-      modeApi.load({
-        key: null,
-        enabled: true,
-        allowEdit: permission.isOk({ item: "cortes", action: "admin" }),
-        allowAdd: false,
-        newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6) }),
-        onModeChange: (m) => { },
-        newRowIndex: null,
-        onAddSave: async (rows, allRows) => await onAddSave(rows, allRows),
-        onEditSave: async (rows, allRows) => await onEditSave(rows, allRows),
-        editText: null,
-        addText: null,
-        saveText: null
-
-      });
-    }
-  }, [permission?.isReady]);
+  const onGridReady = async ({ api, ...params }) => {
+  }
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
     /**
@@ -104,21 +88,17 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     });
   }
 
-  const onAddSave = useCallback(async (rows, allRows) => {
+  const onGridRequest = async () => {};
+  const onGridResponse = async (api) => {
+    if (dataAPI.requestsCount() === 1) {}
+  };
+
+  const onAddSave = async (rows, allRows) => {
     const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
+  };
 
-    // return (await rv.onValidationSuccess(async (p) => {
-    //   setValidation(prev => ({ ...prev, ...p.alerts.error }));
-    //   const result = await dataAPI.safePost(`${API_URL}/trocaetiquetas/sql/`, "NewTask", { parameters: { rows } });
-    //   result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
-    //   result.onFail((p) => { });
-    //   return result.success;
-    //   //setFormStatus(result);
-    // }));
-  }, []);
-
-  const onEditSave = useCallback(async (rows, allRows) => {
+  const onEditSave = async (rows, allRows) => {
     const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -130,41 +110,15 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       //setFormStatus(result);
       return result.success;
     }));
-  }, []);
+  };
 
   const onActionSave = useCallback(async (row, option) => {
     submitting.trigger();
-
-    // const _safePost = async (method, { filter, parameters }) => {
-    //   const result = await dataAPI.safePost(`${API_URL}/trocaetiquetas/sql/`, method, { filter, parameters });
-    //   result.onValidationFail((p) => { });
-    //   result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
-    //   result.onFail((p) => { });
-    //   //setFormStatus(result);
-    // }
-
-    // switch (option.key) {
-    //   case "delete":
-    //     Modal.confirm({
-    //       content: <div>Tem a certeza que deseja apagar a tarefa <b>{row.nome}</b>?</div>, onOk: async () => {
-    //         await _safePost("DeleteTask",  { parameters: { id:row.id }, filter: {} });
-    //       }
-    //     })
-    //     break;
-    //   case "open": await _safePost("OpenTask", { parameters: { id:row.id }, filter: {} }); break;
-    //   case "close": await _safePost("CloseTask", { parameters: { id:row.id }, filter: {} }); break;
-    // };
-
     submitting.end();
   }, []);
 
   const actionItems = useCallback((params) => {
-    return [
-      // ...params.data.status == "9" ? [{ label: "Abrir tarefa", key: "open", icon: <EditOutlined style={{ fontSize: "16px" }} /> }] : [],
-      // ...params.data.status == "1" ? [{ label: "Fechar tarefa", key: "close", icon: <StopOutlined style={{ fontSize: "16px" }} /> }] : [],
-      // { type: 'divider' },
-      // ...[{ label: "Apagar tarefa", key: "delete", icon: <DeleteFilled style={{ fontSize: "16px" }} /> }]
-    ]
+    return []
   }, []);
 
   const cellParams = useCallback((params = {}) => {
@@ -210,15 +164,36 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         columnDefs={columnDefs}
         defaultSort={[{ column: "pc2.updated_date", direction: "DESC" }]}
         filters={filters}
+        onGridReady={onGridReady}
         permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
+
+        modeOptions={{
+
+          enabled: true,
+          allowEdit: permission.isOk({ item: "cortes", action: "admin" }),
+          allowAdd: false,
+          newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6) }),
+          newRowIndex: null,
+          onAddSave,
+          onEditSave,
+          onAdd: null,
+          onModeChange: null,
+          onExitMode: {},
+          onExitModeRefresh: true,
+          onAddSaveExit: true,
+          onEditSaveExit: false
+        }}
+
         //rowSelectionIgnoreOnMode={true}
         // rowSelection="single"
         // onSelectionChanged={onselectionchange}
         dataAPI={dataAPI}
         modeApi={modeApi}
+        onGridRequest={onGridRequest}
+        onGridResponse={onGridResponse}
         onBeforeCellEditRequest={onBeforeCellEditRequest}
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}

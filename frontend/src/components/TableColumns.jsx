@@ -9,7 +9,7 @@ import { Tag, Button, Space, Badge, Dropdown } from "antd";
 import { FORMULACAO_CUBAS, DATETIME_FORMAT, bColors } from "config";
 import dayjs from 'dayjs';
 import { ImArrowDown, ImArrowUp } from 'react-icons/im';
-import { allPass, curry, eqProps, map, uniqWith } from 'ramda';
+import { allPass, curry, eqProps, isNil, isNotNil, map, uniqWith } from 'ramda';
 import { GiBandageRoll } from 'react-icons/gi';
 import { AiOutlineVerticalAlignTop, AiOutlineVerticalAlignBottom } from 'react-icons/ai';
 import { VscDebugStart } from 'react-icons/vsc';
@@ -72,7 +72,7 @@ export const OF = ({ id, ofid, of_des }) => {
     );
 }
 
-export const OFabricoStatus = ({ aggCod=false, data, onClick, cellProps }) => {
+export const OFabricoStatus = ({ aggCod = false, data, onClick, cellProps }) => {
     return (
         <div style={{ display: "flex", flexDirection: "row" }}>
             {(data?.ofabrico_status == 0) && <>
@@ -80,24 +80,24 @@ export const OFabricoStatus = ({ aggCod=false, data, onClick, cellProps }) => {
                 {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>}
             </>}
             {(data?.ofabrico_status == 1) && <>
-                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">{aggCod && <div>{data.agg_cod}</div>}<div>Em Elaboração</div></TagButton>}
-                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>}
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">{aggCod && <div>{data.agg_cod}</div>}<div>Em Elaboração</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>}
             </>}
             {(data?.ofabrico_status == 2 && data?.was_in_production == 0) && <>
-                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Na Produção</div></TagButton>}
-                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>}
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Na Produção</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>}
             </>}
             {(data?.ofabrico_status == 2 && data?.was_in_production == 1) && <>
-                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Suspensa</div></TagButton>}
-                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>}
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">{aggCod && <div>{data.agg_cod}</div>}<div>Suspensa</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>}
             </>}
             {(data?.ofabrico_status) == 3 && <>
-                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">{aggCod && <div>{data.agg_cod}</div>}<div>Em Produção</div></TagButton>}
-                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>}
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">{aggCod && <div>{data.agg_cod}</div>}<div>Em Produção</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>}
             </>}
             {(data?.ofabrico_status) == 9 && <>
-                {aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">{aggCod && <div>{data.agg_cod}</div>}<div>Finalizada</div></TagButton>}
-                {!aggCod &&<TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>}
+                {aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">{aggCod && <div>{data.agg_cod}</div>}<div>Finalizada</div></TagButton>}
+                {!aggCod && <TagButton onClick={onClick} style={{ width: "110px", textAlign: "center" }} color="error">Finalizada</TagButton>}
             </>}
         </div>
     );
@@ -165,7 +165,7 @@ export const Bobines = ({ id, nome, b, onClick, align = "start", cellProps, styl
     return (<>
         {!cellProps?.inEdit && <div style={{ display: "flex", flexDirection: "row", lineHeight: "12px", justifyContent: align }}>
             {b.map((v, i) => {
-                return (<StyledBobine title={nome} style={{...style && style}} onClick={(e)=>onClick && onClick("estado",id,nome,v,e)} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
+                return (<StyledBobine title={nome} style={{ ...style && style }} onClick={(e) => onClick && onClick("estado", id, nome, v, e)} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor} key={`bob-${id && id}-${v.id ? v.id : i}`}><b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar}</div></StyledBobine>);
             })}
         </div>}
     </>
@@ -273,7 +273,7 @@ export const ArrayColumn = ({ value, distinct = true, onClick, style, cellProps,
     }
 
     return (<>{!cellProps?.inEdit && <div style={{ display: "flex", fontSize: "11px" }}>
-        {value && getValue(value).map((v, i) => <div key={`${cellProps?.name}-${i}`} style={{...style}}>{v}</div>)}
+        {value && getValue(value).map((v, i) => <div key={`${cellProps?.name}-${i}`} style={{ ...style }}>{v}</div>)}
     </div>}</>);
 }
 
@@ -297,29 +297,32 @@ const colors = [
     { color: "#bc5fcb", fontColor: "#fff" },
     { color: "#02b5f7", fontColor: "#fff" }
 ];
-const StyledCuba = styled.div`
-        border:dashed 1px #000;
-        background-color:${props => props.color};
-        color:${props => props.$fontColor};
-        border-radius:3px;
-        text-align:center;
-        font-weight:700;
-        width:25px;
-        height:19px;
-        line-height:17px;
-        font-size:14px;
-        cursor:pointer;
-        &:hover {
-            border - color: #d9d9d9;
+
+const useStylesCuba = createUseStyles({
+    cuba: {
+        backgroundColor: props => props.color,
+        color: props => props.fontColor,
+        border: "dashed 1px #000",
+        borderRadius: "3px",
+        textAlign: "center",
+        fontWeight: 700,
+        width: "25px",
+        height: "19px",
+        lineHeight: "17px",
+        fontSize: "14px",
+        cursor: "pointer",
+        '&:hover': {
+            borderColor: "#d9d9d9"
+        }
     }
-        `;
+});
+
 export const getValue = (v) => (v) ? FORMULACAO_CUBAS.find(x => x.key == v)?.value : null;
 export const Cuba = ({ value, style }) => {
     const val = getValue(value);
+    const classes = useStylesCuba({ ...(value && isNotNil(val)) ? { color: colors[value].color, fontColor: colors[value].fontColor } : { color: "#000", fontColor: "#fff" } });
     return (<>
-        {value && <>
-            {(val !== null && val !== undefined) ? <StyledCuba style={{ ...style }} color={colors[value].color} $fontColor={colors[value].fontColor}>{val}</StyledCuba> : <StyledCuba color="#000" $fontColor="#fff">{value}</StyledCuba>}
-        </>}
+        {value && <div className={classes.cuba} style={{...style && style}}>{val}</div>}
     </>);
 }
 export const Bool = ({ value, cellProps, style }) => {

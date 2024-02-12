@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState, useCallback, useRef, useContext, useM
 import { useNavigate, useLocation } from "react-router-dom";
 import { createUseStyles } from 'react-jss';
 import { ROOT_URL, API_URL, DATE_FORMAT, BOBINE_DEFEITOS, BOBINE_ESTADOS } from "config";
-import { useDataAPI, parseFilter, getFilterValue } from "utils/useDataAPIV4";
+import { useDataAPI as useDataAPIV4, parseFilter, getFilterValue } from "utils/useDataAPIV4";
 import { usePermission, Permissions } from "utils/usePermission";
 import { useImmer } from 'use-immer';
 import { useSubmitting, sleep, compareArrays, compareObjArrays, removeArrayMatchingElements, uniqueValues, length, isNullOrEmpty } from "utils";
@@ -11,13 +11,14 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { useGridCellEditor } from 'ag-grid-react';
-import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell, getSelectedNodes, exitMode } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell, getSelectedNodes, exitMode, getAllNodes } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, EstadoBobine, Action, OPTIONS_LAB_MODE, OPTIONS_LAB_PARAMETERTYPE, BadgeCount, ModalMultiRangeView, ArrayTags } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
 import TableGridEdit from 'components/TableV4/TableGridEdit';
 import { AntdAutoCompleteEditor, AntdCheckboxEditor, AntdDateEditor, AntdInputEditor, AntdInputNumberEditor, AntdMultiSelectEditor, AntdSelectEditor, ArtigosLookupEditor, ClientesLookupEditor, RangeDefeitosEditor } from 'components/TableV4/TableEditorsV4';
-import { firstKey, firstKeyValue, includeObjectKeys, json, updateByPath, valueByPath } from 'utils/object';
+import { excludeObjectKeys, firstKey, firstKeyValue, includeObjectKeys, json, updateByPath, valueByPath } from 'utils/object';
 import { z } from "zod";
 import { CheckOutlined, CloseCircleFilled, CloseOutlined, DeleteFilled, DownloadOutlined, EditOutlined, MoreOutlined, PrinterOutlined, StockOutlined, StopOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Dropdown, Modal, Space } from 'antd';
@@ -30,7 +31,6 @@ import FormPrint from '../commons/FormPrint';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
-
 const title = "Bobines Defeitos";
 const subTitle = null;
 const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, title, subTitle }) => {
@@ -40,12 +40,12 @@ const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, t
   />}</>);
 }
 
-const postProcess = async (dt) => {
+const postProcess = async (dt, { validate = false }) => {
 
   for (let [i, v] of dt.rows.entries()) {
     let defeitos = [];
     for (let p of OPTIONS_OUTROSDEFEITOS) {
-      (v[p.value] === 1) && defeitos.push(p);
+      (v[p.value] === 1) && defeitos.push((!validate && p.value === "troca_nw") ? { ...p, disabled: true } : p);
     }
     dt.rows[i]["defeitos"] = defeitos;
     dt.rows[i]["estado_original"] = dt.rows[i]["estado"];
@@ -59,7 +59,6 @@ const postProcess = async (dt) => {
   return dt;
 };
 
-
 export const RowsSelection = ({ dataAPI, modeApi, gridApi, validation }) => {
 
   const handleSelectionClick = (v, select = 1) => {
@@ -70,8 +69,12 @@ export const RowsSelection = ({ dataAPI, modeApi, gridApi, validation }) => {
           node.setSelected(select == 1);
         }
       } else {
-        if (k[0].includes(node.data.estado) && canChangeRow(node.data)) {
-          node.setSelected(select == 1);
+        if (k[0] === "clearall") {
+          node.setSelected(false);
+        } else {
+          if (k[0].includes(node.data.estado) && canChangeRow(node.data)) {
+            node.setSelected(select == 1);
+          }
         }
       }
     });
@@ -85,11 +88,11 @@ export const RowsSelection = ({ dataAPI, modeApi, gridApi, validation }) => {
       const appendItem = (n) => {
         if (!_keysAdded.includes(n.estado)) {
           _keysAdded.push(n.estado);
-          itemsE.push({ key: n.estado, label: <div style={{ display: "flex", justifyContent: "space-between", width:"150px", alignItems: "center" }}><div><b>{n.estado}</b></div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
+          itemsE.push({ key: n.estado, label: <div style={{ display: "flex", justifyContent: "space-between", width: "150px", alignItems: "center" }}><div><b>{n.estado}</b></div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
         }
         if (!_keysAdded.includes(`${n.estado}:${n.lar}`)) {
           _keysAdded.push(`${n.estado}:${n.lar}`);
-          itemsL.push({ key: `${n.estado}:${n.lar}`, label: <div style={{ display: "flex", justifyContent: "space-between", width:"150px", alignItems: "center" }}><div><b>{n.estado}</b>&nbsp;{n.lar}</div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}:${n.lar}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
+          itemsL.push({ key: `${n.estado}:${n.lar}`, label: <div style={{ display: "flex", justifyContent: "space-between", width: "150px", alignItems: "center" }}><div><b>{n.estado}</b>&nbsp;{n.lar}</div><Button onClick={(e) => { e.stopPropagation(); handleSelectionClick({ key: `${n.estado}:${n.lar}` }, 0); }} size="small" icon={<CloseOutlined />} /></div> });
         }
       }
 
@@ -102,7 +105,7 @@ export const RowsSelection = ({ dataAPI, modeApi, gridApi, validation }) => {
           appendItem(n);
         });
       }
-      return { items: [...itemsE, { type: "divider" }, ...itemsL], onClick: (v) => handleSelectionClick(v, 1) };
+      return { items: [{ key: "clearall", label: "Limpar Seleção" }, { type: "divider" }, ...itemsE, { type: "divider" }, ...itemsL], onClick: (v) => handleSelectionClick(v, 1) };
     }
     return { items: [] };
   }, [dataAPI.getTimeStamp(), validation]);
@@ -130,7 +133,7 @@ export const schema = z.object({
   }, {})
 });
 
-const schemaFinal = z.object({
+export const schemaFinal = z.object({
   fc_pos: z.any(),
   ff_pos: z.any(),
   furos_pos: z.any(),
@@ -142,7 +145,7 @@ const schemaFinal = z.object({
   palete_nome: z.string().nullable(),
   obs: z.string().nullable()
 }).merge(schema).refine(v => {
-  const hasDefeitos = (length(v.defeitos) > 0 || length(v.fc_pos) > 0 || length(v.ff_pos) > 0 || length(v.furos_pos) > 0 || length(v.buracos_pos) > 0 || length(v.rugas_pos) > 0 || !isNullOrEmpty(v.prop_obs) || !isNullOrEmpty(v.obs)) ? true : false;
+  const hasDefeitos = (length(v.defeitos.filter(x => x.value !== "troca_nw")) > 0 || length(v.fc_pos) > 0 || length(v.ff_pos) > 0 || length(v.furos_pos) > 0 || length(v.buracos_pos) > 0 || length(v.rugas_pos) > 0 || !isNullOrEmpty(v.prop_obs) || !isNullOrEmpty(v.obs)) ? true : false;
   const estado = v.estado;
   const errors = [];
   if ((estado === "R" || estado === "DM") && !hasDefeitos) {
@@ -159,6 +162,10 @@ const schemaFinal = z.object({
   }
   return true;
 }, {});
+
+export const validationGroups = (dataAPI) => dataAPI.validationGroups({
+  largura: ["l_real", "lar", "estado", "num_bobinagem"]
+});
 
 const useTableStyles = createUseStyles({
   recycled: {
@@ -179,17 +186,17 @@ const isRecycled = (data) => {
   return false;
 }
 
-export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
+export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();
   const [formStatus, setFormStatus] = useState({});
   const submitting = useSubmitting(false);
   const gridRef = useRef(); //not required
-  const modalApi = useModalApi() //not Required;
-  const modeApi = useModeApi() //not Required;
+  const modalApi = useModalApi(); //not Required;
+  const modeApi = useModeApi(); //not Required;
   const permission = usePermission({ permissions: props?.permissions });
-  const defaultParameters = { method: "BobinesListV2" };
+  const defaultParameters = { method: "BobinesListV2", validate: props?.validate };
   const [validation, setValidation] = useState({});
   const { openNotification } = useContext(AppContext);
   const [lastTabs, setLastTabs] = useState({ palete: "1", bobinagem: "1" });
@@ -197,8 +204,8 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   const baseFilters = {
     //...parseFilter("ot.`type`", `==1`, { type: "number" })
   };
-  const dataAPI = useDataAPI({
-    ...((!noid || location?.state?.noid === false) && { id: "ListBobinesDefeitos-01" }), fnPostProcess: (dt) => postProcess(dt, null),
+  const dataAPI = useDataAPIV4({
+    ...((!noid || location?.state?.noid === false) && { id: "ListBobinesDefeitos-01" }), fnPostProcess: (dt) => postProcess(dt, { validate: props?.validate }),
     payload: {
       url: `${API_URL}/bobines/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: false, pageSize: 250, limit: 250 },
       filter: {}, baseFilter: baseFilters,
@@ -206,56 +213,74 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     }
   });
 
-
   useEffect(() => {
-    if (permission?.isReady) {
-      modeApi.load({
-        key: null,
-        enabled: true,
-        allowEdit: permission.isOk({ action: "changeDefeitos" }),
-        allowAdd: false,
-        newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6) }),
-        onModeChange: (m) => { },
-        newRowIndex: null,
-        onAddSave: async (rows, allRows) => await onAddSave(rows, allRows),
-        onEditSave: async (rows, allRows) => await onEditSave(rows, allRows),
-        editText: null,
-        addText: null,
-        saveText: null
-      });
+    if (!isNil(inputParameters)) {
+      //It means that this has parameters already, so the need to exit mode and reload grid data!
+      //Importante para a navegação através do titleform previous|next
+      if (modeApi.isOnMode() && !props.validate) {
+        modeApi.onExit(() => exitMode(gridRef.current.api, false, null, onExitMode));
+      }
+      refreshDataSource(gridRef.current.api);
     }
-  }, [permission?.isReady]);
+  }, [props?.parameters?.bobinagem?.id, props?.parameters?.palete?.id]);
 
   useEffect(() => {
-    if (permission?.isReady) {
-      if (inputParameters?.tstamp !== props?.parameters?.tstamp) {
-        const _inputParameters = loadInit({}, {}, { ...props?.parameters }, { ...location?.state });
-        dataAPI.setBaseFilters({
-          ..._inputParameters?.bobinagem?.id && {
-            ...parseFilter("pbm.id", `==${_inputParameters?.bobinagem?.id}`, { type: "number" }),
-            //...parseFilter("mb.comp_actual", `>0`, { type: "number" }),
-            //...parseFilter("mb.recycle", `==0`, { type: "number" })
-          },
-          ..._inputParameters?.palete?.id && {
-            ...parseFilter("sgppl.id", `==${_inputParameters?.palete?.id}`, { type: "number" }),
-            ...parseFilter("mb.comp_actual", `>0`, { type: "number" }),
-            ...parseFilter("mb.recycle", `==0`, { type: "number" })
-          }
-        });
-        setInputParameters({
-          ..._inputParameters,
-          bobinagem_id: _inputParameters?.bobinagem?.id,
-          bobinagem_nome: _inputParameters?.bobinagem?.nome,
-          palete_id: _inputParameters?.palete?.id,
-          palete_nome: _inputParameters?.palete?.nome
-        });
-        if (modeApi.isOnMode()) {
-          modeApi.onExit(() => exitMode(gridRef.current.api, false, null, onExitMode));
+    //Usado quando se trata de validar a bobinagem!
+    if (props?.validate && !isNullOrEmpty(props?.parameters?.validateTstamp)) {
+      const updates = [];
+      const troca_nw = props.parameters?.validateValues?.troca_nw == 1 ? OPTIONS_OUTROSDEFEITOS.find(v => v.value == "troca_nw") : null;
+      gridRef.current.api.forEachNode(n => {
+        const _defeitos = [...n.data.defeitos];
+        if (troca_nw) {
+          _defeitos.push(troca_nw);
         }
-        refreshDataSource(gridRef.current.api);
+        updates.push({ ...n.data, defeitos: _defeitos, ...excludeObjectKeys(props.parameters?.validateValues, ["troca_nw"]) });
+      });
+      if (updates.length > 0) {
+        gridRef.current.api.applyServerSideTransaction({ update: [...updates] });
+        props.setDataToParent(getAllNodes(gridRef.current.api));
       }
     }
-  }, [permission.isReady, props?.parameters?.tstamp])
+  }, [props?.parameters?.validateTstamp]);
+
+
+  const onGridReady = async ({ api, ...params }) => {
+  }
+  const onGridRequest = async () => {
+    if (inputParameters?.tstamp !== props?.parameters?.tstamp) {
+      const _inputParameters = loadInit({}, {}, { ...props?.parameters }, { ...location?.state });
+      if (isNullOrEmpty(_inputParameters?.bobinagem?.id) && isNullOrEmpty(_inputParameters?.palete?.id)) {
+        return false; //when return false it cancels the request!
+      }
+      dataAPI.setBaseFilters({
+        ..._inputParameters?.bobinagem?.id && {
+          ...parseFilter("pbm.id", `==${_inputParameters?.bobinagem?.id}`, { type: "number" }),
+        },
+        ..._inputParameters?.palete?.id && {
+          ...parseFilter("sgppl.id", `==${_inputParameters?.palete?.id}`, { type: "number" }),
+          ...parseFilter("mb.comp_actual", `>0`, { type: "number" }),
+          ...parseFilter("mb.recycle", `==0`, { type: "number" })
+        }
+      });
+      setInputParameters({
+        ..._inputParameters,
+        bobinagem_id: _inputParameters?.bobinagem?.id,
+        bobinagem_nome: _inputParameters?.bobinagem?.nome,
+        palete_id: _inputParameters?.palete?.id,
+        palete_nome: _inputParameters?.palete?.nome
+      });
+    }
+
+  };
+  const onGridResponse = async (api) => {
+    if (dataAPI.requestsCount() === 1) {
+      if (props?.setDataToParent && typeof props.setDataToParent == "function") {
+        console.log("data sent to parent", getAllNodes(api))
+        props.setDataToParent(getAllNodes(api));
+      }
+    }
+    console.log("aaaaaaa-xxx-after");
+  };
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
     /**
@@ -285,78 +310,85 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         },
         rowvalid: 0
       };
+      console.log("add-transaction--#######################", _data)
       transactions.push(_data);
     }
+
     if (multi) {
       const selectedNodes = getSelectedNodes(event.api);
-      if (!isEmpty(selectedNodes)) {
-        let cancelTxs = false;
-        if (selectedNodes.some(obj => obj.id === event.node.id)) {
-          let _keys = [];
-          if (field == "defeitos") {
-            _keys = ["value"];
-          } else if (field === "ff_pos") {
-            _keys = ["min", "max", "type"];
-          } else if (["fc_pos", "buracos_pos", "furos_pos", "rugas_pos"].includes(field)) {
-            _keys = ["min", "max"];
-          }
-          if (!["prop_obs", "obs", "estado"].includes(field)) {
-            const { removed, added } = compareArrays(valueByPath(data, path, []), newValue, _keys);
-            event.api.forEachNode(n => {
-              if (cancelTxs == false && !canChangeRow(n.data)) {
-                cancelTxs = true;
-                transactions.length = 0;
-              }
-              if (!cancelTxs) {
-                const _selected = selectedNodes.some(obj => obj.id === n.id);
-                if (_selected) {
-                  let _nodedata = removeArrayMatchingElements(valueByPath(n.data, path, []), removed, _keys);
-                  _nodedata.push(...added)
-                  _nodedata = uniqueValues(_nodedata, _keys);
-                  addTransaction(updateByPath(n.data, field, _nodedata));
-                } else if (field === "defeitos" && !_selected) {
-                  let _rnv = removed.find(v => v.value == "troca_nw");
-                  let _anv = added.find(v => v.value == "troca_nw");
-                  if (_anv || _rnv) {
-                    let _nodedata = [];
-                    if (_anv) {
-                      _nodedata = [...valueByPath(n.data, field, [])];
-                      _nodedata.push({ ..._anv });
-                      _nodedata = uniqueValues(_nodedata, _keys);
-                    } else if (_rnv) {
-                      _nodedata = removeArrayMatchingElements(valueByPath(n.data, field, []), [_rnv], _keys);
-                    }
-                    addTransaction(updateByPath(n.data, field, _nodedata));
-                  }
-                }
-              }
-            });
-          } else {
-            event.api.forEachNode(n => {
-              if (cancelTxs == false && !canChangeRow(n.data)) {
-                cancelTxs = true;
-                transactions.length = 0;
-              }
-              if (!cancelTxs) {
-                if (field === "estado" && newValue === "BA") {
-                  addTransaction(updateByPath(n.data, field, newValue));
-                } else if (selectedNodes.some(obj => obj.id === n.id)) {
-                  addTransaction(updateByPath(n.data, field, newValue));
-                } else if (field === "estado" && n.data?.estado == "BA") {
-                  cancelTxs = true;
-                  transactions.length = 0;
-                }
-              }
-            });
-          }
-        } else {
-          addTransaction(updateByPath(data, field, newValue));
-        }
-        if (transactions.length > 0) {
-          event.api.applyServerSideTransaction({ update: transactions });
-        }
-        return false; //Se return === false mais nenhum processamento de dados é efetuado
+      if (isEmpty(selectedNodes)) {
+        selectedNodes.push(event.node);
       }
+      let cancelTxs = false;
+      if (selectedNodes.some(obj => obj.id === event.node.id)) {
+        let _keys = [];
+        if (field == "defeitos") {
+          _keys = ["value"];
+        } else if (field === "ff_pos") {
+          _keys = ["min", "max", "type"];
+        } else if (["fc_pos", "buracos_pos", "furos_pos", "rugas_pos"].includes(field)) {
+          _keys = ["min", "max"];
+        }
+        if (!["prop_obs", "obs", "estado"].includes(field)) {
+          const { removed, added } = compareArrays(valueByPath(data, path, []), newValue, _keys);
+          event.api.forEachNode(n => {
+            if (cancelTxs == false && !canChangeRow(n.data)) {
+              cancelTxs = true;
+              transactions.length = 0;
+            }
+            if (!cancelTxs) {
+              const _selected = selectedNodes.some(obj => obj.id === n.id);
+              if (_selected) {
+                let _nodedata = removeArrayMatchingElements(valueByPath(n.data, path, []), removed, _keys);
+                _nodedata.push(...added)
+                _nodedata = uniqueValues(_nodedata, _keys);
+                addTransaction(updateByPath(n.data, field, _nodedata));
+              } else if (field === "defeitos" && !_selected) {
+                let _rnv = removed.find(v => v.value == "troca_nw");
+                let _anv = added.find(v => v.value == "troca_nw");
+                if (_anv || _rnv) {
+                  let _nodedata = [];
+                  if (_anv) {
+                    _nodedata = [...valueByPath(n.data, field, [])];
+                    _nodedata.push({ ..._anv });
+                    _nodedata = uniqueValues(_nodedata, _keys);
+                  } else if (_rnv) {
+                    _nodedata = removeArrayMatchingElements(valueByPath(n.data, field, []), [_rnv], _keys);
+                  }
+                  addTransaction(updateByPath(n.data, field, _nodedata));
+                }
+              }
+            }
+          });
+        } else {
+          console.log("sel-nodes-x-#######################", selectedNodes)
+          event.api.forEachNode(n => {
+            console.log(n.data, canChangeRow(n.data))
+            let tx = true;
+            if (cancelTxs == false && !canChangeRow(n.data)) {
+              tx = false;
+              //cancelTxs = true;
+              //transactions.length = 0;
+            }
+            if (!cancelTxs && tx) {
+              if (field === "estado" && newValue === "BA") {
+                addTransaction(updateByPath(n.data, field, newValue));
+              } else if (selectedNodes.some(obj => obj.id === n.id)) {
+                addTransaction(updateByPath(n.data, field, newValue));
+              } else if (field === "estado" && n.data?.estado == "BA") {
+                cancelTxs = true;
+                transactions.length = 0;
+              }
+            }
+          });
+        }
+      } else {
+        addTransaction(updateByPath(data, field, newValue));
+      }
+      if (transactions.length > 0) {
+        event.api.applyServerSideTransaction({ update: transactions });
+      }
+      return false; //Se return === false mais nenhum processamento de dados é efetuado
     }
     addTransaction(updateByPath(data, field, newValue));
     if (transactions.length > 0) {
@@ -366,16 +398,20 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups: _validationGroups });
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
     r.onValidationSuccess((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
+      //Tem a ver com a validação da bobinagem (esta página é a mesma para validar a bobinagem)
+      if (props?.setDataToParent && typeof props.setDataToParent == "function") {
+        props.setDataToParent(getAllNodes(event.api));
+      }
     });
   }
 
-  const onAddSave = useCallback(async (rows, allRows) => {
+  const onAddSave = async (rows, allRows) => {
     // const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     // await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -387,10 +423,10 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     //   return result.success;
     //   //setFormStatus(result);
     // }));
-  }, []);
+  };
 
-  const onEditSave = useCallback(async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
+  const onEditSave = async (rows, allRows) => {
+    const rv = await dataAPI.validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups: _validationGroups });
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
     return (await rv.onValidationSuccess(async (p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
@@ -404,10 +440,14 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
       });
       result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
       result.onFail((p) => { });
-      //setFormStatus(result);
+      setFormStatus(result);
       return result.success;
     }));
-  }, []);
+  };
+
+  const onExitMode = () => {
+    gridRef.current.api.deselectAll();
+  };
 
   const onActionSave = useCallback(async (row, option) => {
     submitting.trigger();
@@ -440,16 +480,14 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     ]
   }, []);
 
-  const validationGroups = useMemo(() => (dataAPI.validationGroups({
-    largura: ["l_real", "lar", "estado", "num_bobinagem"]
-  })), []);
+  const _validationGroups = useMemo(() => validationGroups(dataAPI), []);
 
   const cellParams = useCallback((params = {}, editorParams = {}, headerParams = {}) => {
     /**
      * editColumnControl, transfere para cada elemento entrar em modo de edição, em vez de ser a grid, para isso tem de ser true, e na grid suppressClickEdit=true  
      */
     return {
-      cellRendererParams: { validation, modeApi, modalApi, validationGroups, ...params },
+      cellRendererParams: { validation, modeApi, modalApi, validationGroups: _validationGroups, ...params },
       cellEditorParams: { ...editorParams },
       headerComponentParams: { ...headerParams }
     };
@@ -462,17 +500,13 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     return canChangeRow(node.data);
   }, [modeApi?.isOnMode()]);
 
-  const selectRows = (estado) => {
-    gridRef.current.api.forEachNode(node => {
-      if (estado.includes(node.data.estado) && canChangeRow(node.data)) {
-        node.setSelected(true);
-      }
-    });
-  };
-
-  const onExitMode = () => {
-    gridRef.current.api.deselectAll();
-  };
+  // const selectRows = (estado) => {
+  //   gridRef.current.api.forEachNode(node => {
+  //     if (estado.includes(node.data.estado) && canChangeRow(node.data)) {
+  //       node.setSelected(true);
+  //     }
+  //   });
+  // };
 
   const onPaleteClick = (e, { data }) => {
     modalApi.setModalParameters({
@@ -512,7 +546,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     if (inputParameters?.tstamp) {
       return {
         cols: [
-          { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', lockPosition: "left", ...cellParams(), width: 150, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
+          { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', lockPosition: "left", ...cellParams(), width: 165, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
           ...!inputParameters.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
           ...inputParameters.palete?.id ? [{ colId: "mb.posicao_palete", field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 90, cellRenderer: (params) => <Value params={params} /> }] : [],
           { colId: 'mb.estado', field: 'estado', headerName: 'Estado', type: "editableColumn", cellEditor: AntdSelectEditor, width: 90, ...cellParams({ multi: true }, { options: BOBINE_ESTADOS }), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
@@ -526,7 +560,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
           { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
           { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
           { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, { options: OPTIONS_OUTROSDEFEITOS, labelInValue: true }), type: "editableColumn", cellEditor: AntdMultiSelectEditor, cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
+          { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, { options: OPTIONS_OUTROSDEFEITOS.map(v => !props?.validate && v.value == "troca_nw" ? { ...v, disabled: true } : v), labelInValue: true }), type: "editableColumn", cellEditor: AntdMultiSelectEditor, cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
           { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
           { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, width: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
         ], timestamp: new Date()
@@ -543,20 +577,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     more: [/* "@columns" */"nome", "estado", { field: "lar", alias: "mb.lar", label: "Largura" }, "l_real", "comp", "comp_actual"],
     no: [...Object.keys(baseFilters), "action"]
   }), []);
-
-  const onLoadParameters = useCallback(() => {
-    // modalApi.setModalParameters({
-    //   content: <LabLoadParameters refreshParentData={() => { refreshDataSource(gridRef.current.api); }} />,
-    //   closable: true,
-    //   title: "Carregar Parâmetros",
-    //   lazy: true,
-    //   type: "drawer",
-    //   responsive: true,
-    //   width: "1100px",
-    //   parameters: { /* ...getCellFocus(gridRef.current.api) */ }
-    // });
-    // modalApi.showModal();
-  }, []);
 
   const onPrint = () => {
 
@@ -588,9 +608,14 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     <>
       <TitleForm visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
+        onGridRequest={onGridRequest}
+        onGridResponse={onGridResponse}
+        //onGridFailRequest={onGridFailRequest}
+        loadOnInit={loadOnInit}
         loading={submitting.state}
         style={{ height: "65vh" }}
         gridRef={gridRef}
+        onGridReady={onGridReady}
         columnDefs={columnDefs}
         defaultSort={inputParameters?.bobinagem?.id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
         filters={filters}
@@ -601,7 +626,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         //suppressClickEdit={true}
         topToolbar={{
           start: <Space>
-            {modeApi.isOnMode() && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
+            {(modeApi.isOnMode() && dataAPI.hasData()) && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
             {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
           left: <></>
         }}
@@ -610,11 +635,25 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         // onSelectionChanged={onselectionchange}
         dataAPI={dataAPI}
         modeApi={modeApi}
+        modeOptions={{
+          enabled: true,
+          ...props?.validate && { showControls: false, mode: modeApi.EDIT },
+          allowEdit: permission.isOk({ action: "changeDefeitos" }) || props?.validate,
+          allowAdd: false,
+          newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6) }),
+          newRowIndex: null,
+          onAddSave,
+          onEditSave,
+          onAdd: null,
+          onModeChange: null,
+          onExitMode: { onExitMode },
+          onExitModeRefresh: true,
+          onAddSaveExit: true,
+          onEditSaveExit: false
+        }}
         onBeforeCellEditRequest={onBeforeCellEditRequest}
         onAfterCellEditRequest={onAfterCellEditRequest}
         rowClassRules={_rowClassRules}
-
-        onExitMode={onExitMode}
         rowSelectionIgnoreOnMode={true}
         rowSelection="multiple"
         onSelectionChanged={() => { }}

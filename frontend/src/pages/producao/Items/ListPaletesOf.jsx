@@ -12,6 +12,7 @@ import { usePermission } from "utils/usePermission";
 import { createUseStyles } from 'react-jss';
 
 import Palete from '../../paletes/Palete';
+import useModalApi from 'utils/useModalApi';
 
 const useStyles = createUseStyles({
 
@@ -29,6 +30,7 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
     const inputParameters = useRef({});
     const { openNotification } = useContext(AppContext);
     const location = useLocation();
+    const modalApi = useModalApi()
     const navigate = useNavigate();
     const classes = useStyles();
     const tableCls = useTableStyles();
@@ -41,26 +43,39 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
 
     const [lastTab, setLastTab] = useState('1');
 
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
+    // const [modalParameters, setModalParameters] = useState({});
+    // const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
 
-        const content = () => {
-            switch (modalParameters.content) {
-                case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
+    //     const content = () => {
+    //         switch (modalParameters.content) {
+    //             case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
+    //         }
+    //     }
 
-        return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
+    //     return (
+    //         <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
+    //             {content()}
+    //         </ResponsiveModal>
+    //     );
+    // }, [modalParameters]);
     const onClickPalete = (type, row) => {
-        console.log("clickedddd",{ offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() })
+        modalApi.setModalParameters({
+            content: <Palete tab={lastTab} setTab={setLastTab} loadParentData={loadData} parameters={{ palete: row, palete_id: row.palete_id, palete_nome: row.nome }} />,
+            closable: true,
+            title: null, //"Carregar Parâmetros",
+            lazy: false,
+            type: "drawer",
+            responsive: true,
+            width: "95%",
+            push: false,
+            parameters: {} //{ ...getCellFocus(gridRef.current.api) }
+        });
+        modalApi.showModal();
+
+        //console.log("clickedddd",{ offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() })
         //dataAPI: { offset: dataAPI.getRowOffset(row), ...dataAPI.getPayload() }
-        setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
-        showModal();
+        //setModalParameters({ content: "details", tab: lastTab, setLastTab, type: "drawer", push: false, width: "90%", /* title: <div style={{ fontWeight: 900 }}>{title}</div>, */ loadData: loadData, parameters: { palete: row, palete_id: row.palete_id, palete_nome: row.nome } });
+        //showModal();
     }
 
     const columnClass = ({ value, rowActive, rowIndex, data, name }) => {
@@ -98,7 +113,7 @@ export default ({ hash, data, filter, mini = false, ...props }) => {
 
     const loadData = async ({ signal, init = false } = {}) => {
         //submitting.trigger();
-        if (!data?.paletes || !Array.isArray(data.paletes)){
+        if (!data?.paletes || !Array.isArray(data.paletes)) {
             return;
         }
         const _d = data?.paletes.filter(v => filter.includes(v.ofid) && v.palete_id);

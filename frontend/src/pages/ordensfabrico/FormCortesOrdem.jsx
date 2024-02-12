@@ -132,7 +132,6 @@ export default ({ onChangeCortesOrdem, record, larguras: _larguras, forInput = t
         if (_co) {
             console.log("cortesordem!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", _co)
             const _rows = await loadCortesOrdemLookup({ cortesordem_id: _co });
-            console.log("RRRR",_rows)
             setBobines(json(_rows[0].largura_ordem));
             
             setLarguraTotal(_rows[0].largura_util);

@@ -11,7 +11,8 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { useGridCellEditor } from 'ag-grid-react';
-import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell, HeaderCheck } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus, columnPath, refreshDataSource, disableTabOnNextCell, HeaderCheck } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, EstadoBobine, Action, OPTIONS_LAB_MODE, OPTIONS_LAB_PARAMETERTYPE, BadgeCount, ModalMultiRangeView, ArrayTags } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';

@@ -530,6 +530,8 @@ def Validar(request, format=None):
                 try:
                     #rows = [{prop: d.get(prop) for prop in ["id","comp","comp_emenda","estado","troca_nw","l_real","lar","vcr_num_inf","vcr_num_sup","bobinagem_id"]} for d in data]
                     args = (json.dumps(data, ensure_ascii=False),request.data.get("parameters").get("lar_bruta"),request.user.id,0)
+                    #print("validating-----")
+                    #print(args)
                     cursor.callproc('validate_bobinagemv2',args)
                 except Exception as error:
                     return Response({"status": "error", "title": str(error)})

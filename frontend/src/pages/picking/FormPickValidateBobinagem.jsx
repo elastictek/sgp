@@ -130,7 +130,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
                 noid={false}
                 title={title}
                 onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `pbm.timestamp`, direction: "ASC" }]}
+                defaultSort={[{ column: `pbm.timestamp`, direction: "DESC" }]}
                 defaultFilters={{ valid: 0 }}
             />
             }

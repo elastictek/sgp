@@ -181,6 +181,7 @@ export default (props) => {
 
     const loadData = async ({ signal, init = false, navDirection = null } = {}) => {
         setFormDirty(false);
+        const _tab = localStorage.getItem('bm_tab') ? localStorage.getItem('bm_tab') : "1";
         submitting.trigger();
         if (init) {
             const { tstamp, ...paramsIn } = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters, location?.state, null);
@@ -215,15 +216,14 @@ export default (props) => {
         if (formValues.length > 0/* && formValues[0]?.artigo */) {
             setBobinagemExists(true);
         }
-        if (inputParameters.current?.tab) {
-            setActiveTab(inputParameters.current?.tab);
-        }
+        setActiveTab(_tab);
         submitting.end();
     }
 
     const onTabChange = (k) => {
         //Guarda a tab selecionada no parent, por forma a abrir sempre no último selecionado.
         if (props?.setTab) { props.setTab(k); }
+        localStorage.setItem('bm_tab', k);
         setActiveTab(k);
     }
     const changeMode = (key) => {

@@ -32,7 +32,8 @@ import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext } from 'app';
 
 import useModeApi from 'utils/useModeApi';
-import TableV4, { suppressKeyboardEvent, useModalApi,defaultValueGetter } from 'components/TableV4/TableV4';
+import TableV4, { suppressKeyboardEvent, defaultValueGetter } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 import { Cuba, TextAreaViewer, MetodoTipo, MetodoMode, StatusApproval, OFabricoStatus, StatusProduction, PosColumn } from 'components/TableV4/TableColumnsTemp';
 import { useImmer } from 'use-immer';
 
@@ -40,7 +41,7 @@ import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines,
 import { GridApi } from 'ag-grid-community';
 
 
-const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection,valueGetter, ...props }) => {
+const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection, valueGetter, ...props }) => {
   const gridRef = useRef(); //not required
   const [gridApi, setGridApi] = useState(); //not Required;
   const modalApi = useModalApi() //not Required;
@@ -51,26 +52,12 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "PaletesListV2-01" }), /* fnPostProcess: (dt) => postProcess(dt, submitting), */ payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: defaultFilters, sort: defaultSort } });
   const inputParameters = useRef(loadInit({ filter: { nome: "DM" } }, { filter: dataAPI.getFilters(false, true) }, { ...props?.parameters }, { ...location?.state }));
 
-  useEffect(() => {
-    if (permission.isReady) {
-      modeApi.load({
-        key: null,
-        enabled: true,
-        allowEdit: permission.isOk({ item: "stock", /* forInput: [!submitting.state], */ action: "edit" }),
-        allowAdd: permission.isOk({ item: "stock",/* forInput: [!submitting.state], */ action: "add" }),
-        // onAdd: () => { },
-        newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6), nome: null }),
-        newRowIndex: null,
-        onAddSave: () => { console.log("on add save") },
-        onEditSave: () => { console.log("on edit save") },
-        editText: null,
-        addText: null,
-        saveText: null,
-        // onExit: () => { console.log("on edit mode exit") },
 
-      });
-    }
-  }, [permission.isReady]);
+  const onGridReady = async ({ api, ...params }) => { }
+  const onGridRequest = async () => { };
+  const onGridResponse = async (api) => {
+    if (dataAPI.requestsCount() === 1) { }
+  };
 
   useEffect(() => {
     if (gridApi) {
@@ -99,7 +86,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   }
 
   const [columnDefs, setColumnDefs] = useImmer([
-    { colId: 'sgppl.nome', field: 'nome', headerName: 'Nome', checkboxSelection: true,headerCheckboxSelection: true,lockPosition: "left", minWidth: 120, cellStyle: {}, cellRenderer: (params) => <Value link bold params={params} /> },
+    { colId: 'sgppl.nome', field: 'nome', headerName: 'Nome', checkboxSelection: true, headerCheckboxSelection: true, lockPosition: "left", minWidth: 120, cellStyle: {}, cellRenderer: (params) => <Value link bold params={params} /> },
     { colId: 'sgppl.timestamp', field: 'timestamp', headerName: 'Data', minWidth: 100, cellStyle: {}, cellRenderer: (params) => <Value datetime params={params} /> },
     { colId: 'sgppl.nbobines_real', field: 'nbobines_real', headerName: 'Bobines', width: 90, cellStyle: {}, cellRenderer: (params) => <FromTo field={{ from: "nbobines_real", to: "num_bobines" }} colorize={true} params={params} /> },
     { colId: 'sgppl.estado', field: 'estado', headerName: 'Estado', width: 110, cellStyle: {}, cellEditor: ModalEditor, cellRenderer: (params) => <EstadoBobines field={{ artigos: "artigo" }} params={params} /> },
@@ -129,7 +116,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
       sortable: modeApi.isOnMode() ? false : true,
       suppressMenu: modeApi.isOnMode() ? true : false,
       valueGetter: (params) => {
-        return defaultValueGetter(params,valueGetter);
+        return defaultValueGetter(params, valueGetter);
       },
       suppressKeyboardEvent
       //   valueSetter: params => {
@@ -185,6 +172,9 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   return (
     <div style={{ width: "100%", height: "80vh" }}>
       <TableV4
+        onGridRequest={onGridRequest}
+        onGridResponse={onGridResponse}
+        onGridReady={onGridReady}
         loading={submitting.state}
         gridApi={gridApi}
         loadOnInit={loadOnInit}
@@ -225,6 +215,21 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
           clearSort: true
         }}
         modeApi={modeApi}
+        modeOptions={{
+          enabled: true,
+          allowEdit: permission.isOk({ item: "stock", /* forInput: [!submitting.state], */ action: "edit" }),
+          allowAdd: permission.isOk({ item: "stock",/* forInput: [!submitting.state], */ action: "add" }),
+          newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6), nome: null }),
+          newRowIndex: null,
+          onAddSave:null,
+          onEditSave:null,
+          onAdd: null,
+          onModeChange: null,
+          onExitMode: {},
+          onExitModeRefresh: true,
+          onAddSaveExit: true,
+          onEditSaveExit: false
+        }}
 
       />
     </div>

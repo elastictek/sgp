@@ -10,7 +10,8 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import ToolbarTitle from 'components/ToolbarTitleV3';
 import { useGridCellEditor } from 'ag-grid-react';
-import { suppressKeyboardEvent, useModalApi, getCellFocus, columnPath, refreshDataSource } from 'components/TableV4/TableV4';
+import { suppressKeyboardEvent, getCellFocus, columnPath, refreshDataSource } from 'components/TableV4/TableV4';
+import useModalApi from "utils/useModalApi";
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, OPTIONS_TROCAETIQUETAS, Action } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
@@ -78,39 +79,20 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     }
   });
 
-  useEffect(() => {
-    if (permission?.isReady) {
-      modeApi.load({
-        key: null,
-        enabled: true,
-        allowEdit: permission.isOk({ item: "trocaetiquetas", action: "admin" }),
-        allowAdd: permission.isOk({ item: "trocaetiquetas", action: "admin" }),
-        newRow: () => ({
-          [dataAPI.getPrimaryKey()]: uid(6), type: 1, subtype: 2, status: 1, runtype: 1, appliesto: 1, mode: 1, parameters: {
-            artigo: { cod: null },
-            cliente: { BPCNUM_0: null },
-            data_imputacao: dayjs().subtract(1, 'day').format(DATE_FORMAT)
-          }
-        }),
-        onModeChange: (m) => { },
-        newRowIndex: null,
-        onAddSave: async (rows, allRows) => await onAddSave(rows, allRows),
-        onEditSave: async (rows, allRows) => await onEditSave(rows, allRows),
-        editText: null,
-        addText: null,
-        saveText: null
 
-      });
-    }
-  }, [permission?.isReady]);
+  const onGridReady = async ({ api, ...params }) => { }
+  const onGridRequest = async () => { };
+  const onGridResponse = async (api) => {
+    if (dataAPI.requestsCount() === 1) { }
+  };
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
-        /**
-     * Método que permite antes do "commit", fazer pequenas alterações aos dados.
-     * No caso dessas alterações afetarem os valores de outras colunas da "Grid", é necessário desablitar o TabOnNextCell da coluna,
-     * pois o próximo campo entra em edição antes deste método (isto é um Workaround!!!!!), para isso na definição da coluna colocar:
-     * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
-     */
+    /**
+ * Método que permite antes do "commit", fazer pequenas alterações aos dados.
+ * No caso dessas alterações afetarem os valores de outras colunas da "Grid", é necessário desablitar o TabOnNextCell da coluna,
+ * pois o próximo campo entra em edição antes deste método (isto é um Workaround!!!!!), para isso na definição da coluna colocar:
+ * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
+ */
     if (newValue && colDef.field === "cod") {
       data = updateByPath(data, "parameters.artigo", includeObjectKeys(newValue, ["id", "cod", "des", "lar", "core"]));
       return data;
@@ -130,7 +112,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     });
   }
 
-  const onAddSave = useCallback(async (rows, allRows) => {
+  const onAddSave = async (rows, allRows) => {
     const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -142,9 +124,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       return result.success;
       //setFormStatus(result);
     }));
-  }, []);
+  };
 
-  const onEditSave = useCallback(async (rows, allRows) => {
+  const onEditSave = async (rows, allRows) => {
     const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
@@ -156,7 +138,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       //setFormStatus(result);
       return result.success;
     }));
-  }, []);
+  };
 
   const onActionSave = useCallback(async (row, option) => {
     submitting.trigger();
@@ -237,6 +219,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     <>
       <TitleForm loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
+        onGridRequest={onGridRequest}
+        onGridResponse={onGridResponse}
+        onGridReady={onGridReady}
         loading={submitting.state}
         style={style}
         gridRef={gridRef}
@@ -252,6 +237,27 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         // onSelectionChanged={onselectionchange}
         dataAPI={dataAPI}
         modeApi={modeApi}
+        modeOptions={{
+          enabled: true,
+          allowEdit: permission.isOk({ item: "trocaetiquetas", action: "admin" }),
+          allowAdd: permission.isOk({ item: "trocaetiquetas", action: "admin" }),
+          newRow: () => ({
+            [dataAPI.getPrimaryKey()]: uid(6), type: 1, subtype: 2, status: 1, runtype: 1, appliesto: 1, mode: 1, parameters: {
+              artigo: { cod: null },
+              cliente: { BPCNUM_0: null },
+              data_imputacao: dayjs().subtract(1, 'day').format(DATE_FORMAT)
+            }
+          }),
+          newRowIndex: null,
+          onAddSave,
+          onEditSave,
+          onAdd: null,
+          onModeChange: null,
+          onExitMode: {},
+          onExitModeRefresh: true,
+          onAddSaveExit: true,
+          onEditSaveExit: false
+        }}
         onBeforeCellEditRequest={onBeforeCellEditRequest}
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}
