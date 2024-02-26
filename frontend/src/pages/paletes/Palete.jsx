@@ -323,8 +323,8 @@ export default (props) => {
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
             {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} sort={dataAPI.getSort()} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
-            <div style={{ height: "calc(100vh - 130px)" }}>
-                <YScroll>
+            <div /* style={{ height: "calc(100vh - 130px)" }} */ style={{ height: "100%" }}>
+{/*                 <YScroll> */}
                     {dataAPI.hasData() &&
                         <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
                             items={[
@@ -345,12 +345,12 @@ export default (props) => {
                                 }, {
                                     label: `Bobines Defeitos`,
                                     key: '4',
-                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDefeitosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                    children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDefeitosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
                                 },
                                 {
                                     label: `Bobines Destinos`,
                                     key: '5',
-                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesDestinosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                    children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDestinosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
                                 },
                                 {
                                     label: `MP Granulado (Lotes)`,
@@ -370,7 +370,7 @@ export default (props) => {
 
                         />}
                     {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
-                </YScroll>
+{/*                 </YScroll> */}
             </div>
         </>
     )

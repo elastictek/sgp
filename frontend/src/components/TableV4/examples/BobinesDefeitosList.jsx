@@ -28,6 +28,7 @@ import { fetchPost } from 'utils/fetch';
 import { isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import { compareObjArrays } from 'utils/index';
+import { setValidationGroups, validateRows } from 'utils/useValidation';
 
 const OPTIONS_OUTROSDEFEITOS= BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -174,7 +175,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -184,7 +185,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   }
 
   const onAddSave = useCallback(async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     return (await rv.onValidationSuccess(async (p) => {
@@ -198,7 +199,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   }, []);
 
   const onEditSave = useCallback(async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     return (await rv.onValidationSuccess(async (p) => {
@@ -242,7 +243,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     ]
   }, []);
 
-  const validationGroups = useMemo(() => (dataAPI.validationGroups({
+  const validationGroups = useMemo(() => (setValidationGroups({
     lvalues: ["min_value", "max_value"]
   })), []);
 

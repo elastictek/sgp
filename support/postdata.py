@@ -11,3 +11,10 @@ class PostData:
         self.data = request.data.get("parameters") if request.data.get("parameters") is not None else {}
         self.filter = request.data.get("filter") if request.data.get("filter") is not None else {}
         self.sort = request.data.get("sort") if request.data.get("sort") is not None else []
+    
+    def cloneFilter(self,group,exclude=[],fn=None):
+        filtered_items = {}
+        for key, value in self.filter.items():
+            if value.get('group') == group and key not in exclude:
+                filtered_items[f"{key}"] = fn(value) if callable(fn) else value
+        return filtered_items

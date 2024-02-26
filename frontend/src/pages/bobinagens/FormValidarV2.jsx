@@ -41,6 +41,7 @@ import FormPrint from "../commons/FormPrint";
 import BobinesDefeitosList, { schemaFinal, validationGroups } from '../bobines/BobinesDefeitosList';
 import { checkBobinesDefeitos, postProcess } from '../bobines/commons';
 import FormCortesOrdem from '../ordensfabrico/FormCortesOrdem';
+import { validateRows } from 'utils/useValidation';
 
 
 //const title = "Validar Bobinagem";
@@ -398,7 +399,7 @@ export default ({ extraRef, closeSelf, noid, ...props }) => {
         submitting.trigger();
         let response = null;
         try {
-            const rv = await dataAPI.validateRows(childData.current.rows, schemaFinal, "id", {
+            const rv = await validateRows(childData.current.rows, schemaFinal, "id", {
                 passthrough: false, validationGroups: validationGroups(dataAPI)
             });
             rv.onValidationFail((p) => { openNotification("error", "top", "Notificação", p.alerts.error, 5, { width: "500px" }); });

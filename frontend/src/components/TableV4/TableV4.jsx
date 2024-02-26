@@ -141,7 +141,7 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
 
     return (<>
         {initFilterValues !== undefined &&
-            <Flex wrap="nowrap" gap="small" align='end'>{filtersDef(filters, gridRef, false).map((v, i) =>
+            <Flex wrap="nowrap" gap="small" align='end'>{filtersDef(filters, gridRef, { keys: ["toolbar"] }).map((v, i) =>
                 <div key={`f-${v.name}.${i}`}>
                     <div style={{ padding: "0 0 5px" }}>
                         <label>{v.label}</label>
@@ -162,7 +162,7 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
                                 </div>,
                                 options: <FilterSelect disabled={modeApi?.isOnMode()} style={v?.style} name={v.name} _value={_value} onChange={onSelectChange} options={_selectOptions(v)} />
                                 // datetime: <DatetimeField allowClear size="small" {...v?.filter?.field && v.filter.field} style={{ width: "80px", ...style }} />
-                            }[v.type] || <Input disabled={modeApi?.isOnMode()} addonBefore={v.multi && <TypeRelation disabled={modeApi?.isOnMode()} name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />
+                            }[v.type] || <Input onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") { onFilterFinish("filter", removeEmpty(stateFilters)); } }} disabled={modeApi?.isOnMode()} addonBefore={v.multi && <TypeRelation disabled={modeApi?.isOnMode()} name={v.name} onChange={onChange} value={stateFilters?.[v.name]?.rel} />} size="small" value={_value(v.name)} onChange={(e) => onChange(v.name, e)} name={v.name} allowClear /* {...v?.filter?.field && v.filter.field} */ style={{ width: DEFAULTWIDTH, ...v?.style }} />
 
                         }
                     </div>
@@ -251,7 +251,7 @@ const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _val
     >
         <Container fluid style={{ padding: "0px" }}>
             <Row gutterWidth={2}>
-                {filtersDef(filters, gridRef, true).filter(v => v.name !== "fcustom").map((v, i) => {
+                {filtersDef(filters, gridRef, { keys: ["toolbar", "more"] }).filter(v => v.name !== "fcustom").map((v, i) => {
                     return (<Col style={{ marginTop: "5px" }} xs={v.col} key={`fm-${v.name}.${i}`}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end" }}>
                             <label><b>{v.label}</b></label>
@@ -352,22 +352,26 @@ const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
             _filters = dataAPI.preFilters();
             return {
                 designacao: _filters?.designacao, ..._filters.filter && Object.entries(_filters.filter)
-                    .filter(([key, value]) => value.parsed !== null)
+                    //.filter(([key, value]) => value.parsed !== null)
                     .reduce((acc, [key, value]) => {
-                        acc[key] = { parsed: value.parsed };
+                        acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
                         return acc;
                     }, {})
             };
         }
         return Object.entries(_filters)
-            .filter(([key, value]) => value.parsed !== null)
+            //.filter(([key, value]) => value.parsed !== null)
             .reduce((acc, [key, value]) => {
-                acc[key] = { parsed: value.parsed };
+                acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
                 return acc;
             }, {});
     }, []);
 
-    return (<Drawer title="Server Request and Execution" open={visible} onClose={() => setVisible(false)} width="100%"
+    return (<Drawer title={<div>
+        <div style={{ fontWeight: 900, fontSize: "18px" }}>Server Request and Execution</div>
+        <div style={{ fontWeight: 400 }}>{dataAPI.getPayload()?.url}[<span style={{ fontWeight: 700 }}>{dataAPI.getPayload()?.parameters?.method}</span>]</div>
+    </div>}
+        open={visible} onClose={() => setVisible(false)} width="100%"
         footer={
             <div style={{ textAlign: 'right' }}>
                 <Button onClick={() => setVisible(false)} type="primary">Fechar</Button>
@@ -415,7 +419,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
 
 
     const onPre = (item) => {
-        const _defs = filtersDef(topToolbarFilters, gridRef, true);
+        const _defs = filtersDef(topToolbarFilters, gridRef, { all: true });
         const _values = {};
         for (const [key, value] of Object.entries(json(item.filters))) {
             const _f = _defs.find(obj => obj.name === key);
@@ -781,9 +785,23 @@ export const suppressKeyboardEvent = ({ event }) => {
 };
 
 export const getAllNodes = (api) => {
+    if (!api){
+        return [];
+    }
     const _v = [];
     api.forEachNode((node) => {
         _v.push(node.data);
+    });
+    return _v;
+}
+export const getNodes = (api, fn) => {
+    if (!api){
+        return [];
+    }
+    const _v = [];
+    const _fn = fn ? fn : () => true;
+    api.forEachNode((node) => {
+        if (_fn(node)) { _v.push(node.data) };
     });
     return _v;
 }
@@ -869,14 +887,26 @@ export default ({
     const _columnClicked = useRef();
 
     const parseFilters = useCallback((values) => {
-        const _defs = filtersDef(topToolbar?.filters, _gridRef, true);
+        const _defs = filtersDef(topToolbar?.filters, _gridRef, { all: true });
         const _values = {};
         for (const [key, value] of Object.entries(values)) {
-            const _f = _defs.find(obj => obj.name === key);
-            const _pf = processConditions(value?.value ? value.value : value, _f, value?.rel, value?.logic);
-            if (_pf !== null) {
-                _values[key] = excludeObjectKeys(_pf, ["options", "style", "op", "col", "fnvalue"]);
+            const _f = { ..._defs.find(obj => obj.name === key) };
+            for (let [_k, _g] of Object.entries(_f.groups)) {
+                _f.groups[_k] = processConditions(value?.value ? value.value : value, _g, value?.rel, value?.logic);
+                if (!("value" in _f) && _f.groups[_k] !== null) {
+                    _f.value = _f.groups[_k].value;
+                }
             }
+            const _groups = Object.fromEntries(Object.entries(_f.groups).filter(([key, value]) => value !== null));
+            if (!isEmpty(_groups)) {
+                _values[key] = excludeObjectKeys({ ..._f, groups: _groups }, ["options", "style", "op", "col", "fnvalue"]);
+            }
+            // console.log("groups--->", _f);
+            // const _pf = processConditions(value?.value ? value.value : value, _f, value?.rel, value?.logic);
+            // console.log("filter--->", _pf);
+            // if (_pf !== null) {
+            //     _values[key] = excludeObjectKeys(_pf, ["options", "style", "op", "col", "fnvalue"]);
+            // }
         }
         return _values;
     }, []);
@@ -902,7 +932,7 @@ export default ({
     });
 
     useEffect(() => {
-        if (isReady) {
+        if (isReady && modeApi) {
             modeApi.setOptions({ ...excludeObjectKeys(modeOptions, ["onExitModeRefresh", "onAddSaveExit", "onEditSaveExit", "onExitMode"]), isReady: true });
         }
     }, [isReady]);
@@ -919,6 +949,9 @@ export default ({
             const { api } = params;
             setGridApi(api);
         }
+
+
+
         if (typeof onGridReady == "function") {
             await onGridReady({ api: params.api, dataAPI });
         }
@@ -1267,7 +1300,7 @@ export default ({
                         paginationPageSize={dataAPI.getPageSize()}
                         suppressPaginationPanel={true}
                         suppressScrollOnNewData={true}
-                        onPaginationChanged={onPaginationChanged}
+                        {...dataAPI.getPagination().enabled && { onPaginationChanged }}
 
                         columnDefs={columnDefs?.cols ? columnDefs?.cols : columnDefs}
                         defaultColDef={defaultColDef}

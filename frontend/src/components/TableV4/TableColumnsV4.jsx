@@ -29,6 +29,7 @@ import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { columnHasPath, columnPath } from './TableV4';
 import { Field, Container as FormContainer, SelectField, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
+import { StyledBobine } from 'components/FormFields/FormsV2';
 
 export const useStyles = createUseStyles({
     focus: {
@@ -65,6 +66,28 @@ export const OPTIONS_LAB_MODE = {
     "controle": { label: "Controle", props: {} },
     "ciclico": { label: "Cíclico", props: {} }
 }
+
+export const PRIORIDADES_DESTINOS = {
+    1: { label: "1", props: {} },
+    2: { label: "2", props: {} },
+    3: { label: "3", props: {} },
+    4: { label: "4", props: {} },
+    5: { label: "5", props: {} },
+    6: { label: "6", props: {} },
+    7: { label: "7", props: {} },
+    8: { label: "8", props: {} }
+}
+export const useDestinosStyles = createUseStyles({
+    "1": { backgroundColor: "#389e0d", color: "#fff", textAlign: "center" },
+    "2": { backgroundColor: "#73d13d", color: "#000", textAlign: "center" },
+    "3": { backgroundColor: "#b7eb8f", color: "#000", textAlign: "center" },
+    "4": { backgroundColor: "#fadb14", color: "#000", textAlign: "center" },
+    "5": { backgroundColor: "#ffec3d", color: "#000", textAlign: "center" },
+    "6": { backgroundColor: "#fff566", color: "#000", textAlign: "center" },
+    "7": { backgroundColor: "#ffa940", color: "#000", textAlign: "center" },
+    "8": { backgroundColor: "#ffd591", color: "#000", textAlign: "center" }
+    
+});
 
 
 const OuterDiv = ({ error, style, children }) => {
@@ -523,29 +546,7 @@ export const FromTo = ({ field: { from, to } = {}, params: { column: col, data, 
 }
 
 
-const StyledBobine = styled.div`
-    border:dashed 1px #000;
-    background-color:${props => props.color};
-    color:${props => props.$fontColor};
-    border-radius:3px;
-    margin-right:1px;
-    text-align:center;
-    min-height:25px;
-    width:25px;
-    min-width:25px;
-    font-size:8px;
-    cursor:pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    &:hover {
-        border-color: #d9d9d9;
-    }
-    .lar{
-        font-size:9px;
-    }
-`;
+
 
 export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, data, rowIndex, node } = {}, style, align = "start", className, onClick }) => {
     const _artigos = uniqWith(allPass(map(eqProps)(['lar', 'largura', 'estado'])))(json(data?.[artigos], []));
@@ -581,7 +582,7 @@ export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, 
 export const EstadoBobine = ({ field: { estado, largura } = {}, params = {}, align = "center", ...props }) => {
     const { column: col, data, rowIndex, node } = params;
     const error = useValidation(node, col);
-    const _data = { artigo: [{ estado: data?.[estado], lar: data?.[largura] }] };
+    const _data = { artigo: [{ estado: valueByPath(data,estado), lar: valueByPath(data,largura) }] };
     const { modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
     const _checkKey = checkKey ? checkKey : col.getDefinition().field;
     const isOnMode = useMemo(() => {

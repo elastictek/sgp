@@ -7,16 +7,50 @@ import { includeObjectKeys } from './object';
 
 export const isNullOrEmpty = value => R.isNil(value) || R.isEmpty(value);
 
-export const length = (v) =>{
-    if (v && Array.isArray(v)){
+export const length = (v) => {
+    if (v && Array.isArray(v)) {
         return v.length;
     }
     return 0;
 }
 
-export const compareArrays = (oldArray, newArray,keys=[]) => {
-    if (!R.isEmpty(keys)){
-        return compareObjArrays(oldArray, newArray,keys);
+export const maxOf = (array, key) => {
+    return array.reduce((max, obj) => obj?.[key] > max ? obj?.[key] : max, array[0]?.[key]);
+}
+export const minOf = (array, key) => {
+    return array.reduce((min, obj) => obj?.[key] < min ? obj?.[key] : min, array[0]?.[key]);
+};
+
+export const updateArrayWhere = (array, updateRow, conditions) => {
+    const updatedRows = array.map(r => {
+        let match = true;
+        for (const key in conditions) {
+            if (conditions.hasOwnProperty(key) && r[key] !== conditions[key]) {
+                match = false;
+                break;
+            }
+        }
+        return match ? { ...r, ...updateRow } : r;
+    });
+    return updatedRows;
+}
+
+export const deleteArrayElementWhere = (array, conditions) => {
+    return array.filter(row => {
+        let match = true;
+        for (const key in conditions) {
+            if (conditions.hasOwnProperty(key) && row[key] !== conditions[key]) {
+                match = false;
+                break;
+            }
+        }
+        return !match;
+    });
+}
+
+export const compareArrays = (oldArray, newArray, keys = []) => {
+    if (!R.isEmpty(keys)) {
+        return compareObjArrays(oldArray, newArray, keys);
     }
     const removed = oldArray.filter(item => !newArray.includes(item));
     const added = newArray.filter(item => !oldArray.includes(item));
@@ -27,35 +61,41 @@ export const compareObjArrays = (oldArray, newArray, keys) => {
     const oldKeyValues = oldArray.map(getKeysValues);
     const newKeyValues = newArray.map(getKeysValues);
     const removed = oldArray.filter((item, index) => {
-      const values = getKeysValues(item);
-      return !newKeyValues.some(newValues => keys.every((key, i) => newValues[i] === values[i]));
+        const values = getKeysValues(item);
+        return !newKeyValues.some(newValues => keys.every((key, i) => newValues[i] === values[i]));
     });
-  
+
     const added = newArray.filter((item, index) => {
-      const values = getKeysValues(item);
-      return !oldKeyValues.some(oldValues => keys.every((key, i) => oldValues[i] === values[i]));
+        const values = getKeysValues(item);
+        return !oldKeyValues.some(oldValues => keys.every((key, i) => oldValues[i] === values[i]));
     });
-  
+
     return { removed, added };
-  };
-  export const removeArrayMatchingElements = (arr1, arr2, keys) => {
+};
+export const removeArrayMatchingElements = (arr1, arr2, keys) => {
     const keysValuesSet = new Set(arr2.flatMap(obj => keys.map(key => `${key}:${obj[key]}`)));
     return arr1.filter(obj => !keys.some(key => keysValuesSet.has(`${key}:${obj[key]}`)));
-  }
-  export const uniqueValues = (arr, keys) => {
-    const _uniqueValues = new Map();  
+}
+export const uniqueValues = (arr, keys) => {
+    if (!Array.isArray(arr)){
+        return [];
+    }
+    const _uniqueValues = new Map();
     arr.forEach(obj => {
-      const key = keys.map(key => obj[key]).join(':');
-      _uniqueValues.set(key, obj);
-    });  
+        const key = keys.map(key => obj[key]).join(':');
+        _uniqueValues.set(key, obj);
+    });
     return Array.from(_uniqueValues.values());
-  }
+}
 
 export const removeEmpty = (obj, keys = []) => {
     return Object.fromEntries(Object.entries(obj).filter(([_, v]) => (v !== null && v !== '' && v !== undefined && !keys.includes(_))));
 }
 
 export const unique = (array, key) => {
+    if (!Array.isArray(array)){
+        return [];
+    }
     const seen = new Set();
     return array.filter((item) => {
         const value = item[key];
@@ -68,6 +108,9 @@ export const unique = (array, key) => {
 }
 
 export const uniqueKeys = (array, key) => {
+    if (!Array.isArray(array)){
+        return [];
+    }
     const seen = new Set();
     return array.reduce((uniqueArray, item) => {
         const value = item[key];
@@ -79,7 +122,7 @@ export const uniqueKeys = (array, key) => {
     }, []);
 }
 
-export const dayjsValue = (value,retValue=null) => {
+export const dayjsValue = (value, retValue = null) => {
     if (!value) {
         return retValue;
     }
@@ -273,7 +316,14 @@ export const hasValue = (value, compare, ret = '') => {
 }
 
 export const noValue = (value, ret = '') => {
-    if (!value) {
+    if (isNullOrEmpty(value)) {
+        return ret;
+    }
+    return value;
+}
+
+export const getValue = (value, ret = '') => {
+    if (R.isNil(value)) {
         return ret;
     }
     return value;
@@ -322,7 +372,7 @@ export const groupBy = (xs, key) => {
 };
 
 
-export const pickAll = (names, obj={},fn=null) => {
+export const pickAll = (names, obj = {}, fn = null) => {
     var result = {};
     var idx = 0;
     var len = Array.isArray(names) ? names.length : 0;
@@ -331,11 +381,11 @@ export const pickAll = (names, obj={},fn=null) => {
         if (typeof name == "object") {
             const k = Object.keys(name)[0];
             if (isObject(obj) && (k in obj)) {
-                result[name[k]] = fn==null ? obj[k] : fn(k,name[k],obj[k]);
+                result[name[k]] = fn == null ? obj[k] : fn(k, name[k], obj[k]);
             }
         } else {
             if (isObject(obj) && (name in obj)) {
-                result[name] = fn==null ? obj[name] : fn(name,name,obj[name]);
+                result[name] = fn == null ? obj[name] : fn(name, name, obj[name]);
             }
         }
         idx += 1;
@@ -402,7 +452,7 @@ export const getPositiveInt = (value, ret = 0) => {
     if (isNaN(f) || f === null || f === undefined) {
         f = ret;
     }
-    if (f<0){
+    if (f < 0) {
         return ret
     }
     return f;

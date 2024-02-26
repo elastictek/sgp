@@ -41,7 +41,7 @@ import { useImmer } from 'use-immer';
 
 
 export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRules = {}, filters, title, leftTitle, permission, defaultParameters, dataAPI, onSelectionChanged, isRowSelectable, ignoreRowSelectionOnCells = [],
-    topToolbar, loadOnInit = true, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, valueGetter, onRowClick, onCellClick, suppressCellFocus, rowSelection, onGridReady,
+    topToolbar, loadOnInit = true, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, valueGetter, onRowClick, onCellClick, suppressCellFocus, rowSelection="single", onGridReady,
     onGridRequest, onGridResponse, onGridFailRequest,
     /* extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, onFilterChange, local = false, loadOnInit = false, rowSelection, */ ...props }) => {
     const _gridRef = gridRef || useRef(); //not required
@@ -121,7 +121,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
                 gridRef={_gridRef}
                 local={local}
 
-                rowSelection="single"
+                rowSelection={rowSelection}
                 onSelectionChanged={_onSelectionChanged}
                 isRowSelectable={_isRowSelectable}
                 rowClassRules={_rowClassRules}

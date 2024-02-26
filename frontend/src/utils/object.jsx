@@ -1,12 +1,21 @@
 import { assocPath, isNil } from 'ramda';
+import { isNullOrEmpty } from '.';
 
 export const valueByPath = (obj, path,ret=null) => {
-    const _v = path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
+    if (isNullOrEmpty(path)){
+        return ret;
+    }
+    const _p = Array.isArray(path) ? path : path.split('.');
+    const _v = _p.reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
     return isNil(_v) ? ret : _v;
 }
 
 export const updateByPath = (data, path, value) => {
-    return assocPath(path.split("."), value, data);
+    const _p = Array.isArray(path) ? path : path.split('.');
+    return assocPath(_p, value, data);
+}
+export const updateData = (data, value) => {
+    return {...data,...value};
 }
 
 export const nullIfEmpty = (obj) => {

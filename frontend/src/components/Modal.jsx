@@ -93,7 +93,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
                     width={size.width}
                     onCancel={onCancel}
                     {...(footer && { footer: footerButtons() })}
-                    styles={{ body: { height: size.height } }}
+                    styles={{ body: { height: size.height,padding:"5px" } }}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >
@@ -121,6 +121,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
                     {...(footer && { footer: footerButtons() })}
                     {...(extra && { extra: extraButtons() })}
                     //bodyStyle={{ height: size.height }}
+                    styles={{body:{padding:"5px"}}}
                     style={{ ...(size.fullscreen && { top: "0px", margin: "0px", maxWidth: size.width, paddingBottom: "0px" }) }}
                     {...props}
                 >

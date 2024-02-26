@@ -892,51 +892,140 @@ class ParsedFilters:
             print("API VERSION --4--")
             self.compute()
 
+    def _getPrefix(self,_group):
+        if isinstance(self.prefix, dict):
+             if _group in self.prefix:
+                return self.prefix.get(_group)
+             else:
+                return "where"
+        return self.prefix
+
     def compute(self):
-        for key, value in self.filterData.items():
-            if value.get("group") not in self.groups:
-                _p = {k:v for k, v in self.filterData.items() if 'group' in v and v.get("group") == value.get("group")}
-                _fgrp_txt = []
-                self.groups[value.get("group")] = ""
-                for _name, _param in _p.items():
-                    _ftxt = []
-                    for idx, el in enumerate(_param.get("parsed")):
-                        _pn = f"f.{_name}.{idx}" #Parameter Name   
-                        _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
-                        #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
-                        if el in ["and","or"]:
-                            _ftxt.append(f" {el} ")
+        print("RRRRRR")
+        #_p = {k:v for k, v in self.filterData.items() if "groups" in v}
+
+        
+        _grouped = {}
+        for value in self.filterData.values():
+            _groups = value.get('groups', {})
+            for group_name, group_info in _groups.items():
+                key = f"{value['name']}_{group_name}"
+                if group_name not in _grouped:
+                    _grouped[group_name] = {}
+                _grouped[group_name][key] = {"name":value['name'],**group_info}
+
+        for group_name, _p in _grouped.items():
+            _fgrp_txt = []
+            for _name, _param in _p.items():
+                _name = _param.get("name") if "name" in _param else _name
+                _ftxt = []
+                for idx, el in enumerate(_param.get("parsed")):
+                    _pn = f"f.{_name}.{idx}" #Parameter Name   
+                    _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
+                    #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
+                    if el in ["and","or"]:
+                        _ftxt.append(f" {el} ")
+                        continue
+                    if el in ["(",")"]:
+                        _ftxt.append(f" {el} ")
+                        continue
+                    if (el.startswith(":")):
+                        el = el.replace(":","",1)
+                        if (el==""):
                             continue
-                        if el in ["(",")"]:
-                            _ftxt.append(f" {el} ")
+                        _ftxt.append(f"""({trim_outer_quotes(el).replace("%","%%")})""")
+                        continue
+                    if (el.startswith("@:")):
+                        el = trim_outer_quotes(el.replace("@:","",1))
+                        pattern = r'\{([^{}]+)\}(.+)'
+                        match = re.match(pattern, el)
+                        if match:
+                            _pn = match.group(1)
+                            _alias = match.group(1)
+                            el = match.group(2)
+                        else:
                             continue
-                        if (el.startswith(":")):
-                            el = el.replace(":","",1)
-                            if (el==""):
-                                continue
-                            _ftxt.append(f"""({trim_outer_quotes(el).replace("%","%%")})""")
-                            continue
-                        if (el.startswith("@:")):
-                            el = trim_outer_quotes(el.replace("@:","",1))
-                            pattern = r'\{([^{}]+)\}(.+)'
-                            match = re.match(pattern, el)
-                            if match:
-                                _pn = match.group(1)
-                                _alias = match.group(1)
-                                el = match.group(2)
-                            else:
-                                continue
-                        _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
-                        _ftxt.append(f"""({_fp.get("filters")[0]})""")
-                        self.parameters = {**self.parameters,**_fp.get("parameters")}
-                    if len(_fgrp_txt)>0:
-                        _fgrp_txt.append(f" {self.betweenfilters} ")
-                    _fgrp_txt.append(f"""({"".join(_ftxt)})""")
-                self.groups[value.get("group")]=f""" {self.prefix} ({"".join(_fgrp_txt)})"""
+                    _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
+                    _ftxt.append(f"""({_fp.get("filters")[0]})""")
+                    self.parameters = {**self.parameters,**_fp.get("parameters")}
+                if len(_fgrp_txt)>0:
+                    _fgrp_txt.append(f" {self.betweenfilters} ")
+                _fgrp_txt.append(f"""({"".join(_ftxt)})""")
+                self.groups[group_name]=f""" {self._getPrefix(group_name)} ({"".join(_fgrp_txt)})"""
         if not self.parameters:
             self.hasFilters=False
         else:
             self.hasFilters=True
+        
+        #print(self.groups)
+        #print(self.parameters)
+        
+        
+        #return 
+        
+
+        
+        # print(self.filterData)
+        # for group_name in list(all_groups):
+        #     print("Group:", group_name)
+        #     for key, value in self.filterData.items():
+        #         groups = value.get('groups', {})
+        #         group_info = groups.get(group_name)
+        #         print
+        #         if group_info:
+        #             print(f"""{group_info.get("name")}_{group_name}: {group_info}""")
+        
+        
+
+
+
+
+
+        # for key, value in self.filterData.items():
+        #     if value.get("group") not in self.groups:
+        #         _p = {k:v for k, v in self.filterData.items() if 'group' in v and v.get("group") == value.get("group")}
+        #         _fgrp_txt = []
+        #         self.groups[value.get("group")] = ""
+        #         for _name, _param in _p.items():
+        #             _name = _param.get("name") if "name" in _param else _name
+        #             _ftxt = []
+        #             for idx, el in enumerate(_param.get("parsed")):
+        #                 _pn = f"f.{_name}.{idx}" #Parameter Name   
+        #                 _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
+        #                 #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
+        #                 if el in ["and","or"]:
+        #                     _ftxt.append(f" {el} ")
+        #                     continue
+        #                 if el in ["(",")"]:
+        #                     _ftxt.append(f" {el} ")
+        #                     continue
+        #                 if (el.startswith(":")):
+        #                     el = el.replace(":","",1)
+        #                     if (el==""):
+        #                         continue
+        #                     _ftxt.append(f"""({trim_outer_quotes(el).replace("%","%%")})""")
+        #                     continue
+        #                 if (el.startswith("@:")):
+        #                     el = trim_outer_quotes(el.replace("@:","",1))
+        #                     pattern = r'\{([^{}]+)\}(.+)'
+        #                     match = re.match(pattern, el)
+        #                     if match:
+        #                         _pn = match.group(1)
+        #                         _alias = match.group(1)
+        #                         el = match.group(2)
+        #                     else:
+        #                         continue
+        #                 _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
+        #                 _ftxt.append(f"""({_fp.get("filters")[0]})""")
+        #                 self.parameters = {**self.parameters,**_fp.get("parameters")}
+        #             if len(_fgrp_txt)>0:
+        #                 _fgrp_txt.append(f" {self.betweenfilters} ")
+        #             _fgrp_txt.append(f"""({"".join(_ftxt)})""")
+        #         self.groups[value.get("group")]=f""" {self._getPrefix(value.get("group"))} ({"".join(_fgrp_txt)})"""
+        # if not self.parameters:
+        #     self.hasFilters=False
+        # else:
+        #     self.hasFilters=True
 
     def group(self,name="t1"):
         return self.groups.get(name) if self.groups.get(name) is not None else ""

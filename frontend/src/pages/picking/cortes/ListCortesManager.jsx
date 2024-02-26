@@ -23,6 +23,7 @@ import { CloseCircleFilled, DeleteFilled, EditOutlined, StockOutlined, StopOutli
 import { Modal } from 'antd';
 import { AppContext } from 'app';
 import { zOneOfNumber } from 'utils/schemaZodRules';
+import { validateRows } from 'utils/useValidation';
 
 const title = "Gerir Cortes";
 const subTitle = null;
@@ -79,7 +80,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey());
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey());
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -92,14 +93,18 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   const onGridResponse = async (api) => {
     if (dataAPI.requestsCount() === 1) {}
   };
+  const onExitMode = () => {
+    setValidation({});
+    gridRef.current.api.deselectAll();
+  };
 
   const onAddSave = async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey());
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
   };
 
   const onEditSave = async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey());
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey());
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     return (await rv.onValidationSuccess(async (p) => {
@@ -181,7 +186,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
           onEditSave,
           onAdd: null,
           onModeChange: null,
-          onExitMode: {},
+          onExitMode,
           onExitModeRefresh: true,
           onAddSaveExit: true,
           onEditSaveExit: false

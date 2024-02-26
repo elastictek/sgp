@@ -164,7 +164,7 @@ def UpdateDefeitosV2(request, format=None):
             select count(*) cnt
             from producao_bobine pb
             left join producao_palete pp on pp.id=pb.palete_id 
-            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or pp.nome like 'P%%')        
         """), cursor, {})
         return response["rows"][0]["cnt"]
 
@@ -197,7 +197,7 @@ def UpdateDefeitosV2(request, format=None):
                 ids = ','.join(str(x["id"]) for x in r.data.get("rows"))
                 chk = _checkBobines(ids,cursor)
                 if chk > 0:
-                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Comprimento actual, se entrou em reciclado, ou se está numa carga... )"})
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Comprimento actual, se entrou em reciclado, numa carga ou palete final... )"})
                 chk = _checkExpedicaoSage(ids)
                 if chk > 0:
                     return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique se foi expedida."})
@@ -206,6 +206,58 @@ def UpdateDefeitosV2(request, format=None):
         return Response({"status": "success", "title": "Registo(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
+
+def UpdateDestinosV2(request, format=None):
+    r = PostData(request)
+
+    def _checkBobines(ids, cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select count(*) cnt
+            from producao_bobine pb
+            left join producao_palete pp on pp.id=pb.palete_id 
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or pp.nome like 'P%%')        
+        """), cursor, {})
+        return response["rows"][0]["cnt"]
+
+    def _checkExpedicaoSage(ids):
+        connection = connections[connGatewayName].cursor()
+        response = dbgw.executeSimpleList(lambda: (f"""
+                select count(*) cnt
+                from mv_bobines pb
+                left join mv_paletes pp on pp.id=pb.palete_id
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
+                where pb.id in ({ids}) and mv."SDHNUM_0" is not null
+        """), connection, {})
+        return response["rows"][0]["cnt"]
+
+    def update(data,id,cursor):
+        values={
+            "estado":data["estado"],
+            "destinos":json.dumps(data["destinos"], ensure_ascii=False) if data["destinos"] is not None else None,
+            "destino":data["destino"],
+            "destinos_has_obs":data["destinos_has_obs"],
+            "obs":data["obs"],
+            "prop_obs":data["prop_obs"]
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_bobine", {"id":Filters.getNumeric(id,"isnull")}, None, False,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                ids = ','.join(str(x["id"]) for x in r.data.get("rows"))
+                chk = _checkBobines(ids,cursor)
+                if chk > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Comprimento actual, se entrou em reciclado, numa carga ou palete final... )"})
+                chk = _checkExpedicaoSage(ids)
+                if chk > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique se foi expedida."})
+                for i, v in enumerate(r.data.get("rows")):
+                    update(v,v.get("id"),cursor)
+        return Response({"status": "success", "title": "Destino(s) alterado(s) com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
 
 def UpdateDefeitos(request, format=None):
     connection = connections["default"].cursor()
@@ -526,8 +578,8 @@ def BobinesOriginaisList(request,format=None):
 def BobinesListV2(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
+    print(r.filter)
     pf = ParsedFilters(r.filter,"where",r.apiversion)
-    
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
 
@@ -561,20 +613,6 @@ def BobinesListV2(request, format=None):
             {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
         """
     )
-    print( f"""           
-            select {f'{dql.columns}'}
-            FROM producao_bobine mb
-            JOIN producao_bobinagem pbm on pbm.id=mb.bobinagem_id
-            LEFT JOIN planeamento_ordemproducao po ON po.id = mb.ordem_id
-            LEFT JOIN producao_artigo mva on mva.id=mb.artigo_id 
-            LEFT JOIN producao_palete sgppl on sgppl.id=mb.palete_id 
-            LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
-            LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
-            LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
-            LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
-            {pf.group()}
-            {dql.sort} {dql.paging} {dql.limit}
-        """)
     if ("export" in r.data):
         dql.limit=f"""limit {r.data.get("limit")}"""
         dql.paging=""
@@ -587,6 +625,57 @@ def BobinesListV2(request, format=None):
     return Response(response)
 
 
+def BobinesDestinosHint(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    print(r.filter)    
+    print("#######################################################")
+    #print(r.cloneFilter("t1",["artigo_id_from"],lambda v: {**v,"group":"t3"} ))
+    pf = ParsedFilters(r.filter,{"t2":""},r.apiversion)
+    print(pf.group("t1"))
+    print(pf.group("t2"))
+    print(pf.group("t3"))
+    print(pf.parameters)
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}
+    cols = f"""*"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""           
+            with HINTS as(
+                select distinct pd.cliente_id_to,pd.cliente_cod_to,pd.lar_to,pc.nome, 1 used
+                from producao_destinos pd 
+                join producao_cliente pc on pc.id=pd.cliente_id_to
+                {pf.group("t1")} and pd.lar_from>=pd.lar_to
+                union
+                select distinct
+                pc.id cliente_id_to,pc.cod cliente_cod_to,
+                pa.lar lar_to,pc.nome,0 used
+                from producao_artigocliente pac
+                join producao_artigo pa on pa.id=pac.artigo_id and pa.lar>0
+                join producao_artigo pa2 on {pf.group("t2")} and pa.lar<=pa2.lar and pa.gsm=pa2.gsm
+                join producao_cliente pc on pc.id=pac.cliente_id
+                {pf.group("t3")}
+            )
+            select {c(f'{dql.columns}')} from (
+            select row_number() over () id,cliente_id_to,cliente_cod_to,nome,lar_to, used, 
+            MAX(used) over (partition by cliente_id_to,cliente_cod_to,nome,lar_to) AS maxused
+            from HINTS
+            ) t where t.maxused=used
+            order by used desc,nome,lar_to
+            {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
 
 

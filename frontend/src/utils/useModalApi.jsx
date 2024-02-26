@@ -11,7 +11,7 @@ export default () => {
         }, []);
         const onClose = useCallback(() => {
             hideModal();
-            if (typeof modalParameters.parameters.gridApi?.setFocusedCell === "function") {
+            if (typeof modalParameters.parameters?.gridApi?.setFocusedCell === "function") {
                 modalParameters.parameters.gridApi.setFocusedCell(modalParameters.parameters.cellFocus.rowIndex, modalParameters.parameters.cellFocus.colId, null);
             }
         }, []);
@@ -29,6 +29,7 @@ export default () => {
                 width={modalParameters.width}
                 height={modalParameters.height}
                 footer="ref"
+                extra="ref"
                 yScroll>
                 {content()}
             </ResponsiveModal>

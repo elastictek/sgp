@@ -10,30 +10,14 @@ import { isEmpty, isNil, isNotNil } from 'ramda';
 import { AppContext } from "app";
 import dayjs from 'dayjs';
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
+import { _fieldZodDescription } from './schemaZodRules';
+import { getValue } from '.';
 
 export const filterRegExp = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i');
 
 export const parseFilter = (name, parsed, { group = "t1", type = "input", options = {} }) => {
-    return { [name]: { parsed: Array.isArray(parsed) ? parsed : [parsed], group, type, ...options } };
+    return { [`${name}_${group}`]: { name, groups: { [group]: { parsed: Array.isArray(parsed) ? parsed : [parsed], group, type, ...options } } } };
 }
-
-const _filterParser = (value, filter, opTag) => {
-    const _op = filter?.op ? filter.op.toLowerCase() : "any";
-    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%") && !value.includes("_")) {
-        return `${value}`;
-    }
-    if (value.includes("%") || value.includes("_")) {
-        return `${value}`;
-    }
-    switch (_op) {
-        case 'any': return `%${value.replaceAll(' ', '%%')}%`;
-        case 'start': return `${value}%`;
-        case 'end': return `%${value}`;
-        case 'exact': return `==${value}`;
-        default: return `${value}`;
-    }
-}
-
 
 //type = any | start | end | exact
 export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
@@ -64,93 +48,29 @@ export const getFilterValue = (v, type = 'exact', caseLetter = false) => {
     return undefined;
 }
 
-// const _fixConditions = (v) => {
-//     // Rule 0 - trim all spaces not inside '' and all new lines
-//     let input = v.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
+export const filtersDef = (filters, gridRef, { all = false, keys = ["toolbar"] } = {}) => {
+    const _keys = (all) ? Object.keys(filters).filter(v => v !== "no") : keys.filter(v => v !== "no");
 
-//     // Rule 1
-//     input = input.replace(/([^&|\(])\(/g, '$1&(');
-//     input = input.replace(/\(\s*[&|]/g, '(');
-
-//     // Rule 2
-//     input = input.replace(/\)([^&|\)])/g, ')&$1');
-
-//     // Rule 3
-//     input = input.replace(/([^&|\(])\(/g, '$1&(');
-
-//     // Rule 4
-//     input = input.replace(/\)([^&|\)])/g, ')&$1');
-
-//     // Rule 5
-//     input = input.replace(/([&|])\1+/g, '$1');
-
-
-
-
-
-//     // Rule 6
-//     const openParenCount = (input.match(/\(/g) || []).length;
-//     const closeParenCount = (input.match(/\)/g) || []).length;
-//     const parenDiff = openParenCount - closeParenCount;
-
-//     if (parenDiff > 0) {
-//         for (let i = 0; i < parenDiff; i++) {
-//             input += ')';
-//         }
-//     } else if (parenDiff < 0) {
-//         for (let i = 0; i < -parenDiff; i++) {
-//             input = '(' + input;
-//         }
-//     }
-
-//     return input;
-// }
-
-const customSplit = (input) => {
-    let result = [];
-    let insideQuotes = false;
-    let currentChunk = '';
-    // Rule 0 - trim all spaces not inside '' and all new lines
-    //const _input = input.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
-    const _input = input.replace(/'[^']*'|"[^"]*"|\s+/g, function (match) {
-        return match.startsWith("'") || match.startsWith('"') ? match : '';
-    });
-
-    for (let i = 0; i < _input.length; i++) {
-        const char = _input[i];
-
-        if (char === '"') {
-            insideQuotes = !insideQuotes;
-            currentChunk += char;
-        } else if (insideQuotes) {
-            currentChunk += char;
-        } else if (char === '&' || char === '|' || char === '(' || char === ')') {
-            if (currentChunk.trim() !== '') {
-                result.push(currentChunk.trim());
-            }
-            result.push(char);
-            currentChunk = '';
-        } else {
-            currentChunk += char;
+    let _newFilters = [];
+    for (const k of _keys) {
+        let _idx = filters?.[k].indexOf("@columns");
+        const _nf = (_idx >= 0) ? [...filters?.[k].slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.[k].slice(_idx)] : [...filters?.[k]];
+        _newFilters = [..._newFilters, ..._nf];
+        if (k == "more") {
+            _newFilters = [..._newFilters, "fcustom"];
         }
     }
 
-    if (currentChunk.trim() !== '') {
-        result.push(currentChunk.trim());
-    }
+    // let _idx = filters?.toolbar.indexOf("@columns");
+    // let _newfilters = (_idx >= 0) ? [...filters?.toolbar.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.toolbar.slice(_idx)] : [...filters?.toolbar];
+    // if (all) {
+    //     let _idx = filters?.more.indexOf("@columns");
+    //     let _morefilters = (_idx >= 0) ? [...filters?.more.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.more.slice(_idx)] : [...filters?.more];
+    //     _newfilters = [..._newfilters, ..._morefilters, "fcustom"];
+    // }
 
-    return result;
-}
-export const filtersDef = (filters, gridRef, all = false) => {
-    let _idx = filters?.toolbar.indexOf("@columns");
-    let _newfilters = (_idx >= 0) ? [...filters?.toolbar.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.toolbar.slice(_idx)] : [...filters?.toolbar];
-    if (all) {
-        let _idx = filters?.more.indexOf("@columns");
-        let _morefilters = (_idx >= 0) ? [...filters?.more.slice(0, _idx), ...gridRef.current.api.getColumnDefs().filter(v => !filters?.no.includes(v.field)), ...filters?.more.slice(_idx)] : [...filters?.more];
-        _newfilters = [..._newfilters, ..._morefilters, "fcustom"];
-    }
     const _f = {};
-    for (const v of _newfilters.filter(v => v !== "@columns" && v !== undefined)) {
+    for (const v of _newFilters.filter(v => v !== "@columns" && v !== undefined)) {
         if (Object.prototype.toString.call(v) === '[object Object]') {
             let _headerName = "";
             if (v?.colId || v?.headerName) {
@@ -165,26 +85,56 @@ export const filtersDef = (filters, gridRef, all = false) => {
                     _alias = v.field;
                 }
             }
+
+            const _group = v?.group ? v.group : "t1";
+            const _groupOpts = _f?.[v.field]?.["groups"]?.[_group];
             _f[v.field] = {
-                type: v?.type ? v.type : _f?.[v.field]?.type ? _f[v.field]?.type : "input",
+                ..._f?.[v.field],
                 name: v.field,
-                alias: v?.colId ? v.colId : v?.alias ? v.alias : _f?.[v.field]?.colId ? _f[v.field]?.colId : _alias,
+                groups: {
+                    ..._f?.[v.field]?.["groups"], [_group]: {
+                        type: v?.type ? v.type : _groupOpts?.type ? _groupOpts?.type : "input",
+                        alias: v?.colId ? v.colId : v?.alias ? v.alias : _groupOpts?.colId ? _groupOpts?.colId : _alias,
+                        op: v?.op ? v.op : _groupOpts?.op ? _groupOpts?.op : null,
+                        mask: v?.mask ? v.mask : _groupOpts?.mask ? _groupOpts?.mask : null,
+                        vmask: v?.vmask ? v.vmask : _groupOpts?.vmask ? _groupOpts?.vmask : null,
+                        group: _group,
+                        case: v?.case ? v.case : _groupOpts?.case ? _groupOpts?.case : "i",
+                        assign: isNotNil(v?.assign) ? v.assign : isNotNil(_groupOpts?.assign) ? _groupOpts?.assign : true,
+                        wildcards: isNotNil(v?.wildcards) ? v.wildcards : isNotNil(_groupOpts?.wildcards) ? _groupOpts?.wildcards : true,
+                        tags: isNotNil(v?.tags) ? v.tags : isNotNil(_groupOpts?.tags) ? _groupOpts?.tags : true,
+                        fnvalue: v?.fnvalue ? v.fnvalue : _groupOpts?.fnvalue ? _groupOpts?.fnvalue : null
+                    }
+                },
                 style: v?.style ? v?.style : _f?.[v.field]?.style ? _f[v.field]?.style : null,
-                op: v?.op ? v.op : _f?.[v.field]?.op ? _f[v.field]?.op : null,
                 label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
                 col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
-                mask: v?.mask ? v.mask : _f?.[v.field]?.mask ? _f[v.field]?.mask : null,
-                vmask: v?.vmask ? v.vmask : _f?.[v.field]?.vmask ? _f[v.field]?.vmask : null,
-                group: v?.group ? v.group : _f?.[v.field]?.group ? _f[v.field]?.group : "t1",
                 multi: isNotNil(v?.multi) ? v.multi : isNotNil(_f?.[v.field]?.multi) ? _f[v.field]?.multi : false,
                 // exp: v?.exp ? v.exp : _f?.[v.field]?.exp ? _f[v.field]?.exp : null,
-                options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null,
-                case: v?.case ? v.case : _f?.[v.field]?.case ? _f[v.field]?.case : "i",
-                assign: isNotNil(v?.assign) ? v.assign : isNotNil(_f?.[v.field]?.assign) ? _f[v.field]?.assign : true,
-                wildcards: isNotNil(v?.wildcards) ? v.wildcards : isNotNil(_f?.[v.field]?.wildcards) ? _f[v.field]?.wildcards : true,
-                tags: isNotNil(v?.tags) ? v.tags : isNotNil(_f?.[v.field]?.tags) ? _f[v.field]?.tags : true,
-                fnvalue: v?.fnvalue ? v.fnvalue : _f?.[v.field]?.fnvalue ? _f[v.field]?.fnvalue : null,
-            }
+                options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null
+
+            };
+
+            // _f[v.field] = {
+            //     type: v?.type ? v.type : _f?.[v.field]?.type ? _f[v.field]?.type : "input",
+            //     name: v.field,
+            //     alias: v?.colId ? v.colId : v?.alias ? v.alias : _f?.[v.field]?.colId ? _f[v.field]?.colId : _alias,
+            //     style: v?.style ? v?.style : _f?.[v.field]?.style ? _f[v.field]?.style : null,
+            //     op: v?.op ? v.op : _f?.[v.field]?.op ? _f[v.field]?.op : null,
+            //     label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
+            //     col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
+            //     mask: v?.mask ? v.mask : _f?.[v.field]?.mask ? _f[v.field]?.mask : null,
+            //     vmask: v?.vmask ? v.vmask : _f?.[v.field]?.vmask ? _f[v.field]?.vmask : null,
+            //     group: _group,
+            //     multi: isNotNil(v?.multi) ? v.multi : isNotNil(_f?.[v.field]?.multi) ? _f[v.field]?.multi : false,
+            //     // exp: v?.exp ? v.exp : _f?.[v.field]?.exp ? _f[v.field]?.exp : null,
+            //     options: v?.options ? v.options : _f?.[v.field]?.options ? _f[v.field]?.options : null,
+            //     case: v?.case ? v.case : _f?.[v.field]?.case ? _f[v.field]?.case : "i",
+            //     assign: isNotNil(v?.assign) ? v.assign : isNotNil(_f?.[v.field]?.assign) ? _f[v.field]?.assign : true,
+            //     wildcards: isNotNil(v?.wildcards) ? v.wildcards : isNotNil(_f?.[v.field]?.wildcards) ? _f[v.field]?.wildcards : true,
+            //     tags: isNotNil(v?.tags) ? v.tags : isNotNil(_f?.[v.field]?.tags) ? _f[v.field]?.tags : true,
+            //     fnvalue: v?.fnvalue ? v.fnvalue : _f?.[v.field]?.fnvalue ? _f[v.field]?.fnvalue : null,
+            // }
         } else {
             const _s = gridRef.current.api.getColumnDefs().find(x => x.field === v);
             const _headerName = _s?.headerName;
@@ -192,52 +142,64 @@ export const filtersDef = (filters, gridRef, all = false) => {
             if (!_alias) {
                 _alias = v;
             }
+            const _group = "t1";
+            const _groupOpts = _f?.[v]?.["groups"]?.[_group];
             _f[v] = {
-                type: _f?.[v]?.type ? _f[v]?.type : "input",
+                ..._f?.[v],
                 name: v,
-                alias: _f?.[v]?.alias ? _f[v]?.alias : _alias,
-                style: _f?.[v]?.style ? _f[v]?.style : null,
-                op: _f?.[v]?.op ? _f[v]?.op : null,
-                label: _f?.[v]?.label ? _f[v]?.label : _headerName ? _headerName : v,
-                col: _f?.[v]?.col ? _f[v]?.col : "content",
-                mask: _f?.[v]?.mask ? _f[v]?.mask : null,
-                vmask: _f?.[v]?.vmask ? _f[v]?.vmask : null,
-                group: _f?.[v]?.group ? _f[v]?.group : "t1",
-                multi: isNotNil(_f?.[v]?.multi) ? _f[v]?.multi : false,
+                groups: {
+                    ..._f?.[v]?.["groups"], [_group]: {
+                        type: getValue(_groupOpts?.type, "input"),
+                        alias: getValue(_groupOpts?.alias, _alias),
+                        op: getValue(_groupOpts?.op, null),
+                        mask: getValue(_groupOpts?.mask, null),
+                        vmask: getValue(_groupOpts?.vmask, null),
+                        group: _group,
+                        case: getValue(_groupOpts?.case, "i"),
+                        assign: getValue(_groupOpts?.assign, true),
+                        wildcards: getValue(_groupOpts?.wildcards, true),
+                        tags: getValue(_groupOpts?.tags, true),
+                        fnvalue: getValue(_groupOpts?.fnvalue, null)
+                    }
+                },
+                style: getValue(_groupOpts?.style, null),
+                label: _groupOpts?.label ? _groupOpts?.label : _headerName ? _headerName : v,
+                col: getValue(_groupOpts?.col, "content"),
+                multi: getValue(_groupOpts?.multi, false),
                 // exp: _f?.[v]?.exp ? _f[v]?.exp : null,
-                options: _f?.[v]?.options ? _f[v]?.options : null,
-                case: _f?.[v]?.case ? _f[v]?.case : "i",
-                assign: isNotNil(_f?.[v]?.assign) ? _f[v]?.assign : true,
-                wildcards: isNotNil(_f?.[v]?.wildcards) ? _f[v]?.wildcards : true,
-                tags: isNotNil(_f?.[v]?.tags) ? _f[v]?.tags : true,
-                fnvalue: _f?.[v]?.fnvalue ? _f[v]?.fnvalue : null
-            }
+                options: getValue(_groupOpts?.options, null)
+            };
+
+
+
+
+
+
+
+            // _f[v] = {
+            //     type: _f?.[v]?.type ? _f[v]?.type : "input",
+            //     name: v,
+            //     alias: _f?.[v]?.alias ? _f[v]?.alias : _alias,
+            //     style: _f?.[v]?.style ? _f[v]?.style : null,
+            //     op: _f?.[v]?.op ? _f[v]?.op : null,
+            //     label: _f?.[v]?.label ? _f[v]?.label : _headerName ? _headerName : v,
+            //     col: _f?.[v]?.col ? _f[v]?.col : "content",
+            //     mask: _f?.[v]?.mask ? _f[v]?.mask : null,
+            //     vmask: _f?.[v]?.vmask ? _f[v]?.vmask : null,
+            //     group: _group,
+            //     multi: isNotNil(_f?.[v]?.multi) ? _f[v]?.multi : false,
+            //     // exp: _f?.[v]?.exp ? _f[v]?.exp : null,
+            //     options: _f?.[v]?.options ? _f[v]?.options : null,
+            //     case: _f?.[v]?.case ? _f[v]?.case : "i",
+            //     assign: isNotNil(_f?.[v]?.assign) ? _f[v]?.assign : true,
+            //     wildcards: isNotNil(_f?.[v]?.wildcards) ? _f[v]?.wildcards : true,
+            //     tags: isNotNil(_f?.[v]?.tags) ? _f[v]?.tags : true,
+            //     fnvalue: _f?.[v]?.fnvalue ? _f[v]?.fnvalue : null
+            // }
         }
     }
     return Object.values(_f);
 };
-
-const prepareInput = (value, wildcards = true, tags = true) => {
-    let _v = value;
-    if (!tags) {
-        const matches = _v.trim().toString().match(filterRegExp);
-        _v = matches ? matches[2] : _v.trim().toString();
-        _v = _v.replaceAll(",", "&");
-        _v = _v.replaceAll(";", "|");
-    }
-    if (!wildcards) {
-        _v = _v.replaceAll("%", "").replaceAll("_", "");
-    }
-    return _v;
-}
-
-
-const fnValue = (value, fnvalue = null) => {
-    if (typeof fnvalue == "function") {
-        return fnvalue(value);
-    }
-    return value;
-}
 
 export const processConditions = (inputValue, filterDef, rel = "and", logic = "") => {
     let _input = inputValue;
@@ -258,7 +220,7 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
     }
     if (Array.isArray(_input)) {
         if (_input.length == 0) { return null; }
-        console.log("processed-Array-->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
+        //console.log("processed-Array-->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
         _v = [`${logic}in:${_input.join(",")}`];
         if (typeof filterDef?.fnvalue == "function") {
             _v = filterDef.fnvalue(_v);
@@ -396,7 +358,7 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
         _values.splice(_values.length - 1, 1);
         _parsedvalues.splice(_parsedvalues.length - 1, 1);
     }
-    console.log("processed--->", { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef });
+    //console.log("processed--->", { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef });
     return { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef };
 }
 
@@ -410,192 +372,6 @@ export const getLocalStorage = (id, useStorage) => {
         return v;
     }
     return {};
-}
-
-const _computeSort = (_s = []) => {
-    return _s.map(v => ({
-        ...v,
-        ...(v?.id) && {
-            column: v.id,
-            direction: (v?.dir === 1) ? "ASC" : "DESC",
-            sort: (v?.dir === 1) ? "asc" : "desc",
-            colId: v.id
-
-        },
-        ...(v?.column) && {
-            id: v.column,
-            dir: (v?.direction === "ASC") ? 1 : -1,
-            name: v.column,
-            sort: (v?.direction === "ASC") ? "asc" : "desc",
-            colId: v.column
-        },
-        ...(v?.colId) && {
-            id: v.colId,
-            dir: (v?.sort === "asc") ? 1 : -1,
-            column: v.colId,
-            name: v.colId,
-            direction: (v?.sort === "asc") ? "ASC" : "DESC"
-        }
-    }));
-};
-
-const _mergeObjects = (obj1, obj2) => {
-    const result = {};
-    if (!obj2) {
-        return obj1;
-    }
-    for (const key in obj1) {
-        if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
-            result[key] = {
-                ...obj1[key],
-                parsed: obj1[key].parsed.concat(["and", "(", ...obj2[key].parsed, ")"])
-            };
-        } else if (obj1.hasOwnProperty(key)) {
-            result[key] = obj1[key];
-        }
-    }
-
-    for (const key in obj2) {
-        if (obj2.hasOwnProperty(key) && !result.hasOwnProperty(key)) {
-            result[key] = obj2[key];
-        }
-    }
-
-    return result;
-}
-
-
-
-const _dataPost = (url, method, values, filter, parameters, schema) => {
-    //TODO info warning success
-    const obj = {
-        url, method, values, filter, parameters, schema,
-        alerts: { error: [], info: [], warning: [], success: [] },
-        success: null,
-        valid: true,
-        response: null,
-        timestamp: new Date(),
-        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
-        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
-        onSuccess: async function (fn) { if ((this.valid && this.success) && typeof fn === "function") { fn(this); } },
-        onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
-    };
-    return obj;
-}
-
-const _dataValidation = (values, schema) => {
-    //TODO info warning success
-    const obj = {
-        values, schema,
-        alerts: { error: [], info: [], warning: [], success: [] },
-        valid: true,
-        timestamp: new Date(),
-        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
-        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
-    };
-    return obj;
-}
-
-const _dataRowsValidation = (values, schema) => {
-    //TODO info warning success
-    const obj = {
-        values, schema,
-        alerts: { error: {}, info: {}, warning: {}, success: {} },
-        valid: true,
-        timestamp: new Date(),
-        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { return fn(this); } },
-        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { return fn(this); } },
-    };
-    return obj;
-}
-
-
-const _reverseMapping = (_vg) => {
-    const r = {};
-    for (const key in _vg) {
-        const items = _vg[key];
-        items.forEach(item => {
-            if (!r[item]) {
-                r[item] = [];
-            }
-            r[item].push(key);
-            if (item !== key) {
-                r[item].push(`${key}.${item}`);
-            }
-        });
-    }
-    return r;
-}
-const vGroups = (vg) => {
-    const def = vg;
-    const reversed = _reverseMapping(vg);
-
-    const groupPaths = (path) => {
-        if (reversed?.[path]) {
-            return [path, ...reversed[path]];
-        }
-        return [path];
-    }
-
-    const _groups = (_vg, _path) => {
-        const g = {};
-        for (const key in _vg) {
-            const idx = _vg[key].findIndex(item => item === _path);
-            if (idx >= 0) {
-                g[key] = _vg[key];
-            }
-        }
-    }
-    const _createGroupsData = (data) => {
-        const _data = Array.isArray(data) ? [...data] : { ...data };
-        for (const groupName in def) {
-            const groupItems = def[groupName];
-            _data[groupName] = {};
-            groupItems.forEach(item => {
-                _data[groupName] = updateByPath(_data[groupName], item, valueByPath(_data, item));
-            });
-        }
-        return _data;
-    }
-
-    const r = {
-        obj: def,
-        data: _createGroupsData,
-        reversed,
-        groupPaths
-        //groups: (path) => _groups(vg, path)
-        // alerts: { error: [], info: [], warning: [], success: [] },
-        // success: null,
-        // valid: true,
-        // response: null,
-        // timestamp: new Date(),
-        // onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
-        // onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
-        // onSuccess: async function (fn) { if ((this.valid && this.success) && typeof fn === "function") { fn(this); } },
-        // onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
-    };
-    return r;
-}
-
-export const _fieldZodDescription = (schema, path) => {
-    const parts = Array.isArray(path) ? path : path.split('.');
-    let descriptions = "";
-    for (const part of parts) {
-        if (schema && !schema?.shape?.[part] && schema?._def?.schema) {
-            schema = schema._def.schema.shape[part];
-            if (schema?.description) {
-                descriptions = `${descriptions} ${schema?.description}`;
-            }
-        } else if (schema && schema?.shape) {
-            schema = schema.shape[part];
-            if (schema?.description) {
-                descriptions = `${descriptions} ${schema?.description}`;
-            }
-        } else {
-            return null;
-        }
-    }
-    return descriptions !== "" ? descriptions : parts.join(".");
 }
 
 export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {}) => {
@@ -643,8 +419,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         onGridFailRequest: payload?.onGridFailRequest ? payload.onGridFailRequest : null,
         baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         sortMap: payload?.sortMap ? { ...payload.sortMap } : {},
+        requestsCount: 0,
+        data: (payload?.data) ? payload.data : {},
         totalRows: 0,
-        requestsCount: 0
     });
 
     useEffect(() => {
@@ -653,50 +430,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             draft.init = true;
         });
     }, []);
-
-
-    const validate = async (values = {}, schema, passthrough = true) => {
-        let validation = null;
-        let p = _dataValidation(values, schema);
-        p.timestamp = new Date();
-        validation = passthrough ? await p.schema.passthrough().spa(p.values) : await p.schema.spa(p.values);
-        p.valid = validation.success;
-        if (!validation.success) {
-            const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
-            p.alerts.error.push(..._errors);
-        }
-        return p;
-    }
-
-    const validateRows = async (rows = [], schema, nodeId, { passthrough = true, validationGroups, fn } = {}) => {
-        let validation = null;
-        let p = _dataRowsValidation(null, schema);
-        p.timestamp = new Date();
-        const _rows = [];
-        for (const row of rows) {
-            const _row = (fn && typeof fn === "function") ? fn(row) : row;
-            _rows.push(_row);
-            try {
-                if (isNotNil(validationGroups)) {
-                    validation = passthrough ? await p.schema.passthrough().spa(validationGroups.data(_row)) : await p.schema.spa(validationGroups.data(_row));
-                } else {
-                    validation = passthrough ? await p.schema.passthrough().spa(_row) : await p.schema.spa(_row);
-                }
-            } catch (e) {
-                console.log(e);
-                validation = { success: false, error: { errors: [...e.issues] } };
-            }
-            p.valid = (p.valid === true) ? validation.success : p.valid;
-            if (!validation.success) {
-                const _errors = validation?.error.errors.map(v => ({ ...v, field: v.path.join('.'), label: _fieldZodDescription(schema, v.path), type: "props" }));
-                p.alerts.error[_row[nodeId]] = _errors;
-            } else {
-                p.alerts.error[_row[nodeId]] = null;
-            }
-        }
-        p.values = (_rows.length === 0) ? rows : _rows;
-        return p;
-    }
 
     const safePost = async (url, method, { filter = {}, parameters = {}, values = {}, schema, onPre, notify = ["run_fail", "run_success", "fatal"], passthrough = true, ...rest } = {}) => {
         let p = _dataPost(url, method, values, filter, parameters, schema);
@@ -751,10 +484,16 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return p;
     }
 
-
-
-
-
+    const _updateData = (data, totalRows) => {
+        if (totalRows !== null) {
+            ref.current.totalRows = totalRows;
+        }
+        //ref.current.data = data;
+        ref.current.tstamp = new Date();
+        //updateState(draft => {
+        //    draft.tstamp = ref.current.tstamp;
+        //});
+    }
 
     const setPayload = (payload) => {
         updateState(payload);
@@ -866,7 +605,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             return state.pagination.pageSize;
         } else {
             if (!ref.current.pagination.enabled && ref.current.pagination?.limit) {
-                return state.pagination?.limit;
+                return ref.current.pagination?.limit;
             }
             return ref.current.pagination.pageSize;
         }
@@ -1082,8 +821,8 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         }
 
         const _trows = ignoreTotalRows ? data?.rows?.length ?? 0 : _totalRows(data?.rows, data?.total, data?.faketotal);
+        _updateData({ ...data }, _trows);
 
-        ref.current.totalRows = _trows;
         updateState(draft => {
             draft.initLoaded = ref.current.initLoaded;
             draft.data = { ...data };
@@ -1127,7 +866,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     _rows = cb(_rows);
                 }
                 const _total = _totalRows(_rows, ref.current.totalRows + 1);
-                ref.current.totalRows = _total;
+                _updateData({ rows: [..._rows], total: _total }, _total);
                 updateState(draft => {
                     draft.tstamp = Date.now();
                     draft.data = { rows: [..._rows], total: _total };
@@ -1137,10 +876,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         } else {
             _rows = [{ ...row, rowadded: 1, rowvalid: 0 }];
             const _total = _totalRows(_rows, 1);
-            ref.current.totalRows = _total;
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
+            _updateData({ rows: _rows, total: _total }, _total);
             updateState(draft => {
                 draft.tstamp = Date.now();
                 draft.data = { rows: _rows, total: _total };
@@ -1169,10 +908,10 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         } else {
             _rows = rows.map(v => ({ ...v, rowadded: 1, rowvalid: 0 }));
             const _total = _totalRows(_rows, null);
-            ref.current.totalRows = _total;
             if (typeof cb === "function") {
                 _rows = cb(_rows);
             }
+            _updateData({ rows: _rows, total: _total }, _total);
             updateState(draft => {
                 draft.tstamp = Date.now();
                 draft.data = { rows: _rows, total: _total };
@@ -1182,7 +921,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     }
     const setRows = (rows, total = null) => {
         const _total = _totalRows(rows, (total === null) ? ref.current.totalRows : total);
-        ref.current.totalRows = _total;
+        _updateData({ rows: [...rows], total: _total }, _total);
         updateState(draft => {
             draft.tstamp = Date.now();
             draft.data = { rows: [...rows], total: _total };
@@ -1198,7 +937,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 }
             });
             const _total = _totalRows(_rows, ref.current.totalRows - 1);
-            ref.current.totalRows = _total;
+            _updateData({ rows: [..._rows], total: _total }, _total);
             updateState(draft => {
                 draft.tstamp = Date.now();
                 draft.data = { rows: [..._rows], total: _total }
@@ -1219,7 +958,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 }
             });
             const _total = _totalRows(_rows, ref.current.totalRows - 1);
-            ref.current.totalRows = _total;
+            _updateData({ rows: [..._rows], total: _total }, _total);
             updateState(draft => {
                 draft.tstamp = Date.now();
                 draft.data = { rows: [..._rows], total: _total }
@@ -1236,6 +975,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 draft["rowvalid"] = 1;
             });
         });
+        _updateData({ rows: [..._rows], ...(ref.current.data?.total) ? { total: ref.current.data.total } : {} }, null);
         updateState(draft => {
             draft.tstamp = Date.now();
             draft.data = { rows: [..._rows] };
@@ -1258,6 +998,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     _rows[index - 1] = _rows[index];
                     _rows[index] = temp;
                 }
+                _updateData({ rows: [..._rows], total: ref.current.data.total }, null);
                 updateState(draft => {
                     draft.tstamp = Date.now();
                     draft.data = { rows: [..._rows], total: draft.data.total }
@@ -1280,6 +1021,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                     _rows[index + 1] = _rows[index];
                     _rows[index] = temp;
                 }
+                _updateData({ rows: [..._rows], total: ref.current.data.total }, null);
                 updateState(draft => {
                     draft.tstamp = Date.now();
                     draft.data = { rows: [..._rows], total: draft.data.total }
@@ -1287,6 +1029,27 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
         }
         return _rows;
+    }
+
+
+    const updateRows = (row, conditions) => {
+
+        const updatedRows = state.data.rows.map(r => {
+            let match = true;
+            for (const key in conditions) {
+                if (conditions.hasOwnProperty(key) && r[key] !== conditions[key]) {
+                    match = false;
+                    break;
+                }
+            }
+            return match ? { ...r, ...row } : r;
+        });
+        _updateData({ rows: updateRows, total: ref.current.totalRows }, null);
+        updateState(draft => {
+            draft.tstamp = Date.now();
+            draft.data = { rows: updatedRows, total: ref.current.totalRows };
+            draft.totalRows = 0;
+        });
     }
 
     //Update just one column
@@ -1298,7 +1061,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 _obj[column] = value;
                 _obj["rowvalid"] = 0;
                 _rows[idx] = { ..._obj };
-                ref.current.updated = Date.now();
+                _updateData({ rows: [..._rows], total: ref.current.data.total }, null);
                 updateState(draft => {
                     draft.updated = ref.current.updated;
                     draft.data = { rows: [..._rows], total: ref.current.totalRows };
@@ -1320,7 +1083,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                 }
                 _obj["rowvalid"] = 0;
                 _rows[idx] = { ..._obj };
-                ref.current.updated = Date.now();
+                _updateData({ rows: [..._rows], total: ref.current.data.total }, null);
                 updateState(draft => {
                     draft.updated = ref.current.updated;
                     draft.data = { rows: [..._rows], total: ref.current.totalRows };
@@ -1331,7 +1094,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     }
 
     const clearData = () => {
-        ref.current.totalRows = 0;
+        _updateData({}, 0);
         updateState(draft => {
             draft.tstamp = Date.now();
             draft.data = {};
@@ -1341,39 +1104,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const getData = () => {
         return { ...state.data };
     }
-    // const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromSate = false } = {}) => {
-    //     console.log("FETCH POST-------")
-    //     let _url = (url) ? url : ref.current.url;
-    //     let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
-    //     const payload = getPayload(fromSate);
-    //     payload.tstamp = Date.now();
-    //     setIsLoading(true);
-    //     let ret = null;
-    //     //let ok = true;
-    //     if (id && useStorage) {
-    //         localStorage.setItem(`dapi-${id}`, JSON.stringify(payload));
-    //     }
-    //     try {
-    //         const dt = (await fetchPost({ url: _url, ...(_withCredentials !== null && { withCredentials: _withCredentials }), ...payload, ...((signal) ? { signal } : { cancelToken: token }) })).data;
-    //         if (typeof rowFn === "function") {
-    //             ret = await rowFn(dt);
-    //             setData(ret, payload);
-    //         } else if (typeof fnPostProcess === "function") {
-    //             ret = await fnPostProcess(dt);
-    //             setData(ret, payload);
-    //         } else {
-    //             ret = dt;
-    //             setData(ret, payload);
-    //         }
-    //     } catch (e) {
-    //         Modal.error({ content: e.message });
-    //         //ok = false;
-    //         ret = null;
-    //     }
-    //     setIsLoading(false);
-    //     return ret;
-    //     //return ok;
-    // }
     const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ignoreTotalRows = false, norun = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
@@ -1533,9 +1263,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         let _sort = getSort();
         _sort = (_sort && _sort.length > 0) ? _sort : _computeSort(getDefaultSort());
         api.applyColumnState({
-            state: _sort.map(v => includeObjectKeys(v, ["colId", "sort"])),
-            defaultState: { sort: null },
-            applyOrder: false
+            state: _sort.map(v => includeObjectKeys(v, ["colId", "sort"]))
+            //     defaultState: { sort: _sort.map(v => includeObjectKeys(v, ["colId", "sort"])) },
+            //     applyOrder: false
         });
     }
 
@@ -1546,6 +1276,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         return {
             getRows: async (params) => {
                 const { api } = gridRef?.current || params;
+
                 // if (!ref.current.dsV4StateInit) {
                 //     //load Grid State through dataAPI
                 //     // let _sort = getSort();
@@ -1581,7 +1312,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
                         console.log("SERVER-REQUEST-FAIL onGridRequest EVENT")
                     } else {
                         data = await _fetchPost();
-                        console.log("SERVER-REQUEST", ref, params.request.sortModel, data.total, data.rows.length)
+                        console.log("SERVER-REQUEST", ref, params.request.sortModel, data?.total, data?.rows?.length)
                     }
                     if (data !== null && data?.status !== "error") {
                         params.success({
@@ -1653,6 +1384,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         sortOrder,
         initLoaded,
         setPayload,
+        updateRows,
         nav,
         url,
         setAction,
@@ -1683,10 +1415,153 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         onGridResponse: (fn) => { ref.current.onGridResponse = fn; },
         onGridFailRequest: (fn) => { ref.current.onGridFailRequest = fn; },
         safePost,
-        validate,
-        validateRows,
+        //validate,
+        //validateRows,
         openNotification,
-        validationGroups: vGroups,
+        //validationGroups: vGroups,
         requestsCount: () => ref.current.requestsCount
     }
+}
+
+
+
+
+
+
+
+const _filterParser = (value, filter, opTag) => {
+    const _op = filter?.op ? filter.op.toLowerCase() : "any";
+    if (opTag !== "" && opTag !== "=" && opTag !== "!=" && !value.includes("%") && !value.includes("_")) {
+        return `${value}`;
+    }
+    if (value.includes("%") || value.includes("_")) {
+        return `${value}`;
+    }
+    switch (_op) {
+        case 'any': return `%${value.replaceAll(' ', '%%')}%`;
+        case 'start': return `${value}%`;
+        case 'end': return `%${value}`;
+        case 'exact': return `==${value}`;
+        default: return `${value}`;
+    }
+}
+const customSplit = (input) => {
+    let result = [];
+    let insideQuotes = false;
+    let currentChunk = '';
+    // Rule 0 - trim all spaces not inside '' and all new lines
+    //const _input = input.replace(/('[^']*')|\s+/g, (match, group1) => group1 || '');
+    const _input = input.replace(/'[^']*'|"[^"]*"|\s+/g, function (match) {
+        return match.startsWith("'") || match.startsWith('"') ? match : '';
+    });
+
+    for (let i = 0; i < _input.length; i++) {
+        const char = _input[i];
+
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+            currentChunk += char;
+        } else if (insideQuotes) {
+            currentChunk += char;
+        } else if (char === '&' || char === '|' || char === '(' || char === ')') {
+            if (currentChunk.trim() !== '') {
+                result.push(currentChunk.trim());
+            }
+            result.push(char);
+            currentChunk = '';
+        } else {
+            currentChunk += char;
+        }
+    }
+
+    if (currentChunk.trim() !== '') {
+        result.push(currentChunk.trim());
+    }
+
+    return result;
+}
+const prepareInput = (value, wildcards = true, tags = true) => {
+    let _v = value;
+    if (!tags) {
+        const matches = _v.trim().toString().match(filterRegExp);
+        _v = matches ? matches[2] : _v.trim().toString();
+        _v = _v.replaceAll(",", "&");
+        _v = _v.replaceAll(";", "|");
+    }
+    if (!wildcards) {
+        _v = _v.replaceAll("%", "").replaceAll("_", "");
+    }
+    return _v;
+}
+const fnValue = (value, fnvalue = null) => {
+    if (typeof fnvalue == "function") {
+        return fnvalue(value);
+    }
+    return value;
+}
+const _computeSort = (_s = []) => {
+    return _s.map(v => ({
+        ...v,
+        ...(v?.id) && {
+            column: v.id,
+            direction: (v?.dir === 1) ? "ASC" : "DESC",
+            sort: (v?.dir === 1) ? "asc" : "desc",
+            colId: v.id
+
+        },
+        ...(v?.column) && {
+            id: v.column,
+            dir: (v?.direction === "ASC") ? 1 : -1,
+            name: v.column,
+            sort: (v?.direction === "ASC") ? "asc" : "desc",
+            colId: v.column
+        },
+        ...(v?.colId) && {
+            id: v.colId,
+            dir: (v?.sort === "asc") ? 1 : -1,
+            column: v.colId,
+            name: v.colId,
+            direction: (v?.sort === "asc") ? "ASC" : "DESC"
+        }
+    }));
+}
+const _mergeObjects = (obj1, obj2) => {
+    const result = {};
+    if (!obj2) {
+        return obj1;
+    }
+    for (const key in obj1) {
+        if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
+            result[key] = {
+                ...obj1[key],
+                parsed: obj1[key].parsed.concat(["and", "(", ...obj2[key].parsed, ")"])
+            };
+        } else if (obj1.hasOwnProperty(key)) {
+            result[key] = obj1[key];
+        }
+    }
+
+    for (const key in obj2) {
+        if (obj2.hasOwnProperty(key) && !result.hasOwnProperty(key)) {
+            result[key] = obj2[key];
+        }
+    }
+
+    return result;
+}
+const _dataPost = (url, method, values, filter, parameters, schema) => {
+    //TODO info warning success
+    const obj = {
+        url, method, values, filter, parameters, schema,
+        alerts: { error: [], info: [], warning: [], success: [] },
+        success: null,
+        valid: true,
+        response: null,
+        timestamp: new Date(),
+        onValidationSuccess: async function (fn) { if (this.valid && typeof fn === "function") { fn(this); } },
+        onValidationFail: async function (fn) { if (!this.valid && typeof fn === "function") { fn(this); } },
+        onSuccess: async function (fn) { if ((this.valid && this.success) && typeof fn === "function") { fn(this); } },
+        onFail: async function (fn) { if (!this.success && typeof fn === "function") { fn(this); } }
+    };
+    return obj;
 }

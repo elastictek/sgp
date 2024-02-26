@@ -1,6 +1,26 @@
 import { isNil, isNotNil } from "ramda";
 import { z } from "zod";
 
+export const _fieldZodDescription = (schema, path) => {
+    const parts = Array.isArray(path) ? path : path.split('.');
+    let descriptions = "";
+    for (const part of parts) {
+        if (schema && !schema?.shape?.[part] && schema?._def?.schema) {
+            schema = schema._def.schema.shape[part];
+            if (schema?.description) {
+                descriptions = `${descriptions} ${schema?.description}`;
+            }
+        } else if (schema && schema?.shape) {
+            schema = schema.shape[part];
+            if (schema?.description) {
+                descriptions = `${descriptions} ${schema?.description}`;
+            }
+        } else {
+            return null;
+        }
+    }
+    return descriptions !== "" ? descriptions : parts.join(".");
+}
 
 export const zIntervalDate = (min, max) => z.coerce.date().min(min).max(max);
 export const zGroupIntervalDate = (init, end, { nullable = true, custom_error, description: { init: _init, end: _end } } = {}) =>

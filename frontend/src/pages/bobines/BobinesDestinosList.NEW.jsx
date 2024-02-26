@@ -29,6 +29,7 @@ import { is, isEmpty, isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import FormPrint from '../commons/FormPrint';
 import { RowsSelection } from './BobinesDefeitosList';
+import { setValidationGroups, validateRows } from 'utils/useValidation';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -317,7 +318,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -327,7 +328,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   }
 
   const onAddSave = useCallback(async (rows, allRows) => {
-    // const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    // const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     // await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     // return (await rv.onValidationSuccess(async (p) => {
@@ -341,7 +342,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   }, []);
 
   const onEditSave = useCallback(async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
+    const rv = await validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
     return (await rv.onValidationSuccess(async (p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
@@ -391,7 +392,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
     ]
   }, []);
 
-  const validationGroups = useMemo(() => (dataAPI.validationGroups({
+  const validationGroups = useMemo(() => (setValidationGroups({
     largura: ["l_real", "lar", "estado", "num_bobinagem"]
   })), []);
 
@@ -558,7 +559,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         onAfterCellEditRequest={onAfterCellEditRequest}
         rowClassRules={_rowClassRules}
 
-        onExitMode={onExitMode}
+        onExitMode
         rowSelectionIgnoreOnMode={true}
         rowSelection="multiple"
         onSelectionChanged={() => { }}

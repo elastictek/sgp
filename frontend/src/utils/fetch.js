@@ -97,6 +97,9 @@ export const fetchPostTest = async ({ url = "", filter = {}, sort = [], paginati
 export const fetchPost = async ({ url = "", norun = false, apiversion = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [], withCredentials } = {}) => {
   return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal, dates, withCredentials, norun, apiversion });
 }
+export const fetchPostV4 = async ({ url = "", norun = false, apiversion = "4", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [], withCredentials } = {}) => {
+  return await fetch({ url, method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal, dates, withCredentials, norun, apiversion });
+}
 
 export const fetchPostBlob = async ({ url = "", norun = false, apiversion = "", filter = {}, sort = [], pagination = {}, timeout = 10000, parameters = {}, cancelToken, signal, dates = [], withCredentials } = {}, f = true) => {
   return await fetch({ url, responseType: "blob", method: "post", filter, sort, pagination, timeout, parameters, cancelToken, signal, dates, withCredentials, norun, apiversion }, f);

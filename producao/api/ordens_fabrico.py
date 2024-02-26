@@ -3960,7 +3960,7 @@ def ArtigosClienteList(request, format=None):
     cols=f"""
         pac.*,
         pc.name cliente_nome,pc.liminf,pc.limsup,pc.cod cliente_cod,pc.abv cliente_abv,pc.diam_ref,
-        pa.cod artigo_cod,pa.des artigo_des,pa.gtin
+        pa.cod artigo_cod,pa.des artigo_des,pa.gtin,pa.lar
     """
     dql.columns=encloseColumn(cols,False)
     sql = lambda p, c, s: (

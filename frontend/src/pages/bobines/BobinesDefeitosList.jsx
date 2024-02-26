@@ -28,6 +28,7 @@ import { fetchPost } from 'utils/fetch';
 import { is, isEmpty, isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import FormPrint from '../commons/FormPrint';
+import { setValidationGroups, validateRows } from 'utils/useValidation';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -40,16 +41,17 @@ const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, t
   />}</>);
 }
 
-const postProcess = async (dt, { validate = false }) => {
+export const postProcess = async (dt, { validate = false }) => {
 
   for (let [i, v] of dt.rows.entries()) {
     let defeitos = [];
     for (let p of OPTIONS_OUTROSDEFEITOS) {
-      (v[p.value] === 1) && defeitos.push((!validate && p.value === "troca_nw") ? { ...p, disabled: true } : p);
+      (v[p.value] === 1) && defeitos.push(p);
     }
     dt.rows[i]["defeitos"] = defeitos;
     dt.rows[i]["estado_original"] = dt.rows[i]["estado"];
     dt.rows[i]["estado"] = dt.rows[i]["estado"];
+    dt.rows[i]["destinos"] = json(dt.rows[i]["destinos"]);
     dt.rows[i]["fc_pos"] = json(dt.rows[i]["fc_pos"]);
     dt.rows[i]["ff_pos"] = json(dt.rows[i]["ff_pos"]);
     dt.rows[i]["furos_pos"] = json(dt.rows[i]["furos_pos"]);
@@ -163,7 +165,7 @@ export const schemaFinal = z.object({
   return true;
 }, {});
 
-export const validationGroups = (dataAPI) => dataAPI.validationGroups({
+export const validationGroups = (dataAPI) => setValidationGroups({
   largura: ["l_real", "lar", "estado", "num_bobinagem"]
 });
 
@@ -201,6 +203,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   const { openNotification } = useContext(AppContext);
   const [lastTabs, setLastTabs] = useState({ palete: "1", bobinagem: "1" });
   const [inputParameters, setInputParameters] = useState();
+  const _inputParameters = useRef(loadInit({}, {}, { ...props?.parameters }, { ...location?.state }));
   const baseFilters = {
     //...parseFilter("ot.`type`", `==1`, { type: "number" })
   };
@@ -212,10 +215,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
       sortMap: { /* cod: "ot.parameters->>'$.artigo.cod'", des: "ot.parameters->>'$.artigo.des'", cliente: "ot.parameters->>'$.cliente.BPCNAM_0'", data_imputacao: "ot.parameters->>'$.data_imputacao'" */ }
     }
   });
-
-  useEffect(()=>{
-    console.log("???????????????????",permission.isReady,props?.permissions,permission.isOk({ action: "changeDefeitos" }));
-  },[permission?.isReady]);
 
   useEffect(() => {
     if (!isNil(inputParameters)) {
@@ -252,26 +251,26 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   }
   const onGridRequest = async () => {
     if (inputParameters?.tstamp !== props?.parameters?.tstamp) {
-      const _inputParameters = loadInit({}, {}, { ...props?.parameters }, { ...location?.state });
-      if (isNullOrEmpty(_inputParameters?.bobinagem?.id) && isNullOrEmpty(_inputParameters?.palete?.id)) {
+      _inputParameters.current = loadInit({}, {}, { ...props?.parameters }, { ...location?.state });
+      if (isNullOrEmpty(_inputParameters.current?.bobinagem?.id) && isNullOrEmpty(_inputParameters.current?.palete?.id)) {
         return false; //when return false it cancels the request!
       }
       dataAPI.setBaseFilters({
-        ..._inputParameters?.bobinagem?.id && {
-          ...parseFilter("pbm.id", `==${_inputParameters?.bobinagem?.id}`, { type: "number" }),
+        ..._inputParameters.current?.bobinagem?.id && {
+          ...parseFilter("pbm.id", `==${_inputParameters.current?.bobinagem?.id}`, { type: "number" }),
         },
-        ..._inputParameters?.palete?.id && {
-          ...parseFilter("sgppl.id", `==${_inputParameters?.palete?.id}`, { type: "number" }),
+        ..._inputParameters.current?.palete?.id && {
+          ...parseFilter("sgppl.id", `==${_inputParameters.current?.palete?.id}`, { type: "number" }),
           ...parseFilter("mb.comp_actual", `>0`, { type: "number" }),
           ...parseFilter("mb.recycle", `==0`, { type: "number" })
         }
       });
       setInputParameters({
-        ..._inputParameters,
-        bobinagem_id: _inputParameters?.bobinagem?.id,
-        bobinagem_nome: _inputParameters?.bobinagem?.nome,
-        palete_id: _inputParameters?.palete?.id,
-        palete_nome: _inputParameters?.palete?.nome
+        ..._inputParameters.current,
+        bobinagem_id: _inputParameters.current?.bobinagem?.id,
+        bobinagem_nome: _inputParameters.current?.bobinagem?.nome,
+        palete_id: _inputParameters.current?.palete?.id,
+        palete_nome: _inputParameters.current?.palete?.nome
       });
     }
 
@@ -298,7 +297,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     const transactions = [];
     const addTransaction = (values) => {
       const r = {};
-      const keysSet = new Set(values.defeitos.map(obj => obj.key));
+      const keysSet = new Set(values.defeitos.map(obj => obj.value));
       OPTIONS_OUTROSDEFEITOS.forEach(obj => {
         r[obj.value] = (keysSet.has(obj.value)) ? 1 : 0;
       });
@@ -314,10 +313,8 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         },
         rowvalid: 0
       };
-      console.log("add-transaction--#######################", _data)
       transactions.push(_data);
     }
-
     if (multi) {
       const selectedNodes = getSelectedNodes(event.api);
       if (isEmpty(selectedNodes)) {
@@ -367,9 +364,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
             }
           });
         } else {
-          console.log("sel-nodes-x-#######################", selectedNodes)
           event.api.forEachNode(n => {
-            console.log(n.data, canChangeRow(n.data))
             let tx = true;
             if (cancelTxs == false && !canChangeRow(n.data)) {
               tx = false;
@@ -404,7 +399,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups: _validationGroups });
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups: _validationGroups });
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -418,7 +413,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   }
 
   const onAddSave = async (rows, allRows) => {
-    // const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    // const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     // await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     // return (await rv.onValidationSuccess(async (p) => {
@@ -432,7 +427,8 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   };
 
   const onEditSave = async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups: _validationGroups });
+
+    const rv = await validateRows(rows, schemaFinal, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups: _validationGroups });
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
     return (await rv.onValidationSuccess(async (p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
@@ -440,18 +436,19 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
       const result = await dataAPI.safePost(`${API_URL}/bobines/sql/`, "UpdateDefeitosV2", {
         parameters: {
           rows: rows.map(v => {
-            return { ...includeObjectKeys(v, [...keys, "id", "prop_obs", "obs", "l_real", "ff_pos", "fc_pos", "buracos_pos", "furos_pos", "rugas_pos", "ff_m_ini", "fc_diam_ini", "ff_m_fim", "fc_diam_fim"]) };
+            return { ...includeObjectKeys(v, [...keys, "id", "estado", "prop_obs", "obs", "l_real", "ff_pos", "fc_pos", "buracos_pos", "furos_pos", "rugas_pos", "ff_m_ini", "fc_diam_ini", "ff_m_fim", "fc_diam_fim"]) };
           })
         }
       });
       result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
       result.onFail((p) => { });
-      setFormStatus(result);
+      //setFormStatus(result);
       return result.success;
     }));
   };
 
   const onExitMode = () => {
+    setValidation({});
     gridRef.current.api.deselectAll();
   };
 
@@ -549,33 +546,27 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   }
 
   const columnDefs = useMemo(() => {
-    if (inputParameters?.tstamp) {
-      return {
-        cols: [
-          { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', lockPosition: "left", ...cellParams(), width: 165, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
-          ...!inputParameters.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
-          ...inputParameters.palete?.id ? [{ colId: "mb.posicao_palete", field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 90, cellRenderer: (params) => <Value params={params} /> }] : [],
-          { colId: 'mb.estado', field: 'estado', headerName: 'Estado', type: "editableColumn", cellEditor: AntdSelectEditor, width: 90, ...cellParams({ multi: true }, { options: BOBINE_ESTADOS }), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
-          { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', width: 90, ...cellParams(), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-          { colId: 'mb.l_real', field: 'l_real', headerName: 'Lar. Real', width: 90, ...cellParams(null, {}), type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-          { colId: 'pbm.comp', field: 'comp_original', headerName: 'Comp. Original', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
-          { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
-          { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 90, ...cellParams({ unit: "mm", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-
-          { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
-          { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-          { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, { options: OPTIONS_OUTROSDEFEITOS.map(v => !props?.validate && v.value == "troca_nw" ? { ...v, disabled: true } : v), labelInValue: true }), type: "editableColumn", cellEditor: AntdMultiSelectEditor, cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
-          { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
-          { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, width: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
-        ], timestamp: new Date()
-      };
-    }
     return {
-      cols: [],
-      timestamp: new Date()
-    }
+      cols: [
+        { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', lockPosition: "left", ...cellParams(), width: 165, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
+        ...!_inputParameters.current?.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
+        ..._inputParameters.current?.palete?.id ? [{ colId: "mb.posicao_palete", field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 90, cellRenderer: (params) => <Value params={params} /> }] : [],
+        { colId: 'mb.estado', field: 'estado', headerName: 'Estado', type: "editableColumn", cellEditor: AntdSelectEditor, width: 90, ...cellParams({ multi: true }, { options: BOBINE_ESTADOS }), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
+        { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', width: 90, ...cellParams(), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+        { colId: 'mb.l_real', field: 'l_real', headerName: 'Lar. Real', width: 90, ...cellParams(null, {}), type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+        { colId: 'pbm.comp', field: 'comp_original', headerName: 'C. Original', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
+        { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
+        { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 90, ...cellParams({ unit: "mm", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+
+        { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
+        { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { field: 'defeitos', headerName: 'Outros defeitos', sortable: false, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, { options: OPTIONS_OUTROSDEFEITOS.map(v => !props?.validate && v.value == "troca_nw" ? { ...v, disabled: true } : v), labelInValue: true }), type: "editableColumn", cellEditor: AntdMultiSelectEditor, cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
+        { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
+        { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, width: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
+      ], timestamp: new Date()
+    };
   }, [validation, modeApi?.isOnMode(), inputParameters?.tstamp]);
 
   const filters = useMemo(() => ({
@@ -623,12 +614,13 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         gridRef={gridRef}
         onGridReady={onGridReady}
         columnDefs={columnDefs}
-        defaultSort={inputParameters?.bobinagem?.id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
+        defaultSort={_inputParameters.current?.bobinagem?.id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
         filters={filters}
         permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
-        //singleClickEdit={true}
+        singleClickEdit={true}
+        enterNavigatesVerticallyAfterEdit={true}
         //suppressClickEdit={true}
         topToolbar={{
           start: <Space>
@@ -652,7 +644,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
           onEditSave,
           onAdd: null,
           onModeChange: null,
-          onExitMode: { onExitMode },
+          onExitMode,
           onExitModeRefresh: true,
           onAddSaveExit: true,
           onEditSaveExit: false

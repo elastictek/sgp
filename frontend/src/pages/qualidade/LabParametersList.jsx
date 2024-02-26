@@ -25,6 +25,7 @@ import { AppContext } from 'app';
 import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber, zRangeNumber } from 'utils/schemaZodRules';
 import { fetchPost } from 'utils/fetch';
 import LabLoadParameters from './LabLoadParameters';
+import { setValidationGroups, validateRows } from 'utils/useValidation';
 
 const title = "Parâmetros";
 const subTitle = null;
@@ -96,6 +97,10 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   const onGridResponse = async (api) => {
     if (dataAPI.requestsCount() === 1) { }
   };
+  const onExitMode = () => {
+    setValidation({});
+    gridRef.current.api.deselectAll();
+  };
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
     /**
@@ -114,7 +119,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await dataAPI.validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -124,7 +129,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }
 
   const onAddSave = async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     return (await rv.onValidationSuccess(async (p) => {
@@ -138,7 +143,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   };
 
   const onEditSave = async (rows, allRows) => {
-    const rv = await dataAPI.validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
     rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
 
     return (await rv.onValidationSuccess(async (p) => {
@@ -182,7 +187,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     ]
   }, []);
 
-  const validationGroups = useMemo(() => (dataAPI.validationGroups({
+  const validationGroups = useMemo(() => (setValidationGroups({
     lvalues: ["min_value", "max_value"]
   })), []);
 
@@ -264,7 +269,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
           onEditSave,
           onAdd: null,
           onModeChange: null,
-          onExitMode: {},
+          onExitMode,
           onExitModeRefresh: true,
           onAddSaveExit: true,
           onEditSaveExit: false

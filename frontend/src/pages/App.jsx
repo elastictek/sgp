@@ -97,6 +97,7 @@ const PaletizacoesList = lazy(() => import('./paletizacoes/PaletizacoesList'));
 
 const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
 const FormNewPaleteLine = lazy(() => import('./paletes/FormNewPaleteLine'));
+const FormPaletizacao = lazy(() => import('./paletes/paletizacao/FormPaletizacao'));
 const LinkExpired = lazy(() => import('./linkExpired'));
 
 
@@ -253,6 +254,7 @@ const RenderRouter = () => {
                 { path: "paletes/formpalete", element: <Suspense fallback={<Spin />}><Palete /></Suspense> },
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
                 { path: "paletes/formnewpaleteline", element: <Suspense fallback={<Spin />}><FormNewPaleteLine /></Suspense> },
+                { path: "paletes/formpaletizacao", element: <Suspense fallback={<Spin />}><FormPaletizacao /></Suspense> },
 
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
                 { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },

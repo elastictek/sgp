@@ -99,6 +99,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
         return {
             //editable: (params) => modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()), //params.data.year == 2012,
             filter: false,
+            sortable:true,
             sortable: modeApi.isOnMode() ? false : true,
             suppressMenu: modeApi.isOnMode() ? true : false,
             valueGetter: (params) => {
