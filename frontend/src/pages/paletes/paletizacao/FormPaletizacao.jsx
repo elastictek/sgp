@@ -6,7 +6,7 @@ import { dayjsValue, getValue, isNullOrEmpty, useSubmitting, updateArrayWhere, d
 import { CheckSquareOutlined, DeleteFilled, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { columnPath, getAllNodes, getCellFocus, getNodes, getSelectedNodes } from 'components/TableV4/TableV4';
 import { useDataAPI, _fieldZodDescription, parseFilter } from 'utils/useDataAPIV4';
-import { API_URL, DATETIME_FORMAT, BOBINE_ESTADOS } from 'config';
+import { API_URL,ROOT_URL, DATETIME_FORMAT, BOBINE_ESTADOS } from 'config';
 import { Action, Bool, EstadoBobine, MultiLine, PRIORIDADES_DESTINOS, Options, Value, useDestinosStyles } from 'components/TableV4/TableColumnsV4';
 import { fetchPostV4 } from 'utils/fetch';
 import { sortBy, prop, is, isEmpty, isNil, isNotNil } from 'ramda';
@@ -30,6 +30,22 @@ import loadInitV3 from 'utils/loadInitV3';
 import { usePermission } from 'utils/usePermission';
 import ToolbarTitleV3 from 'components/ToolbarTitleV3';
 import { styled } from 'styled-components';
+
+const imgGroup01= `${ROOT_URL}/static/img/group01.png`;
+const imgGroup02= `${ROOT_URL}/static/img/group02.png`;
+const imgGroup03= `${ROOT_URL}/static/img/group03.png`;
+const imgGroup04= `${ROOT_URL}/static/img/group04.png`;
+const imgGroup05= `${ROOT_URL}/static/img/group05.png`;
+const imgGroup06= `${ROOT_URL}/static/img/group06.png`;
+
+const imgItem01= `${ROOT_URL}/static/img/item01.png`;
+const imgItem02= `${ROOT_URL}/static/img/item02.png`;
+const imgItem03= `${ROOT_URL}/static/img/item03.png`;
+const imgItem04= `${ROOT_URL}/static/img/item04.png`;
+const imgItem05= `${ROOT_URL}/static/img/item05.png`;
+const imgItem06= `${ROOT_URL}/static/img/item06.png`;
+const imgItem07= `${ROOT_URL}/static/img/item07.png`;
+
 const gutterWidth = 5;
 
 const title = "Esquema de Embalamento";
@@ -48,8 +64,8 @@ export const validationGroups = (dataAPI) => setValidationGroups({});
 
 
 const StyledButton = styled(Button)`
-    height:90px;
-    width:120px;
+    height:80px !important;
+    width:100px !important;
     .txt{
         height:20px;
         line-height:1;
@@ -60,13 +76,20 @@ const StyledButton = styled(Button)`
 const ToolbarItems = ({ onClick }) => {
     return (
         <Space>
-            <StyledButton onClick={()=>onClick(1)}><div className='txt'>Palete</div></StyledButton>
-            <StyledButton onClick={()=>onClick(2)}><div className='txt'>Bobines</div></StyledButton>
-            <StyledButton onClick={()=>onClick(3)}><div className='txt'>Placa de Cartão</div></StyledButton>
-            <StyledButton onClick={()=>onClick(4)}><div className='txt'>Placa MDF</div></StyledButton>
-            <StyledButton onClick={()=>onClick(5)}><div className='txt'>PLaca Plástico</div></StyledButton>
-            <StyledButton onClick={()=>onClick(6)}><div className='txt'>Cantoneira</div></StyledButton>
-            <StyledButton onClick={()=>onClick(7)}><div className='txt'>Cut Here!</div></StyledButton>
+            <StyledButton onClick={()=>onClick("g01")} icon={<img src={imgGroup01} alt="Icon" />}/>
+            <StyledButton onClick={()=>onClick("g02")} icon={<img src={imgGroup02} alt="Icon" />}/>
+            <StyledButton onClick={()=>onClick("g05")} icon={<img src={imgGroup05} alt="Icon" />}/>
+            <StyledButton onClick={()=>onClick("g03")} icon={<img src={imgGroup03} alt="Icon" />}/>
+            <StyledButton onClick={()=>onClick("g04")} icon={<img src={imgGroup04} alt="Icon" />}/>
+            <StyledButton onClick={()=>onClick("g06")} icon={<img src={imgGroup06} alt="Icon" />}/>
+
+            <StyledButton onClick={()=>onClick(1)}><img src={imgItem01} alt="Icon" /><div className='txt'>Palete</div></StyledButton>
+            <StyledButton onClick={()=>onClick(2)}><img src={imgItem02} alt="Icon" /><div className='txt'>Bobines</div></StyledButton>
+            <StyledButton onClick={()=>onClick(3)}><img src={imgItem03} alt="Icon" /><div className='txt'>Placa de Cartão</div></StyledButton>
+            <StyledButton onClick={()=>onClick(4)}><img src={imgItem04} alt="Icon" /><div className='txt'>Placa MDF</div></StyledButton>
+            <StyledButton onClick={()=>onClick(5)}><img src={imgItem05} alt="Icon" /><div className='txt'>Placa de Plástico</div></StyledButton>
+            <StyledButton onClick={()=>onClick(6)}><img src={imgItem06} alt="Icon" /><div className='txt'>Cantoneira</div></StyledButton>
+            <StyledButton onClick={()=>onClick(7)}><img src={imgItem07} alt="Icon" /><div className='txt'>Cut Here!</div></StyledButton>
         </Space>
     );
 }

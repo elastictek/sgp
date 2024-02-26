@@ -503,6 +503,24 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     modalApi.showModal();
   }
 
+  const onDefeitosRangeClick = ({ column, data }, minValue, maxValue, extraFields = {}) => {
+    const _value = data[column.getDefinition().field];
+    const { unit } = column.getDefinition()?.cellRendererParams || {};
+    if (_value && _value.length > 0) {
+      modalApi.setModalParameters({
+        content: <ModalMultiRangeView unit={unit} minValue={minValue} maxValue={maxValue} value={_value} extraFields={extraFields} />,
+        closable: true,
+        title: column.getDefinition().headerName,
+        lazy: true,
+        type: "modal",
+        responsive: true,
+        width: "500px",
+        parameters: { ...getCellFocus(gridRef.current.api) }
+      });
+      modalApi.showModal();
+    }
+  }
+
   const columnDefs = useMemo(() => {
     return {
       cols: [
@@ -611,7 +629,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         modeOptions={{
           enabled: true,
           ...props?.validate && { showControls: false, mode: modeApi.EDIT },
-          allowEdit: permission.isOk({ action: "changeDefeitos" }) || props?.validate,
+          allowEdit: permission.isOk({ action: "changeDestino" }),
           allowAdd: false,
           newRow: () => ({ [dataAPI.getPrimaryKey()]: uid(6) }),
           newRowIndex: null,
