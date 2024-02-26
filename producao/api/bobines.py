@@ -164,7 +164,7 @@ def UpdateDefeitosV2(request, format=None):
             select count(*) cnt
             from producao_bobine pb
             left join producao_palete pp on pp.id=pb.palete_id 
-            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or pp.nome like 'P%%')        
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or ((pp.nome like 'P%%' or pp.nome like 'R%%') and pb.estado<>'LAB'))        
         """), cursor, {})
         return response["rows"][0]["cnt"]
 
@@ -671,7 +671,7 @@ def BobinesDestinosHint(request, format=None):
         dql.paging=""
         return export(sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)
+        response = db.executeList(sql, connection, parameters,[],None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)        
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

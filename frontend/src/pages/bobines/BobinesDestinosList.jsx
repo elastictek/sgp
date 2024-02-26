@@ -36,8 +36,8 @@ const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' &
 
 const title = "Bobines Destinos";
 const subTitle = null;
-const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, title, subTitle }) => {
-  return (<>{visible && <ToolbarTitle disabled={loading} id={auth?.user} description={title}
+const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, title, subTitle, confirm }) => {
+  return (<>{visible && <ToolbarTitle confirm={confirm} disabled={loading} id={auth?.user} description={title}
     leftTitle={<span style={{}}>{title}</span>}
     {...subTitle && { leftSubTitle: <span style={{}}>{subTitle}</span> }}
   />}</>);
@@ -218,7 +218,7 @@ const DetailRenderer = ({ data }) => {
 
 };
 
-export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
+export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, setConfirm, confirm = false, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();
@@ -276,6 +276,12 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     }
   }, [props?.parameters?.validateTstamp]);
 
+  useEffect(() => {
+    if (setConfirm && typeof setConfirm == "function") {
+      setConfirm(modeApi.isDirty() && modeApi.isOnMode());
+    }
+
+  }, [modeApi.isDirty(),modeApi.isOnMode()]);
 
   const onGridReady = async ({ api, ...params }) => {
   }
@@ -580,15 +586,19 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     };
   }, []);
 
-  const onToggleExpand = (t=1) => {
+  const onToggleExpand = (t = 1) => {
     gridRef.current.api.forEachNode(n => {
-      n.setExpanded(t==1 ? true : false);
+      n.setExpanded(t == 1 ? true : false);
     });
   }
 
+  const confirmExit = useMemo(() => {
+    return modeApi.isDirty() && modeApi.isOnMode();
+  }, [modeApi.isDirty(), modeApi.isOnMode()]);
+
   return (
     <>
-      <TitleForm visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
+      <TitleForm confirm={confirmExit} visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         // domLayout={'autoHeight'}
         style={{ height: "65vh" }}
@@ -616,7 +626,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         //suppressClickEdit={true}
         topToolbar={{
           start: <Space>
-            <Dropdown.Button onClick={()=>onToggleExpand(1)} icon={<MoreOutlined />} menu={{ items:[{ key: '1', label: 'Recolher Destinos'}], onClick: ()=>onToggleExpand(0) }}>Expandir Destinos</Dropdown.Button>
+            <Dropdown.Button onClick={() => onToggleExpand(1)} icon={<MoreOutlined />} menu={{ items: [{ key: '1', label: 'Recolher Destinos' }], onClick: () => onToggleExpand(0) }}>Expandir Destinos</Dropdown.Button>
             {(modeApi.isOnMode() && dataAPI.hasData()) && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
             {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
           left: <></>

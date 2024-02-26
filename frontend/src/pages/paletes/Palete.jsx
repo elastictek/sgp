@@ -47,15 +47,29 @@ import { FaWeightHanging } from 'react-icons/fa';
 export const Context = React.createContext({});
 
 const title = "Palete";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting, sort }) => {
+const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting, sort, confirm, setConfirm }) => {
     const reverseDirection = (sort && sort.length > 0 && sort[0].direction == "DESC") ? true : false;
-    return (<ToolbarTitle id={auth?.user} description={`${title} ${paleteNome}`}
+
+    const _loadData = (v) => {
+        if (confirm) {
+            Modal.confirm({
+                content: <div>Tem a certeza que deseja sair <span style={{ fontWeight: 700, color: "#d46b08" }}>sem guardar as alterações?</span> </div>, onOk: async () => {
+                    setConfirm(false);
+                    loadData(v);
+                }
+            })
+        } else {
+            loadData(v);
+        }
+    }
+
+    return (<ToolbarTitle confirm={confirm} setConfirm={setConfirm} id={auth?.user} description={`${title} ${paleteNome}`}
         leftTitle={<span style={{}}>{`${title} ${paleteNome}`}</span>}
         actions={
             <Space.Compact style={{ marginLeft: "5px" }}>
                 {(loadData && nav) && <>
-                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretLeftFilled />} onClick={() => loadData({ navDirection: reverseDirection ? 1 : -1 })} />
-                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretRightFilled />} onClick={() => loadData({ navDirection: reverseDirection ? -1 : 1 })} />
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretLeftFilled />} onClick={() => _loadData({ navDirection: reverseDirection ? 1 : -1 })} />
+                    <Button disabled={submitting.state} style={{ background: "#d9d9d9", border: "0px" }} icon={<CaretRightFilled />} onClick={() => _loadData({ navDirection: reverseDirection ? -1 : 1 })} />
                 </>
                 }
             </Space.Compact>
@@ -69,7 +83,7 @@ export const LeftToolbar = ({ form, dataAPI, permission }) => {
     </>);
 }
 
-export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc,loadParentData, ...props }) => {
+export const RightToolbar = ({ form, dataAPI, permission, edit, parameters, misc, loadParentData, ...props }) => {
     const onAction = () => {
         changeOf({ loadParentData, openNotification: misc?.openNotification, row: { id: parameters?.palete?.id, nome: parameters?.palete?.nome }, showModal: misc?.showModal, setModalParameters: misc?.setModalParameters, item: { key: "changeof" } });
     }
@@ -91,12 +105,12 @@ export const BtnEtiquetasBobines = () => {
 }
 
 
-const onChangeOf = async ({ data, closeSelf, palete_id, openNotification,loadParentData }) => {
+const onChangeOf = async ({ data, closeSelf, palete_id, openNotification, loadParentData }) => {
     let response = null;
     try {
         response = await fetchPost({ url: `${API_URL}/paletes/sql/`, filter: { palete_id }, parameters: { method: "changePaleteOrdemFabrico", ordem_id: data?.id } });
         if (response && response.data.status !== "error") {
-            if (loadParentData){
+            if (loadParentData) {
                 loadParentData();
             }
             closeSelf();
@@ -110,7 +124,7 @@ const onChangeOf = async ({ data, closeSelf, palete_id, openNotification,loadPar
     };
 }
 
-export const changeOf = ({ setModalParameters, showModal, openNotification,loadParentData, item, row }) => {
+export const changeOf = ({ setModalParameters, showModal, openNotification, loadParentData, item, row }) => {
     setModalParameters({
         content: item.key, responsive: true, type: "drawer", title: `Ordens de Fabrico Compatíveis [Palete ${row?.nome}]`, push: false, loadData: () => { }, parameters: {
             payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "GetPaleteCompatibleOrdensFabricoOpen" }, pagination: { enabled: false, limit: 50 }, filter: { palete_id: row.id }, sort: [] } },
@@ -126,7 +140,7 @@ export const changeOf = ({ setModalParameters, showModal, openNotification,loadP
                 { name: 'item_numbobines', header: 'Bobines', defaultWidth: 100 }
 
             ],
-            onSelect: ({ rowProps, closeSelf }) => onChangeOf({ data: rowProps?.data, closeSelf, palete_id: row.id, openNotification,loadParentData })
+            onSelect: ({ rowProps, closeSelf }) => onChangeOf({ data: rowProps?.data, closeSelf, palete_id: row.id, openNotification, loadParentData })
         },
 
     });
@@ -184,6 +198,7 @@ export default (props) => {
     const [editKey, setEditKey] = useState(null);
     const [formDirty, setFormDirty] = useState(false);
     const [modalParameters, setModalParameters] = useState({});
+    const [confirm, setConfirm] = useState(false);
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
@@ -322,55 +337,55 @@ export default (props) => {
     return (
         // <Context.Provider value={{ parameters: props?.parameters, permission, allowEdit, modeEdit, setAllowEdit, setModeEdit }}>
         <>
-            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm submitting={submitting} auth={permission.auth} sort={dataAPI.getSort()} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
+            {(!props?.setFormTitle && dataAPI.hasData()) && <TitleForm confirm={confirm} setConfirm={setConfirm} submitting={submitting} auth={permission.auth} sort={dataAPI.getSort()} paleteNome={dataAPI.getData().rows[0]?.nome} loadData={loadData} nav={inputParameters.current?.dataAPI ? true : false} />}
             <div /* style={{ height: "calc(100vh - 130px)" }} */ style={{ height: "100%" }}>
-{/*                 <YScroll> */}
-                    {dataAPI.hasData() &&
-                        <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
-                            items={[
-                                {
-                                    label: `Informação`,
-                                    key: '1',
-                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPalete {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions, misc: { setModalParameters, showModal, openNotification } }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
-                                },
-                                {
-                                    label: `Embalamento`,
-                                    key: '2',
-                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPaletizacao {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
-                                },
-                                {
-                                    label: `Bobines`,
-                                    key: '3',
-                                    children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
-                                }, {
-                                    label: `Bobines Defeitos`,
-                                    key: '4',
-                                    children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDefeitosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
-                                },
-                                {
-                                    label: `Bobines Destinos`,
-                                    key: '5',
-                                    children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDestinosList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
-                                },
-                                {
-                                    label: `MP Granulado (Lotes)`,
-                                    key: '6',
-                                    children: <BobinesMPGranuladoList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
-                                }, {
-                                    label: `Bobines Originais`,
-                                    key: '7',
-                                    children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
-                                },
-                                {
-                                    label: `Histórico`,
-                                    key: '8',
-                                    children: <PaletesHistoryList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
-                                },
-                            ]}
+                {/*                 <YScroll> */}
+                {dataAPI.hasData() &&
+                    <Tabs type="card" dark={1} defaultActiveKey="1" activeKey={activeTab} onChange={onTabChange}
+                        items={[
+                            {
+                                label: `Informação`,
+                                key: '1',
+                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPalete {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions, misc: { setModalParameters, showModal, openNotification } }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
+                            },
+                            {
+                                label: `Embalamento`,
+                                key: '2',
+                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><FormPaletizacao {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} editParameters={{ editKey, onEdit, onEndEdit, onCancelEdit, formDirty }} /></YScroll></div>,
+                            },
+                            {
+                                label: `Bobines`,
+                                key: '3',
+                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                            }, {
+                                label: `Bobines Defeitos`,
+                                key: '4',
+                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDefeitosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
+                            },
+                            {
+                                label: `Bobines Destinos`,
+                                key: '5',
+                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDestinosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
+                            },
+                            {
+                                label: `MP Granulado (Lotes)`,
+                                key: '6',
+                                children: <BobinesMPGranuladoList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
+                            }, {
+                                label: `Bobines Originais`,
+                                key: '7',
+                                children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                            },
+                            {
+                                label: `Histórico`,
+                                key: '8',
+                                children: <PaletesHistoryList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, permissions: permission.permissions }} />,
+                            },
+                        ]}
 
-                        />}
-                    {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
-{/*                 </YScroll> */}
+                    />}
+                {(!dataAPI.hasData() && !submitting.state) && <Empty description="A Palete não foi encontrada!" />}
+                {/*                 </YScroll> */}
             </div>
         </>
     )

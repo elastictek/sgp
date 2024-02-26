@@ -59,7 +59,7 @@ export const saveNavigation = (description, id, location) => {
     }
 }
 
-export const SimpleDropdownHistory = ({ disabled = false, fixedTopItems, fixedFooterItems, right, center, details, description, id }) => {
+export const SimpleDropdownHistory = ({ disabled = false, fixedTopItems, fixedFooterItems, right, center, details, description, id, confirm }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -77,6 +77,7 @@ export const SimpleDropdownHistory = ({ disabled = false, fixedTopItems, fixedFo
 
 
     const onShowDrawer = () => {
+
         setDrawerVisible(true);
     };
 
@@ -203,7 +204,7 @@ export const SimpleDropdownHistory = ({ disabled = false, fixedTopItems, fixedFo
     );
 }
 
-export default ({ title, disabled = false, leftTitle, leftSubTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true }) => {
+export default ({ title, disabled = false, leftTitle, leftSubTitle, right, rightHeader, details, description, id, actions, showHistory = true, save = true, logInInfo = true, confirm = false, setConfirm }) => {
     const navigate = useNavigate();
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [history, setHistory] = useState([]);
@@ -225,11 +226,23 @@ export default ({ title, disabled = false, leftTitle, leftSubTitle, right, right
         /* return () => {
           document.title = 'Original Page Title';
         }; */
-    }, []);
+    }, [confirm]);
 
+    const onShowDrawer = async () => {
+        const _fn = () => {
+            setDrawerVisible(true);
+        }
+        if (confirm) {
+            Modal.confirm({
+                content: <div>Tem a certeza que deseja sair <span style={{ fontWeight: 700, color: "#d46b08" }}>sem guardar as alterações?</span> </div>, onOk: async () => {
+                    setConfirm(false);
+                    await _fn();
+                }
+            })
+        } else {
+            await _fn();
+        }
 
-    const onShowDrawer = () => {
-        setDrawerVisible(true);
     };
 
     const onCloseDrawer = () => {
@@ -240,45 +253,59 @@ export default ({ title, disabled = false, leftTitle, leftSubTitle, right, right
         if (action == "mainmenu") {
             onShowDrawer();
         }
-        else if (action !== "back" && action !== "logout") {
-            let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
-            path = path.startsWith("#") ? path.slice(1) : path;
-            let _old = history.find(v => v.key === path);
-            let _h = history.filter(v => v.key !== path);
-            _h.push({ state: _old?.state, label: url?.label, key: path });
-            setHistory(_h);
-            saveToLS(_h, id);
+        else {
+            const _fn = async () => {
+                if (action !== "back" && action !== "logout") {
+                    let path = url.key.endsWith("/") ? url.key : `${url.key}/`;
+                    path = path.startsWith("#") ? path.slice(1) : path;
+                    let _old = history.find(v => v.key === path);
+                    let _h = history.filter(v => v.key !== path);
+                    _h.push({ state: _old?.state, label: url?.label, key: path });
+                    setHistory(_h);
+                    saveToLS(_h, id);
 
-            if (url?.state && url?.state?.newWindow) {
-                newWindow(path, { ..._old?.state }, url?.state?.newWindow);
-            } else {
-                navigate(path, { replace: true, state: _old?.state });
-            }
-        } else if (action == "back") {
-            const _h = [...history];
-            _h.pop();
-            const _t = _h[_h.length - 1];
-            if (!_t?.key) {
-                return;
-            }
-            setHistory(_h);
-            saveToLS(_h, id);
-            navigate(_t.key, { replace: true, state: _t?.state });
-        } else if (action == "logout") {
-            try {
-                let response = await fetchPost({ url: LOGOUT_URL, parameters: {} });
-                if (response.status === 200) {
-                    window.location.href = LOGIN_URL;
+                    if (url?.state && url?.state?.newWindow) {
+                        newWindow(path, { ..._old?.state }, url?.state?.newWindow);
+                    } else {
+                        navigate(path, { replace: true, state: _old?.state });
+                    }
+                } else if (action == "back") {
+                    const _h = [...history];
+                    _h.pop();
+                    const _t = _h[_h.length - 1];
+                    if (!_t?.key) {
+                        return;
+                    }
+                    setHistory(_h);
+                    saveToLS(_h, id);
+                    navigate(_t.key, { replace: true, state: _t?.state });
+                } else if (action == "logout") {
+                    try {
+                        let response = await fetchPost({ url: LOGOUT_URL, parameters: {} });
+                        if (response.status === 200) {
+                            window.location.href = LOGIN_URL;
+                        }
+                    } catch (e) {
+                        Modal.error({
+                            centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Logout', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
+                                <YScroll>
+                                    {e.message}
+                                </YScroll>
+                            </div></div>
+                        });
+                    };
                 }
-            } catch (e) {
-                Modal.error({
-                    centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro de Logout', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}>
-                        <YScroll>
-                            {e.message}
-                        </YScroll>
-                    </div></div>
-                });
-            };
+            }
+            if (confirm) {
+                Modal.confirm({
+                    content: <div>Tem a certeza que deseja sair <span style={{ fontWeight: 700, color: "#d46b08" }}>sem guardar as alterações?</span> </div>, onOk: async () => {
+                        setConfirm(false);
+                        await _fn();
+                    }
+                })
+            } else {
+                await _fn();
+            }
         }
     }
 

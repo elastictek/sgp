@@ -667,7 +667,6 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
             dataAPIBobines.setRows(selectedNodes);
         }
         form.setFieldsValue({ ...value, largura: _minLargura, estado: noValue(value?.estado, { value: data.estado }), regranular: noValue(value?.regranular, 0), obs: data?.obs, prop_obs: data?.prop_obs, troca_etiqueta: data?.troca_etiqueta });
-        console.log("---------xxxxx---------", { ...value, largura: _minLargura, estado: noValue(value?.estado, { value: data.estado }), regranular: noValue(value?.regranular, 0), obs: data?.obs, prop_obs: data?.prop_obs, troca_etiqueta: data?.troca_etiqueta })
         submitting.end();
     }, []);
 
@@ -740,7 +739,7 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
             });
             _destinos_has_obs = (_destinos_has_obs === 0 && _obs_prioridades?.some(v => !isNullOrEmpty(v?.value))) ? 1 : _destinos_has_obs;
             _destinoTxt = `${_destinoTxt} ${BOBINE_ESTADOS.find(v => v.value === estado.value).label} ${regranular == 1 ? "REGRANULAR" : ""}`.trim();
-            const _values = { destino: _destinoTxt, destinos_has_obs: _destinos_has_obs, destinos: { estado, regranular, obs_prioridades: _obs_prioridades?.map(({ id, value }) => ({ id, value })), destinos: _destinos } };
+            const _values = { destino: _destinoTxt, destinos_has_obs: _destinos_has_obs, estado: estado.value, destinos: { estado, regranular, obs_prioridades: _obs_prioridades?.map(({ id, value }) => ({ id, value })), destinos: _destinos } };
             setValidation(prev => ({ ...prev, ...p.alerts.error }));
             onValueChange(_values);
             gridApi.stopEditing();
@@ -943,7 +942,7 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
 
     return (<>
         <FormContainer fluid form={form} forInput={forInput} wrapForm={true} wrapFormItem={true} style={{}} onValuesChange={onValuesChange} validation={validation}>
-            <Row style={{ maxHeight:"200px", overflowY:"auto"}} gutterWidth={gutterWidth}>
+            <Row style={{ maxHeight: "200px", overflowY: "auto" }} gutterWidth={gutterWidth}>
                 <Col>
                     {selectedNodes &&
                         <TableGridView
@@ -958,7 +957,7 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
                             filters={null}
                             dataAPI={dataAPIBobines}
                             domLayout={'autoHeight'}
-                            style={{height: "auto" }}
+                            style={{ height: "auto" }}
                         />
                     }
                 </Col>

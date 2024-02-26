@@ -6,7 +6,7 @@ import { dayjsValue, getValue, isNullOrEmpty, useSubmitting, updateArrayWhere, d
 import { CheckSquareOutlined, DeleteFilled, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { columnPath, getAllNodes, getCellFocus, getNodes, getSelectedNodes } from 'components/TableV4/TableV4';
 import { useDataAPI, _fieldZodDescription, parseFilter } from 'utils/useDataAPIV4';
-import { API_URL,ROOT_URL, DATETIME_FORMAT, BOBINE_ESTADOS } from 'config';
+import { API_URL, ROOT_URL, DATETIME_FORMAT, BOBINE_ESTADOS, PALETE_SIZES } from 'config';
 import { Action, Bool, EstadoBobine, MultiLine, PRIORIDADES_DESTINOS, Options, Value, useDestinosStyles } from 'components/TableV4/TableColumnsV4';
 import { fetchPostV4 } from 'utils/fetch';
 import { sortBy, prop, is, isEmpty, isNil, isNotNil } from 'ramda';
@@ -30,21 +30,22 @@ import loadInitV3 from 'utils/loadInitV3';
 import { usePermission } from 'utils/usePermission';
 import ToolbarTitleV3 from 'components/ToolbarTitleV3';
 import { styled } from 'styled-components';
+import SvgSchema from './SvgSchemaV3';
 
-const imgGroup01= `${ROOT_URL}/static/img/group01.png`;
-const imgGroup02= `${ROOT_URL}/static/img/group02.png`;
-const imgGroup03= `${ROOT_URL}/static/img/group03.png`;
-const imgGroup04= `${ROOT_URL}/static/img/group04.png`;
-const imgGroup05= `${ROOT_URL}/static/img/group05.png`;
-const imgGroup06= `${ROOT_URL}/static/img/group06.png`;
+const imgGroup01 = `${ROOT_URL}/static/img/group01.png`;
+const imgGroup02 = `${ROOT_URL}/static/img/group02.png`;
+const imgGroup03 = `${ROOT_URL}/static/img/group03.png`;
+const imgGroup04 = `${ROOT_URL}/static/img/group04.png`;
+const imgGroup05 = `${ROOT_URL}/static/img/group05.png`;
+const imgGroup06 = `${ROOT_URL}/static/img/group06.png`;
 
-const imgItem01= `${ROOT_URL}/static/img/item01.png`;
-const imgItem02= `${ROOT_URL}/static/img/item02.png`;
-const imgItem03= `${ROOT_URL}/static/img/item03.png`;
-const imgItem04= `${ROOT_URL}/static/img/item04.png`;
-const imgItem05= `${ROOT_URL}/static/img/item05.png`;
-const imgItem06= `${ROOT_URL}/static/img/item06.png`;
-const imgItem07= `${ROOT_URL}/static/img/item07.png`;
+const imgItem01 = `${ROOT_URL}/static/img/item01.png`;
+const imgItem02 = `${ROOT_URL}/static/img/item02.png`;
+const imgItem03 = `${ROOT_URL}/static/img/item03.png`;
+const imgItem04 = `${ROOT_URL}/static/img/item04.png`;
+const imgItem05 = `${ROOT_URL}/static/img/item05.png`;
+const imgItem06 = `${ROOT_URL}/static/img/item06.png`;
+const imgItem07 = `${ROOT_URL}/static/img/item07.png`;
 
 const gutterWidth = 5;
 
@@ -75,22 +76,22 @@ const StyledButton = styled(Button)`
 
 const ToolbarItems = ({ onClick }) => {
     return (
-        <Space>
-            <StyledButton onClick={()=>onClick("g01")} icon={<img src={imgGroup01} alt="Icon" />}/>
-            <StyledButton onClick={()=>onClick("g02")} icon={<img src={imgGroup02} alt="Icon" />}/>
-            <StyledButton onClick={()=>onClick("g05")} icon={<img src={imgGroup05} alt="Icon" />}/>
-            <StyledButton onClick={()=>onClick("g03")} icon={<img src={imgGroup03} alt="Icon" />}/>
-            <StyledButton onClick={()=>onClick("g04")} icon={<img src={imgGroup04} alt="Icon" />}/>
-            <StyledButton onClick={()=>onClick("g06")} icon={<img src={imgGroup06} alt="Icon" />}/>
+        <Row gutterWidth={2} justify='center' style={{ overflowX: "auto", backgroundColor: "#fafafa", padding: "5px" }} wrap='nowrap'>
+            <Col xs="content"><StyledButton onClick={() => onClick("g01")} icon={<img src={imgGroup01} alt="Icon" />} /></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("g02")} icon={<img src={imgGroup02} alt="Icon" />} /></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("g05")} icon={<img src={imgGroup05} alt="Icon" />} /></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("g03")} icon={<img src={imgGroup03} alt="Icon" />} /></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("g04")} icon={<img src={imgGroup04} alt="Icon" />} /></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("g06")} icon={<img src={imgGroup06} alt="Icon" />} /></Col>
 
-            <StyledButton onClick={()=>onClick(1)}><img src={imgItem01} alt="Icon" /><div className='txt'>Palete</div></StyledButton>
-            <StyledButton onClick={()=>onClick(2)}><img src={imgItem02} alt="Icon" /><div className='txt'>Bobines</div></StyledButton>
-            <StyledButton onClick={()=>onClick(3)}><img src={imgItem03} alt="Icon" /><div className='txt'>Placa de Cartão</div></StyledButton>
-            <StyledButton onClick={()=>onClick(4)}><img src={imgItem04} alt="Icon" /><div className='txt'>Placa MDF</div></StyledButton>
-            <StyledButton onClick={()=>onClick(5)}><img src={imgItem05} alt="Icon" /><div className='txt'>Placa de Plástico</div></StyledButton>
-            <StyledButton onClick={()=>onClick(6)}><img src={imgItem06} alt="Icon" /><div className='txt'>Cantoneira</div></StyledButton>
-            <StyledButton onClick={()=>onClick(7)}><img src={imgItem07} alt="Icon" /><div className='txt'>Cut Here!</div></StyledButton>
-        </Space>
+            <Col xs="content"><StyledButton onClick={() => onClick("1")}><img src={imgItem01} alt="Icon" /><div className='txt'>Palete</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("2")}><img src={imgItem02} alt="Icon" /><div className='txt'>Bobines</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("3")}><img src={imgItem03} alt="Icon" /><div className='txt'>Placa de Cartão</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("4")}><img src={imgItem04} alt="Icon" /><div className='txt'>Placa MDF</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("5")}><img src={imgItem05} alt="Icon" /><div className='txt'>Placa de Plástico</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("6")}><img src={imgItem06} alt="Icon" /><div className='txt'>Cantoneira</div></StyledButton></Col>
+            <Col xs="content"><StyledButton onClick={() => onClick("7")}><img src={imgItem07} alt="Icon" /><div className='txt'>Cut Here!</div></StyledButton></Col>
+        </Row>
     );
 }
 
@@ -100,9 +101,10 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     const navigate = useNavigate();
     const permission = usePermission({ permissions: props?.permissions });
     const submitting = useSubmitting(true);
-    const gridRef = useRef(); //not required
+    const gridRefItems = useRef(); //not required
     const modalApi = useModalApi(); //not Required;
     const modeApi = useModeApi(); //not Required;
+    const [isDirty, setIsDirty] = useState(false);
     const defaultParameters = { method: null };
     const baseFilters = {};
     const dataAPIItems = useDataAPI({ payload: { primaryKey: "id", pagination: { enabled: false, limit: 500 } } });
@@ -203,14 +205,82 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         return {};
     }, []);
 
-    const onAddItem = () =>{
+    const onAddItem = (item) => {
+        const _rows = getAllNodes(gridRefItems.current.api);
 
+        const _reorder = (_r) => _r.map((v, i) => ({ ...v, item_order: _r.length - i }));
+
+        switch (item) {
+            case "1":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                break;
+            case "2":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines:null });
+                break;
+            case "3":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
+                break;
+            case "4":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 4, item_des: "Placa MDF", item_order: 0, value: null });
+                break;
+            case "5":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
+                break;
+            case "6":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                break;
+            case "7":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
+                break;
+            case "g01":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                break;
+            case "g02":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
+                break;
+            case "g05":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 4, item_des: "Placa MDF", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
+                break;
+            case "g03":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                break;
+            case "g04":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                break;
+            case "g06":
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
+                break;
+        }
+        dataAPIItems.setRows(_reorder(_rows));
+        setIsDirty(true);
     }
+
+
 
     return (
         <>
             <TitleForm visible={true} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
-            <ToolbarItems onClick={onAddItem}/>
+            <ToolbarItems onClick={onAddItem} />
             <FormContainer fluid style={{}}>
                 <Row>
                     <Col width={400}>
@@ -218,7 +288,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                             local
                             domLayout={'autoHeight'}
                             style={{ height: "auto" }}
-                            gridRef={gridRef}
+                            gridRef={gridRefItems}
                             singleClickEdit={true}
                             onAfterCellEditRequest={onAfterCellEditRequest}
                             onBeforeCellEditRequest={onBeforeCellEditRequest}
@@ -232,6 +302,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                         />
                     </Col>
                     <Col></Col>
+                    <Col><SvgSchema timestamp={dataAPIItems.getTimeStamp()} data={{details:dataAPIItems.getData().rows}}/></Col>
                 </Row>
             </FormContainer>
         </>
