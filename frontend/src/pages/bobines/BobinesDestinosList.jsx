@@ -158,7 +158,7 @@ const useTableStyles = createUseStyles({
 });
 
 const canChangeRow = (data) => {
-  if (data?.recycle == 0 && data?.comp_actual >= 50 && !data?.carga_id) {
+  if (data?.recycle == 0 && data?.comp_actual >= 50 && !data?.carga_id && data?.palete_nome?.startsWith("DM")) {
     return true;
   }
   return false;

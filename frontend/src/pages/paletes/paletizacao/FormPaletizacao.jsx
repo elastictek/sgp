@@ -233,40 +233,40 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 break;
             case "g01":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 break;
             case "g02":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;
             case "g05":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 4, item_des: "Placa MDF", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;
             case "g03":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 break;
             case "g04":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 break;
             case "g06":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;

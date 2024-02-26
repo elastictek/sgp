@@ -164,7 +164,7 @@ def UpdateDefeitosV2(request, format=None):
             select count(*) cnt
             from producao_bobine pb
             left join producao_palete pp on pp.id=pb.palete_id 
-            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or ((pp.nome like 'P%%' or pp.nome like 'R%%') and pb.estado<>'LAB'))        
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
         """), cursor, {})
         return response["rows"][0]["cnt"]
 
@@ -175,13 +175,13 @@ def UpdateDefeitosV2(request, format=None):
                 from mv_bobines pb
                 left join mv_paletes pp on pp.id=pb.palete_id
                 LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
-                where pb.id in ({ids}) and mv."SDHNUM_0" is not null
+                where pb.id in ({ids}) and (mv."SDHNUM_0" is not null or mv.stock_lot is not NULL)
         """), connection, {})
         return response["rows"][0]["cnt"]
 
     def update(data,id,cursor):
         values={
-            **excludeDictKeys(data,["id","ff_pos","fc_pos","buracos_pos","rugas_pos","furos_pos"]),
+            **excludeDictKeys(data,["id","ff_pos","fc_pos","buracos_pos","rugas_pos","furos_pos","palete_nome"]),
             "ff_pos":json.dumps(data["ff_pos"], ensure_ascii=False) if data["ff_pos"] is not None else None,
             "fc_pos":json.dumps(data["fc_pos"], ensure_ascii=False) if data["fc_pos"] is not None else None,
             "furos_pos":json.dumps(data["furos_pos"], ensure_ascii=False) if data["furos_pos"] is not None else None,
@@ -215,7 +215,7 @@ def UpdateDestinosV2(request, format=None):
             select count(*) cnt
             from producao_bobine pb
             left join producao_palete pp on pp.id=pb.palete_id 
-            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or pp.nome like 'P%%')        
+            where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0 or pp.nome not like 'DM%%')        
         """), cursor, {})
         return response["rows"][0]["cnt"]
 

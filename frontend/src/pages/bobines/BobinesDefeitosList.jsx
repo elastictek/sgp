@@ -150,8 +150,8 @@ export const schemaFinal = z.object({
   const hasDefeitos = (length(v.defeitos.filter(x => x.value !== "troca_nw")) > 0 || length(v.fc_pos) > 0 || length(v.ff_pos) > 0 || length(v.furos_pos) > 0 || length(v.buracos_pos) > 0 || length(v.rugas_pos) > 0 || !isNullOrEmpty(v.prop_obs) || !isNullOrEmpty(v.obs)) ? true : false;
   const estado = v.estado;
   const errors = [];
-  if ((v?.palete_nome?.startsWith("P") || v?.palete_nome?.startsWith("R")) && !["G","LAB"].includes(estado)) {
-    errors.push({ path: ['estado'], message: 'Só é possível classificar bobines em palete final como GOOD e LAB!' });
+  if (isNullOrEmpty(v?.palete_nome) && ["BA"].includes(estado)) {
+    errors.push({ path: ['estado'], message: 'Não é possível classificar bobines como BA!' });
   }else if ((estado === "R" || estado === "DM") && !hasDefeitos) {
     errors.push({ path: ['estado'], message: 'Para classificar com DM ou R, tem de indicar pelo menos um defeito!' });
   } else if (v.defeitos.some(x => x.key === "fmp") && isNullOrEmpty(v.obs)) {
@@ -438,7 +438,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
       const result = await dataAPI.safePost(`${API_URL}/bobines/sql/`, "UpdateDefeitosV2", {
         parameters: {
           rows: rows.map(v => {
-            return { ...includeObjectKeys(v, [...keys, "id", "estado", "prop_obs", "obs", "l_real", "ff_pos", "fc_pos", "buracos_pos", "furos_pos", "rugas_pos", "ff_m_ini", "fc_diam_ini", "ff_m_fim", "fc_diam_fim"]) };
+            return { ...includeObjectKeys(v, [...keys, "id","palete_nome", "estado", "prop_obs", "obs", "l_real", "ff_pos", "fc_pos", "buracos_pos", "furos_pos", "rugas_pos", "ff_m_ini", "fc_diam_ini", "ff_m_fim", "fc_diam_fim"]) };
           })
         }
       });
