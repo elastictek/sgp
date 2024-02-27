@@ -191,11 +191,11 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
                     </Col>
                 </Row>
             </FormContainer>
-
             <BobinesChoose
                 gridRef={gridRef}
                 style={{ height: "70vh" }}
                 noid={true}
+                permission={permission}
                 baseFilters={{
                     ...parseFilter("mb.recycle", `==0`, { type: "number" }),
                     ...parseFilter("mb.comp_actual", `>0`, { type: "number" }),
