@@ -24,6 +24,7 @@ import { Modal } from 'antd';
 import { AppContext } from 'app';
 import { zOneOfNumber } from 'utils/schemaZodRules';
 import { validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Gerir Cortes";
 const subTitle = null;
@@ -160,7 +161,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }), []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         loading={submitting.state}
@@ -170,7 +171,6 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         defaultSort={[{ column: "pc2.updated_date", direction: "DESC" }]}
         filters={filters}
         onGridReady={onGridReady}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
@@ -203,7 +203,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

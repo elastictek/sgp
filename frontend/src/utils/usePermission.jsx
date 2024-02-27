@@ -25,16 +25,19 @@ export const Permissions = ({ permissions, action = null, item = null, forInput 
     );
 }
 
-const loadPermissions = async ({ name, module,path }) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/permissions/sql/`, pagination: { limit: 1 }, filter: { name, module,path }, parameters: { method: "PermissionsLookup" } });
+const loadPermissions = async ({ name, module, path }) => {
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/permissions/sql/`, pagination: { limit: 1 }, filter: { name, module, path }, parameters: { method: "PermissionsLookup" } });
     if (rows?.length > 0) {
         return rows[0];
     }
     return {};
 }
 
-export const usePermission = ({ load = true, allowed = {}, name, module = 'main', item: globalItem, permissions:objPermissions } = {}) => {
-    const [permissions, setPermissions] = useState();
+export const usePermission = ({ load = true, allowed = {}, name, module = 'main', item: globalItem, permissions: objPermissions } = {}) => {
+    const permissions = useRef();
+    // const _loaded = useRef();
+    const [timestamp, setTimestamp] = useState(Date.now());
+    //const [permissions, setPermissions] = useState();
     const { auth } = useContext(AppContext);
     const userKeys = Object.keys(auth.permissions);
     const loc = useLocation();
@@ -49,29 +52,30 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
     }, []);
 
     const loadData = async ({ signal } = {}) => {
-        if (objPermissions){
-            //console.log("start--",objPermissions)
-            setPermissions(objPermissions);
-        }else if (load) {
-            //console.log("isAdmin is commented, uncomment!!!!!")
+        if (objPermissions) {
+            permissions.current = objPermissions;
+        } else if (load) {
             console.log("Permissions Location/Name:", name ? name : loc.pathname.replace(/\:$/, ''), " module:", module)
             const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
-            setPermissions(json(_perm?.permissions));
+            permissions.current = json(_perm?.permissions);
         }
+        setTimestamp(Date.now());
         setLoaded(true);
     }
 
     const loadInstantPermissions = async ({ name, module = "main", set = false }) => {
         const _perm = await loadPermissions({ path: loc.pathname.replace(/\:$/, ''), ...name && { name }, module });
         if (set) {
-            setPermissions(json(_perm?.permissions));
+            permissions.current = json(_perm?.permissions);
+            setTimestamp(Date.now());
         }
         return json(_perm?.permissions);
     }
 
     const setInstantPermissions = async ({ objPermissions, set = false }) => {
         if (set) {
-            setPermissions(objPermissions);
+            permissions.current = objPermissions;
+            setTimestamp(Date.now());
         }
         return json(objPermissions);
     }
@@ -80,7 +84,8 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
         //onPlace - indica as permissões mínimas para ter acesso, sobrepõe-se às "permissions" definidas em app_permissions 
         //example.1 {createRecord: {rolename: 200}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200
         //example.2 {formA: { createRecord: {rolename: 200}}} | Gives permission to "rolename" to action ("createRecord") if level is at least 200 on item ("formA")
-        const _permissions = (instantPermissions) ? instantPermissions : permissions;
+        //const _permissions = (instantPermissions) ? instantPermissions : permissions;
+        const _permissions = (instantPermissions) ? instantPermissions : permissions.current;
         if (!item && globalItem) {
             item = globalItem;
         } else if (!item && _permissions) {
@@ -153,5 +158,5 @@ export const usePermission = ({ load = true, allowed = {}, name, module = 'main'
         return false;
     }
 
-    return { isReady:loaded,loaded,auth, allow, permissions, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
+    return { isReady: loaded, loaded, auth, allow, permissions: permissions.current, timestamp: () => timestamp, name: name ? name : loc.pathname, module, isOk, loadInstantPermissions, setInstantPermissions };
 }

@@ -95,7 +95,7 @@ module.exports = (env, argv) => {
         },
         output: {
             path: path.resolve(rootPath, buildFolder),
-            filename: "[name].js",
+            filename: "[name].[contenthash].js",
             chunkFilename: isDevMode ? 'chunks/[name].chunk.js' : 'chunks/[name]/[chunkhash].chunk.js',
             publicPath: `/static/${appName}/`,
         },

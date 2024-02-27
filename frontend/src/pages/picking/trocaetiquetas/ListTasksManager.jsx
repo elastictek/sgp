@@ -24,6 +24,7 @@ import { Modal } from 'antd';
 import { AppContext } from 'app';
 import { zOneOfNumber } from 'utils/schemaZodRules';
 import { validateRows } from 'utils/useValidation';
+import Page,{ Container as FormContainer } from 'components/FormFields/FormsV2';
 
 const title = "Gerir Tarefas <Troca de Etiquetas>";
 const subTitle = null;
@@ -221,7 +222,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }), []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         onGridRequest={onGridRequest}
@@ -233,7 +234,6 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         columnDefs={columnDefs}
         defaultSort={[{ column: "timestamp", direction: "DESC" }]}
         filters={filters}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
@@ -267,7 +267,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

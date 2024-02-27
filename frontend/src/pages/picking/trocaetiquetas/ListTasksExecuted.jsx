@@ -12,6 +12,7 @@ import useModalApi from "utils/useModalApi";
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, OPTIONS_TROCAETIQUETAS } from "components/TableV4/TableColumnsV4";
 
 import TableGridView from 'components/TableV4/TableGridView';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Troca de Etiquetas Executadas";
 const subTitle = null;
@@ -75,7 +76,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridView
         style={style}
@@ -83,12 +84,11 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         columnDefs={columnDefs}
         filters={filters}
         defaultSort={[{ column: "te.timestamp", direction: "DESC" }]}
-        permission={permission}
         defaultParameters={defaultParameters}
         dataAPI={dataAPI}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

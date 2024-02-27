@@ -19,6 +19,7 @@ import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse,
 import { Field, Container as FormContainer, SelectField, RangeDateField, SelectDebounceField, CheckboxField, Selector, Label, HorizontalRule } from 'components/FormFields';
 import dayjs from 'dayjs';
 import FormPrint from "../../commons/FormPrint";
+import Page from 'components/FormFields/FormsV2';
 
 const OPTIONS_SUBTYPE = Object.entries(OPTIONS_TROCAETIQUETAS).map(([value, { label }]) => ({ value: value, label }));
 
@@ -169,7 +170,7 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
     }
 
     return (
-        <>
+        <Page.Ready ready={permission?.isReady}>
             <TitleForm auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
             <FormContainer fluid form={form} forInput={false} wrapForm={true} wrapFormItem={true} style={{ borderTop: "solid 1px #d9d9d9" }}>
                 <Row style={{}} gutterWidth={10}>
@@ -205,10 +206,9 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
                     ...parseFilter("mb.core", `==${location.state.parameters.artigo.core}`, { type: "number" })
                 }}
                 defaultSort={[{ column: "mb.timestamp", direction: "DESC" }]}
-                permission={permission}
                 onClick={onSelectionChanged}
             />
-        </>
+        </Page.Ready>
     );
 
 }

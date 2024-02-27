@@ -12,6 +12,7 @@ import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines,
 
 import TableGridSelect from 'components/TableV4/TableGridSelect';
 import { json } from 'utils/object';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Troca de Etiquetas";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
@@ -85,7 +86,7 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
   }
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TableGridSelect
         style={style}
         gridRef={_gridRef}
@@ -93,14 +94,13 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
         columnDefs={columnDefs}
         filters={filters}
         defaultSort={defaultSort}
-        permission={permission}
         defaultParameters={defaultParameters}
         dataAPI={dataAPI}
         onSelectionChanged={onSelectionChanged}
         isRowSelectable={_isRowSelectable}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

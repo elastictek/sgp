@@ -29,6 +29,7 @@ import { is, isEmpty, isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import FormPrint from '../commons/FormPrint';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -150,7 +151,7 @@ export const schemaFinal = z.object({
   const hasDefeitos = (length(v.defeitos.filter(x => x.value !== "troca_nw")) > 0 || length(v.fc_pos) > 0 || length(v.ff_pos) > 0 || length(v.furos_pos) > 0 || length(v.buracos_pos) > 0 || length(v.rugas_pos) > 0 || !isNullOrEmpty(v.prop_obs) || !isNullOrEmpty(v.obs)) ? true : false;
   const estado = v.estado;
   const errors = [];
-  if (isNullOrEmpty(v?.palete_nome) && ["BA"].includes(estado)) {
+  if (!isNullOrEmpty(v?.palete_nome) && ["BA"].includes(estado)) {
     errors.push({ path: ['estado'], message: 'Não é possível classificar bobines como BA!' });
   }else if ((estado === "R" || estado === "DM") && !hasDefeitos) {
     errors.push({ path: ['estado'], message: 'Para classificar com DM ou R, tem de indicar pelo menos um defeito!' });
@@ -604,7 +605,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   }, []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         onGridRequest={onGridRequest}
@@ -618,7 +619,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         columnDefs={columnDefs}
         defaultSort={_inputParameters.current?.bobinagem?.id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
         filters={filters}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
@@ -661,7 +661,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         isRowSelectable={isRowSelectable}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

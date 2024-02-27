@@ -83,7 +83,7 @@ def authUser(user):
         turno["dep"] = user.turno.dep
         turno["turno"] = user.turno.turno
         turno["enabled"] = True
-    #return {'turno': {'enabled': False}, 'groups': ['producao#100','all#100'], 'items': {'producao': 100}, 'isAdmin': False}
+    #return {'turno': {'enabled': False}, 'groups': ['producao#300','all#100',"planeamento#100"], 'items': {'producao': 300}, 'isAdmin': False}
     return {"turno":turno,"groups":grps,"items":items,"isAdmin":isAdmin}
 
 @api_view(['POST'])

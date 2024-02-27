@@ -24,6 +24,7 @@ import { Modal } from 'antd';
 import { AppContext } from 'app';
 import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber, zRangeNumber } from 'utils/schemaZodRules';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Gerir relação Artigo/Cliente";
 const subTitle = null;
@@ -224,7 +225,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }), []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         onGridRequest={onGridRequest}
@@ -236,7 +237,6 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         columnDefs={columnDefs}
         defaultSort={[{ column: "pc.name", direction: "DESC" }]}
         filters={filters}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
@@ -264,7 +264,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

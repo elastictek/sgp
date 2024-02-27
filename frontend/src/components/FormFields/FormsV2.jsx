@@ -222,6 +222,7 @@ export const EstadoBobineLookup = ({ field, onClick, onSelectionChange, forView,
         </>
     )
 }
+
 export const Container = ({ loading = false, children, id = "default", wrapForm = false, form, initialValues, onFinish, onValuesChange, validation, forInput = true, wrapFormItem = false, style, size = "small", ...props }) => {
     const dataContext = { form, wrapForm, wrapFormItem, forInput, containerId: id, size, validation };
     return (
@@ -404,3 +405,11 @@ export const Field = ({ name, path: _path, children, label = {}, forInput, forVi
         );
     }
 }
+
+const Page = ({ children }) => {
+    return (<div>{children}</div>);
+}
+Page.Ready = ({ ready, children }) => {
+    return (<>{ready && children}</>);
+}
+export default Page;

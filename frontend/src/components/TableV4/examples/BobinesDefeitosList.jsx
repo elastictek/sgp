@@ -29,6 +29,7 @@ import { isNil } from 'ramda';
 import Palete from '../paletes/Palete';
 import { compareObjArrays } from 'utils/index';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const OPTIONS_OUTROSDEFEITOS= BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -375,7 +376,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
   }, []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         loading={submitting.state}
@@ -384,7 +385,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         columnDefs={columnDefs}
         defaultSort={inputParameters.current?.bobinagem_id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
         filters={filters}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         //singleClickEdit={true}
@@ -408,7 +408,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         isRowSelectable={()=>{return true;}}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

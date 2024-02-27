@@ -31,6 +31,7 @@ import Palete from '../paletes/Palete';
 import FormPrint from '../commons/FormPrint';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
 import { postProcess } from './BobinesDefeitosList';
+import Page from 'components/FormFields/FormsV2';
 
 const OPTIONS_OUTROSDEFEITOS = BOBINE_DEFEITOS.filter(v => v.value !== 'furos' && v.value !== 'buraco' && v.value !== 'rugas' && v.value !== 'ff' && v.value !== 'fc');
 
@@ -597,7 +598,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
   }, [modeApi.isDirty(), modeApi.isOnMode()]);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm confirm={confirmExit} visible={false} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         // domLayout={'autoHeight'}
@@ -618,7 +619,6 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         columnDefs={columnDefs}
         defaultSort={_inputParameters.current?.bobinagem?.id ? [{ column: 'mb.nome', direction: 'ASC' }] : [{ column: 'mb.posicao_palete', direction: 'ASC' }]}
         filters={filters}
-        permission={permission}
         defaultParameters={defaultParameters}
         isCellEditable={isCellEditable}
         singleClickEdit={true}
@@ -662,7 +662,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         isRowSelectable={isRowSelectable}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

@@ -14,7 +14,7 @@ import { valueByPath, json } from 'utils/object';
 import YScroll from 'components/YScroll';
 import Portal from "components/portal";
 import IconButton from "components/iconButton";
-import { Container as FormContainer, Field, Label, ClientesLookupField, Lookup, ButtonChooser, SelectorPopup, EstadoBobineLookup } from 'components/FormFields/FormsV2';
+import Page, { Container as FormContainer, Field, Label, ClientesLookupField, Lookup, ButtonChooser, SelectorPopup, EstadoBobineLookup } from 'components/FormFields/FormsV2';
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import { CgCloseO } from 'react-icons/cg';
 import { zGroupIntervalNumber, zGroupRangeNumber } from 'utils/schemaZodRules';
@@ -102,17 +102,50 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
     const permission = usePermission({ permissions: props?.permissions });
     const submitting = useSubmitting(true);
     const gridRefItems = useRef(); //not required
+    const gridRefData = useRef(); //not required
     const modalApi = useModalApi(); //not Required;
     const modeApi = useModeApi(); //not Required;
     const [isDirty, setIsDirty] = useState(false);
     const defaultParameters = { method: null };
     const baseFilters = {};
     const dataAPIItems = useDataAPI({ payload: { primaryKey: "id", pagination: { enabled: false, limit: 500 } } });
+    const dataAPIData = useDataAPI({ payload: { primaryKey: "id", pagination: { enabled: false, limit: 500 } } });
     const [validation, setValidation] = useState({});
     const [inputParameters, setInputParameters] = useState();
     const _inputParameters = useRef(loadInitV3({}, {}, { ...props?.parameters }, { ...location?.state }));
 
     useEffect(() => {
+
+        // ncintas: 2,
+        // npaletes: 24,
+        // artigo_cod: 'EEEEFTACPAAR000242',
+        // designacao: '40HC OD 1090',
+        // cliente_cod: 100267,
+        // cliente_nome: 'MEGA DISPOSABLES S.A.',
+        // contentor_id: 'Camião',
+        // cintas_palete: 1,
+        // netiquetas_lote: 2,
+        // netiquetas_final: 1,
+        // palete_maxaltura: 2.55,
+        // netiquetas_bobine: 2,
+        // paletes_sobrepostas: 0,
+        // folha_identificativa: 1,
+        // filmeestiravel_bobines: 1,
+        // filmeestiravel_exterior: 0,
+
+        const _rows = [
+            {f:"palete_maxaltura",d:"Altura máxima",v:2.55},
+            {f:"cintas",d:"Cintas",v:2,t:"checkbox"},
+            {f:"ncintas",d:"Número de cintas",v:2},
+            {f:"cintas_palete",d:"Cintas por palete",v:1},
+            {f:"netiquetas_lote",d:"Etiquetas por lote",v:2},
+            {f:"netiquetas_final",d:"Número de etiquetas final",v:2},
+            {f:"netiquetas_bobine",d:"Número de etiquetas por bobine",v:2},
+            {f:"folha_identificativa",d:"Folha identificativa",v:1},
+            {f:"filmeestiravel_bobines",d:"Filme estirável",v:1},
+            {f:"filmeestiravel_exterior",d:"Filme estirável exterior",v:1}
+        ];
+        dataAPIData.setRows(_rows);
         submitting.end();
     }, []);
 
@@ -187,10 +220,20 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                 { field: 'id', hide: true },
                 { field: 'item_id', hide: true },
                 { field: 'item_order', hide: true },
-                { field: 'item_des', headerName: 'Item', ...cellParams(), width: 165, cellRenderer: (params) => <Value bold params={params} /> },
+                { field: 'item_des', headerName: 'Item', ...cellParams(), width: 165, flex: 1, cellRenderer: (params) => <Value bold params={params} /> },
                 { field: 'value', headerName: 'Valor', ...cellParams(), width: 100, cellRenderer: (params) => <Value params={params} /> }
                 //{ field: 'num_bobines', headerName: 'Bobines', ...cellParams(), width: 100, cellRenderer: (params) => <Value params={params} /> },
                 //{ field: 'palete_size', headerName: 'Palete', ...cellParams(), width: 100, cellRenderer: (params) => <Value params={params} /> },
+            ], timestamp: new Date()
+        };
+    }, [validation, modeApi?.isOnMode()]);
+
+    const columnDefsData = useMemo(() => {
+        return {
+            cols: [
+                { field: 'f', hide: true },
+                { field: 'd', headerName: '', ...cellParams(), width: 165, flex: 1, cellRenderer: (params) => <Value bold params={params} /> },
+                { field: 'v', headerName: 'Valor', ...cellParams(), width: 100, cellRenderer: (params) => <Value params={params} /> }
             ], timestamp: new Date()
         };
     }, [validation, modeApi?.isOnMode()]);
@@ -212,10 +255,10 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
 
         switch (item) {
             case "1":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize: PALETE_SIZES[0].value });
                 break;
             case "2":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 break;
             case "3":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
@@ -233,40 +276,40 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 break;
             case "g01":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize: PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 break;
             case "g02":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize: PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;
             case "g05":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 4, item_des: "Placa MDF", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize: PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;
             case "g03":
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize:PALETE_SIZES[0].value });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 1, item_des: "Palete", item_order: 0, value: PALETE_SIZES[0].value, item_paletesize: PALETE_SIZES[0].value });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 3, item_des: "Placa de Cartão", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 break;
             case "g04":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 break;
             case "g06":
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 7, item_des: "Etiqueta Cut Here", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
-                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null,item_numbobines:null });
+                _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 2, item_des: "Bobines", item_order: 0, value: null, item_numbobines: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 6, item_des: "Cantoneira Cartão Branco", item_order: 0, value: null });
                 _rows.splice(0, 0, { [dataAPIItems.getPrimaryKey()]: uid(6), item_id: 5, item_des: "Placa de Plástico", item_order: 0, value: null });
                 break;
@@ -278,7 +321,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
 
 
     return (
-        <>
+        <Page.Ready ready={permission?.isReady}>
             <TitleForm visible={true} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
             <ToolbarItems onClick={onAddItem} />
             <FormContainer fluid style={{}}>
@@ -301,11 +344,28 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
                             modeOptions={{ enabled: true, showControls: false, allowEdit: true }}
                         />
                     </Col>
-                    <Col></Col>
-                    <Col><SvgSchema timestamp={dataAPIItems.getTimeStamp()} data={{details:dataAPIItems.getData().rows}}/></Col>
+                    <Col width={400}>
+                        <TableGridEdit
+                            local
+                            domLayout={'autoHeight'}
+                            style={{ height: "auto" }}
+                            gridRef={gridRefData}
+                            singleClickEdit={true}
+                            //onAfterCellEditRequest={onAfterCellEditRequest}
+                            //onBeforeCellEditRequest={onBeforeCellEditRequest}
+                            showTopToolbar={true}
+                            topToolbar={{ showSettings: false }}
+                            columnDefs={columnDefsData}
+                            filters={null}
+                            dataAPI={dataAPIData}
+                            modeApi={modeApi}
+                            //modeOptions={{ enabled: true, showControls: false, allowEdit: true }}
+                        />
+                    </Col>
+                    <Col><SvgSchema reverse={true} timestamp={dataAPIItems.getTimeStamp()} data={{ details: dataAPIItems.getData().rows }} /></Col>
                 </Row>
             </FormContainer>
-        </>
+        </Page.Ready>
     );
 }
 

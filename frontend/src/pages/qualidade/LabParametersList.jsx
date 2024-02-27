@@ -26,6 +26,7 @@ import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber,
 import { fetchPost } from 'utils/fetch';
 import LabLoadParameters from './LabLoadParameters';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Parâmetros";
 const subTitle = null;
@@ -235,7 +236,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }, []);
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TitleForm loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
       <TableGridEdit
         onGridRequest={onGridRequest}
@@ -278,7 +279,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         onAfterCellEditRequest={onAfterCellEditRequest}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

@@ -13,6 +13,7 @@ import useModalApi from "utils/useModalApi";
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, EstadoBobine } from "components/TableV4/TableColumnsV4";
 
 import TableGridSelect from 'components/TableV4/TableGridSelect';
+import Page from 'components/FormFields/FormsV2';
 
 
 const Palete = lazy(() => import('../paletes/Palete'));
@@ -80,7 +81,7 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
   }
 
   return (
-    <>
+    <Page.Ready ready={permission?.isReady}>
       <TableGridSelect
         style={style}
         gridRef={_gridRef}
@@ -88,14 +89,13 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
         columnDefs={columnDefs}
         filters={filters}
         defaultSort={defaultSort}
-        permission={permission}
         defaultParameters={defaultParameters}
         dataAPI={dataAPI}
         onSelectionChanged={onSelectionChanged}
         isRowSelectable={_isRowSelectable}
         {...props}
       />
-    </>
+    </Page.Ready>
   );
 
 }

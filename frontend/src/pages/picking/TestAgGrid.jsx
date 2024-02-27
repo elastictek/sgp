@@ -39,6 +39,7 @@ import { useImmer } from 'use-immer';
 
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber } from "components/TableV4/TableColumnsV4";
 import { GridApi } from 'ag-grid-community';
+import Page from 'components/FormFields/FormsV2';
 
 
 const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaultFilters = {}, defaultSort = [], onSelect, title, onFilterChange, local = false, loadOnInit = false, rowSelection, valueGetter, ...props }) => {
@@ -170,6 +171,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
   // }
 
   return (
+    <Page.Ready ready={permission?.isReady}>
     <div style={{ width: "100%", height: "80vh" }}>
       <TableV4
         onGridRequest={onGridRequest}
@@ -233,6 +235,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
 
       />
     </div>
+    </Page.Ready>
   );
 }
 

@@ -15,6 +15,12 @@ const height = null;
 const heightPercentage = 1;
 const viewBox = null;
 
+const Group = styled.g`
+    cursor:pointer;  
+    &:hover {
+        fill: #1677ff;
+    }
+`;
 
 export const SvgPalete = ({ key, pos, text }) => {
     const { x = 0, y = 20 } = pos;
@@ -219,6 +225,7 @@ const compute = (els, currentPosY = 0) => {
 }
 const build = (data, reverse = false) => {
     if (data?.details) {
+        const _details = reverse ? [...data.details].reverse() : [...data.details];
         let els = [];
         let npaletes = 0;
         let newPaleteGroup = false;
@@ -227,7 +234,7 @@ const build = (data, reverse = false) => {
         //const currentGroup=0;
         const groupsLvl = [[]];
         const groupsLvlHeight = [];
-        for (let v of data.details) {
+        for (let v of _details) {
             switch (v.item_id) {
                 case 1:
                     npaletes++;
@@ -251,7 +258,7 @@ const build = (data, reverse = false) => {
                             groupsLvl.push([]);
                         }
                     }
-                    groupsLvl[groupsLvl.length - 1].push({ obj: SvgBobines, x, height: 70, filmeEstiravel: isValue(data.filmeestiravel_bobines, undefined, 0), item_numbobines: v.item_numbobines, bobinesTxt: `${v.item_numbobines} Bobine(s)`, item_order: v.item_order, item_id: v.item_id });
+                    groupsLvl[groupsLvl.length - 1].push({ obj: SvgBobines, x, height: 70, filmeEstiravel: isValue(data.filmeestiravel_bobines, undefined, 0), item_numbobines: v.item_numbobines, bobinesTxt: v.item_numbobines ? `${v.item_numbobines} Bobine(s)` : null, item_order: v.item_order, item_id: v.item_id });
                     break;
                 case 3:
                     groupsLvl[groupsLvl.length - 1].push({ obj: SvgPlacaCartao, x, height: 15, item_order: v.item_order, item_id: v.item_id });
@@ -293,7 +300,7 @@ const build = (data, reverse = false) => {
 };
 
 
-export default ({ data, timestamp }) => {
+export default ({ data, timestamp,reverse }) => {
     const acc = useRef(0);
     const offs = useRef(0);
     const [state, updateState] = useState({
@@ -303,8 +310,7 @@ export default ({ data, timestamp }) => {
         paletes_sobrepostas: 0,
     });
     useEffect(() => {
-        console.log("/////////////////////",data,timestamp,build(data, true))
-        updateState(build(data, true));
+        updateState(build(data, reverse));
     }, [timestamp]);
     return (
         <>{state &&

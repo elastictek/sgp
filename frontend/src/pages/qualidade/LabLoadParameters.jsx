@@ -28,6 +28,7 @@ import { fetchPost } from 'utils/fetch';
 import { columns, schema, fecthUnits } from './LabParametersList';
 import { isNotNil, isNil } from 'ramda';
 import { setValidationGroups, validateRows } from 'utils/useValidation';
+import Page from 'components/FormFields/FormsV2';
 
 const title = "Carregar Parâmetros";
 const subTitle = null;
@@ -196,7 +197,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     }), []);
 
     return (
-        <>
+        <Page.Ready ready={permission?.isReady}>
             <TitleForm visible={isNil(props?.setTitle)} loading={submitting.state} auth={permission.auth} level={location?.state?.level} title={props?.title ? props.title : title} subTitle={props?.subTitle ? props.subTitle : subTitle} />
             <div style={{ height: "150px" }}>
                 <Dragger {...{
@@ -284,7 +285,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
                 onAfterCellEditRequest={onAfterCellEditRequest}
                 {...props}
             />
-        </>
+        </Page.Ready>
     );
 
 }

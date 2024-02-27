@@ -937,6 +937,8 @@ export default ({
         }
     }, [isReady]);
 
+
+
     const _onGridReady = useCallback(async (params) => {
         console.log("GIRD-READY");
         //Load Filters State
