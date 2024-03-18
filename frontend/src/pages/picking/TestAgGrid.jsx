@@ -115,7 +115,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
       editable: (params) => modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()), //params.data.year == 2012,
       filter: false,
       sortable: modeApi.isOnMode() ? false : true,
-      suppressMenu: modeApi.isOnMode() ? true : false,
+      suppressHeaderMenuButton: modeApi.isOnMode() ? true : false,
       valueGetter: (params) => {
         return defaultValueGetter(params, valueGetter);
       },
@@ -133,7 +133,7 @@ const PaletesList = ({ extraRef, closeSelf, loadParentData, noid = false, defaul
       // dateColumn: {
       //   filter: 'agDateColumnFilter',
       //   filterParams: { comparator: myDateComparator },
-      //   suppressMenu: true
+      //   suppressHeaderMenuButton: true
       // }
     };
   }, []);

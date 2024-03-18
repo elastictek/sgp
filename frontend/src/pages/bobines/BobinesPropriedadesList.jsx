@@ -39,7 +39,7 @@ const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
     return (<>{items.length > 0 && <Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />}</>);
 }
 
-export default ({ noEdit = true, noPrint = true, defaultSort:_defaultSort, ...props }) => {
+export default ({edit = false, print = false, defaultSort:_defaultSort, ...props }) => {
     const submitting = useSubmitting(true);
     const navigate = useNavigate();
     const location = useLocation();
@@ -230,8 +230,8 @@ export default ({ noEdit = true, noPrint = true, defaultSort:_defaultSort, ...pr
                 onRowsChange={onRowsChange}
                 toolbarFilters={{ ...toolbarFilters(formFilter), onFinish: onFilterFinish, onValuesChange: onFilterChange }}
                 leftToolbar={<Space>
-                    {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
-                    <Permissions permissions={permission} action="changeProperties" forInput={!noEdit}>
+                    {print && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}
+                    <Permissions permissions={permission} action="changeProperties" forInput={edit}>
                         {/* {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>} */}
                         {/* {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />} */}
                         {/*  {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.valid === 0).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>} */}

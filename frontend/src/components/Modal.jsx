@@ -18,7 +18,7 @@ const TitleModal = ({ title, eTitle, details }) => {
 
     return (
         <div>
-            <div><span style={{ textTransform: "capitalize", fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
+            <div><span style={{ /* textTransform: "capitalize", */ fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
             {details && <div>{details}</div>}
         </div>
     );

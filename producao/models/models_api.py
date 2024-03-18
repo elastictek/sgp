@@ -244,7 +244,8 @@ class Paletizacao(models.Model):
     netiquetas_final = models.SmallIntegerField(verbose_name="Número de Etiquetas Final")
     folha_identificativa = models.SmallIntegerField(verbose_name="Folha Identificativa de Palete", default=0)
     versao = models.SmallIntegerField(verbose_name="Versão", default=1)
-
+    artigo_des = models.CharField(max_length=200,verbose_name="Designacao Artigo", null=True)
+    sentido_desenrolamento = models.CharField(max_length=12,verbose_name="Sentido desenrolamento", null=True, default="Direita")
     class Meta:
         unique_together = (('designacao', 'cliente_cod', 'artigo_cod','contentor_id'))
     
@@ -258,6 +259,8 @@ class PaletizacaoDetails(models.Model):
     item_order = models.SmallIntegerField(verbose_name="Item Ordem")
     item_numbobines = models.SmallIntegerField(verbose_name="Item Número de Bobines", null=True)
     item_paletesize = models.CharField(verbose_name="Item Tamanho Palete", max_length=20, null=True)
+    item_cintas = models.SmallIntegerField(verbose_name="Item Ordem", default=0)
+    item_size = models.CharField(verbose_name="Item Tamanho", max_length=20, null=True)
 
     def __str__(self):
          return self.item_id

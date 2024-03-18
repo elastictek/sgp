@@ -93,11 +93,12 @@ const FormulacaoList = lazy(() => import('./formulacao/FormulacoesList'));
 const OrdemFabrico = React.lazy(() => import('./planeamento/ordemFabrico/FormOFabricoValidar'));
 /****/
 const OrdensFabricoList = React.lazy(() => import('./ordensfabrico/OrdensFabricoList'));
-const PaletizacoesList = lazy(() => import('./paletizacoes/PaletizacoesList'));
+const PaletizacoesListxxxxxxxx = lazy(() => import('./paletizacoes/PaletizacoesList'));
 
 const SalesPriceList = lazy(() => import('./comercial/SalesPriceList'));
 const FormNewPaleteLine = lazy(() => import('./paletes/FormNewPaleteLine'));
 const FormPaletizacao = lazy(() => import('./paletes/paletizacao/FormPaletizacao'));
+const PaletizacoesList = lazy(() => import('./paletes/paletizacao/PaletizacoesList'));
 const LinkExpired = lazy(() => import('./linkExpired'));
 
 
@@ -124,6 +125,7 @@ const MainPicking = lazy(() => import('./picking/MainPicking'));
 const FormPickNonwovensPrint = lazy(() => import('./picking/FormPickNonwovensPrint'));
 const FormPickNonwovensIn = lazy(() => import('./picking/FormPickNonwovensIn'));
 const FormPickNewPaleteLine = lazy(() => import('./picking/FormPickNewPaleteLine'));
+const FormPickNewPalete = lazy(() => import('./picking/FormPickNewPalete'));
 const FormPickRedoPaleteLine = lazy(() => import('./picking/FormPickRedoPaleteLine'));
 const FormPickWeighPalete = lazy(() => import('./picking/FormPickWeighPalete'));
 const FormPickDeletePalete = lazy(() => import('./picking/FormPickDeletePalete'));
@@ -142,6 +144,7 @@ const FormPickNonwovensQueue = lazy(() => import('./picking/FormPickNonwovensQue
 const FormPickPrintBuffer = lazy(() => import('./picking/FormPickPrintBuffer'));
 const FormPickNewBobinagemLine = lazy(() => import('./picking/FormPickNewBobinagemLine'));
 const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
+const FormPickPaletizacao = lazy(() => import('./picking/FormPickPaletizacao'));
 const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
 const FormPickQualityBobinagemTest = lazy(() => import('./picking/FormPickQualityBobinagemTest'));
@@ -255,6 +258,7 @@ const RenderRouter = () => {
                 { path: "paletes/paleteslist", element: <Suspense fallback={<Spin />}><PaletesList /></Suspense> },
                 { path: "paletes/formnewpaleteline", element: <Suspense fallback={<Spin />}><FormNewPaleteLine /></Suspense> },
                 { path: "paletes/formpaletizacao", element: <Suspense fallback={<Spin />}><FormPaletizacao /></Suspense> },
+                { path: "paletes/paletizacoeslist", element: <Suspense fallback={<Spin />}><PaletizacoesList /></Suspense> },
 
                 { path: "picking/base", element: <Suspense fallback={<Spin />}><BasePick /></Suspense> },
                 { path: "picking/granulado", element: <Suspense fallback={<Spin />}><GranuladoPick /></Suspense> },
@@ -266,7 +270,8 @@ const RenderRouter = () => {
                 { path: "ofabrico/formulacaolist", element: <Suspense fallback={<Spin />}><FormulacaoList /></Suspense> },
                 { path: "ofabrico/ordemfabrico", element: <Suspense fallback={<Spin />}><OrdemFabrico /></Suspense> },
                 { path: "ofabrico/ordensfabricolist", element: <Suspense fallback={<Spin />}><OrdensFabricoList /></Suspense> },
-                { path: "ofabrico/paletizacoeslist", element: <Suspense fallback={<Spin />}><PaletizacoesList /></Suspense> },
+                
+                
 
                 { path: "producao/widgetestadoproducao", element: <Suspense fallback={<Spin />}><WidgetEstadoProducao /></Suspense> },
                 { path: "picking/main", element: <Suspense fallback={<Spin />}><MainPicking /></Suspense> },
@@ -276,7 +281,10 @@ const RenderRouter = () => {
                 { path: "picking/nonwovensqueue", element: <Suspense fallback={<Spin />}><FormPickNonwovensQueue /></Suspense> },
                 { path: "picking/granuladoin", element: <Suspense fallback={<Spin />}><FormPickGranuladoIn /></Suspense> },
                 { path: "picking/granuladoout", element: <Suspense fallback={<Spin />}><FormPickGranuladoOut /></Suspense> },
+                
                 { path: "picking/newpaleteline", element: <Suspense fallback={<Spin />}><FormPickNewPaleteLine /></Suspense> },
+                { path: "picking/newpalete", element: <Suspense fallback={<Spin />}><FormPickNewPalete /></Suspense> },
+
                 { path: "picking/newbobinagemline", element: <Suspense fallback={<Spin />}><FormPickNewBobinagemLine /></Suspense> },
                 { path: "picking/validatebobinagem", element: <Suspense fallback={<Spin />}><FormPickValidateBobinagem /></Suspense> },
                 { path: "picking/redopaleteline", element: <Suspense fallback={<Spin />}><FormPickRedoPaleteLine /></Suspense> },
@@ -290,6 +298,7 @@ const RenderRouter = () => {
                 { path: "picking/ofabricochangestatus", element: <Suspense fallback={<Spin />}><FormPickOFabricoChangeStatus /></Suspense> },
                 { path: "picking/ofabricoformulacao", element: <Suspense fallback={<Spin />}><FormPickOFabricoFormulacao /></Suspense> },
                 { path: "picking/ofabricodoseadores", element: <Suspense fallback={<Spin />}><FormPickOFabricoDoseadores /></Suspense> },
+                { path: "picking/ofabricopaletizacao", element: <Suspense fallback={<Spin />}><FormPickPaletizacao /></Suspense> },
                 { path: "picking/ofabricoattachements", element: <Suspense fallback={<Spin />}><FormPickAttachements /></Suspense> },
                 { path: "picking/ofabricononwovens", element: <Suspense fallback={<Spin />}><FormPickOFabricoNonwovens /></Suspense> },
                 { path: "picking/ofabricocortes", element: <Suspense fallback={<Spin />}><FormPickOFabricoCortes /></Suspense> },

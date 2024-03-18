@@ -100,8 +100,8 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
             //editable: (params) => modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()), //params.data.year == 2012,
             filter: false,
             sortable:true,
-            sortable: modeApi.isOnMode() ? false : true,
-            suppressMenu: modeApi.isOnMode() ? true : false,
+            sortable: modeApi?.isOnMode() ? false : true,
+            suppressHeaderMenuButton: modeApi?.isOnMode() ? true : false,
             valueGetter: (params) => {
                 return defaultValueGetter(params, valueGetter);
             },
@@ -114,20 +114,20 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
             // },
             ...defaultColDefs
         };
-    }, [modeApi.isOnMode()]);
+    }, [modeApi?.isOnMode()]);
 
     const _columnTypes = useMemo(() => {
         return {
             editableColumn: {
                 editable: (params) => {
-                    const _allow = (modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()));
+                    const _allow = (modeApi?.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()));
                     if (_allow && typeof isCellEditable === "function") {
                         return isCellEditable(params);
                     }
                     return _allow;
                 },
                 cellStyle: (params) => {
-                    const _allow = (modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()));
+                    const _allow = (modeApi?.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()));
                     if (_allow && typeof isCellEditable === "function" && isCellEditable(params)) {
                         return { /* border:"solid 1px #bae7ff" */ };
                     }
@@ -140,7 +140,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
             },
             ...columnTypes
         };
-    }, [modeApi.isOnMode()]);
+    }, [modeApi?.isOnMode()]);
 
     const _rowClassRules = useMemo(() => {
         return rowClassRules;

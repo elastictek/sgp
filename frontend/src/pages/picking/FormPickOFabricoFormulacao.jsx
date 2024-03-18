@@ -183,7 +183,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         {state.step == 0 && <Col><AggChoose openNotification={openNotification} onClick={onSelectOrdem} /></Col>}
                                         {state.step == 1 && <Col>
                                             <YScroll maxHeight={"80vh"}>
-                                                <FormFormulacao noHeader={true} setFormTitle={true} parameters={{ cs_id: state.pos.items[0].cs_id, type: "formulacao_formulation_change" }} />
+                                                <FormFormulacao header={false} setFormTitle={true} parameters={{ cs_id: state.pos.items[0].cs_id, type: "formulacao_formulation_change" }} />
                                             </YScroll>
                                         </Col>}
                                     </Row>

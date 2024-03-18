@@ -201,16 +201,16 @@ export default (props) => {
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <div></div> //<BobinesPropriedadesList {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div></div> //<BobinesPropriedadesList {...{ parameters: props?.parameters, print: true, edit: true, permission }} />,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <div></div>//<BobinesDefeitosList noPrint={false} noEdit={false} {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div></div>//<BobinesDefeitosList print={true} edit={true} {...{ parameters: props?.parameters, print: true, edit: true, permission }} />,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <div></div>//<BobinesDestinosList noPrint={false} noEdit={false} {...{ parameters: props?.parameters, noPrint: false, noEdit: false, permission }} />,
+                                children: <div></div>//<BobinesDestinosList print={true} edit={true} {...{ parameters: props?.parameters, print: true, edit: true, permission }} />,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
@@ -219,7 +219,7 @@ export default (props) => {
                             }, {
                                 label: `Bobines Originais`,
                                 key: '7',
-                                children: <div></div>//<BobinesOriginaisList {...{ parameters: props?.parameters, noPrint: true, noEdit: true, permission }} />,
+                                children: <div></div>//<BobinesOriginaisList {...{ parameters: props?.parameters, print: false, edit: false, permission }} />,
                             },
                             {
                                 label: `Histórico`,

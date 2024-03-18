@@ -24,7 +24,7 @@ from datetime import datetime
 from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
-from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check
+from support.database import encloseColumn, Filters, DBSql, TypeDml, fetchall, Check, ParsedFilters
 from support.myUtils import  ifNull,delKeys
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
@@ -42,6 +42,7 @@ import requests
 import psycopg2
 from decimal import Decimal
 from producao.api.exports import export
+from support.postdata import PostData
 
 connGatewayName = "postgres"
 connMssqlName = "sqlserver"
@@ -160,40 +161,84 @@ def updateMaterializedView(mv):
     conngw.commit()
 
 def GetEventosWithoutBobinagem(request,format=None):
-    filter = request.data.get("filter")
     connection = connections["default"].cursor()
-    f = Filters(filter)
-    f.where()
-    f.value("and")
-    response = db.executeSimpleList(lambda: (
-        f"""
-            select * 
-            from ig_bobinagens ib
-            where ib.t_stamp > DATE_SUB(NOW(), INTERVAL 4 MONTH) and ib.`type` = 1 and not exists (select 1 from producao_bobinagem pb where pb.ig_bobinagem_id is not null and pb.ig_bobinagem_id=ib.id)
-            order by ib.id desc
-        """
-    ), connection, {**f.parameters})
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"and",r.apiversion)
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}  
+
+    try:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select * 
+                from ig_bobinagens ib
+                where ib.t_stamp > DATE_SUB(NOW(), INTERVAL 4 MONTH) and ib.`type` = 1 and not exists (select 1 from producao_bobinagem pb where pb.ig_bobinagem_id is not null and pb.ig_bobinagem_id=ib.id)
+                {pf.group()}
+                order by ib.id desc
+            """
+        ), connection, {**parameters},[],r.norun)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
     return Response(response)
 
 def GetAuditCurrentSettingsRange(request,format=None):
-    filter = request.data.get("filter")
     connection = connections["default"].cursor()
-    f = Filters(filter)
-    f.add(f"(pc.`timestamp` between DATE_SUB(:t_stamp, interval 2 hour) and DATE_SUB(:t_stamp, interval -2 hour))",lambda v:(v!=None) )
-    f.where()
-    f.value("and")
-    response = db.executeSimpleList(lambda: (
-        f"""
-             select pc.id acs_id,pc.`timestamp`, pta.cod agg_cod, pta.id agg_id, po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , t1.artigo_des, po.was_in_production, po.`status` ofabrico_status,
-            case when pc.cortes is not null then pc.cortes->'$.id' else pta.cortes_id end cortes_id,
-            case when pc.cortesordem is not null then pc.cortesordem->'$.id' else pta.cortesordem_id end cortesordem_id
-            from planeamento_ordemproducao po 
-            join audit_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
-            left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
-            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
-            left join producao_tempaggordemfabrico pta on pta.id=pt.agg_of_id 
-            {f.text} order by pc.`timestamp` desc
-        """
-    ), connection, {**f.parameters})
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
+    dql = db.dql(request.data, False,False)
+    parameters = {**pf.parameters}  
+    try:
+        response = db.executeSimpleList(lambda: (
+            f"""
+                select 
+                acs.type_op,acs.agg_of_id,pta.cod agg_cod,
+                acs.id acs_id,pc.status ofabrico_status,
+                acs.`timestamp`, cc.cortes,cco.cortesordem,
+                (select JSON_ARRAYAGG(json_object(
+                "of_id",t.of_id,"of_cod",t.of_cod,
+                "cliente_nome",t.cliente_nome,"cliente_cod",t.cliente_cod,
+                "prf_cod",t.prf_cod,"order_cod",t.order_cod ,
+                "artigo_cod",t.artigo_cod ,"artigo_des", t.artigo_des
+                ))
+                from JSON_TABLE (aco.ofs,"$[*]"COLUMNS ( 
+                    of_id INT PATH "$.of_id", 
+                    of_cod VARCHAR(30) PATH "$.of_cod", 
+                    artigo_cod VARCHAR(50) PATH "$.artigo_cod",
+                    artigo_des VARCHAR(200) PATH "$.artigo_des",
+                    cliente_cod VARCHAR(50) PATH "$.cliente_cod",
+                    cliente_nome VARCHAR(250) PATH "$.cliente_nome",
+                    order_cod VARCHAR(50) PATH "$.order_cod",
+                    prf_cod VARCHAR(50) PATH "$.prf_cod"
+                )) t ) ofs
+                from audit_current_settings acs
+                join producao_currentsettings pc on pc.id=acs.contextid
+                join audit_current_ofs aco on aco.id = acs._ofs 
+                join audit_current_cortes cc on cc.id = acs._cortes
+                join audit_current_cortesordem cco on cco.id = acs._cortesordem
+                left join producao_tempaggordemfabrico pta on pta.id=acs.agg_of_id
+                {pf.group()} {"and" if pf.hasFilters else "where"} cc.cortes is not null and cco.cortesordem is not null
+                order by acs.`timestamp` desc
+            """
+        ), connection, parameters,[],r.norun)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
 
-    return Response(response)    
+def IgnoreEvent(request, format=None):
+    r = PostData(request)
+    def _update(id,cursor):
+        values={"`ignore`":1}
+        dml = db.dml(TypeDml.UPDATE, values, "ig_bobinagens", {"id":Filters.getNumeric(id,"isnull")}, None, False,[])
+        print(dml.statement)
+        print(dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                _update(r.filter.get("id"),cursor)
+        return Response({"status": "success", "title": "Evento alterado com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})

@@ -406,12 +406,12 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         } /* onChangeStatus={onChangeStatus} */ /></Col>}
                                         {state.step == 1 && <Col>
                                             <YScroll maxHeight={"80vh"}>
-                                                <FormFormulacao noHeader={true} setFormTitle={true} parameters={{ cs_id: state.pos.cs_id, type: "formulacao_formulation_change" }} />
+                                                <FormFormulacao header={false} setFormTitle={true} parameters={{ cs_id: state.pos.cs_id, type: "formulacao_formulation_change" }} />
                                             </YScroll>
                                         </Col>}
                                         {state.step == 2 && <Col>
                                             <YScroll maxHeight={"80vh"}>
-                                                <Suspense fallback={<Spin />}><FormFormulacao noHeader={true} setFormTitle={true} parameters={{ cs_id: state.pos.cs_id, type: "formulacao_dosers_change" }} /></Suspense>
+                                                <Suspense fallback={<Spin />}><FormFormulacao header={false} setFormTitle={true} parameters={{ cs_id: state.pos.cs_id, type: "formulacao_dosers_change" }} /></Suspense>
                                             </YScroll>
                                         </Col>}
                                         {state.step == 3 && <Col>
@@ -431,7 +431,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         </Col>}
                                         {state.step == 6 && <Col>
                                             <YScroll maxHeight={"80vh"}>
-                                                <Suspense fallback={<Spin />}><FormCortes noHeader={true} setFormTitle={true} parameters={{ agg_of_id: state.pos.agg_id, cs_id: state.pos.cs_id, type: "cortes" }} /></Suspense>
+                                                <Suspense fallback={<Spin />}><FormCortes header={false} setFormTitle={true} parameters={{ agg_of_id: state.pos.agg_id, cs_id: state.pos.cs_id, type: "cortes" }} /></Suspense>
                                             </YScroll>
                                         </Col>}
                                         {state.step == 7 && <Col style={{ textAlign: "center" }}>

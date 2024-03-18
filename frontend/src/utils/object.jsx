@@ -81,8 +81,9 @@ export const excludeObjectKeys = (value = {}, exclude = []) => {
         return false;
     }
     const _exclude = v => exclude.some(x => {
-
-        if (x.startsWith('%') && x.endsWith('%')) {
+        if (isNullOrEmpty(x)){
+            return false;
+        }else if (x.startsWith('%') && x.endsWith('%')) {
             return v.includes(x.replace(/^\%*|\%*$/g, ''));
         } else if (x.startsWith('%')) {
             return v.endsWith(x.replace(/^\%*/g, ''));
@@ -98,7 +99,9 @@ export const excludeObjectKeys = (value = {}, exclude = []) => {
 
 export const includeObjectKeys = (value = {}, include = []) => {
     const _include = v => include.some(x => {
-        if (x.startsWith('%') && x.endsWith('%')) {
+        if (isNullOrEmpty(x)){
+            return true;
+        }else if (x.startsWith('%') && x.endsWith('%')) {
             return v.includes(x.replace(/^\%*|\%*$/g, ''));
         } else if (x.startsWith('%')) {
             return v.endsWith(x.replace(/^\%*/g, ''));

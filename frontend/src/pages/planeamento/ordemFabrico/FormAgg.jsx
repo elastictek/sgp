@@ -14,7 +14,8 @@ import { LoadingOutlined, EditOutlined, PlusOutlined, EllipsisOutlined, SettingO
 import { DATE_FORMAT, DATETIME_FORMAT, THICKNESS } from 'config';
 import FormAggUpsert from '../agg/FormAggUpsert';
 const FormPaletesStockUpsert = React.lazy(() => import('../paletesStock/FormPaletesStockUpsert'));
-const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
+const FormPaletizacao = React.lazy(() => import('../../paletes/paletizacao/FormPaletizacao'));
+//const FormPaletizacao = React.lazy(() => import('./FormPaletizacao'));
 const FormSettings = React.lazy(() => import('./FormSettings'));
 const FormAttachments = React.lazy(() => import('./FormAttachments'));
 import { remove } from 'ramda';
@@ -23,6 +24,7 @@ import { FaPallet, FaWarehouse, FaTape } from 'react-icons/fa';
 
 import { OFabricoContext } from '../ordemFabrico/FormOFabricoValidar';
 import SvgSchema from '../paletizacaoSchema/SvgSchema';
+import useModalApi from 'utils/useModalApi';
 
 const StyledCard = styled(Card)`
     .ant-card-body{
@@ -97,8 +99,9 @@ const PaletesStock = ({ item }) => {
     )
 }
 
-const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
+const CardAgg = ({ aggId, aggItem, setShowForm, /* aggItem */ of_id, parentReload }) => {
     const paletes = JSON.parse(aggItem?.n_paletes);
+    const modalApi = useModalApi() //not Required;
 
     const onAction = (op) => {
         switch (op) {
@@ -109,13 +112,28 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'settings':
-                console.log("sssss",aggItem,of_id)
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
             case 'attachments':
                 setShowForm(prev => ({ ...prev, type: op, mode: "drawer", show: !prev.show, record: { /* aggItem, */ aggItem, of_id } }));
                 break;
         }
+    }
+
+    const onPaletizacaoClick = () => {
+        modalApi.setModalParameters({
+            content: <FormPaletizacao onAssociateSuccess={()=>parentReload({agg_id:aggId[0].id})} associate={true} edit={false} parameters={{ 
+                artigo_cod: aggItem?.item_cod, cliente_cod: aggItem?.cliente_cod, draft_id: of_id, id: aggItem?.paletizacao_id 
+            }} />,
+            closable: true,
+            title: `Esquema de Embalamento ${aggItem?.of_id}`,
+            lazy: true,
+            type: "drawer",
+            responsive: true,
+            width: "100%",
+            parameters: { /* ...getCellFocus(gridRef.current.api) */ }
+        });
+        modalApi.showModal();
     }
 
     return (
@@ -133,7 +151,7 @@ const CardAgg = ({ aggItem, setShowForm, /* aggItem */ of_id }) => {
                     <div key="settings" onClick={() => onAction('settings')} title="Outras definições">Definições</div>,
                     /* <FaPallet key="schema" onClick={() => onAction('schema')} title="Paletização (Esquema)" />, */
                     /* <FaWarehouse key="paletes" onClick={() => onAction('paletes_stock')} title="Paletes em Stock" />, */
-                    <div key="schema" onClick={() => onAction('schema')} title="Paletização (Esquema)">Paletização</div>,
+                    <div key="schema" onClick={onPaletizacaoClick} title="Paletização (Esquema)">Paletização</div>,
                     <div key="paletes" onClick={() => onAction('paletes_stock')}>Stock</div>,
                     <div key="attachments" onClick={() => onAction('attachments')}><span><PaperClipOutlined />Anexos</span></div>
                     /* <div key="quantity" onClick={() => onAction('quantity')} title="Quantidades">Quantidades</div> */
@@ -233,7 +251,7 @@ export default ({ /* changedValues */ }) => {
                 (async () => {
                     let _aggs = await loadAggsLookup(ctx.produto_id, token);
                     setAggs(_aggs);
-                    console.log("LOAD-DATA-AGG",agg_id)
+                    console.log("LOAD-DATA-AGG", agg_id)
                     if (agg_id && _aggs[0]?.v) {
                         //const { id, group_id, group_ofid, group_item_cod, group_qty_item } = _aggs[0].v.filter(v => v.id == agg_of_id)[0];
                         const ret = _aggs[0].v.filter(v => v.id == agg_id);
@@ -265,7 +283,7 @@ export default ({ /* changedValues */ }) => {
         /* const { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } = ctx; */
         /* if (newForm) { */
         setShowForm(prev => ({ ...prev, type: null, show: !prev.show, /* record: { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } */ }));
-        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$",{ ...prev, type: null, show: !prev.show, /* record: { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } */ })
+        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", { ...prev, type: null, show: !prev.show, /* record: { produto_id, produto_cod, ofabrico, temp_ofabrico_agg, temp_ofabrico } */ })
         /* } else { */
         //setShowForm(prev => ({ ...prev, show: !prev.show, record: { ...form.getFieldsValue(true) } }));
         /* } */
@@ -322,7 +340,7 @@ export default ({ /* changedValues */ }) => {
                                 size="small"
                                 dataSource={aggId}
                                 renderItem={aggItem => {
-                                    return (<CardAgg aggItem={aggItem} /* aggItem={aggId[item.name]} */ of_id={ctx.of_id} setShowForm={setShowForm} />);
+                                    return (<CardAgg parentReload={loadData} aggId={aggId} aggItem={aggItem} /* aggItem={aggId[item.name]} */ of_id={ctx.of_id} setShowForm={setShowForm} />);
                                 }}
                             >
                             </List>

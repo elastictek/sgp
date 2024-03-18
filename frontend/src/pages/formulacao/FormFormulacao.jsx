@@ -149,7 +149,7 @@ const menuOptions = ({ edit, joinbc, referenceDisabled = false }) => [
     ...(edit) ? [{ key: 6, label: <Space><Field name="joinbc" label={{ enabled: false }}><SwitchField /></Field><span>{joinbc ? "Desagrupar extrusora BC" : "Agrupar extrusora BC"}</span></Space> }] : []
 ];
 
-export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...props }) => {
+export default ({ header = true, setFormTitle, enableAssociation = true, ...props }) => {
     const media = useContext(MediaContext);
 
     const permission = usePermission({ name: "formulacao", item: "datagrid" });//Permissões Iniciais
@@ -729,7 +729,7 @@ export default ({ noHeader = false, setFormTitle, enableAssociation = true, ...p
         <YScroll>
             {!setFormTitle && <TitleForm auth={permission.auth} data={dataAPI.getFilter(true)} onChange={onFilterChange} level={location?.state?.level} form={formFilter} />}
             <FormContainer id="form" fluid loading={submitting.state} wrapForm={true} form={form} fieldStatus={fieldStatus} setFieldStatus={setFieldStatus} onValuesChange={onValuesChange} wrapFormItem={true} forInput={mode.datagrid.edit} style={{ padding: "0px 5px" }} alert={{ tooltip: true, pos: "none" }}>
-                {!noHeader && <Row style={{}} gutterWidth={10}>
+                {header && <Row style={{}} gutterWidth={10}>
                     <Col xs={2} md={1}><Field name="versao" forInput={false} label={{ enabled: true, text: "Versao" }}><Input /></Field></Col>
                     <Col xs={4} md={2}><FormulacaoGroups name="group_name" label={{ enabled: true, text: "Grupo" }} /></Col>
                     <Col xs={4} md={2}><FormulacaoSubGroups name="subgroup_name" label={{ enabled: true, text: "SubGrupo" }} /></Col>

@@ -1788,7 +1788,7 @@ def _bobinesOriginais(_filter,_data):
 
             row_number() over() rowid,
             root,root_estado,emenda,emenda_lvl1,emenda_lvl2,emenda_lvl3,emenda_lvl4,
-
+            pbm.nwsup,pbm.lotenwsup,pbm.tiponwsup,pbm.nwinf,pbm.lotenwinf,pbm.tiponwinf,
 
             bobine bobine0,comp0,largura0,plt.nome palete0, tb1.estado estado0,
             original_lvl1, comp1 comp1_original, (comp1 - metros) comp1_atual, metros metros_cons,largura1,estado1,plt1.nome palete1,
@@ -1813,9 +1813,11 @@ def _bobinesOriginais(_filter,_data):
 
             FROM (
             select
-            palete_id,bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4,
+            palete_id,           
+            bobine, original_lvl1, original_lvl2, original_lvl3, original_lvl4,
             original_lvl5,
             IFNULL(original_lvl5, IFNULL(original_lvl4, IFNULL(original_lvl3, IFNULL(original_lvl2, original_lvl1)))) root,
+            IFNULL(original_id_lvl5, IFNULL(original_id_lvl4, IFNULL(original_id_lvl3, IFNULL(original_id_lvl2, original_id_lvl1)))) root_id,
             IFNULL(estado5, IFNULL(estado4, IFNULL(estado3, IFNULL(estado2, estado1)))) root_estado
 
             ,case when (original_lvl5 is not null) THEN 5
@@ -1842,7 +1844,9 @@ def _bobinesOriginais(_filter,_data):
                         ,palete_id1,palete_id2,palete_id3,palete_id4,palete_id5,
                         estado,estado1,estado2,estado3,estado4,estado5
             from (
-            select distinct pb0.palete_id,pb0.nome bobine, pb.nome original_lvl1,     
+            select distinct pb0.palete_id,
+            pb0.id bobine_id, pb.id original_id_lvl1,pb2.id original_id_lvl2,pb3.id original_id_lvl3, pb4.id original_id_lvl4, pb5.id original_id_lvl5,
+            pb0.nome bobine, pb.nome original_lvl1,     
 
             pb2.nome original_lvl2,
             pb3.nome original_lvl3, pb4.nome original_lvl4, pb5.nome original_lvl5 ,  
@@ -1904,7 +1908,9 @@ def _bobinesOriginais(_filter,_data):
             /**/
              {fs}
 
-            ) tb0 LIMIT 5000) tb1
+            ) tb0 LIMIT 50000) tb1
+            left join producao_bobine pb on pb.id=root_id
+            left join producao_bobinagem pbm on pbm.id=pb.bobinagem_id
             LEFT JOIN producao_palete plt on tb1.palete_id=plt.id
             LEFT JOIN producao_palete plt1 on tb1.palete_id1=plt1.id
             LEFT JOIN producao_palete plt2 on tb1.palete_id2=plt2.id

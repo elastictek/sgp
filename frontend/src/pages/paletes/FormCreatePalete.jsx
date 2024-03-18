@@ -45,7 +45,7 @@ import { json } from "utils/object";
 import PaleteBobinesPick from '../picking/PaleteBobinesPick';
 
 const loadOrdensFabricoOpen = async () => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: {}, filter: {}, parameters: { method: "OrdensFabricoOpen" } });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, pagination: {}, filter: {retrabalho:0}, parameters: { method: "OrdensFabricoOpen" } });
     return rows;
 }
 

@@ -191,7 +191,7 @@ const isRecycled = (data) => {
   return false;
 }
 
-export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
+export default ({ noid = true, print = false, edit = false, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();
@@ -627,7 +627,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         topToolbar={{
           start: <Space>
             {(modeApi.isOnMode() && dataAPI.hasData()) && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
-            {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
+            {print && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
           left: <></>
         }}
         //rowSelectionIgnoreOnMode={true}

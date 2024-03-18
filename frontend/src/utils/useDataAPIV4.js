@@ -378,7 +378,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const { openNotification } = useContext(AppContext);
     const [isLoading, setIsLoading] = useState(false);
     const action = useRef([]);
-    const apiversion = "4"
+    const apiversion = "4";
     const [state, updateState] = useImmer({
         init: false,
         initLoaded: payload?.initLoaded || false,
@@ -390,11 +390,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         //sort: payload?.sort || [],
         sort: [],
         parameters: payload?.parameters || {},
-        primaryKey: payload?.primaryKey || null,
         data: (payload?.data) ? payload.data : {},
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
         ...getLocalStorage(id, useStorage),
+        primaryKey: payload?.primaryKey || null,
         baseFilter: payload?.baseFilter ? { ...payload.baseFilter } : {},
         totalRows: 0
     });
@@ -404,7 +404,6 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         dsV4StateInit: false,
         initLoaded: payload?.initLoaded || false,
         update: null,
-        primaryKey: payload?.primaryKey || null,
         pagination: payload?.pagination ? { ...payload.pagination } : { enabled: false, pageSize: 10 },
         filter: payload?.filter ? { ...payload.filter } : {},
         preFilter: payload?.preFilter ? { ...payload.preFilter } : {},
@@ -414,6 +413,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
         withCredentials: payload?.withCredentials || null,
         url: payload?.url,
         ...getLocalStorage(id, useStorage),
+        primaryKey: payload?.primaryKey || null,
         onGridRequest: payload?.onGridRequest ? payload.onGridRequest : null,
         onGridResponse: payload?.onGridResponse ? payload.onGridResponse : null,
         onGridFailRequest: payload?.onGridFailRequest ? payload.onGridFailRequest : null,

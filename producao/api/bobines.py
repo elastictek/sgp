@@ -578,7 +578,6 @@ def BobinesOriginaisList(request,format=None):
 def BobinesListV2(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
-    print(r.filter)
     pf = ParsedFilters(r.filter,"where",r.apiversion)
     dql = db.dql(request.data, False,False)
     parameters = {**pf.parameters}
@@ -628,8 +627,6 @@ def BobinesListV2(request, format=None):
 def BobinesDestinosHint(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
-    print(r.filter)    
-    print("#######################################################")
     #print(r.cloneFilter("t1",["artigo_id_from"],lambda v: {**v,"group":"t3"} ))
     pf = ParsedFilters(r.filter,{"t2":""},r.apiversion)
     print(pf.group("t1"))

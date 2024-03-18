@@ -69,7 +69,6 @@ def fetchone(cursor, exclude=[]):
             return dict(zip(columns, row))
         return {}    
 
-
 def encloseColumn(col, enclose=True, join=True, ignore=[], colSeparator='.', listSeparator=', '):
     if not col:
         return '' if join else []
@@ -298,11 +297,9 @@ class BaseSql:
             print(f'EXECUTE--> {sql}')
             print(f'PARAMS--> {parameters}')
             execSql = self.computeSequencial(sql() if callable(sql) else sql, parameters)
-            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
             print(execSql["sql"])
             print(execSql["parameters"])
             connOrCursor.execute(execSql["sql"],execSql["parameters"])
-            print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz")
             if returning:
                 ret = connOrCursor.fetchone()[0]
                 return ret
@@ -523,7 +520,7 @@ class MySqlSql(BaseSql):
             ret.columns = self.columns(
                 data.get('columns', ['*']), super().encloseColumns)
         return ret
-
+    
     def dml(self, typeDml, data, table=None, filterParameters=None, returning=None, encloseColumns=False, ignoreKeys=[]):
         "Compute insert/update/delete items and statement"
         ret = BaseSql.Dml()
@@ -900,8 +897,12 @@ class ParsedFilters:
                 return "where"
         return self.prefix
 
+    def log(self,str="t1"):
+        print(self.group(str))
+        print(self.parameters)
+
     def compute(self):
-        print("RRRRRR")
+       
         #_p = {k:v for k, v in self.filterData.items() if "groups" in v}
 
         

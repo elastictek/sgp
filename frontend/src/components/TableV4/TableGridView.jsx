@@ -41,7 +41,7 @@ import { useImmer } from 'use-immer';
 
 
 export default ({
-    loading, columnDefs, defaultColDefs, columnTypes, rowClassRules = {}, filters, title, leftTitle, permission, defaultParameters, dataAPI, onSelectionChanged, isRowSelectable, ignoreRowSelectionOnCells = [],
+    loading, columnDefs, defaultColDefs, columnTypes, rowClassRules = {}, filters, title, leftTitle, permission, defaultParameters, dataAPI,
     topToolbar, loadOnInit = true, local = false, defaultSort = [], defaultFilters = {}, gridRef, style, valueGetter, onGridReady,
     onGridRequest, onGridResponse, onGridFailRequest, ...props }) => {
     const _gridRef = gridRef || useRef(); //not required
@@ -75,7 +75,7 @@ export default ({
             editable: false,//(params) => modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()), //params.data.year == 2012,
             filter: false,
             sortable: true,//modeApi.isOnMode() ? false : true,
-            suppressMenu: false,//modeApi.isOnMode() ? true : false,
+            suppressHeaderMenuButton: false,//modeApi.isOnMode() ? true : false,
             valueGetter: (params) => {
                 return defaultValueGetter(params, valueGetter);
             },
@@ -91,20 +91,6 @@ export default ({
     const _rowClassRules = useMemo(() => {
         return rowClassRules;
     }, []);
-
-    const _onSelectionChanged = (rows) => {
-        if (typeof onSelectionChanged === "function") {
-            onSelectionChanged(rows);
-        }
-    };
-
-    const _isRowSelectable = (params) => {
-        if (typeof isRowSelectable === "function") {
-            return isRowSelectable(params);
-        }
-        return true;
-    };
-
 
     return (
         <div style={{ width: "100%", height: "80vh", ...style }}>

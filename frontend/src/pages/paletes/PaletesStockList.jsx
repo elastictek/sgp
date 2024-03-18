@@ -185,7 +185,7 @@ export default ({ setFormTitle, noid = false, ...props }) => {
             content: "paletesstock", responsive: true, type: "drawer", width: "85%", title: "Paletes disponíveis", push: false, loadData: () => { }, parameters: {
                 offsetHeight:"200px",
                 multipleSelection: true,
-                payload: { payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: { method: "PaletesStockAvailableList" }, pagination: { enabled: true }, filter: _filter, sort: [] } },
+                payload: { payload: { url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: { method: "PaletesStockAvailableList" }, pagination: { enabled: false,limit:300 }, filter: _filter, sort: [] } },
                 toolbar: true,
                 columns: [
                     { name: 'nome', header: 'Palete', defaultWidth: 160,defaultLocked: true },

@@ -125,7 +125,7 @@ const gutterWidth = 5;
 
 export const AntdInputEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
-    const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const value = useMemo(() => {
         return props.value;
     }, [props.value]);
@@ -144,7 +144,7 @@ export const AntdInputEditor = forwardRef((props, ref) => {
 export const AntdDateEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
     const { format = DATETIME_FORMAT } = props.column.getDefinition()?.cellRendererParams || {};
-    const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
 
     const value = useMemo(() => {
         return dayjsValue(props.value);
@@ -169,7 +169,7 @@ export const AntdDateEditor = forwardRef((props, ref) => {
 export const AntdAutoCompleteEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
     const { map } = props.column.getDefinition()?.cellRendererParams || {};
-    const { options: opt, remote, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, options: opt, remote, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const _options = opt ? opt : map ? Object.entries(map).map(([value, { label }]) => ({ value: value, label })) : [];
     const [options, setOptions] = useState([]);
 
@@ -208,7 +208,7 @@ export const AntdAutoCompleteEditor = forwardRef((props, ref) => {
 export const AntdSelectEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
     const { map } = props.column.getDefinition()?.cellRendererParams || {};
-    const { options, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, options, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const _options = options ? options : map ? Object.entries(map).map(([value, { label }]) => ({ value: value, label })) : [];
 
     const value = useMemo(() => {
@@ -229,7 +229,7 @@ export const AntdSelectEditor = forwardRef((props, ref) => {
 export const AntdMultiSelectEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
     const { map } = props.column.getDefinition()?.cellRendererParams || {};
-    const { options, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, options, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const _options = options ? options : map ? Object.entries(map).map(([value, { label }]) => ({ value: value, label })) : [];
 
     const value = useMemo(() => {
@@ -249,7 +249,7 @@ export const AntdMultiSelectEditor = forwardRef((props, ref) => {
 });
 export const AntdCheckboxEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
-    const { checkedValues = [1, "1", true], unCheckedValues = [0, "0", false], checkedValue = null, unCheckedValue = null, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, checkedValues = [1, "1", true], unCheckedValues = [0, "0", false], checkedValue = null, unCheckedValue = null, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
 
     const value = useMemo(() => {
         return checkedValues.includes(props?.value) ? true : false;
@@ -282,7 +282,7 @@ export const AntdCheckboxEditor = forwardRef((props, ref) => {
 });
 export const AntdInputNumberEditor = forwardRef((props, ref) => {
     const { onValueChange } = props;
-    const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const value = useMemo(() => {
         return props.value;
     }, [props.value]);
@@ -301,7 +301,7 @@ export const AntdInputNumberEditor = forwardRef((props, ref) => {
 export const ArtigosLookupEditor = forwardRef((props, ref) => {
     const modalApi = useModalApi();
     const { onValueChange, api } = props;
-    const { options, title = "Artigos", baseFilters = {}, keyField = "cod", textField = "des", ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, options, title = "Artigos", baseFilters = {}, keyField = "cod", textField = "des", ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/artigos/sql/`, primaryKey: "id", parameters: { method: "ArtigosLookup" },
@@ -360,7 +360,7 @@ export const ArtigosLookupEditor = forwardRef((props, ref) => {
 export const ClientesLookupEditor = forwardRef((props, ref) => {
     const modalApi = useModalApi();
     const { onValueChange, api } = props;
-    const { options, title = "Clientes", baseFilters = {}, keyField = "BPCNUM_0", textField = "BPCNAM_0", ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, options, title = "Clientes", baseFilters = {}, keyField = "BPCNUM_0", textField = "BPCNAM_0", ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
     const dataAPI = useDataAPI({
         payload: {
             url: `${API_URL}/artigos/sql/`, primaryKey: "BPCNUM_0", parameters: { method: "ClientesLookup" },
@@ -416,6 +416,27 @@ export const ClientesLookupEditor = forwardRef((props, ref) => {
 
     return <Input value={value} style={{ cursor: "pointer", width: "100%" }} onClick={onPopup} /* onKeyDown={_onKeyDown} */ readOnly suffix={<SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />;
 });
+
+
+export const MultiEditor = forwardRef((props, ref) => {
+    const { editorType } = props.column.getDefinition()?.cellEditorParams || null;
+
+    const _type = (editorType && typeof editorType == "function") ? editorType(props.column.getDefinition(), props.data) : null;
+
+    switch (_type?.type) {
+        case "AntdInputNumberEditor": return <AntdInputNumberEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "AntdSelectEditor": return <AntdSelectEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "AntdCheckboxEditor": return <AntdCheckboxEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "AntdMultiSelectEditor": return <AntdMultiSelectEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "AntdAutoCompleteEditor": return <AntdAutoCompleteEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "AntdDateEditor": return <AntdDateEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "ArtigosLookupEditor": return <ArtigosLookupEditor {...props} ref={ref} otherParams={_type?.params} />;
+        case "ClientesLookupEditor": return <ClientesLookupEditor {...props} ref={ref} otherParams={_type?.params} />;
+    }
+    return <AntdInputEditor  {...props} ref={ref} otherParams={_type?.params} />;
+});
+
+
 
 const schemaMultiRange = ({ ctx }) => z.object({
     min: z.any(),
@@ -529,7 +550,7 @@ export const RangeDefeitosEditor = forwardRef((props, ref) => {
     const initialized = useRef(false);
     const modalApi = useModalApi();
     const { onValueChange, api } = props;
-    const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
     const { unit, title } = props.column.getDefinition()?.cellRendererParams || {};
     const _field = columnPath(props.column);
 
@@ -662,11 +683,13 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
         const rows = !isNullOrEmpty(value?.destinos) ? value.destinos.map(v => ({ [dataAPI.getPrimaryKey()]: uid(6), prioridade: v?.prioridade ? v.prioridade : 1, cliente_cod: v.cliente.BPCNUM_0, cliente_des: v.cliente.BPCNAM_0, largura: v.largura, obs: v.obs })) : [];
         dataAPI.setRows(rows);
         let _minLargura = data?.lar;
+        let _artigos = data?.artigo_id;
         if (selectedNodes) {
             _minLargura = minOf(selectedNodes, "lar");
+            _artigos = uniqueValues(selectedNodes, ["artigo_id"]).map(v => v.artigo_id);
             dataAPIBobines.setRows(selectedNodes);
         }
-        form.setFieldsValue({ ...value, largura: _minLargura, estado: noValue(value?.estado, { value: data.estado }), regranular: noValue(value?.regranular, 0), obs: data?.obs, prop_obs: data?.prop_obs, troca_etiqueta: data?.troca_etiqueta });
+        form.setFieldsValue({ ...value, largura: _minLargura, artigos: _artigos, estado: noValue(value?.estado, { value: data.estado }), regranular: noValue(value?.regranular, 0), obs: data?.obs, prop_obs: data?.prop_obs, troca_etiqueta: data?.troca_etiqueta });
         submitting.end();
     }, []);
 
@@ -877,7 +900,7 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
                         pagination: { enabled: false, limit: 500 }, baseFilter: {
                             ...parseFilter("artigo_id_from", `==${data?.artigo_id}`, { type: "number", group: "t1" }),
                             ...parseFilter("pd.lar_to", `<=${form.getFieldValue("largura")}`, { type: "number", group: "t1" }),
-                            ...parseFilter("pa2.id", `==${data?.artigo_id}`, { type: "number", group: "t2" }),
+                            ...parseFilter("pa2.id", `in:${form.getFieldValue("artigos").join(",")}`, { type: "number", group: "t2" }),
                             ...parseFilter("pa2.lar", `<=${form.getFieldValue("largura")}`, { type: "number", group: "t2" }),
                         }
                     }}
@@ -895,6 +918,10 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
                         no: ["artigo_id_from"],
                         other: [{ field: "nome", colId: "pc.nome", group: "t3" }, { field: "lar_to", alias: "pa.lar", type: "number", group: "t3" }]
                     }}
+                    dataGridProps={{ onRowDoubleClicked: ({ data },closeSelf,x) => {
+                        onDestinosSelect([{data}], index, _data, priority, gridRef.current.api);
+                        closeSelf();
+                    } }}
                     style={{ height: `calc(80vh - 70px)` }}
                     rowSelection={index ? "single" : "multiple"}
                 />,
@@ -937,6 +964,30 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
         } else {
             _lookup(_data.prioridade);
             modalApi.showModal();
+        }
+    }
+
+    const onOption = (opt) => {
+        const _gRows = getAllNodes(gridRef.current.api);
+        switch (opt) {
+            case 1:
+                if (!_gRows.some(v => v.cliente_cod == 3)) {
+                    dataAPI.setRows([..._gRows, { [dataAPI.getPrimaryKey()]: uid(6), prioridade: "8", cliente_cod: "3", cliente_des: "Sem alternativa", largura: null, obs: null }]);
+                    setIsDirty(true);
+                }
+                break;
+            case 2:
+                if (!_gRows.some(v => v.cliente_cod == 1)) {
+                    dataAPI.setRows([..._gRows, { [dataAPI.getPrimaryKey()]: uid(6), prioridade: "8", cliente_cod: "1", cliente_des: "Industrialização", largura: null, obs: null }]);
+                    setIsDirty(true);
+                }
+                break;
+            case 3:
+                if (!_gRows.some(v => v.cliente_cod == 0)) {
+                    dataAPI.setRows([..._gRows, { [dataAPI.getPrimaryKey()]: uid(6), prioridade: "8", cliente_cod: "0", cliente_des: "Elastictek", largura: null, obs: null }]);
+                    setIsDirty(true);
+                }
+                break;
         }
     }
 
@@ -1040,7 +1091,13 @@ export const FormDestinosEditor = ({ value, selectedNodes, field, data, wndRef, 
                             {((regranular == 0 || form.getFieldValue("regranular") == 0) && (estado?.value !== "R" || form.getFieldValue("estado")?.value != "R")) && <Row>
                                 <Col md={7}>
                                     <Row nogutter style={{ padding: "5px", alignItems: "center", height: "45px" }}>
-                                        <Col></Col>
+                                        <Col>
+                                            <Space>
+                                                {(forInput && regranular == 0 && estado?.value !== "R") && <Button danger onClick={() => onOption(1)}>Sem alternativa</Button>}
+                                                {(forInput && regranular == 0 && estado?.value !== "R") && <Button type="primary" ghost onClick={() => onOption(2)}>Industrialização</Button>}
+                                                {(forInput && regranular == 0 && estado?.value !== "R") && <Button onClick={() => onOption(3)}>Elastictek</Button>}
+                                            </Space>
+                                        </Col>
                                         <Col xs="content">
                                             {(forInput && regranular == 0 && estado?.value !== "R") && <Button onClick={() => onLookup()} icon={<CheckSquareOutlined />} type="primary">Selecionar</Button>}
                                         </Col>
@@ -1094,7 +1151,7 @@ export const DestinosEditor = forwardRef((props, ref) => {
     const initialized = useRef(false);
     const modalApi = useModalApi();
     const { onValueChange, api } = props;
-    const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+    const { editorType, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
     const { title } = props.column.getDefinition()?.cellRendererParams || {};
     const _field = columnPath(props.column);
 
@@ -1342,7 +1399,7 @@ export const DestinosEditor = forwardRef((props, ref) => {
 //     const initialized = useRef(false);
 //     const modalApi = useModalApi();
 //     const { onValueChange, api } = props;
-//     const { ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
+//     const { editorType, ...editorParams } = props.column.getDefinition()?.cellEditorParams || {};
 //     const { title } = props.column.getDefinition()?.cellRendererParams || {};
 //     const _field = columnPath(props.column);
 

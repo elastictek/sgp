@@ -52,7 +52,7 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
 // }
 
 export const loadOrdensFabricoOpen = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1,retrabalho:0, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }
@@ -133,6 +133,7 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
             inputParameters.current = { ...paramsIn };
         }
         const _items = await loadOrdensFabricoOpen({}, signal);
+        console.log("::::::::::::::::::::::",_items)
         setItems(_items);
         submitting.end();
     }
@@ -559,6 +560,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 draft.maxStep = 0;
             });
         }
+        console.log("%%%%%%%%%%%%%%%%%%%%%%%%%")
         submitting.end();
     }
 

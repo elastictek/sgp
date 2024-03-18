@@ -175,10 +175,6 @@ font-size: 10px;
 `;
 
 export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, right, hr = true, style, ...props }) => {
-    //const parentProps = useContext(ParentContext);
-    //const myProps = inheritSelf({ ...props, margin }, parentProps?.field);
-    /* const classes = useFieldStyles(myProps); */
-    //const { refMainAlertContainer } = parentProps;
     return (
         <>
             {title && <StyledHRuleTitle style={{ padding, marginTop, display: "flex", justifyContent: "space-between", ...style }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}{hr && <StyledHorizontalRule style={{ marginBottom }} />}

@@ -131,7 +131,7 @@ const isRecycled = (data) => {
   return false;
 }
 
-export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
+export default ({ noid = true, print = false, edit = false, defaultFilters = {}, defaultSort = [], style, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();

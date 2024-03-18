@@ -14,6 +14,10 @@ export const length = (v) => {
     return 0;
 }
 
+export const countWhere = (array, fn) => {
+    return array.filter(fn).length;
+}
+
 export const maxOf = (array, key) => {
     return array.reduce((max, obj) => obj?.[key] > max ? obj?.[key] : max, array[0]?.[key]);
 }
@@ -77,7 +81,7 @@ export const removeArrayMatchingElements = (arr1, arr2, keys) => {
     return arr1.filter(obj => !keys.some(key => keysValuesSet.has(`${key}:${obj[key]}`)));
 }
 export const uniqueValues = (arr, keys) => {
-    if (!Array.isArray(arr)){
+    if (!Array.isArray(arr)) {
         return [];
     }
     const _uniqueValues = new Map();
@@ -92,8 +96,13 @@ export const removeEmpty = (obj, keys = []) => {
     return Object.fromEntries(Object.entries(obj).filter(([_, v]) => (v !== null && v !== '' && v !== undefined && !keys.includes(_))));
 }
 
+export const populateArray = n => {
+    if (n === 0) return [0];
+    return Array.from({ length: n + 1 }, (_, index) => index);
+  };
+
 export const unique = (array, key) => {
-    if (!Array.isArray(array)){
+    if (!Array.isArray(array)) {
         return [];
     }
     const seen = new Set();
@@ -108,7 +117,7 @@ export const unique = (array, key) => {
 }
 
 export const uniqueKeys = (array, key) => {
-    if (!Array.isArray(array)){
+    if (!Array.isArray(array)) {
         return [];
     }
     const seen = new Set();
@@ -167,14 +176,14 @@ export const sleep = (ms) => {
 }
 
 export const useSubmitting = (val = false) => {
-    const [state, setState] = useState(val);
+    const [state, setState] = useState({ val: val, timestamp: Date.now(), loaded: false });
     const currentState = useRef(val);
 
     const trigger = async (seconds) => {
         if (seconds) {
             await sleep(seconds);
         }
-        setState(true);
+        setState(prev => ({ ...prev, val: true, timestamp: Date.now() }));
     }
 
     const init = () => {
@@ -191,14 +200,15 @@ export const useSubmitting = (val = false) => {
         if (seconds) {
             await sleep(seconds);
         }
-        setState(false);
+
+        setState({ val: false, timestamp: Date.now(), loaded: true });
     }
 
     const initiated = () => {
         return currentState.current
     }
 
-    return { trigger, init, end, initiated, state };
+    return { trigger, init, end, initiated, state: state.val, timestamp: state.timestamp, loaded: state.loaded };
 
 }
 

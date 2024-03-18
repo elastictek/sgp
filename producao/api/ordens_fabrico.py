@@ -28,7 +28,7 @@ from django.http.response import JsonResponse
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, renderer_classes
 from django.db import connections, transaction
 from support.database import ParsedFilters, encloseColumn, Filters, DBSql, TypeDml, fetchall,fetchone, Check
-from support.myUtils import  ifNull, includeDictKeys,timestamp
+from support.myUtils import  ifNull, includeDictKeys,timestamp,excludeDictKeys
 
 from rest_framework.renderers import JSONRenderer, MultiPartRenderer, BaseRenderer
 from rest_framework.utils import encoders, json
@@ -421,7 +421,8 @@ def OrdensFabricoPlanGet(request, format=None):
     response = db.executeSimpleList(lambda: (
         f"""
             select * from (
-            select esquema,po.id,pt.of_id ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id , t1.artigo_des, po.bobines_por_palete, po.was_in_production, 
+            select pt2.id agg_id, pt2.cod agg_cod,pt.paletizacao_id, pc.id cs_id, esquema,po.id,pt.of_id ofid,po.op,pt.cliente_nome, pt.cliente_cod ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id ,
+            pa.des artigo_des, po.bobines_por_palete, po.was_in_production, 
             CASE WHEN po.`status` IS NULL AND pt.id is not null and pt2.`status`=0 THEN 1 ELSE
                 CASE WHEN pc.`status`= 1 THEN 2 ELSE
                     CASE WHEN pc.`status`= 2 THEN 2 ELSE
@@ -435,11 +436,11 @@ def OrdensFabricoPlanGet(request, format=None):
             pc.status,
             po.ativa
             from producao_tempordemfabrico pt
+            join producao_artigo pa on pa.id=pt.item_id
             left join producao_tempaggordemfabrico pt2 on pt2.id=pt.agg_of_id
             left join planeamento_ordemproducao po on pt.id=po.draft_ordem_id
             left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
-            left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
             where not exists (select 1 from producao_ordemfabricodetails po2 where po2.cod=pt.of_id and po2.ignorar = 1 ) and ({"(pt.id is not null and pt2.`status`=0 ) or " if allowInElaboration else "1=1 and"} (pc.status in (1,2,3))) {f.text} order by po.ofid is null,pt.of_id,po.ofid
             ) t where t.ofabrico_status <9
         """
@@ -477,17 +478,31 @@ def OrdensFabricoOpen(request, format=None):
     f = Filters(filter)
     f.where(False,"and")
     f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
+    f.add(f'(po.retrabalho = :retrabalho)',lambda v:(v!=None) )
     f.add(f'(po.id = :id)',lambda v:(v!=None) )
     f.value("and")
     response = db.executeSimpleList(lambda: (
         f"""
-            select esquema,po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id,  t1.artigo_des, po.bobines_por_palete, po.was_in_production, po.`status` ofabrico_status
-            from planeamento_ordemproducao po 
+            select 
+            esquema,po.id,
+            ifnull(po.ofid,po.op) ofid,
+            po.op,
+            ifnull(pt.cliente_nome,pcl.nome) cliente_nome ,
+            ifnull(pt.prf_cod,po.prfcod) prf_cod,
+            pt.order_cod,
+            ifnull(pt.item_cod,pa.cod) item_cod,
+            pt.id draft_id,
+            ifnull(t1.artigo_des,pa.des) artigo_des, 
+            po.bobines_por_palete, po.was_in_production, case when po.retrabalho = 1 then 3 else po.`status` end ofabrico_status,
+            po.retrabalho, po.paletizacao_id
+            from planeamento_ordemproducao po
+            join producao_cliente pcl on pcl.id=po.cliente_id
+            join producao_artigo pa on pa.id=po.artigo_id
             left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
-            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
-            where po.ativa = 1 and po.stock=0 {f.text} order by po.ofid is null,po.ofid
+            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id
+            where po.ativa = 1 {f.text} order by po.ofid is null,po.ofid
         """
     ), connection, {**f.parameters})
 
@@ -1819,71 +1834,275 @@ def SaveNwsPlan(request, format=None):
 
 def PaletizacoesList(request, format=None):
     connection = connections["default"].cursor()    
-    f = Filters({**request.data['filter']})
-    f.setParameters({
-        #"group_name": {"value": lambda v: Filters.getUpper(v.get('fgroup')), "field": lambda k, v: f'pf.{k}'},
-        #"subgroup_name": {"value": lambda v: Filters.getUpper(v.get('fsubgroup')), "field": lambda k, v: f'pf.{k}'},
-        "designacao": {"value": lambda v: Filters.getUpper(v.get('fdesignacao')), "field": lambda k, v: f'pp.{k}'},
-        #"produto_cod": {"value": lambda v: Filters.getUpper(v.get('fproduto')), "field": lambda k, v: f'upper(pp.{k})'},
-        "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper(pp.{k})'},
-        "versao": {"value": lambda v: Filters.getNumeric(v.get('fversao')), "field": lambda k, v: f'{k}'},
-        #"reference": {"value": lambda v: Filters.getNumeric(v.get('freference')), "field": lambda k, v: f'pf.{k}'},
-        #**rangeP(f.filterData.get('fdata_created'), 'pf.created_date', lambda k, v: f'{k}'),
-        #**rangeP(f.filterData.get('fdata_updated'), 'pf.updated_date', lambda k, v: f'{k}')
-    }, True)
-    f.where()
-    f.add(f"pp2.item_id in (2)",True)
-    f.auto()
-    f.value("and")
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
 
-    def filterMultiSelect(data,name):
-        dt = {str(i + 1): elem for i, elem in enumerate(data.split(","))} if data is not None else {}
-        f = Filters(dt)
-        for k,v in dt.items():
-            f.add(f"JSON_CONTAINS({name}, :{k})",True)
-        f.where()
-        f.value("and")
-        return f
+    # f = Filters({**request.data['filter']})
+    # f.setParameters({
+    #     #"group_name": {"value": lambda v: Filters.getUpper(v.get('fgroup')), "field": lambda k, v: f'pf.{k}'},
+    #     #"subgroup_name": {"value": lambda v: Filters.getUpper(v.get('fsubgroup')), "field": lambda k, v: f'pf.{k}'},
+    #     "designacao": {"value": lambda v: Filters.getUpper(v.get('fdesignacao')), "field": lambda k, v: f'pp.{k}'},
+    #     #"produto_cod": {"value": lambda v: Filters.getUpper(v.get('fproduto')), "field": lambda k, v: f'upper(pp.{k})'},
+    #     "cliente_nome": {"value": lambda v: Filters.getUpper(v.get('fcliente')), "field": lambda k, v: f'upper(pp.{k})'},
+    #     "versao": {"value": lambda v: Filters.getNumeric(v.get('fversao')), "field": lambda k, v: f'{k}'},
+    #     #"reference": {"value": lambda v: Filters.getNumeric(v.get('freference')), "field": lambda k, v: f'pf.{k}'},
+    #     #**rangeP(f.filterData.get('fdata_created'), 'pf.created_date', lambda k, v: f'{k}'),
+    #     #**rangeP(f.filterData.get('fdata_updated'), 'pf.updated_date', lambda k, v: f'{k}')
+    # }, True)
+    # f.where()
+    # f.add(f"pp2.item_id in (2)",True)
+    # f.auto()
+    # f.value("and")
 
-    f2 = filterMultiSelect(request.data.get("filter").get('fbobines'),'bobines')
+    # def filterMultiSelect(data,name):
+    #     dt = {str(i + 1): elem for i, elem in enumerate(data.split(","))} if data is not None else {}
+    #     f = Filters(dt)
+    #     for k,v in dt.items():
+    #         f.add(f"JSON_CONTAINS({name}, :{k})",True)
+    #     f.where()
+    #     f.value("and")
+    #     return f
 
-    f3 = Filters({**request.data.get("filter")})
-    f3.setParameters({
-       "empilhadas": {"value": lambda v: Filters.getNumeric(v.get('fempilhadas')), "field": lambda k, v: f'JSON_LENGTH(bobines)'}
-    }, True)
-    f3.where(False, "and" if f2.hasFilters else "where")
-    f3.auto()
-    f3.value("and")
+    # f2 = filterMultiSelect(request.data.get("filter").get('fbobines'),'bobines')
+
+    # f3 = Filters({**request.data.get("filter")})
+    # f3.setParameters({
+    #    "empilhadas": {"value": lambda v: Filters.getNumeric(v.get('fempilhadas')), "field": lambda k, v: f'JSON_LENGTH(bobines)'}
+    # }, True)
+    # f3.where(False, "and" if f2.hasFilters else "where")
+    # f3.auto()
+    # f3.value("and")
 
     #f2 = filterMulti(request.data['filter'], {
     #    # 'fmulti_artigo': {"keys": ['"ITMREF_0"', '"ITMDES1_0"'], "table": 'ITM.'}
     #}, False, "and" if f.hasFilters else "and" ,False)
 
-    parameters = {**f.parameters, **f2.parameters, **f3.parameters}
+    parameters = {**pf.parameters}
     dql = db.dql(request.data, False,False)
-    print("LISTING PALETIZACOES")
-    print(request.data)
-    cols = f'''t.*'''
+    cols = f"t.*"    
     sql = lambda p, c, s: (
         f"""
             select {c(f'{cols}')} from (
-                select distinct pp.*,json_arrayagg(item_numbobines) over (partition by pp.id) bobines,
+                select distinct pp.*,json_arrayagg(ifnull(item_numbobines,0)) over (partition by pp.id) bobines,
                 pa.cod,pa.des
                 from producao_paletizacao pp 
-                join producao_paletizacaodetails pp2 on pp.id=pp2.paletizacao_id 
+                join producao_paletizacaodetails pp2 on pp.id=pp2.paletizacao_id and pp2.item_id =2
                 LEFT JOIN producao_artigo pa ON pa.cod=pp.artigo_cod
-                {f.text}
+                {pf.group("t1")}
+                {s(dql.sort)}
             ) t
-            {f2.text} {f3.text}
-            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}  
+            {p(dql.paging)} {p(dql.limit)}  
         """
     )
-    print(f2.text)
-    print(f2.parameters)
     if ("export" in request.data["parameters"]):
         return export(sql(lambda v:'',lambda v:v,lambda v:v), db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"])
-    response = db.executeList(sql, connection, parameters, [])
+    response = db.executeList(sql, connection, parameters, [],None,None,r.norun)
     return Response(response) 
+
+
+def AssociatePaletizacao(request, format=None):
+    r = PostData(request)
+
+    def _checkOfStatus(id,cursor):
+        response = db.executeSimpleList(lambda:(f"""
+            select count(*) cnt from (
+                select 
+                CASE WHEN pc.`status`= 1 THEN 2 ELSE
+                CASE WHEN pc.`status`= 2 THEN 2 ELSE
+                CASE WHEN pc.`status`= 3 THEN 3 ELSE 9 END
+                END
+                END
+                ofabrico_status
+                from planeamento_ordemproducao po
+                left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
+                WHERE po.id = {id} 
+            ) t where t.ofabrico_status <9
+        """),cursor,{})
+        return response["rows"][0]["cnt"]
+    
+    def _checkTempOFabrico(id,cursor):
+        response = db.executeSimpleList(lambda:(f"""
+            select count(*) cnt 
+            from planeamento_ordemproducao po 
+            join producao_currentsettings pc on po.agg_of_id_id=pc.agg_of_id
+            where draft_ordem_id={id}
+        """),cursor,{})
+        return response["rows"][0]["cnt"]
+
+    def _checkPalete(palete_id):
+            if not palete_id:
+                return 0
+            connection = connections[connGatewayName].cursor()
+            f = Filters({"id":palete_id})
+            f.where()
+            f.add(f'sgppl.id = :id', True)
+            f.value("and")
+            response = dbgw.executeSimpleList(lambda: (f"""
+            SELECT sgppl.id
+            FROM mv_paletes sgppl
+            LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = sgppl.nome
+            {f.text} and mv."SDHNUM_0" is null and sgppl.carga_id is null
+            """), connection, f.parameters)
+            if len(response["rows"])>0:
+                return response["rows"][0]
+            return None
+
+    def _updateOfId(id,paletizacao_id,cursor):
+        dml = db.dml(TypeDml.UPDATE, {}, "producao_currentsettings",{"id":id,"paletizacao_id":paletizacao_id},None,None,[])
+        dml.statement=f"""
+            update producao_currentsettings pcs
+            join (
+            select pc.id,JSON_ARRAYAGG(json_object("of_cod",of_cod,"of_id",of_id,"draft_of_id",draft_of_id, "paletizacao",
+            case when t.of_id ={Filters.fParam("id")} then 
+            (select 
+            json_object(
+            "id",id,"cliente_cod",cliente_cod,"artigo_cod",artigo_cod,"contentor_id",contentor_id,"filmeestiravel_bobines",filmeestiravel_bobines,
+            "filmeestiravel_exterior",filmeestiravel_exterior,"cintas",cintas,"ncintas",ncintas,"paletes_sobrepostas",paletes_sobrepostas,
+            "npaletes",npaletes,"palete_maxaltura",palete_maxaltura,"netiquetas_bobine",netiquetas_bobine,"netiquetas_lote",netiquetas_lote,"netiquetas_final",netiquetas_final,"designacao",designacao
+            ,"cintas_palete",cintas_palete,"cliente_nome",cliente_nome,"folha_identificativa",folha_identificativa,"versao",versao,"artigo_des",artigo_des,"sentido_desenrolamento",sentido_desenrolamento,
+            "details",(select JSON_ARRAYAGG( json_object("id",id,"item_id",item_id,"item_des",item_des,"item_order",item_order,
+            "item_numbobines",item_numbobines,"item_paletesize",item_paletesize,"paletizacao_id",paletizacao_id,"item_cintas",item_cintas) ) 
+            from producao_paletizacaodetails pp where pp.paletizacao_id={Filters.fParam("paletizacao_id")})
+            ) from producao_paletizacao where id={Filters.fParam("paletizacao_id")} limit 1)
+            else t.paletizacao  end
+            )) paletizacao
+            from producao_currentsettings pc 
+            join planeamento_ordemproducao po on po.agg_of_id_id = pc.agg_of_id,
+            json_table(fix_json(pc.paletizacao),"$[*]"COLUMNS(of_cod varchar(25) path '$.of_cod',draft_of_id int path '$.draft_of_id',of_id int path '$.of_id', paletizacao json path '$.paletizacao')) t
+            where po.id={Filters.fParam("id")}
+            group by pc.id
+            ) t on t.id=pcs.id
+            set pcs.paletizacao=t.paletizacao,pcs.type_op = 'paletizacao'
+        """
+        #db.execute(dml.statement, cursor, dml.parameters)
+        dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id,"id":id}, "planeamento_ordemproducao",{},None,None,[])
+        #db.execute(dml.statement, cursor, dml.parameters)
+
+    def _updateTempOFabrico(id,paletizacao_id,cursor):
+        dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id}, "producao_tempordemfabrico",{"id":Filters.getNumeric(id)},None,None,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+        dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id}, "planeamento_ordemproducao",{"draft_ordem_id":Filters.getNumeric(id)},None,None,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                if r.data.get("of_id"):
+                    _chk = _checkOfStatus(r.data.get("of_id"),cursor)
+                    if _chk==0:
+                        return Response({"status": "error", "title": "A ordem de fabrico já se encontra finalizada!", "subTitle":f'{None}'})
+                    _updateOfId(r.data.get("of_id"),r.data.get("paletizacao_id"),cursor)
+                if r.data.get("draft_id"):
+                    _chk = _checkTempOFabrico(r.data.get("draft_id"),cursor)
+                    if _chk==1:
+                        return Response({"status": "error", "title": "A ordem de fabrico já não se encontra em elaboração!", "subTitle":f'{None}'})
+                    _updateTempOFabrico(r.data.get("draft_id"),r.data.get("paletizacao_id"),cursor)
+                if r.data.get("palete_id"):
+                    if _checkPalete(r.data.get("palete_id")) is None:
+                        return Response({"status": "error", "title": "A palete já foi expedida ou pertence a uma carga!"})
+        return Response({"status": "success", "title": "Esquema associado com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+
+def SavePaletizacaoV2(request, format=None):
+    r = PostData(request)
+    def _check(id, cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select 
+                (select count(*) from producao_tempordemfabrico t where t.paletizacao_id={id}) + (select count(*) from producao_palete t where t.paletizacao_id={id}) cnt            
+        """), cursor, {})
+        return response["rows"][0]["cnt"]
+    def _paletizacaoVersao(data,cursor):
+        f = Filters({
+            "cliente": data.get("cliente_cod"),
+            "artigo": data.get("artigo_cod"),
+            "designacao": data.get("designacao").lower()
+        })
+        f.where()
+        f.add(f'pf.artigo_cod {f.nullValue("artigo","=:artigo")}',True )
+        f.add(f'pf.cliente_cod {f.nullValue("cliente","=:cliente")}',True )
+        f.add(f'lower(pf.designacao) =:designacao',True )
+        f.value("and")
+        rows = db.executeSimpleList(lambda: (f'SELECT IFNULL(MAX(versao),0)+1 AS mx FROM producao_paletizacao pf {f.text}'), cursor, f.parameters).get("rows")
+        if rows is not None and len(rows)>0:
+            return rows[0].get("mx")
+        return 1
+    def _insert(data,versao,cursor):
+        dml = db.dml(TypeDml.INSERT, {
+            **excludeDictKeys(data,["id","versao"]),
+            "versao":f"{versao}"
+        }, "producao_paletizacao",None,None,False,['versao'])
+        db.execute(dml.statement, cursor, dml.parameters)
+        return cursor.lastrowid
+    def _insertDetails(details,paletizacao_id,cursor):
+        for idx, v in enumerate(details):
+            dml = db.dml(TypeDml.INSERT, {
+                **excludeDictKeys(v,["id","paletizacao_id"]),
+                'paletizacao_id':paletizacao_id
+            }, "producao_paletizacaodetails",None,None,False)
+            db.execute(dml.statement, cursor, dml.parameters)
+    def _deleteDetails(paletizacao_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_paletizacaodetails',{"paletizacao_id":Filters.getNumeric(paletizacao_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    def _update(data,paletizacao_id,cursor):
+        dml = db.dml(TypeDml.UPDATE, {
+            **excludeDictKeys(data,["id"])
+        }, "producao_paletizacao",{"id":Filters.getNumeric(paletizacao_id)},None,None,[])
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                _id = r.data.get("data").get("id")
+                if _id:
+                    chk = _check(_id,cursor)
+                    if chk > 0:
+                        return Response({"status": "error", "title": "O esquema de embalamento já foi utilizado!", "subTitle":f'{None}'})
+                        #_versao = _paletizacaoVersao(r.data.get("data"),cursor)
+                        #_paletizacao_id = _insert(r.data.get("data"),_versao,cursor)
+                        #_insertDetails(r.data.get("items"),_paletizacao_id,cursor)
+                    else:
+                        _deleteDetails(_id,cursor)
+                        _update(r.data.get("data"),_id,cursor)
+                        _insertDetails(r.data.get("items"),_id,cursor)
+                        _paletizacao_id = _id
+                else:
+                    _versao = _paletizacaoVersao(r.data.get("data"),cursor)
+                    _paletizacao_id = _insert(r.data.get("data"),_versao,cursor)
+                    _insertDetails(r.data.get("items"),_paletizacao_id,cursor)
+        return Response({"status": "success", "title": "Esquema registado com sucesso!", "id":_paletizacao_id, "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
+    
+def DeletePaletizacaoV2(request, format=None):
+    r = PostData(request)
+    def _check(id, cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select 
+                (select count(*) from producao_tempordemfabrico t where t.paletizacao_id={id}) + (select count(*) from producao_palete t where t.paletizacao_id={id}) cnt            
+        """), cursor, {})
+        return response["rows"][0]["cnt"]
+    def _delete(paletizacao_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_paletizacao',{"id":Filters.getNumeric(paletizacao_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+    def _deleteDetails(paletizacao_id,cursor):
+        dml = db.dml(TypeDml.DELETE, None,'producao_paletizacaodetails',{"paletizacao_id":Filters.getNumeric(paletizacao_id)},None,False)
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                _id = r.filter.get("id")
+                if _id:
+                    chk = _check(_id,cursor)
+                    if chk > 0:
+                        return Response({"status": "error", "title": "O esquema de embalamento já foi utilizado!", "subTitle":f'{None}'})
+                    else:
+                        _deleteDetails(_id,cursor)
+                        _delete(_id,cursor)
+        return Response({"status": "success", "title": "Esquema apagado com sucesso!", "subTitle":f'{None}'})
+    except Exception as error:
+        return Response({"status": "error", "title": str(error)})
 
 def SavePaletizacao(request, format=None):
     data = request.data.get("parameters")

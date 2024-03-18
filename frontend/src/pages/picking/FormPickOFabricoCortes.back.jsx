@@ -184,7 +184,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                         {state.step == 0 && <Col><AggChoose openNotification={openNotification} onClick={onSelectOrdem} /></Col>}
                                         {state.step == 1 && <Col>
                                             <YScroll maxHeight={"80vh"}>
-                                                <FormCortes noHeader={true} setFormTitle={true} parameters={{ agg_of_id: state.pos.items[0].agg_id, cs_id: state.pos.items[0].cs_id, type: "cortes" }} />
+                                                <FormCortes header={false} setFormTitle={true} parameters={{ agg_of_id: state.pos.items[0].agg_id, cs_id: state.pos.items[0].cs_id, type: "cortes" }} />
                                             </YScroll>
                                         </Col>}
                                     </Row>

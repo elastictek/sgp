@@ -36,7 +36,7 @@ const TitleWnd = ({ title, externalTitle }) => {
         <div style={{ display: "flex", flexDirection: "row", gap: "10px", alignItems: "center", minHeight: "12px" }}>
             <div style={{ fontSize: "14px", display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Space>
-                    <div><b style={{ textTransform: "capitalize" }}></b>{getTitle()}</div>
+                    <div><b style={{ /* textTransform: "capitalize" */ }}></b>{getTitle()}</div>
                 </Space>
             </div>
         </div>

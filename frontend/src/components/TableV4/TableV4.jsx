@@ -794,6 +794,17 @@ export const getAllNodes = (api) => {
     });
     return _v;
 }
+export const getAllNodesMap = (api,fn) => {
+    if (!api){
+        return [];
+    }
+    const _v = [];
+    const _fn = fn ? fn : (n,i) => n;
+    api.forEachNode((node,i) => {
+        _v.push(_fn(node.data,i));
+    });
+    return _v;
+}
 export const getNodes = (api, fn) => {
     if (!api){
         return [];
@@ -839,7 +850,10 @@ export const getCellFocus = (api) => {
 }
 
 export const columnPath = (col) => {
-    return col.getDefinition().cellRendererParams?.path ? col.getDefinition().cellRendererParams.path : col.getDefinition().field;
+    if (col?.getDefinition()){
+        return col.getDefinition().cellRendererParams?.path ? col.getDefinition().cellRendererParams.path : col.getDefinition().field;
+    }
+    return null;
 }
 
 export const columnHasPath = (col) => {
@@ -873,7 +887,7 @@ export default ({
     loading = false, showRange = true, allowGoTo = true, showFromTo, showTotalCount, gridRef, showTopToolbar = true, topToolbar = {},
     rowClassRules = {}, modeApi, rowSelection, onSelectionChanged, onCellClick, onRowClick, isRowSelectable,
     ignoreRowSelectionOnCells = [], onBeforeCellEditRequest, onAfterCellEditRequest, rowSelectionIgnoreOnMode = false, suppressCellFocus = false, onGridReady,
-    onGridRequest, onGridResponse, onGridFailRequest, modeOptions = {},
+    onGridRequest, onGridResponse, onGridFailRequest, modeOptions = {}, gridCss,
     ...props
 }) => {
     const { onExitModeRefresh = true, onAddSaveExit = true, onEditSaveExit = false, onExitMode } = modeOptions;
@@ -1115,19 +1129,19 @@ export default ({
         if (modeApi && isReady) {
             _gridRef.current.api.getColumns().forEach(c => {
                 if (c.getDefinition().type === "actionOnViewColumn") {
-                    _gridRef.current.api.setColumnVisible(c, !modeApi.isOnMode());
+                    _gridRef.current.api.setColumnsVisible([c], !modeApi.isOnMode());
                 } else if (c.getDefinition().type === "actionOnModeColumn") {
-                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnMode());
+                    _gridRef.current.api.setColumnsVisible([c], modeApi.isOnMode());
                 } else if (c.getDefinition().type === "actionOnEditColumn") {
-                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnEditMode());
+                    _gridRef.current.api.setColumnsVisible([c], modeApi.isOnEditMode());
                 } else if (c.getDefinition().type === "actionOnAddColumn") {
-                    _gridRef.current.api.setColumnVisible(c, modeApi.isOnAddMode());
+                    _gridRef.current.api.setColumnsVisible([c], modeApi.isOnAddMode());
                 }
             });
         } else if (!modeApi && isReady) {
             _gridRef.current.api.getColumns().forEach(c => {
                 if (c.getDefinition().type === "actionOnViewColumn") {
-                    _gridRef.current.api.setColumnVisible(c, true);
+                    _gridRef.current.api.setColumnsVisible([c], true);
                 }
             });
         }
@@ -1278,7 +1292,7 @@ export default ({
         <GridContainer>
             <TableContext.Provider value={{ dataAPI, modeApi, gridRef: _gridRef, stateFilters, updateStateFilters, topToolbar, local }}>
                 {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExitModeRefresh={onExitModeRefresh} onAddSaveExit={onAddSaveExit} onEditSaveExit={onEditSaveExit} onExitMode={onExitMode} /* onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} */ onFilterFinish={onFilterFinish} />}
-                <div className="ag-theme-quartz ag-custom">
+                <div className={`ag-theme-quartz ag-custom ${gridCss}`}>
                     <AgGridReact
                         ref={_gridRef}
                         onFirstDataRendered={onFirstDataRendered}
@@ -1322,7 +1336,6 @@ export default ({
                             onSelectionChanged: _onSelectionChanged,
                             suppressCellFocus
                         }}
-
                         //sideBar={'columns'}
                         onGridReady={_onGridReady}
                         getRowId={getRowId}
@@ -1340,6 +1353,7 @@ export default ({
                         rowClassRules={_rowClassRules}
                         reactiveCustomComponents
                         rowHeight={31}
+                        
                         overlayLoadingTemplate={
                             '<div style="background:#fafafa;border-radius:5px;padding:10px;">Aguarde um momento...</div>'
                         }

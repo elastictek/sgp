@@ -287,7 +287,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                                                         <TitleOF item={state.pos} />
                                                         <ContentOF item={state.pos} />
                                                     </div>
-                                                    <FormAttachements noHeader={true} setFormTitle={true} parameters={{ draft_id: state.pos.draft_id, ofid: state.pos.ofid }} />
+                                                    <FormAttachements header={false} setFormTitle={true} parameters={{ draft_id: state.pos.draft_id, ofid: state.pos.ofid }} />
                                                 </Col>}
                                             </YScroll>
                                         </Col>

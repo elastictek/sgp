@@ -1,3 +1,10 @@
+.ag-noheader .ag-header {
+  display: none;
+}
+.ag-noborder .ag-root-wrapper {
+  border:none;
+}
+
 .ag-custom,
 .ag-custom.default {
   /*--ag-header-column-separator-height:100%;*/

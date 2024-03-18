@@ -75,7 +75,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
             editable: false,//(params) => modeApi.isOnEditMode() || (params.data?.rowadded == 1 && modeApi.isOnAddMode()), //params.data.year == 2012,
             filter: false,
             sortable: true,//modeApi.isOnMode() ? false : true,
-            suppressMenu: false,//modeApi.isOnMode() ? true : false,
+            suppressHeaderMenuButton: false,//modeApi.isOnMode() ? true : false,
             valueGetter: (params) => {
                 return defaultValueGetter(params, valueGetter);
             },

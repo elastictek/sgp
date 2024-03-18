@@ -75,7 +75,7 @@ const useTableStyles = createUseStyles({
   }
 });
 
-export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {}, defaultSort = [], style, ...props }) => {
+export default ({ noid = true, print = false, edit = false, defaultFilters = {}, defaultSort = [], style, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();
@@ -390,7 +390,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, defaultFilters = {
         //singleClickEdit={true}
         suppressClickEdit={true}
         topToolbar={{
-          start: <>{!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</>
+          start: <>{print && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</>
         }}
         //rowSelectionIgnoreOnMode={true}
         // rowSelection="single"

@@ -247,16 +247,16 @@ export default (props) => {
                                 {
                                     label: `Bobines`,
                                     key: '3',
-                                    children: <BobinesPropriedadesList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
+                                    children: <BobinesPropriedadesList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions, columns: { palete_nome: "palete_nome" } }} />,
                                 }, {
                                     label: `Bobines Defeitos`,
                                     key: '4',
-                                    children: <BobinesDefeitosList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions/* , columns: { palete_nome: "palete_nome" } */ }} />,
+                                    children: <BobinesDefeitosList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions/* , columns: { palete_nome: "palete_nome" } */ }} />,
                                 },
                                 {
                                     label: `Bobines Destinos`,
                                     key: '5',
-                                    children: <BobinesDestinosList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions/* , columns: { palete_nome: "palete_nome" } */ }} />,
+                                    children: <BobinesDestinosList defaultSort={[{ column: 'nome', direction: 'ASC' }]} {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions/* , columns: { palete_nome: "palete_nome" } */ }} />,
                                 },
                                 {
                                     label: `MP Granulado (Lotes)`,
@@ -265,7 +265,7 @@ export default (props) => {
                                 }, {
                                     label: `Bobines Originais`,
                                     key: '7',
-                                    children: <BobinesOriginaisList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                    children: <BobinesOriginaisList {...{ parameters: { bobinagem: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions }} />,
                                 },
                                 {
                                     label: `Histórico`,

@@ -1,5 +1,6 @@
 class PostData:
     def __init__(self,request):
+        self.userId=request.user.id
         self.options = request.data.get("options") if request.data.get("options") is not None else {}
         self.apiversion=None
         if "apiversion" in self.options and self.options.get("apiversion")!="":

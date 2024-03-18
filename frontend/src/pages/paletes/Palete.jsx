@@ -356,16 +356,16 @@ export default (props) => {
                             {
                                 label: `Bobines`,
                                 key: '3',
-                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} /></YScroll></div>,
+                                children: <div style={{ height: "calc(100vh - 230px)" }}><YScroll><BobinesPropriedadesList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions }} /></YScroll></div>,
                             }, {
                                 label: `Bobines Defeitos`,
                                 key: '4',
-                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDefeitosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
+                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDefeitosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
                             },
                             {
                                 label: `Bobines Destinos`,
                                 key: '5',
-                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDestinosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: false, noEdit: false, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
+                                children: <div style={{ height: "100%" }} /* style={{ height: "calc(100vh - 230px)" }} */>{/* <YScroll> */}<BobinesDestinosList setConfirm={setConfirm} confirm={confirm} {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: true, edit: true, permissions: permission.permissions }} />{/* </YScroll> */}</div>,
                             },
                             {
                                 label: `MP Granulado (Lotes)`,
@@ -374,7 +374,7 @@ export default (props) => {
                             }, {
                                 label: `Bobines Originais`,
                                 key: '7',
-                                children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, noPrint: true, noEdit: true, permissions: permission.permissions }} />,
+                                children: <BobinesOriginaisList {...{ parameters: { palete: dataAPI.getData().rows[0], tstamp: dataAPI.getTimeStamp() }, print: false, edit: false, permissions: permission.permissions }} />,
                             },
                             {
                                 label: `Histórico`,

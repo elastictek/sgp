@@ -39,7 +39,6 @@ export const newWindow = (url, data, name, expires = URL_EXPIRATION) => {
     window.open(_url, name ? name : '_blank');
 }
 
-
 export default (init, store = {}, props = {}, state = {}, fields=null) => {
     let query = {};
     let df = { ...init };

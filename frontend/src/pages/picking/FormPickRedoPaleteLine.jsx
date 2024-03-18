@@ -93,7 +93,7 @@ const moreFilters = ({ form, columns }) => [
 // }
 
 // export const loadOrdensFabrico = async ({ }, signal) => {
-//     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1 }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
+//     const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1,retrabalho:0 }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
 //     if (rows && Object.keys(rows).length > 0) {
 //         return rows;
 //     }

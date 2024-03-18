@@ -219,7 +219,7 @@ const DetailRenderer = ({ data }) => {
 
 };
 
-export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, setConfirm, confirm = false, ...props }) => {
+export default ({ noid = true, print = false, edit = false, loadOnInit = true, defaultFilters = {}, defaultSort = [], style, setConfirm, confirm = false, ...props }) => {
   const classes = useTableStyles();
   const location = useLocation();
   const navigate = useNavigate();
@@ -282,7 +282,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
       setConfirm(modeApi.isDirty() && modeApi.isOnMode());
     }
 
-  }, [modeApi.isDirty(),modeApi.isOnMode()]);
+  }, [modeApi.isDirty(), modeApi.isOnMode()]);
 
   const onGridReady = async ({ api, ...params }) => {
   }
@@ -329,6 +329,23 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
      * pois o próximo campo entra em edição antes deste método (isto é um Workaround!!!!!), para isso na definição da coluna colocar:
      * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
      */
+
+    const _fixDestinos = (_data, _newValue) => {
+      //...n.data, ...newValue
+      let _destinos = Array.isArray(_newValue?.destinos?.destinos) ? _newValue.destinos?.destinos : [];
+      _destinos = _destinos.map(v => {
+        if (["0", "1", "3"].includes(v?.cliente?.BPCNUM_0)) {
+          v.largura = _data?.lar;
+        }
+        return v;
+      });
+      newValue.destino = newValue.destino.replace(/null/g, _data?.lar);
+      if (Array.isArray(_newValue?.destinos?.destinos)) {
+        newValue.destinos.destinos = _destinos;
+      }
+      return { ..._data, ..._newValue };
+    }
+
     const field = columnPath(event.column);
     const multi = event.column.getDefinition().cellRendererParams?.multi;
     const transactions = [];
@@ -349,7 +366,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
             }
             if (!cancelTxs && tx) {
               if (field === "destino") {
-                transactions.push({ ...n.data, ...newValue, rowvalid: 0 });
+                transactions.push({ ..._fixDestinos(n.data, newValue), rowvalid: 0 });
               } else {
                 transactions.push({ ...n.data, [field]: newValue, rowvalid: 0 });
               }
@@ -359,7 +376,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
       } else {
         if (canChangeRow(data)) {
           if (field === "destino") {
-            transactions.push({ ...data, ...newValue, rowvalid: 0 });
+            transactions.push({ ..._fixDestinos(data, newValue), rowvalid: 0 });
           } else {
             transactions.push({ ...data, [field]: newValue, rowvalid: 0 });
           }
@@ -534,21 +551,21 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
         { field: "group", headerName: "", cellRenderer: 'agGroupCellRenderer', pinned: "left", width: 25 },
         { colId: "mb.nome", field: 'nome', ...modeApi?.isOnMode() && { checkboxSelection: true, headerCheckboxSelection: true }, headerName: 'Bobine', pinned: "left", ...cellParams(), width: 165, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
         ...!_inputParameters.current?.palete?.id ? [{ colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 130, cellRenderer: (params) => <Value bold link onClick={(e) => onPaleteClick(e, params)} params={params} /> }] : [],
-        ..._inputParameters.current?.palete?.id ? [{ colId: "mb.posicao_palete", suppressMenu: true, field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 60, cellRenderer: (params) => <Value params={params} /> }] : [],
-        { colId: 'mb.estado', field: 'estado', headerName: 'Estado', suppressMenu: true, width: 80, ...cellParams({}), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
+        ..._inputParameters.current?.palete?.id ? [{ colId: "mb.posicao_palete", suppressHeaderMenuButton: true, field: 'posicao_palete', headerName: 'Pos.', ...cellParams(), width: 60, cellRenderer: (params) => <Value params={params} /> }] : [],
+        { colId: 'mb.estado', field: 'estado', headerName: 'Estado', suppressHeaderMenuButton: true, width: 80, ...cellParams({}), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
         { colId: 'mb.destino', field: 'destino', headerName: 'Destinos', width: 300, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: DestinosEditor, cellRenderer: (params) => <Value onClick={() => onDestinosClick(params)} params={params} /> },
-        { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', suppressMenu: true, width: 60, ...cellParams(), cellRenderer: (params) => <Value bold unit=" mm" params={params} /> },
-        { colId: 'mb.l_real', field: 'l_real', headerName: 'Lar. Real', suppressMenu: true, width: 60, ...cellParams(null, {}), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-        { colId: 'pbm.comp', field: 'comp_original', headerName: 'C. Original', suppressMenu: true, width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
-        { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', suppressMenu: true, width: 70, ...cellParams(), cellRenderer: (params) => <Value bold unit=" m" params={params} /> },
-        { colId: 'mb.diam', field: 'diam', headerName: 'Diam.', suppressMenu: true, width: 60, ...cellParams(), cellRenderer: (params) => <Value bold unit=" mm" params={params} /> },
-        { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', suppressMenu: true, width: 70, ...cellParams({ unit: "mm" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { colId: 'mb.lar', field: 'lar', headerName: 'Lar.', suppressHeaderMenuButton: true, width: 60, ...cellParams(), cellRenderer: (params) => <Value bold unit=" mm" params={params} /> },
+        { colId: 'mb.l_real', field: 'l_real', headerName: 'Lar. Real', suppressHeaderMenuButton: true, width: 60, ...cellParams(null, {}), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+        { colId: 'pbm.comp', field: 'comp_original', headerName: 'C. Original', suppressHeaderMenuButton: true, width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
+        { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', suppressHeaderMenuButton: true, width: 70, ...cellParams(), cellRenderer: (params) => <Value bold unit=" m" params={params} /> },
+        { colId: 'mb.diam', field: 'diam', headerName: 'Diam.', suppressHeaderMenuButton: true, width: 60, ...cellParams(), cellRenderer: (params) => <Value bold unit=" mm" params={params} /> },
+        { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', suppressHeaderMenuButton: true, width: 70, ...cellParams({ unit: "mm" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
 
-        { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', suppressMenu: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
-        { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', suppressMenu: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-        { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', suppressMenu: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-        { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', suppressMenu: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-        { field: 'defeitos', headerName: 'Outros defeitos', suppressMenu: true, sortable: false, width: 300, minWidth: 390, flex: 1, ...cellParams(), cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
+        { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', suppressHeaderMenuButton: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
+        { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', suppressHeaderMenuButton: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', suppressHeaderMenuButton: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', suppressHeaderMenuButton: true, width: 70, ...cellParams({ unit: "m" }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+        { field: 'defeitos', headerName: 'Outros defeitos', suppressHeaderMenuButton: true, sortable: false, width: 300, minWidth: 390, flex: 1, ...cellParams(), cellRenderer: (params) => <ArrayTags params={params} isObject color="red" /> },
         { field: 'prop_obs', wrapText: true, autoHeight: false, pinned: "right", headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
         { field: 'obs', wrapText: true, autoHeight: false, pinned: "right", headerName: 'Obs.', ...cellParams({ multi: true }), width: 200, type: "editableColumn", cellEditor: 'agLargeTextCellEditor', cellEditorPopup: true, minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
       ], timestamp: new Date()
@@ -628,7 +645,7 @@ export default ({ noid = true, noPrint = true, noEdit = true, loadOnInit = true,
           start: <Space>
             <Dropdown.Button onClick={() => onToggleExpand(1)} icon={<MoreOutlined />} menu={{ items: [{ key: '1', label: 'Recolher Destinos' }], onClick: () => onToggleExpand(0) }}>Expandir Destinos</Dropdown.Button>
             {(modeApi.isOnMode() && dataAPI.hasData()) && <RowsSelection dataAPI={dataAPI} modeApi={modeApi} gridApi={gridRef.current?.api} validation={validation} />}
-            {!noPrint && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
+            {print && <Button icon={<PrinterOutlined />} onClick={onPrint}>Imprimir Etiquetas</Button>}</Space>,
           left: <></>
         }}
         //rowSelectionIgnoreOnMode={true}

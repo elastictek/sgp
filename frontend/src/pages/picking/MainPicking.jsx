@@ -31,6 +31,7 @@ import ToolbarTitle from 'components/ToolbarTitleV3';
 import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext, MediaContext } from 'app';
+import { LiaDatabaseSolid } from 'react-icons/lia';
 
 const title = "Painel de Controlo";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
@@ -61,7 +62,7 @@ const Box = styled.div`
     margin: 0 0 10px;
     /*display: inline-block;*/ 
     width: 100%;
-    min-width:450px;
+    min-width:350px;
     break-inside: avoid;
     background-color:#ffffff;
 `;
@@ -91,12 +92,12 @@ const Group = ({ title, right, more, visible = true, children }) => {
         }</>);
 }
 
-const Item = ({ title, icon, onClick, visible = true }) => {
+const Item = ({ title, icon, onClick, visible = true, style }) => {
     return (
         <>
             {visible &&
                 <Col xs="content" style={{ marginBottom: "5px" }}>
-                    <StyledButton onClick={onClick}>
+                    <StyledButton onClick={onClick} style={{ ...style && style }}>
                         <div>{icon ? icon : <AppstoreTwoTone style={{ fontSize: "22px" }} />}</div>
                         <div className='txt'>{title}</div>
                     </StyledButton>
@@ -148,7 +149,8 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
     const ofsItems = useMemo(() => {
         return [
             ...allows?.cortes?.admin ? [{ key: "cortesmanage", label: "Gerir cortes", icon: <SettingOutlined /> }] : [],
-            ...allows?.base?.admin ? [{ key: "artigosclientemanage", label: "Gerir relação artigo/cliente", icon: <SettingOutlined /> }] : []
+            ...allows?.base?.admin ? [{ key: "artigosclientemanage", label: "Gerir relação artigo/cliente", icon: <SettingOutlined /> }] : [],
+            ...allows?.base?.admin ? [{ key: "paletizacoesmanage", label: "Gerir Esquemas de embalamento", icon: <SettingOutlined /> }] : []
         ];
 
     }, [allows]);
@@ -157,6 +159,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         switch (item.key) {
             case "cortesmanage": navigate("/app/picking/cortes/managecortes"); break;
             case "artigosclientemanage": navigate("/app/picking/base/manageartigoscliente"); break;
+            case "paletizacoesmanage": navigate("/app/paletes/paletizacoeslist", { state: { edit: true } }); break;
         }
     }, []);
 
@@ -202,6 +205,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Item title="Nonwovens" visible={allows?.ordensFabrico?.nonwovens}
                         onClick={() => navigate("/app/picking/ofabricononwovens")}
                     />
+                    <Item title="Esquema de Embalamento" visible={allows?.ordensFabrico?.paletizacao}
+                        onClick={() => navigate("/app/picking/ofabricopaletizacao")}
+                    />
 
                 </Group>
 
@@ -209,7 +215,10 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     right={<><Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}>
 
                     <Item title="Nova Palete Linha" visible={allows?.paletes?.newline}
-                        onClick={() => navigate("/app/picking/newpaleteline")}
+                        icon={<LiaDatabaseSolid size={28} color="#1677ff" />} onClick={() => navigate("/app/picking/newpaleteline")}
+                    />
+                    <Item title="Nova Palete HOLD" visible={allows?.paletes?.newhold} style={{ backgroundColor: "#391085", color: "#fff" }}
+                        icon={<LiaDatabaseSolid size={28} color="#fff" />} onClick={() => navigate("/app/picking/newpalete", { state: { type: "HOLD", title: "Nova Palete HOLD", ordemFabrico: { enabled: false, retrabalho: null } } })}
                     />
                     <Item title="Nova Palete Stock" visible={allows?.paletes?.newcliente}
                         onClick={() => newWindow(`${ROOT_URL}/producao/palete/create/`, {}, `paletecreate`)}

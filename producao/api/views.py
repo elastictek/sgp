@@ -3598,6 +3598,7 @@ def sgpForProduction(data,aggid,user,cursor):
                 "draft_ordem_id":ordemfabrico["id"],
                 "agg_of_id_id":aggid,
                 "status":2,
+                "paletizacao_id":ordemfabrico['paletizacao']["id"],
                 "horas_previstas_producao": hours['hours'] #divmod(delta.total_seconds(), 3600)[0]
             }
             #Save Current Settings

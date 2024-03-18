@@ -187,21 +187,21 @@ export default (props) => {
                         {
                             label: `Bobines`,
                             key: '1',
-                            children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                            children: <BobinesPropriedadesList {...{ parameters: props?.parameters, permission, paging: true, edit: false, print: false, columns: { palete_nome: "palete_nome" } }} />,
                         }, {
                             label: `Bobines Defeitos`,
                             key: '2',
-                            children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                            children: <BobinesDefeitosList {...{ parameters: props?.parameters, permission, paging: true, edit: false, print: false, columns: { palete_nome: "palete_nome" } }} />,
                         },
                         {
                             label: `Bobines Destinos`,
                             key: '3',
-                            children: <BobinesDestinosList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                            children: <BobinesDestinosList {...{ parameters: props?.parameters, permission, paging: true, edit: false, print: false, columns: { palete_nome: "palete_nome" } }} />,
                         },
                         {
                             label: `Bobines Originais`,
                             key: '4',
-                            children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission, paging: true, noEdit: true, noPrint: true, columns: { palete_nome: "palete_nome" } }} />,
+                            children: <BobinesOriginaisList {...{ parameters: props?.parameters, permission, paging: true, edit: false, print: false, columns: { palete_nome: "palete_nome" } }} />,
                         }
                         /*                             {
                                                         label: `Histórico`,

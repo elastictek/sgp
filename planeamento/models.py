@@ -151,6 +151,7 @@ class OrdemProducao(models.Model):
     certificacoes           = models.CharField(max_length=200,verbose_name="Certificações", null=True) #ADDED
     reported_paletes        = models.IntegerField(verbose_name="Indica se o relatório de produção foi sincronizada com o SAGE", null=True) #ADDED
     eef                     = models.CharField(max_length = 17, null = True, verbose_name = "Encomenda") #ADDED
+    paletizacao_id          = models.IntegerField(verbose_name="Indica o esquema de embalamento", null=True) #ADDED
     class Meta:
         verbose_name_plural = "Ordens de Produção"
         

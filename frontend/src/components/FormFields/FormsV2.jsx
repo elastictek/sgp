@@ -47,7 +47,7 @@ const _status = (name, validation) => {
             _validation = validation?.errors?.find(v => v.path.join(".") == name);
         }
     }
-    return _validation ? _validation : { valid: true };
+    return _validation ? { valid: false, ..._validation } : { valid: true };
 }
 
 const useStyles = createUseStyles({
@@ -73,6 +73,47 @@ const useStyles = createUseStyles({
         cursor: 'pointer'
     },
 });
+
+const StyledHRuleTitle = styled('div').withConfig({
+    shouldForwardProp: (prop) =>
+        ['className', 'style', 'children'].includes(prop)
+})`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    /*background:#f3f3f3;*/
+
+    .title{
+        font-weight: 700;
+        font-size:15px;
+        margin: 0px;
+        margin-right:5px;
+    }
+
+    .description{
+        align-self: center;
+        color:#595959;
+    }   
+`;
+const StyledHorizontalRule = styled('hr').withConfig({
+    shouldForwardProp: (prop) =>
+        ['className', 'style', 'children'].includes(prop)
+})`
+    border: none;
+    height: 1px;
+    background-color: #dcdddf;
+    flex-shrink: 0;
+    flex-grow: 0;
+    width: 100%;
+    margin: 0px;
+`;
+export const HorizontalRule = ({ marginTop = "20px", marginBottom = "8px", padding = "1px", title, description, right, hr = true, style, ...props }) => {
+    return (
+        <>
+            {title && <StyledHRuleTitle style={{ padding, marginTop, display: "flex", justifyContent: "space-between", ...style }}><div><div className="title">{title}</div><div className="description">{description}</div></div><div>{right}</div></StyledHRuleTitle>}{hr && <StyledHorizontalRule style={{ marginBottom }} />}
+        </>
+    );
+}
 
 export const StyledBobine = styled("div").withConfig({
     shouldForwardProp: (prop) =>
@@ -116,6 +157,73 @@ const DefaultForView = ({ value, childrenProps, forViewProps }) => {
     return (<div style={{ borderRadius: "3px", padding: "2px", ...forViewProps?.forViewBorder && { border: "solid 1px #d9d9d9" }, display: "flex", ...forViewProps?.height, alignItems: "center", ...forViewProps?.forViewBackground && { background: "#f0f0f0" }, ...(forViewProps?.style && forViewProps?.style) }} /* {...onDoubleClick && { onDoubleClick }} */>{value}</div>);
 }
 
+export const SelectorComponentPopup = ({ onSelectionChanged, keyField, textField, detailFn, popupProps = {}, allowClear = true, onClear, customSearch, component, ...props }) => {
+    const { width = "700px", height = "500px", offsetHeight = "70px", type = "modal", responsive = true, closable = true, lazy = false, ..._popupProps } = popupProps;
+    const classes = useStyles();
+    const modalApi = useModalApi();
+
+    const valueObj = useMemo(() => {
+        if (isNullOrEmpty(props?.value)) {
+            return { value: null, text: null };
+        }
+        if (typeof props.value === 'object') {
+            return { value: props.value?.[keyField], text: getValue(props.value?.[textField], props.value?.[keyField]) };
+        }
+        return { value: props?.value, text: props?.value };
+    }, [props?.value]);
+
+
+    const _onClear = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (onClear) {
+            onClear();
+        }
+        props.onChange({ value: null, text: null });
+    }
+
+    const _onSelectionChanged = async (row, closeSelf) => {
+        if (onSelectionChanged && typeof onSelectionChanged == "function") {
+            const _v = await onSelectionChanged(row[0]);
+            if (_v !== false) {
+                props.onChange(_v);
+            }
+        } else {
+            props.onChange({ ...row[0] });
+        }
+        closeSelf();
+    }
+    const onPopup = () => {
+        modalApi.setModalParameters({
+            content: component,
+            closable,
+            lazy,
+            type,
+            width,
+            height,
+            responsive,
+            ..._popupProps
+        });
+        modalApi.showModal();
+    }
+    return <div>
+        {customSearch ? React.cloneElement(customSearch, { ...customSearch.props, value: valueObj.text, forView: props?.forView, ...(!props?.forView) && { onClick: onPopup } }) :
+            <>
+                {props?.forView && <DefaultForView {...props?.forViewProps} value={valueObj.text} />}
+                {!props?.forView && <div className={classes.inputContainer}>
+                    <Input value={valueObj.text} style={{ cursor: "pointer", width: "100%" }} onClick={onPopup} /* onKeyDown={_onKeyDown} */ readOnly suffix={<SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />
+                    {(allowClear && valueObj.value) &&
+                        <div className={classes.clearButton} onClick={_onClear}>
+                            <CloseCircleFilled style={{ cursor: "pointer", color: "gray" }} />
+                        </div>
+                    }
+                </div>}
+            </>}
+        <div style={{ fontSize: "11px" }}>{((valueObj && typeof detailFn === 'function')) && detailFn(valueObj, props.value)}</div>
+    </div>;
+};
+
+
 export const SelectorPopup = ({ onSelectionChanged, options, keyField, textField, detailFn, dataGridProps = {}, popupProps = {}, payload, allowClear = true, onClear, customSearch, ...props }) => {
     const { columnDefs, filters = { toolbar: ["@columns"], more: [], no: ["action"] }, ..._dataGridProps } = dataGridProps;
     const { width = "700px", height = "500px", offsetHeight = "70px", type = "modal", responsive = true, closable = true, lazy = false, ..._popupProps } = popupProps;
@@ -146,11 +254,13 @@ export const SelectorPopup = ({ onSelectionChanged, options, keyField, textField
     const _onSelectionChanged = async (row, closeSelf) => {
         if (onSelectionChanged && typeof onSelectionChanged == "function") {
             const _v = await onSelectionChanged(row[0]);
-            if (_v !== false) {
+            if (_v !== false && props?.change) {
                 props.onChange(_v);
             }
         } else {
-            props.onChange({ ...row[0] });
+            if (props?.change) {
+                props.onChange({ ...row[0] });
+            }
         }
         closeSelf();
     }
@@ -252,7 +362,8 @@ const height = (size) => {
 };
 
 export const Lookup = ({ dataAPI, payload, columnDefs, filters, onSelectionChanged, style, closeSelf, ignoreRowSelectionOnCells = [],
-    rowSelection, wndRef, extraRef, onOk, onCancel, onCancelText = "Fechar", onOkText = "OK", dataGridProps, ...props }) => {
+    rowSelection, wndRef, extraRef, onOk, onCancel, onCancelText = "Fechar", onOkText = "OK", dataGridProps = {}, ...props }) => {
+    const { onRowDoubleClicked, ..._dataGridProps } = dataGridProps;
     const _dataAPI = dataAPI ? null : useDataAPI({ payload });
     const gridRef = useRef();
     const submitting = useSubmitting(true);
@@ -286,8 +397,9 @@ export const Lookup = ({ dataAPI, payload, columnDefs, filters, onSelectionChang
             columnDefs={columnDefs}
             filters={filters}
             dataAPI={dataAPI ? dataAPI : _dataAPI}
+            {...(onRowDoubleClicked && typeof onRowDoubleClicked === "function") && { onRowDoubleClicked: async (data) => await onRowDoubleClicked(data, closeSelf, gridRef.current.api) }}
             {...rowSelection !== "multiple" && { onSelectionChanged: async (row) => (typeof onSelectionChanged === "function") && await onSelectionChanged(row, closeSelf, gridRef.current.api) }}
-            {...dataGridProps}
+            {..._dataGridProps}
         />
         {extraRef && <Portal elId={extraRef.current}>
             <Space>
@@ -374,6 +486,7 @@ export const Field = ({ name, path: _path, children, label = {}, forInput, forVi
     const _size = children?.props?.size ? children?.props?.size : ctx.size
     const { text, enabled = true, pos = "top", style: labelStyle } = label;
     const status = _status(name, validation);
+    console.log("--->", name, status)
     if (!children) {
         return <>{children}</>
     } else if (_forInput) {
@@ -406,10 +519,11 @@ export const Field = ({ name, path: _path, children, label = {}, forInput, forVi
     }
 }
 
-const Page = ({ children }) => {
-    return (<div>{children}</div>);
+const Page = ({ children, loading = false }) => {
+    return (<Spin spinning={loading}>{children}</Spin>);
 }
-Page.Ready = ({ ready, children }) => {
-    return (<>{ready && children}</>);
+Page.Ready = ({ ready, children, loading = false}) => {
+    return (<Spin spinning={loading}>{ready && children}</Spin>);
 }
+
 export default Page;
