@@ -10,6 +10,7 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, PALETES_WEIGH, BOBINE_ESTADOS } from "config";
+import { parseFilter, useDataAPI } from "utils/useDataAPIV4";
 import { json, includeObjectKeys, excludeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
@@ -35,9 +36,9 @@ import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
 import PaletesChoose from './PaletesChoose';
-import { parseFilter } from 'utils/useDataAPIV4';
+import { typePalete } from './commons';
 
-const title = "Apagar Palete";
+const title = "Refazer Palete";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
     return (<ToolbarTitle id={auth?.user} description={title}
         leftTitle={<span style={{}}>{title}</span>}
@@ -52,21 +53,6 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, columns, ...props }) => {
     return (<>
         {true && <>
             {getFilters({ columns: columns })}
-            {/* <Col xs="content">
-                <Field name="fdocstatus" label={{ enabled: true, text: "Estado Documento", pos: "top", padding: "0px" }}>
-                    <Select size="small" options={[{ value: null, label: "Todos" }, { value: 0, label: "Em elaboração" }, { value: 1, label: "Em revisão" }, { value: 2, label: "Fechado" }]} allowClear style={{ width: "150px" }} />
-                </Field>
-            </Col> */}
-            {/*<Col xs="content">
-                <Field name="fyear" shouldUpdate label={{ enabled: true, text: "Ano", pos: "top", padding: "0px" }}>
-                    <DatePicker size="small" picker="year" format={"YYYY"} />
-                </Field>
-            </Col>
-            <Col xs="content">
-                <Field name="fquarter" label={{ enabled: true, text: "Quarter", pos: "top", padding: "0px" }}>
-                    <Select size="small" options={[{ value: 1, label: "Q1" }, { value: 2, label: "Q2" }, { value: 3, label: "Q3" }, { value: 4, label: "Q4" }]} allowClear style={{ width: "60px" }} />
-                </Field>
-            </Col> */}
         </>}
     </>
     );
@@ -74,16 +60,8 @@ const ToolbarFilters = ({ dataAPI, auth, num, v, columns, ...props }) => {
 const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
 const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
 const moreFilters = ({ form, columns }) => [
-    ...getMoreFilters({ columns }),
-    // <Col xs="content">
-    //     <Field name="fdocstatus" label={{ enabled: true, text: "Estado Documento", pos: "top", padding: "0px" }}>
-    //         <Select size="small" options={[{ value: null, label: "Todos" }, { value: 0, label: "Em elaboração" }, { value: 1, label: "Em revisão" }, { value: 2, label: "Fechado" }]} allowClear style={{ width: "150px" }} />
-    //     </Field>
-    // </Col>
-    /* { fgroup: { label: "Grupo", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fcod: { label: "Artigo Cód.", field: { type: 'input', size: 'small' }, span: 8 }, fdes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 16 } }, */
+    ...getMoreFilters({ columns })
 ];
-
 
 export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) => {
     const location = useLocation();
@@ -93,6 +71,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     const submitting = useSubmitting(true);
     const permission = usePermission({ name: "controlpanel" });
     const [load, setLoad] = useState(false);
+    const dataAPI = useDataAPI();
 
     useEffect(() => {
         const controller = new AbortController();
@@ -120,23 +99,43 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
         } */
     };
 
-    const onSelectionChange = (v) => {
+    const onSelectionChange = async (v) => {
         const _v = Array.isArray(v) ? v[0] : v;
-        navigate("/app/picking/newpaleteline", { state: { action: "delete", palete_id: _v.id, palete_nome: _v.nome, ordem_id: _v.ordem_id, num_bobines: _v.num_bobines, lvl: _v.lvl } });
+        const match = _v.nome.match(/^[^\d]+/);
+        let _ordem = {};
+
+        if (_v?.ordem_id) {
+            //Com ordem de fabrico
+            const result = await dataAPI.safePost(`${API_URL}/ordensfabrico/sql/`, "OrdensFabricoOpen", { notify: ["run_fail", "fatal"], filter: { id: _v?.ordem_id }, parameters: {} });
+            result.onSuccess(({ response }) => { });
+            result.onFail((p) => { });
+            const { rows } = result.response;
+            if (!result.valid || !rows || rows?.length == 0) {
+                openNotification("error", 'top', "Notificação", `A ordem de fabrico encontra-se fechada!`, null);
+                return;
+            } else {
+                _ordem = { enabled: true, retrabalho: rows[0].retrabalho == 1 ? true : false, optional: false };
+            }
+        }
+        navigate("/app/picking/newpalete", {
+            state: {
+                ...typePalete(["R"].includes(match[0]) && !_ordem?.retrabalho ? "P" : match[0]),
+                ordemFabrico: { ..._ordem },
+                palete: { id: _v?.id, nome: _v?.nome, ordemFilter: { id: _v?.ordem_id } }
+            }
+        });
     }
 
     return (
         <>
-            {load && <PaletesChoose
-                noid={false}
-                title="Apagar Palete"
-                onFilterChange={onFilterChange} onSelect={onSelectionChange}
-                defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]}
-                baseFilters={{
-                    ...parseFilter("sgppl.carga_id", "isnull"),
-                    ...parseFilter("sgppl.disabled", "==0")
-                }}
-            />
+            {load &&
+                <PaletesChoose noid={false} title="Refazer Palete" onFilterChange={onFilterChange} onSelect={onSelectionChange}
+                    defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]}
+                    baseFilters={{
+                        ...parseFilter("sgppl.carga_id", "isnull"),
+                        ...parseFilter("sgppl.disabled", "==0")
+                    }}
+                />
             }
         </>
     )

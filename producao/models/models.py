@@ -640,6 +640,12 @@ class Carga(models.Model):
     artigos = models.JSONField(blank=True, null=True) #ADDED
     prf=models.CharField(max_length = 17, null = True, verbose_name = "prf") #ADDED
     cliente=models.CharField(max_length = 255, null = True, verbose_name = "cliente") #ADDED
+    cliente_cod=models.IntegerField(null = True, verbose_name = "Cod Cliente")
+    matricula_reboque=models.CharField(max_length = 100, null = True, verbose_name = "Matricula Reboque") #ADDED
+    matricula=models.CharField(max_length = 100, null = True, verbose_name = "Matricula") #ADDED
+    modo_exp=models.CharField(max_length = 100, null = True, verbose_name = "Modo Expedição") #ADDED
+    data_producao=models.IntegerField(null = True, verbose_name = "Com ou sem data de produção")
+    po_cliente=models.CharField(max_length = 100, null = True, verbose_name = "PO Cliente")
     def __str__(self):
         return self.carga
 

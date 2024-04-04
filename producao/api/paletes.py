@@ -981,106 +981,40 @@ def CheckBobinesPaleteLine(request, format=None):
     
 def CheckBobinesPalete(request, format=None):
     r = PostData(request)
-
-    # def _checkBobines(ids, cursor):
-    #     response = db.executeSimpleList(lambda: (f"""        
-    #         select count(*) cnt
-    #         from producao_bobine pb
-    #         left join producao_palete pp on pp.id=pb.palete_id 
-    #         where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
-    #     """), cursor, {})
-    #     return response["rows"][0]["cnt"]
-
-    # def _checkExpedicaoSage(ids):
-    #     connection = connections[connGatewayName].cursor()
-    #     response = dbgw.executeSimpleList(lambda: (f"""
-    #             select count(*) cnt
-    #             from mv_bobines pb
-    #             left join mv_paletes pp on pp.id=pb.palete_id
-    #             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
-    #             where pb.id in ({ids}) and (mv."SDHNUM_0" is not null or mv.stock_lot is not NULL)
-    #     """), connection, {})
-    #     return response["rows"][0]["cnt"]
-
-    # def update(data,id,cursor):
-    #     values={
-    #         **excludeDictKeys(data,["id","ff_pos","fc_pos","buracos_pos","rugas_pos","furos_pos","palete_nome"]),
-    #         "ff_pos":json.dumps(data["ff_pos"], ensure_ascii=False) if data["ff_pos"] is not None else None,
-    #         "fc_pos":json.dumps(data["fc_pos"], ensure_ascii=False) if data["fc_pos"] is not None else None,
-    #         "furos_pos":json.dumps(data["furos_pos"], ensure_ascii=False) if data["furos_pos"] is not None else None,
-    #         "buracos_pos":json.dumps(data["buracos_pos"], ensure_ascii=False) if data["buracos_pos"] is not None else None,
-    #         "rugas_pos":json.dumps(data["rugas_pos"], ensure_ascii=False) if data["rugas_pos"] is not None else None
-    #     }
-    #     dml = db.dml(TypeDml.UPDATE, values, "producao_bobine", {"id":Filters.getNumeric(id,"isnull")}, None, False,[])
-    #     db.execute(dml.statement, cursor, dml.parameters)
-
     try:
         with transaction.atomic():
             with connections["default"].cursor() as cursor:
-                print(r.data)
-                args = [r.data.get("type"),r.data.get("nBobines"),r.data.get("lvl"),r.data.get("paleteRef"),json.dumps(r.data.get("bobines"), ensure_ascii=False)]
+                args = [r.data.get("type"),r.data.get("nBobines"),r.data.get("ordem_id"),r.data.get("lvl"),r.data.get("paleteRef"),json.dumps(r.data.get("bobines"), ensure_ascii=False),r.data.get("palete_redo_id")]
+                print(args)
                 cursor.callproc('check_bobines_palete',args)
                 report = fetchall(cursor)
-                print("report")
-                print(report)
         return Response({"status": "success", "title": "Palete validada com sucesso!", "report":report, "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
 
 def CreatePalete(request, format=None):
     r = PostData(request)
-
-    # def _checkBobines(ids, cursor):
-    #     response = db.executeSimpleList(lambda: (f"""        
-    #         select count(*) cnt
-    #         from producao_bobine pb
-    #         left join producao_palete pp on pp.id=pb.palete_id 
-    #         where pb.id in ({ids}) and (pp.carga_id is NOT NULL or pb.comp_actual =0 and pb.recycle > 0)        
-    #     """), cursor, {})
-    #     return response["rows"][0]["cnt"]
-
-    # def _checkExpedicaoSage(ids):
-    #     connection = connections[connGatewayName].cursor()
-    #     response = dbgw.executeSimpleList(lambda: (f"""
-    #             select count(*) cnt
-    #             from mv_bobines pb
-    #             left join mv_paletes pp on pp.id=pb.palete_id
-    #             LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
-    #             where pb.id in ({ids}) and (mv."SDHNUM_0" is not null or mv.stock_lot is not NULL)
-    #     """), connection, {})
-    #     return response["rows"][0]["cnt"]
-
-    # def update(data,id,cursor):
-    #     values={
-    #         **excludeDictKeys(data,["id","ff_pos","fc_pos","buracos_pos","rugas_pos","furos_pos","palete_nome"]),
-    #         "ff_pos":json.dumps(data["ff_pos"], ensure_ascii=False) if data["ff_pos"] is not None else None,
-    #         "fc_pos":json.dumps(data["fc_pos"], ensure_ascii=False) if data["fc_pos"] is not None else None,
-    #         "furos_pos":json.dumps(data["furos_pos"], ensure_ascii=False) if data["furos_pos"] is not None else None,
-    #         "buracos_pos":json.dumps(data["buracos_pos"], ensure_ascii=False) if data["buracos_pos"] is not None else None,
-    #         "rugas_pos":json.dumps(data["rugas_pos"], ensure_ascii=False) if data["rugas_pos"] is not None else None
-    #     }
-    #     dml = db.dml(TypeDml.UPDATE, values, "producao_bobine", {"id":Filters.getNumeric(id,"isnull")}, None, False,[])
-    #     db.execute(dml.statement, cursor, dml.parameters)
-
     try:
         #with transaction.atomic():
         with connections["default"].cursor() as cursor:
             args = [
-                r.data.get("type"),r.data.get("nBobines"),r.data.get("lvl"),r.data.get("paleteRef"),
-                json.dumps(r.data.get("bobines"), ensure_ascii=False)
+                r.data.get("type"),r.data.get("nBobines"),r.data.get("ordem_id"),r.data.get("lvl"),r.data.get("paleteRef"),
+                json.dumps(r.data.get("bobines"), ensure_ascii=False),
+                r.data.get("palete_redo_id")
             ]
             cursor.callproc('check_bobines_palete',args)
             report = fetchall(cursor)
-            print("checked")
         with connections["default"].cursor() as cursor:
-            #if len(report)>0 and report[0].get("ok")==1:
-            args = [
-                r.data.get("type"),r.data.get("nBobines"),r.data.get("lvl"),r.data.get("paleteRef"),
-                json.dumps(r.data.get("bobines"), ensure_ascii=False),r.data.get("pesoBruto"),r.data.get("paletePeso"),
-                r.data.get("paletizacao_id"),r.userId
-            ]
-            cursor.callproc('create_other_palete',args)
-            palete = fetchall(cursor)
+            if len(report)>0 and report[0].get("ok")==1:
+                schemabobines = ",".join(str(num) for num in r.data.get("schemaBobines"))
+                args = [
+                    r.data.get("type"),r.data.get("nBobines"),r.data.get("ordem_id"),r.data.get("lvl"),r.data.get("paleteRef"),
+                    json.dumps(r.data.get("bobines"), ensure_ascii=False),r.data.get("pesoBruto"),r.data.get("paletePeso"),
+                    r.data.get("paletizacao_id"),schemabobines, r.data.get("palete_redo_id"),r.userId
+                ]
+                print(args)
+                cursor.callproc('create_other_palete',args)
+                palete = fetchall(cursor)
         return Response({"status": "success", "title": "Palete criada com sucesso!", "report":report,"palete":palete, "subTitle":f'{None}'})
     except Exception as error:
         print(error)

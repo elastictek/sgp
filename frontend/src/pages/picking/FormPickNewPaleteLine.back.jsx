@@ -59,7 +59,7 @@ export const loadOrdensFabricoOpen = async ({ id }, signal) => {
     return null;
 }
 export const loadOrdensFabrico = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id,ativa:1 }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }

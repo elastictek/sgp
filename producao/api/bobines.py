@@ -575,6 +575,109 @@ def BobinesOriginaisList(request,format=None):
     return Response(response)
 
 
+def GetBobinesProduto(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
+    parameters = {**pf.parameters}
+    
+    response = db.executeSimpleList(lambda: (f"""        
+        select case when pa.produto is null or pa.produto='' then 
+		case when pd.produto_cod is null then pa2.produto else pd.produto_cod end
+	    else pa.produto end cod,pc.nome
+	    from producao_artigocliente pa
+        join producao_cliente pc on pc.id=pa.cliente_id
+	    join producao_artigo pa2 on pa2.id=pa.artigo_id
+	    left join producao_produtos pd on pd.id=pa2.produto_id
+	    {pf.group()}
+    """), connection, parameters)
+    return Response(response)
+
+def FixBobineProduto(request, format=None):
+    r = PostData(request)
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                try:
+                    dml = db.dml(TypeDml.UPDATE, {"designacao_prod":r.data.get("designacao_prod")}, "producao_bobine",{"id":Filters.getNumeric(r.filter.get("id"),"isnull")},None,False)
+                    dml.statement = f"""
+                        update producao_bobine pb
+                        left join producao_palete pp on pp.id=pb.palete_id
+                        set pb.designacao_prod = {Filters.fParam("designacao_prod")}
+                        where pb.id= {Filters.fParam("auto_id")} and pb.recycle=0 and (pp.id is null or pp.nome like 'DM%') and pp.carga_id is null
+                    """
+                    db.execute(dml.statement, cursor, dml.parameters)
+                except Exception as error:
+                    return Response({"status": "error", "title": str(error)})
+                return Response({"status": "success", "title": "Produto corrigido com sucesso!", "subTitle":None})
+    except Exception as error:
+        return Response({"status": "error", "title": f"Erro ao corrigir o Produto! {str(error)}"})
+
+def UpdateBobines(request, format=None):
+    r = PostData(request)
+
+    def _checkBobines(ids, cursor):
+        response = db.executeSimpleList(lambda: (f"""        
+            select count(*) cnt
+            from producao_bobine pb
+            left join producao_palete pp on pp.id=pb.palete_id 
+            where pb.id in({ids}) and (pb.recycle=1 or pp.carga_id is not null)
+        """), cursor, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]["cnt"]
+        return None
+
+    def _checkExpedicaoSage(ids,cursor):
+        connection = connections[connGatewayName].cursor()
+        response = dbgw.executeSimpleList(lambda: (f"""
+                select count(*) cnt
+                from mv_bobines pb
+                left join mv_paletes pp on pp.id=pb.palete_id
+                LEFT JOIN mv_pacabado_status mv on mv."LOT_0" = pp.nome
+                where pb.id in ({ids}) and mv."SDHNUM_0" is not null
+        """), connection, {})
+        if len(response["rows"])>0:
+            return response["rows"][0]["cnt"]
+        return None
+
+    def _update(data,id,cursor):
+        values={
+            "comp_actual":data.get("comp_actual"),
+            "area":f"""area=round({data.get("comp_actual")}*(lar/1000),2)"""
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_bobine", {"id":Filters.getNumeric(id,"isnull")}, None, False,["area"])
+        db.execute(dml.statement, cursor, dml.parameters)
+        values={
+            "comp_total":data.get("comp_actual"),
+            "area":f"""area=round({data.get("comp_actual")}*(largura_bobine/1000),2)"""
+        }
+        dml = db.dml(TypeDml.UPDATE, values, "producao_etiquetaretrabalho", {"id":Filters.getNumeric(id,"isnull")}, None, False,["area"])
+        dml.statement = f"""
+            UPDATE producao_etiquetaretrabalho SET 
+            comp_total = {Filters.fParam("comp_total")},
+            area=round({Filters.fParam("comp_total")}*(largura_bobine/1000),2) 
+            where bobine = (select pb.nome from producao_bobine pb where pb.id={Filters.fParam("auto_id")}) 
+        """
+        db.execute(dml.statement, cursor, dml.parameters)
+
+    try:
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                ids = ','.join(str(x["id"]) for x in r.data.get("rows"))
+                print(ids)
+                print(r.data)
+                chk01 = _checkBobines(ids,cursor)
+                if chk01 > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique (Se entrou em reciclado, ou se está numa carga... )"})
+                chk02 = _checkExpedicaoSage(ids,cursor)
+                if chk02 > 0:
+                    return Response({"status": "error", "title": f"Não é possível alterar uma ou mais bobines. Verifique se já existe expedição."})
+                for i, v in enumerate(r.data.get("rows")):
+                    _update(v,v.get("id"),cursor)
+        return Response({"status": "success", "title":f"""Registos atualizados com sucesso!"""})
+    except Error as error:
+        return Response({"status": "error", "title": str(error)})
+
 def BobinesListV2(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
@@ -589,9 +692,10 @@ def BobinesListV2(request, format=None):
         ,sgppl.retrabalhada,sgppl.stock,sgppl.carga_id,sgppl.num_palete_carga,sgppl.destino palete_destino,sgppl.ordem_id palete_ordem_id,sgppl.ordem_original
         ,sgppl.ordem_original_stock,sgppl.num_palete_ordem,sgppl.draft_ordem_id,sgppl.ordem_id_original,sgppl.area_real
         ,sgppl.comp_real,sgppl.diam_avg,sgppl.diam_max,sgppl.diam_min,sgppl.nbobines_real, 
-        po.ofid ofid_bobine,po1.ofid ofid_original, po2.ofid palete_ofid, 
+        po.ofid ofid_bobine,po1.ofid ofid_original,po1.eef eef_original, po2.ofid palete_ofid,po2.eef palete_eef, 
         sgppl.disabled,pc.name cliente_nome,sgppl.artigo,sgppl.destinos palete_destinos,sgppl.nbobines_emendas,sgppl.destinos_has_obs pl_destinos_has_obs,
-        mva.cod artigo_cod,pbm.tiponwinf,pbm.tiponwsup,pbm.comp comp_original, pbm.diam diam_original,pbm.num_bobinagem,pbm.data,pbm.inico inicio,pbm.fim
+        mva.cod artigo_cod,mva.des artigo_des,pbm.nome bobinagem_nome, pbm.tiponwinf,pbm.tiponwsup,pbm.comp comp_original, pbm.diam diam_original,pbm.num_bobinagem,pbm.data,pbm.inico inicio,pbm.fim,pbm.valid,
+        pcarga.carga,pcarga.eef,pcarga.prf,pcarga.cliente carga_cliente
         {",sum(mb.lar) over (partition by mb.bobinagem_id) largura_bobinagem" if r.data.get("validate") else "" }
     """
 
@@ -673,8 +777,6 @@ def BobinesDestinosHint(request, format=None):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
     return Response(response)
-
-
 
 
 def BobinesList(request, format=None):

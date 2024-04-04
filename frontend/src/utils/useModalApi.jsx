@@ -23,6 +23,7 @@ export default () => {
                 keyboard={!isNil(modalParameters?.closable) ? modalParameters.closable : true}
                 lazy={modalParameters?.lazy}
                 title={modalParameters?.title}
+                subTitle={modalParameters?.subTitle}
                 type={modalParameters?.type}
                 push={modalParameters?.push}
                 onCancel={onClose}

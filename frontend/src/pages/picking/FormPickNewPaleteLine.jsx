@@ -52,14 +52,14 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title }) => {
 // }
 
 export const loadOrdensFabricoOpen = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1,retrabalho:0, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { was_in_production: 1, retrabalho: 0, id }, sort: [], parameters: { method: "OrdensFabricoOpen" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }
     return null;
 }
 export const loadOrdensFabrico = async ({ id }, signal) => {
-    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
+    const { data: { rows } } = await fetchPost({ url: `${API_URL}/ordensfabrico/sql/`, filter: { id, ativa: 1 }, sort: [], parameters: { method: "OrdensFabricoGet" }, signal });
     if (rows && Object.keys(rows).length > 0) {
         return rows;
     }
@@ -133,7 +133,7 @@ const OrdensFabricoList = ({ openNotification, next, ...props }) => {
             inputParameters.current = { ...paramsIn };
         }
         const _items = await loadOrdensFabricoOpen({}, signal);
-        console.log("::::::::::::::::::::::",_items)
+        console.log("::::::::::::::::::::::", _items)
         setItems(_items);
         submitting.end();
     }
@@ -281,37 +281,37 @@ const Errors = ({ parameters }) => {
         <Row wrap='nowrap' nogutter>
             <Col>
                 <YScroll xScroll="auto">
-                    <Row nogutter wrap='nowrap' style={{padding:"3px"}}>
-                        <Col style={{minWidth:"30px"}} width={30}></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o produto não corresponde ao da ordem de fabrico">Produto</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine não existe, foi reciclada ou o comprimento é igual a zero">Bobine</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o core não corresponde ao da ordem de fabrico">Core</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o diametro da bobine não está dentro dos limites establecidos pelo cliente">Diâmetro</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: existirem bobines duplicadas">Duplicada</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o número de emendas excede o definido na ordem de fabrico">Emendas</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: o estado da bobine for diferente de GOOD">Estado</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine foi produzida à mais de 3 meses">Expirada</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a largura não corresponde à da ordem de fabrico">Largura</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col>
-                        <Col width={65} style={{ minWidth:"65px",textAlign: "center" }}><Tooltip title="Erro se: a palete final encontra-se numa carga" trigger={["click", "hover"]}>Carga</Tooltip></Col>
+                    <Row nogutter wrap='nowrap' style={{ padding: "3px" }}>
+                        <Col style={{ minWidth: "30px" }} width={30}></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o artigo não corresponde ao da ordem de fabrico">Artigo</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o produto não corresponde ao da ordem de fabrico">Produto</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: a bobine não existe, foi reciclada ou o comprimento é igual a zero">Bobine</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o core não corresponde ao da ordem de fabrico">Core</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o diametro da bobine não está dentro dos limites establecidos pelo cliente">Diâmetro</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: existirem bobines duplicadas">Duplicada</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o número de emendas excede o definido na ordem de fabrico">Emendas</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: o estado da bobine for diferente de GOOD">Estado</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: a bobine foi produzida à mais de 3 meses">Expirada</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: a largura não corresponde à da ordem de fabrico">Largura</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: a bobine se encontra numa palete final" trigger={["click", "hover"]}>Palete</Tooltip></Col>
+                        <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="Erro se: a palete final encontra-se numa carga" trigger={["click", "hover"]}>Carga</Tooltip></Col>
                     </Row>
 
                     {report.map((v, i) => (
-                        <Row nogutter key={`err-${i}`} style={{ marginTop: "2px",padding:"3px", ...(i==index) && {background:"#fff1b8"} }} wrap='nowrap'>
-                            <Col style={{minWidth:"30px",alignSelf:"center"}} width={30}>{`${i + 1}`.padStart(2, '0')}</Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].artigo_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].produto_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].bobine_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].core_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].diam_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].duplicate == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].emendas_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].estado_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].expired_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].largura_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].palete_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                            <Col width={65} style={{minWidth:"65px"}}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].carga_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                        <Row nogutter key={`err-${i}`} style={{ marginTop: "2px", padding: "3px", ...(i == index) && { background: "#fff1b8" } }} wrap='nowrap'>
+                            <Col style={{ minWidth: "30px", alignSelf: "center" }} width={30}>{`${i + 1}`.padStart(2, '0')}</Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].artigo_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].produto_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].bobine_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].core_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].diam_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].duplicate == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].emendas_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].estado_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].expired_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].largura_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].palete_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                            <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: report[i].carga_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
                         </Row>
                     ))}
                 </YScroll>

@@ -418,11 +418,13 @@ def OrdensFabricoPlanGet(request, format=None):
     f.add(f'(pt.id = :draft_id)',lambda v:(v!=None) )
     f.add(f'(po.ativa = :ativa)',lambda v:(v!=None) )
     f.value("and")
+
     response = db.executeSimpleList(lambda: (
         f"""
             select * from (
             select pt2.id agg_id, pt2.cod agg_cod,pt.paletizacao_id, pc.id cs_id, esquema,po.id,pt.of_id ofid,po.op,pt.cliente_nome, pt.cliente_cod ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id ,
-            pa.des artigo_des, po.bobines_por_palete, po.was_in_production, 
+            po.bobines_por_palete,po.bobines_por_palete_inf,
+            pa.des artigo_des, po.was_in_production, 
             CASE WHEN po.`status` IS NULL AND pt.id is not null and pt2.`status`=0 THEN 1 ELSE
                 CASE WHEN pc.`status`= 1 THEN 2 ELSE
                     CASE WHEN pc.`status`= 2 THEN 2 ELSE
@@ -433,6 +435,7 @@ def OrdensFabricoPlanGet(request, format=None):
                     END
             END
             ofabrico_status,
+            ifnull(po.retrabalho,0) retrabalho,
             pc.status,
             po.ativa
             from producao_tempordemfabrico pt
@@ -445,6 +448,7 @@ def OrdensFabricoPlanGet(request, format=None):
             ) t where t.ofabrico_status <9
         """
     ), connection, {**f.parameters})
+    print(response)
     return Response(response)    
 
 
@@ -456,17 +460,34 @@ def OrdensFabricoGet(request, format=None):
     f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
     f.add(f'(po.id = :id)',lambda v:(v!=None) )
     f.add(f'(po.stock = :stock)',lambda v:(v!=None) )
+    f.add(f'(po.retrabalho = :retrabalho)',lambda v:(v!=None) )
     f.add(f'(po.draft_ordem_id = :draft_id)',lambda v:(v!=None) )
     f.add(f'(po.ativa = :ativa)',lambda v:(v!=None) )
     f.value("and")
     response = db.executeSimpleList(lambda: (
         f"""
-            select esquema,po.id,po.ofid,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod ,pt.id draft_id , t1.artigo_des, po.bobines_por_palete, po.was_in_production, po.`status` ofabrico_status,po.ativa
-            from planeamento_ordemproducao po 
+            select
+            pta.id agg_id, pta.cod agg_cod,ifnull(po.paletizacao_id,pt.paletizacao_id) paletizacao_id, pc.id cs_id, 
+            esquema,po.id,
+            po.bobines_por_palete,po.bobines_por_palete_inf,
+            ifnull(po.ofid,po.op) ofid,
+            po.op,
+            ifnull(pt.cliente_nome,pcl.nome) cliente_nome ,
+            ifnull(pt.prf_cod,po.prfcod) prf_cod,
+            ifnull(pt.order_cod,po.eef) order_cod,
+            ifnull(pt.item_cod,pa.cod) item_cod,
+            pt.id draft_id,
+            ifnull(t1.artigo_des,pa.des) artigo_des, 
+            po.was_in_production, case when po.retrabalho = 1 then 3 else po.`status` end ofabrico_status,
+            po.retrabalho
+            from planeamento_ordemproducao po
+            join producao_cliente pcl on pcl.id=po.cliente_id
+            join producao_artigo pa on pa.id=po.artigo_id
             left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
-            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id 
+            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id
+            left join producao_tempaggordemfabrico pta on pta.id=pt.agg_of_id
             {f.text} order by po.ofid is null,po.ofid
         """
     ), connection, {**f.parameters})
@@ -475,6 +496,7 @@ def OrdensFabricoGet(request, format=None):
 def OrdensFabricoOpen(request, format=None):
     filter = request.data.get("filter")
     connection = connections["default"].cursor()
+    print(filter)
     f = Filters(filter)
     f.where(False,"and")
     f.add(f'(po.was_in_production = :was_in_production)',lambda v:(v!=None) )
@@ -484,7 +506,9 @@ def OrdensFabricoOpen(request, format=None):
     response = db.executeSimpleList(lambda: (
         f"""
             select 
+            pta.id agg_id, pta.cod agg_cod,ifnull(po.paletizacao_id,pt.paletizacao_id) paletizacao_id, pc.id cs_id,
             esquema,po.id,
+            po.bobines_por_palete,po.bobines_por_palete_inf,
             ifnull(po.ofid,po.op) ofid,
             po.op,
             ifnull(pt.cliente_nome,pcl.nome) cliente_nome ,
@@ -494,7 +518,7 @@ def OrdensFabricoOpen(request, format=None):
             pt.id draft_id,
             ifnull(t1.artigo_des,pa.des) artigo_des, 
             po.bobines_por_palete, po.was_in_production, case when po.retrabalho = 1 then 3 else po.`status` end ofabrico_status,
-            po.retrabalho, po.paletizacao_id
+            po.retrabalho
             from planeamento_ordemproducao po
             join producao_cliente pcl on pcl.id=po.cliente_id
             join producao_artigo pa on pa.id=po.artigo_id
@@ -502,10 +526,35 @@ def OrdensFabricoOpen(request, format=None):
             left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
             left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
             left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id
+            left join producao_tempaggordemfabrico pta on pta.id=pt.agg_of_id
             where po.ativa = 1 {f.text} order by po.ofid is null,po.ofid
         """
     ), connection, {**f.parameters})
-
+    print(f"""
+    
+                select 
+            pta.id agg_id, pta.cod agg_cod,ifnull(po.paletizacao_id,pt.paletizacao_id) paletizacao_id, pc.id cs_id,
+            esquema,po.id,
+            po.bobines_por_palete,po.bobines_por_palete_inf,
+            ifnull(po.ofid,po.op) ofid,
+            po.op,
+            ifnull(pt.cliente_nome,pcl.nome) cliente_nome ,
+            ifnull(pt.prf_cod,po.prfcod) prf_cod,
+            pt.order_cod,
+            ifnull(pt.item_cod,pa.cod) item_cod,
+            pt.id draft_id,
+            ifnull(t1.artigo_des,pa.des) artigo_des, 
+            po.bobines_por_palete, po.was_in_production, case when po.retrabalho = 1 then 3 else po.`status` end ofabrico_status,
+            po.retrabalho
+            from planeamento_ordemproducao po
+            join producao_cliente pcl on pcl.id=po.cliente_id
+            join producao_artigo pa on pa.id=po.artigo_id
+            left join producao_currentsettings pc on pc.agg_of_id = po.agg_of_id_id
+            left join JSON_TABLE (pc.paletizacao,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", esquema JSON PATH "$") ) t on t.of_id=po.id
+            left join JSON_TABLE (pc.ofs,"$[*]"COLUMNS ( of_id INT PATH "$.of_id", artigo_des VARCHAR(200) PATH "$.artigo_des") ) t1 on t1.of_id=po.id
+            left join producao_tempordemfabrico pt on pt.id=po.draft_ordem_id
+            left join producao_tempaggordemfabrico pta on pta.id=pt.agg_of_id
+            where po.ativa = 1 {f.text} order by po.ofid is null,po.ofid""")
     return Response(response)
 
 def OrdensFabricoInProduction(request, format=None):
@@ -1928,6 +1977,12 @@ def AssociatePaletizacao(request, format=None):
             where draft_ordem_id={id}
         """),cursor,{})
         return response["rows"][0]["cnt"]
+    
+    def _getPaletizacao(id,cursor):
+        response = db.executeSimpleList(lambda:(f"""
+            select * from producao_paletizacao where id={id}
+        """),cursor,{})
+        return response["rows"][0]
 
     def _checkPalete(palete_id):
             if not palete_id:
@@ -1974,15 +2029,17 @@ def AssociatePaletizacao(request, format=None):
             ) t on t.id=pcs.id
             set pcs.paletizacao=t.paletizacao,pcs.type_op = 'paletizacao'
         """
-        #db.execute(dml.statement, cursor, dml.parameters)
-        dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id,"id":id}, "planeamento_ordemproducao",{},None,None,[])
-        #db.execute(dml.statement, cursor, dml.parameters)
+        db.execute(dml.statement, cursor, dml.parameters)
+        _pal = _getPaletizacao(paletizacao_id,cursor)
+        dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id,"tipo_transporte":_pal.get("contentor_id"),"altura_max":_pal.get("palete_maxaltura")}, "planeamento_ordemproducao",{"id":Filters.getNumeric(id)},None,None,[])
+        db.execute(dml.statement, cursor, dml.parameters)
 
     def _updateTempOFabrico(id,paletizacao_id,cursor):
         dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id}, "producao_tempordemfabrico",{"id":Filters.getNumeric(id)},None,None,[])
         db.execute(dml.statement, cursor, dml.parameters)
         dml = db.dml(TypeDml.UPDATE, {"paletizacao_id":paletizacao_id}, "planeamento_ordemproducao",{"draft_ordem_id":Filters.getNumeric(id)},None,None,[])
         db.execute(dml.statement, cursor, dml.parameters)
+
 
     try:
         with transaction.atomic():
@@ -1997,9 +2054,9 @@ def AssociatePaletizacao(request, format=None):
                     if _chk==1:
                         return Response({"status": "error", "title": "A ordem de fabrico já não se encontra em elaboração!", "subTitle":f'{None}'})
                     _updateTempOFabrico(r.data.get("draft_id"),r.data.get("paletizacao_id"),cursor)
-                if r.data.get("palete_id"):
-                    if _checkPalete(r.data.get("palete_id")) is None:
-                        return Response({"status": "error", "title": "A palete já foi expedida ou pertence a uma carga!"})
+                # if r.data.get("palete_id"):
+                #     if _checkPalete(r.data.get("palete_id")) is None:
+                #         return Response({"status": "error", "title": "A palete já foi expedida ou pertence a uma carga!"})
         return Response({"status": "success", "title": "Esquema associado com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
@@ -2246,7 +2303,6 @@ def SavePaletizacao(request, format=None):
     except Exception as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})
-
 
 def FormulacaoPlanList(request, format=None):
     connection = connections["default"].cursor()
@@ -4263,6 +4319,12 @@ def _updateCliente(data,id,cursor):
     }
     dml = db.dml(TypeDml.UPDATE, values, "producao_cliente",{"id":Filters.getNumeric(id,"isnull")}, None, False,[])
     db.execute(dml.statement, cursor, dml.parameters)
+def _updateArtigo(data,id,cursor):
+    values = {
+        'lar': data.get('lar')
+    }
+    dml = db.dml(TypeDml.UPDATE, values, "producao_artigo",{"id":Filters.getNumeric(id,"isnull")}, None, False,[])
+    db.execute(dml.statement, cursor, dml.parameters)
 def _insertProduto(data,cursor):
     values = {**data}
     dml = db.dml(TypeDml.INSERT, values, "producao_produtos", None, None, False,[])
@@ -4321,6 +4383,7 @@ def _insertArtigo(data,cursor):
         produto_id = _insertProduto({"produto_cod":artigo_data.get("produto")},cursor)
     values = {
         **artigo_data,
+        "lar":data.get("lar"),
         "des":data.get("artigo_des"),
         "cod":data.get("artigo_cod"),
         "tipo":"Produto final",
@@ -4391,6 +4454,8 @@ def UpdateArtigoCliente(request, format=None):
                         return Response({"status": "error", "title": "O artigo não existe!", "subTitle":f'{None}'})
                     if cliente_id and artigo_id:
                         _updateCliente(v,cliente_id,cursor)
+                        if "amostra".casefold() in v.get("artigo_des").casefold():
+                            _updateArtigo(v,artigo_id,cursor)
                         chk = _artigoClienteExists(artigo_id,cliente_id,cursor)
                         if (chk==0):
                             return Response({"status": "error", "title": "A relação artigo/cliente não existe!", "subTitle":f'{None}'})

@@ -167,12 +167,11 @@ export default ({ extraRef, closeSelf, loadParentData, showHistory = true, ...pr
             let _qtd = 0;
             let _qtd_kg = 0;
             switch (unit) {
-                case "m": parseFloat((qtd * (pos.largura / 1000)).toFixed(2)); break;
+                case "m": _qtd = parseFloat((qtd * (pos.largura / 1000)).toFixed(2)); break;
                 case "m2": _qtd = qtd; break;
-                case "kg": _qtd = parseFloat((qtd / pos.gsm).toFixed(2)); break;
+                case "kg": _qtd = parseFloat(((qtd*1000) / pos.gsm).toFixed(2)); break;
             }
             _qtd_kg = parseFloat(((_qtd* pos.gsm) / 1000).toFixed(2));
-
             const _recycle = (justificacao == JUSTIFICATION_NW_OUT_V2[JUSTIFICATION_NW_OUT_V2.length-1]) ? true : false;
             response = await fetchPost({ url: `${API_URL}/materiasprimas/sql/`, filter: {}, parameters: { method: "RemoveNonwovenFromLine", row: { recycle:_recycle, qty_reminder: _qtd,qty_kg: _qtd_kg, obs: justificacao, vcr_num: pos.vcr_num } } });
             if (response && response.data.status !== "error") {

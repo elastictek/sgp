@@ -7,7 +7,7 @@ import { ConditionalWrapper } from '../conditionalWrapper';
 import Portal from "../portal";
 import YScroll from "../YScroll";
 import PointingAlert from "../pointingAlert";
-import { debounce, dayjsValue } from "utils";
+import { getValue, isNullOrEmpty, tryParseDate, useSubmitting,debounce, dayjsValue } from "utils";
 import { validate, getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
 import { LoadingOutlined, CheckSquareOutlined, BorderOutlined, SearchOutlined, CloseCircleFilled } from '@ant-design/icons';
 import { BiWindow } from "react-icons/bi";
@@ -24,7 +24,6 @@ import useModalApi from 'utils/useModalApi';
 import { parseFilter, useDataAPI } from 'utils/useDataAPIV4';
 import TableGridSelect from 'components/TableV4/TableGridSelect';
 import { EstadoBobine, Value } from 'components/TableV4/TableColumnsV4';
-import { getValue, isNullOrEmpty, useSubmitting } from 'utils/index';
 import { getSelectedNodes } from 'components/TableV4/TableV4';
 export const Context = createContext({});
 
@@ -451,7 +450,10 @@ export const ForView = ({ name, path, size, children, data, keyField, textField,
             return 'Selector';
         } else if (children.type === InputNumber) {
             return 'InputNumber';
-        } else if (children.type === Switch) {
+        }else if (children.type === DatePicker) {
+            return 'Date';
+        } 
+        else if (children.type === Switch) {
             return 'Switch';
         } else if (children.type === Checkbox) {
             return 'Checkbox';
@@ -464,6 +466,9 @@ export const ForView = ({ name, path, size, children, data, keyField, textField,
         <>
             {(() => {
                 switch (type) {
+                    case 'Date':
+                        const format = (children.props?.format) ? children.props.format : DATETIME_FORMAT;
+                        return <DefaultForView value={tryParseDate(value,'',format)} childrenProps={children.props} forViewProps={{ height: _height, name, path, size, data, keyField, textField, optionsRender, labelInValue, forViewBorder, forViewBackground, style, ...props }} />;
                     case 'Switch':
                         return (<Switch size={size} {...children.props} value={value} disabled={true} />);
                     case 'Checkbox':
@@ -486,7 +491,6 @@ export const Field = ({ name, path: _path, children, label = {}, forInput, forVi
     const _size = children?.props?.size ? children?.props?.size : ctx.size
     const { text, enabled = true, pos = "top", style: labelStyle } = label;
     const status = _status(name, validation);
-    console.log("--->", name, status)
     if (!children) {
         return <>{children}</>
     } else if (_forInput) {

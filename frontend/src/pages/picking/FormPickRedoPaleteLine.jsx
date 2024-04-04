@@ -10,7 +10,6 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, PALETES_WEIGH, BOBINE_ESTADOS } from "config";
-import { useDataAPI } from "utils/useDataAPIV3";
 import { json, includeObjectKeys, excludeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
@@ -36,6 +35,7 @@ import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
 import PaletesChoose from './PaletesChoose';
+import { parseFilter } from 'utils/useDataAPIV4';
 
 const title = "Refazer Palete";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
@@ -401,13 +401,20 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
-        navigate("/app/picking/newpaleteline", { state: { action: "redo", palete_id: v.data.id, palete_nome: v.data.nome, ordem_id: v.data.ordem_id, num_bobines: v.data.num_bobines } });
+        const _v = Array.isArray(v) ? v[0] : v;
+        navigate("/app/picking/newpaleteline", { state: { action: "redo", palete_id: _v.id, palete_nome: _v.nome, ordem_id: _v.ordem_id, num_bobines: _v.num_bobines } });
     }
 
     return (
         <>
             {load &&
-                <PaletesChoose noid={false} title="Refazer Palete" onFilterChange={onFilterChange} onSelect={onSelectionChange} defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]} defaultFilters={{ fcarga: "isnull", fdisabled: "==0", fdispatched: "isnull" }} />
+                <PaletesChoose noid={false} title="Refazer Palete" onFilterChange={onFilterChange} onSelect={onSelectionChange} 
+                defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]} 
+                baseFilters={{
+                    ...parseFilter("sgppl.carga_id", "isnull"),
+                    ...parseFilter("sgppl.disabled", "==0")
+                }}
+                />
             }
         </>
     )

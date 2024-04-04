@@ -42,7 +42,7 @@ const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, t
   />}</>);
 }
 
-export const postProcess = async (dt, { validate = false }) => {
+export const postProcess = async (dt, { validate = false }={}) => {
 
   for (let [i, v] of dt.rows.entries()) {
     let defeitos = [];
@@ -172,7 +172,7 @@ export const validationGroups = (dataAPI) => setValidationGroups({
   largura: ["l_real", "lar", "estado", "num_bobinagem"]
 });
 
-const useTableStyles = createUseStyles({
+export const useTableStyles = createUseStyles({
   recycled: {
     background: "#ffccc7 !important"
   }
@@ -184,7 +184,7 @@ const canChangeRow = (data) => {
   }
   return false;
 }
-const isRecycled = (data) => {
+export const isRecycled = (data) => {
   if (data?.recycle == 1 || data?.comp_actual < 50) {
     return true;
   }
@@ -281,11 +281,9 @@ export default ({ noid = true, print = false, edit = false, loadOnInit = true, d
   const onGridResponse = async (api) => {
     if (dataAPI.requestsCount() === 1) {
       if (props?.setDataToParent && typeof props.setDataToParent == "function") {
-        console.log("data sent to parent", getAllNodes(api))
         props.setDataToParent(getAllNodes(api));
       }
     }
-    console.log("aaaaaaa-xxx-after");
   };
 
   const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
@@ -470,7 +468,7 @@ export default ({ noid = true, print = false, edit = false, loadOnInit = true, d
       case "delete":
         Modal.confirm({
           content: <div>Tem a certeza que deseja apagar o parâmetro <b>{row.nome}</b>?</div>, onOk: async () => {
-            await _safePost("DeleteLabParameter", { parameters: {}, filter: { id: row.id } });
+            await _safePost("xxxxxxxxxxxxxxxx", { parameters: {}, filter: { id: row.id } });
           }
         })
         break;
@@ -560,7 +558,6 @@ export default ({ noid = true, print = false, edit = false, loadOnInit = true, d
         { colId: 'pbm.comp', field: 'comp_original', headerName: 'C. Original', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
         { colId: 'mb.comp_actual', field: 'comp_actual', headerName: 'Comp.', width: 70, ...cellParams(), cellRenderer: (params) => <Value unit=" m" params={params} /> },
         { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 90, ...cellParams({ unit: "mm", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
-
         { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
         { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
         { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 90, ...cellParams({ unit: "m", multi: true }), type: "editableColumn", cellEditor: RangeDefeitosEditor, cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },

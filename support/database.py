@@ -256,6 +256,7 @@ class BaseSql:
                     count = connOrCursor.fetchone()[0]
         if (norun):
             return {"sql":execSql["sql"].replace("%%","%"),"parameters":execSql["parameters"]}
+        
         return {"rows": rows, "total": count, "faketotal":fakeTotal}
 
     def executeSimpleList(self, sql, connOrCursor, parameters, ignore=[],norun = None):
@@ -515,6 +516,7 @@ class MySqlSql(BaseSql):
             ret.limit = f"""LIMIT {limit}"""
         else:
             ret.limit = ''
+        
         ret.pageSize = pageSize
         if computeColumns:
             ret.columns = self.columns(
@@ -688,8 +690,6 @@ class SqlServerSql(BaseSql):
         "Compute query items: sort and pagination"
         ret = BaseSql.Dql()
         self.encloseColumns = encloseColumns
-        print("oiii")
-        print(defaultSort)
         ret.sort = self._BaseSql__getSort(data,defaultSort)
         pagination = {"limit": 0, "pageSize": 10, "currentPage": 0, "page": None, "offset": 0, "enabled": False, **data.get('pagination', {})}
         ret.currentPage = pagination.get('currentPage') if pagination.get('page') is None else pagination.get('page')
@@ -878,16 +878,17 @@ def _computeCase(field,params):
     return field
 
 class ParsedFilters:
-    def __init__(self,filterData={},prefix="where",apiversion=None) -> None:
+    def __init__(self,filterData={},prefix="where",apiversion=None,processGroups=None,mask=None,fn=None) -> None:
+        self.fn = fn
         self.betweenfilters = "and"
-        self.hasFilters = False
+        self.groupHasFilters = {}
         self.parameters = {}
         self.filterData = {**filterData}
         self.groups = {}
-        self.prefix=prefix
+        self.prefix= {"t1":prefix} if not isinstance(prefix, dict) else prefix
         if apiversion=="4":
             print("API VERSION --4--")
-            self.compute()
+            self.compute(processGroups,mask)
 
     def _getPrefix(self,_group):
         if isinstance(self.prefix, dict):
@@ -896,16 +897,48 @@ class ParsedFilters:
              else:
                 return "where"
         return self.prefix
-
+    
+    def getProperty(self,filterName,prop,group=None):
+        if filterName in self.filterData:
+            if group is not None:
+                    if group in self.filterData.get(filterName):
+                        return self.filterData.get(filterName).get(group).get(prop)
+                    else:
+                        return None
+            else:
+                return self.filterData.get(filterName).get(prop)
+        return None
+    def setProperty(self,filterName,prop,group,value):
+        if filterName in self.filterData:
+            if group:
+                if group in self.filterData.get(filterName).get("groups"):
+                    self.filterData[filterName]["groups"][group][prop]=value
+            else:
+                self.filterData[filterName][prop]=value
+    
+    def setProperties(self,filterName,group,value):
+        if filterName in self.filterData:
+            if group:
+                if group in self.filterData.get(filterName).get("groups"):
+                    self.filterData[filterName]["groups"][group] = {**self.filterData[filterName]["groups"][group],**value}
+            else:
+                self.filterData[filterName]={**self.filterData[filterName],**value}
+    
     def log(self,str="t1"):
         print(self.group(str))
         print(self.parameters)
 
-    def compute(self):
-       
-        #_p = {k:v for k, v in self.filterData.items() if "groups" in v}
-
-        
+    def hasFilters(self,name=None):
+        r=False
+        if name is None:
+            r = any(value for value in self.groupHasFilters.values())
+        elif isinstance(name, list):
+            r = any(self.groupHasFilters[key] for key in name if key in self.groupHasFilters and self.groupHasFilters[key])
+        else:
+            r = self.groupHasFilters.get(name) 
+        return True if r==True else False
+    
+    def compute(self,processGroups=None,mask=None):
         _grouped = {}
         for value in self.filterData.values():
             _groups = value.get('groups', {})
@@ -915,8 +948,15 @@ class ParsedFilters:
                     _grouped[group_name] = {}
                 _grouped[group_name][key] = {"name":value['name'],**group_info}
 
+        if processGroups is None:
+            self.groupHasFilters={}
+        else:
+            self.groupHasFilters = {key: value for key, value in self.groupHasFilters.items() if key not in processGroups}
         for group_name, _p in _grouped.items():
+            if processGroups is not None and group_name not in processGroups:
+                continue
             _fgrp_txt = []
+            self.groupHasFilters[group_name]=False
             for _name, _param in _p.items():
                 _name = _param.get("name") if "name" in _param else _name
                 _ftxt = []
@@ -949,88 +989,37 @@ class ParsedFilters:
                     _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
                     _ftxt.append(f"""({_fp.get("filters")[0]})""")
                     self.parameters = {**self.parameters,**_fp.get("parameters")}
-                if len(_fgrp_txt)>0:
-                    _fgrp_txt.append(f" {self.betweenfilters} ")
-                _fgrp_txt.append(f"""({"".join(_ftxt)})""")
-                self.groups[group_name]=f""" {self._getPrefix(group_name)} ({"".join(_fgrp_txt)})"""
-        if not self.parameters:
-            self.hasFilters=False
-        else:
-            self.hasFilters=True
-        
-        #print(self.groups)
-        #print(self.parameters)
-        
-        
-        #return 
-        
-
-        
-        # print(self.filterData)
-        # for group_name in list(all_groups):
-        #     print("Group:", group_name)
-        #     for key, value in self.filterData.items():
-        #         groups = value.get('groups', {})
-        #         group_info = groups.get(group_name)
-        #         print
-        #         if group_info:
-        #             print(f"""{group_info.get("name")}_{group_name}: {group_info}""")
-        
-        
-
-
-
-
-
-        # for key, value in self.filterData.items():
-        #     if value.get("group") not in self.groups:
-        #         _p = {k:v for k, v in self.filterData.items() if 'group' in v and v.get("group") == value.get("group")}
-        #         _fgrp_txt = []
-        #         self.groups[value.get("group")] = ""
-        #         for _name, _param in _p.items():
-        #             _name = _param.get("name") if "name" in _param else _name
-        #             _ftxt = []
-        #             for idx, el in enumerate(_param.get("parsed")):
-        #                 _pn = f"f.{_name}.{idx}" #Parameter Name   
-        #                 _alias = _param.get("mask").format(k=_param.get("alias")) if _param.get("mask") else _computeCase(_param.get("alias"),_param) if _param.get("alias") else _computeCase(_name,_param)
-        #                 #_parameters[_pn] = {"value": lambda v: el if el is not None else None, "field": lambda k, v: _alias}
-        #                 if el in ["and","or"]:
-        #                     _ftxt.append(f" {el} ")
-        #                     continue
-        #                 if el in ["(",")"]:
-        #                     _ftxt.append(f" {el} ")
-        #                     continue
-        #                 if (el.startswith(":")):
-        #                     el = el.replace(":","",1)
-        #                     if (el==""):
-        #                         continue
-        #                     _ftxt.append(f"""({trim_outer_quotes(el).replace("%","%%")})""")
-        #                     continue
-        #                 if (el.startswith("@:")):
-        #                     el = trim_outer_quotes(el.replace("@:","",1))
-        #                     pattern = r'\{([^{}]+)\}(.+)'
-        #                     match = re.match(pattern, el)
-        #                     if match:
-        #                         _pn = match.group(1)
-        #                         _alias = match.group(1)
-        #                         el = match.group(2)
-        #                     else:
-        #                         continue
-        #                 _fp = FiltersParser({_pn:el},{_pn:_alias},_param)
-        #                 _ftxt.append(f"""({_fp.get("filters")[0]})""")
-        #                 self.parameters = {**self.parameters,**_fp.get("parameters")}
-        #             if len(_fgrp_txt)>0:
-        #                 _fgrp_txt.append(f" {self.betweenfilters} ")
-        #             _fgrp_txt.append(f"""({"".join(_ftxt)})""")
-        #         self.groups[value.get("group")]=f""" {self._getPrefix(value.get("group"))} ({"".join(_fgrp_txt)})"""
-        # if not self.parameters:
-        #     self.hasFilters=False
-        # else:
-        #     self.hasFilters=True
-
+               
+                gmask = _param.get("gmask")
+                retfn=None
+                if self.fn and callable(self.fn):
+                    retfn = self.fn(self,group_name,_name,_param,_ftxt,mask,gmask)
+                    if isinstance(retfn, list):
+                         _ftxt=retfn   
+                if retfn!=True:
+                    if len(_fgrp_txt)>0:
+                        _fgrp_txt.append(f" {self.betweenfilters} ")
+                    _fgrp_txt.append(f"""({"".join(_ftxt)})""")
+                    if mask is None:
+                        self.groups[group_name]=f""" {"" if gmask else self._getPrefix(group_name)} ({"".join(_fgrp_txt)})"""
+                        if (gmask):
+                            self.groups[group_name] = f"""{self._getPrefix(group_name)} {gmask.replace("{_}",self.groups[group_name])}"""
+                    else:
+                        self.groups[group_name]=f""" {"" if gmask else self._getPrefix(group_name)} ({mask.replace("$[v]","".join(_fgrp_txt))})"""
+                        if (gmask):
+                            self.groups[group_name] = f"""{self._getPrefix(group_name)} {gmask.replace("{_}",self.groups[group_name])}"""
+                    if self.groups[group_name] is not None and self.groups[group_name].strip()!="":
+                        self.groupHasFilters[group_name]=True
+ 
     def group(self,name="t1"):
         return self.groups.get(name) if self.groups.get(name) is not None else ""
     
+
+    def setGroup(self,name,value):
+        self.groupHasFilters[name]=False
+        if value is not None and value.strip()!="":
+            self.groupHasFilters[name]=True
+        self.groups[name]=value
 
 class Filters:
     def __init__(self, filterData={}):
@@ -1267,8 +1256,17 @@ class Filters:
                 #groups[value.get("group")] = Filters({key: v.get("parsed") for key, v in request.data.get("filter").items() if 'group' in v and v.get("group") == value.get("group")})
         #======================================================================
 
-def _apply_vmask(vmask,field,value):
-    return vmask.format(k=field,v=value) if vmask else value
+def _apply_vmask(vmask,field,value,op=None,opNot=None):
+    _op=op
+    if op=='===':
+        _op=''
+    elif op=="==":
+        _op = "=" if not opNot else "<>"
+    elif op=='=':
+        _op = "like" if not opNot else "not like"
+    elif op is None:
+        _op=''
+    return vmask.format(k=field,v=value,l=_op) if vmask else value
 def _apply_wildcards(value,wildcards=True):
     if (wildcards):
         return value
@@ -1292,7 +1290,7 @@ def FiltersParser(data, fields={},options={}, encloseColumns=True, typedb=TypeDB
         #     parameters[f'auto_{key}'] = value
         # el
         if (options and "assign" in options and not options.get("assign")):
-            filters.append(_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s'))
+            filters.append(_apply_vmask(options.get("vmask"),field,f'%(auto_{key})s',op,opNot))
             parameters[f'auto_{key}'] = _apply_wildcards(value,options.get("wildcards"))
         elif op == '===':
             if typedb==TypeDB.MYSQL:

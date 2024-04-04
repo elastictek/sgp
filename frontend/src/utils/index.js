@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import * as R from 'ramda';
 import moment from 'moment';
 import dayjs from 'dayjs';
-import { DATE_ENGINE } from 'config';
+import { DATE_ENGINE,DATETIME_FORMAT } from 'config';
 import { includeObjectKeys } from './object';
 
 export const isNullOrEmpty = value => R.isNil(value) || R.isEmpty(value);
@@ -129,6 +129,17 @@ export const uniqueKeys = (array, key) => {
         }
         return uniqueArray;
     }, []);
+}
+
+export const tryParseDate = (dateString,ret=null,format=DATETIME_FORMAT) => {
+    const parsedDate = dayjs(dateString);
+    if (!parsedDate.isValid()){
+        return ret;
+    }
+    if (format){
+        return parsedDate.format(format);
+    }
+    return parsedDate;
 }
 
 export const dayjsValue = (value, retValue = null) => {

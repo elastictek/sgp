@@ -32,6 +32,7 @@ import YScroll from 'components/YScroll';
 import { usePermission, Permissions } from "utils/usePermission";
 import { AppContext, MediaContext } from 'app';
 import { LiaDatabaseSolid } from 'react-icons/lia';
+import { typePalete } from './commons';
 
 const title = "Painel de Controlo";
 const TitleForm = ({ data, onChange, level, auth, form }) => {
@@ -39,12 +40,16 @@ const TitleForm = ({ data, onChange, level, auth, form }) => {
 }
 
 const StyledButton = styled(Button)`
-    height:90px;
-    width:120px;
+    height:80px;
+    width:80px;
+    padding:0px 0px;
     .txt{
         height:20px;
         line-height:1;
         text-wrap:wrap;
+    }
+    .ant-btn{
+        padding:0px 0px;
     }
 `;
 
@@ -62,10 +67,12 @@ const Box = styled.div`
     margin: 0 0 10px;
     /*display: inline-block;*/ 
     width: 100%;
-    min-width:350px;
+    min-width:250px;
     break-inside: avoid;
     background-color:#ffffff;
 `;
+
+
 
 const Group = ({ title, right, more, visible = true, children }) => {
     const hasItems = React.Children.count(children) > 0;
@@ -214,17 +221,32 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 <Group title="Paletes" visible={allows?.paletes?.n > 0}
                     right={<><Button onClick={() => navigate("/app/paletes/paleteslist", { noid: false })} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}>
 
-                    <Item title="Nova Palete Linha" visible={allows?.paletes?.newline}
+                    {/* <Item title={<span>Nova Palete Linha <b>P/R</b></span>} visible={allows?.paletes?.newline}
                         icon={<LiaDatabaseSolid size={28} color="#1677ff" />} onClick={() => navigate("/app/picking/newpaleteline")}
+                    /> */}
+                    <Item title={<span>Nova Palete Linha <b>P</b></span>} visible={allows?.paletes?.newline} style={{ backgroundColor: "#fff", color: "#000" }}
+                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("P"), ordemFabrico: { enabled: true, retrabalho: false, optional: false } } })}
                     />
-                    <Item title="Nova Palete HOLD" visible={allows?.paletes?.newhold} style={{ backgroundColor: "#391085", color: "#fff" }}
-                        icon={<LiaDatabaseSolid size={28} color="#fff" />} onClick={() => navigate("/app/picking/newpalete", { state: { type: "HOLD", title: "Nova Palete HOLD", ordemFabrico: { enabled: false, retrabalho: null } } })}
+                    <Item title={<span>Nova Palete Stock <b>S</b></span>} visible={allows?.paletes?.newretrabalho} style={{ backgroundColor: "#95de64", color: "#000" }}
+                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("S"), ordemFabrico: { enabled: true, retrabalho: false, optional:false } } })}
                     />
-                    <Item title="Nova Palete Stock" visible={allows?.paletes?.newcliente}
+                    <Item title={<span>Nova Palete <b>HOLD</b></span>} visible={allows?.paletes?.newhold} style={{ backgroundColor: "#391085", color: "#fff" }}
+                        icon={<LiaDatabaseSolid size={28} color="#fff" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("H"), ordemFabrico: { enabled: false } } })}
+                    />
+                    <Item title={<span>Nova Palete <b>DM</b></span>} visible={allows?.paletes?.newdm} style={{ backgroundColor: "#fadb14", color: "#000" }}
+                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("DM"), ordemFabrico: { enabled: false } } })}
+                    />
+                    <Item title={<span>Nova Palete <b>IND</b></span>} visible={allows?.paletes?.newind} style={{ backgroundColor: "#1677ff", color: "#fff" }}
+                        icon={<LiaDatabaseSolid size={28} color="#fff" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("IND"), ordemFabrico: { enabled: true, retrabalho: false, optional: false } } })}
+                    />
+                    <Item title={<span>Nova Palete Retrabalho <b>R</b></span>} visible={allows?.paletes?.newretrabalho} style={{ backgroundColor: "#95de64", color: "#000" }}
+                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("R"), ordemFabrico: { enabled: true, retrabalho: true, optional: false } } })}
+                    />
+                    {/* <Item title="Nova Palete Stock" visible={allows?.paletes?.newcliente}
                         onClick={() => newWindow(`${ROOT_URL}/producao/palete/create/`, {}, `paletecreate`)}
-                    />
+                    /> */}
                     <Item title="Refazer Palete" visible={allows?.paletes?.redo}
-                        onClick={() => navigate("/app/picking/redopaleteline")}
+                        onClick={() => navigate("/app/picking/redopalete")}
                     />
                     <Item title="Pesar Palete" visible={allows?.paletes?.weigh}
                         onClick={() => navigate("/app/picking/weighpalete")}
@@ -238,9 +260,18 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     />
                 </Group>
 
-                <Group title="Cargas" visible={allows?.cargas?.n > 0}>
-
-                    <Item title="Pré-Picking" visible={allows?.cargas?.prepicking}
+                <Group title="Cargas" visible={allows?.cargas?.n > 0}
+                    right={<><Button disabled={!allows?.cargas?.list} onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "C", action:"list_closed" }, noid: false })} icon={<UnorderedListOutlined />} type="link" >Cargas Completas</Button></>}>
+                    <Item title="Nova Carga" visible={allows?.cargas?.new}
+                        onClick={() => navigate("/app/picking/cargas/newcarga", { state: { action:"new"} })}
+                    />
+                    <Item title="Cargas Abertas" visible={allows?.cargas?.list}
+                        onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "I", action:"list_open" } })}
+                    />
+                    <Item title="Confirmar Carga" visible={allows?.cargas?.confirm}
+                        onClick={() => navigate("/app/picking/cargas/confirmcargas", { state: { estado: "C", expedida: 0, action:"list_confirm" } })}
+                    />
+                    {/* <Item title="Pré-Picking" visible={allows?.cargas?.prepicking}
                         onClick={() => navigate("/app/picking/prepicking")}
                     />
                     <Item title="Criar Carga" visible={allows?.cargas?.new}
@@ -248,7 +279,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     />
                     <Item title="Apagar Carga" visible={allows?.cargas?.delete}
                         onClick={() => navigate("/app/picking/xxxxx")}
-                    />
+                    /> */}
 
                 </Group>
 

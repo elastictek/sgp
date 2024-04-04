@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useContext, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { createUseStyles } from 'react-jss';
 import styled from 'styled-components';
-import { useSubmitting, removeEmpty, sleep, unique } from "utils";
+import { useSubmitting, removeEmpty, sleep, unique, isObject } from "utils";
 import { usePermission } from "utils/usePermission";
 import { useImmer } from 'use-immer';
 import { isEmpty, isNil, assocPath, assoc } from 'ramda';
@@ -10,7 +10,7 @@ import { uid } from 'uid';
 import dayjs from 'dayjs';
 import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty, valueByPath, updateByPath } from "utils/object";
 import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar, Checkbox } from "antd";
-import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined, QuestionCircleTwoTone } from '@ant-design/icons';
+import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined, QuestionCircleTwoTone, CaretRightOutlined, CaretLeftOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
 import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
@@ -24,6 +24,8 @@ import TextArea from 'antd/es/input/TextArea';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { a11yDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { fetchPost } from 'utils/fetch';
+import { BsChevronCompactLeft, BsChevronCompactRight } from 'react-icons/bs';
+import Portal from 'components/portal';
 // import 'ag-grid-enterprise';
 // import { LicenseManager } from "ag-grid-enterprise";
 // LicenseManager.setLicenseKey("my-license-key");
@@ -120,7 +122,7 @@ export const TypeRelation = ({ disabled, onChange, name, value, background = fal
 };
 export const TypeLogic = ({ onChange, name, value, background = false, disabled }) => {
     return (
-        <StyledType disabled={disabled} size='small' background={background} popupMatchSelectWidth={false} name={`lo-${name}`} onChange={(e) => onChange(name, e, false, true)} value={value} options={[{ value: "!", label: "Não" }, { value: "", label: "" }]} />
+        <StyledType disabled={disabled} size='small' background={background} popupMatchSelectWidth={false} name={`lo-${name}`} onChange={(e) => onChange(name, e, false, true)} value={value} options={[{ value: "|", label: "(ou)" }, { value: "&", label: "(e)" }, { value: "!&", label: "Não (e)" }, { value: "!|", label: "Não (ou)" }]} />
     );
 };
 
@@ -128,14 +130,16 @@ const _selectOptions = (v) => {
     if (v?.options) {
         if (Array.isArray(v.options)) {
             return v.options;
-        } else {
+        } else if (v.options instanceof Object) {
             return Object.entries(v.options).map(([value, { label }]) => ({ value: value, label }));
+        }else{
+            return _getSelectDefaultOptions(v.options);
         }
     }
     return v?.options;
 };
 const DEFAULTWIDTH = "150px";
-const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value, onSelectChange }) => {
+const FiltersToolbar = React.forwardRef(({ onFilterFinish, onPredifinedFilters, onChange, _value, onSelectChange }, ref) => {
     const { dataAPI, modeApi, gridRef, stateFilters, topToolbar: { filters, initFilterValues } = {} } = useContext(TableContext);
     const countFilters = useMemo(() => Object.keys(removeEmpty(dataAPI.getFilters())).length, [dataAPI.getFilters()]);
 
@@ -167,15 +171,16 @@ const FiltersToolbar = ({ onFilterFinish, onPredifinedFilters, onChange, _value,
                         }
                     </div>
                 </div>)}
-                <div>
+                {ref && <Portal elId={ref.current}>
                     <Badge dot={countFilters > 0 ? true : false} offset={[-2, 0]} style={{ backgroundColor: '#52c41a' }} /* count={countFilters}  *//* size="small" */><Button disabled={modeApi?.isOnMode()} onClick={() => onFilterFinish("filter", removeEmpty(stateFilters))} size="small" icon={<SearchOutlined />} /></Badge>
                     <Button size="small" disabled={modeApi?.isOnMode()} onClick={onPredifinedFilters} icon={<MoreOutlined />} />
-                </div>
+                </Portal>
+                }
             </Flex>
         }
     </>
     );
-}
+});
 
 const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, reports, modeEdit, modeAdd, reportItems }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
@@ -209,12 +214,14 @@ const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, set
 const _getSelectDefaultOptions = (v) => {
     switch (v) {
         case "bool:0": return [{ value: "", label: " " }, { value: "0", label: "Sim" }, { value: "1", label: "Não" }];
+        case "bool:1": return [{ value: "", label: " " }, { value: "1", label: "Sim" }, { value: "0", label: "Não" }];
         case "opt:0": return [{ value: "0", label: "Ok" }, { value: "1", label: "Not Ok" }];
         case "opt:1": return [{ value: "0", label: "Ok" }, { value: ">=1", label: "Not Ok" }];
         case "opt:2": return [{ value: "", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }];
         case "opt:3": return [{ value: "0", label: "Saída" }, { value: "1", label: "Entrada" }];
         case "opt:4": return [{ value: "1", label: "Aberto" }, { value: "9", label: "Fechado" }];
         case "opt:5": return [{ value: "1", label: "Ativo" }, { value: "0", label: "Inativo" }];
+        case "opt:6": return [{ value: "0", label: "Aberta" }, { value: "1", label: "Fechada" }];
     }
 }
 
@@ -235,7 +242,7 @@ const DrawerMoreFilters = ({ visible, setVisible, onFilterFinish, onChange, _val
     const { dataAPI, modeApi, gridRef, stateFilters, updateStateFilters, topToolbar: { filters, initFilterValues } = {} } = useContext(TableContext);
     const permission = usePermission();
 
-    return (<Drawer title="Filtros" open={visible} onClose={() => setVisible(false)} width="500px"
+    return (<Drawer push={false} title="Filtros" open={visible} onClose={() => setVisible(false)} width="500px"
         footer={
             <div style={{ textAlign: 'right' }}>
                 <Button onClick={() => {
@@ -311,7 +318,7 @@ const DrawerHelp = ({ visible, setVisible, dataAPI }) => {
         };
     }, []);
 
-    return (<Drawer title="Ajuda Filtros" open={visible} onClose={() => setVisible(false)} width="100%"
+    return (<Drawer push={false} title="Ajuda Filtros" open={visible} onClose={() => setVisible(false)} width="100%"
         footer={
             <div style={{ textAlign: 'right' }}>
                 <Button onClick={() => setVisible(false)} type="primary">Fechar</Button>
@@ -354,7 +361,11 @@ const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
                 designacao: _filters?.designacao, ..._filters.filter && Object.entries(_filters.filter)
                     //.filter(([key, value]) => value.parsed !== null)
                     .reduce((acc, [key, value]) => {
-                        acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
+                        if (!isObject(value)) {
+                            acc[key] = value;
+                        } else {
+                            acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
+                        }
                         return acc;
                     }, {})
             };
@@ -362,12 +373,16 @@ const DrawerSqlQueryView = ({ visible, setVisible, dataAPI }) => {
         return Object.entries(_filters)
             //.filter(([key, value]) => value.parsed !== null)
             .reduce((acc, [key, value]) => {
-                acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
+                if (!isObject(value)) {
+                    acc[key] = value;
+                } else {
+                    acc[key] = { ...Object.fromEntries(Object.entries(value.groups).filter(([key, value]) => value.parsed !== null).map(([key, value]) => [key, value.parsed])) };
+                }
                 return acc;
             }, {});
     }, []);
 
-    return (<Drawer title={<div>
+    return (<Drawer push={false} title={<div>
         <div style={{ fontWeight: 900, fontSize: "18px" }}>Server Request and Execution</div>
         <div style={{ fontWeight: 400 }}>{dataAPI.getPayload()?.url}[<span style={{ fontWeight: 700 }}>{dataAPI.getPayload()?.parameters?.method}</span>]</div>
     </div>}
@@ -423,7 +438,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
         const _values = {};
         for (const [key, value] of Object.entries(json(item.filters))) {
             const _f = _defs.find(obj => obj.name === key);
-            _values[key] = { parsed: value?.parsed, ...excludeObjectKeys(_f, ["options", "style", "op", "col", "fnvalue"]) }
+            _values[key] = { ...excludeObjectKeys(_f, ["options", "style", "op", "col", "fnvalue", "fn"]), ...value }
         }
         dataAPI.setPreFilters({ filter: _values, designacao: item.designacao });
         gridRef.current.api.refreshServerSide({ purge: false });
@@ -434,7 +449,7 @@ const DrawerPredifinedFilters = ({ visible, setVisible, dataAPI, gridRef, topToo
         gridRef.current.api.refreshServerSide({ purge: false });
     }
 
-    return (<Drawer title="Filtros Predefinidos" open={visible} onClose={() => setVisible(false)} size='large'
+    return (<Drawer push={false} title="Filtros Predefinidos" open={visible} onClose={() => setVisible(false)} size='large'
         footer={
             <div style={{ textAlign: 'right' }}>
                 <Button onClick={() => setVisible(false)} type="primary">Fechar</Button>
@@ -482,7 +497,119 @@ export const exitMode = (gridApi, onExitModeRefresh = true, data = null, fn = nu
     }
 }
 
-const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish, onExitMode }) => {
+const ScrollButton = styled(Button)`
+  /* position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index:9999; */
+  background-color: rgba(0, 0, 0, 0.03);
+  ${({ $left }) => $left ? 'left: 0;' : 'right: 0;'}
+`;
+
+const Scroll = ({ children, style, ...props }) => {
+    const contentRef = useRef(null);
+    const [showLeftButton, setShowLeftButton] = useState(false);
+    const [showRightButton, setShowRightButton] = useState(false);
+    const [dragStartX, setDragStartX] = useState(0);
+    const [scrollLeftOnDragStart, setScrollLeftOnDragStart] = useState(0);
+
+    const updateButtonVisibility = () => {
+        if (contentRef.current) {
+            setShowLeftButton(contentRef.current.scrollLeft > 0);
+            setShowRightButton((contentRef.current.scrollLeft + contentRef.current.clientWidth) < contentRef.current.scrollWidth);
+        }
+    };
+
+    useEffect(() => {
+        updateButtonVisibility();
+
+        const handleScroll = () => {
+            updateButtonVisibility();
+        };
+
+        const handleResize = () => {
+            updateButtonVisibility();
+        };
+
+        const handleDragStart = (event) => {
+            if (event.type === 'mousedown') {
+                setDragStartX(event.clientX);
+            } else if (event.type === 'touchstart') {
+                setDragStartX(event.touches[0].clientX);
+            }
+            setScrollLeftOnDragStart(contentRef.current.scrollLeft);
+            contentRef.current.style.cursor = 'grabbing'; // Change cursor style during drag
+        };
+
+        const handleDragEnd = () => {
+            contentRef.current.style.cursor = 'grab';
+        };
+
+        const handleDragMove = (event) => {
+            if (contentRef.current && (event.buttons === 1 || event.type === 'touchmove')) {
+                const clientX = event.type === 'mousemove' ? event.clientX : event.touches[0].clientX;
+                const deltaX = clientX - dragStartX;
+                contentRef.current.scrollLeft = scrollLeftOnDragStart - deltaX;
+            }
+        };
+
+        if (contentRef.current) {
+            contentRef.current.addEventListener('scroll', handleScroll);
+            window.addEventListener('resize', handleResize);
+            contentRef.current.addEventListener('mousedown', handleDragStart);
+            contentRef.current.addEventListener('touchstart', handleDragStart);
+            contentRef.current.addEventListener('mouseup', handleDragEnd);
+            contentRef.current.addEventListener('touchend', handleDragEnd);
+            contentRef.current.addEventListener('mousemove', handleDragMove);
+            contentRef.current.addEventListener('touchmove', handleDragMove);
+        }
+
+        return () => {
+            if (contentRef.current) {
+                contentRef.current.removeEventListener('scroll', handleScroll);
+                contentRef.current.removeEventListener('mousedown', handleDragStart);
+                contentRef.current.removeEventListener('touchstart', handleDragStart);
+                contentRef.current.removeEventListener('mouseup', handleDragEnd);
+                contentRef.current.removeEventListener('touchend', handleDragEnd);
+                contentRef.current.removeEventListener('mousemove', handleDragMove);
+                contentRef.current.removeEventListener('touchmove', handleDragMove);
+            }
+            window.removeEventListener('resize', handleResize);
+
+        };
+    }, [dragStartX, scrollLeftOnDragStart]);
+
+    const scrollLeft = () => {
+        if (contentRef.current) {
+            contentRef.current.scrollLeft -= 100;
+        }
+    };
+
+    const scrollRight = () => {
+        if (contentRef.current) {
+            contentRef.current.scrollLeft += 100;
+        }
+    };
+    return (
+        <>
+            {showLeftButton && <Col xs="content" style={{ display: "flex" }}><ScrollButton size="small" $left type="link" onClick={scrollLeft} icon={<BsChevronCompactLeft style={{ fontSize: "20px" }} color="#262626" />} /></Col>}
+            <Col style={{ overflow: "hidden", userSelect: "none", ...style }} {...props}>
+                <Col ref={contentRef} style={{ overflow: "hidden" }}>
+                    {children}
+                </Col>
+                {/* {showLeftButton && <ScrollButton $left type="link" onClick={scrollLeft} icon={<BsChevronCompactLeft style={{ fontSize: "24px" }} color="#262626" />} />}
+                {showRightButton && <ScrollButton type="link" onClick={scrollRight} icon={<BsChevronCompactRight style={{ fontSize: "24px" }} color="#262626" />} />} */}
+            </Col>
+            {showRightButton && <Col xs="content" style={{ display: "flex" }}><ScrollButton size="small" type="link" onClick={scrollRight} icon={<BsChevronCompactRight style={{ fontSize: "20px" }} color="#262626" />} /></Col>}
+        </>
+    );
+}
+
+
+
+
+const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitModeRefresh, onAddSaveExit, onEditSaveExit, onFilterFinish, onExitMode, minHeight = "20px" }) => {
+    const filterButtons = useRef();
     const [moreFilters, setMoreFilters] = useState(false);
     const [sqlQueryView, setSqlQueryView] = useState(false);
     const [helpfilters, setHelpFilters] = useState(false);
@@ -643,33 +770,43 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                 <DrawerSqlQueryView visible={sqlQueryView} setVisible={setSqlQueryView} dataAPI={dataAPI} />
                 {moreFilters && <DrawerMoreFilters visible={moreFilters} setVisible={setMoreFilters} onFilterFinish={onFilterFinish} onChange={onChange} onSelectChange={onSelectChange} _value={_value} />}
             </>}
-            <Container fluid>
+            <Container fluid style={{ padding: "0px" }}>
                 {(title || (!title && !leftTitle && dataAPI.preFilters()?.designacao)) && <Row gutterWidth={5} style={{ padding: "5px" }}>
-                    <Col>{title}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c" }}>{dataAPI.preFilters()?.designacao}</span>}</Col>
+                    <Col>{title}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c", fontSize: "14px", fontWeight: 700 }}>{dataAPI.preFilters()?.designacao}</span>}</Col>
                 </Row>}
-                <RowXScroll gutterWidth={5} style={{ padding: "5px" }} align='center' wrap='nowrap'>
-                    <Col xs="content">
-                        {(leftTitle && !title) && <>{leftTitle}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c" }}>{dataAPI.preFilters()?.designacao}</span>}</>}
-                    </Col>
-                    <Col xs="content">
-                        {start && start}
-                    </Col>
+                <Row wrap='nowrap' gutterWidth={5} style={{ padding: "5px", minHeight, backgroundColor: "#f5f5f5", borderRadius: "3px" }} align='end'>
 
-                    {modeApi?.showControls() && modeApi?.enabled() && modeApi?.isReady() && <>
-                        {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col xs="content"><Button type="default" icon={<PlusOutlined />} onClick={() => modeApi.onAddMode(onAddMode)}>{modeApi.addText()}</Button></Col>}
-                        {(!modeApi.isOnMode() && modeApi.allowEdit()) && <Col xs="content"><Button type="default" icon={<EditOutlined />} onClick={modeApi.onEditMode}>{modeApi.editText()}</Button></Col>}
-                        {(modeApi.isOnMode() && modeApi.isDirty()) && <Col xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onSave}>{modeApi.saveText()}</Button></Col>}
-                        {modeApi.isOnMode() && <Col xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={() => modeApi.onExit(_exitMode)} /></Col>}
-                    </>}
+                    <Scroll style={{ display: "flex", alignItems: "end", minHeight }}>
+                        <Row nogutter wrap='nowrap' style={{}}>
+                            <Col style={{ alignSelf: "end" }} xs="content">
+                                {(leftTitle && !title) && <>{leftTitle}{dataAPI.preFilters()?.designacao && <span style={{ color: "#8c8c8c" }}>{dataAPI.preFilters()?.designacao}</span>}</>}
+                            </Col>
+                            <Col style={{ alignSelf: "end" }} xs="content">
+                                {start && start}
+                            </Col>
 
-                    <Col xs="content">
-                        {left && left}
-                    </Col>
+                            {modeApi?.showControls() && modeApi?.enabled() && modeApi?.isReady() && <>
+                                {(!modeApi.isOnMode() && modeApi.allowAdd()) && <Col style={{ alignSelf: "end" }} xs="content"><Button type="default" icon={<PlusOutlined />} onClick={() => modeApi.onAddMode(onAddMode)}>{modeApi.addText()}</Button></Col>}
+                                {(!modeApi.isOnMode() && modeApi.allowEdit()) && <Col style={{ alignSelf: "end" }} xs="content"><Button type="default" icon={<EditOutlined />} onClick={modeApi.onEditMode}>{modeApi.editText()}</Button></Col>}
+                                {(modeApi.isOnMode() && modeApi.isDirty()) && <Col style={{ alignSelf: "end" }} xs="content"><Button type="primary" icon={<EditOutlined />} onClick={onSave}>{modeApi.saveText()}</Button></Col>}
+                                {modeApi.isOnMode() && <Col style={{ alignSelf: "end" }} xs="content"><Button type="default" icon={<RollbackOutlined />} onClick={() => modeApi.onExit(_exitMode)} /></Col>}
+                            </>}
 
-                    <Col></Col>
-                    <Col xs="content">{(filters?.toolbar && showFilters) && <FiltersToolbar onPredifinedFilters={() => setPredifinedFilters(true)} onFilterFinish={onFilterFinish} onChange={onChange} onSelectChange={onSelectChange} _value={_value} />}</Col>
-                    <Col xs="content">{right && right}</Col>
-                    {showSettings && <Col xs="content" style={{ alignSelf: "end" }}>
+                            <Col style={{ alignSelf: "end" }} xs="content">
+                                {left && left}
+                            </Col>
+                            <Col style={{ alignSelf: "end", minWidth: "50px" }}></Col>
+
+                            <Col style={{ alignSelf: "end" }} xs="content">{(filters?.toolbar && showFilters) && <FiltersToolbar ref={filterButtons} onPredifinedFilters={() => setPredifinedFilters(true)} onFilterFinish={onFilterFinish} onChange={onChange} onSelectChange={onSelectChange} _value={_value} />}</Col>
+
+                            <Col style={{ alignSelf: "end" }} xs="content">{right && right}</Col>
+
+                        </Row>
+
+                    </Scroll>
+
+                    {(filters?.toolbar && showFilters) && <Col xs="content" ref={filterButtons}></Col>}
+                    {showSettings && <Col xs="content" style={{ display: "flex", alignItems: "end", minHeight }}>
                         <Popover
                             open={clickSettings}
                             onOpenChange={handleSettingsClick}
@@ -690,12 +827,17 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                             <Button size="small" icon={<SettingOutlined />} />
                         </Popover>
                     </Col>}
-                </RowXScroll>
+                </Row>
             </Container>
         </Spin>
     );
 }
 export const useTableStyles = createUseStyles({
+    headerCenter: {
+        '& .ag-header-cell-label': { //<-- what should i use here, if there is anything that would work at all?
+            justifyContent: 'center'
+        }
+    },
     error: {
         background: "rgb(255, 17, 0) !important"
     },
@@ -710,6 +852,9 @@ export const useTableStyles = createUseStyles({
     },
     right: {
         textAlign: "right"
+    },
+    center: {
+        textAlign: "center"
     },
     selectable: {
         cursor: "pointer"
@@ -785,7 +930,7 @@ export const suppressKeyboardEvent = ({ event }) => {
 };
 
 export const getAllNodes = (api) => {
-    if (!api){
+    if (!api) {
         return [];
     }
     const _v = [];
@@ -794,19 +939,19 @@ export const getAllNodes = (api) => {
     });
     return _v;
 }
-export const getAllNodesMap = (api,fn) => {
-    if (!api){
+export const getAllNodesMap = (api, fn) => {
+    if (!api) {
         return [];
     }
     const _v = [];
-    const _fn = fn ? fn : (n,i) => n;
-    api.forEachNode((node,i) => {
-        _v.push(_fn(node.data,i));
+    const _fn = fn ? fn : (n, i) => n;
+    api.forEachNode((node, i) => {
+        _v.push(_fn(node.data, i));
     });
     return _v;
 }
 export const getNodes = (api, fn) => {
-    if (!api){
+    if (!api) {
         return [];
     }
     const _v = [];
@@ -850,7 +995,7 @@ export const getCellFocus = (api) => {
 }
 
 export const columnPath = (col) => {
-    if (col?.getDefinition()){
+    if (col?.getDefinition()) {
         return col.getDefinition().cellRendererParams?.path ? col.getDefinition().cellRendererParams.path : col.getDefinition().field;
     }
     return null;
@@ -867,7 +1012,13 @@ export const defaultValueGetter = (params, fn) => {
             return _v;
         }
     }
-    return columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
+    const obj=columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
+    if (Array.isArray(obj)){
+        return obj.join(",");
+    }else if (obj instanceof Object){
+        return Object.values(obj).join('\t');
+    }
+    return obj;
 }
 
 export const disableTabOnNextCell = ({ event, api, editing, node, column }, onEdit = true) => {
@@ -909,6 +1060,8 @@ export default ({
                 _f.groups[_k] = processConditions(value?.value ? value.value : value, _g, value?.rel, value?.logic);
                 if (!("value" in _f) && _f.groups[_k] !== null) {
                     _f.value = _f.groups[_k].value;
+                    _f.logic = _f.groups[_k]?.logic;
+                    _f.rel = _f.groups[_k]?.rel;
                 }
             }
             const _groups = Object.fromEntries(Object.entries(_f.groups).filter(([key, value]) => value !== null));
@@ -1056,6 +1209,13 @@ export default ({
 
     const _columnTypes = useMemo(() => {
         return {
+            number:{},
+            datetime:{},
+            date:{},
+            time:{},
+            options:{},
+            text:{},
+            input:{},
             actionOnViewColumn: {
                 sortable: false,
                 supressMenu: true,
@@ -1294,9 +1454,11 @@ export default ({
                 {isReady && <Toolbar loading={isLoading} visible={showTopToolbar} onExitModeRefresh={onExitModeRefresh} onAddSaveExit={onAddSaveExit} onEditSaveExit={onEditSaveExit} onExitMode={onExitMode} /* onExit={() => modeApi.onExit(onExitMode)} onAdd={() => modeApi.onAddMode(onAddMode)} */ onFilterFinish={onFilterFinish} />}
                 <div className={`ag-theme-quartz ag-custom ${gridCss}`}>
                     <AgGridReact
+                        animateRows={false}
                         ref={_gridRef}
                         onFirstDataRendered={onFirstDataRendered}
                         isRowSelectable={_isRowSelectable}
+                        enableRangeSelection={true}
                         //initialState={{ pagination: { page: 15 } }}
                         // initialState={{
                         //   pagination: {
@@ -1353,7 +1515,7 @@ export default ({
                         rowClassRules={_rowClassRules}
                         reactiveCustomComponents
                         rowHeight={31}
-                        
+
                         overlayLoadingTemplate={
                             '<div style="background:#fafafa;border-radius:5px;padding:10px;">Aguarde um momento...</div>'
                         }

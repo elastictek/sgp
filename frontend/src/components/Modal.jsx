@@ -8,7 +8,7 @@ import { ConditionalWrapper } from './conditionalWrapper';
 import { MediaContext } from '../pages/App';
 
 
-const TitleModal = ({ title, eTitle, details }) => {
+const TitleModal = ({ title, subTitle, eTitle, details }) => {
     const getTitle = () => {
         if (title) {
             return title;
@@ -19,6 +19,7 @@ const TitleModal = ({ title, eTitle, details }) => {
     return (
         <div>
             <div><span style={{ /* textTransform: "capitalize", */ fontWeight: 900, fontSize: "18px" }}>{getTitle()}</span></div>
+            {subTitle && <div>{subTitle}</div>}
             {details && <div>{details}</div>}
         </div>
     );
@@ -26,7 +27,7 @@ const TitleModal = ({ title, eTitle, details }) => {
 
 
 
-export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer, extra, title: iTitle, details, lazy = false, onCancel, yScroll = false, ...props }) => {
+export default ({ type = "modal", id, push = true, responsive = true, width = 800, height = 300, children, footer, extra, title: iTitle,subTitle: iSubTitle, details, lazy = false, onCancel, yScroll = false, ...props }) => {
     const [size, setSize] = useState({ width, height, fullscreen: false, computed: false });
     const [title, setTitle] = useState(null);
     const ctx = useContext(MediaContext);
@@ -82,7 +83,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
         <>
             {(size.computed && type === "modal") &&
                 <Modal
-                    title={<TitleModal title={iTitle} eTitle={title} details={details} />}
+                    title={<TitleModal title={iTitle} eTitle={title} details={details} subTitle={iSubTitle} />}
                     open={true}
                     centered={size.fullscreen ? false : true}
                     maskClosable={true}
@@ -108,7 +109,7 @@ export default ({ type = "modal", id, push = true, responsive = true, width = 80
             }
             {(size.computed && type === "drawer") &&
                 <Drawer
-                    title={<TitleModal title={iTitle} eTitle={title} />}
+                    title={<TitleModal title={iTitle} eTitle={title}  subTitle={iSubTitle} />}
                     open={true}
                     //centered={size.fullscreen ? false : true}
                     maskClosable={true}

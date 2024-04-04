@@ -1,693 +1,414 @@
-import React, { useEffect, useState, useCallback, useRef, useContext } from 'react';
-import { createUseStyles } from 'react-jss';
-import styled from 'styled-components';
-import Joi, { alternatives } from 'joi';
-import dayjs from 'dayjs';
-import { useImmer } from 'use-immer';
+import React, { memo, useEffect, useState, useCallback, useRef, useContext, useMemo, forwardRef, useImperativeHandle, lazy } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
-import { fetch, fetchPost, cancelToken } from "utils/fetch";
-import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValidator";
-import { useSubmitting } from "utils";
-import loadInit, { fixRangeDates, newWindow } from "utils/loadInit";
-import { API_URL, DOSERS, ROOT_URL } from "config";
-import { useDataAPI } from "utils/useDataAPI";
-//import { WrapperForm, TitleForm, FormLayout, FieldSet, Label, LabelField, FieldItem, AlertsContainer, Item, SelectField, InputAddon, VerticalSpace, HorizontalRule, SelectDebounceField } from "components/formLayout";
-import Toolbar from "components/toolbar";
-import { getFilterRangeValues, getFilterValue, secondstoDay } from "utils";
-import Portal from "components/portal";
-import { Button, Spin, Form, Space, Input, InputNumber, Tooltip, Menu, Collapse, Typography, Modal, Select, Tag, DatePicker, Alert, Drawer, Checkbox } from "antd";
-const { TextArea } = Input;
-const { Title } = Typography;
-import { json } from "utils/object";
-import { DeleteFilled, AppstoreAddOutlined, PrinterOutlined, SyncOutlined, SnippetsOutlined, CheckOutlined, MoreOutlined, EditOutlined, LockOutlined, PlusCircleOutlined, CheckCircleOutlined, SettingOutlined } from '@ant-design/icons';
-import ResultMessage from 'components/resultMessage';
-import Table from 'components/TableV2';
-import { DATE_FORMAT, DATETIME_FORMAT, TIPOEMENDA_OPTIONS, SOCKET, FORMULACAO_CUBAS, BOBINE_ESTADOS, BOBINE_DEFEITOS } from 'config';
-import uuIdInt from "utils/uuIdInt";
-import { useModal } from "react-modal-hook";
-import ResponsiveModal from 'components/Modal';
-import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
-import { Field, Container as FormContainer, SelectField, AlertsContainer, RangeDateField, SelectDebounceField, CheckboxField, Selector, SelectMultiField, SwitchField } from 'components/FormFields';
-import ToolbarTitle from 'components/ToolbarTitleV3';
-import YScroll from 'components/YScroll';
+import { ROOT_URL, API_URL, DATE_FORMAT, BOBINE_ESTADOS, BOBINE_DEFEITOS } from "config";
+import { useDataAPI, parseFilter, parseFilters } from "utils/useDataAPIV4";
+import { newWindow } from 'utils/loadInitV3'
 import { usePermission, Permissions } from "utils/usePermission";
-import { TbCircles } from "react-icons/tb";
-import { GoArrowUp } from 'react-icons/go';
-import { ImArrowLeft } from 'react-icons/im';
-// import Palete from './Palete';
-// import FormCreatePalete from './FormCreatePalete';
-import { MediaContext } from "../App";
-import OF from '../commons/OF';
-import { Status, toolbarFilters, postProcess, processFilters, saveBobinesDefeitos, saveTrocaEtiqueta } from "./commons";
-import { DateTimeEditor, InputNumberEditor, ModalObsEditor, SelectDebounceEditor, ModalRangeEditor, useEditorStyles, DestinoEditor, ItemsField, MultiLine, CheckColumn, FieldEstadoEditor, FieldDefeitosEditor, FieldDefeitos, SwitchEditor } from 'components/tableEditors';
+import { useImmer } from 'use-immer';
+import { includeObjectKeys, json, valueByPath } from 'utils/object';
+import ToolbarTitle from 'components/ToolbarTitleV3';
+import { suppressKeyboardEvent, getCellFocus, getSelectedNodes, columnPath, refreshDataSource } from 'components/TableV4/TableV4';
+import useModeApi from 'utils/useModeApi';
+
+import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, EstadoBobine, OrdensDetail, BadgeCount, ArrayTags, ModalMultiRangeView, OrdemFabrico, Action, } from "components/TableV4/TableColumnsV4";
+
+import TableGridSelect from 'components/TableV4/TableGridSelect';
+import Page from 'components/FormFields/FormsV2';
+import ToolbarTitleV3 from 'components/ToolbarTitleV3';
+import { useSubmitting, noValue } from 'utils';
+import { Button, Space, Modal } from 'antd';
+import { CheckOutlined, ShrinkOutlined } from '@ant-design/icons';
+import { TbCircles } from 'react-icons/tb';
+import { isRecycled, postProcess, useTableStyles } from './BobinesDefeitosList';
+import { AntdInputNumberEditor, FormDestinosEditor } from 'components/TableV4/TableEditorsV4';
 import Palete from '../paletes/Palete';
-import Bobine from './Bobine';
-import BobinesTasks from './BobinesTasks';
+import TableGridEdit from 'components/TableV4/TableGridEdit';
+import useModalApi from 'utils/useModalApi';
+import { setValidationGroups, validateRows } from 'utils/useValidation';
+import { z } from 'zod';
+import { is } from 'ramda';
 
 
-const focus = (el, h,) => { el?.focus(); };
-const schema = (options = {}) => {
-    return getSchema({}, options).unknown(true);
+let title = "Bobines";
+const subTitle = null;
+const TitleForm = ({ visible = true, level, auth, hasEntries, onSave, loading, title, subTitle }) => {
+  return (<>{visible && <ToolbarTitleV3 disabled={loading} id={auth?.user} description={title}
+    leftTitle={<span style={{}}>{title}</span>}
+    {...subTitle && { leftSubTitle: <span style={{}}>{subTitle}</span> }}
+  />}</>);
 }
 
-const title = "Bobines";
-const TitleForm = ({ level, auth, hasEntries, onSave, loading, data, onChange }) => {
-    useEffect(() => { }, [data?.type]);
-    return (<ToolbarTitle id={auth?.user} description={title}
-        leftTitle={<span style={{}}>{title}</span>}
-        right={<Col xs="content" style={{ padding: "5px" }}>
-            <SelectField value={data?.type} onChange={(v) => onChange(v, "type")} size="small" keyField="value" textField="label"
-                data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }, { value: "C", label: "Dados de Expedição" }]} />
-        </Col>
-        }
-    />);
-}
-
-
-// const TitleForm = ({ data, onChange }) => {
-
-//     useEffect(() => { }, [data?.type]);
-
-//     // const st = JSON.stringify(record.ofs)?.replaceAll(/[\[\]\"]/gm, "")?.replaceAll(",", " | ");
-//     return (<ToolbarTitle /* history={level === 0 ? [] : ['Registo Nonwovens - Entrada em Linha']} */ title={<>
-//         <Col>
-//             <Row style={{ marginBottom: "5px" }}>
-//                 <Col xs='content' style={{}}><Row nogutter><Col><span style={{ fontSize: "21px", lineHeight: "normal", fontWeight: 900 }}>{title}</span></Col></Row></Col>
-//                 {/* <Col xs='content' style={{ paddingTop: "3px" }}>{st && <Tag icon={<MoreOutlined />} color="#2db7f5">{st}</Tag>}</Col> */}
-//             </Row>
-
-//         </Col>
-//     </>
-//     }
-//         right={<Col xs="content" style={{ padding: "5px" }}>
-//             <SelectField value={data?.type} onChange={(v) => onChange(v, "type")} size="small" keyField="value" textField="label"
-//                 data={[{ value: "A", label: "Propriedades" }, { value: "B", label: "Defeitos" }, { value: "C", label: "Dados de Expedição" }]} />
-//         </Col>
-//         }
-//     />);
+// export const postProcess = async (dt, submitting) => {
+//   // for (let [i, v] of dt.rows.entries()) {
+//   //   dt.rows[i]["bobines"] = json(dt.rows[i]["bobines"]).sort((a, b) => (a.nome < b.nome) ? -1 : 1);
+//   // }
+//   if (submitting) {
+//     submitting.end();
+//   }
+//   return dt;
 // }
-const ToolbarFilters = ({ dataAPI, ...props }) => {
-    return (<>
-        <Col xs='content'>
-            <Field name="flote" label={{ enabled: true, text: "Bobine", pos: "top", padding: "0px" }}>
-                <Input size='small' allowClear />
-            </Field>
-        </Col>
-        <Col xs="content">
-            <Field name="fpalete" label={{ enabled: true, text: "Palete", pos: "top", padding: "0px" }}>
-                <Input size='small' allowClear />
-            </Field>
-        </Col>
-        <Col width={150}>
-            <Field name="festados" label={{ enabled: true, text: "Estados", pos: "top", padding: "0px" }}>
-                <SelectMultiField size="small" keyField='value' textField='value' data={BOBINE_ESTADOS} />
-            </Field>
-        </Col>
-    </>
-    );
+
+const canChangeRow = (data) => {
+  if (data?.recycle == 0 && data?.comp_actual !== data?.comp && !data?.carga_id) {
+    return true;
+  }
+  return false;
 }
 
-const useStyles = createUseStyles({
-    hasObs: {
-        backgroundColor: "#fffb8f"
-    },
-    diffAbove: {
-        backgroundColor: "#ffa39e"
-    },
-    diffBellow: {
-        backgroundColor: "#fffb8f"
-    },
-    noOutline: {
-        outline: "none !important"
-    },
-    notValid: {
-        background: "#ffe7ba"
-    },
-    closed: {
-        background: "#d9f7be"
-    },
-    edit: {
-        position: "relative",
-        '&:before': {
-            /* we need this to create the pseudo-element */
-            content: "''",
-            display: "block",
-            /* position the triangle in the top right corner */
-            position: "absolute",
-            zIndex: "0",
-            top: "0",
-            right: "0",
-            /* create the triangle */
-            width: "0",
-            height: "0",
-            border: ".3em solid transparent",
-            borderTopColor: "#66afe9",
-            borderRightColor: "#66afe9"
+const showActionMenu = (data) => {
+  return data?.recycle == 0 && !data?.carga_id && (!data?.palete_id || data?.palete_nome?.startsWith("DM"));
+}
 
-        }
+export const schema = z.object({
+  comps: z.object({
+    comp_actual: z.coerce.number(),
+    comp: z.coerce.number()
+  }).refine((v) => {
+    const errors = [];
+    if ((!is(Number, v.comp_actual))) {
+      errors.push({ path: ['comp_actual'], message: 'O comprimento é obrigatório!' });
+      throw new z.ZodError(errors);
     }
+    if (v.comp_actual < 0 || v.comp_actual > v.comp) {
+      errors.push({ path: ['comp_actual'], message: 'O comprimento tem de ser maior ou igual a zero e menor que o comprimento da bobinagem!' });
+      throw new z.ZodError(errors);
+    }
+    return true;
+  }, {})
 });
-const moreFiltersRules = (keys) => { return getSchema({}, { keys }).unknown(true); }
-const TipoRelation = () => <Select size='small' options={[{ value: "e" }, { value: "ou" }, { value: "!e" }, { value: "!ou" }]} />;
-const moreFiltersSchema = ({ form }) => [
-    { flote: { label: "Bobine", field: { type: 'input', size: 'small' } } },
-    { fpalete: { label: "Palete", field: { type: 'input', size: 'small' } } },
-    { flargura: { label: "Largura", field: { type: 'input', size: 'small' }, span: 4 }, fcore: { label: "Core", field: { type: 'input', size: 'small' }, span: 4 } },
-    { festados: { label: 'Estados', field: { type: 'selectmulti', size: 'small', options: BOBINE_ESTADOS }, span: 10 } },
-    { fartigo: { label: "Artigo Cod.", field: { type: 'input', size: 'small' }, span: 12 }, fartigodes: { label: "Artigo Des.", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fdata: { label: "Data", field: { type: "rangedate", size: 'small' } } },
-    {
-        farea: { label: "Área", field: { type: 'input', size: 'small' }, span: 4 },
-        fcomp: { label: "Comprimento", field: { type: 'input', size: 'small' }, span: 5 },
-    },
-    { fof: { label: "Ordem Fabrico Original", field: { type: 'input', size: 'small' }, span: 12 }, fpof: { label: "Ordem Fabrico Palete", field: { type: 'input', size: 'small' }, span: 12 } },
-    { ftiponwinf: { label: "Nonwoven Artigo Inf.", field: { type: 'input', size: 'small' }, span: 12 }, flotenwinf: { label: "Lote Nonwoven Inf.", field: { type: 'input', size: 'small' }, span: 12 } },
-    { ftiponwsup: { label: "Nonwoven Artigo Sup.", field: { type: 'input', size: 'small' }, span: 12 }, flotenwsup: { label: "Lote Nonwoven Sup.", field: { type: 'input', size: 'small' }, span: 12 } },
-    {
-        freldefeitos: { label: " ", field: TipoRelation, span: 4 },
-        fdefeitos: { label: 'Defeitos', field: { type: 'selectmulti', size: 'small', options: BOBINE_DEFEITOS }, span: 20 }
-    },
-    { fprf: { label: "PRF", field: { type: 'input', size: 'small' }, span: 12 }, forder: { label: "Encomenda", field: { type: 'input', size: 'small' }, span: 12 } },
-    {
-        fdispatched: { label: 'Expedido', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
-        fcarga: { label: 'Carga', field: { type: 'select', size: 'small', options: [{ value: "ALL", label: " " }, { value: "!isnull", label: "Sim" }, { value: "isnull", label: "Não" }] }, span: 6 },
-        feec: { label: 'EEC', field: { type: 'input', size: 'small' }, span: 4 },
-        fano: { label: "Ano Exp.", field: { type: 'input', size: 'small' }, span: 4 },
-        fmes: { label: "Mês Exp.", field: { type: 'input', size: 'small' }, span: 4 }
-    },
-    { fcarganome: { label: "Carga Designação", field: { type: 'input', size: 'small' } } },
-    { fsdh: { label: "Expedição", field: { type: 'input', size: 'small' }, span: 12 }, fclienteexp: { label: "Expedição Cliente", field: { type: 'input', size: 'small' }, span: 12 } },
-    { fartigoexp: { label: "Artigo Expedição", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula: { label: "Matrícula", field: { type: 'input', size: 'small' }, span: 8 }, fmatricula_reboque: { label: "Mat.Reboque", field: { type: 'input', size: 'small' }, span: 8 } },
-    { fdestino: { label: "Destino", field: { type: 'input', size: 'small' } } },
-    { fdestino_lar: { label: "Destino Largura", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_estado: { label: "Destino Estado", field: { type: 'input', size: 'small' }, span: 8 }, fdestino_reg: { label: " Destino Regranular", field: { type: 'input', size: 'small' }, span: 8 } },
-    { fdestinoold: { label: "Destino (Legacy)", field: { type: 'input', size: 'small' } } },
-    { fartigo_mp: { label: "Artigo Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 }, flote_mp: { label: "Lote Granulado (MP)", field: { type: 'input', size: 'small' }, span: 12 } },
+
+export default ({ noid = false, header = true, defaultFilters = {}, baseFilters: _baseFilters, defaultSort = [], style, gridRef, ...props }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const classes = useTableStyles();
+  const _gridRef = gridRef || useRef(); //not required
+  const modalApi = useModalApi(); //not Required;
+  const modeApi = useModeApi(); //not Required;
+  const [validation, setValidation] = useState({});
+  const submitting = useSubmitting(false);
+  const [lastTabs, setLastTabs] = useState({ palete: "1", bobinagem: "1" });
+  const defaultParameters = { method: "BobinesListV2" };
+  const permission = usePermission({ name: "bobines" });
+  const baseFilters = _baseFilters ? _baseFilters : {
+
+  };
+  const dataAPI = useDataAPI({
+    ...((!noid || location?.state?.noid === false) && { id: "BobinesList-01" }), fnPostProcess: (dt) => postProcess(dt, { validate: false }),
+    payload: {
+      url: `${API_URL}/bobines/sql/`, primaryKey: "id", parameters: defaultParameters,
+      pagination: { enabled: true, pageSize: 20 }, baseFilter: baseFilters
+    }
+  });
+
+  const validationGroups = useMemo(() => setValidationGroups({
+    comps: ["comp_actual", "comp"]
+  }), []);
+
+  const cellParams = useCallback((params = {}, editorParams = {}) => {
+    return {
+      cellRendererParams: { validation, modeApi, modalApi, validationGroups, ...params },
+      cellEditorParams: { ...editorParams }
+    };
+  }, [validation, modeApi?.isOnMode()]);
+
+  const _rowClassRules = useMemo(() => {
+    return {
+      [classes.recycled]: (params) => {
+        return isRecycled(params.data);
+      }
+    };
+  }, [dataAPI.getTimeStamp()]);
 
 
+  const onActionSave = useCallback(async (row, option) => {
+    submitting.trigger();
 
-    // { fqty: { label: "Quantidade Lote", field: { type: 'input', size: 'small' }, span: 12 } },
-    // { fqty_reminder: { label: "Quantidade Restante", field: { type: 'input', size: 'small' }, span: 12 } },
-    // { ftype_mov: { label: 'Movimento', field: { type: 'select', size: 'small', options: [{ value: 0, label: "Saída" }, { value: 1, label: "Entrada" }] }, span: 6 } },
-];
+    const _fix = async (v) => {
+      const result = await dataAPI.safePost(`${API_URL}/bobines/sql/`, "FixBobineProduto", { filter: { id: row.id }, parameters: { designacao_prod: v.cod } });
+      result.onValidationFail((p) => { });
+      result.onSuccess((p) => { refreshDataSource(_gridRef.current.api); Modal.destroyAll(); });
+      result.onFail((p) => { });
+    }
 
-
-
-const ActionContent = ({ dataAPI, hide, onClick, modeEdit, ...props }) => {
-    const items = [
-        // ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) ? [{ label: <span style={{}}>Fechar movimento</span>, key: 'close', icon: <CheckCircleOutlined style={{ fontSize: "16px" }} /> }, { type: 'divider' }] : [],
-        // ...(modeEdit && props.row?.closed === 0 && props.row?.valid !== 0 && props.row?.type_mov == 1) ? [{ label: <span style={{}}>Saída de Linha</span>, key: 'out', icon: <ImArrowLeft size={16} style={{ verticalAlign: "text-top" }} /> }, { type: 'divider' }] : [],
-        // (modeEdit && props.row?.closed === 0 && props.row?.valid !== 0) && { label: <span style={{ fontWeight: 700 }}>Eliminar Registo</span>, key: 'delete', icon: <DeleteFilled style={{ fontSize: "16px", color: "red" }} /> }
-    ];
-    return (<Menu items={items} onClick={v => { hide(); onClick(v, props.row); }} />);
-}
-
-
-export const ModalViewer = ({ p, title, width = "90%", type = "drawer", push = false, height, footer = "ref", yScroll = true, children }) => {
-    const [visible, setVisible] = useState(true);
-
-    const onCancel = () => {
-        p.onClose();
-        setVisible(false);
+    switch (option.key) {
+      case "fixproduto":
+        const result = await dataAPI.safePost(`${API_URL}/bobines/sql/`, "GetBobinesProduto", {
+          notify: [],
+          filter: {
+            ...parseFilter("pa.artigo_id", `==${row.artigo_id}`, { type: "number" }),
+            ...row?.cliente_id && parseFilter("pa.cliente_id", `==${row?.cliente_id}`, { type: "number" })
+          }
+        });
+        if (result.response?.rows && result.response.rows.length > 0) {
+          const content = <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "5px" }}>
+            {result.response.rows.map((v, i) => <div style={{ borderBottom: "solid 1px #000" }} key={`prd-${i}`}><Button size='small' style={{ height: "55px", fontSize: "12px" }} onClick={() => _fix(v)} type="link"><b>{v?.cod}</b><br />{v.nome}</Button></div>)}
+          </div>;
+          Modal.confirm({
+            title: <div style={{ fontSize: "12px", textAlign: "center" }}>Selecione o novo Produto da bobine <b>{row.nome}</b><br />{row.designacao_prod}</div>,
+            content,
+            okButtonProps: { style: { display: 'none' } }
+          });
+        }
+        break;
     };
 
-    return (
-        <ResponsiveModal title={title} type={type} push={push} onCancel={onCancel} width={width} height={height} footer={footer} yScroll={yScroll}>
-            {children}
-        </ResponsiveModal>
-    );
-};
+    submitting.end();
+  }, []);
 
 
-const modoExpedicao = (v) => {
-    switch (v) {
-        case "1": return "CONTAINER";
-        case "3": return "TRUCK";
-        case "4": return "AIR";
-        default: return "";
+  const actionItems = useCallback((params) => {
+    return [
+      { type: 'divider' },
+      ...[{ label: "Corrigir designação do Produto", key: "fixproduto", icon: <ShrinkOutlined style={{ fontSize: "16px" }} /> }],
+      { type: 'divider' }
+    ]
+  }, []);
+
+  const columnDefs = useMemo(() => ({
+    cols: [
+      { colId: "pbm.id", field: "id", hide: true },
+      { colId: 'action', type: "actionOnEditColumn", lockPosition: "left", cellRenderer: (params) => <Action visible={showActionMenu(params.data)} params={params} onClick={(option) => onActionSave(params.data, option)} items={() => actionItems(params)} /> },
+      { colId: 'mb.nome', field: 'nome', headerName: 'Bobine', lockPosition: "left", width: 120, cellStyle: {}, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
+      { colId: 'pbm.nome', field: 'bobinagem_nome', headerName: 'Bobinagem', width: 100, cellStyle: {}, cellRenderer: (params) => <Value link onClick={(e) => onBobinagemClick(e, params)} params={params} /> },
+      { colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 100, cellRenderer: (params) => <Value link onClick={(e) => onPaleteClick(e, params)} params={params} /> },
+      { colId: "mb.posicao_palete", suppressHeaderMenuButton: true, field: 'posicao_palete', type: "number", headerName: 'Pos.', ...cellParams(), width: 50, cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'mb.estado', field: 'estado', headerName: 'Estado', width: 65, ...cellParams({ multi: true }, {}), cellRenderer: (params) => <EstadoBobine field={{ estado: "estado", largura: "lar" }} params={params} /> },
+      { colId: 'mb.timestamp', field: 'timestamp', type: "date", headerName: 'Data', width: 115, cellStyle: {}, cellRenderer: (params) => <Value datetime params={params} /> },
+      { colId: 'mb.core', field: 'core', type: "number", headerName: 'Core', width: 60, cellStyle: {}, cellRenderer: (params) => <Value unit="''" params={params} /> },
+      { colId: 'mb.comp_actual', field: 'comp_actual', type: "number", headerName: 'Comp. Actual', width: 70, cellStyle: {}, type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'mb.comp', field: 'comp', type: "number", headerName: 'Comprimento', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'mb.diam', field: 'diam', type: "number", headerName: 'Diâmetro', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+      { colId: 'mb.lar', field: 'lar', type: "number", headerName: 'Largura', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+      { colId: 'mb.l_real', field: 'l_real', type: "number", headerName: 'Lar. Real', width: 60, ...cellParams(null, {}), cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+      { colId: 'mb.area', field: 'area', type: "number", headerName: 'Área', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m2" params={params} /> },
+
+      { colId: 'mb.fc_pos', field: 'fc_pos', headerName: 'F.Corte', width: 70, ...cellParams({ unit: "mm", multi: true }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+      { colId: 'mb.ff_pos', field: 'ff_pos', headerName: 'F.Filme', width: 70, ...cellParams({ unit: "m", multi: true }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual, { type: true })} params={params} /> },
+      { colId: 'mb.buracos_pos', field: 'buracos_pos', headerName: 'Buracos', width: 70, ...cellParams({ unit: "m", multi: true }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+      { colId: 'mb.furos_pos', field: 'furos_pos', headerName: 'Furos', width: 70, ...cellParams({ unit: "m", multi: true }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+      { colId: 'mb.rugas_pos', field: 'rugas_pos', headerName: 'Rugas', width: 70, ...cellParams({ unit: "m", multi: true }), cellRenderer: (params) => <BadgeCount onClick={() => onDefeitosRangeClick(params, 0, params.data.comp_actual)} params={params} /> },
+      {
+        field: 'defeitos', headerName: 'Outros defeitos', sortable: false, valueGetter: (params) => {
+          return valueByPath(params.data, columnPath(params.column))?.map(v => v?.label).join(",");
+        }, width: 390, minWidth: 390, flex: 1, ...cellParams({ multi: true }, {}), cellRenderer: (params) => <ArrayTags params={params} isObject color="red" />
+      },
+      { colId: 'mb.destino', field: 'destino', headerName: 'Destinos', width: 300, ...cellParams({ unit: "m", multi: true }), cellRenderer: (params) => <Value onClick={() => onDestinosClick(params)} params={params} /> },
+
+      { colId: 'mb.designacao_prod', field: 'designacao_prod', headerName: 'Produto', width: 190, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'mva.cod', field: 'artigo_cod', headerName: 'Artigo Cód.', width: 150, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'mva.des', field: 'artigo_des', headerName: 'Artigo Des.', width: 280, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+
+      { colId: 'po.ofid', field: 'ofid_bobine', headerName: 'OF Bobine', width: 150, ...cellParams({}), cellRenderer: (params) => <Value bold params={params} /> },
+
+      { colId: 'pc.nome', field: 'cliente_nome', headerName: 'Cliente da Palete', width: 190, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'po2.ofid', field: 'palete_ofid', headerName: 'OF Palete', width: 220, ...cellParams({}), cellRenderer: (params) => <OrdemFabrico field={{ ofid: "palete_ofid", order: "palete_eef" }} params={params} /> },
+
+      { colId: 'pcarga.carga', field: 'carga', headerName: 'Carga', width: 190, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'pcarga.eef', field: 'eef', headerName: 'Enc. Carga', width: 150, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'pcarga.prf', field: 'prf', headerName: 'PRF Carga', width: 150, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'pcarga.cliente', field: 'carga_cliente', headerName: 'Cliente da Carga', width: 190, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
+
+      { colId: 'mb.nwinf', field: 'nwinf', type: "number", headerName: 'NW Inf.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'mb.nwsup', field: 'nwsup', type: "number", headerName: 'NW Sup.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'mb.tiponwinf', field: 'tiponwinf', headerName: 'Tipo NW Inf.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
+      { colId: 'mb.tiponwsup', field: 'tiponwsup', headerName: 'Tipo NW Sup.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
+      { colId: 'mb.lotenwinf', field: 'lotenwinf', headerName: 'Lote NW Inf.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'mb.lotenwsup', field: 'lotenwsup', headerName: 'Lote NW Sup.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'mb.recycle', field: 'recycle', headerName: 'Reciclada', ...cellParams(), width: 50, cellRenderer: (params) => <Bool checkedValue={1} unCheckedValue={0} params={params} /> },
+      { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
+      { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }
+    ], timestamp: new Date()
+  }), [validation, dataAPI.getTimeStamp(), modeApi.isOnMode()]);
+
+  const filters = useMemo(() => ({
+    toolbar: [
+      { field: "nome", case: "s" }, { field: "estado", group: "t2", type: "select", assign: true, options: BOBINE_ESTADOS, multi: true, label: "Estado", style: { width: "250px" }, case: "s" },
+      { field: "pbm.data", type: "date", label: "Data"/* , mask: "date({k})" */ }
+    ],
+    more: [
+      { field: "palete_nome", case: "s" }, { field: "bobinagem_nome", case: "s" },
+      { field: "defeitos", group: "t2", type: "select", assign: true, options: BOBINE_DEFEITOS, multi: true, label: "Defeitos", style: { width: "250px" }, case: "s" },
+      {
+        field: "of_id", group: "t1", type: "input", assign: true, label: "Ordem Fabrico", style: { width: "120px" }, case: "i",
+        gmask: " EXISTS (SELECT 1 FROM producao_tempaggordemfabrico aof join producao_tempordemfabrico tof on tof.agg_of_id=acs.agg_of_id WHERE aof.id=acs.agg_of_id and {_})"
+      },
+      { field: "destino", group: "t2", type: "input", assign: true, label: "Destino", style: { width: "150px" }, case: "i" },
+      { field: "cliente", group: "t2", type: "input", assign: true, label: "Cliente", style: { width: "150px" }, case: "i" },
+      { field: "recycle", options: "bool:1", type: "options" },
+      "@columns",
+
+    ],
+    no: [...Object.keys(baseFilters), "action", "id", "btn"]
+  }), []);
+
+
+  // const onBobineClick = (e, { data }) => {
+  //   if (data?.valid == 0) {
+  //     navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: data.id, bobinagem_nome: data.nome } });
+  //   } else {
+  //     const hasQualidadeGroup = permission.auth.groups.some(role => role.startsWith("qualidade"));
+  //     navigate("/app/bobinagens/formbobinagem", { replace: true, state: { tab: hasQualidadeGroup ? "4" : "1", bobinagem: data, bobinagem_id: data.id, bobinagem_nome: data.nome, tstamp: Date.now(), dataAPI: { offset: dataAPI.getRowOffset(data), ...dataAPI.getPayload() } } });
+  //   }
+  // }
+
+  const onBobineClick = (e, { data }) => {
+    if (!data) {
+      return;
     }
-}
+    newWindow(`${ROOT_URL}/producao/bobine/details/${data.id}/`, {}, `bobine-${data.nome}`);
+    //setModalParameters({ content: "details", width: 5000, height: 5000, src: `/producao/bobine/details/${v.id}/`, title: `Detalhes da Bobine` });
+    //showModal();
+  }
 
-const applyToAllRows = (rows, col, currentIndex, added, removed) => {
-    return rows.map((v, i) => {
-        if (i !== currentIndex) {
-            let _d = v[col] || [];
-            _d = _d.filter(a => !removed?.map(b => b.value).includes(a.value));
-            _d = [..._d, ...added.filter(a => !_d?.map(b => b.value).includes(a.value))];
-            return { ...v, [col]: _d, notValid: 1 };
-        }
-        return v;
+  const onDefeitosRangeClick = ({ column, data }, minValue, maxValue, extraFields = {}) => {
+    const _value = data[column.getDefinition().field];
+    const { unit } = column.getDefinition()?.cellRendererParams || {};
+    if (_value && _value.length > 0) {
+      modalApi.setModalParameters({
+        content: <ModalMultiRangeView unit={unit} minValue={minValue} maxValue={maxValue} value={_value} extraFields={extraFields} />,
+        closable: true,
+        title: column.getDefinition().headerName,
+        lazy: true,
+        type: "modal",
+        responsive: true,
+        width: "500px",
+        parameters: { ...getCellFocus(_gridRef.current.api) }
+      });
+      modalApi.showModal();
+    }
+  }
+
+  const onDestinosClick = ({ column, data }) => {
+    modalApi.setModalParameters({
+      content: <FormDestinosEditor forInput={false} field="destinos" value={valueByPath(data, "destinos")} data={data} gridApi={_gridRef.current.api} />,
+      closable: true,
+      title: column.getDefinition().headerName,
+      lazy: false,
+      type: "drawer",
+      width: "95vw",
+      responsive: true,
+      parameters: { ...getCellFocus(_gridRef.current.api) }
     });
-}
-const applyRangeToAllRows = (rows, col, currentIndex, added, removed) => {
-    return rows.map((v, i) => {
-        if (i !== currentIndex) {
-            let _d = v[col] || [];
-            _d = _d.filter(a => !removed?.map(({ min, max }) => ({ min, max })).some(v => v.min === a.min && v.max === a.max));
-            _d = [..._d, ...added.filter(a => !_d?.map(({ min, max }) => ({ min, max })).some(v => v.min === a.min && v.max === a.max))];
-            return { ...v, [col]: _d, notValid: 1 };
-        }
-        return v;
+    modalApi.showModal();
+  }
+  const onPaleteClick = (e, { data }) => {
+    modalApi.setModalParameters({
+      content: <Palete tab={lastTabs.palete} setTab={(v) => setLastTabs(prev => ({ ...prev, palete: v }))} parameters={{ palete: { id: data?.palete_id, nome: data?.palete_nome }, palete_id: data?.palete_id, palete_nome: data?.palete_nome }} />,
+      closable: true,
+      title: null, //"Carregar Parâmetros",
+      lazy: true,
+      type: "drawer",
+      responsive: true,
+      width: "95%",
+      parameters: {} //{ ...getCellFocus(gridRef.current.api) }
     });
-}
-const applyValueToAllRows = (rows, col, currentIndex, value) => {
-    return rows.map((v, i) => {
-        if (i !== currentIndex) {
-            return { ...v, [col]: value, notValid: 1 };
-        }
-        return v;
+    modalApi.showModal();
+  }
+  const onBobinagemClick = (e, { data }) => {
+    if (data?.valid == 0) {
+      navigate("/app/bobinagens/validatebobinagem", { state: { action: "validate", bobinagem_id: data.bobinagem_id, bobinagem_nome: data.bobinagem_nome } });
+    } else {
+      const hasQualidadeGroup = permission.auth.groups.some(role => role.startsWith("qualidade"));
+      navigate("/app/bobinagens/formbobinagem", { replace: true, state: { tab: hasQualidadeGroup ? "4" : "1", bobinagem: { id: data.bobinagem_id }, bobinagem_id: data.bobinagem_id, bobinagem_nome: data.bobinagem_nome, tstamp: Date.now() } });
+    }
+  }
+
+  const isCellEditable = useCallback((params) => {
+    return canChangeRow(params.data);
+  }, [modeApi?.isOnMode()]);
+
+
+
+  const onBeforeCellEditRequest = async (data, colDef, path, newValue, event) => {
+    /**
+ * Método que permite antes do "commit", fazer pequenas alterações aos dados.
+ * No caso dessas alterações afetarem os valores de outras colunas da "Grid", é necessário desablitar o TabOnNextCell da coluna,
+ * pois o próximo campo entra em edição antes deste método (isto é um Workaround!!!!!), para isso na definição da coluna colocar:
+ * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
+ */
+    return null;
+  }
+  const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    r.onValidationFail((p) => {
+      console.log("errrororrrrrr",p.alerts.error)
+      setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
-}
-
-export default ({ setFormTitle, noid = false, ...props }) => {
-    const media = useContext(MediaContext);
-    const location = useLocation();
-    const navigate = useNavigate();
-
-    const permission = usePermission({});
-    const [modeEdit, setModeEdit] = useState({ datagrid: false });
-    const [formStatus, setFormStatus] = useState({ error: [], warning: [], info: [], success: [] });
-    const classes = useStyles();
-    const [formFilter] = Form.useForm();
-    const [parameters, setParameters] = useState();
-    const defaultFilters = {};
-    const defaultParameters = { method: "BobinesList" };
-    const defaultSort = [{ column: "timestamp", direction: "DESC" }];
-    const dataAPI = useDataAPI({ ...(!noid && { id: "lst-bobines" }), fnPostProcess: (dt) => postProcess(dt, submitting), payload: { url: `${API_URL}/bobines/sql/`, parameters: {}, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: defaultFilters, sort: [] } });
-    const submitting = useSubmitting(true);
-    const [lastTabPalete, setLastTabPalete] = useState('1');
-    const [lastTabBobine, setLastTabBobine] = useState('1');
-    const [checkData, setCheckData] = useImmer({ destino: false });
-
-    const [modalParameters, setModalParameters] = useState({});
-    const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
-
-        const content = () => {
-            switch (modalParameters.content) {
-                case "palete": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTabPalete} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                case "bobine": return <Bobine tab={modalParameters.tab} setTab={modalParameters.setLastTabBobine} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                case "tasks": return <BobinesTasks loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                //     case "details": return <Palete tab={modalParameters.tab} setTab={modalParameters.setLastTab} loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-                //     case "createpalete": return <FormCreatePalete loadParentData={modalParameters.loadData} parameters={modalParameters.parameters} />;
-            }
-        }
-
-        return (
-            <ResponsiveModal title={modalParameters?.title} type={modalParameters?.type} push={modalParameters?.push} onCancel={hideModal} width={modalParameters.width} height={modalParameters.height} footer="ref" yScroll>
-                {content()}
-            </ResponsiveModal>
-        );
-    }, [modalParameters]);
+    r.onValidationSuccess((p) => {
+      setValidation(prev => ({ ...prev, ...p.alerts.error }));
+    });
+  }
 
 
-    const primaryKeys = ['id'];
 
-    const editable = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "generic") { return true };
-        }
-        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "trocaEtiquetas") { return true; }
-        }
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDestinos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "destino") { return true };
-        }
-        return false;
-    }
-    const editableClass = (row, col) => {
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDefeitos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "generic") { return classes.edit };
-        }
-        if (modeEdit.datagrid && permission.isOk({ action: "changeDestinos" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "destino") { return classes.edit };
-        }
-        if (modeEdit.datagrid && permission.isOk({ action: "trocaEtiquetas" }) && !row?.carga_id && !row?.SDHNUM_0 && row?.palete_nome?.startsWith('D')) {
-            if (col === "trocaEtiquetas") { return classes.edit };
-        }
-        if (col === "destino" && row?.destinos_has_obs > 0) {
-            return classes.hasObs;
-        }
-        return undefined;
-    }
+  const onEditSave = async (rows, allRows) => {
+    submitting.trigger();
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
+    rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
+    await rv.onValidationSuccess(async (p) => {
+      setValidation(prev => ({ ...prev, ...p.alerts.error }));
+       const result = await dataAPI.safePost(`${API_URL}/bobines/sql/`, "UpdateBobines", {
+         parameters: {
+           rows: rows.map(v => {
+             return { ...includeObjectKeys(v, ["id","comp_actual"]) };
+           })
+         }
+       });
+    //   result.onSuccess((p) => { refreshDataSource(gridRef.current.api); });
+    //   result.onFail((p) => { });
+    //   //setFormStatus(result);
+    //   return result.success;
 
-    const onCheckChange = (key, value) => { setCheckData(draft => { draft[key] = value.target.checked; }); }
+    });
+    submitting.end();
+  };
 
-    const onPaleteClick = (row) => {
-        setModalParameters({ content: "palete", type: "drawer", push: false, width: "90%", parameters: { palete: { id: row.palete_id, nome: row.palete_nome }, palete_id: row.palete_id, palete_nome: row.palete_nome } });
-        showModal();
-    }
+  const onExitMode = () => {
+    setValidation({});
+    _gridRef.current.api.deselectAll();
+  };
 
-    const onBobineClick = (row) => {
-        newWindow(`${ROOT_URL}/producao/bobine/details/${row.id}/`, {}, `bobine-${row.id}`);
-        //setModalParameters({ content: "bobine", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome }, bobine_id: row.id, bobine_nome: row.nome } });
-        //showModal();
-    }
+  return (
+    <Page.Ready ready={permission?.isReady}>
+      <TitleForm visible={header} auth={permission.auth} level={location?.state?.level} loading={submitting.state} title={props?.title ? props?.title : title} />
+      <TableGridEdit
+        style={{ height: "80vh" }}
+        gridRef={_gridRef}
+        rowClassRules={_rowClassRules}
+        columnDefs={columnDefs}
+        filters={filters}
+        defaultSort={[{ column: "mb.timestamp", direction: "DESC" }]}
+        defaultParameters={defaultParameters}
+        dataAPI={dataAPI}
 
-    const onClickRetrabalho = (row) => {
-        setModalParameters({ content: "retrabalho", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome }, bobine_id: row.id, bobine_nome: row.nome } });
-        showModal();
-    }
+        isCellEditable={isCellEditable}
+        singleClickEdit={true}
+        enterNavigatesVerticallyAfterEdit={true}
 
-    const onClickTasks = (row) => {
-        setModalParameters({ content: "tasks", type: "drawer", push: false, width: "90%", parameters: { bobine: { id: row.id, nome: row.nome, artigo_cod: row.artigo_cod }, bobine_id: row.id, bobine_nome: row.nome, artigo_cod: row.artigo_cod } });
-        showModal();
-    }
+        modeApi={modeApi}
+        modeOptions={{
+          enabled: true,
+          allowEdit: permission.isOk({ action: "edit" }),
+          allowAdd: false,
+          newRow: null,
+          newRowIndex: null,
+          onEditSave,
+          onAdd: null,
+          onModeChange: null,
+          onExitMode,
+          onExitModeRefresh: true,
+          onAddSaveExit: true,
+          onEditSaveExit: false
+        }}
+        onBeforeCellEditRequest={onBeforeCellEditRequest}
+        onAfterCellEditRequest={onAfterCellEditRequest}
+        topToolbar={{
+          start: <></>,
+          left: <></>
+        }}
+        {...props}
+      />
+    </Page.Ready>
+  );
 
-    const columns = [
-        { key: 'nome', name: 'Lote', frozen: true, width: 135, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onBobineClick(p.row)}>{p.row.nome}</Button> },
-        ...dataAPI.getAllFilter()?.type !== "C" ? [{
-            key: 'baction', name: '', minWidth: 40, maxWidth: 40, frozen: true, formatter: p => <Button icon={<SettingOutlined />} size="small" onClick={() => onClickTasks(p.row)} />,
-        }] : [],
-        { key: 'timestamp', width: 130, name: 'Data', formatter: p => dayjs(p.row.timestamp).format(DATETIME_FORMAT) },
-        {
-            key: 'estado', sortable: false, name: 'Estado', minWidth: 85, width: 85, name: 'Estado',
-            editor: p => <FieldEstadoEditor forInput={editable(p.row, 'generic')} p={p} />,
-            formatter: (p) => <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}><Status b={{ lar: p.row.lar, estado: p.row.estado }} larguraColumn="lar" /></div>,
-            editorOptions: { editOnClick: true },
-            cellClass: r => editableClass(r, 'generic')
-        },
-        ...dataAPI.getAllFilter()?.type === "A" ? [
-            { key: 'area', name: 'Área', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
-            { key: 'comp_actual', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
-            { key: 'metros_cons', name: 'Metros Cons.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
-            { key: 'lar', name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
-            { key: 'diam', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
-            { key: 'core', name: 'Core', width: 60, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> }
-        ] : [],
-
-        ...dataAPI.getAllFilter()?.type === "C" ? [
-            { key: 'area', name: 'Área', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.area} m&sup2;</div> },
-            { key: 'comp_actual', name: 'Comp.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp_actual} m</div> },
-            { key: 'metros_cons', name: 'Metros Cons.', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.metros_cons} m</div> },
-            { key: 'lar', name: 'Largura', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.lar} mm</div> },
-            { key: 'diam', name: 'Diâmetro', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.diam} mm</div> },
-            { key: 'core', name: 'Core', width: 60, formatter: p => <div style={{ textAlign: "right" }}>{p.row.core}''</div> }
-        ] : [],
-
-
-        { key: 'palete_nome', name: 'Palete', width: 130, formatter: p => <Button style={{ color: "#0050b3", fontWeight: 700 }} size="small" type="link" onClick={() => onPaleteClick(p.row)}>{p.row.palete_nome}</Button> },
-        {
-            key: 'destino', name: 'Destino', width: 200,
-            editor: p => <DestinoEditor forInput={editable(p.row, 'destino')} forInputTroca={editable(p.row, 'trocaEtiquetas')} p={p} column="destino" onConfirm={onDestinoConfirm}/* onChange={() => { console.log("changedddddddd") }} */ />,
-            cellClass: r => editableClass(r, 'destino'),
-            editable: true,
-            editorOptions: { editOnClick: true, commitOnOutsideClick: false },
-            formatter: p => p.row.destino
-        },
-        ...(dataAPI.getAllFilter()?.type === "A" || dataAPI.getAllFilter()?.type === "C") ? [
-            { key: 'ofid', name: 'OF Original', width: 130, formatter: p => <OF id={p.row.ordem_id} ofid={p.row.ofid} /> },
-            { key: 'palete_ofid', name: 'OF Palete', width: 130, formatter: p => <OF id={p.row.palete_ordem_id} ofid={p.row.palete_ofid} /> },
-            { key: 'tiponwinf', name: 'NW Inf.', width: 150, formatter: p => p.row.tiponwinf },
-            { key: 'lotenwinf', name: 'Lote NW Inf.', width: 130, formatter: p => p.row.lotenwinf },
-            { key: 'nwinf', name: 'NW Inf. Metros', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwinf} m</div> },
-            { key: 'tiponwsup', name: 'NW Sup.', width: 150, formatter: p => p.row.tiponwsup },
-            { key: 'lotenwsup', name: 'Lote NW Sup.', width: 130, formatter: p => p.row.lotenwsup },
-            { key: 'nwsup', name: 'NW Sup. Metros', reportFormat: '0', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.nwsup} m</div> }
-        ] : [],
-        ...(dataAPI.getAllFilter()?.type === "C") ? [
-            { key: 'prf', name: 'PRF', width: 130, formatter: p => p.row.prf },
-            { key: 'iorder', name: 'Encomenda', width: 130, formatter: p => p.row.iorder },
-            { key: 'data_encomenda', width: 130, name: 'Data Encomenda', formatter: p => p.row.data_encomenda && dayjs(p.row.data_encomenda).format(DATETIME_FORMAT) },
-            { key: 'item', name: 'Cod. Artigo', width: 130, formatter: p => p.row.item },
-            { key: 'ofid_original', name: 'Ordem F. Origem', width: 130, formatter: p => <OF id={p.row.id} ofid={p.row.ofid_original} /> },
-            { key: 'stock_loc', name: 'Loc.', width: 30, formatter: p => p.row.stock_loc },
-            { key: 'stock_qtypcu', name: 'Qtd. Stock', reportFormat: '0.00', width: 90, formatter: p => <div style={{ textAlign: "right" }}>{p.row.stock_qtypcu} {p.row.stock_qtypcu && <>m&sup2;</>}</div> },
-            { key: 'VCRNUMORI_0', name: 'Doc.', width: 130, formatter: p => p.row.VCRNUMORI_0 },
-            { key: 'SDHNUM_0', name: 'Expedição', width: 130, formatter: p => p.row.SDHNUM_0 },
-            { key: 'BPCNAM_0', name: 'Expedição Cliente', width: 200, formatter: p => p.row.BPCNAM_0 },
-            { key: 'EECICT_0', name: 'EEC', width: 60, formatter: p => p.row.EECICT_0 },
-            { key: 'modo_exp', name: 'Modo Expedição', reportFormat: '0', width: 90, formatter: p => modoExpedicao(p.row.modo_exp) },
-            { key: 'matricula', name: 'Matrícula', width: 60, formatter: p => p.row.matricula },
-            { key: 'matricula_reboque', name: 'Matrícula Reboque', width: 60, formatter: p => p.row.matricula_reboque },
-            { key: 'mes', name: 'Mês', reportFormat: '0', width: 60, formatter: p => p.row.mes },
-            { key: 'ano', name: 'Ano', reportFormat: '0', width: 60, formatter: p => p.row.ano }
-        ] : [],
-
-        ...dataAPI.getAllFilter()?.type === "B" ? [
-            {
-                key: 'fc_pos', sortable: false, width: 85,
-                headerRenderer: p => <CheckColumn id="fc_pos" name="Falha Corte" onChange={onCheckChange} defaultChecked={checkData?.fc_pos} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row }) => <ItemsField row={row} column="fc_pos" />,
-                editor(p) { return <ModalRangeEditor type="fc" unit='mm' p={p} column="fc_pos" title="Falha de Corte" forInput={editable(p.row, 'generic')} valid={1} /> },
-                editorOptions: { editOnClick: true },
-                cellClass: r => editableClass(r, 'generic')
-            },
-            {
-                key: 'ff_pos', sortable: false, width: 85,
-                headerRenderer: p => <CheckColumn id="ff_pos" name="Falha de Filme" onChange={onCheckChange} defaultChecked={checkData?.ff_pos} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row }) => <ItemsField row={row} column="ff_pos" />,
-                editor(p) { return <ModalRangeEditor type="ff" p={p} column="ff_pos" title="Falha de Filme" forInput={editable(p.row, 'generic')} valid={1} /> },
-                editorOptions: { editOnClick: true },
-                cellClass: r => editableClass(r, 'generic')
-            },
-            {
-                key: 'buracos_pos', sortable: false, width: 85,
-                headerRenderer: p => <CheckColumn id="buracos_pos" name="Buracos" onChange={onCheckChange} defaultChecked={checkData?.buracos} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row }) => <ItemsField row={row} column="buracos_pos" />,
-                editor(p) { return <ModalRangeEditor type="buracos" p={p} column="buracos_pos" title="Buracos" forInput={editable(p.row, 'generic')} valid={1} /> },
-                editorOptions: { editOnClick: true },
-                cellClass: r => editableClass(r, 'generic')
-            },
-            {
-                key: 'furos_pos', sortable: false, width: 85,
-                headerRenderer: p => <CheckColumn id="furos_pos" name="Furos" onChange={onCheckChange} defaultChecked={checkData?.furos_pos} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row }) => <ItemsField row={row} column="furos_pos" />,
-                editor(p) { return <ModalRangeEditor p={p} type="furos" column="furos_pos" title="Furos" forInput={editable(p.row, 'generic')} valid={1} /> },
-                editorOptions: { editOnClick: true },
-                cellClass: r => editableClass(r, 'generic')
-            },
-            {
-                key: 'rugas_pos', sortable: false, width: 85,
-                headerRenderer: p => <CheckColumn id="rugas_pos" name="Rugas" onChange={onCheckChange} defaultChecked={checkData?.rugas_pos} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row }) => <ItemsField row={row} column="rugas_pos" />,
-                editor(p) { return <ModalRangeEditor type="rugas" p={p} column="rugas_pos" title="Rugas" forInput={editable(p.row, 'generic')} valid={1} /> },
-                editorOptions: { editOnClick: true },
-                cellClass: r => editableClass(r, 'generic')
-            },
-            { key: 'comp', sortable: false, name: "Comprimento", width: 100, formatter: p => <div style={{ textAlign: "right" }}>{p.row.comp} m</div> },
-            {
-                key: 'defeitos', sortable: false,
-                headerRenderer: p => <CheckColumn id="defeitos" name="Outros Defeitos" onChange={onCheckChange} defaultChecked={checkData?.defeitos} forInput={editable(p.row, 'generic')} />,
-                editor: p => <FieldDefeitosEditor p={p} />, editorOptions: { editOnClick: true },
-                width: 250, formatter: (p) => <FieldDefeitos p={p} />,
-                cellClass: r => editableClass(r, 'generic'),
-                editable: modeEdit.datagrid
-            },
-            {
-                key: 'prop_obs', sortable: false,
-                headerRenderer: p => <CheckColumn id="prop_obs" name="Propriedades Observações" onChange={onCheckChange} defaultChecked={checkData?.prop_obs} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row, isCellSelected }) => <MultiLine value={row.prop_obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.prop_obs}</pre></MultiLine>,
-                editor(p) { return <ModalObsEditor forInput={editable(p.row, 'generic')} p={p} column="prop_obs" title="Propriedades Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
-                cellClass: r => editableClass(r, 'generic'),
-                editorOptions: { editOnClick: true }
-            },
-            {
-                key: 'obs', sortable: false,
-                headerRenderer: p => <CheckColumn id="obs" name="Observações" onChange={onCheckChange} defaultChecked={checkData?.obs} forInput={editable(p.row, 'generic')} />,
-                formatter: ({ row, isCellSelected }) => <MultiLine value={row.obs} isCellSelected={isCellSelected}><pre style={{ whiteSpace: "break-spaces" }}>{row.obs}</pre></MultiLine>,
-                editor: (p) => { return <ModalObsEditor forInput={editable(p.row, 'generic')} p={p} column="obs" title="Observações" autoSize={{ minRows: 2, maxRows: 6 }} maxLength={1000} /> },
-                cellClass: r => editableClass(r, 'generic'),
-                editorOptions: { editOnClick: true },
-            }
-        ] : [],
-    ];
-
-    useEffect(() => {
-        const controller = new AbortController();
-        const interval = loadData({ init: true, signal: controller.signal });
-        return (() => { controller.abort(); (interval) && clearInterval(interval); });
-    }, []);
-
-    const loadData = async ({ init = false, signal, type } = {}) => {
-        if (init) {
-            const initFilters = loadInit({}, { ...dataAPI.getAllFilter(), tstamp: dataAPI.getTimeStamp() }, props?.parameters?.filter, {}, null);
-            let { filterValues, fieldValues } = fixRangeDates(['fdata'], initFilters);
-            formFilter.setFieldsValue({ ...fieldValues });
-            dataAPI.addFilters({ ...filterValues, ...!filterValues?.type && { type: "A" } }, true, false);
-            dataAPI.setSort(defaultSort);
-            dataAPI.addParameters(defaultParameters, true, true);
-            dataAPI.fetchPost({ signal });
-        } else {
-            dataAPI.fetchPost({ signal });
-        }
-        submitting.end();
-    }
-
-    const onDestinoConfirm = async (p, destinos, destinoTxt, obs, prop_obs, troca_etiqueta) => {
-        const ids = dataAPI.getData().rows.map(v => v.id);
-        const rowsDestinos = (checkData?.destino) ? ids : [p.row.id];
-        const rowsObs = (checkData?.obs) ? ids : [p.row.id];
-        const rowsPropObs = (checkData?.prop_obs) ? ids : [p.row.id];
-        const values = { destinos, destinoTxt, obs, prop_obs, troca_etiqueta };
-        const palete_id = p.row.palete_id;
-
-        try {
-            let response = await fetchPost({
-                url: `${API_URL}/paletes/paletessql/`, parameters: {
-                    method: "UpdateDestinos", ids, rowsDestinos, rowsObs, rowsPropObs, values,
-                    troca: permission.isOk({ action: "trocaEtiquetas" }),
-                    destinos: permission.isOk({ action: "changeDestinos" })
-                }, filter: { palete_id }
-            });
-            if (response.data.status !== "error") {
-                p.onClose(true);
-                loadData();
-            } else {
-                Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
-            }
-        } catch (e) {
-            Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-        } finally { };
-    }
-
-    const onFilterFinish = (type, values) => {
-        switch (type) {
-            case "filter":
-                //remove empty values
-                const vals = Object.fromEntries(Object.entries({ ...defaultFilters, ...values }).filter(([_, v]) => v !== null && v !== ''));
-                const _values = {
-                    ...vals,
-                    // fartigo: getFilterValue(vals?.fartigo, 'any'),
-                    flote: getFilterValue(vals?.flote, 'start'),
-                    fbobine: getFilterValue(vals?.fbobine, 'start'),
-                    fpalete: getFilterValue(vals?.fpalete, 'start'),
-                    fof: getFilterValue(vals?.fof, 'start'),
-                    fpof: getFilterValue(vals?.fpof, 'start'),
-                    fdata: getFilterRangeValues(vals["fdata"]?.formatted),
-                    flotenwinf: getFilterValue(vals?.flotenwinf, 'start'),
-                    ftiponwinf: getFilterValue(vals?.ftiponwinf, 'start'),
-                    flotenwsup: getFilterValue(vals?.flotenwsup, 'start'),
-                    ftiponwsup: getFilterValue(vals?.ftiponwsup, 'start'),
-                    fprf: getFilterValue(vals?.fprf, 'start'),
-                    forder: getFilterValue(vals?.forder, 'start'),
-                    fdispatched: (!vals?.fdispatched || vals?.fdispatched === 'ALL') ? null : vals.fdispatched,
-                    fcarga: (!vals?.fcarga || vals?.fcarga === 'ALL') ? null : vals.fcarga,
-                    fcarganome: getFilterValue(vals?.fcarganome, 'start'),
-                    fdestinoold: getFilterValue(vals?.fdestinoold, 'start'),
-                    fartigo_mp: getFilterValue(vals?.fartigo_mp, 'start'),
-                    fdestino: getFilterValue(vals?.fdestino, 'start'),
-                    flote_mp: getFilterValue(vals?.flote_mp, 'start'),
-                    fmatricula: getFilterValue(vals?.fmatricula, 'start'),
-                    fmatricula_reboque: getFilterValue(vals?.fmatricula_reboque, 'start'),
-                    fsdh: getFilterValue(vals?.fsdh, 'start'),
-                    fclienteexp: getFilterValue(vals?.fclienteexp, 'start'),
-                    fartigoexp: getFilterValue(vals?.fartigoexp, 'start'),
-                    fartigo: getFilterValue(vals?.fartigo, 'start'),
-                    fartigodes: getFilterValue(vals?.fartigodes, 'start'),
-                    // fvcr: getFilterValue(vals?.fvcr, 'any'),
-                    // fdatain: getFilterRangeValues(vals["fdatain"]?.formatted),
-                    // fdataout: getFilterRangeValues(vals["fdataout"]?.formatted)
-                };
-                console.log("RRRRRRRRRRRRRRRRRR", _values)
-                dataAPI.addFilters(_values, true);
-                dataAPI.addParameters(defaultParameters);
-                dataAPI.first();
-                dataAPI.fetchPost();
-                break;
-        }
-    };
-    const onFilterChange = (changedValues, values) => {
-        /* if ("type" in changedValues) {
-            navigate("/app/picking/picknwlist", { state: { ...location?.state, ...formFilter.getFieldsValue(true), type: changedValues.type, tstamp: Date.now() }, replace: true });
-        } */
-    };
-
-    const onAction = (item, row) => {
-        // switch (item.key) {
-        //     case "delete": Modal.confirm({
-        //         title: <div>Eliminar Movimento <b>{row.vcr_num}</b></div>, content: <ul>
-        //             {row.type_mov === 1 && <li>Serão eliminados os movimentos de entrada e saída!</li>}
-        //             <li style={{ fontWeight: 700 }}>Atenção!! Se tiver alterações por guardar, ao efetuar esta operação perderá todas as alterações.</li>
-        //         </ul>, onOk: async () => {
-        //             submitting.trigger();
-        //             try {
-        //                 let response = await fetchPost({ url: `${API_URL}/deletegranulado/`, filter: { vcr_num: row.vcr_num, type_mov: row.type_mov }, parameters: {} });
-        //                 if (response.data.status !== "error") {
-        //                     dataAPI.fetchPost();
-        //                 } else {
-        //                     Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: "Erro!", content: response.data.content });
-        //                 }
-        //             } catch (e) {
-        //                 Modal.error({ centered: true, width: "auto", style: { maxWidth: "768px" }, title: 'Erro!', content: <div style={{ display: "flex" }}><div style={{ maxHeight: "60vh", width: "100%" }}><YScroll>{e.message}</YScroll></div></div> });
-        //             } finally {
-        //                 submitting.end();
-        //             };
-        //         }
-        //     });
-        //         break;
-        //     case "out":
-        //         setModalParameters({ type: item.key, title: "Saída de lote em linha", loadData: () => dataAPI.fetchPost(), record: row });
-        //         showModal();
-        //         break;
-        //     case "close":
-        //         setModalParameters({ type: item.key, title: "Fechar movimento", loadData: () => dataAPI.fetchPost(), record: row, height: 300 });
-        //         showModal();
-        //         break;
-        // }
-    }
-    const changeMode = () => {
-        setModeEdit({ datagrid: (modeEdit.datagrid) ? false : true });
-    }
-    const onSave = async (action) => {
-        await saveBobinesDefeitos(dataAPI.getData().rows, submitting, parameters, loadData);
-    }
-    const onSaveTrocaEtiqueta = async (r, v) => {
-        await saveTrocaEtiqueta(r, v, submitting, parameters, loadData);
-    }
-
-
-    const onTitleChange = async (value, source) => {
-        switch (source) {
-            case "type":
-                dataAPI.addFilters({ type: value }, false);
-                await loadData({ init: true, type: value });
-                //const vals = Object.fromEntries(Object.entries({ ...defaultFilters, ...formFilter.getFieldsValue(true) }).filter(([_, v]) => v !== null && v !== ''));
-                //    const _values = { ...vals, type: value };
-                //    dataAPI.addParameters({ ...defaultParameters, ...dataAPI.getParameters() });
-                //    dataAPI.addFilters(_values, true);
-                //    dataAPI.fetchPost();
-                break;
-        }
-    }
-
-    return (
-        <>
-            {!setFormTitle && <TitleForm data={dataAPI.getAllFilter()} onChange={onTitleChange} level={location?.state?.level} />}
-            <Table
-                loading={submitting.state}
-                actionColumn={<ActionContent dataAPI={dataAPI} onClick={onAction} modeEdit={modeEdit.datagrid} />}
-                frozenActionColumn={true}
-                reportTitle={title}
-                loadOnInit={false}
-                columns={columns}
-                dataAPI={dataAPI}
-                toolbar={true}
-                search={true}
-                moreFilters={true}
-                maxPage={false}
-                rowSelection={false}
-                primaryKeys={primaryKeys}
-                editable={true}
-                clearSort={false}
-                rowHeight={28}
-                onPageChange={() => dataAPI.fetchPost()}
-                rowClass={(row) => (row?.notValid === 1 ? classes.notValid : undefined)}
-                leftToolbar={
-                    <Space>
-                        <Permissions permissions={permission} action="editList" {...dataAPI.getAllFilter()?.type === "C" && { forInput: false }}>
-                            {!modeEdit.datagrid && <Button disabled={submitting.state} icon={<EditOutlined />} onClick={changeMode}>Editar</Button>}
-                            {modeEdit.datagrid && <Button disabled={submitting.state} icon={<LockOutlined title="Modo de Leitura" />} onClick={changeMode} />}
-                            {(modeEdit.datagrid && dataAPI.getData().rows.filter(v => v?.notValid === 1).length > 0) && <Button type="primary" disabled={submitting.state} icon={<EditOutlined />} onClick={onSave}>Guardar Alterações</Button>}
-                        </Permissions>
-
-                    </Space>
-
-                }
-                toolbarFilters={{
-                    form: formFilter, schema, onFinish: onFilterFinish, onValuesChange: onFilterChange,
-                    filters: <ToolbarFilters dataAPI={dataAPI} />,
-                    moreFilters: { schema: moreFiltersSchema, rules: moreFiltersRules, width: 500, mask: true }
-                }}
-            />
-        </>
-    );
 }

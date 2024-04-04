@@ -133,9 +133,9 @@ export default ({ dark = false }) => {
             </Permissions>
             <Permissions permissions={permission} item="armazem" key="5" clone>
                 <Panel header={<b>Armazém</b>} key="5">
-                    <Permissions permissions={permission} item="armazem" action="A"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`, 'Cargas')} title="A">Cargas</Button></Permissions>
-                    <Permissions permissions={permission} item="armazem" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`, 'Pesagem')} title="B">Pesagem</Button></Permissions>
-                    <Permissions permissions={permission} item="armazem" action="C"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`, 'Stock')} title="C">Stock</Button></Permissions>
+                    {/* <Permissions permissions={permission} item="armazem" action="A"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/carga/`, 'Cargas')} title="A">Cargas</Button></Permissions> */}
+                    {/* <Permissions permissions={permission} item="armazem" action="B"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/palete/selecao/`, 'Pesagem')} title="B">Pesagem</Button></Permissions> */}
+                    {/* <Permissions permissions={permission} item="armazem" action="C"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/stock/`, 'Stock')} title="C">Stock</Button></Permissions> */}
                     <Permissions permissions={permission} item="armazem" action="D"><Button size='small' type="link" onClick={() => onClickItemFrame(`/producao/export_bobines_originais/`, 'Exportar')} title="D">Exportar</Button></Permissions>
                     <Permissions permissions={permission} item="armazem" action="E"><Button size='small' type="link" onClick={() => navigate('/app/devolucoes/devolucoeslist', {})} title="A">Devoluções de Produto Acabado</Button></Permissions>
                     <Permissions permissions={permission} item="armazem" action="F"><Button size='small' type="link" onClick={() => navigate('/app/expedicoes/timearmazem', {})} title="B">Relatório de Expedições Mensal</Button></Permissions>

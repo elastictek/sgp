@@ -590,6 +590,7 @@ const fetchCargas = async (enc) => {
 }
 
 const PackingListForm = ({ r, form, ...rest }) => {
+    console.log("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     const dataCargas = useDataAPI({ id: "cargaslookup", payload: { url: `${API_URL}/cargaslookup/`, parameters: {}, pagination: { enabled: false, limit: 20 }, filter: {}, sort: [] } });
     useEffect(() => {
         dataCargas.addFilters({ enc: r.iorder });

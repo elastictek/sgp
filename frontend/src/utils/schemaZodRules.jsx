@@ -1,5 +1,6 @@
 import { isNil, isNotNil } from "ramda";
 import { z } from "zod";
+import dayjs from 'dayjs';
 
 export const _fieldZodDescription = (schema, path) => {
     const parts = Array.isArray(path) ? path : path.split('.');
@@ -25,16 +26,29 @@ export const _fieldZodDescription = (schema, path) => {
 export const zIntervalDate = (min, max) => z.coerce.date().min(min).max(max);
 export const zGroupIntervalDate = (init, end, { nullable = true, custom_error, description: { init: _init, end: _end } } = {}) =>
     z.object({
-        [init]: z.coerce.date({ description: _init }),
-        [end]: z.coerce.date({ description: _end })
+        [init]: z.any(),// coerce.date({ description: _init }),
+        [end]: z.any() //coerce.date({ description: _end })
     }).refine((v) => {
-        if (nullable && (isNil(v?.[init]) || isNil(v?.[end]))) {
-            return true;
+        const errors = [];
+        const _di = dayjs(v[init]);
+        const _de = dayjs(v[end]);
+        if (!nullable && (isNil(v?.[init]) || isNil(v?.[end]))) {
+            errors.push({ path: [init], message: `${_init ? _init : init} tem de estar preenchido` });
+            errors.push({ path: [end], message: `${_end ? _end : end} tem de estar preenchido` });
         }
-        return isNotNil(v?.[init]) && isNotNil(v?.[end]) && v[end] >= v[init];
-    }, {
-        ...custom_error ? custom_error : { message: `${_end ? _end : end} must be greater or equal than ${_init ? _init : init}` },
-    });
+        if (!_di.isValid() || !_de.isValid()) {
+            errors.push({ path: [init], message: `${_init ? _init : init} tem de ser uma data válida` });
+            errors.push({ path: [end], message: `${_end ? _end : end} tem de ser uma data válida` });
+        }
+        if (isNotNil(v?.[init]) && isNotNil(v?.[end]) && _de < _di) {
+            errors.push({ path: [init], message: `${_end ? _end : end} tem de ser maior ou igual a ${_init ? _init : init}` });
+            errors.push({ path: [end], message: `${_end ? _end : end} tem de ser maior ou igual a ${_init ? _init : init}` });
+        };
+        if (errors.length > 0) {
+            throw new z.ZodError(errors);
+        }
+        return true;
+    }, {});
 
 
 

@@ -93,8 +93,9 @@ export default ({
     }, []);
 
     return (
-        <div style={{ width: "100%", height: "80vh", ...style }}>
+        <div style={{ width: "100%", height: "70vh", ...style }}>
             <TableV4
+                enableRangeSelection={true}
                 onGridRequest={onGridRequest}
                 onGridResponse={onGridResponse}
                 onGridFailRequest={onGridFailRequest}
@@ -106,11 +107,12 @@ export default ({
                 multiSortKey='ctrl'
                 gridRef={_gridRef}
                 local={local}
+                rowClassRules={_rowClassRules}
 
                 /* rowSelection="single"
                 onSelectionChanged={_onSelectionChanged}
                 isRowSelectable={_isRowSelectable}
-                rowClassRules={_rowClassRules}
+                
                 ignoreRowSelectionOnCells={ignoreRowSelectionOnCells} */
 
                 showRange={false}

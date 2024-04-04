@@ -10,7 +10,6 @@ import { getSchema, pick, getStatus, validateMessages } from "utils/schemaValida
 import { useSubmitting } from "utils";
 import loadInit, { fixRangeDates } from "utils/loadInitV3";
 import { API_URL, PALETES_WEIGH, BOBINE_ESTADOS } from "config";
-import { useDataAPI } from "utils/useDataAPIV3";
 import { json, includeObjectKeys, excludeObjectKeys } from "utils/object";
 import Toolbar from "components/toolbar";
 import { getFilterRangeValues, getFilterValue, secondstoDay, pickAll } from "utils";
@@ -36,6 +35,7 @@ import { produce } from 'immer';
 import { useImmer } from "use-immer";
 import SvgSchema from "../paletes/paletizacao/SvgSchemaV2";
 import PaletesChoose from './PaletesChoose';
+import { parseFilter } from 'utils/useDataAPIV4';
 
 const title = "Imprimir Etiqueta";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading }) => {
@@ -145,19 +145,20 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     };
 
     const onSelectionChange = (v) => {
+        const _v = Array.isArray(v) ? v[0] : v;
         setModalParameters({
             width: "500px",
             height: "200px",
             content: "print", type: "modal", push: false/* , width: "90%" */, title: <div style={{ fontWeight: 900 }}>Imprimir Etiqueta</div>,
             parameters: {
                 url: `${API_URL}/print/sql/`, printers: [...printersList?.PRODUCAO, ...printersList?.ARMAZEM], numCopias: 2,
-                onComplete: async (response, download) => await onDownloadComplete(response, download, v),
+                onComplete: async (response, download) => await onDownloadComplete(response, download, _v),
                 parameters: {
                     method: "PrintPaleteEtiqueta",
-                    id: v.data.id,
-                    palete_nome: v.data.nome,
-                    name: v?.data?.nome.startsWith("DM") ? "ETIQUETAS-PALETE-DM" : "ETIQUETAS-PALETE",
-                    path: v?.data?.nome.startsWith("DM") ? "ETIQUETAS/PALETE-DM" : "ETIQUETAS/PALETE-DM"
+                    id: _v.id,
+                    palete_nome: _v.nome,
+                    name: _v?.nome.startsWith("DM") ? "ETIQUETAS-PALETE-DM" : "ETIQUETAS-PALETE",
+                    path: _v?.nome.startsWith("DM") ? "ETIQUETAS/PALETE-DM" : "ETIQUETAS/PALETE-DM"
                 }
             }
         });
@@ -166,7 +167,7 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
     }
 
     const onPrintPaleteHold = async (v) => {
-        const hasBobinesHold = (await loadBobines({ palete_id: v.data.id })).findIndex(x => x?.estado === "HOLD");
+        const hasBobinesHold = (await loadBobines({ palete_id: v.id })).findIndex(x => x?.estado === "HOLD");
         if (hasBobinesHold >= 0) {
             setModalParameters({
                 width: "500px",
@@ -187,8 +188,8 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
                     onComplete: async (response, download) => await onDownloadComplete(response, download),
                     parameters: {
                         method: "PrintPaleteEtiqueta",
-                        id: v.data.id,
-                        palete_nome: v.data.nome,
+                        id: v.id,
+                        palete_nome: v.nome,
                         user:permission.auth.user,
                         name: "ETIQUETAS-PALETE-HOLD",
                         path: "ETIQUETAS/PALETE-HOLD"
@@ -219,7 +220,9 @@ export default ({ extraRef, closeSelf, loadParentData, noid = true, ...props }) 
                     title="Imprimir Etiqueta"
                     onFilterChange={onFilterChange} onSelect={onSelectionChange}
                     defaultSort={[{ column: `sgppl.timestamp`, direction: "DESC" }]}
-                    defaultFilters={{ /* fcarga: "isnull", */ fdisabled: "==0"/* , fdispatched: "isnull" */ }}
+                    baseFilters={{
+                        ...parseFilter("sgppl.disabled", "==0")
+                    }}
                 />
             }
         </>

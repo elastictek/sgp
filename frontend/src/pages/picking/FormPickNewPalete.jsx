@@ -28,6 +28,10 @@ import { Value } from 'components/TableV4/TableColumnsV4';
 import { z } from "zod";
 import { FormPrint, printersList } from 'components/FormFields';
 import useModalApi from 'utils/useModalApi';
+import OrdensFabricoChoose from './OrdensFabricoChoose';
+import Pick, { PickMax } from "./commons/Pick";
+import PaletesChoose from './PaletesChoose';
+
 
 //const title = "Nova Palete ...";
 //const subTitle = null;
@@ -52,222 +56,6 @@ const steps = [
         title: 'Palete'
     },
 ];
-
-const ListColumns = styled.div`
-    column-count: ${(props) => Math.ceil(props.$nItems / 20) >= props.$columns ? props.$columns : Math.ceil(props.$nItems / 20)};
-    column-gap: 10px;
-    column-width: ${(props) => props.$columnWidth}px;
-    ${props => Math.ceil(props.$nItems / 20) >= 6 &&
-        css`
-            @media (max-width: ${(props) => props.$columnWidth * 7 + 100}px) {
-                column-count: 6;
-            }
-        `}
-    ${props => Math.ceil(props.$nItems / 20) >= 5 &&
-        css`
-        @media (max-width: ${(props) => props.$columnWidth * 6 + 100}px) {
-            column-count: 5;
-        }
-    `}
-    ${props => Math.ceil(props.$nItems / 20) >= 4 &&
-        css`
-            @media (max-width: ${(props) => props.$columnWidth * 5 + 100}px) {
-                column-count: 4;
-            }
-        `}
-    ${props => Math.ceil(props.$nItems / 20) >= 3 &&
-        css`
-        @media (max-width: ${(props) => props.$columnWidth * 4 + 100}px) {
-            column-count: 3;
-        }
-    `}
-    ${props => Math.ceil(props.$nItems / 20) >= 2 &&
-        css`
-        @media (max-width: ${(props) => props.$columnWidth * 3 + 100}px) {
-            column-count: 2;
-        }
-    `}
-    ${props => Math.ceil(props.$nItems / 20) >= 1 &&
-        css`
-            @media (max-width: ${(props) => props.$columnWidth * 2 + 100}px) {
-                column-count: 1;
-            }
-        `}
-`;
-
-const styleItemStatus = (input, index, focusIndex, disabled) => {
-    const _focused = { ...(index === focusIndex && !disabled) && { border: "solid 2px #1890ff" } };
-    if (input.status.error) {
-        return { backgroundColor: "#ff7875", border: "solid 1px #595959", ..._focused };
-    } else {
-        if (input.picked === false) {
-            return { backgroundColor: "#ff7875", border: "solid 1px #595959", ..._focused };
-        } else if (input.picked === true) {
-            return { border: "solid 1px #595959", ..._focused };
-        }
-    }
-    return { ..._focused };
-}
-
-const Pick = React.forwardRef(({ disabled = false, initialInputs, selectorPopup, onInputChange, popupValuePath, n, pattern, duplicates = false, allowEmpty = false, onPick, rowNumber = true, rowNumberFn, rowNumberWidth = 30, columnWidth = 300, width = "100%", height = "80vh" }, ref) => {
-    const inputRef = useRef();
-    const inputsRef = useRef();
-    const [state, updateState] = useState({ value: null, focusIndex: 0, timestamp: Date.now() });
-    const submitting = useSubmitting(true);
-
-    useImperativeHandle(ref, () => ({
-        inputRef,
-        inputsRef
-    }));
-
-
-
-    useEffect(() => {
-        if (n !== inputsRef.current?.n) {
-            const _initialLength = Array.isArray(initialInputs) ? initialInputs.length : 0;
-            if (_initialLength == n) {
-                inputsRef.current = {
-                    picked: _initialLength, n, errors: 0, items: Array(n).fill().map((v, i) => ({
-                        ...(typeof initialInputs[i] == "object" && !isNullOrEmpty(initialInputs[i])) ? initialInputs[i] : { item: initialInputs[i], picked: true, status: { error: false, description: "" } }
-                    }))
-                };
-                updateState(prev => ({ ...prev, value: (typeof initialInputs[0] == "object" && !isNullOrEmpty(initialInputs[0])) ? initialInputs[0]?.item : initialInputs[0] }));
-            } else {
-                inputsRef.current = { picked: 0, n, errors: 0, items: Array(n).fill().map((v, i) => ({ item: null, picked: null, status: { error: false, description: "" } })) };
-            }
-        }
-        submitting.end();
-    }, []);
-
-    const update = (index, v) => {
-        updateState({
-            ...state,
-            value: v,
-            ...!isNil(index) && { focusIndex: index },
-            timestamp: Date.now()
-        });
-        if (onPick && typeof onPick == "function") {
-            onPick({ data: inputsRef.current, newValue: v, newIndex: index, index, value });
-        }
-    }
-
-    const onItemClick = (e, v, index) => {
-        checkInput(state.value, state.focusIndex);
-        update(index, v);
-    }
-
-    const checkInput = (v, index) => {
-        if (index == -1) {
-            if (onInputChange && typeof onInputChange == "function") {
-                onInputChange(v, index, state);
-            }
-            return;
-        }
-        const _hasError = inputsRef.current.items[index].status.error;
-        const t = (pattern && (!isNullOrEmpty(v) || !allowEmpty)) ? pattern.test(v) : true;
-
-        inputsRef.current.items[index].item = v;
-        inputsRef.current.items[index].picked = t;
-        inputsRef.current.items[index].status.error = !t;
-        inputsRef.current.items[index].status.description = (t) ? "" : "Erro no padrão de entrada";
-        if (t && !duplicates) {
-            const _duplicated = inputsRef.current.items.some((x, idx) => x.item === v && idx !== index);
-            inputsRef.current.picked = ((_hasError && _duplicated) || (!_hasError && !_duplicated)) ? inputsRef.current.picked : (!_hasError && _duplicated) ? inputsRef.current.picked - 1 : inputsRef.current.picked + 1;
-            inputsRef.current.items[index].picked = !_duplicated;
-            inputsRef.current.items[index].status.error = _duplicated;
-            inputsRef.current.items[index].status.description = (!_duplicated) ? "" : "Entrada duplicada";
-        }
-        inputsRef.current.errors = inputsRef.current.items.filter(x => x.status.error === true).length;
-        inputsRef.current.picked = inputsRef.current.items.filter(x => x.picked === true).length;
-        if (onInputChange && typeof onInputChange == "function") {
-            onInputChange(v, index, state);
-        }
-    }
-
-    const _onInputOk = (e) => {
-        if (e.key) {
-            if (["Enter", "Tab"].includes(e.key)) {
-                e.preventDefault();
-                if (e.shiftKey) {
-                    checkInput(state.value, state.focusIndex);
-                    if (state.focusIndex == 0) {
-                        updateState({ ...state, timestamp: Date.now(), focusIndex: -1 });
-                        return;
-                    }
-                    update(state.focusIndex - 1, inputsRef.current.items[state.focusIndex - 1].item);
-                } else {
-                    checkInput(state.value, state.focusIndex);
-                    if (n === state.focusIndex + 1) {
-                        updateState({ ...state, timestamp: Date.now(), focusIndex: -1 });
-                        return;
-                    }
-                    update(state.focusIndex + 1, inputsRef.current.items[state.focusIndex + 1].item);
-                }
-            }
-
-        }
-    }
-
-    const _onInput = (v, index) => {
-        inputsRef.current.items[index].item = v;
-        update(null, v);
-    }
-
-    const onContainerClick = () => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-        }
-    }
-
-    const onFocus = (e) => {
-        e.target.select();
-    }
-
-    const columns = useMemo(() => {
-        return Math.floor(n / 16) + 1;
-    }, [n]);
-
-    const onPopupSelect = (v) => {
-        const _value = valueByPath(v, popupValuePath);
-        inputsRef.current.items[state.focusIndex].item = _value;
-        inputRef.current.value = _value;
-        inputRef.current.focus();
-        update(null, _value);
-    }
-
-    return (
-        <Row onClick={onContainerClick} nogutter style={{}}>
-            <Col>
-                <YScroll width={width} height={height}>
-                    <Row nogutter style={{ justifyContent: "center" }}>
-                        <Col xs="content">
-                            <ListColumns $nItems={n} $columnWidth={columnWidth} $columns={columns}>
-                                {!submitting.state && inputsRef.current.items.map((v, index) => {
-                                    return (<Row style={{ fontSize: "14px", height: "32px", padding: "1px", breakInside: "avoid" }} key={`pi-${index}`} nogutter>
-                                        <Col width={columnWidth} style={{ border: "dashed 1px #bfbfbf", alignItems: "center", display: "flex", ...styleItemStatus(v, index, state.focusIndex, disabled) }} >
-                                            <Row nogutter>
-                                                {rowNumber && <Col width={rowNumberWidth} style={{ alignSelf: "center", fontWeight: 900, cursor: "pointer", paddingLeft: "5px" }} {...!disabled && { onClick: (e) => onItemClick(e, v.item, index) }}>{(rowNumberFn) ? rowNumberFn(index, v.item) : index + 1}</Col>}
-                                                <Col style={{ alignSelf: "center" }} {...(!rowNumber && !disabled) && { onClick: (e) => onItemClick(e, v.item, index) }}>
-                                                    {(state.focusIndex === index && !disabled) ?
-                                                        <div style={{ display: "flex" }}>
-                                                            <Input onFocus={onFocus} disabled={disabled} ref={inputRef} style={{ /* width: `${columnWidth - (rowNumber ? rowNumberWidth + 10 : 10)}px`, */ border: 'none', boxShadow: 'none', background: "none" }} value={state.value} autoFocus onChange={(e) => _onInput(e.target.value, index, e)} onKeyDown={(e) => _onInputOk(e, index)} />
-                                                            {(selectorPopup && popupValuePath && !disabled) && <SelectorPopup customSearch={<Button icon={<SearchOutlined />} />} {...selectorPopup} onSelectionChanged={onPopupSelect} />}
-                                                        </div>
-                                                        :
-                                                        <span style={{ paddingLeft: "10px" }}>{v.item}</span>}
-                                                </Col>
-                                            </Row>
-                                        </Col>
-                                    </Row>);
-                                })}
-                            </ListColumns>
-                        </Col>
-                    </Row>
-                </YScroll>
-            </Col>
-        </Row>
-    );
-});
 
 const schemaWeigh = z.object({
     pesobruto: z.any()
@@ -342,6 +130,7 @@ const _default = {
     paleteRef: [],
     palete: null,
     lvl: 0,
+    ordemFabrico: { id: null, paletizacao_id: null, ofid: null, allSchemaBobines: [] },
     paletePeso: null,
     paleteSize: null,
     report: { valid: false, list: [] },
@@ -362,9 +151,21 @@ const _setDefault = (draft) => {
     draft.timestamp = Date.now();
 }
 
+const ReportItem = ({ value, width = 65 }) => {
+    if (isNullOrEmpty(value)) {
+        return (<></>);
+    }
+    return (<Col width={width} style={{ minWidth: `${width}px` }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: value == 1 ? "green" : "#ff4d4f" }}></div></Col>);
+}
 
-const ReportList = ({ list, report, index }) => {
+const ReportItemHeader = ({ visible = false, tooltip, title, width = 65 }) => {
+    if (!visible) {
+        return (<></>);
+    }
+    return (<Col width={width} style={{ minWidth: `${width}px`, textAlign: "center", fontSize: "11px" }}><Tooltip title={tooltip}>{title}</Tooltip></Col>);
+}
 
+const ReportList = ({ typePalete, list, report, index }) => {
     const getItem = (item) => {
         return report.find(v => v.nome == item);
     }
@@ -377,9 +178,19 @@ const ReportList = ({ list, report, index }) => {
                         <Row nogutter wrap='nowrap' style={{ padding: "3px" }}>
                             <Col width={30} style={{ minWidth: "30px" }}></Col>
                             <Col width={120} style={{ minWidth: "120px" }}>Nome</Col>
-                            <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="A bobine já não existe (retrabalhada/regranulada)">Bobine</Tooltip></Col>
-                            <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="A bobine encontra-se numa palete final">Palete</Tooltip></Col>
-                            <Col width={65} style={{ minWidth: "65px", textAlign: "center" }}><Tooltip title="A bobine encontra-se numa palete que se encontra em carga ou expedida">Carga/Exp.</Tooltip></Col>
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.bobine_ok)} tooltip="A bobine já não existe ou não se encontra disponível (retrabalhada/regranulada)" title="Bobine" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.estado_ok)} tooltip="A bobine não se encontra num estado válido" title="Estado" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.palete_ok)} tooltip="A bobine encontra-se numa palete final" title="Palete" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.carga_ok)} tooltip="A bobine encontra-se numa palete que se encontra em carga ou expedida" title="Carga" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.artigo_ok)} tooltip="O artigo não corresponde ao da ordem de fabrico" title="Artigo" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.largura_ok)} tooltip="A largura não corresponde à da ordem de fabrico" title="Largura" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.produto_ok)} tooltip="O produto não corresponde ao da ordem de fabrico" title="Produto" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.core_ok)} tooltip="O core não corresponde ao da ordem de fabrico" title="Core" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.diam_ok)} tooltip="O diâmetro da bobine não está dentro dos limites establecidos pelo cliente" title="Diâmetro" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.duplicate_ok)} tooltip="Existem bobines duplicadas" title="Duplicada" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.item_emendas_ok) && !isNullOrEmpty(report?.[0]?.item_emendas_limit_ok)} tooltip="O número de emendas excede o definido na ordem de fabrico" title="Emendas" />
+                            <ReportItemHeader visible={!isNullOrEmpty(report?.[0]?.item_expired_ok)} tooltip="A bobine encontra-se fora do prazo de validade" title="Expirada" />
+
                         </Row>
 
                         {list.map((x, i) => {
@@ -388,9 +199,18 @@ const ReportList = ({ list, report, index }) => {
                                 <Row nogutter key={`err-${i}`} style={{ marginTop: "2px", padding: "3px", ...(i == index) && { background: "#fff1b8" } }} wrap='nowrap'>
                                     <Col style={{ alignSelf: "center", minWidth: "30px" }} width={30}>{`${i + 1}`.padStart(2, '0')}</Col>
                                     <Col style={{ alignSelf: "center", minWidth: "120px", fontWeight: 700 }} width={120}>{v.nome}</Col>
-                                    <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: v.bobine_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                                    <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: v.palete_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
-                                    <Col width={65} style={{ minWidth: "65px" }}><div style={{ margin: "0px 20px", border: "dashed 1px", width: "25px", height: "25px", borderRadius: "2px", backgroundColor: v.carga_ok == 1 ? "green" : "#ff4d4f" }}></div></Col>
+                                    <ReportItem value={v?.bobine_ok} />
+                                    <ReportItem value={v?.estado_ok} />
+                                    <ReportItem value={v?.palete_ok} />
+                                    <ReportItem value={v?.carga_ok} />
+                                    <ReportItem value={v?.artigo_ok} />
+                                    <ReportItem value={v?.largura_ok} />
+                                    <ReportItem value={v?.produto_ok} />
+                                    <ReportItem value={v?.core_ok} />
+                                    <ReportItem value={v?.diam_ok} />
+                                    <ReportItem value={v?.duplicate_ok} />
+                                    {!isNullOrEmpty(v?.item_emendas_ok) && !isNullOrEmpty(v?.item_emendas_limit_ok) && <ReportItem value={(v?.item_emendas_ok == 0 || v?.item_emendas_limit_ok == 0) ? 0 : 1} />}
+                                    <ReportItem value={v?.item_expired_ok} />
                                 </Row>);
                         })}
                     </Col>
@@ -398,16 +218,6 @@ const ReportList = ({ list, report, index }) => {
             </Container>
         </YScroll>
     );
-}
-
-const _styleOnPrint = (step, type) => {
-    if (![4].includes(step)) {
-        return {};
-    }
-    switch (type) {
-        case "HOLD": return { backgroundColor: "#391085", color: "#fff" };
-        default: return {};
-    }
 }
 
 export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
@@ -481,6 +291,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         form.setFieldsValue(_defaultForm);
         updateState(draft => {
             _setDefault(draft);
+            draft.allSchemaBobines = draft.ordemFabrico.allSchemaBobines; //se tiver ordem de fabrico, sobrepõe como default
             draft.schema = row;
             draft.timestamp = Date.now();
         });
@@ -488,6 +299,10 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
     const onSelectLevel = (row) => {
         if (row.valid) {
+            // if (inputParameters.current.type == "S" && json(state.schema.bobines)[row.lvl - 1] <= row.nBobines) {
+            //     openNotification("error", 'top', "Notificação", `A palete do tipo ${inputParameters.current.type} tem de ter menos bobines que o definido na ordem de fabrico!`, null);
+            //     return;
+            // }
             step.current.allowed = populateArray(1);
             next();
             form.setFieldsValue(_defaultForm);
@@ -523,7 +338,12 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         step.current.allowed = populateArray(2);
         if (picked === n) {
             const _bobines = items.map(v => v.item);
-            const result = await dataAPI.safePost(`${API_URL}/paletes/sql/`, "CheckBobinesPalete", { notify: [], parameters: { type: inputParameters.current.type, ...state, bobines: _bobines, paleteRef: _paleteRef?.[0]?.item } });
+            const result = await dataAPI.safePost(`${API_URL}/paletes/sql/`, "CheckBobinesPalete", {
+                notify: ["run_fail", "fatal"], parameters: {
+                    type: inputParameters.current.type, ...state, ordem_id: state.ordemFabrico.id, bobines: _bobines, paleteRef: _paleteRef?.[0]?.item,
+                    palete_redo_id: inputParameters.current?.palete?.id
+                },
+            });
             result.onSuccess(({ response }) => {
                 if (response.report[0].ok === 1) {
                     step.current.allowedActions = ["create"];
@@ -565,7 +385,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             const _paletePeso = values.haspalete == 1 ? PALETES_WEIGH.find(v => v.value.replace(/\s/g, '') == state.paleteSize.replace(/\s/g, ''))?.key : 0;
             const { report, ..._state } = state;
             const result = await dataAPI.safePost(`${API_URL}/paletes/sql/`, "CreatePalete", {
-                notify: [], parameters: {
+                notify: ["run_fail", "fatal"], parameters: {
                     type: inputParameters.current.type,
                     paletePeso: _paletePeso,
                     pesoBruto: values.pesobruto,
@@ -575,7 +395,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     paleteSize: state.paleteSize,
                     paleteRef: state.paleteRef?.[0],
                     paletizacao_id: state.schema.id,
-                    schemaBobines: state.schemaBobines
+                    schemaBobines: state.schemaBobines,
+                    ordem_id: state.ordemFabrico.id,
+                    palete_redo_id: inputParameters.current?.palete?.id
                 }
             });
             result.onSuccess(({ response }) => {
@@ -603,7 +425,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
 
     const onReportList = () => {
         modalApi.setModalParameters({
-            content: <ReportList list={bobinesRef.current.inputsRef.current.items} report={state.report.list} />,
+            content: <ReportList typePalete={inputParameters.current?.type} list={bobinesRef.current.inputsRef.current.items} report={state.report.list} />,
             closable: true,
             title: "Relatório de erros",
             lazy: false,
@@ -652,75 +474,135 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
         }
     }
 
+    const onSelectOrdem = (v) => {
+        goTo(0);
+
+        if (inputParameters.current.type == "S") {
+            updateState(draft => {
+                draft.ordemFabrico = { id: v[0].id, ofid: v[0]?.ofid };
+                draft.timestamp = Date.now();
+            });
+        } else {
+            const _allSchemabobines = [];
+            if (!v[0]?.paletizacao_id) {
+                if (v[0]?.bobines_por_palete_inf) {
+                    _allSchemabobines.push(v[0]?.bobines_por_palete_inf);
+                }
+                if (v[0]?.bobines_por_palete) {
+                    _allSchemabobines.push(v[0]?.bobines_por_palete);
+                }
+            }
+            updateState(draft => {
+                draft.allSchemaBobines = _allSchemabobines;
+                draft.ordemFabrico = { id: v[0].id, ofid: v[0]?.ofid, paletizacao_id: 2, allSchemaBobines: _allSchemabobines };
+                draft.timestamp = Date.now();
+            });
+        }
+    }
+
+    const onIgnore = () => {
+        if (inputParameters.current?.ordemFabrico) {
+            inputParameters.current.ordemFabrico.enabled = false;
+        }
+        goTo(0);
+        updateState(draft => {
+            draft.timestamp = Date.now();
+        });
+    }
+
+    const _titleForm = useCallback(() => {
+        if (inputParameters.current?.palete?.id) {
+            return `Refazer Palete ${inputParameters.current?.palete?.nome}`;
+        } else {
+            return `Nova ${inputParameters.current.title}`;
+        }
+    }, [submitting.timestamp]);
+
     return (
         <Page.Ready ready={permission?.isReady && !isNullOrEmpty(inputParameters.current?.type)} loading={submitting.state}>
-            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} title={inputParameters.current?.title} />
-            <Container fluid >
-                <Row>
-                    <Col>
-                        <Row nogutter>
-                            <Col>
-                                <Steps type='inline' current={_step} items={steps} direction="horizontal" onChange={onStepChange} />
-                            </Col>
-                            <Col xs="content">
-                                <Space>
-                                    {(!submitting.state && _allowedActions.includes("validate") && [2].includes(_step)) && <Button onClick={onValidate} type="primary">Validar</Button>}
-                                    {(!submitting.state && _allowedActions.includes("create") && [3].includes(_step)) && <Button onClick={onCreate} type="primary">Criar Palete</Button>}
-                                    {/* {(!submitting.state && _allowedActions.includes("weigh") && [3].includes(_step)) && <Button onClick={onWeigh} type="primary">Pesar Palete</Button>} */}
-                                </Space>
-                            </Col>
-                        </Row>
-                        <Row nogutter>
-                            <Col>
-                                <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
-                                    {(_step > 0) && <Row><Col style={{}}></Col></Row>}
-                                    <Row nogutter>
-                                        {_step == 0 && <Col>
-                                            <PaletizacoesList noid showFilters={false} select header={false} edit={false} onSelectionChanged={onSelectSchema} domLayout={'autoHeight'} style={{ height: "auto" }}
-                                                baseFilters={{ ...parseFilter("pp.id", `in:181,182`, { type: "number" }) }}
-                                            />
-                                        </Col>}
-                                        {_step == 1 && <Col>
-                                            <FormPaletizacao initialSchemaBobines={state.allSchemaBobines} select={{ enabled: true }} onSelectLevel={onSelectLevel} header={false} associate={false} edit={false} editItems={[2]} parameters={{ id: state.schema?.id }} />
-                                        </Col>}
-                                        {[2, 4].includes(_step) && <Col style={{}}>
-                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "5px", ..._styleOnPrint(_step, inputParameters.current.type) }}>
-                                                <div style={{ fontSize: "22px", fontWeight: 900 }}>{state?.palete?.nome}</div>
-                                                {[4].includes(_step) && <Button onClick={onPrint} icon={<PrinterOutlined />}>Imprimir Etiqueta</Button>}
-                                            </div>
-                                            {(!state.report.valid && state.report.list.length > 0) && <div style={{ textAlign: "center" }}><Button style={{ background: "#ff4d4f" }} icon={<UnorderedListOutlined />} onClick={onReportList} /></div>}
-                                            <Pick
-                                                width="320px"
-                                                initialInputs={state.paleteRef}
-                                                disabled={submitting.state || _step == 4}
-                                                onInputChange={(v, i, st) => onInputChange("palete", v, i, st)}
-                                                popupValuePath="nome" selectorPopup={{
-                                                    payload: {
-                                                        url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: { method: "PaletesListV2" },
-                                                        pagination: { enabled: true, page: 1, pageSize: 20 }, baseFilter: {}, sortMap: {}
-                                                    },
-                                                    dataGridProps: {
-                                                        columnDefs: [
-                                                            { colId: 'sgppl.nome', field: 'nome', headerName: 'Palete', width: 130, cellRenderer: (params) => <Value bold params={params} /> },
-                                                        ],
-                                                        filters: { toolbar: ["@columns"], more: [], no: [...Object.keys({})] }
-                                                    },
-                                                    popupProps: { title: "Paletes", width: "95%", type: "drawer" },
-                                                    customSearch: <CustomSearchButton />
-                                                }}
-                                                height="40px" rowNumberWidth={100} rowNumberFn={(index) => <span>Palete Ref.</span>} n={1} allowEmpty={true} ref={paleteRef} pattern={/^(P|R|DM|H|S)\d{4}-\d{4}$/} duplicates={false} />
-                                            <Pick initialInputs={clone(state.bobines)} disabled={submitting.state || _step == 4} onInputChange={(v, i, st) => onInputChange("bobines", v, i, st)} n={state.nBobines} ref={bobinesRef} pattern={/^\d{8}-\d{2,}-\d{2,}$/} duplicates={false} height={_step == 4 ? "65vh" : "75vh"} />
-                                        </Col>}
-                                        {_step == 3 && <Col>
-                                            <WeighPalete form={form} validation={validation} />
-                                        </Col>}
-                                    </Row>
-                                </Container>
-                            </Col>
-                        </Row>
-                    </Col >
-                </Row >
-            </Container >
+            <TitleForm auth={permission.auth} level={location?.state?.level} loading={submitting.state} title={_titleForm()} />
+            {inputParameters.current?.ordemFabrico?.enabled && isNullOrEmpty(state?.ordemFabrico?.id) ?
+                <Container fluid >
+                    {inputParameters.current?.ordemFabrico?.optional && <Row>
+                        <Col style={{ textAlign: "left", fontWeight: "700" }}>
+                            <Button onClick={onIgnore} type='link'>Ignorar &gt;&gt;</Button>
+                        </Col>
+                    </Row>}
+                    <Row>
+                        <Col>
+                            <OrdensFabricoChoose baseFilters={inputParameters.current?.palete?.ordemFilter && inputParameters.current?.palete?.ordemFilter} retrabalho={inputParameters.current?.ordemFabrico?.retrabalho} serverMethod="OrdensFabricoOpen" showHeader showAggCod={false} permission={permission} allowInElaboration={false} onClick={onSelectOrdem} />
+                        </Col>
+                    </Row>
+                </Container>
+                : <Container fluid >
+                    <Row>
+                        <Col>
+                            <Row nogutter>
+                                <Col>
+                                    <Steps type='inline' current={_step} items={steps} direction="horizontal" onChange={onStepChange} />
+                                </Col>
+                                <Col xs="content">
+                                    <Space>
+                                        {(!submitting.state && _allowedActions.includes("validate") && [2].includes(_step)) && <Button onClick={onValidate} type="primary">Validar</Button>}
+                                        {(!submitting.state && _allowedActions.includes("create") && [3].includes(_step)) && <Button onClick={onCreate} type="primary">Criar Palete</Button>}
+                                    </Space>
+                                </Col>
+                            </Row>
+                            <Row nogutter>
+                                <Col>
+                                    <Container fluid style={{ borderRadius: "3px", border: "1px dashed #d9d9d9", marginTop: "10px", padding: "5px" }}>
+                                        {(_step > 0) && <Row><Col style={{}}></Col></Row>}
+                                        <Row nogutter>
+                                            {_step == 0 && <Col>
+                                                <PaletizacoesList noid showFilters={false} select header={false} edit={false} onSelectionChanged={onSelectSchema} domLayout={'autoHeight'} style={{ height: "auto" }}
+                                                    baseFilters={{ ...parseFilter("pp.id", state.ordemFabrico?.paletizacao_id ? `in:${state.ordemFabrico?.paletizacao_id}` : `in:181,182`, { type: "number" }) }}
+                                                />
+                                            </Col>}
+                                            {_step == 1 && <Col>
+                                                <FormPaletizacao initialSchemaBobines={state.allSchemaBobines} select={{ enabled: true }} onSelectLevel={onSelectLevel} header={false} associate={false} edit={false} editItems={[2]} parameters={{ id: state.schema?.id }} />
+                                            </Col>}
+                                            {[2, 4].includes(_step) && <Col style={{}}>
+                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "5px", backgroundColor: inputParameters.current?.backgroundColor, color: inputParameters.current?.color }}>
+                                                    <div style={{ fontSize: "22px", fontWeight: 900 }}>{state?.palete?.nome}</div>
+                                                    {[4].includes(_step) && <Button onClick={onPrint} icon={<PrinterOutlined />}>Imprimir Etiqueta</Button>}
+                                                </div>
+                                                {(!state.report.valid && state.report.list.length > 0) && <div style={{ textAlign: "center" }}><Button style={{ background: "#ff4d4f" }} icon={<UnorderedListOutlined />} onClick={onReportList} /></div>}
+                                                <Pick
+                                                    width="320px"
+                                                    adjustWidth={40}
+                                                    initialInputs={state.paleteRef}
+                                                    disabled={submitting.state || _step == 4}
+                                                    onInputChange={(v, i, st) => onInputChange("palete", v, i, st)}
+                                                    popupValuePath="nome" 
+                                                    selectorPopupComponent={<PaletesChoose closeOnSelect={true} select={true} header={false} />}
+                                                    popupProps={{title:"Selecionar Palete"}}
+                                                    // selectorPopup={{
+                                                    //     payload: {
+                                                    //         url: `${API_URL}/paletes/sql/`, primaryKey: "id", parameters: { method: "PaletesListV2" },
+                                                    //         pagination: { enabled: true, page: 1, pageSize: 20 }, baseFilter: {}, sortMap: {}
+                                                    //     },
+                                                    //     dataGridProps: {
+                                                    //         columnDefs: [
+                                                    //             { colId: 'sgppl.nome', field: 'nome', headerName: 'Palete', width: 130, cellRenderer: (params) => <Value bold params={params} /> },
+                                                    //         ],
+                                                    //         filters: { toolbar: ["@columns"], more: [], no: [...Object.keys({})] }
+                                                    //     },
+                                                    //     popupProps: { title: "Paletes", width: "95%", type: "drawer" },
+                                                    //     customSearch: <CustomSearchButton />
+                                                    // }}
+                                                    height="40px" rowNumberWidth={100} rowNumberFn={(index) => <span>Palete Ref.</span>} n={1} allowEmpty={true} ref={paleteRef} pattern={/^(IND|P|R|DM|H|S)\d{4}-\d{4}$/} duplicates={false} />
+                                                <Pick initialInputs={clone(state.bobines)} disabled={submitting.state || _step == 4} onInputChange={(v, i, st) => onInputChange("bobines", v, i, st)} n={state.nBobines} ref={bobinesRef} pattern={/^\d{8}-\d{2,}-\d{2,}$/} duplicates={false} height={_step == 4 ? "65vh" : "75vh"} />
+                                            </Col>}
+                                            {_step == 3 && <Col>
+                                                <WeighPalete form={form} validation={validation} />
+                                            </Col>}
+                                        </Row>
+                                    </Container>
+                                </Col>
+                            </Row>
+                        </Col >
+                    </Row >
+                </Container >}
         </Page.Ready>
     )
 

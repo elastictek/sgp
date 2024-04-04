@@ -49,7 +49,6 @@ export const Context = React.createContext({});
 const title = "Palete";
 const TitleForm = ({ level, auth, hasEntries, onSave, loading, paleteNome = "", loadData, nav = false, submitting, sort, confirm, setConfirm }) => {
     const reverseDirection = (sort && sort.length > 0 && sort[0].direction == "DESC") ? true : false;
-
     const _loadData = (v) => {
         if (confirm) {
             Modal.confirm({

@@ -107,7 +107,7 @@ export default ({ loading, columnDefs, defaultColDefs, columnTypes, rowClassRule
 
 
     return (
-        <div style={{ width: "100%", height: "80vh", ...style }}>
+        <div style={{ width: "100%", height: "70vh", ...style }}>
             <TableV4
                 onGridRequest={onGridRequest}
                 onGridResponse={onGridResponse}

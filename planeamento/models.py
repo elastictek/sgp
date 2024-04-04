@@ -152,6 +152,8 @@ class OrdemProducao(models.Model):
     reported_paletes        = models.IntegerField(verbose_name="Indica se o relatório de produção foi sincronizada com o SAGE", null=True) #ADDED
     eef                     = models.CharField(max_length = 17, null = True, verbose_name = "Encomenda") #ADDED
     paletizacao_id          = models.IntegerField(verbose_name="Indica o esquema de embalamento", null=True) #ADDED
+    num_paletes_carga       = models.IntegerField(verbose_name="Indica o nº de paletes em carga", null=True, default=0) #ADDED
+    ignore_audit            = models.IntegerField(unique=False, null=True, blank=True, verbose_name="Ignore Audit") #ADDED
     class Meta:
         verbose_name_plural = "Ordens de Produção"
         

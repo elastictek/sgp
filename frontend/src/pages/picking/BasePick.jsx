@@ -126,7 +126,7 @@ const Output = ({ data, openNotification, parentRef, closeParent, loadParentData
                     openNotification(response.data.status, 'top', "Notificação", response.data.title, null);
                 }
             } catch (e) {
-                openNotification(response?.data?.status, 'top', "Notificação", e.message, null);
+                openNotification("error", 'top', "Notificação", e.message, null);
             } finally {
                 submitting.end();
             };

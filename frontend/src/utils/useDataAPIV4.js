@@ -1,22 +1,34 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useContext } from 'react';
 import { fetchPost } from "./fetch";
 import { Modal } from 'antd';
-import { deepEqual, pickAll, getInt, sleep } from 'utils';
+import { deepEqual, pickAll, getInt, sleep, isObject } from 'utils';
 import { produce, finishDraft } from 'immer';
 import { useImmer } from "use-immer";
 import { json, includeObjectKeys, updateByPath, valueByPath } from "utils/object";
 import { uid } from 'uid';
-import { isEmpty, isNil, isNotNil } from 'ramda';
+import { clone, isEmpty, isNil, isNotNil, mergeDeepRight } from 'ramda';
 import { AppContext } from "app";
 import dayjs from 'dayjs';
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT } from 'config';
 import { _fieldZodDescription } from './schemaZodRules';
-import { getValue } from '.';
+import { getValue, isNullOrEmpty } from '.';
 
 export const filterRegExp = new RegExp(/(==|=|!==|!=|>=|<=|>|<|between:|btw:|in:|!btw|!between:|!in:|isnull|!isnull|@:|:)(.*)/, 'i');
 
-export const parseFilter = (name, parsed, { group = "t1", type = "input", options = {} }) => {
-    return { [`${name}_${group}`]: { name, groups: { [group]: { parsed: Array.isArray(parsed) ? parsed : [parsed], group, type, ...options } } } };
+export const parseFilter = (name, parsed, { group = "t1", type = "input", logic, rel, options = {} } = {}) => {
+    return { [`${name}_${group}`]: { name, groups: { [group]: { parsed: Array.isArray(parsed) ? parsed : [parsed], group, type, logic, rel, ...options } } } };
+}
+
+export const parseFilters = (filters = {}) => {
+    let _filters = {};
+    Object.keys(filters).forEach(v => {
+        if (isObject(filters[v])) {
+            _filters = { ..._filters, ...filters[v] };
+        } else {
+            _filters = { ..._filters, ...parseFilter(v, filters[v]) };
+        }
+    });
+    return _filters;
 }
 
 //type = any | start | end | exact
@@ -98,14 +110,17 @@ export const filtersDef = (filters, gridRef, { all = false, keys = ["toolbar"] }
                         op: v?.op ? v.op : _groupOpts?.op ? _groupOpts?.op : null,
                         mask: v?.mask ? v.mask : _groupOpts?.mask ? _groupOpts?.mask : null,
                         vmask: v?.vmask ? v.vmask : _groupOpts?.vmask ? _groupOpts?.vmask : null,
+                        gmask: v?.gmask ? v.gmask : _groupOpts?.gmask ? _groupOpts?.gmask : null,
                         group: _group,
                         case: v?.case ? v.case : _groupOpts?.case ? _groupOpts?.case : "i",
                         assign: isNotNil(v?.assign) ? v.assign : isNotNil(_groupOpts?.assign) ? _groupOpts?.assign : true,
                         wildcards: isNotNil(v?.wildcards) ? v.wildcards : isNotNil(_groupOpts?.wildcards) ? _groupOpts?.wildcards : true,
                         tags: isNotNil(v?.tags) ? v.tags : isNotNil(_groupOpts?.tags) ? _groupOpts?.tags : true,
-                        fnvalue: v?.fnvalue ? v.fnvalue : _groupOpts?.fnvalue ? _groupOpts?.fnvalue : null
+                        fnvalue: v?.fnvalue ? v.fnvalue : _groupOpts?.fnvalue ? _groupOpts?.fnvalue : null,
+                        fn: v?.fn ? v.fn : _groupOpts?.fn ? _groupOpts?.fn : null
                     }
                 },
+                type: v?.type ? v?.type : _f?.[v.field]?.type ? _f[v.field]?.type : "input",
                 style: v?.style ? v?.style : _f?.[v.field]?.style ? _f[v.field]?.style : null,
                 label: v?.label ? v.label : _f?.[v.field]?.label ? _f[v.field]?.label : _headerName ? _headerName : v.field,
                 col: v?.col ? v.col : _f?.[v.field]?.col ? _f[v.field]?.col : "content",
@@ -154,14 +169,17 @@ export const filtersDef = (filters, gridRef, { all = false, keys = ["toolbar"] }
                         op: getValue(_groupOpts?.op, null),
                         mask: getValue(_groupOpts?.mask, null),
                         vmask: getValue(_groupOpts?.vmask, null),
+                        gmask: getValue(_groupOpts?.gmask, null),
                         group: _group,
                         case: getValue(_groupOpts?.case, "i"),
                         assign: getValue(_groupOpts?.assign, true),
                         wildcards: getValue(_groupOpts?.wildcards, true),
                         tags: getValue(_groupOpts?.tags, true),
-                        fnvalue: getValue(_groupOpts?.fnvalue, null)
+                        fnvalue: getValue(_groupOpts?.fnvalue, null),
+                        fn: getValue(_groupOpts?.fn, null)
                     }
                 },
+                type: getValue(_groupOpts?.type, "input"),
                 style: getValue(_groupOpts?.style, null),
                 label: _groupOpts?.label ? _groupOpts?.label : _headerName ? _headerName : v,
                 col: getValue(_groupOpts?.col, "content"),
@@ -198,11 +216,14 @@ export const filtersDef = (filters, gridRef, { all = false, keys = ["toolbar"] }
             // }
         }
     }
+
     return Object.values(_f);
 };
 
 export const processConditions = (inputValue, filterDef, rel = "and", logic = "") => {
     let _input = inputValue;
+    let _arrayValue = null;
+    let _overrideOptions = null;
     if (isNil(inputValue) || isEmpty(inputValue)) {
         if (typeof filterDef?.fnvalue == "function") {
             return filterDef.fnvalue(null);
@@ -221,14 +242,31 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
     if (Array.isArray(_input)) {
         if (_input.length == 0) { return null; }
         //console.log("processed-Array-->", { value: _input, parsed: [`${logic}in:${_input.join(",")}`], logic, ...filterDef });
-        _v = [`${logic}in:${_input.join(",")}`];
-        if (typeof filterDef?.fnvalue == "function") {
-            _v = filterDef.fnvalue(_v);
+        let _v = "";
+        switch (logic) {
+            case "|":
+                _v = [`in:${_input.join(",")}`];
+                break;
+            case "&":
+                _v = [`==${_input.join("&==")}`];
+                break;
+            case "!|":
+                _v = [`!in:${_input.join(",")}`];
+                break;
+            case "!&":
+                _v = [`!==${_input.join("&!==")}`];
+                break;
+            default: _v = [`in:${_input.join(",")}`];
         }
-        return { value: _input, parsed: _v, logic, ...filterDef };
+        //        let _v = [`${logic}in:${_input.join(",")}`];
+        if (typeof filterDef?.fnvalue == "function") {
+            _v = filterDef.fnvalue(_v, logic);
+        }
+        _arrayValue = _input;
+        _input = _v?.[0];
+        //return { value: _input, parsed: _v, logic, ...filterDef };
 
     }
-
 
     //const conditionsArray = _input.split(';');
     // const conditionsArray = _input.split(/([&|])/).reduce((acc, current, index, array) => {
@@ -243,6 +281,9 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
     const conditionsArray = customSplit(prepareInput(_input, filterDef.wildcards, filterDef.tags));
     const _values = [];
     const _parsedvalues = [];
+    if (typeof filterDef?.fn == "function") {
+        _overrideOptions = filterDef.fn(_input, logic, rel);
+    }
     for (const [idx, condition] of conditionsArray.entries()) {
         let _valid = true;
         const _value = [];
@@ -277,7 +318,6 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
             _values.push(condition);
             continue;
         }
-
         if (!isEmpty(_x) || (["isnull", "!isnull"].includes(_opTag))) {
             for (const value of _x.split(',')) {
                 if (filterDef.type === "options") {
@@ -358,8 +398,8 @@ export const processConditions = (inputValue, filterDef, rel = "and", logic = ""
         _values.splice(_values.length - 1, 1);
         _parsedvalues.splice(_parsedvalues.length - 1, 1);
     }
-    //console.log("processed--->", { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef });
-    return { value: _values.join(""), parsed: _parsedvalues, rel, ...filterDef };
+    console.log("processed--->", { value: !isNil(_arrayValue) ? _arrayValue : _values.join(""), parsed: _parsedvalues, rel, logic, ...filterDef, ..._overrideOptions && _overrideOptions })
+    return { value: !isNil(_arrayValue) ? _arrayValue : _values.join(""), parsed: _parsedvalues, rel, logic, ...filterDef, ..._overrideOptions && _overrideOptions };
 }
 
 export const getLocalStorage = (id, useStorage) => {
@@ -456,13 +496,26 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             }
 
             if (validation?.success) {
-                response = await fetchPost({ url: p.url, filter: p.filter, parameters: { method: p.method, ...p.parameters, apiversion: "4" } });
+                response = await fetchPost({ url: p.url, filter: p.filter, apiversion: "4", parameters: { method: p.method, ...p.parameters }, ...rest });
                 p.response = response?.data;
-                if (!response || response?.data?.status !== "success") {
+
+                if (!response || (isNullOrEmpty(response?.data?.status) && response?.status != 200)) {
+                    p.success = false;
+                    p.alerts.error.push({ code: "RUN_ERROR", message: response?.data?.title ? response?.data?.title : response?.statusText, type: "run_fail" });
+                    if (notify && notify.includes("run_fail")) {
+                        openNotification("error", "top", "Notificação", response?.data?.title ? response?.data?.title : response?.statusText);
+                    }
+                } else if (!isNullOrEmpty(response?.data?.status) && response?.data?.status !== "success") {
                     p.success = false;
                     p.alerts.error.push({ code: "RUN_ERROR", message: response?.data?.title, type: "run_fail" });
                     if (notify && notify.includes("run_fail")) {
                         openNotification("error", "top", "Notificação", response?.data?.title);
+                    }
+                } else if (isNullOrEmpty(response?.data?.status) && response?.status == 200) {
+                    p.success = true;
+                    p.alerts.success.push({ code: "RUN_SUCCESS", message: response?.statusText, type: "run_success", data: response?.data });
+                    if (notify && notify.includes("run_success")) {
+                        openNotification("success", "top", "Notificação", response?.statusText);
                     }
                 } else if (response?.data?.status === "success") {
                     const { title, status, ...rest } = response?.data;
@@ -592,9 +645,9 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const getPagination = (fromState = false) => {
         if (fromState) {
-            return { ...state.pagination };
+            return { ...state.pagination, pageSize: getPageSize(true) };
         } else {
-            return { ...ref.current.pagination };
+            return { ...ref.current.pagination, pageSize: getPageSize(false) };
         }
     };
     const getPageSize = (fromState = false) => {
@@ -801,11 +854,11 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
 
     const _totalRows = (rows, total, fakeTotal = false) => {
         if (total) {
-            if (fakeTotal === true) {
-                const _len = (rows && Array.isArray(rows)) ? rows.length : 0;
-                return (_len < getPageSize()) ? _len : total;
-            }
-            return total;
+            //if (fakeTotal === true) {
+            const _len = (rows && Array.isArray(rows)) ? rows.length : 0;
+            return (_len < getPageSize()) ? (getCurrentPage() * getPageSize()) - (getPageSize() - _len) : total;
+            //}
+            //return total;
         }
         if (rows && Array.isArray(rows)) {
             return rows.length;
@@ -1107,6 +1160,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ignoreTotalRows = false, norun = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
+        console.log("default-sortxx-", fromState, getPayload(fromState))
         const { sort, ...payload } = getPayload(fromState);
         payload.tstamp = Date.now();
         payload.apiversion = apiversion;
@@ -1532,10 +1586,16 @@ const _mergeObjects = (obj1, obj2) => {
     }
     for (const key in obj1) {
         if (obj1.hasOwnProperty(key) && obj2.hasOwnProperty(key)) {
-            result[key] = {
-                ...obj1[key],
-                parsed: obj1[key].parsed.concat(["and", "(", ...obj2[key].parsed, ")"])
-            };
+
+            result[key] = clone(obj1[key]);
+
+            for (const grp in result[key].groups) {
+                if (grp in obj2[key].groups) {
+                    result[key].groups[grp] = { ...result[key].groups[grp], parsed: [...result[key].groups[grp].parsed, ...["and", "(", ...obj2[key].groups[grp].parsed, ")"]] };
+                }
+            }
+
+
         } else if (obj1.hasOwnProperty(key)) {
             result[key] = obj1[key];
         }

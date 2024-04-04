@@ -34,10 +34,10 @@ import { LiaDatabaseSolid } from "react-icons/lia";
 
 export const useStyles = createUseStyles({
     focus: {
-        outline: "none",
-        '&:focus': {
-            outline: 'solid 1px #000'
-        },
+        // outline: "none",
+        // '&:focus': {
+        //     outline: 'solid 1px #000'
+        // },
     }
 });
 
@@ -101,8 +101,10 @@ const OuterDiv = ({ error, style, children }) => {
 
 const useValidation = (node, col) => {
     const { validation, validationGroups } = col?.getDefinition()?.cellRendererParams || {};
+
     const error = useMemo(() => {
         if (validation && Object.keys(validation).length > 0) {
+            //console.log("aaaaaaaaxxxxxxaaaaaaaa",node.id,col,validation, Object.keys(validation))
             const _validation = validation?.[node.id];
             if (_validation) {
                 const _path = validationGroups ? validationGroups.groupPaths(columnPath(col)) : [columnPath(col)];
@@ -166,6 +168,72 @@ export const PlanningStatus = ({ params: { column: col, data, node, rowIndex } =
     );
 
 }
+
+const StyledOf = styled.div`
+    border:solid 1px #40a9ff;
+    border-radius:3px;
+    margin-right:1px;
+    min-width:200px;
+    max-width:200px;
+    padding:2px;
+    cursor:pointer;
+    text-align:center;
+    font-size:9px;
+    &:hover {
+        border-color: #d9d9d9;
+    }
+    .cl{
+        font-size:8px;
+    }
+`;
+
+export const OrdensDetail = ({ params: { column: col, data, node, rowIndex } = {}, value, style, outerStyle, className, onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const ofs = JSON.parse(data.ofs);
+    const clientes = JSON.parse(data.clientes);
+    const orders = JSON.parse(data.orders);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+    return (
+        <OuterDiv error={error}>
+            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, style, _classNames)}>
+                {ofs && ofs.map((v, i) => {
+                    return (<StyledOf onClick={onClick} onKeyDown={onkeydown}/*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`off-${v}-${data.id}`}>
+                        <div><b>{v}</b><span style={{ marginLeft: "3px" }}>{orders[i]}</span></div>
+                        <div className='cl'>{clientes[i]}</div>
+                    </StyledOf>);
+                })}
+            </div>
+        </OuterDiv>
+    );
+};
+
+export const OrdemFabrico = ({ field: { ofid, order, cliente } = {}, params: { column: col, data, node, rowIndex } = {}, style, className, onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+    return (
+        <OuterDiv error={error}>
+            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, onClick, onKeyDown, style, _classNames)}>
+                <StyledOf /*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */>
+                    <div><b>{data?.[ofid]}</b>{order && <span style={{ marginLeft: "3px" }}>{data?.[order]}</span>}</div>
+                    {(cliente) && <div className='cl'>{data?.[cliente]}</div>}
+                </StyledOf>
+            </div>
+        </OuterDiv>
+    );
+}
+
 
 export const AuditCsOperation = ({ params: { column: col, data, node, rowIndex } = {}, value, style, outerStyle, className, onClick }) => {
     const classes = useStyles();
@@ -231,7 +299,7 @@ export const AuditCsOperation = ({ params: { column: col, data, node, rowIndex }
     );
 }
 
-export const OrdemFabricoStatus = ({ field: { status, aggCod, ofId } = {}, params: { column: col, data, node, rowIndex } = {}, style, className, onClick }) => {
+export const OrdemFabricoStatus = ({ field: { status, aggCod, ofId, retrabalho } = {}, params: { column: col, data, node, rowIndex } = {}, style, className, onClick }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
     const error = useValidation(node, col);
@@ -242,33 +310,45 @@ export const OrdemFabricoStatus = ({ field: { status, aggCod, ofId } = {}, param
     }
     return (
         <OuterDiv error={error}>
-            <div style={{ display: "flex", flexDirection: "column", margin: "2px",lineHeight:1.3 }}>
-                {ofId && <span style={{ fontSize: "14px", fontWeight: 900 }}>{data?.[ofId]}</span>}
-                {(data?.[status] == 0) && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<CheckOutlined />} color="#108ee9">{aggCod && <div>{data?.[aggCod]}</div>}<div>Validar</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>}
-                </>}
-                {(data?.[status] == 1) && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="warning">{aggCod && <div>{data?.[aggCod]}</div>}<div>Em Elaboração</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>}
-                </>}
-                {(data?.[status] == 2 && data?.was_in_production == 0) && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="orange">{aggCod && <div>{data?.[aggCod]}</div>}<div>Na Produção</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>}
-                </>}
-                {(data?.[status] == 2 && data?.was_in_production == 1) && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<PauseOutlined />} color="orange">{aggCod && <div>{data?.[aggCod]}</div>}<div>Suspensa</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>}
-                </>}
-                {(data?.[status]) == 3 && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<SyncOutlined spin />} color="success">{aggCod && <div>{data?.[aggCod]}</div>}<div>Em Produção</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>}
-                </>}
-                {(data?.[status]) == 9 && <>
-                    {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">{aggCod && <div>{data?.[aggCod]}</div>}<div>Finalizada</div></TagButton>}
-                    {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">Finalizada</TagButton>}
-                </>}
-            </div>
+            {retrabalho ?
+                <div style={{ display: "flex", flexDirection: "column", margin: "2px", lineHeight: 1.3 }}>
+                    {ofId && <span style={{ fontSize: "14px", fontWeight: 700 }}>{data?.[ofId]}</span>}
+                    {(data?.[status]) == 3 && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="success">{aggCod && <div>{data?.[aggCod]}</div>}<div>Aberta</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="success">Aberta</TagButton>}
+                    </>}
+                    {(data?.[status]) == 9 && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">{aggCod && <div>{data?.[aggCod]}</div>}<div>Finalizada</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">Finalizada</TagButton>}
+                    </>}
+                </div>
+                : <div style={{ display: "flex", flexDirection: "column", margin: "2px", lineHeight: 1.3 }}>
+                    {ofId && <span style={{ fontSize: "14px", fontWeight: 900 }}>{data?.[ofId]}</span>}
+                    {(data?.[status] == 0) && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<CheckOutlined />} color="#108ee9">{aggCod && <div>{data?.[aggCod]}</div>}<div>Validar</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<CheckOutlined />} color="#108ee9">Validar</TagButton>}
+                    </>}
+                    {(data?.[status] == 1) && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="warning">{aggCod && <div>{data?.[aggCod]}</div>}<div>Em Elaboração</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="warning">Em Elaboração</TagButton>}
+                    </>}
+                    {(data?.[status] == 2 && data?.was_in_production == 0) && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="orange">{aggCod && <div>{data?.[aggCod]}</div>}<div>Na Produção</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<UnorderedListOutlined />} color="orange">Na Produção</TagButton>}
+                    </>}
+                    {(data?.[status] == 2 && data?.was_in_production == 1) && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<PauseOutlined />} color="orange">{aggCod && <div>{data?.[aggCod]}</div>}<div>Suspensa</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<PauseOutlined />} color="orange">Suspensa</TagButton>}
+                    </>}
+                    {(data?.[status]) == 3 && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<SyncOutlined spin />} color="success">{aggCod && <div>{data?.[aggCod]}</div>}<div>Em Produção</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} icon={<SyncOutlined spin />} color="success">Em Produção</TagButton>}
+                    </>}
+                    {(data?.[status]) == 9 && <>
+                        {aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">{aggCod && <div>{data?.[aggCod]}</div>}<div>Finalizada</div></TagButton>}
+                        {!aggCod && <TagButton {...genericProps({ width: "110px", textAlign: "center" }, onClick, onKeyDown, style, _classNames)} color="error">Finalizada</TagButton>}
+                    </>}
+                </div>}
         </OuterDiv>
     );
 }
@@ -284,9 +364,9 @@ export const ClienteArtigo = ({ field: { clienteCod, clienteNome, artigoCod, art
     }
     return (
         <OuterDiv error={error}>
-            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */,lineHeight:1.3 }, onClick, onKeyDown, style, _classNames)}>
-                {(clienteNome || clienteCod) && <div style={{ fontWeight: 700, fontSize: "14px", color: "#000" }}><span style={{ fontWeight: 400 }}>{clienteCod && data?.[clienteCod]}</span> {clienteNome && data?.[clienteNome]}</div>}
-                {(artigoCod || artigoDes) && <div style={{fontSize:"12px"}}><span>{artigoCod && data?.[artigoCod]}</span><span style={{ marginLeft: "10px" }}>{artigoDes && data?.[artigoDes]?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</span></div>}
+            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, onClick, onKeyDown, style, _classNames)}>
+                {(clienteNome || clienteCod) && <div style={{ fontWeight: 700, fontSize: "12px", color: "#000" }}><span style={{ fontWeight: 400 }}>{clienteCod && data?.[clienteCod]}</span> {clienteNome && data?.[clienteNome]}</div>}
+                {(artigoCod || artigoDes) && <div style={{ fontSize: "12px" }}><span>{artigoCod && data?.[artigoCod]}</span><span style={{ marginLeft: "10px" }}>{artigoDes && data?.[artigoDes]?.replace(new RegExp(`Nonwoven Elastic Bands |Nonwoven Elastic Band |NW Elastic Bands `, "gi"), "")}</span></div>}
             </div>
         </OuterDiv>
     );
@@ -303,9 +383,9 @@ export const Encomenda = ({ field: { ofCod, orderCod, prfCod } = {}, params: { c
     }
     return (
         <OuterDiv error={error}>
-            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */,lineHeight:1.3 }, onClick, onKeyDown, style, _classNames)}>
-                {(prfCod || ofCod) && <div style={{ fontWeight: 700, color: "#000", fontSize: "14px" }}>{ofCod && <span style={{ fontSize: "12px", fontWeight: "400", marginRight: "10px" }}>{data?.[ofCod]}</span>}{prfCod && data?.[prfCod]}</div>}
-                {(orderCod) && <div><span style={{fontSize:"12px"}}>{data?.[orderCod]}</span></div>}
+            <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, onClick, onKeyDown, style, _classNames)}>
+                {(prfCod || ofCod) && <div style={{ fontWeight: 700, color: "#000", fontSize: "12px" }}>{ofCod && <span style={{ fontSize: "12px", fontWeight: "400", marginRight: "10px" }}>{data?.[ofCod]}</span>}{prfCod && data?.[prfCod]}</div>}
+                {(orderCod) && <div><span style={{ fontSize: "12px" }}>{data?.[orderCod]}</span></div>}
             </div>
         </OuterDiv>
     );
@@ -406,6 +486,7 @@ export const ArrayTags = ({ params = {}, color, isObject = false, value, column,
             return null;
         }
         return json(_v);
+
     }, [data]);
 
 
@@ -421,14 +502,16 @@ export const ArrayTags = ({ params = {}, color, isObject = false, value, column,
     </OuterDiv>);
 }
 
-export const Action = ({ params: { column: col, data, node } = {}, icon, onClick, items = [] }) => {
+export const Action = ({ visible = true, params: { column: col, data, node } = {}, icon, onClick, items = [] }) => {
 
     return (
-
-        <Dropdown menu={{ items: (Array.isArray(items) ? items : items()), onClick }} placement="bottomLeft" trigger={["click"]}>
-            <Button size='small' icon={icon ? icon : <EllipsisOutlined />} />
-        </Dropdown>
-
+        <>
+            {visible &&
+                <Dropdown menu={{ items: (Array.isArray(items) ? items : items()), onClick }} placement="bottomLeft" trigger={["click"]}>
+                    <Button size='small' icon={icon ? icon : <EllipsisOutlined />} />
+                </Dropdown>
+            }
+        </>
     )
 
 }
@@ -626,7 +709,9 @@ export const CortesOrdem = ({ params: { column: col, data, node, rowIndex } = {}
                         _alternate = _alternate == 0 ? 1 : 0;
                     }
                     return (<div style={{ minWidth: "30px", padding: "0px 1px", flex: `${(parseInt(v) * 1) / _largura_util}%` }} key={`crto-${rowIndex}-${i}`}>
-                        <div style={{ textAlign: "center", borderRadius: "2px", backgroundColor: _alternate == 0 ? "#0050b3" : "#003a8c", color: _alternate == 0 ? "#ffffff" : "#ffffff" }}>{v}</div>
+                        <div style={{ textAlign: "center", borderRadius: "2px", backgroundColor: _alternate == 0 ? "#0050b3" : "#003a8c", color: _alternate == 0 ? "#ffffff" : "#ffffff" }}>
+                            <div style={{ float: "left", top: "-5px", position: "relative", left: "5px", fontSize: "10px", color: "#f0f0f0" }}>{i + 1}</div>{v}
+                        </div>
                     </div>);
                 })}
             </div>
@@ -768,7 +853,7 @@ export const FromTo = ({ field: { from, to } = {}, params: { column: col, data, 
     //return (<div style={{ textAlign: "left", ...style }} {...className && { className }}></div>;
 }
 
-export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, data, rowIndex, node } = {}, style, align = "start", className, onClick }) => {
+export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, data, rowIndex, node } = {}, style, align = "start", className, onClick, title }) => {
     const _artigos = uniqWith(allPass(map(eqProps)(['lar', 'largura', 'estado'])))(json(data?.[artigos], []));
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
@@ -785,13 +870,15 @@ export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, 
                 <>
                     {_artigos.map((v, i) => {
                         return (
-                            <StyledBobine key={`bos-${rowIndex}-${v?.estado}-${v?.lar ? v.lar : v?.largura}-${i}`} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor}
-                                {...genericProps({},
-                                    onClick ? () => onClick && onClick("estado", { data: v }) : null,
-                                    (e) => onKeyDown(e, "estado", { data: v }), style, _classNames)}
-                            >
-                                <b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar ? v.lar : v?.largura}</div>
-                            </StyledBobine>
+                            <Badge color='#000' offset={[0, 4]} key={`bos-${rowIndex}-${v?.estado}-${v?.lar ? v.lar : v?.largura}-${i}`} dot={v?.destino ? true : false}>
+                                <StyledBobine title={title} color={bColors(v.estado).color} $fontColor={bColors(v.estado).fontColor}
+                                    {...genericProps({},
+                                        onClick ? () => onClick && onClick("estado", { data: v }) : null,
+                                        (e) => onKeyDown(e, "estado", { data: v }), style, _classNames)}
+                                >
+                                    <b>{v.estado === 'HOLD' ? 'HLD' : v.estado}</b><div className='lar'>{v.lar ? v.lar : v?.largura}</div>
+                                </StyledBobine>
+                            </Badge>
                         );
                     })}
                 </>
@@ -799,10 +886,10 @@ export const EstadoBobines = ({ field: { artigos } = {}, params: { column: col, 
         </div></OuterDiv>);
 }
 
-export const EstadoBobine = ({ field: { estado, largura } = {}, params = {}, align = "center", ...props }) => {
+export const EstadoBobine = ({ field: { estado, largura, destino } = {}, params = {}, align = "center", ...props }) => {
     const { column: col, data, rowIndex, node } = params;
     const error = useValidation(node, col);
-    const _data = { artigo: [{ estado: valueByPath(data, estado), lar: valueByPath(data, largura) }] };
+    const _data = { artigo: [{ estado: valueByPath(data, estado), lar: valueByPath(data, largura), destino: valueByPath(data, destino) }] };
     const { modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
     const _checkKey = checkKey ? checkKey : col.getDefinition().field;
     const isOnMode = useMemo(() => {

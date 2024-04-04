@@ -8,6 +8,7 @@
 .ag-custom,
 .ag-custom.default {
   /*--ag-header-column-separator-height:100%;*/
+  --ag-wrapper-border-radius:4px;
   --ag-selected-row-background-color:#e6f7ff;
   --ag-header-column-resize-handle-height:80%;
   --ag-header-cell-moving-background-color: rgb(194, 194, 194);

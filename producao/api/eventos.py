@@ -217,7 +217,7 @@ def GetAuditCurrentSettingsRange(request,format=None):
                 join audit_current_cortes cc on cc.id = acs._cortes
                 join audit_current_cortesordem cco on cco.id = acs._cortesordem
                 left join producao_tempaggordemfabrico pta on pta.id=acs.agg_of_id
-                {pf.group()} {"and" if pf.hasFilters else "where"} cc.cortes is not null and cco.cortesordem is not null
+                {pf.group()} {"and" if pf.hasFilters() else "where"} cc.cortes is not null and cco.cortesordem is not null
                 order by acs.`timestamp` desc
             """
         ), connection, parameters,[],r.norun)

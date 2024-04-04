@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const filePath = path.resolve('node_modules/ag-grid-enterprise/dist/ag-grid-enterprise.auto.esm.js');
+//const filePath = path.resolve('node_modules/ag-grid-enterprise/dist/ag-grid-enterprise.auto.esm.js');
+const filePath = path.resolve('node_modules/ag-grid-enterprise/dist/package/main.esm.mjs');
 const searchStrings = [
-  `LicenseManager.extractExpiry = function (license) {`,
-  `LicenseManager.extractLicenseComponents = function (licenseKey) {`
+  `static extractExpiry(license) {`,
+  `static extractLicenseComponents(licenseKey) {`,
 ]; // Strings to search
 const addLines = [
   `

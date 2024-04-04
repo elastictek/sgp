@@ -50,6 +50,17 @@ const StyledStatus = styled.div`
     }
 `;
 
+export const typePalete = (type) => {
+    switch(type){
+        case "P": return({ type: "P", backgroundColor: "#fff", color: "#000", title: "Palete Linha"});
+        case "R": return({ type: "R",backgroundColor: "#95de64", color: "#000", title: "Palete de Retrabalho"});
+        case "H": return({ type: "H", backgroundColor: "#391085", color: "#fff", title: "Palete HOLD"});
+        case "DM": return({ type: "DM",backgroundColor: "#fadb14", color: "#000", title: "Palete DM"});
+        case "S": return({type: "S",backgroundColor: "#95de64", color: "#000", title: "Palete de Stock"});
+        case "IND": return({ type: "IND", backgroundColor: "#1677ff", color: "#fff", title: "Palete IND"});
+    }
+}
+
 export const bColors = (estado) => {
     if (estado === "G") {
         return { color: "#237804", fontColor: "#fff" };//"green";

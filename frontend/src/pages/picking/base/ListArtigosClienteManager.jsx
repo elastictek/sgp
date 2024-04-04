@@ -192,6 +192,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     if (modeApi.isOnAddMode() && ["cliente_abv", "liminf", "diam_ref", "limsup"].includes(params.colDef.field)) {
       return (params.data.cliente_id) ? false : true;
     }
+    if (modeApi.isOnEditMode() && ["lar"].includes(params.colDef.field)) {
+      return (params.data.artigo_des.toLowerCase().includes("amostra")) ? true : false;
+    }
     if (modeApi.isOnEditMode() && ["artigo_cod", "cliente_cod"].includes(params.colDef.field)) {
       return false;
     }
@@ -205,6 +208,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       { colId: "pc.name", field: 'cliente_nome', headerName: 'Cliente', lockPosition: "left", ...cellParams(), width: 300, flex: 1, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pac.cod_client", field: 'cod_client', headerName: 'Cliente Cod.', ...cellParams(), type: "editableColumn", cellEditor: AntdInputEditor, width: 130, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pc.abv", field: 'cliente_abv', headerName: 'Abrev.', ...cellParams(null, { maxLength: 3 }), type: "editableColumn", cellEditor: AntdInputEditor, width: 70, cellRenderer: (params) => <Value params={params} /> },
+      { colId: "pa.lar", field: 'lar', headerName: 'Largura', ...cellParams(), width: 140, type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
       { colId: "pa.cod", field: 'artigo_cod', headerName: 'Artigo Cod.', ...cellParams(), width: 140, type: "editableColumn", cellEditor: ArtigosLookupEditor, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pa.des", field: 'artigo_des', headerName: 'Artigo Des.', ...cellParams(), width: 350, flex: 1, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pa.gtin", field: 'gtin', headerName: 'GTIN', ...cellParams(), width: 140, cellRenderer: (params) => <Value params={params} /> },

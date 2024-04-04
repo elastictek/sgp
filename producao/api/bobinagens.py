@@ -231,6 +231,82 @@ def NewManualEvent(request, format=None):
         return Response({"status": "error", "title": f"Erro ao criar registo! {str(error)}"})
 
 
+def BobinagensListV2(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
+    def fn(self,group,name,param,parsed,mask,gmask):
+        if name=="defeitos":
+            l = "and" if "&" in param.get("logic") else "or"
+            o = "<>" if param.get("logic").startswith("!") else "="
+            return [f' {l} '.join(f'{f}{o}1' for f in param.get("value"))]
+        if name=="estado" and param.get("logic") not in ["|","!|","",None]:
+            for i in range(len(parsed)):
+                if i % 2 == 0:
+                    parsed[i] = f"""EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id and {parsed[i]})"""
+            self.setGroup("t3",f"""({"".join(parsed)})""")
+            return True
+    pf = ParsedFilters(r.filter,{"t1":"where","t2":""},r.apiversion,None,None,fn)
+    pf.setGroup("t2","" if not pf.hasFilters("t2") else f"""{"and" if pf.hasFilters(["t1"]) else "where"} EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.bobinagem_id = pbm.id and {pf.group("t2")})""")
+    pf.setGroup("t3","" if not pf.hasFilters("t3") else f"""{"and" if pf.hasFilters(["t1","t2"]) else "where"} {pf.group("t3")}""")
+    parameters = {**pf.parameters}
+
+    dql = db.dql(request.data, False)
+    cols = f"""pbm.*,JSON_ARRAYAGG(JSON_OBJECT('id',pb.id,'lar',pb.lar,'cliente',pb.cliente,'estado',pb.estado,'nome',pb.nome,'destino',pb.destino)) bobines,sum(pb.lar) largura,pb.core"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f""" 
+            SELECT
+            {c(f'{dql.columns}')}
+            from(
+                select pbm.*
+                ,JSON_EXTRACT(acs.ofs, '$[*].of_cod') ofs
+                ,JSON_EXTRACT(acs.ofs, '$[*].cliente_nome') clientes
+                ,JSON_EXTRACT(acs.ofs, '$[*].order_cod') orders,
+                acs.agg_of_id
+                FROM producao_bobinagem pbm
+                left join audit_currentsettings acs on acs.id=pbm.audit_current_settings_id
+                {pf.group()} {pf.group('t2')} {pf.group('t3')}
+                {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+            ) pbm
+            join producao_bobine pb on pb.bobinagem_id = pbm.id
+            group by pbm.id,pb.core
+        """
+    )
+    if ("export" in request.data["parameters"]):
+        for x in range(0, 30):
+            request.data["parameters"]['cols'][f'{x+1}']={"title":f'{x+1}',"width":6}
+        dql.limit=f"""limit {request.data["parameters"]["limit"]}"""
+        dql.paging=""
+        tmpsql = sql(lambda v:'',lambda v:v,lambda v:v)
+        tmpsql = f"""SELECT t.*,
+            concat(t.bobines->>'$[0].estado','\\n',t.bobines->>'$[0].lar') as '1',concat(t.bobines->>'$[1].estado','\\n',t.bobines->>'$[1].lar') as '2',
+            concat(t.bobines->>'$[2].estado','\\n',t.bobines->>'$[2].lar') as '3',concat(t.bobines->>'$[3].estado','\\n',t.bobines->>'$[3].lar') as '4',
+            concat(t.bobines->>'$[4].estado','\\n',t.bobines->>'$[4].lar') as '5',concat(t.bobines->>'$[5].estado','\\n',t.bobines->>'$[5].lar') as '6',
+            concat(t.bobines->>'$[6].estado','\\n',t.bobines->>'$[6].lar') as '7',concat(t.bobines->>'$[7].estado','\\n',t.bobines->>'$[7].lar') as '8',
+            concat(t.bobines->>'$[8].estado','\\n',t.bobines->>'$[8].lar') as '9',concat(t.bobines->>'$[9].estado','\\n',t.bobines->>'$[9].lar') as '10',
+
+            concat(t.bobines->>'$[10].estado','\\n',t.bobines->>'$[10].lar') as '11',concat(t.bobines->>'$[11].estado','\\n',t.bobines->>'$[11].lar') as '12',
+            concat(t.bobines->>'$[12].estado','\\n',t.bobines->>'$[12].lar') as '13',concat(t.bobines->>'$[13].estado','\\n',t.bobines->>'$[13].lar') as '14',
+            concat(t.bobines->>'$[14].estado','\\n',t.bobines->>'$[14].lar') as '15',concat(t.bobines->>'$[15].estado','\\n',t.bobines->>'$[15].lar') as '16',
+            concat(t.bobines->>'$[16].estado','\\n',t.bobines->>'$[16].lar') as '17',concat(t.bobines->>'$[17].estado','\\n',t.bobines->>'$[17].lar') as '18',
+            concat(t.bobines->>'$[18].estado','\\n',t.bobines->>'$[18].lar') as '19',concat(t.bobines->>'$[19].estado','\\n',t.bobines->>'$[19].lar') as '20',
+
+            concat(t.bobines->>'$[20].estado','\\n',t.bobines->>'$[20].lar') as '21',concat(t.bobines->>'$[21].estado','\\n',t.bobines->>'$[21].lar') as '22',
+            concat(t.bobines->>'$[22].estado','\\n',t.bobines->>'$[22].lar') as '23',concat(t.bobines->>'$[23].estado','\\n',t.bobines->>'$[23].lar') as '24',
+            concat(t.bobines->>'$[24].estado','\\n',t.bobines->>'$[24].lar') as '25',concat(t.bobines->>'$[25].estado','\\n',t.bobines->>'$[25].lar') as '26',
+            concat(t.bobines->>'$[26].estado','\\n',t.bobines->>'$[26].lar') as '27',concat(t.bobines->>'$[27].estado','\\n',t.bobines->>'$[27].lar') as '28',
+            concat(t.bobines->>'$[28].estado','\\n',t.bobines->>'$[28].lar') as '29',concat(t.bobines->>'$[29].estado','\\n',t.bobines->>'$[29].lar') as '30'
+            from (
+            {tmpsql} 
+            ) t"""
+        return export(tmpsql, db_parameters=parameters, parameters=request.data["parameters"],conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    response = db.executeList(sql, connection, parameters, [],None,f"select {dql.currentPage*dql.pageSize+1}",r.norun,fakeTotal=True)
+    return Response(response)
+
+
+
+
+
 def BobinagensList(request, format=None):
     connection = connections["default"].cursor()
     feature = request.data['parameters']['feature'] if 'feature' in request.data['parameters'] else None
@@ -872,7 +948,7 @@ def CreateBobinagem(request, format=None):
                 if "ig_bobinagem" not in data:
                     return Response({"status": "error", "title":"error"})
                 args = (data["ig_bobinagem"])
-                cursor.callproc('create_bobinagem_from_ig_v2',args)
+                #cursor.callproc('create_bobinagem_from_ig_v2',args)
         return Response({"status": "success", "title": "Bobinagem criada com sucesso!", "subTitle":f'{None}'})
     except Exception as error:
         return Response({"status": "error", "title": str(error)})
@@ -896,8 +972,6 @@ def NewBobinagem(request, format=None):
                 if "ig_id" not in data:
                     return Response({"status": "error", "title":"Tem de indicar o Evento de linha!"})
                 args = [data.get("ig_id"),data.get("acs_id")]
-                print("newwwwwwwwwwwwwwwwwwwwwwww")
-                print(args)
                 cursor.callproc('create_bobinagem_from_ig_v3',args)
                 row = cursor.fetchone()
         return Response({"status": "success", "title": "Bobinagem criada com sucesso!","bobinagem":{"id":row[0],"nome":row[1]}})
