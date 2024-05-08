@@ -280,7 +280,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       { colId: 'btn', field: "btn", headerName: "", type: "actionOnViewColumn", lockPosition: "left", cellRenderer: (params) => <Button onClick={(e) => onCargasClick(e, params)} icon={<TbCircles />} size='small' /> },
       { colId: "pc.data", field: 'data', headerName: 'Data', ...cellParams({ format: DATE_FORMAT }), width: 110, cellRenderer: (params) => <Value datetime params={params} /> },
       { colId: "pc.eef", field: 'eef', headerName: 'Encomenda', ...cellParams(), width: 150, cellRenderer: (params) => <Value params={params} /> },
-      { colId: "pl.nome", field: 'cliente_nome', headerName: 'Cliente', ...cellParams(), minWidth: 180, flex: 1, cellRenderer: (params) => <Value params={params} /> },
+      { colId: "pc.nome", field: 'cliente_nome', headerName: 'Cliente', ...cellParams(), minWidth: 180, flex: 1, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pc.tipo", field: 'tipo', headerName: 'Tipo', type: "editableColumn", ...cellParams({}, { options: CONTENTORES_OPTIONS }), width: 90, cellEditor: AntdSelectEditor, cellRenderer: (params) => <Value params={params} /> },
       { colId: 'pc.num_paletes', field: 'num_paletes', headerName: 'Paletes', type: "editableColumn", cellEditor: AntdInputNumberEditor, width: 110, cellStyle: {}, cellRenderer: (params) => <FromTo field={{ from: "num_paletes_actual", to: "num_paletes" }} colorize={true} params={params} /> },
       { colId: "nbobines_emendas", field: 'nbobines_emendas', headerName: 'Bobines c/Emendas', ...cellParams(), width: 90, cellRenderer: (params) => <Value unit=' %' params={params} /> },
@@ -354,6 +354,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
         singleClickEdit={true}
         // rowClassRules={rowClassRules}
         //rowSelectionIgnoreOnMode={true}
+        ignoreRowSelectionOnCells={["action"]}
         {..._action == "list_confirm" ? { isRowSelectable: () => true, rowSelection: "single", onSelectionChanged } : { modeApi }}
         dataAPI={dataAPI}
         modeOptions={{

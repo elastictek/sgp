@@ -586,7 +586,7 @@ def _compute(ids,cursor):
             FROM producao_palete pp 
             WHERE pp.id in ({ids})
         )
-        select ARTIGOS.artigo,PALS.* 
+        select ARTIGOS.artigo artigos,PALS.* 
         from ARTIGOS
         CROSS JOIN PALS
     """), cursor, {})
@@ -787,7 +787,7 @@ def NewCarga(request, format=None):
         values = {
                 "carga":_nome.get("nome"),
                 "num_carga":_nome.get("num_carga"),
-                "artigos":computed.get("artigo"),
+                "artigos":computed.get("artigos"),
                 "sqm":computed.get("sqm"),
                 "metros":computed.get("metros"),
                 "num_paletes":data.get("num_paletes"),

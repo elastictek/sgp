@@ -40,7 +40,7 @@ from sistema.settings.appSettings import AppSettings
 import time
 import requests
 import psycopg2
-from producao.api.exports import export
+from producao.api.exports import export,sqlCols
 from support.postdata import PostData
 
 connGatewayName = "postgres"
@@ -204,6 +204,100 @@ def Sql(request, format=None):
 def PaletesListV2(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
+    def fn(self,group,name,param,parsed,mask,gmask):
+        if name=="defeitos":
+            l = "and" if "&" in param.get("logic") else "or"
+            o = "<>" if param.get("logic").startswith("!") else "="
+            return [f' {l} '.join(f'{f}{o}1' for f in param.get("value"))]
+        if name=="estado" and param.get("logic") not in ["|","!|","",None]:
+            for i in range(len(parsed)):
+                if i % 2 == 0:
+                    parsed[i] = f"""EXISTS (SELECT 1 FROM producao_bobine tpb where tpb.palete_id = sgppl.id and {parsed[i]})"""
+            self.setGroup("t3",f"""({"".join(parsed)})""")
+            return True
+    pf = ParsedFilters(r.filter,{"t1":"and","t2":""},r.apiversion,None,None,fn)
+    pf.setGroup("t2","" if not pf.hasFilters("t2") else f"""and EXISTS (SELECT 1 FROM producao_bobine tpb join producao_artigo pa on pa.id=tpb.artigo_id where tpb.palete_id = sgppl.id and {pf.group("t2")})""")
+    pf.setGroup("t3","" if not pf.hasFilters("t3") else f"""and {pf.group("t3")}""")
+   
+    parameters = {**pf.parameters}
+    dql = db.dql(request.data, False,False)
+    cols = f"""sgppl.id, sgppl.`timestamp`, sgppl.data_pal, sgppl.nome, sgppl.num, sgppl.estado, sgppl.area,
+            sgppl.comp_total,sgppl.num_bobines,sgppl.diametro,sgppl.peso_bruto,sgppl.peso_palete, sgppl.peso_liquido,
+            sgppl.cliente_id, sgppl.retrabalhada,sgppl.stock, sgppl.carga_id, sgppl.num_palete_carga, sgppl.destino,
+            sgppl.ordem_id, sgppl.ordem_original, sgppl.ordem_original_stock, sgppl.num_palete_ordem,
+            sgppl.draft_ordem_id,sgppl.ordem_id_original, sgppl.area_real, sgppl.comp_real,
+            sgppl.diam_avg, sgppl.diam_max, sgppl.diam_min,sgppl.nbobines_real, sgppl.disabled,
+            sgppl.artigo, sgppl.destinos, sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,
+            (select count(*) from producao_bobine mb where mb.palete_id=sgppl.id and date(mb.timestamp) < DATE_SUB(CURRENT_DATE(), INTERVAL 3 MONTH)) n_bobines_expired,
+            sgppl.nok_estados, sgppl.nok, sgppl.lvl, pcarga.id carga_id, pcarga.carga,pcarga.eef carga_eef,pcarga.prf carga_prf,pcarga.cliente carga_cliente, po1.ofid AS ofid_original, po2.ofid, po1.op AS op_original,
+            po2.op, pc.cod AS cliente_cod, pc.name AS cliente_nome, pc.limsup AS cliente_limsup, pc.liminf AS cliente_liminf,
+            pc.diam_ref AS cliente_diamref,pt.prf_cod prf,pt.order_cod iorder"""
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda p, c, s: (
+        f"""  
+            SELECT {c(f'{dql.columns}')}
+            FROM producao_palete sgppl
+            [#MARK-REPORT-01#]
+            LEFT JOIN producao_carga pcarga ON pcarga.id = sgppl.carga_id
+            LEFT JOIN producao_cliente pc ON pc.id = sgppl.cliente_id
+            LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
+            LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
+            LEFT JOIN producao_tempordemfabrico pt ON pt.id = po2.draft_ordem_id
+            WHERE sgppl.nbobines_real>0 and sgppl.disabled=0
+            {pf.group()} {pf.group('t2')} {pf.group('t3')}
+            {s(dql.sort)} {p(dql.paging)} {p(dql.limit)}
+        """
+    )
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        if request.data["parameters"].get("export") == "PaletesDetailed_01":
+            cols = {
+                "sgppl.nome": {"title": "Palete Nome"}, 
+                "pb.nome":{"title": "Bobine"},
+                "pa.cod": {"title": "Artigo Cod."},
+                "pa.des": {"title": "Artigo"},
+                "pb.posicao_palete":{"title": "Posição"},
+                "pb.lar":{"title": "Bobine Largura"},
+                "pb.comp_actual":{"title": "Bobine Comp."},
+                "pb.estado":{"title": "Bobine Estado"},
+                "pb.destino":{"title": "Bobine Destino"},
+                "sgppl.timestamp": {"title": "Palete Data"}, 
+                "sgppl.nbobines_real": {"title": "Bobines"}, 
+                "sgppl.nbobines_emendas": {"title": "Emendas"}, 
+                "sgppl.nbobines_sem_destino": {"title": "Sem Destino"},
+                "sgppl.area_real":{"title": "Palete Área"},
+                "sgppl.comp_real":{"title": "Palete Comp."},
+                "sgppl.peso_bruto":{"title": "Palete Peso B."},
+                "sgppl.peso_liquido":{"title": "Palete Peso L."},
+                "sgppl.diam_min":{"title": "Palete Diam. Min."},
+                "sgppl.diam_max":{"title": "Palete Diam. Max."},
+                "sgppl.diam_avg":{"title": "Palete Diam. Médio"},
+                "pc.nome":{"title": "Palete Cliente","field":"cliente_nome"},
+                "po2.ofid":{"title": "Ordem Fabrico"},
+                "pt.prf_cod":{"title": "PRF"},
+                "pt.order_cod":{"title": "Encomenda"},
+            }
+            _sql=sql(lambda v:v,lambda v:sqlCols(cols),lambda v:f"{v},pb.posicao_palete" if v is not None else "order by pb.posicao_palete")
+            _sql = _sql.replace("[#MARK-REPORT-01#]",f"""
+                JOIN producao_bobine pb on pb.palete_id=sgppl.id and pb.recycle=0 and pb.comp_actual>0
+                left JOIN producao_artigo pa on pa.id=pb.artigo_id
+            """)
+            r.data["cols"]=cols
+        else:
+            _sql=sql
+        return export(_sql, db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
+    try:
+        response = db.executeList(sql, connection, parameters,[],None,None,r.norun)
+    except Exception as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
+
+def PaletesListV2x(request, format=None):
+    connection = connections["default"].cursor()
+    r = PostData(request)
     pf = ParsedFilters(r.filter,"and",r.apiversion)
     f = Filters(r.filter)
     f.setParameters({
@@ -302,7 +396,7 @@ def PaletesListV2(request, format=None):
             sgppl.draft_ordem_id,sgppl.ordem_id_original, sgppl.area_real, sgppl.comp_real,
             sgppl.diam_avg, sgppl.diam_max, sgppl.diam_min,sgppl.nbobines_real, sgppl.disabled,
             sgppl.artigo, sgppl.destinos, sgppl.nbobines_emendas,sgppl.destinos_has_obs,sgppl.nbobines_sem_destino,
-            sgppl.nok_estados, sgppl.nok, sgppl.lvl, pcarga.carga, po1.ofid AS ofid_original, po2.ofid, po1.op AS op_original,
+            sgppl.nok_estados, sgppl.nok, sgppl.lvl, pcarga.id carga_id, pcarga.carga,pcarga.eef carga_eef,pcarga.prf carga_prf,pcarga.cliente carga_cliente, po1.ofid AS ofid_original, po2.ofid, po1.op AS op_original,
             po2.op, pc.cod AS cliente_cod, pc.name AS cliente_nome, pc.limsup AS cliente_limsup, pc.liminf AS cliente_liminf,
             pc.diam_ref AS cliente_diamref,pt.prf_cod prf,pt.order_cod iorder"""
     dql.columns=encloseColumn(cols,False)
@@ -714,7 +808,7 @@ def PaletesStockAvailableList(request, format=None):
          "carga_id": {"value": lambda v: "isnull", "field": lambda k, v: f'sgppl.{k}'},
          "ordem_id": {"value": lambda v: Filters.getNumeric(v.get('ordem_id'),v.get('ordem_id'),"!==="), "field": lambda k, v: f'sgppl.{k}'},
          "disabled": {"value": lambda v: Filters.getNumeric(0), "field": lambda k, v: f'sgppl.{k}'},
-         "cliente_cod": {"value": lambda v: Filters.getNumeric(v.get('cliente_cod')), "field": lambda k, v: f'sgppl.{k}'},
+         #"cliente_cod": {"value": lambda v: Filters.getNumeric(v.get('cliente_cod')), "field": lambda k, v: f'sgppl.{k}'},
          "SDHNUM_0": {"value": lambda v: "isnull", "field": lambda k, v: f'mv."{k}"'},
          "artigo_cod": {"value": lambda v: f"=={v.get('artigo_cod')}", "field": lambda k, v: f"j->>'cod'"},
     }, True)

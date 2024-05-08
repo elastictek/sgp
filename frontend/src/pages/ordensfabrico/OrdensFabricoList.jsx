@@ -33,6 +33,7 @@ import { MediaContext, AppContext } from "../App";
 import { usePermission, Permissions } from "utils/usePermission";
 import { IoCreateOutline, IoTimeOutline } from 'react-icons/io5';
 import { BsFillStopFill, BsPauseCircleFill, BsStopCircleFill, BsPlayCircleFill, BsCircleFill, BsCircle } from 'react-icons/bs';
+import { parseFilter } from 'utils/useDataAPIV4';
 
 const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
 const OrdemFabrico = React.lazy(() => import('../planeamento/ordemFabrico/FormOFabricoValidar'));
@@ -467,7 +468,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 case "ordemfabricoview": return <OrdemFabricoView record={modalParameters.parameters} loadParentData={modalParameters.loadParentData} />;
                 case "textarea": return <TextAreaViewer parameters={modalParameters.parameters} />;
                 case "packinglist": return <FormPackingList parameters={modalParameters.parameters} />;
-                case "paletes": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />;
+                case "paletes": return <PaletesList {...modalParameters.parameters } noid={true} />;
                 case "paletesstock": return <PaletesStockList parameters={modalParameters.parameters} />
                 case "attachments": return <FormAttachements parameters={modalParameters.parameters} />
                 case "newpalete": return <FormNewPaleteLine parameters={modalParameters.parameters} />
@@ -775,19 +776,19 @@ export default ({ noid = false, setFormTitle, ...props }) => {
     const onAction = (action, data, rowIndex) => {
         switch (action.key) {
             case "pl-pdf":
-                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, eef:data?.iorder } });
+                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "vertical" }, eef: data?.iorder } });
                 showModal();
                 break;
             case "pl-excel":
-                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Excel> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "xlsx", export: "excel", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "landscape" }, eef:data?.iorder } });
+                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List <Excel> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "xlsx", export: "excel", name: "PACKING-LIST", path: "PACKING-LIST/PACKING-LIST-MASTER", orientation: "landscape" }, eef: data?.iorder } });
                 showModal();
                 break;
             case "pld-pdf":
-                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List Detalhado <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER", orientation: "vertical" }, eef:data?.iorder } });
+                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List Detalhado <Pdf> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "pdf", export: "pdf", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER", orientation: "vertical" }, eef: data?.iorder } });
                 showModal();
                 break;
             case "pld-excel":
-                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List Detalhado <Excel> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "xlsx", export: "excel", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER", orientation: "landscape" }, eef:data?.iorder } });
+                setModalParameters({ content: "packinglist", type: "modal", width: "800px", height: "400px", title: `Imprimir Packing List Detalhado <Excel> ${data.prf}`, lazy: true, push: false/* , loadData: () => dataAPI.fetchPost() */, parameters: { report: { extension: "xlsx", export: "excel", name: "PACKING-LIST-DETAILED", path: "PACKING-LIST/PACKING-LIST-DETAILED-MASTER", orientation: "landscape" }, eef: data?.iorder } });
                 showModal();
                 break;
             case "op-start": break;
@@ -826,7 +827,7 @@ export default ({ noid = false, setFormTitle, ...props }) => {
                 showModal();
                 break;
             case "op-paletes":
-                setModalParameters({ content: "paletes", type: "drawer", lazy: true, push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `==${data?.ofabrico}` } } });
+                setModalParameters({ content: "paletes", type: "drawer", lazy: true, push: false, width: "95%", title: <div style={{ fontWeight: 900 }}>Paletes {data?.ofabrico}</div>, parameters: { header: false, baseFilters: { ...parseFilter("ordem_id", `==${data?.ofabrico_sgp}`) } } });
                 showModal();
                 break;
             // case "op-newpalete":

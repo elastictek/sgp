@@ -9,7 +9,7 @@ import { filterRegExp, filtersDef, processConditions } from 'utils/useDataAPIV4'
 import { uid } from 'uid';
 import dayjs from 'dayjs';
 import { json, includeObjectKeys, excludeObjectKeys, isObjectEmpty, valueByPath, updateByPath } from "utils/object";
-import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar, Checkbox } from "antd";
+import { Button, Spin, Input, Flex, Badge, Select, Popover, Menu, Drawer, List, Avatar, Checkbox, Divider } from "antd";
 import Icon, { EditOutlined, RollbackOutlined, PlusOutlined, SearchOutlined, SettingOutlined, ReloadOutlined, FilterOutlined, ConsoleSqlOutlined, MoreOutlined, PullRequestOutlined, QuestionCircleTwoTone, CaretRightOutlined, CaretLeftOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import ClearSort from 'assets/clearsort.svg';
 import MoreFilters from 'assets/morefilters.svg'
@@ -17,6 +17,7 @@ import { Container, Row, Col, Visible, Hidden } from 'react-grid-system';
 import YScroll from 'components/YScroll';
 import XScroll, { RowXScroll } from 'components/XScroll';
 import Pagination, { paginationI18n } from './PaginatorV4';
+import Report from "./ReportV4";
 
 import { AgGridReact } from 'ag-grid-react';
 import { DATE_FORMAT, DATETIME_FORMAT, TIME_FORMAT, API_URL } from 'config';
@@ -132,7 +133,7 @@ const _selectOptions = (v) => {
             return v.options;
         } else if (v.options instanceof Object) {
             return Object.entries(v.options).map(([value, { label }]) => ({ value: value, label }));
-        }else{
+        } else {
             return _getSelectDefaultOptions(v.options);
         }
     }
@@ -182,7 +183,7 @@ const FiltersToolbar = React.forwardRef(({ onFilterFinish, onPredifinedFilters, 
     );
 });
 
-const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, moreFilters, reports, modeEdit, modeAdd, reportItems }) => {
+const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, setIsDirty, onClick, dataAPI, columns/*  pageSize, setPageSize */, reportTitle: _reportTitle, showReports, reports }) => {
     const [reportTitle, setReportTitle] = useState(_reportTitle);
     const permission = usePermission();
     const updateReportTitle = (e) => {
@@ -199,14 +200,15 @@ const ContentSettings = ({ modeApi, clearSort, showFilters, showMoreFilters, set
                 (permission.auth.isAdmin) && { label: <span style={{ color: "#10239e" }}>Server Request and Execution</span>, key: 'sqlquery', icon: <PullRequestOutlined style={{ color: "#10239e" }} />, data: {} },
                 { type: 'divider' },
                 { label: <span style={{ color: "#10239e" }}>Ajuda Filtros</span>, key: 'helpfilters', icon: <QuestionCircleTwoTone style={{ fontSize: "14px" }} />, data: {} },
-            ]}></StyledMenu>
-            {/* 
-            <Divider style={{ margin: "8px 0" }} />
-            {reports && <>
-                <Divider orientation="left" orientationMargin="0" style={{ margin: "8px 0" }}>Relatórios</Divider>
-                <Input value={reportTitle} onChange={updateReportTitle} size="small" maxLength={200} />
-                <Report dataAPI={dataAPI} columns={columns} hide={onClick} title={reportTitle} items={reportItems} />
-            </>} */}
+                { type: 'divider' }
+            ]}>
+            </StyledMenu>
+            {showReports && <>
+                <Divider orientation="center" orientationMargin="0" style={{ margin: "8px 0" }}>Relatórios</Divider>
+                <Input placeholder='Nome do relatório' value={reportTitle} onChange={updateReportTitle} size="small" maxLength={200} />
+                <Report dataAPI={dataAPI} columns={columns} onClick={onClick} title={reportTitle} items={reports} />
+            </>}
+
         </div>
     );
 }
@@ -615,7 +617,7 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
     const [helpfilters, setHelpFilters] = useState(false);
     const [predifinedFilters, setPredifinedFilters] = useState(false);
     const [clickSettings, setClickSettings] = useState(false);
-    const { modeApi, dataAPI, gridRef, local, updateStateFilters, stateFilters, topToolbar: { title, leftTitle, start, left, right, filters, showSettings = true, showFilters = true, showMoreFilters = true, clearSort = true } = {} } = useContext(TableContext);
+    const { modeApi, dataAPI, gridRef, local, updateStateFilters, stateFilters, topToolbar: { title, leftTitle, start, left, right, filters, showSettings = true, showFilters = true, showMoreFilters = true, clearSort = true, reports = [], showReports = true, reportTitle } = {} } = useContext(TableContext);
     if (!visible) {
         return (<></>);
     }
@@ -734,31 +736,33 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
     }
 
     const onSettingsClick = useCallback((o) => {
-        switch (o.key) {
-            case "refresh":
-                gridRef.current.api.refreshServerSide({ purge: false });
-                break;
-            case "morefilters":
-                setMoreFilters(true);
-                break;
-            case "sqlquery":
-                setSqlQueryView(true);
-                break;
-            case "helpfilters":
-                setHelpFilters(true);
-                break;
-            case "clearfilters":
-                dataAPI.addFilters({}, true);
-                dataAPI.setPreFilters({});
-                updateStateFilters({});
-                gridRef.current.api.refreshServerSide({ purge: false });
-                break;
-            case "clearsort":
-                gridRef.current.api.applyColumnState({
-                    state: dataAPI.getDefaultSort().map(v => includeObjectKeys(v, ["colId", "sort"])),
-                    defaultState: { sort: null },
-                });
-                break;
+        if (o) {
+            switch (o.key) {
+                case "refresh":
+                    gridRef.current.api.refreshServerSide({ purge: false });
+                    break;
+                case "morefilters":
+                    setMoreFilters(true);
+                    break;
+                case "sqlquery":
+                    setSqlQueryView(true);
+                    break;
+                case "helpfilters":
+                    setHelpFilters(true);
+                    break;
+                case "clearfilters":
+                    dataAPI.addFilters({}, true);
+                    dataAPI.setPreFilters({});
+                    updateStateFilters({});
+                    gridRef.current.api.refreshServerSide({ purge: false });
+                    break;
+                case "clearsort":
+                    gridRef.current.api.applyColumnState({
+                        state: dataAPI.getDefaultSort().map(v => includeObjectKeys(v, ["colId", "sort"])),
+                        defaultState: { sort: null },
+                    });
+                    break;
+            }
         }
         hideSettings();
     }, []);
@@ -813,11 +817,16 @@ const Toolbar = ({ visible = true, loading = false, /* onExit, onAdd, */ onExitM
                             placement="bottomRight" title="Opções"
                             content={
                                 <ContentSettings
+                                    columns={gridRef.current.api.getColumns()}
                                     modeApi={modeApi}
                                     clearSort={clearSort}
                                     showFilters={showFilters}
                                     showMoreFilters={showMoreFilters}
+                                    showReports={showReports}
+                                    reports={reports}
+                                    reportTitle={reportTitle}
                                     onClick={onSettingsClick}
+                                    dataAPI={dataAPI}
                                 /* modeEdit={editMode(editable)} modeAdd={addMode(editable)} setIsDirty={setSettingsIsDirty} onClick={onSettingsClick}
                                 dataAPI={dataAPI} columns={columns} pageSize={dataAPI?.getPageSize(true)} reportTitle={reportTitle}
                                 moreFilters={moreFilters} reports={reports} clearSort={clearSort} reportItems={reportItems} */
@@ -1012,10 +1021,10 @@ export const defaultValueGetter = (params, fn) => {
             return _v;
         }
     }
-    const obj=columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
-    if (Array.isArray(obj)){
+    const obj = columnHasPath(params.column) ? valueByPath(params.data, columnPath(params.column)) : params.data?.[columnPath(params.column)];
+    if (Array.isArray(obj)) {
         return obj.join(",");
-    }else if (obj instanceof Object){
+    } else if (obj instanceof Object) {
         return Object.values(obj).join('\t');
     }
     return obj;
@@ -1209,13 +1218,13 @@ export default ({
 
     const _columnTypes = useMemo(() => {
         return {
-            number:{},
-            datetime:{},
-            date:{},
-            time:{},
-            options:{},
-            text:{},
-            input:{},
+            number: {},
+            datetime: {},
+            date: {},
+            time: {},
+            options: {},
+            text: {},
+            input: {},
             actionOnViewColumn: {
                 sortable: false,
                 supressMenu: true,

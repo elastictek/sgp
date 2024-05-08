@@ -87,7 +87,7 @@ export const rules = () => {
 
         const _error = (txt) => {
             valid = false;
-            message = { valid, path: _path.split(","), error: txt };
+            message = { valid, path: _path.split(","), error: txt, message: txt };
             errors.push(message);
         };
 
@@ -188,10 +188,12 @@ export const rules = () => {
             return obj;
         }
 
-        const required = () => {
-            if (valid && isNullOrEmpty(v)) {
-                _error(`${getValue(_name, "O valor")} é obrigatório.`);
-                console.log("required--->", _path, valid, v, isNullOrEmpty(v), errors)
+        const required = (_required = true) => {
+            if (_required = true) {
+                if (valid && isNullOrEmpty(v)) {
+                    _error(`${getValue(_name, "O valor")} é obrigatório.`);
+                    console.log("required--->", _path, valid, v, isNullOrEmpty(v), errors)
+                }
             }
             return obj;
         }

@@ -42,6 +42,10 @@ import BobinesMPGranuladoList from '../bobines/BobinesMPGranuladoList';
 import BobinesOriginaisList from '../bobines/BobinesOriginaisList';
 import FormPaletizacao from './FormPaletizacao';
 import { FaWeightHanging } from 'react-icons/fa';
+import { Lookup } from 'components/FormFields/FormsV2';
+import { parseFilter } from 'utils/useDataAPIV4';
+import { Value } from 'components/TableV4/TableColumnsV4';
+import { refreshDataSource } from 'components/TableV4/TableV4';
 
 
 export const Context = React.createContext({});
@@ -104,7 +108,7 @@ export const BtnEtiquetasBobines = () => {
 }
 
 
-const onChangeOf = async ({ data, closeSelf, palete_id, openNotification, loadParentData }) => {
+export const onChangeOf = async ({ data, closeSelf, palete_id, openNotification, loadParentData }) => {
     let response = null;
     try {
         response = await fetchPost({ url: `${API_URL}/paletes/sql/`, filter: { palete_id }, parameters: { method: "changePaleteOrdemFabrico", ordem_id: data?.id } });
@@ -144,6 +148,75 @@ export const changeOf = ({ setModalParameters, showModal, openNotification, load
 
     });
     showModal();
+}
+
+export const changeOfV2 = ({ modalApi, openNotification, gridRef, row }) => {
+
+    const refreshParent = ()=>{
+        if (gridRef?.current){
+            refreshDataSource(gridRef.current.api);
+        }
+    }
+
+    modalApi.setModalParameters({
+        content: <Lookup
+            payload={{
+                url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "GetPaleteCompatibleOrdensFabricoOpen" }, pagination: { enabled: false, limit: 50 }, filter: {}, sort: [],
+                baseFilter: { ...parseFilter("pp.id", `==${row?.id}`, { type: "number", group: "t1" }) }
+            }}
+            onSelectionChanged={(v,closeSelf) => {
+                onChangeOf({ data: v[0], closeSelf, palete_id: row.id, openNotification, loadParentData:refreshParent })
+            }}
+            //onOk={(rows) => onDestinosSelect(rows, index, _data, priority, gridRef.current.api)}
+            // onCancel={() => { }}
+            columnDefs={[
+                { colId: "ofid", field: 'ofid', headerName: 'Ordem', width: 160, cellRenderer: (params) => <Value bold params={params} /> },
+                { colId: "prf_cod", field: 'prf_cod', headerName: 'Prf', width: 160, cellRenderer: (params) => <Value params={params} /> },
+                { colId: "order_cod", field: 'order_cod', headerName: 'Encomenda', width: 160, cellRenderer: (params) => <Value params={params} /> },
+                { colId: "item_cod", field: 'item_cod', headerName: 'Artigo', minWidth: 160,flex:1, cellRenderer: (params) => <Value params={params} /> },
+                { colId: "cliente_nome", field: 'cliente_nome', headerName: 'Cliente', minWidth: 160,flex:1, cellRenderer: (params) => <Value params={params} /> },
+                { colId: "artigo_lar", field: 'artigo_lar', headerName: 'Largura', width: 100, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+                { colId: "artigo_core", field: 'artigo_core', headerName: 'Core', width: 100, cellRenderer: (params) => <Value unit="''" params={params} /> },
+                { colId: "item_numbobines", field: 'item_numbobines', headerName: 'Bobines', width: 100, cellRenderer: (params) => <Value params={params} /> }
+            ]}
+            // dataGridProps={{ onRowDoubleClicked: ({ data },closeSelf,x) => {
+            //     onDestinosSelect([{data}], index, _data, priority, gridRef.current.api);
+            //     closeSelf();
+            // } }}
+            style={{ height: `calc(80vh - 70px)` }}
+            rowSelection="single"
+        />,
+        closable: true,
+        title: `Ordens de Fabrico Compatíveis [Palete ${row?.nome}]`,
+        lazy: true,
+        type: "drawer",
+        responsive: true,
+        width: "95%",
+        parameters: { /* ...getCellFocus(_gridRef.current.api) */ }
+    });
+    modalApi.showModal();
+
+
+    // setModalParameters({
+    //     content: item.key, responsive: true, type: "drawer", title: `Ordens de Fabrico Compatíveis [Palete ${row?.nome}]`, push: false, loadData: () => { }, parameters: {
+    //         payload: { payload: { url: `${API_URL}/ordensfabrico/sql/`, primaryKey: "id", parameters: { method: "GetPaleteCompatibleOrdensFabricoOpen" }, pagination: { enabled: false, limit: 50 }, filter: { palete_id: row.id }, sort: [] } },
+    //         toolbar: false,
+    //         columns: [
+    //             { name: 'ofid', header: 'Ordem', defaultWidth: 160 },
+    //             { name: 'prf_cod', header: 'Prf', defaultWidth: 160 },
+    //             { name: 'order_cod', header: 'Encomenda', defaultWidth: 160 },
+    //             { name: 'item_cod', header: 'Artigo', defaultWidth: 160 },
+    //             { name: 'cliente_nome', header: 'Cliente', defaultWidth: 160 },
+    //             { name: 'artigo_lar', header: 'Largura', defaultWidth: 100 },
+    //             { name: 'artigo_core', header: 'Core', defaultWidth: 100 },
+    //             { name: 'item_numbobines', header: 'Bobines', defaultWidth: 100 }
+
+    //         ],
+    //         onSelect: ({ rowProps, closeSelf }) => onChangeOf({ data: rowProps?.data, closeSelf, palete_id: row.id, openNotification, loadParentData })
+    //     },
+
+    // });
+    // showModal();
 }
 
 

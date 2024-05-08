@@ -69,16 +69,16 @@ export default ({ noid = false, header = true, defaultFilters = {}, baseFilters:
     cols: [
       { colId: "pbm.id", field: "id", hide: true },
       /*       { colId: 'action', type: "actionOnViewColumn", lockPosition: "left", cellRenderer: (params) => <Action params={params} onClick={(option) => onActionSave(params.data, option)} items={() => actionItems(params)} /> }, */
-      { colId: 'pbm.nome', field: 'nome', headerName: 'Bobinagem', lockPosition: "left", width: 120, cellStyle: {}, cellRenderer: (params) => <Value link onClick={(e) => onBobinagemClick(e, params)} params={params} /> },
+      { colId: 'pbm.nome', field: 'nome', headerName: 'Bobinagem', lockPosition: "left",pinned:"left", width: 120, cellStyle: {}, cellRenderer: (params) => <Value link onClick={(e) => onBobinagemClick(e, params)} params={params} /> },
       { colId: 'btn', field: "btn", headerName: "", type: "actionOnViewColumn", lockPosition: "left", cellRenderer: (params) => <Button onClick={(e) => onBobinagemPopup(e, params)} icon={<TbCircles />} size='small' /> },
       { colId: 'pbm.timestamp', field: 'timestamp',type:"date", headerName: 'Data', width: 115, cellStyle: {}, cellRenderer: (params) => <Value datetime params={params} /> },
       { colId: 'pbm.inico', field: 'inico',type:"time", headerName: 'Início', width: 70, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
       { colId: 'pbm.fim', field: 'fim',type:"time", headerName: 'Fim', width: 70, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
-      { colId: 'pbm.core', field: 'core',type:"number", headerName: 'Core', width: 60, cellStyle: {}, cellRenderer: (params) => <Value unit="''" params={params} /> },
+      { colId: 'pb.core', field: 'core',type:"number", headerName: 'Core', width: 60, cellStyle: {}, cellRenderer: (params) => <Value unit="''" params={params} /> },
       { colId: 'pbm.comp', field: 'comp',type:"number", headerName: 'Comprimento', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
       { colId: 'pbm.comp_par', field: 'comp_par',type:"number", headerName: 'Emenda', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
       { colId: 'pbm.diam', field: 'diam',type:"number", headerName: 'Diâmetro', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-      { colId: 'pbm.largura', field: 'largura',type:"number", headerName: 'Largura', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
+      { colId: 'sum(pb.lar)', field: 'largura',type:"number", headerName: 'Largura', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
       { colId: 'pbm.largura_bruta', field: 'largura_bruta',type:"number", headerName: 'Largura Bruta', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
       { colId: 'pbm.area', field: 'area', headerName: 'Área',type:"number", width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m2" params={params} /> },
       ...[...Array(24).keys()].map((v, i) => ({ colId: `${v + 1}`, field: `${v + 1}`, sortable: false, suppressHeaderMenuButton: true, headerName: `${v + 1}`, width: 35, resizable: false, headerClass: classes.headerCenter, cellStyle: {}, cellRenderer: (params) => <EstadoBobine title={`${params.data.bobines?.[v]?.nome} ${noValue(params.data.bobines?.[v]?.destino,"")}`} onClick={(e)=>onBobineClick(e,params.data.bobines?.[v])} field={{ estado: "estado", largura: "lar", destino:"destino" }} params={{ ...params, data: params.data.bobines?.[v] }} /> })),
@@ -109,7 +109,7 @@ export default ({ noid = false, header = true, defaultFilters = {}, baseFilters:
       { field: "destino", group: "t2", type: "input", assign: true, label: "Destino", style: { width: "150px" }, case: "i" },
       { field: "cliente", group: "t2", type: "input", assign: true, label: "Cliente", style: { width: "150px" }, case: "i" }
     ],
-    no: [...Object.keys(baseFilters), "action", "id", "btn", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"]
+    no: [...Object.keys(baseFilters), "action", "id", "btn", "largura","core", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"]
   }), []);
 
 

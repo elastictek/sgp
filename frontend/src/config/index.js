@@ -1,9 +1,10 @@
 import React from 'react';
 import { uid } from 'uid';
 import { DashOutlined, DashboardOutlined, HomeFilled, LeftCircleFilled, UnorderedListOutlined, LogoutOutlined, ControlOutlined, MenuOutlined } from '@ant-design/icons';
+import { isNullOrEmpty } from 'utils';
 
 //export const SERVER_PORT = "81";export const SERVER = "192.168.0.16";
-export const SERVER_PORT = "8000";export const SERVER = "localhost";
+export const SERVER_PORT = "8000"; export const SERVER = "localhost";
 export const ROOT_URL = `http://${SERVER}:${SERVER_PORT}`;
 export const DASHBOARD_URL = `/app`;
 export const CSRF = document.cookie.replace("csrftoken=", "");
@@ -48,8 +49,26 @@ export const bColors = (estado) => {
     }
 }
 
+export const paleteColors = (name) => {
+    if (!isNullOrEmpty(name)) {
+        if (name.startsWith("P")) {
+            return { color: "#fff", fontColor: "#000" };//"green";
+        } else if (name.startsWith("R")) {
+            return { color: "#fff", fontColor: "#000" };//"green";
+        } else if (name.startsWith("H")) {
+            return { color: "#391085", fontColor: "#fff" };//"green";
+        } else if (name.startsWith("DM")) {
+            return { color: "#fadb14", fontColor: "#000" };//"green";
+        } else if (name.startsWith("IND")) {
+            return { color: "#0050b3", fontColor: "#fff" };//"green";
+        } else if (name.startsWith("S")) {
+            return { color: "#237804", fontColor: "#fff" };//"green";
+        }
+    }
+}
+
 export const HISTORY_DEFAULT = [
-    { label: <div style={{textAlign:"center"}}><MenuOutlined style={{ fontSize: "14px",color:"#1677ff" }} /></div>, key: `mainmenu` },
+    { label: <div style={{ textAlign: "center" }}><MenuOutlined style={{ fontSize: "14px", color: "#1677ff" }} /></div>, key: `mainmenu` },
     { label: "Dashboard", key: `#${DASHBOARD_URL}`, icon: <HomeFilled style={{ fontSize: "14px" }} /> },
     { label: "Dashboard Produção Linha 1", key: "#/app/producao/widgetestadoproducao", state: null, icon: <DashboardOutlined style={{ fontSize: "14px" }} /> },
     { label: "Painel de Controlo", key: "#/app/picking/main/", state: { newWindow: `controlpanel-${uid(4)}` }, icon: <ControlOutlined style={{ fontSize: "14px" }} /> },
@@ -85,16 +104,16 @@ export const TIPOANEXOS_OF = [{ value: "Ficha de Processo", key: "Ficha de Proce
 { value: "Orientação Qualidade", key: "Orientação Qualidade" },
 { value: "Ordem de Fabrico", key: "Ordem de Fabrico" }];
 //SENTIDO ENROLAMENTO
-export const DESENROLAMENTO_OPTIONS = [{ label: "Direita", value: 1 }, { label: "Esquerda", value: 2 },{ label: "Direita (Com etiqueta)", value: 3 },{ label: "Esquerda (Com etiqueta)", value: 4 }];
-export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 },{ label: "Anti-Horário (Com etiqueta)", value: 3 },{ label: "Horário (Com etiqueta)", value: 4 }];
-export const TIPOEMENDA_OPTIONS = [{ value: "Não Aplicável", key: null },{ value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
+export const DESENROLAMENTO_OPTIONS = [{ label: "Direita", value: 1 }, { label: "Esquerda", value: 2 }, { label: "Direita (Com etiqueta)", value: 3 }, { label: "Esquerda (Com etiqueta)", value: 4 }];
+export const ENROLAMENTO_OPTIONS = [{ label: "Anti-Horário", value: 1 }, { label: "Horário", value: 2 }, { label: "Anti-Horário (Com etiqueta)", value: 3 }, { label: "Horário (Com etiqueta)", value: 4 }];
+export const TIPOEMENDA_OPTIONS = [{ value: "Não Aplicável", key: null }, { value: "Fita Preta", key: 1 }, { value: "Fita metálica e Fita Preta", key: 2 }, { value: "Fita metálica", key: 3 }];
 //--ARTIGO
 export const THICKNESS = 325; //microns
 export const GTIN = '560084119'
 //--PALETIZAÇÃO
-export const PALETES_WEIGH = [{ key: 13, value: "970 x 970" },{ key: 14, value: "1050x1050" }, { key: 15, value: "1080x1080" }, { key: 8, value: "760 x 760" },{ key: 0, value: "Sem palete" }];
+export const PALETES_WEIGH = [{ key: 13, value: "970 x 970" }, { key: 14, value: "1050x1050" }, { key: 15, value: "1080x1080" }, { key: 8, value: "760 x 760" }, { key: 0, value: "Sem palete" }];
 export const PALETIZACAO_ITEMS = [{ key: 1, value: "Palete" }, { key: 2, value: "Bobines" }, { key: 3, value: "Placa de Cartão" }, { key: 4, value: "Placa MDF" }, { key: 5, value: "Placa de Plástico" }, { key: 6, value: "Cantoneira Cartão Branco" }, { key: 7, value: "Etiqueta Cut Here" }];
-export const PALETE_SIZES = [{ key: '970x970', value: "970x970" },{ key: '1050x1050', value: "1050x1050" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
+export const PALETE_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1050x1050', value: "1050x1050" }, { key: '1080x1080', value: "1080x1080" }, { key: '760x760', value: "760x760" }];
 export const PLACACARTAO_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }];
 export const MDF_SIZES = [{ key: '970x970', value: "970x970" }, { key: '1080x1080', value: "1080x1080" }];
 export const CONTENTORES_OPTIONS = [
@@ -191,5 +210,5 @@ export const BOBINE_DEFEITOS = [
     { value: 'diam_insuf', label: 'Diâmetro Insuficiente' }, { value: 'furos', label: 'Furos' }, { value: 'outros', label: 'Outros' }, { value: 'buraco', label: 'Buracos' },
     { value: 'nok', label: 'Largura NOK' }, { value: 'car', label: 'Carro Atrás' }, { value: 'fc', label: 'Falha Corte' }, { value: 'ff', label: 'Falha Filme' },
     { value: 'fmp', label: 'Falha Matéria Prima' }, { value: 'lac', label: 'Laçou' }, { value: 'ncore', label: 'Não Colou' }, { value: 'suj', label: 'Sujidade' },
-    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }, { value: 'mpalete', label: "Marcas de Palete" },{value: 'rasgo', label: 'Rasgo' }
+    { value: 'sbrt', label: 'Sobretiragem' }, { value: 'esp', label: 'Gramagem' }, { value: 'rugas', label: 'Rugas' }, { value: 'tr', label: 'Troca Rápida' }, { value: 'prop', label: 'Propriedades' }, { value: 'mpalete', label: "Marcas de Palete" }, { value: 'rasgo', label: 'Rasgo' }
 ];

@@ -16,14 +16,14 @@ import useModalApi from "utils/useModalApi";
 import { Value, Bool, MultiLine, Larguras, Cores, Ordens, FromTo, EstadoBobines, BadgeNumber, Options, Cortes, CortesOrdem, Action } from "components/TableV4/TableColumnsV4";
 import useModeApi from 'utils/useModeApi';
 import TableGridEdit from 'components/TableV4/TableGridEdit';
-import { AntdCheckboxEditor, AntdDateEditor, AntdInputEditor, AntdInputNumberEditor, AntdSelectEditor, ArtigosLookupEditor, ClientesLookupEditor } from 'components/TableV4/TableEditorsV4';
+import { AntdCheckboxEditor, AntdDateEditor, AntdInputEditor, AntdInputNumberEditor, AntdSelectEditor, ArtigosLookupEditor, ArtigosSageLookupEditor, ClientesLookupEditor } from 'components/TableV4/TableEditorsV4';
 import { includeObjectKeys, json, updateByPath } from 'utils/object';
 import { z } from "zod";
 import { CloseCircleFilled, DeleteFilled, EditOutlined, StockOutlined, StopOutlined } from '@ant-design/icons';
 import { Modal } from 'antd';
 import { AppContext } from 'app';
 import { zGroupIntervalNumber, zGroupRangeNumber, zIntervalNumber, zOneOfNumber, zRangeNumber } from 'utils/schemaZodRules';
-import { setValidationGroups, validateRows } from 'utils/useValidation';
+import { rules, setValidationGroups, validateRows } from 'utils/useValidation';
 import Page from 'components/FormFields/FormsV2';
 
 const title = "Gerir relação Artigo/Cliente";
@@ -41,12 +41,38 @@ const TitleForm = ({ level, auth, hasEntries, onSave, loading, title, subTitle }
 // };
 
 const schema = z.object({
-  artigo_cod: z.coerce.string().min(1),
-  cliente_cod: z.coerce.string().min(1),
-  cliente_abv: z.coerce.string().min(1),
-  limites: zGroupIntervalNumber("liminf", "limsup", { description: { init: "Limite inferior", end: "Limite superior" }, nullable: false }),
-  diam: zGroupRangeNumber("diam_ref", "liminf", "limsup", { description: { value: "Diâmetro de referência", min: "Limite inferior", max: "Limite superior" }, nullable: false })
-});
+  artigo_cod: z.any(),
+  cliente_cod: z.any(),
+  cliente_abv: z.any(),
+  lar: z.any(),
+  limites:z.object({
+    liminf:z.any(),
+    limsup:z.any()
+  }),
+  diam:z.object({
+    diam_ref:z.any(),
+    liminf:z.any(), 
+    limsup:z.any()
+  })
+}).refine((v) => {
+  const r = rules();
+  r(v, "lar", { name: "Largura" }).number().required().positive(false).min(20);
+  r(v, "artigo_cod", { name: "Artigo" }).required();
+  r(v, "cliente_cod", { name: "Cliente" }).required();
+  r(v, "cliente_abv", { name: "Abreviatura" }).required();
+  
+  r(v?.diam, "liminf").number().required().positive(false);
+  r(v?.diam, "limsup").number().required().positive(false);
+  r(v?.diam, "diam_ref", { name: "Diâmetro de Referência" }).number().required().positive(false).between(v?.diam?.liminf, v?.diam?.limsup, { including: true, nameMin: "Limite inferior", nameMax: "Limite superior" });
+
+  r(v?.limites, "liminf", { name: "Limite inferior" }).number().required().positive(false).max(v?.limites?.limsup, { name: "Limite superior" });
+  r(v?.limites, "limsup", { name: "Limite superior" }).number().required().positive(false).min(v?.limites?.liminf, { name: "Limite inferior" });
+
+  if (!r().valid()) {
+    throw new z.ZodError(r().errors());
+  }
+  return true;
+}, {});
 
 export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ...props }) => {
   const location = useLocation();
@@ -72,7 +98,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     }
   });
 
-  const onGridReady = async ({ api, ...params }) => {}
+  const onGridReady = async ({ api, ...params }) => { }
   const onGridRequest = async () => { };
   const onGridResponse = async (api) => {
     if (dataAPI.requestsCount() === 1) { }
@@ -91,10 +117,11 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
  * suppressKeyboardEvent: (params)=>disableTabOnNextCell(params)
  */
     if (newValue && colDef.field === "artigo_cod") {
-      data = updateByPath(data, "artigo_cod", newValue?.cod);
+      data = updateByPath(data, "artigo_cod", newValue?.ITMREF_0);
       data = updateByPath(data, "artigo_id", newValue?.id);
-      data = updateByPath(data, "artigo_des", newValue?.des);
+      data = updateByPath(data, "artigo_des", newValue?.ITMDES1_0);
       data = updateByPath(data, "gtin", newValue?.gtin);
+      data = updateByPath(data, "lar", newValue?.lar);
       return data;
     } else if (newValue && colDef.field === "cliente_cod") {
       data = updateByPath(data, "cliente_cod", newValue?.BPCNUM_0);
@@ -109,7 +136,9 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
     return null;
   }
   const onAfterCellEditRequest = async (data, colDef, path, newValue, event, result) => {
-    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { validationGroups });
+    console.log("dddddddd", data)
+    const r = await validateRows([data], schema, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
+    console.log("rrrrrrrrrrrrrrrrrrr", r)
     r.onValidationFail((p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
     });
@@ -119,9 +148,10 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
   }
 
   const onAddSave = async (rows, allRows) => {
-    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { validationGroups });
+    console.log("dddddddd", rows)
+    const rv = await validateRows(rows, schema, dataAPI.getPrimaryKey(), { passthrough: false, validationGroups });
     await rv.onValidationFail((p) => { setValidation(prev => ({ ...prev, ...p.alerts.error })); });
-
+    console.log("xxxxxxxxxxxxxxxxxxxxx")
     return (await rv.onValidationSuccess(async (p) => {
       setValidation(prev => ({ ...prev, ...p.alerts.error }));
       const result = await dataAPI.safePost(`${API_URL}/ordensfabrico/sql/`, "NewArtigoCliente", { parameters: { rows } });
@@ -209,7 +239,7 @@ export default ({ noid = false, defaultFilters = {}, defaultSort = [], style, ..
       { colId: "pac.cod_client", field: 'cod_client', headerName: 'Cliente Cod.', ...cellParams(), type: "editableColumn", cellEditor: AntdInputEditor, width: 130, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pc.abv", field: 'cliente_abv', headerName: 'Abrev.', ...cellParams(null, { maxLength: 3 }), type: "editableColumn", cellEditor: AntdInputEditor, width: 70, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pa.lar", field: 'lar', headerName: 'Largura', ...cellParams(), width: 140, type: "editableColumn", cellEditor: AntdInputNumberEditor, cellRenderer: (params) => <Value unit=" mm" params={params} /> },
-      { colId: "pa.cod", field: 'artigo_cod', headerName: 'Artigo Cod.', ...cellParams(), width: 140, type: "editableColumn", cellEditor: ArtigosLookupEditor, cellRenderer: (params) => <Value params={params} /> },
+      { colId: "pa.cod", field: 'artigo_cod', headerName: 'Artigo Cod.', ...cellParams(), width: 140, type: "editableColumn", cellEditor: ArtigosSageLookupEditor, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pa.des", field: 'artigo_des', headerName: 'Artigo Des.', ...cellParams(), width: 350, flex: 1, cellRenderer: (params) => <Value bold params={params} /> },
       { colId: "pa.gtin", field: 'gtin', headerName: 'GTIN', ...cellParams(), width: 140, cellRenderer: (params) => <Value params={params} /> },
       { colId: "pc.diam_ref", field: 'diam_ref', headerName: 'Diam. Ref.', ...cellParams(null, { min: 0 }), type: "editableColumn", cellEditor: AntdInputNumberEditor, width: 140, cellRenderer: (params) => <Value unit="mm" params={params} /> },

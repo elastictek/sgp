@@ -186,6 +186,45 @@ def Sql(request, format=None):
         return Response({"status": "error", "title": str(error)})
     return Response({})
     
+
+
+def ArtigosSageLookup(request, format=None):
+    connection = connections[connGatewayName].cursor()
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion)
+
+    # _filter = {} if r.apiversion=="4" else r.filter
+    # f = Filters(_filter)
+    # f.setParameters({}, False)
+    # f.where()
+    # f.value()
+
+    # f2 = filterMulti(_filter, {
+    #     'fartigo': {"keys": ['cod', 'des'], "table": ''}
+    # }, False, "and" if f.hasFilters else "where" ,False)
+    # parameters = {**f.parameters, **f2['parameters'],**pf.parameters}
+    sageAlias = dbgw.dbAlias.get("sage")
+    parameters = {**pf.parameters}
+    dql = dbgw.dql(request.data, False)
+    cols = f""""ITMREF_0","ITMDES1_0","TSICOD_0","TSICOD_1","TSICOD_2","TSICOD_3","TSICOD_4","STU_0",pa.gtin,pa.lar """
+    dql.columns=encloseColumn(cols,False)
+    sql = lambda: (f"""
+        select {f'{dql.columns}'} 
+        from {sageAlias}."ITMMASTER" as itm 
+        left join "SGP-PROD".producao_artigo pa on pa.cod=itm."ITMREF_0"
+        {pf.group()} {dql.sort} {dql.limit}
+    """)
+    if ("export" in r.data):
+        dql.limit=f"""limit {r.data.get("limit")}"""
+        dql.paging=""
+        return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["gw"],dbi=dbgw,conn=connection)
+    try:
+        response = db.executeSimpleList(sql, connection, parameters,[],r.norun)
+    except Error as error:
+        print(str(error))
+        return Response({"status": "error", "title": str(error)})
+    return Response(response)
+
 def ArtigosLookup(request, format=None):
     connection = connections["default"].cursor()
     r = PostData(request)
@@ -211,7 +250,7 @@ def ArtigosLookup(request, format=None):
         dql.paging=""
         return export(sql(lambda v:v,lambda v:v,lambda v:v), db_parameters=parameters, parameters=r.data,conn_name=AppSettings.reportConn["sgp"],dbi=db,conn=connection)
     try:
-        response = db.executeSimpleList(sql, connection, parameters)
+        response = db.executeSimpleList(sql, connection, parameters,[],r.norun)
     except Error as error:
         print(str(error))
         return Response({"status": "error", "title": str(error)})

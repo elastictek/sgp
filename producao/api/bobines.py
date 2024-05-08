@@ -604,7 +604,7 @@ def FixBobineProduto(request, format=None):
                         update producao_bobine pb
                         left join producao_palete pp on pp.id=pb.palete_id
                         set pb.designacao_prod = {Filters.fParam("designacao_prod")}
-                        where pb.id= {Filters.fParam("auto_id")} and pb.recycle=0 and (pp.id is null or pp.nome like 'DM%') and pp.carga_id is null
+                        where pb.id= {Filters.fParam("auto_id")} and pb.recycle=0 and (pp.id is null or pp.nome like 'DM%%') and pp.carga_id is null
                     """
                     db.execute(dml.statement, cursor, dml.parameters)
                 except Exception as error:
@@ -754,7 +754,7 @@ def BobinesDestinosHint(request, format=None):
                 pa.lar lar_to,pc.nome,0 used
                 from producao_artigocliente pac
                 join producao_artigo pa on pa.id=pac.artigo_id and pa.lar>0
-                join producao_artigo pa2 on {pf.group("t2")} and pa.lar<=pa2.lar and pa.gsm=pa2.gsm
+                join producao_artigo pa2 on {pf.group("t2")} and pa.lar<=pa2.lar #and pa.gsm=pa2.gsm
                 join producao_cliente pc on pc.id=pac.cliente_id
                 {pf.group("t3")}
             )
@@ -1023,6 +1023,7 @@ def BobinesLookup(request, format=None):
     f.where()
     f.auto()
     f.value()
+
 
     f2 = filterMulti(request.data['filter'], {
         # 'fartigo': {"keys": ['artigo_cod', 'artigo_des'], "table": 't.'}

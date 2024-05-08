@@ -105,6 +105,9 @@ export const unique = (array, key) => {
     if (!Array.isArray(array)) {
         return [];
     }
+    if (!key){
+        return [...new Set(array)];
+    }
     const seen = new Set();
     return array.filter((item) => {
         const value = item[key];

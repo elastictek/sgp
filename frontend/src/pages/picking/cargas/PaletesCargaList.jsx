@@ -278,6 +278,9 @@ export default ({ noid = false, header = true, defaultFilters = {}, defaultSort 
         setSelections(prev => ({ ...prev, delete: false }));
         gridRef.current.api.deselectAll();
         refreshDataSource(gridRef.current.api);
+        if (props?.parentApi){
+          refreshDataSource(props?.parentApi);
+        }
       });
       result.onFail((p) => { });
       //setFormStatus(result);
@@ -287,6 +290,9 @@ export default ({ noid = false, header = true, defaultFilters = {}, defaultSort 
   }
 
   const onDeleteSelectionChanged = (v, x) => {
+    if (props?.parentApi){
+      refreshDataSource(props?.parentApi);
+    }
     if (v.length > 0) {
       setSelections(prev => ({ ...prev, delete: true }));
     } else {
@@ -310,6 +316,9 @@ export default ({ noid = false, header = true, defaultFilters = {}, defaultSort 
       result.onSuccess((p) => {
         gridRef.current.api.deselectAll();
         refreshDataSource(gridRef.current.api);
+        if (props?.parentApi){
+          refreshDataSource(props?.parentApi);
+        }
       });
       result.onFail((p) => { });
       //setFormStatus(result);
@@ -334,7 +343,7 @@ export default ({ noid = false, header = true, defaultFilters = {}, defaultSort 
         defaultParameters={defaultParameters}
         singleClickEdit={false}
         //rowSelectionIgnoreOnMode={true}
-        {...allowEdit && { rowSelection: "multiple", onDeleteSelectionChanged }}
+        {...allowEdit && { rowSelection: "multiple", onSelectionChanged: onDeleteSelectionChanged }}
         dataAPI={dataAPI}
         modeApi={modeApi}
         modeOptions={{ enabled: false }}

@@ -582,12 +582,8 @@ def OrdensFabricoInProduction(request, format=None):
 
 def GetPaleteCompatibleOrdensFabricoOpen(request,format=None):
     cursor = connections["default"].cursor()
-    filter = request.data.get("filter")
-    f = Filters({"palete_id": filter['palete_id']})
-    f.setParameters({}, False)
-    f.where()
-    f.add(f'pp.id = :palete_id', True)
-    f.value("and")
+    r = PostData(request)
+    pf = ParsedFilters(r.filter,"where",r.apiversion,None,None,None)
     response = db.executeSimpleList(lambda: (
         f"""
             with palete as(
@@ -595,7 +591,7 @@ def GetPaleteCompatibleOrdensFabricoOpen(request,format=None):
             from producao_palete pp 
             join planeamento_ordemproducao po on po.id=pp.ordem_id_original
             join producao_artigo pa on po.artigo_id=pa.id
-            {f.text}
+            {pf.group()}
             )
             select t.* from (
             select pa.cod artigo_cod, po.id,po.ofid,po.agg_of_id_id,po.op,pt.cliente_nome ,pt.prf_cod ,pt.order_cod ,pt.item_cod , ofc.artigo_lar, ofc.artigo_core,x.item_numbobines
@@ -610,7 +606,7 @@ def GetPaleteCompatibleOrdensFabricoOpen(request,format=None):
             ) t
             join palete pp on pp.id<>t.id and pp.agg_of_id_id = t.agg_of_id_id and pp.artigo_cod=t.artigo_cod /*pp.largura_bobines = t.artigo_lar and pp.core_bobines  = t.artigo_core*/ and pp.num_bobines = t.item_numbobines
         """
-    ), cursor, f.parameters)
+    ), cursor, pf.parameters,[],r.norun)
     return Response(response)
 
 def ClienteExists(request, format=None):
@@ -4325,6 +4321,24 @@ def _updateArtigo(data,id,cursor):
     }
     dml = db.dml(TypeDml.UPDATE, values, "producao_artigo",{"id":Filters.getNumeric(id,"isnull")}, None, False,[])
     db.execute(dml.statement, cursor, dml.parameters)
+def _insertArtigo(data,cursor):
+    artigo_data = _computeArtigoData(data.get("artigo_des"))
+    produto_id = _getProdutoIdByName(artigo_data.get("produto"),cursor)
+    if (produto_id is None):
+        produto_id = _insertProduto({"produto_cod":artigo_data.get("produto")},cursor)
+    values = {
+        **artigo_data,
+        "lar":data.get("lar"),
+        "des":data.get("artigo_des"),
+        "cod":data.get("artigo_cod"),
+        "tipo":"Produto final",
+        "gtin":"(select sistema.compute_gtin())",
+        "produto_id":produto_id,
+        "thickness":325
+    }
+    dml = db.dml(TypeDml.INSERT, values, "producao_artigo", None, None, False,["gtin"])
+    db.execute(dml.statement, cursor, dml.parameters)
+    return cursor.lastrowid
 def _insertProduto(data,cursor):
     values = {**data}
     dml = db.dml(TypeDml.INSERT, values, "producao_produtos", None, None, False,[])
@@ -4376,24 +4390,7 @@ def _computeArtigoData(name):
             _prod.append(_el)
     r["produto"]=' '.join(_prod[::-1])
     return r
-def _insertArtigo(data,cursor):
-    artigo_data = _computeArtigoData(data.get("artigo_des"))
-    produto_id = _getProdutoIdByName(artigo_data.get("produto"),cursor)
-    if (produto_id is None):
-        produto_id = _insertProduto({"produto_cod":artigo_data.get("produto")},cursor)
-    values = {
-        **artigo_data,
-        "lar":data.get("lar"),
-        "des":data.get("artigo_des"),
-        "cod":data.get("artigo_cod"),
-        "tipo":"Produto final",
-        "gtin":"(select sistema.compute_gtin())",
-        "produto_id":produto_id,
-        "thikness":325
-    }
-    dml = db.dml(TypeDml.INSERT, values, "producao_artigo", None, None, False,["gtin"])
-    db.execute(dml.statement, cursor, dml.parameters)
-    return cursor.lastrowid
+
 def NewArtigoCliente(request, format=None):
     r = PostData(request)
     def insert(data,artigo_id,cliente_id,cursor):
@@ -4451,7 +4448,7 @@ def UpdateArtigoCliente(request, format=None):
                         return Response({"status": "error", "title": "O cliente não existe!", "subTitle":f'{None}'})
                     artigo_id = _getArtigoId(v.get("artigo_cod"),cursor)
                     if (artigo_id is None):
-                        return Response({"status": "error", "title": "O artigo não existe!", "subTitle":f'{None}'})
+                        artigo_id = _insertArtigo(v,cursor)
                     if cliente_id and artigo_id:
                         _updateCliente(v,cliente_id,cursor)
                         if "amostra".casefold() in v.get("artigo_des").casefold():

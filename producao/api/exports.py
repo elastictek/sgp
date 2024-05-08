@@ -65,6 +65,21 @@ def getKeyInsensitive(dictionary, key):
             return dict_key
     return None  # Return None if the key is not found
 
+def getCols(req):
+    get_string_after_last_dot = lambda input_string: input_string.split('.')[-1] if '.' in input_string else input_string
+    req_cols = {}
+    for key, value in req["cols"].items():
+        if "reportField" in value and value["reportField"] is not None:
+            k=value["reportField"]
+        elif "field" in value and value["field"] is not None:
+            k=value["field"]
+        else:
+            k = get_string_after_last_dot(key)
+        if "visible" in value and value["visible"]==False:
+            continue
+        req_cols[k] = req["cols"][key]
+    return req_cols
+
 def exportRunxlslist(req,dbi,conn):
     try:
         response = dbi.executeSimpleList(req["sql"], conn, req["data"])
@@ -72,22 +87,18 @@ def exportRunxlslist(req,dbi,conn):
         #lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
         #lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
         #cols = [column for column in df.columns.values.tolist() if column.lower() in lowercase_reqcols]
-        get_string_after_last_dot = lambda input_string: input_string.split('.')[-1] if '.' in input_string else input_string
-        req_cols = {}
-        for key, value in req["cols"].items():
-            k = get_string_after_last_dot(key)
-            req_cols[k] = req["cols"][key]
+        
+        req_cols = getCols(req)
 
-
-
-        lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
+        #lowercase_reqcols = [column.lower() for column in req["cols"].keys()]
         lowercase_columns = [column.lower() for column in df.columns.values.tolist()]
         cols = [column for column in req_cols if column.lower() in lowercase_columns]
+        _cols = lowercase_columns if "notListed" in req and req["notListed"]==True else cols
         rcols = []
-        for v in cols:
+        for v in _cols:
             df_k = getKeyInsensitive(df,v)
             rq_k = getKeyInsensitive(req_cols,v)
-            if ("format" in req_cols[rq_k]):
+            if (rq_k in req_cols and "format" in req_cols[rq_k]):
                 if req_cols[rq_k]["format"]=='0':
                     df[df_k] = df[df_k].fillna(0).astype(int)
                 elif req_cols[rq_k]["format"]=='0.0':
@@ -98,7 +109,7 @@ def exportRunxlslist(req,dbi,conn):
                     df[df_k] = df[df_k].fillna(0).astype(float).round(3)
                 elif req_cols[rq_k]["format"]=='0.0000':
                     df[df_k] = df[df_k].fillna(0).astype(float).round(4)
-            if "title" in req_cols[rq_k]:
+            if rq_k in req_cols and "title" in req_cols[rq_k]:
                 df.rename(columns = {df_k:req_cols[rq_k]["title"]}, inplace = True)
                 rcols.append(req_cols[rq_k]["title"])
             else:
@@ -111,6 +122,7 @@ def exportRunxlslist(req,dbi,conn):
         excel_file  = BytesIO()
         #writer = pd.ExcelWriter(sio, engine='openpyxl') 
         #writer.book = book
+
         df.to_excel(excel_file, engine='openpyxl', index=False,columns=rcols)
         
         excel_file.seek(0)
@@ -154,6 +166,15 @@ def exportRunxlslist(req,dbi,conn):
         print(str(error))
         return Response({"status": "error", "title": str(error)})
 
+def sqlCols(cols):
+    column_names = []
+    for key, value in cols.items():
+        if "field" in value:
+            column_names.append(f"""{key} {value["field"]}""")
+        else:
+            column_names.append(key)
+    return ",".join(column_names)
+
 def export(sql, db_parameters, parameters,conn_name,dbi=None,conn=None):
     if ("export" in parameters and parameters["export"] is not None):
         _sql = None
@@ -166,32 +187,30 @@ def export(sql, db_parameters, parameters,conn_name,dbi=None,conn=None):
             if f"%({key})s" not in _sql: 
                 continue
             dbparams[key] = value
-        if parameters["export"] == "clean-excel":
+        if parameters["export"] == "clean-excel" or parameters["export"] not in ["pdf", "excel", "word"]:
             req = {
                 "sql":_sql,
                 "data":dbparams,
-                "cols":parameters["cols"]
+                "cols":parameters["cols"],
+                "notListed":parameters.get("notListed")
             }
             return exportRunxlslist(req,dbi,conn)
-        if parameters["export"] not in ["pdf", "excel", "word"]:
-            method=parameters["export"]
-            func = getattr(reports,method,None)
-            req = func(sql, dbparams,parameters["cols"],conn_name,dbi,conn)
-            return exportRunxlslist(req,dbi,conn)
 
-        _sql = _sql.replace(f"%({key})s",f":{key}")        
+        markPattern = r'\[#MARK-[A-Z]+-\d+#\]'
+        _sql = re.sub(markPattern,'',_sql)
+        for key, value in db_parameters.items():
+            _sql = _sql.replace(f"%({key})s",f""":{key.replace(".","_")}""")        
         hash = base64.b64encode(hmac.new(bytes("SA;PA#Jct\"#f.+%UxT[vf5B)XW`mssr$" , 'utf-8'), msg = bytes(_sql , 'utf-8'), digestmod = hashlib.sha256).hexdigest().upper().encode()).decode()
-        req = {
-            
+        req = {            
             "conn-name":conn_name,
             "sql":_sql,
             "hash":hash,
-            "data":dbparams,
-            **parameters
+            "data":{key.replace('.', '_'): value for key, value in db_parameters.items()},
+            **parameters,
+            "cols":getCols(parameters)
         }
         wService = "runxlslist" if parameters["export"] == "clean-excel" else "runlist"
-        fstream = requests.post(f'http://192.168.0.16:8080/ReportsGW/{wService}', json=req)
-        
+        fstream = requests.post(f'{AppSettings.reportServer["default"]}/{wService}', json=req)
         if (fstream.status_code==200):
             resp =  HttpResponse(fstream.content, content_type=fstream.headers["Content-Type"])
             if (parameters["export"] == "pdf"):

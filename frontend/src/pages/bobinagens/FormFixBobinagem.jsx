@@ -57,10 +57,10 @@ const schema = (options = {}) => {
         diam: Joi.number().positive().label("Diâmetro").required(),
         comp: Joi.number().positive().label("Comprimento").required(),
         largura_bruta: Joi.number().positive().label("Largura Bruta").required(),
-        nwinf: Joi.number().positive().label("Comprimento Nonwoven Inferior").required(),
-        nwsup: Joi.number().positive().label("Comprimento Nonwoven Superior").required(),
-        lote_nwinf: Joi.object().label("Lote de Nonwoven Inferior").required(),
-        lote_nwsup: Joi.object().label("Lote de Nonwoven Superior").required()
+        //nwinf: Joi.number().positive().label("Comprimento Nonwoven Inferior").required(),
+        //nwsup: Joi.number().positive().label("Comprimento Nonwoven Superior").required(),
+        //lote_nwinf: Joi.object().label("Lote de Nonwoven Inferior").required(),
+        //lote_nwsup: Joi.object().label("Lote de Nonwoven Superior").required()
     }, options).unknown(true);
 }
 

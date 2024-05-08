@@ -298,6 +298,66 @@ export const AntdInputNumberEditor = forwardRef((props, ref) => {
     }));
     return <InputNumber style={{ width: "100%" }} autoFocus value={value} onChange={handleChange} {...editorParams} />;
 });
+
+export const ArtigosSageLookupEditor = forwardRef((props, ref) => {
+    const modalApi = useModalApi();
+    const { onValueChange, api } = props;
+    const { editorType, options, title = "Artigos", baseFilters = {...parseFilter(`"TSICOD_0"`,`==PACAB`)}, keyField = "ITMREF_0", textField = "ITMDES1_0", ...editorParams } = { ...props.column.getDefinition()?.cellEditorParams, ...props?.otherParams } || {};
+    const dataAPI = useDataAPI({
+        payload: {
+            url: `${API_URL}/artigos/sql/`, primaryKey: "ITMREF_0", parameters: { method: "ArtigosSageLookup" },
+            pagination: { enabled: true, page: 1, pageSize: 20 }, baseFilter: baseFilters,
+            sortMap: {}
+        }
+    });
+
+    const value = useMemo(() => {
+        if (props.value === undefined || props.value === null || props.value === "") {
+            return null;
+        }
+        if (typeof props.value === 'object') {
+            return props.value?.[keyField];
+        }
+        return `${props.value}`;
+    }, [props.value]);
+
+    // Expose the Input value to ag-Grid
+    useImperativeHandle(ref, () => ({
+        getValue() {
+            return value;
+        },
+    }));
+
+    const columnDefs = useMemo(() => [
+        { colId: '"ITMREF_0"', field:"ITMREF_0", headerName: 'Artigo Cód.', width: 130, cellRenderer: (params) => <Value bold params={params} /> },
+        { colId: '"ITMDES1_0"', field:"ITMDES1_0", headerName: 'Artigo', flex: 1, cellRenderer: (params) => <Value params={params} /> },
+    ], []);
+    const filters = useMemo(() => ({
+        toolbar: ["@columns"],
+        more: [],
+        no: [...Object.keys(baseFilters)]
+    }), []);
+
+    const onSelectionChanged = (row, closeSelf) => {
+        onValueChange(row[0]);
+        closeSelf();
+    }
+    const onPopup = () => {
+        modalApi.setModalParameters({
+            content: <Lookup style={{ height: "420px" }} dataAPI={dataAPI} columnDefs={columnDefs} filters={filters} onSelectionChanged={onSelectionChanged} />,
+            closable: true,
+            title: title,
+            lazy: false,
+            type: "modal",
+            width: "700px",
+            height: "500px",
+            parameters: { ...getCellFocus(api) }
+        });
+        modalApi.showModal();
+    }
+
+    return <Input value={value} style={{ cursor: "pointer", width: "100%" }} onClick={onPopup} /* onKeyDown={_onKeyDown} */ readOnly suffix={<SearchOutlined onClick={onPopup} style={{ cursor: "pointer" }} />} />;
+});
 export const ArtigosLookupEditor = forwardRef((props, ref) => {
     const modalApi = useModalApi();
     const { onValueChange, api } = props;

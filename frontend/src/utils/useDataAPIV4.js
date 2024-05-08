@@ -1157,10 +1157,30 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
     const getData = () => {
         return { ...state.data };
     }
+
+    const getPostRequest = ({ url, fromState = false, withCredentials = null } = {}) => {
+        let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
+        const { sort, ...payload } = getPayload(fromState);
+        const _sort = sort.map(v => {
+            if (v.column in ref.current.sortMap) {
+                v.column = ref.current.sortMap[v.column];
+                return v;
+            }
+            return v;
+        });
+        return {
+            url: (url) ? url : ref.current.url,
+            ...(_withCredentials !== null && { withCredentials: _withCredentials }),
+            ...payload,
+            sort: _sort,
+            filter: { ..._mergeObjects(ref.current.filter, ref.current.preFilter?.filter), ...ref.current.baseFilter },
+            options: { apiversion }
+        }
+    }
+
     const _fetchPost = async ({ url, withCredentials = null, token, signal, rowFn, fromState = false, ignoreTotalRows = false, norun = false, ...rest } = {}) => {
         let _url = (url) ? url : ref.current.url;
         let _withCredentials = (withCredentials !== null) ? withCredentials : ref.current.withCredentials;
-        console.log("default-sortxx-", fromState, getPayload(fromState))
         const { sort, ...payload } = getPayload(fromState);
         payload.tstamp = Date.now();
         payload.apiversion = apiversion;
@@ -1210,9 +1230,7 @@ export const useDataAPI = ({ payload, id, useStorage = true, fnPostProcess } = {
             //return ok;
         })();
     }
-    const getPostRequest = ({ url, fromState = false } = {}) => {
-        return { ...getPayload(fromState), url: (url) ? url : ref.current.url };
-    }
+
     const nav = ({ action = "", page = 1, onFetch } = {}) => {
         addAction('nav');
         switch (action) {

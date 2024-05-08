@@ -16,7 +16,7 @@ import TableGridSelect from 'components/TableV4/TableGridSelect';
 import Page from 'components/FormFields/FormsV2';
 import { isNullOrEmpty } from 'utils/index';
 
-export default ({ noid = false, defaultFilters = {}, serverMethod, baseFilters: _baseFilters, defaultSort = [], onClick, isRowSelectable, permission, style, gridRef, allowInElaboration, showHeader = false, retrabalho = false, ...props }) => {
+export default ({ noid = false, defaultFilters = {}, serverMethod, baseFilters: _baseFilters, defaultSort = [], onClick,onItemsClick, isRowSelectable, permission, style, gridRef, allowInElaboration, showHeader = false, retrabalho = false, ...props }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const _gridRef = gridRef || useRef(); //not required
@@ -41,13 +41,19 @@ export default ({ noid = false, defaultFilters = {}, serverMethod, baseFilters: 
 
       { field: 'cliente_artigo', wrapText: false, autoHeight: true, headerName: 'Cliente/Artigo', minWidth: 400, ...cellParams(), cellRenderer: (params) => <ClienteArtigo field={{ clienteNome: "cliente_nome", artigoCod: "item_cod", artigoDes: "artigo_des" }} params={params} /> },
       { field: 'order', wrapText: false, autoHeight: true, headerName: 'Encomenda', minWidth: 190, flex: 1, ...cellParams(), cellRenderer: (params) => <Encomenda field={{ orderCod: "order_cod", prfCod: "prf_cod" }} params={params} /> },
-      { field: 'planning', autoHeight: true, headerName: 'Planeamento', width: 180, ...cellParams(), cellRenderer: (params) => <PlanningStatus outerStyle={{ height: "100%", alignItems: "center" }} check={{ paletizacao: { id: "paletizacao_id" } }} params={params} /> }
+      { field: 'planning', autoHeight: true, headerName: 'Planeamento', width: 180, ...cellParams(), cellRenderer: (params) => <PlanningStatus onClick={_onItemsClick} outerStyle={{ height: "100%", alignItems: "center" }} check={{ paletizacao: { id: "paletizacao_id" } }} params={params} /> }
 
 
     ], timestamp: new Date()
   }), []);
 
   const filters = useMemo(() => ({ toolbar: [], more: [/* "@columns"*/], no: [...Object.keys(baseFilters)] }), []);
+
+  const _onItemsClick = (item,data) => {
+    if (typeof onItemsClick === "function") {
+      onItemsClick(item,data);
+    }
+  }
 
   const onSelectionChanged = (rows) => {
     if (typeof onClick === "function") {

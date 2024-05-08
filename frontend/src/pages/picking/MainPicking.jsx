@@ -193,6 +193,11 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     right={<><Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}
                     more={{ items: ofsItems, onClick: onOfsItemsClick }}>
 
+
+                    <Item title="Gerir Ordens de Fabrico" visible={allows?.ordensFabrico?.manage}
+                        onClick={() => navigate("/app/picking/ordensfabrico/choose")}
+                    />
+
                     <Item title="Anexos" visible={allows?.ordensFabrico?.attachements}
                         onClick={() => navigate("/app/picking/ofabricoattachements")}
                         icon={<PaperClipOutlined style={{ fontSize: "22px", color: "rgb(22, 119, 255)" }} />}
@@ -212,9 +217,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Item title="Nonwovens" visible={allows?.ordensFabrico?.nonwovens}
                         onClick={() => navigate("/app/picking/ofabricononwovens")}
                     />
-                    <Item title="Esquema de Embalamento" visible={allows?.ordensFabrico?.paletizacao}
+                    {/* <Item title="Esquema de Embalamento" visible={allows?.ordensFabrico?.paletizacao}
                         onClick={() => navigate("/app/picking/ofabricopaletizacao")}
-                    />
+                    /> */}
 
                 </Group>
 
@@ -228,7 +233,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                         icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("P"), ordemFabrico: { enabled: true, retrabalho: false, optional: false } } })}
                     />
                     <Item title={<span>Nova Palete Stock <b>S</b></span>} visible={allows?.paletes?.newretrabalho} style={{ backgroundColor: "#95de64", color: "#000" }}
-                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("S"), ordemFabrico: { enabled: true, retrabalho: false, optional:false } } })}
+                        icon={<LiaDatabaseSolid size={28} color="#000" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("S"), ordemFabrico: { enabled: true, retrabalho: false, optional: false } } })}
                     />
                     <Item title={<span>Nova Palete <b>HOLD</b></span>} visible={allows?.paletes?.newhold} style={{ backgroundColor: "#391085", color: "#fff" }}
                         icon={<LiaDatabaseSolid size={28} color="#fff" />} onClick={() => navigate("/app/picking/newpalete", { state: { ...typePalete("H"), ordemFabrico: { enabled: false } } })}
@@ -261,15 +266,15 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                 </Group>
 
                 <Group title="Cargas" visible={allows?.cargas?.n > 0}
-                    right={<><Button disabled={!allows?.cargas?.list} onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "C", action:"list_closed" }, noid: false })} icon={<UnorderedListOutlined />} type="link" >Cargas Completas</Button></>}>
+                    right={<><Button disabled={!allows?.cargas?.list} onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "C", action: "list_closed" }, noid: false })} icon={<UnorderedListOutlined />} type="link" >Cargas Completas</Button></>}>
                     <Item title="Nova Carga" visible={allows?.cargas?.new}
-                        onClick={() => navigate("/app/picking/cargas/newcarga", { state: { action:"new"} })}
+                        onClick={() => navigate("/app/picking/cargas/newcarga", { state: { action: "new" } })}
                     />
                     <Item title="Cargas Abertas" visible={allows?.cargas?.list}
-                        onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "I", action:"list_open" } })}
+                        onClick={() => navigate("/app/picking/cargas/cargas", { state: { estado: "I", action: "list_open" } })}
                     />
                     <Item title="Confirmar Carga" visible={allows?.cargas?.confirm}
-                        onClick={() => navigate("/app/picking/cargas/confirmcargas", { state: { estado: "C", expedida: 0, action:"list_confirm" } })}
+                        onClick={() => navigate("/app/picking/cargas/confirmcargas", { state: { estado: "C", expedida: 0, action: "list_confirm" } })}
                     />
                     {/* <Item title="Pré-Picking" visible={allows?.cargas?.prepicking}
                         onClick={() => navigate("/app/picking/prepicking")}

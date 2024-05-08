@@ -477,7 +477,7 @@ export default ({ dataAPI, onTogglePaletes, paletes, /* activeKeys=[], onActiveK
 
         const content = () => {
             switch (modalParameters.content) {
-                case "paletesexpand": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />
+                case "paletesexpand": return <PaletesList { ...modalParameters.parameters } noid={true} />
                 case "bobines": return <BobinesGroup tab={modalParameters.tab} setTab={modalParameters.setLastTab} parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "bobinagensexpand": return <BobinagensList parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />

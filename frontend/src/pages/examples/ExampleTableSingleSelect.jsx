@@ -32,7 +32,7 @@ export default ({ noid = false, defaultFilters = {}, baseFilters: _baseFilters, 
   const navigate = useNavigate();
   const permission = usePermission({ name: "checklist" });
   const defaultParameters = { method: "TodoTasksList" };
-  const baseFilters = _baseFilters ? _baseFilters : { ...parseFilter("type", "==1", { type: "number" }), ...parseFilter("status", "==1", { type: "number" }) };
+  const baseFilters = _baseFilters ? _ters : { ...parseFilter("type", "==1", { type: "number" }), ...parseFilter("status", "==1", { type: "number" }) };
   const dataAPI = useDataAPI({ ...((!noid || location?.state?.noid === false) && { id: "TodoTasksList-01" }), fnPostProcess: (dt) => postProcess(dt, null), payload: { url: `${API_URL}/trocaetiquetas/sql/`, primaryKey: "id", parameters: defaultParameters, pagination: { enabled: true, page: 1, pageSize: 20 }, filter: {}, baseFilter: baseFilters, sort: defaultSort } });
 
   const [columnDefs, setColumnDefs] = useImmer([

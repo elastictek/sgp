@@ -167,8 +167,8 @@ export default ({ noid = false, header = true, defaultFilters = {}, baseFilters:
   const columnDefs = useMemo(() => ({
     cols: [
       { colId: "pbm.id", field: "id", hide: true },
-      { colId: 'action', type: "actionOnEditColumn", lockPosition: "left", cellRenderer: (params) => <Action visible={showActionMenu(params.data)} params={params} onClick={(option) => onActionSave(params.data, option)} items={() => actionItems(params)} /> },
-      { colId: 'mb.nome', field: 'nome', headerName: 'Bobine', lockPosition: "left", width: 120, cellStyle: {}, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
+      { colId: 'action', type: "actionOnEditColumn", lockPosition: "left",pinned:"left", cellRenderer: (params) => <Action visible={showActionMenu(params.data)} params={params} onClick={(option) => onActionSave(params.data, option)} items={() => actionItems(params)} /> },
+      { colId: 'mb.nome', field: 'nome', headerName: 'Bobine', lockPosition: "left",pinned:"left", width: 120, cellStyle: {}, cellRenderer: (params) => <Value bold link onClick={(e) => onBobineClick(e, params)} params={params} /> },
       { colId: 'pbm.nome', field: 'bobinagem_nome', headerName: 'Bobinagem', width: 100, cellStyle: {}, cellRenderer: (params) => <Value link onClick={(e) => onBobinagemClick(e, params)} params={params} /> },
       { colId: "sgppl.nome", field: 'palete_nome', headerName: 'Palete', ...cellParams(), width: 100, cellRenderer: (params) => <Value link onClick={(e) => onPaleteClick(e, params)} params={params} /> },
       { colId: "mb.posicao_palete", suppressHeaderMenuButton: true, field: 'posicao_palete', type: "number", headerName: 'Pos.', ...cellParams(), width: 50, cellRenderer: (params) => <Value params={params} /> },
@@ -208,12 +208,12 @@ export default ({ noid = false, header = true, defaultFilters = {}, baseFilters:
       { colId: 'pcarga.prf', field: 'prf', headerName: 'PRF Carga', width: 150, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
       { colId: 'pcarga.cliente', field: 'carga_cliente', headerName: 'Cliente da Carga', width: 190, ...cellParams({}), cellRenderer: (params) => <Value params={params} /> },
 
-      { colId: 'mb.nwinf', field: 'nwinf', type: "number", headerName: 'NW Inf.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
-      { colId: 'mb.nwsup', field: 'nwsup', type: "number", headerName: 'NW Sup.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
-      { colId: 'mb.tiponwinf', field: 'tiponwinf', headerName: 'Tipo NW Inf.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
-      { colId: 'mb.tiponwsup', field: 'tiponwsup', headerName: 'Tipo NW Sup.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
-      { colId: 'mb.lotenwinf', field: 'lotenwinf', headerName: 'Lote NW Inf.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
-      { colId: 'mb.lotenwsup', field: 'lotenwsup', headerName: 'Lote NW Sup.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'pbm.nwinf', field: 'nwinf', type: "number", headerName: 'NW Inf.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'pbm.nwsup', field: 'nwsup', type: "number", headerName: 'NW Sup.', width: 70, cellStyle: {}, cellRenderer: (params) => <Value unit=" m" params={params} /> },
+      { colId: 'pbm.tiponwinf', field: 'tiponwinf', headerName: 'Tipo NW Inf.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
+      { colId: 'pbm.tiponwsup', field: 'tiponwsup', headerName: 'Tipo NW Sup.', width: 290, cellStyle: {}, cellRenderer: (params) => <Value bold params={params} /> },
+      { colId: 'pb.lotenwinf', field: 'lotenwinf', headerName: 'Lote NW Inf.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
+      { colId: 'pb.lotenwsup', field: 'lotenwsup', headerName: 'Lote NW Sup.', width: 130, cellStyle: {}, cellRenderer: (params) => <Value params={params} /> },
       { colId: 'mb.recycle', field: 'recycle', headerName: 'Reciclada', ...cellParams(), width: 50, cellRenderer: (params) => <Bool checkedValue={1} unCheckedValue={0} params={params} /> },
       { field: 'prop_obs', wrapText: true, autoHeight: false, headerName: 'Obs. Propriedades', ...cellParams({ multi: true }), minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> },
       { field: 'obs', wrapText: true, autoHeight: false, headerName: 'Obs.', ...cellParams({ multi: true }), minWidth: 200, flex: 1, cellRenderer: (params) => <MultiLine params={params} /> }

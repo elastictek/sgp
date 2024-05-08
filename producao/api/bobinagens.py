@@ -270,6 +270,7 @@ def BobinagensListV2(request, format=None):
             ) pbm
             join producao_bobine pb on pb.bobinagem_id = pbm.id
             group by pbm.id,pb.core
+            {s(dql.sort)}
         """
     )
     if ("export" in request.data["parameters"]):
@@ -315,7 +316,7 @@ def BobinagensList(request, format=None):
     f.setParameters({
         **rangeP(f.filterData.get('fdata'), 'data', lambda k, v: f'DATE(pbm.{k})'),
         **rangeP(f.filterData.get('ftime'), ['inico','fim'], lambda k, v: f'TIME(pbm.{k})', lambda k, v: f'TIMEDIFF(TIME(pbm.{k[1]}),TIME(pbm.{k[0]}))'),
-        "_nome": {"value": lambda v: "2%", "field": lambda k, v: f'pbm.nome'},
+        #"_nome": {"value": lambda v: "2%", "field": lambda k, v: f'pbm.nome'},
         "nome": {"value": lambda v: v.get('fbobinagem'), "field": lambda k, v: f'pbm.{k}'},
         "duracao": {"value": lambda v: v.get('fduracao'), "field": lambda k, v: f'(TIME_TO_SEC(pbm.{k})/60)'},
         "area": {"value": lambda v: v.get('farea'), "field": lambda k, v: f'pbm.{k}'},

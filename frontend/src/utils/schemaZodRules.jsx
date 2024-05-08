@@ -1,6 +1,7 @@
 import { isNil, isNotNil } from "ramda";
 import { z } from "zod";
 import dayjs from 'dayjs';
+import { rules } from "./useValidation";
 
 export const _fieldZodDescription = (schema, path) => {
     const parts = Array.isArray(path) ? path : path.split('.');
@@ -59,25 +60,29 @@ export const zGroupRangeNumber = (value, min, max, { nullable = true, custom_err
         [max]: z.coerce.number({ description: _max }),
         [value]: z.coerce.number({ description: _value })
     }).refine((v) => {
-        if (nullable && isNil(v?.[value])) {
-            return true;
+
+        const r = rules();
+        r(v, min).number().required(!nullable).positive(false);
+        r(v, max).number().required(!nullable).positive(false);
+        r(v, value, { name: _value ? _value : value }).number().required(!nullable).positive(false).between(v?.[min], v?.[max], { including: true, nameMin: _min ? _min : min, nameMax: _max ? _max : max });
+        if (!r().valid()) {
+            throw new z.ZodError(r().errors());
         }
-        return isNotNil(v?.[min]) && isNotNil(v?.[max]) && v[value] >= v[min] && v[value] <= v[max];
-    }, {
-        ...custom_error ? custom_error : { message: `${_value ? _value : value} must be between ${_min ? _min : min} and ${_max ? _max : max}` },
-    });
-export const zGroupIntervalNumber = (init, end, { nullable = true, custom_error, description: { init: _init, end: _end } } = {}) =>
+        return true;
+    }, {});
+export const zGroupIntervalNumber = (init, end, { nullable = true, description: { init: _init, end: _end } } = {}) =>
     z.object({
-        [init]: z.coerce.number({ description: _init }),
-        [end]: z.coerce.number({ description: _end })
+        [init]: z.any(),
+        [end]: z.any()
     }).refine((v) => {
-        if (nullable && (isNil(v?.[init]) || isNil(v?.[end]))) {
-            return true;
+        const r = rules();
+        r(v, init, { name: _init ? _init : init }).number().required(!nullable).positive(false).max(v?.[end], { name: _end ? _end : end });
+        r(v, end, { name: _end ? _end : end }).number().required(!nullable).positive(false).min(v?.[init], { name: _init ? _init : init });
+        if (!r().valid()) {
+            throw new z.ZodError(r().errors());
         }
-        return isNotNil(v?.[init]) && isNotNil(v?.[end]) && v[end] >= v[init];
-    }, {
-        ...custom_error ? custom_error : { message: `${_end ? _end : end} must be greater or equal than ${_init ? _init : init}` },
-    });
+        return true;
+    }, {});
 export const zOneOfNumber = (values) => z.coerce.number().refine(value => values.includes(value));
 export const zOneOfString = (values) => z.coerce.string().refine(value => values.includes(value));
 

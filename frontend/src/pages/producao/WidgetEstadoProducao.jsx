@@ -57,7 +57,7 @@ const FormBobinagemValidar = React.lazy(() => import('../bobinagens/FormValidar'
 const FormOrdemFabricoValidar = React.lazy(() => import('../ordensfabrico/FormValidar'));
 const OrdemFabrico = React.lazy(() => import('../ordensfabrico/OrdemFabrico'));
 import { downloadFile } from 'components/DownloadReports';
-import { uniqueKeys } from 'utils/index';
+import { unique, uniqueKeys } from 'utils/index';
 import Logo from 'assets/logowhite.svg';
 import LogoWhite from 'assets/logowhite.svg';
 import MainMenu from '../currentline/dashboard/MainMenu';
@@ -71,6 +71,7 @@ import ListGranuladoInline from './items/ListGranuladoInline';
 import ListBobinagens from './items/ListBobinagens';
 import LineParameters from './items/LineParameters';
 import ListReciclado from './items/ListReciclado';
+import { parseFilter } from 'utils/useDataAPIV4';
 
 const FormCortesOrdem = React.lazy(() => import('../ordensfabrico/FormCortesOrdem'));
 const LineLogList = React.lazy(() => import('../logslist/LineLogList'));
@@ -82,7 +83,7 @@ const PaletesStockList = React.lazy(() => import('../paletes/PaletesStockList'))
 const PickNWList = lazy(() => import('../picking/PickNWList'));
 
 const title = "Produção";
-const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop','mpalete','rasgo'];
+const defeitosToSum = ['con', 'descen', 'presa', 'diam_insuf', 'esp', 'troca_nw', 'outros', 'nok', 'car', 'fmp', 'lac', 'ncore', 'sbrt', 'suj', 'tr', 'buraco', 'fc', 'ff', 'furos', 'rugas', 'prop', 'mpalete', 'rasgo'];
 
 const StyledCollapse = styled(Collapse)`
 
@@ -549,7 +550,8 @@ export const estadoProducaoData = ({ data }) => {
     //     return acc;
     // }, {}));
     const _ofs = uniqueKeys(_acc, "of_cod"); //[...new Set(_dj.map(obj => obj.of_cod))];
-    return { ofs: _ofs, rows: _acc, total: _acc.length };
+    const _ofsid =  unique(_acc.map(v=>v?.of?.of_id));
+    return { ofs: _ofs, ofsid: _ofsid, rows: _acc, total: _acc.length };
 }
 
 const EstadoProducao = ({ hash, parameters, ...props }) => {
@@ -569,13 +571,14 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     const submitting = useSubmitting(true);
     const cortesRef = useRef();
     const [ofs, setOfs] = useState([]);
+    const [ofsId, setOfsId] = useState([]);
     const [paletes, setPaletes] = useState([]);
     const [modalParameters, setModalParameters] = useState({});
     const [lastBobinesTab, setLastBobinesTab] = useState('1');
     const [showModal, hideModal] = useModal(({ in: open, onExited }) => {
         const content = () => {
             switch (modalParameters.content) {
-                case "paletesexpand": return <PaletesList parameters={{ ...modalParameters.parameters }} noid={true} />
+                case "paletesexpand": return <PaletesList {...modalParameters.parameters} noid={true} />
                 case "bobines": return <BobinesGroup tab={modalParameters.tab} setTab={modalParameters.setLastTab} parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "bobinagensexpand": return <BobinagensList parameters={{ ...modalParameters.parameters }} noid={true} />
                 case "formulacao": return <FormFormulacao parameters={modalParameters.parameters} />
@@ -661,7 +664,7 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
     };
 
     const onPaletesExpand = () => {
-        newWindow("/app/paletes/paleteslist", ofs ? {} : { filter: { fof: `in:${ofs.join(",")}` } }, "paletes", 120);
+        newWindow("/app/paletes/paleteslist", !ofsId ? { noid: true, } : { noid: true, baseFilters: { ...parseFilter("ordem_id", `in:${ofsId.join(",")}`) } }, "paletes", 120);
         //setModalParameters({ content: "paletesexpand", type: "drawer", push: false, width: "90%", title: <div style={{ fontWeight: 900 }}>Paletes</div>, parameters: { filter: { fof: `in:${ofs.join(",")}` } } });
         //showModal();
     }
@@ -722,10 +725,12 @@ const EstadoProducao = ({ hash, parameters, ...props }) => {
         submitting.trigger();
         if (parameters?.data?.rows) {
             const v = estadoProducaoData({ data: parameters?.data });
+
             console.log("loadedddddddddddddddddddd", v, parameters?.data, json(parameters?.data?.current?.cortesordem)?.id)
             //setOfs([..._ofs]);
             //dataAPI.setData({ rows: _dj, total: _dj.length });
             setOfs(v.ofs);
+            setOfsId(v.ofsid);
             dataAPI.setData({ rows: v.rows, total: v.total });
 
             // setOfsData(_dj);
@@ -1388,8 +1393,8 @@ export default ({ setFormTitle, ...props }) => {
         <Card
             hoverable
             styles={{
-                header:{ padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" },
-                body:{ height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }
+                header: { padding: "5px 10px", backgroundColor: isRunning() ? "#389e0d" : isRunning() === null ? "#d46b08" : "#cf1322" },
+                body: { height: "calc(100vh - 55px)", padding: "0px 3px 3px 0px" }
             }}
             style={{ height: "100%", border: "1px solid #8c8c8c" }}
             size="small"

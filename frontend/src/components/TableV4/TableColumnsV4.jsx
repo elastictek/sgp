@@ -163,29 +163,66 @@ export const PlanningStatus = ({ params: { column: col, data, node, rowIndex } =
 
     return (
         <div style={{ display: "flex", margin: "3px", ...outerStyle }}>
-            {paletizacao?.id && <StyledPlanningStatus ok={data?.[paletizacao?.id]}><LiaDatabaseSolid size={18} color="#fff" /></StyledPlanningStatus>}
+            {paletizacao?.id && <StyledPlanningStatus onClick={(e)=>onClick && onClick("paletizacao",data)} ok={data?.[paletizacao?.id]}><LiaDatabaseSolid size={18} color="#fff" /></StyledPlanningStatus>}
         </div>
     );
 
 }
 
-const StyledOf = styled.div`
+const StyledItem = styled.div`
     border:solid 1px #40a9ff;
     border-radius:3px;
     margin-right:1px;
     min-width:200px;
-    max-width:200px;
-    padding:2px;
+    max-width:300px;
+    padding:1px;
     cursor:pointer;
     text-align:center;
-    font-size:9px;
+    font-size:10px;
     &:hover {
         border-color: #d9d9d9;
     }
     .cl{
-        font-size:8px;
+        font-size:9px;
     }
 `;
+
+
+export const ArrayColumn = ({ params: { column: col, data, node, rowIndex } = {}, column, value, style, isObject=false, valueProperty = "value", labelProperty = "label", showValue = false, className, onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+
+    const _values = useMemo(() => {
+        let _v = value;
+        const _path = columnPath(col);
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : (columnHasPath(col) ? valueByPath(data, _path) : data?.[_path]) : _v;
+        if (_v == undefined) {
+            return null;
+        }
+        const a = json(_v);
+        return Array.isArray(a) ? a : [];
+    }, [data]);
+
+    return (
+        <OuterDiv error={error}>
+            <div {...genericProps({ display: "flex", flexDirection: "row"/* , margin: "3px" */, lineHeight: 1.3 }, style, _classNames)}>
+                {_values && _values.map((v, i) => {
+                    return (<StyledItem onClick={onClick} onKeyDown={onKeyDown}/*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`itm-${isObject ? v?.[valueProperty] : v}-${i}`}>
+                        {(showValue && isObject) && <div><b>{v?.[valueProperty]}</b></div>}
+                        <div className='cl'>{isObject ? v?.[labelProperty] : v}</div>
+                    </StyledItem>);
+                })}
+            </div>
+        </OuterDiv>
+    );
+};
+
 
 export const OrdensDetail = ({ params: { column: col, data, node, rowIndex } = {}, value, style, outerStyle, className, onClick }) => {
     const classes = useStyles();
@@ -203,10 +240,10 @@ export const OrdensDetail = ({ params: { column: col, data, node, rowIndex } = {
         <OuterDiv error={error}>
             <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, style, _classNames)}>
                 {ofs && ofs.map((v, i) => {
-                    return (<StyledOf onClick={onClick} onKeyDown={onkeydown}/*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`off-${v}-${data.id}`}>
+                    return (<StyledItem onClick={onClick} onKeyDown={onkeydown}/*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */ key={`off-${v}-${data.id}`}>
                         <div><b>{v}</b><span style={{ marginLeft: "3px" }}>{orders[i]}</span></div>
                         <div className='cl'>{clientes[i]}</div>
-                    </StyledOf>);
+                    </StyledItem>);
                 })}
             </div>
         </OuterDiv>
@@ -225,10 +262,10 @@ export const OrdemFabrico = ({ field: { ofid, order, cliente } = {}, params: { c
     return (
         <OuterDiv error={error}>
             <div {...genericProps({ display: "flex", flexDirection: "column"/* , margin: "3px" */, lineHeight: 1.3 }, onClick, onKeyDown, style, _classNames)}>
-                <StyledOf /*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */>
+                <StyledItem /*color={bColors(v.estado).color} fontColor={bColors(v.estado).fontColor} */>
                     <div><b>{data?.[ofid]}</b>{order && <span style={{ marginLeft: "3px" }}>{data?.[order]}</span>}</div>
                     {(cliente) && <div className='cl'>{data?.[cliente]}</div>}
-                </StyledOf>
+                </StyledItem>
             </div>
         </OuterDiv>
     );
@@ -719,6 +756,25 @@ export const CortesOrdem = ({ params: { column: col, data, node, rowIndex } = {}
     </OuterDiv>);
 }
 
+export const Color = ({ params: { column: col, data, node } = {}, column, value, style, className, align = "center", onClick }) => {
+    const classes = useStyles();
+    const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
+    const error = useValidation(node, col);
+    const onKeyDown = (event) => {
+        if (event.keyCode === 13) {
+            onClick(event)
+        }
+    }
+    const _value = useMemo(() => {
+        let _v = value;
+        _v = (_v === undefined && col && data) ? (typeof column === "string") ? valueByPath(data, column) : data?.[col.getDefinition().field] : _v;
+        return _v;
+    }, [data]);
+
+
+    return (<OuterDiv error={error} style={{ textAlign: align }}><div {...genericProps({}, onClick, onKeyDown, style, _classNames)}><div style={{ backgroundColor: _value }}>&nbsp;</div></div></OuterDiv>);
+}
+
 export const BadgeNumber = ({ params: { column: col, data, node } = {}, column, value, unit, style, className, bold, align = "center", onClick }) => {
     const classes = useStyles();
     const _classNames = classNames({ [className]: className, [classes.focus]: onClick });
@@ -973,7 +1029,7 @@ const MultiText = ({ value, dataType }) => {
     }
     return (<div style={{ whiteSpace: "pre-wrap" }}>{value}</div>)
 }
-export const MultiLine = ({ params = {}, column, value, style, className, bold, align = "left", type = "drawer", dataType = "text", width = 500, height = 300, }) => {
+export const MultiLine = ({ params = {}, column, columnPopup, value, valuePopup, style, className, bold, align = "left", type = "drawer", dataType = "text", width = 500, height = 300 }) => {
     const { column: col, data, api, node } = params;
     const _classNames = classNames({ [className]: className });
     const { modalApi, modeApi, check, checkKey, checks, updateChecks, editColumControl } = col.getDefinition().cellRendererParams || {};
@@ -1030,6 +1086,20 @@ export const MultiLine = ({ params = {}, column, value, style, className, bold, 
         return _v;
     }, [data]);
 
+    const _valuePopup = useMemo(() => {
+        const _column = columnPopup ? columnPopup : column;
+        let _v = valuePopup ? valuePopup : value;
+        _v = (_v === undefined && col && data) ? (typeof _column === "string") ? valueByPath(data, _column) : data?.[col.getDefinition().field] : _v;
+        if (dataType == "json") {
+            const _j = json(_v, {});
+            if (isObjectEmpty(_j)) {
+                return "";
+            }
+            return JSON.stringify(_j, null, 2);
+        }
+        return _v;
+    }, [data]);
+
     const onKeyDown = (event) => {
         if (event.keyCode === 13) {
             onOpen();
@@ -1038,7 +1108,7 @@ export const MultiLine = ({ params = {}, column, value, style, className, bold, 
 
     const onOpen = () => {
         const _t = api.getFocusedCell();
-        modalApi.setModalParameters({ content: <MultiText dataType={dataType} value={_value} />, title: col.getDefinition().headerName, type: type, width: width, height: height, parameters: { gridApi: api, cellFocus: { rowIndex: _t.rowIndex, colId: _t.column.colId } } });
+        modalApi.setModalParameters({ content: <MultiText dataType={dataType} value={_valuePopup} />, title: col.getDefinition().headerName, type: type, width: width, height: height, parameters: { gridApi: api, cellFocus: { rowIndex: _t.rowIndex, colId: _t.column.colId } } });
         modalApi.showModal();
     }
 
