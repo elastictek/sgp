@@ -151,8 +151,8 @@ const FormPickNonwovensQueue = lazy(() => import('./picking/FormPickNonwovensQue
 const FormPickPrintBuffer = lazy(() => import('./picking/FormPickPrintBuffer'));
 const FormPickNewBobinagemLine = lazy(() => import('./picking/FormPickNewBobinagemLine'));
 const FormPickValidateBobinagem = lazy(() => import('./picking/FormPickValidateBobinagem'));
-const FormPickPaletizacao = lazy(() => import('./picking/ordensfabrico/FormPaletizacao'));
-//const FormPickPaletizacao = lazy(() => import('./picking/FormPickPaletizacao'));
+const FormPaletizacaoSchema = lazy(() => import('./picking/ordensfabrico/FormPaletizacao'));
+const FormPickPaletizacao = lazy(() => import('./picking/FormPickPaletizacao'));
 const FormValidateBobinagem = lazy(() => import('./bobinagens/FormValidarV2'));
 
 const FormPickQualityBobinagemTest = lazy(() => import('./picking/FormPickQualityBobinagemTest'));
@@ -309,7 +309,8 @@ const RenderRouter = () => {
                 { path: "picking/cargas/confirmcarga", element: <Suspense fallback={<Spin />}><ConfirmCarga /></Suspense> },
                 
                 { path: "picking/ordensfabrico/choose", element: <Suspense fallback={<Spin />}><OrdensChoose /></Suspense> },
-                { path: "picking/ordensfabrico/paletizacao", element: <Suspense fallback={<Spin />}><FormPickPaletizacao /></Suspense> },
+                { path: "picking/ordensfabrico/paletizacao", element: <Suspense fallback={<Spin />}><FormPaletizacaoSchema /></Suspense> },
+                { path: "picking/ofabricopaletizacao", element: <Suspense fallback={<Spin />}><FormPickPaletizacao /></Suspense> },
 
 
                 { path: "picking/fixbobinagem", element: <Suspense fallback={<Spin />}><FormPickFixBobinagem /></Suspense> },

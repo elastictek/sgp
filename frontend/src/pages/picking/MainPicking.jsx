@@ -193,10 +193,10 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     right={<><Button onClick={() => navigate("/app/ofabrico/ordensfabricolist/")} icon={<UnorderedListOutlined />} type="link" >Lista</Button></>}
                     more={{ items: ofsItems, onClick: onOfsItemsClick }}>
 
-
+{/* 
                     <Item title="Gerir Ordens de Fabrico" visible={allows?.ordensFabrico?.manage}
                         onClick={() => navigate("/app/picking/ordensfabrico/choose")}
-                    />
+                    /> */}
 
                     <Item title="Anexos" visible={allows?.ordensFabrico?.attachements}
                         onClick={() => navigate("/app/picking/ofabricoattachements")}
@@ -217,9 +217,9 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
                     <Item title="Nonwovens" visible={allows?.ordensFabrico?.nonwovens}
                         onClick={() => navigate("/app/picking/ofabricononwovens")}
                     />
-                    {/* <Item title="Esquema de Embalamento" visible={allows?.ordensFabrico?.paletizacao}
+                    <Item title="Esquema de Embalamento" visible={allows?.ordensFabrico?.paletizacao}
                         onClick={() => navigate("/app/picking/ofabricopaletizacao")}
-                    /> */}
+                    />
 
                 </Group>
 

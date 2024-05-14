@@ -494,7 +494,7 @@ export default ({ extraRef, closeSelf, loadParentData, ...props }) => {
             }
             updateState(draft => {
                 draft.allSchemaBobines = _allSchemabobines;
-                draft.ordemFabrico = { id: v[0].id, ofid: v[0]?.ofid, paletizacao_id: 2, allSchemaBobines: _allSchemabobines };
+                draft.ordemFabrico = { id: v[0].id, ofid: v[0]?.ofid, paletizacao_id: v[0].paletizacao_id, allSchemaBobines: _allSchemabobines };
                 draft.timestamp = Date.now();
             });
         }
