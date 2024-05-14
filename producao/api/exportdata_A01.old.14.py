@@ -1371,75 +1371,40 @@ def VolumeProduzidoArtigos(request, format=None):
     _filter = request.data['filter'] if "filter" in request.data else {}
     _data = request.data['parameters'] if "parameters" in request.data else {}  
     
-    groupby = _data["groupby"] if "groupby" in _data else "artigo"
-    
     _parameters = {}
-    if "festado" in _filter and _filter.get("festado"):
-        _filter["festado"] = f"""in:{_filter.get("festado")}"""
-        _parameters["estado"]={"value": lambda v: v.get("festado"), "field": lambda k, v: f'pb.estado'}
     if "fdata" in _filter and _filter.get("fdata") is not None:
         _parameters = {**rangeP(f.filterData.get('fdata'), 'pb2.data', lambda k, v: f'{k}')}
     elif ("fmes" in _filter and _filter.get("fmes") is not None) or ("fano" in _filter and _filter.get("fano") is not None):
-        if _filter.get("fano") is None:
-            _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
-            _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pb2.data)'}
         _filter["fano"] = datetime.now().year if _filter.get("fano") is None or not _filter.get("fano") else _filter.get("fano")
+        _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
         _parameters["ano"]={"value": lambda v: Filters.getNumeric(v.get("fano"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'YEAR(pb2.data)'}
-        
+        _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pb2.data)'}
 
     f = Filters(_filter)
     f.setParameters(_parameters, True)
     f.where()
     f.auto()
-    if _filter.get("flinha") == 1:
-        f.add("pb.ig_id is not null",True)
+    f.add("pb.ig_id is not null",True)
     f.value("and")
 
     parameters = {**f.parameters}
     dql = db.dql(request.data, False,False)
-    print("------------------")
-    print(groupby)
-    if groupby == "artigo":
-        cols = f"""*"""
-        sql = lambda : (
-            f"""
-                SELECT {f'{cols}'} FROM(
-                SELECT pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area, pb.core, pb.lar  
-                from producao_bobine pb
-                join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
-                join producao_artigo pa on pa.id=pb.artigo_id
-                left join producao_produtos pp on pp.id=pa.produto_id
-                {f.text}
-                group by pb.artigo_id,pb.core, pb.lar
-                ) t
-                {dql.limit}
-            """
-        )
-    elif groupby == "corelar":
-        cols = f"""*"""
-        sql = lambda : (
-            f"""
-                SELECT {f'{cols}'} FROM(
-                SELECT pb.core, pb.lar, sum(pb2.comp*(pb.lar/1000)) area, count(*) nbobines
-                from producao_bobine pb
-                join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
-                {f.text}
-                group by pb.core, pb.lar
-                ) t
-                {dql.limit}
-            """
-        )
-    print(f"""
-                SELECT {f'{cols}'} FROM(
-                SELECT pb.core, pb.lar, sum(pb2.comp*(pb.lar/1000)) area, count(*) nbobines
-                from producao_bobine pb
-                join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
-                {f.text}
-                group by pb.core, pb.lar
-                ) t
-                {dql.limit}
-            """)
-    print(parameters)
+
+    cols = f"""*"""
+    sql = lambda : (
+        f"""
+            SELECT {f'{cols}'} FROM(
+            SELECT pa.cod, pa.des,IFNULL(pp.produto_cod,pa.produto) produto, sum(pb2.comp*(pb.lar/1000)) area  
+            from producao_bobine pb
+            join producao_bobinagem pb2 on pb2.id=pb.bobinagem_id
+            join producao_artigo pa on pa.id=pb.artigo_id
+            left join producao_produtos pp on pp.id=pa.produto_id
+            {f.text}
+            group by artigo_id
+            ) t
+            {dql.limit}
+        """
+    )
     response = db.executeSimpleList(sql, connection, parameters,[])
     return Response(response)
 
@@ -1452,13 +1417,10 @@ def ProduzidoRetrabalho(request, format=None):
     if "fdata" in _filter and _filter.get("fdata") is not None:
         _parameters = {**rangeP(f.filterData.get('fdata'), 'pbmo.data', lambda k, v: f'{k}')}
     elif ("fmes" in _filter and _filter.get("fmes") is not None) or ("fano" in _filter and _filter.get("fano") is not None):
-        if _filter.get("fano") is None:
-            _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
-            _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pbmo.data)'}
-        
         _filter["fano"] = datetime.now().year if _filter.get("fano") is None or not _filter.get("fano") else _filter.get("fano")
+        _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
         _parameters["ano"]={"value": lambda v: Filters.getNumeric(v.get("fano"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'YEAR(pbmo.data)'}
-        
+        _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pbmo.data)'}
 
     f = Filters(_filter)
     f.setParameters(_parameters, True)
@@ -1515,13 +1477,10 @@ def ProduzidoLinha(request, format=None):
     if "fdata" in _filter and _filter.get("fdata") is not None:
         _parameters = {**rangeP(f.filterData.get('fdata'), 'pb2.data', lambda k, v: f'{k}')}
     elif ("fmes" in _filter and _filter.get("fmes") is not None) or ("fano" in _filter and _filter.get("fano") is not None):
-        if _filter.get("fano") is None:
-            _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
-            _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pb2.data)'}
-        
         _filter["fano"] = datetime.now().year if _filter.get("fano") is None or not _filter.get("fano") else _filter.get("fano")
+        _filter["fmes"] = datetime.now().month if _filter.get("fmes") is None or not _filter.get("fmes") else _filter.get("fmes")
         _parameters["ano"]={"value": lambda v: Filters.getNumeric(v.get("fano"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'YEAR(pb2.data)'}
-        
+        _parameters["mes"]={"value": lambda v: Filters.getNumeric(v.get("fmes"),None,"==" if _data.get("source")=="external" else None), "field": lambda k, v: f'MONTH(pb2.data)'}
 
     f = Filters(_filter)
     f.setParameters(_parameters, True)
@@ -1822,6 +1781,7 @@ def _bobinesOriginais(_filter,_data):
         fs=f"{f.text} {f'AND ({fs})' if fs else ''}"
     
     parameters = {**f.parameters}
+
     sql = lambda : (
         f"""
             select
@@ -1960,7 +1920,6 @@ def _bobinesOriginais(_filter,_data):
             
         """
     )
-    
     response = db.executeSimpleList(sql, connection, parameters,[])
     return Response(response)
 
@@ -2100,10 +2059,10 @@ def _paletesList(_filter,_data):
             LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
             LEFT JOIN producao_tempordemfabrico pt ON pt.id = po2.draft_ordem_id
             #json_table(sgppl.artigo,'$[*]'columns(artigo_cod VARCHAR(30) PATH "$.cod",artigo_estado VARCHAR(10) PATH "$.estado", artigo_des VARCHAR(200) PATH "$.des")) artigos
-            WHERE sgppl.nbobines_real>0 #and sgppl.disabled=0 
+            WHERE sgppl.nbobines_real>0 and sgppl.disabled=0 
             {fs}          
         """
-    )   
+    )
     response = db.executeSimpleList(sql, connection, parameters,[])
     return Response(response)
 
@@ -2170,7 +2129,7 @@ def _bobinesList(_filter,_data):
             LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
             LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
             LEFT JOIN producao_tempordemfabrico pt ON pt.id = po2.draft_ordem_id
-            WHERE pb.recycle=0 and pb.comp_actual>0 and sgppl.nbobines_real>0 #and sgppl.disabled=0 
+            WHERE pb.recycle=0 and pb.comp_actual>0 and sgppl.nbobines_real>0 and sgppl.disabled=0 
             {fs}          
         """
     )
@@ -2297,7 +2256,7 @@ def PaletesListx(request, format=None):
             LEFT JOIN planeamento_ordemproducao po1 ON po1.id = sgppl.ordem_id_original
             LEFT JOIN planeamento_ordemproducao po2 ON po2.id = sgppl.ordem_id
             LEFT JOIN producao_tempordemfabrico pt ON pt.id = po2.draft_ordem_id
-            WHERE sgppl.nbobines_real>0 #and sgppl.disabled=0
+            WHERE sgppl.nbobines_real>0 and sgppl.disabled=0
             {f.text} {fartigo["text"]} {festados.text} {fbobinemulti["text"]} {fartigompmulti["text"]} {fbobinedestinos.text}
             {dql.sort} {dql.limit}
         """

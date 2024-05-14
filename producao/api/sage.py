@@ -295,9 +295,8 @@ def SyncProdutoAcabadoProductionReport(request, format=None):
     def getPaletesOrdem(op_id,ip_date,cursor):
          f = Filters({"id":op_id,"ipdate":ip_date})
          f.where()
-         f.add(f'pp.nok = 0 and pp.ordem_id = :id',True )
+         f.add(f'pp.nok = 0 and pp.ordem_id = :id and not exists(select 1 from producao_bobine pb where pb.palete_id=pp.id and pb.estado="LAB"',True )
          f.value("and")
-         print("bbbbb")
          rows = db.executeSimpleList(lambda: (f"""
             SELECT pp.nome,
             CASE WHEN pp.artigo->>'$[0].cod' = 'EEEEFTACPAAR000061' THEN 
