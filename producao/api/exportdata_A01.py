@@ -2151,7 +2151,15 @@ def _bobinesList(_filter,_data):
     sql = lambda : (
         f"""
             SELECT 
-            pb.nome,pb.posicao_palete,sgppl.nome palete_nome,pb.`timestamp`,pb.comp_actual*(pb.lar/1000) area,pb.comp_actual,pb.estado,pb.designacao_prod,pb.lar,pb.core,pb.recycle,pb.destino,
+            pb.nome,pb.posicao_palete,sgppl.nome palete_nome,pb.`timestamp`,
+            pb.comp_actual*(pb.lar/1000) area,pb.comp_actual,pb.estado,
+            pb.designacao_prod,pb.lar,pb.core,pb.recycle,pb.destino,
+            pb.destino,pb.lar,pb.diam,pb.comp_atual,pb.comp,pb.con,pb.descen,
+            pb.presa,pb.diam_insuf,
+            pb.furos,pb.esp,pb.troca_nw,pb.outros,pb.buraco,pb.obs,
+            pb.prop_obs,pb.nok,pb.car,pb.mpalete,
+            pb.rasgo,pb.rugas_pos,pb.rugas,pb.furos_pos,pb.ff_pos,pb.fc_pos,pb.buracos_pos,pb.suj,
+            pb.sbrt,pb.prop,pb.ncore,pb.lac,pb.fmp,pb.l_real,pb.posicao_real,
             pa.cod artigo_cod,pa.des artigo_des,
             #artigos.*,
             sgppl.`timestamp` palete_timestamp, sgppl.data_pal, sgppl.area_real area_palete,
